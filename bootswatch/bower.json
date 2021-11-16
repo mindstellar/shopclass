@@ -1,0 +1,24 @@
+{
+  "name": "shopclass_swatch",
+  "description": "shopclass themes build on bootswatch",
+  "author": "Navjot Tomer",
+  "dependencies": {
+    "jQuery": "3.5.x",
+    "bootstrap": "~3.4.x",
+    "masonry-layout": "~4.2.2",
+    "imagesloaded": "~4.1.4",
+    "jquery-match-height": "^0.7.2",
+    "responsiveCarousel": "basilio/responsiveCarousel#master",
+    "Bootstrap-3-Typeahead": "bassjobsen/Bootstrap-3-Typeahead#v3.1.1",
+    "magnific-popup": "1.1.0",
+    "bootbox.js": "4.4.0",
+    "jquery-ui": "1.12.x",
+    "jquery-validation": "1.17.x"
+  },
+  "devDependencies": {
+    "bootstrap-sass-official": "~3.3.x",
+    "font-awesome": "~4.7.x",
+    "html5shiv": "~3.7.0",
+    "respond": "~1.4.2"
+  }
+}

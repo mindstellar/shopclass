@@ -1,0 +1,25 @@
+{
+  "name": "shopclass",
+  "description": "A free and open-source classified theme for Osclass.",
+  "version": "3.3.6",
+  "author": "Navjot tomer",
+  "homepage": "https://github.com/mindstellar/shopclass",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "devDependencies": {
+    "bower": "^1.8.12",
+    "grunt": "^1.4.1",
+    "grunt-autoprefixer": ">0.4.2",
+    "grunt-contrib-clean": "^2.0.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-connect": "^3.0.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-less": "^3.0.0",
+    "grunt-contrib-sass": "~0.7.4",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-postcss": "^0.9.0",
+    "postcss-html": "^0.36.0",
+    "stylelint": "^13.13.1"
+  }
+}

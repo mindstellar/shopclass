@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS /*TABLE_PREFIX*/t_user_avatar(
+	user_id int( 10 ) unsigned NOT NULL,
+	avatar_ext VARCHAR( 255 ) ,
+	PRIMARY KEY ( user_id )
+) ENGINE = InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';

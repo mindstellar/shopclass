@@ -1,0 +1,2072 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ShopClass\n"
+"POT-Creation-Date: 2019-04-09 17:50+0530\n"
+"PO-Revision-Date: 2019-04-10 15:00+0530\n"
+"Last-Translator: Navjot Tomer <admin@tuffclassified.com>\n"
+"Language-Team: TuffIndia <navjottomer@gmail.com>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.1\n"
+"X-Poedit-Basepath: ../..\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: 404.php:6 includes/classes/tfcBreadcrumb.php:314
+#: includes/classes/tfcSeo.php:146
+msgid "Error"
+msgstr ""
+
+#: 404.php:7
+msgid "Page not found"
+msgstr ""
+
+#: 404.php:9
+msgid "We are sorry ! This page is not here anymore."
+msgstr ""
+
+#: admin/seo-extra.php:1
+msgid "Seo Details"
+msgstr ""
+
+#: admin/seo-extra.php:3
+msgid "SEO Title"
+msgstr ""
+
+#: admin/seo-extra.php:9
+msgid "SEO Description"
+msgstr ""
+
+#: alert-form.php:4
+msgid "Subscribe to this search"
+msgstr ""
+
+#: alert-form.php:20
+msgid "Subscribe now"
+msgstr ""
+
+#: carousel-loop.php:4
+msgid "Featured Listing"
+msgstr ""
+
+#: carousel-loop.php:5
+msgid "Carefully handpicked listings for you."
+msgstr ""
+
+#: carousel-loop.php:38 header.php:275 includes/classes/tfcAdsLoop.php:282
+#: item-post.php:82 search_sidebar.php:114
+msgid "Price"
+msgstr ""
+
+#: comments.php:6 comments.php:46
+msgid "Comments"
+msgstr ""
+
+#: comments.php:49
+msgid "Add Comment"
+msgstr ""
+
+#: comments.php:71 contact.php:16 item-contact.php:25 item-send-friend.php:34
+#: item.php:440 user-public-profile.php:154
+msgid "Your name"
+msgstr ""
+
+#: comments.php:77 user-register.php:17
+msgid "Enter your name"
+msgstr ""
+
+#: comments.php:79
+msgid "Your e-mail"
+msgstr ""
+
+#: comments.php:84
+msgid "abc@example.com"
+msgstr ""
+
+#: comments.php:87 includes/frm/tfcItemForm.php:548
+msgid "Title"
+msgstr ""
+
+#: comments.php:92
+msgid "Enter title"
+msgstr ""
+
+#: comments.php:94
+msgid "Comment"
+msgstr ""
+
+#: comments.php:99
+msgid "Enter your comment"
+msgstr ""
+
+#: comments.php:107 item.php:491 user-public-profile.php:197
+msgid "Send"
+msgstr ""
+
+#: comments.php:109
+msgid "Please Wait"
+msgstr ""
+
+#: comments.php:143
+msgid "Delete your comment"
+msgstr ""
+
+#: comments.php:143 includes/classes/tfcAdsLoop.php:428
+#: includes/frm/tfcItemForm.php:1495 includes/frm/tfcItemForm.php:1702
+#: includes/frm/tfcItemForm.php:1714 includes/frm/tfcItemForm.php:1860
+#: item.php:143
+msgid "Delete"
+msgstr ""
+
+#: contact.php:6
+msgid "Contact us"
+msgstr ""
+
+#: contact.php:21 item-send-friend.php:40
+msgid "Enter name"
+msgstr ""
+
+#: contact.php:27 item-send-friend.php:45
+msgid "E-mail address"
+msgstr ""
+
+#: contact.php:32 item-send-friend.php:50
+msgid "Enter E-mail"
+msgstr ""
+
+#: contact.php:38
+msgid "Subject"
+msgstr ""
+
+#: contact.php:43
+msgid "Enter Subject"
+msgstr ""
+
+#: contact.php:51 item-contact.php:53 item-send-friend.php:81 item.php:248
+#: item.php:465 user-public-profile.php:179
+msgid "Message"
+msgstr ""
+
+#: contact.php:53 item-send-friend.php:83
+msgid "Enter your message"
+msgstr ""
+
+#: contact.php:62 item-send-friend.php:92
+msgid "Send Message"
+msgstr ""
+
+#: contact.php:115 contact.php:119 contact.php:123 contact.php:127
+#: item-contact.php:90 item-contact.php:94 item-contact.php:98 item.php:544
+#: item.php:548 item.php:552 user-public-profile.php:224
+#: user-public-profile.php:228 user-public-profile.php:232
+msgid "This field is required"
+msgstr ""
+
+#: contact.php:116 includes/frm/tfcItemForm.php:1083
+#: includes/frm/tfcItemForm.php:1391 includes/tfcScript.php:131
+#: includes/tfcScript.php:184 item-contact.php:91 item-send-friend.php:153
+#: item.php:545 user-public-profile.php:225 user-register.php:149
+msgid "Invalid email address"
+msgstr ""
+
+#: contact.php:120 item-contact.php:95 item.php:549 user-public-profile.php:229
+msgid "Your Message is too short"
+msgstr ""
+
+#: contact.php:124 item-contact.php:99 item.php:553 user-public-profile.php:233
+msgid "Your Name is too short"
+msgstr ""
+
+#: contact.php:128
+msgid "Your Subject is too short"
+msgstr ""
+
+#: footer.php:21 header.php:144
+msgid "Search"
+msgstr ""
+
+#: footer.php:40
+msgid "Choose a category"
+msgstr ""
+
+#: footer.php:101 item.php:494 search.php:137
+msgid "Close"
+msgstr ""
+
+#: footer.php:126 header.php:85
+msgid "Pages"
+msgstr ""
+
+#: footer.php:129 header.php:88
+msgid "Contact Us"
+msgstr ""
+
+#: footer.php:135 header.php:81
+msgid "Post Free Ad"
+msgstr ""
+
+#: footer.php:139
+msgid "Browse Sitemap"
+msgstr ""
+
+#: footer.php:143
+msgid "OSClass web"
+msgstr ""
+
+#: footer.php:143
+msgid "Created with OSClass"
+msgstr ""
+
+#: footer.php:150
+msgid "Our Location"
+msgstr ""
+
+#: footer.php:171
+msgid "We are Social !!!"
+msgstr ""
+
+#: footer.php:175
+msgid "Like Us"
+msgstr ""
+
+#: footer.php:179
+msgid "Plus Us"
+msgstr ""
+
+#: footer.php:183
+msgid "Follow Us"
+msgstr ""
+
+#: footer.php:186
+msgid "Subscribe Us"
+msgstr ""
+
+#: footer.php:195
+msgid "Copyright © "
+msgstr ""
+
+#: footer.php:197
+msgid "All Rights Reserved"
+msgstr ""
+
+#: footer.php:199
+msgid "Free Classified Online"
+msgstr ""
+
+#: footer.php:200
+msgid "support"
+msgstr ""
+
+#: footer.php:201
+msgid "Email us"
+msgstr ""
+
+#: footer.php:220
+msgid "Scroll To Top"
+msgstr ""
+
+#: functions.php:137
+msgid "ie. PHP Programmer"
+msgstr ""
+
+#: functions.php:183
+msgid "Hey Welcome To Shopclass Theme, Please Checkout Our Dashboard Options"
+msgstr ""
+
+#: functions.php:189 functions.php:209
+msgid ""
+"Osclass upload directory is not writable. Category images function will not "
+"work."
+msgstr ""
+
+#: functions.php:197 functions.php:217
+msgid ""
+"Osclass upload directory is not writable. Main Slider will not work properly."
+msgstr ""
+
+#: functions.php:203
+msgid "Great You have updated Shopclass to latest version"
+msgstr ""
+
+#: header.php:33
+msgid "Categories "
+msgstr ""
+
+#: header.php:47
+msgid "Hi !"
+msgstr ""
+
+#: header.php:53 includes/classes/tfcBreadcrumb.php:379
+#: includes/core-functions.php:873
+msgid "Dashboard"
+msgstr ""
+
+#: header.php:58 user-sidebar.php:28
+msgid "Logout"
+msgstr ""
+
+#: header.php:65
+msgid "Hi Guest"
+msgstr ""
+
+#: header.php:69 includes/classes/tfcBreadcrumb.php:388 item.php:415
+#: user-public-profile.php:140
+msgid "Login"
+msgstr ""
+
+#: header.php:72
+msgid "Register"
+msgstr ""
+
+#: header.php:98
+msgid "All Ads"
+msgstr ""
+
+#: header.php:124
+msgid "Post your Free Ad!"
+msgstr ""
+
+#: header.php:152
+msgid "Refine"
+msgstr ""
+
+#: header.php:167
+msgid "Refine your search"
+msgstr ""
+
+#: header.php:182 item-post.php:29 search_sidebar.php:34
+msgid "Category"
+msgstr ""
+
+#: header.php:187 includes/frm/tfcForm.php:150 includes/frm/tfcItemForm.php:126
+msgid "Select Category"
+msgstr ""
+
+#: header.php:188 includes/frm/tfcItemForm.php:60 item-post.php:34
+msgid "Select a category"
+msgstr ""
+
+#: header.php:194
+msgid "Select Country"
+msgstr ""
+
+#: header.php:197 includes/frm/tfcItemForm.php:664 search_sidebar.php:47
+msgid "Select a country..."
+msgstr ""
+
+#: header.php:207 header.php:246
+msgid "Select Region"
+msgstr ""
+
+#: header.php:211 search_sidebar.php:60
+msgid "Select State/Region"
+msgstr ""
+
+#: header.php:234 header.php:254
+msgid "Select City"
+msgstr ""
+
+#: header.php:237 search_sidebar.php:75
+msgid "Select State/Region First"
+msgstr ""
+
+#: header.php:250
+msgid "Enter State/Region"
+msgstr ""
+
+#: header.php:257
+msgid "Enter City/Area"
+msgstr ""
+
+#: header.php:265 search_sidebar.php:108
+msgid "Pictures Only"
+msgstr ""
+
+#: header.php:277
+msgid "Min "
+msgstr ""
+
+#: header.php:284 search_sidebar.php:123
+msgid "Max"
+msgstr ""
+
+#: header.php:296
+msgid "Done"
+msgstr ""
+
+#: home-layout/layout_1.php:5 home-layout/layout_3.php:9
+msgid "Categories"
+msgstr ""
+
+#: home-layout/layout_1.php:41 home-layout/layout_3.php:36
+msgid " Latest Items"
+msgstr ""
+
+#: home-layout/layout_2.php:6
+msgid "All Categories"
+msgstr ""
+
+#: home-layout/layout_2.php:7
+msgid "Check the list of all categories available for our listings."
+msgstr ""
+
+#: home-layout/layout_2.php:25
+msgid "More"
+msgstr ""
+
+#: home-layout/layout_2.php:36 mainpage-ad-loop.php:18
+msgid "See all offers"
+msgstr ""
+
+#: home-layout/layout_2.php:47 home-layout/layout_3.php:48
+msgid "Sub Categories"
+msgstr ""
+
+#: home-layout/layout_2.php:50 home-layout/layout_3.php:51
+#: includes/voting/item_detail.php:4 includes/voting/item_detail_user.php:4
+msgid "Loading"
+msgstr ""
+
+#: home-layout/layout_2.php:69 home-layout/layout_3.php:70
+msgid "Loading "
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:141
+msgid "HTTP error, Unabled to send request"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:148
+msgid "API error, Unable to authenticate"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:183
+#: includes/SocialLogin/tfcSocialLoginClass.php:184
+msgid "This Social account is already linked to another user"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:202
+#: includes/SocialLogin/tfcSocialLoginClass.php:233
+msgid "You account is now connected with your social account"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:214
+msgid "You are Successfully logged in"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:275
+msgid "Your social account did not given any email address."
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:280
+msgid "This email is not allowed"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:284
+msgid "This IP address is not allowed"
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:296
+msgid "This email is already been used ."
+msgstr ""
+
+#: includes/SocialLogin/tfcSocialLoginClass.php:323
+msgid "Your account has been created successfully"
+msgstr ""
+
+#: includes/actions.php:194
+msgid "Robots.txt updated successfully"
+msgstr ""
+
+#: includes/actions.php:196
+msgid "We have problem updating robots.txt"
+msgstr ""
+
+#: includes/actions.php:224
+msgid "Your settings saved successfully"
+msgstr ""
+
+#: includes/actions.php:238
+msgid "Directory is not writable."
+msgstr ""
+
+#: includes/actions.php:256
+msgid "Image Uploaded Successfully."
+msgstr ""
+
+#: includes/actions.php:294
+msgid "No Picture Found. Please reconnect your Social Profile."
+msgstr ""
+
+#: includes/actions.php:319
+msgid "Avatar Deleted Successfully."
+msgstr ""
+
+#: includes/classes/relatedAds.php:78
+msgid "Related Ads"
+msgstr ""
+
+#: includes/classes/tfcAdminDashboard.php:276
+#: includes/classes/tfcAdminDashboard.php:281
+msgid "ShopClass Theme"
+msgstr ""
+
+#: includes/classes/tfcAdminDashboard.php:309
+msgid "Shopclass"
+msgstr ""
+
+#: includes/classes/tfcAdminDashboard.php:375
+msgid "Manage all your shopclass settings from here."
+msgstr ""
+
+#: includes/classes/tfcAdminFormRegister.php:120
+msgid "Save changes"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:132
+msgid "No Item Found"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:185 includes/classes/tfcAdsLoop.php:248
+msgid "No image available"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:309 includes/classes/tfcAdsLoop.php:321
+#: search.php:86
+msgid "Sponsored Links"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:405
+msgid "No result found matching your query"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:420
+msgid "View item"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:423 item.php:138
+msgid "Edit"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:426 item.php:141 user-favourite.php:48
+msgid "This action can not be undone. Are you sure you want to continue?"
+msgstr ""
+
+#: includes/classes/tfcAdsLoop.php:433 item.php:146
+msgid "Activate"
+msgstr ""
+
+#: includes/classes/tfcAdsSpam.php:114
+msgid "Your ad is submitted for a review."
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:61
+msgid "Home"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:373 item-post.php:25
+msgid "Publish a listing"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:374
+msgid "Edit your listing"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:375 includes/classes/tfcSeo.php:132
+#: item-send-friend.php:6
+msgid "Send to a friend"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:376
+msgid "Contact publisher"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:377
+msgid "Search results"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:378
+#, php-format
+msgid "Search results: %s"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:380
+#, php-format
+msgid "%s's profile"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:381
+msgid "Account"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:382
+msgid "My listings"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:383
+msgid "My alerts"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:384
+msgid "Update my profile"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:385
+msgid "Change my email"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:386
+msgid "Change my username"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:387
+msgid "Change my password"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:389 includes/classes/tfcSeo.php:229
+#: user-forgot_password.php:10 user-recover.php:8
+msgid "Recover your password"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:390 user-change_password.php:11
+#: user-change_password.php:16
+msgid "Change your password"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:391
+msgid "Create a new account"
+msgstr ""
+
+#: includes/classes/tfcBreadcrumb.php:392
+msgid "Contact"
+msgstr ""
+
+#: includes/classes/tfcCookieConsent.php:70
+msgid ""
+"This website uses cookies to ensure you get the best experience on our "
+"website"
+msgstr ""
+
+#: includes/classes/tfcCookieConsent.php:71
+msgid "Learn more"
+msgstr ""
+
+#: includes/classes/tfcCookieConsent.php:72
+msgid "Got It!"
+msgstr ""
+
+#: includes/classes/tfcDuplicateItem.php:210
+msgid "Your listing is under review."
+msgstr ""
+
+#: includes/classes/tfcImageManager.php:204
+msgid "The file you attempted to upload is too large."
+msgstr ""
+
+#: includes/classes/tfcImageManager.php:209
+msgid "Directory is not writable, Contact Administrator."
+msgstr ""
+
+#: includes/classes/tfcImageManager.php:217
+msgid "Invalid Image, only .jpg, .png, .gif are allowed."
+msgstr ""
+
+#: includes/classes/tfcSeo.php:136 item-contact.php:10
+msgid "Contact seller"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:160 includes/sphinx/SphSearch.php:871
+msgid "Page"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:175
+msgid "Find latest "
+msgstr ""
+
+#: includes/classes/tfcSeo.php:181
+msgid "Latest classified ads "
+msgstr ""
+
+#: includes/classes/tfcSeo.php:182
+msgid "Search and Find latest classified listings In"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:188 includes/classes/tfcSeo.php:194
+#: includes/classes/tfcSeo.php:197 includes/sphinx/SphSearch.php:887
+msgid "In"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:189 includes/classes/tfcSeo.php:192
+#: includes/classes/tfcSeo.php:195 includes/classes/tfcSeo.php:198
+msgid "At"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:204 includes/sphinx/SphSearch.php:880
+msgid "Latest Classified Ads"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:205
+msgid "Find and search all latest classified ads."
+msgstr ""
+
+#: includes/classes/tfcSeo.php:244
+msgid "User Dashboard"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:247
+msgid "Manage listings"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:250
+msgid "Manage alerts"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:253
+msgid "Update profile"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:256
+msgid "Public profile"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:259 includes/core-functions.php:903
+msgid "Change email"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:262 includes/core-functions.php:915
+#: user-forgot_password.php:26
+msgid "Change password"
+msgstr ""
+
+#: includes/classes/tfcSeo.php:265
+msgid "Recover password"
+msgstr ""
+
+#: includes/classes/tfcSpamSecurity.php:196
+#: includes/classes/tfcSpamSecurity.php:242
+msgid "That was an Invalid request"
+msgstr ""
+
+#: includes/core-functions.php:376
+msgid "view all items"
+msgstr ""
+
+#: includes/core-functions.php:411
+msgid "Reset Categories:"
+msgstr ""
+
+#: includes/core-functions.php:744
+msgid " Push To Top"
+msgstr ""
+
+#: includes/core-functions.php:758
+msgid "Your listing has been pushed to top"
+msgstr ""
+
+#: includes/core-functions.php:770
+msgid "We could not find any item with this ID!"
+msgstr ""
+
+#: includes/core-functions.php:879
+msgid "Manage your listings"
+msgstr ""
+
+#: includes/core-functions.php:885
+msgid "Manage your alerts"
+msgstr ""
+
+#: includes/core-functions.php:891
+msgid "Manage your Favourite"
+msgstr ""
+
+#: includes/core-functions.php:897
+msgid "Manage your profile"
+msgstr ""
+
+#: includes/core-functions.php:909
+msgid "Change username"
+msgstr ""
+
+#: includes/core-functions.php:921
+msgid "Public Profile"
+msgstr ""
+
+#: includes/core-functions.php:1379
+msgid "Sorry, we could not save your comment. Try again later"
+msgstr ""
+
+#: includes/core-functions.php:1383
+msgid "Your comment is awaiting moderation"
+msgstr ""
+
+#: includes/core-functions.php:1387
+msgid "Your comment has been approved"
+msgstr ""
+
+#: includes/core-functions.php:1391
+msgid "Please fill the required field (email)"
+msgstr ""
+
+#: includes/core-functions.php:1395
+msgid "Please type a comment"
+msgstr ""
+
+#: includes/core-functions.php:1399
+msgid "Your comment has been marked as spam"
+msgstr ""
+
+#: includes/core-functions.php:1403
+msgid "You need to be logged to comment"
+msgstr ""
+
+#: includes/core-functions.php:1407
+msgid "Sorry, comments are disabled"
+msgstr ""
+
+#: includes/core-functions.php:1411
+msgid "Sorry, Invalid Request"
+msgstr ""
+
+#: includes/core-functions.php:1734
+msgid "Report As Spam"
+msgstr ""
+
+#: includes/core-functions.php:1736
+msgid "Report As Misclassified"
+msgstr ""
+
+#: includes/core-functions.php:1738
+msgid "Report As Duplicated"
+msgstr ""
+
+#: includes/core-functions.php:1740
+msgid "Report As Expired"
+msgstr ""
+
+#: includes/core-functions.php:1742
+msgid "Report As Offensive"
+msgstr ""
+
+#: includes/core-loader.php:241
+msgid "Successfully removed your favourite item."
+msgstr ""
+
+#: includes/core-loader.php:266
+msgid "Please login before using this page."
+msgstr ""
+
+#: includes/core-loader.php:274 includes/core-loader.php:457
+msgid "Your Favourite"
+msgstr ""
+
+#: includes/core-loader.php:293 includes/core-loader.php:311
+msgid "Add To Favourite"
+msgstr ""
+
+#: includes/core-loader.php:305
+msgid "View Favourite List"
+msgstr ""
+
+#: includes/core-loader.php:318
+msgid "Please Login"
+msgstr ""
+
+#: includes/core-loader.php:372
+msgid "Already Added!"
+msgstr ""
+
+#: includes/core-loader.php:378
+msgid "View your favourite"
+msgstr ""
+
+#: includes/core-loader.php:382
+msgid "Please login"
+msgstr ""
+
+#: includes/core-loader.php:796
+msgid "Avatar Updated Successfully."
+msgstr ""
+
+#: includes/core-loader.php:802
+msgid "Avatar Uploaded Successfully."
+msgstr ""
+
+#: includes/core-loader.php:828 includes/core-loader.php:843
+msgid ""
+"Upload your profile picture. Only .jpg,.png,.gif are supported. Max Size: 2MB"
+msgstr ""
+
+#: includes/core-loader.php:829
+msgid "Upload New Avatar"
+msgstr ""
+
+#: includes/core-loader.php:835
+msgid "Delete Avatar"
+msgstr ""
+
+#: includes/core-loader.php:844
+msgid "Upload Avatar"
+msgstr ""
+
+#: includes/core-loader.php:940 includes/core-loader.php:958
+msgid "Your account has been disconnected successfully"
+msgstr ""
+
+#: includes/core-loader.php:1022
+msgid "Disconnect"
+msgstr ""
+
+#: includes/core-loader.php:1024
+msgid "Connect"
+msgstr ""
+
+#: includes/core-loader.php:1029
+msgid "Register With"
+msgstr ""
+
+#: includes/core-loader.php:1031
+msgid "Login With "
+msgstr ""
+
+#: includes/core-loader.php:1047
+msgid "Avatar From"
+msgstr ""
+
+#: includes/frm/tfcContactForm.php:20 includes/frm/tfcContactForm.php:22
+msgid "Enter Your Name"
+msgstr ""
+
+#: includes/frm/tfcContactForm.php:33 includes/frm/tfcContactForm.php:35
+msgid "Enter Your Email"
+msgstr ""
+
+#: includes/frm/tfcContactForm.php:46 includes/frm/tfcContactForm.php:48
+msgid "Enter Phone Number"
+msgstr ""
+
+#: includes/frm/tfcContactForm.php:59 includes/frm/tfcContactForm.php:61
+msgid "Enter Your Subject"
+msgstr ""
+
+#: includes/frm/tfcContactForm.php:72 includes/frm/tfcContactForm.php:74
+msgid "Enter Your Message"
+msgstr ""
+
+#: includes/frm/tfcForm.php:153 includes/frm/tfcItemForm.php:139
+#: includes/frm/tfcItemForm.php:150 includes/frm/tfcItemForm.php:185
+msgid "Select Subcategory"
+msgstr ""
+
+#: includes/frm/tfcFormFucntion.php:67 includes/frm/tfcItemForm.php:726
+#: includes/frm/tfcItemForm.php:1204 includes/frm/tfcItemForm.php:1235
+#: includes/frm/tfcItemForm.php:1242 includes/frm/tfcItemForm.php:1244
+#: user-profile.php:233 user-profile.php:257 user-profile.php:264
+#: user-profile.php:266
+msgid "Select a region..."
+msgstr ""
+
+#: includes/frm/tfcFormFucntion.php:75 includes/frm/tfcFormFucntion.php:114
+#: includes/frm/tfcFormFucntion.php:187 includes/frm/tfcItemForm.php:1286
+#: user-profile.php:244 user-profile.php:305
+msgid "No results"
+msgstr ""
+
+#: includes/frm/tfcFormFucntion.php:106 includes/frm/tfcFormFucntion.php:179
+#: includes/frm/tfcItemForm.php:762 includes/frm/tfcItemForm.php:1228
+#: includes/frm/tfcItemForm.php:1238 includes/frm/tfcItemForm.php:1248
+#: includes/frm/tfcItemForm.php:1250 includes/frm/tfcItemForm.php:1278
+#: user-profile.php:252 user-profile.php:260 user-profile.php:270
+#: user-profile.php:272 user-profile.php:298
+msgid "Select a city..."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:146 includes/frm/tfcItemForm.php:188
+msgid "No Subcategory"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:283
+msgid "Select category"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:286
+msgid "Select subcategory"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:473 includes/frm/tfcItemForm.php:491
+msgid "No change expiration"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:476 includes/frm/tfcItemForm.php:493
+msgid "Without expiration"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:479 includes/frm/tfcItemForm.php:495
+msgid "1 day"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:482 includes/frm/tfcItemForm.php:498
+#, php-format
+msgid "%d days"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:559 item.php:96 print.php:73
+msgid "Description"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:586
+msgid "Enter Item Title"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:599
+msgid "Enter Item Description"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:671 includes/frm/tfcItemForm.php:698
+msgid "Enter Country Name"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:733 includes/frm/tfcItemForm.php:787
+msgid "Enter Region Name"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:769 includes/frm/tfcItemForm.php:805
+msgid "Enter City Name"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:823
+msgid "Enter City Area"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:841
+msgid "Enter Your Address"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:858
+msgid "Enter Zip Code"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:875
+msgid "Enter Contact Name"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:892
+msgid "Enter Contact Email"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1015 includes/frm/tfcItemForm.php:1325
+msgid "Description needs to be longer"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1068 includes/frm/tfcItemForm.php:1376
+msgid "Choose one category"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1071 includes/frm/tfcItemForm.php:1379
+msgid "Price: no more than 50 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1073 includes/frm/tfcItemForm.php:1381
+msgid "Currency: make your selection"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1077 includes/frm/tfcItemForm.php:1385
+msgid "Contact Name is Required"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1078 includes/frm/tfcItemForm.php:1386
+msgid "Name: enter at least 3 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1079 includes/frm/tfcItemForm.php:1387
+msgid "Name: no more than 35 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1082 includes/frm/tfcItemForm.php:1390
+#: includes/tfcScript.php:183 item-send-friend.php:154 user-register.php:148
+msgid "Email: this field is required"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1086 includes/frm/tfcItemForm.php:1394
+msgid "Select a region"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1087 includes/frm/tfcItemForm.php:1395
+msgid "Select a city"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1089 includes/frm/tfcItemForm.php:1397
+msgid "City area: enter at least 3 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1090 includes/frm/tfcItemForm.php:1398
+msgid "City area: no more than 50 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1093 includes/frm/tfcItemForm.php:1401
+msgid "Address: enter at least 3 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1094 includes/frm/tfcItemForm.php:1402
+msgid "Address: no more than 100 characters"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1117 includes/frm/tfcItemForm.php:1425
+msgid "Title field is required"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1118 includes/frm/tfcItemForm.php:1426
+msgid "Type at least 10 characters."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1147 includes/frm/tfcItemForm.php:1454
+#: includes/frm/tfcItemForm.php:1742 user-alerts.php:24
+msgid "This action can't be undone. Are you sure you want to continue?"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1539
+msgid "Remove"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1551
+msgid "Sorry, you have reached the maximum number of images per listing"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1692
+msgid "Images already uploaded"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1838
+msgid ""
+"Too many items ({netItems}) would be uploaded. Item limit is {itemLimit}."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1839
+msgid ""
+"The files are being uploaded, if you leave now the upload will be cancelled."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1840
+msgid "{file} has an invalid extension. Valid extension(s): {extensions}."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1841
+msgid "{file} is too large, maximum file size is {sizeLimit}."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1842
+msgid "{file} is empty, please select files again without it."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1855
+msgid "Click or Drop for upload images"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1856
+msgid "Processing..."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1857
+msgid "Retry"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1858 item-post.php:151 user-profile.php:187
+msgid "Cancel"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1859
+msgid "Upload failed"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1861
+msgid "Deleting..."
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1862
+#, php-format
+msgid "{percent}% of {total_size}"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1877
+msgid "Make primary image"
+msgstr ""
+
+#: includes/frm/tfcItemForm.php:1917
+#, php-format
+msgid "Too many items were uploaded. Item limit is %d."
+msgstr ""
+
+#: includes/sphinx/CWebSphSearch.php:509
+msgid "Latest listings added"
+msgstr ""
+
+#: includes/sphinx/CWebSphSearch.php:511
+msgid "Latest listings added in"
+msgstr ""
+
+#: includes/sphinx/SphSearch.php:875
+msgid "Ads Found"
+msgstr ""
+
+#: includes/sphinx/SphSearch.php:876
+msgid "for"
+msgstr ""
+
+#: includes/tfcScript.php:128
+msgid "You have sucessfully subscribed to the alert"
+msgstr ""
+
+#: includes/tfcScript.php:134
+msgid "There was a problem with the alert"
+msgstr ""
+
+#: includes/tfcScript.php:187
+msgid "Comment: this field is required"
+msgstr ""
+
+#: includes/tfcScript.php:188
+msgid "Your Comment is too short"
+msgstr ""
+
+#: includes/voting/set_results.php:81
+msgid "Best voted"
+msgstr ""
+
+#: includes/voting/set_results.php:91 includes/voting/set_results_user.php:89
+msgid "Essential"
+msgstr ""
+
+#: includes/voting/set_results.php:93 includes/voting/set_results_user.php:91
+msgid "Very interesting"
+msgstr ""
+
+#: includes/voting/set_results.php:95 includes/voting/set_results_user.php:93
+msgid "Interesting"
+msgstr ""
+
+#: includes/voting/set_results.php:97 includes/voting/set_results_user.php:95
+msgid "Uninteresting"
+msgstr ""
+
+#: includes/voting/set_results.php:99 includes/voting/set_results_user.php:97
+msgid "Without interest"
+msgstr ""
+
+#: includes/voting/set_results.php:101 includes/voting/set_results_user.php:99
+msgid "Without information"
+msgstr ""
+
+#: includes/voting/set_results.php:121 includes/voting/set_results_user.php:118
+#: includes/voting/view_votes_user.php:66
+msgid "votes"
+msgstr ""
+
+#: includes/voting/set_results_user.php:81
+msgid "Best users voted"
+msgstr ""
+
+#: includes/voting/view_votes.php:7
+msgid "Rate Listing:"
+msgstr ""
+
+#: includes/voting/view_votes.php:10 includes/voting/view_votes.php:14
+#: includes/voting/view_votes.php:18 includes/voting/view_votes.php:22
+#: includes/voting/view_votes.php:26
+msgid "Star"
+msgstr ""
+
+#: includes/voting/view_votes.php:36
+msgid "Current Rating:"
+msgstr ""
+
+#: includes/voting/view_votes.php:67
+msgid "Vote"
+msgstr ""
+
+#: includes/voting/view_votes_user.php:19
+msgid "Rate User:"
+msgstr ""
+
+#: includes/voting/view_votes_user.php:49
+msgid "Current User Rating:"
+msgstr ""
+
+#: item-contact.php:17
+msgid "To (seller)"
+msgstr ""
+
+#: item-contact.php:18 item-send-friend.php:18
+msgid "Item"
+msgstr ""
+
+#: item-contact.php:34 item.php:448 user-public-profile.php:162
+msgid "Your e-mail address"
+msgstr ""
+
+#: item-contact.php:43 item.php:456 user-public-profile.php:170
+msgid "Phone number"
+msgstr ""
+
+#: item-contact.php:44 item.php:457 user-public-profile.php:171
+msgid "optional"
+msgstr ""
+
+#: item-contact.php:62
+msgid "Send message"
+msgstr ""
+
+#: item-post.php:27
+msgid "General Information"
+msgstr ""
+
+#: item-post.php:52
+msgid "Photos"
+msgstr ""
+
+#: item-post.php:65
+msgid "Your info"
+msgstr ""
+
+#: item-post.php:67 item.php:421 item.php:425 user-profile.php:24
+#: user-public-profile.php:145
+msgid "Name"
+msgstr ""
+
+#: item-post.php:71 item.php:429 user-profile.php:31 user-recover.php:14
+#: user-register.php:40
+msgid "E-mail"
+msgstr ""
+
+#: item-post.php:75
+msgid "Show e-mail on the item page"
+msgstr ""
+
+#: item-post.php:93
+msgid "Item Location"
+msgstr ""
+
+#: item-post.php:95 search_sidebar.php:46 user-profile.php:60
+msgid "Country"
+msgstr ""
+
+#: item-post.php:100 item-post.php:110 item-post.php:119
+msgid "State/Region"
+msgstr ""
+
+#: item-post.php:104 item-post.php:114 item-post.php:123 search_sidebar.php:69
+#: search_sidebar.php:94 user-profile.php:73
+msgid "City"
+msgstr ""
+
+#: item-post.php:129
+msgid "City Area"
+msgstr ""
+
+#: item-post.php:133 user-profile.php:95
+msgid "Address"
+msgstr ""
+
+#: item-post.php:149 user-change_email.php:32 user-change_password.php:34
+#: user-change_username.php:30 user-profile.php:164
+msgid "Update"
+msgstr ""
+
+#: item-post.php:154
+msgid "Publish"
+msgstr ""
+
+#: item-send-friend.php:57
+msgid "Friend Name"
+msgstr ""
+
+#: item-send-friend.php:62
+msgid "Enter Friend Name"
+msgstr ""
+
+#: item-send-friend.php:68
+msgid "Friend E-mail"
+msgstr ""
+
+#: item-send-friend.php:73
+msgid "Enter Friend E-mail"
+msgstr ""
+
+#: item-send-friend.php:110 item.php:217 user-public-profile.php:54
+#: user-sidebar.php:19
+msgid "Company"
+msgstr ""
+
+#: item-send-friend.php:112 item.php:219 user-public-profile.php:54
+#: user-sidebar.php:19
+msgid "Individual"
+msgstr ""
+
+#: item-send-friend.php:150
+msgid "Your name: this field is required"
+msgstr ""
+
+#: item-send-friend.php:157
+msgid "Friend's name: this field is required"
+msgstr ""
+
+#: item-send-friend.php:160
+msgid "Friend's email: this field is required"
+msgstr ""
+
+#: item-send-friend.php:161
+msgid "Invalid friend's email address"
+msgstr ""
+
+#: item-send-friend.php:163
+msgid "Message: this field is required"
+msgstr ""
+
+#: item.php:32
+msgid "Price:"
+msgstr ""
+
+#: item.php:49 item.php:65
+msgid "Click Image to Zoom"
+msgstr ""
+
+#: item.php:51 item.php:67
+msgid "Image"
+msgstr ""
+
+#: item.php:81
+msgid "No Image Available"
+msgstr ""
+
+#: item.php:102
+msgid "Share on Facebook"
+msgstr ""
+
+#: item.php:106
+msgid "Share on Google Plus"
+msgstr ""
+
+#: item.php:110
+msgid "Share on Twitter"
+msgstr ""
+
+#: item.php:114
+msgid "Share on Linkedin"
+msgstr ""
+
+#: item.php:118
+msgid "Share on WhatsApp"
+msgstr ""
+
+#: item.php:123
+msgid "Print this page"
+msgstr ""
+
+#: item.php:127
+msgid "Send to Friend"
+msgstr ""
+
+#: item.php:130
+msgid "View QR Code"
+msgstr ""
+
+#: item.php:155
+msgid "More Details"
+msgstr ""
+
+#: item.php:163
+msgid "Total Views:"
+msgstr ""
+
+#: item.php:170
+msgid "Reference Id:"
+msgstr ""
+
+#: item.php:243
+msgid "Follow"
+msgstr ""
+
+#: item.php:258 item.php:433 user-public-profile.php:147
+msgid "Tel"
+msgstr ""
+
+#: item.php:264
+msgid "Location :"
+msgstr ""
+
+#: item.php:297
+msgid "Location Map"
+msgstr ""
+
+#: item.php:301
+msgid "Report this Ad"
+msgstr ""
+
+#: item.php:318
+msgid "Useful Info"
+msgstr ""
+
+#: item.php:322
+msgid "Avoid scams by acting locally or paying with PayPal."
+msgstr ""
+
+#: item.php:325
+msgid ""
+"Never pay with Western Union, Moneygram or other anonymous payment services."
+msgstr ""
+
+#: item.php:328
+msgid ""
+"Don't buy or sell outside of your country. Don't accept cashier cheques from "
+"outside your country."
+msgstr ""
+
+#: item.php:331
+msgid ""
+"This site is never involved in any transaction, and does not handle "
+"payments, shipping, guarantee transactions, provide escrow services, or "
+"offer \"buyer protection\" or \"seller certification\"."
+msgstr ""
+
+#: item.php:345
+msgid " Prev Ad"
+msgstr ""
+
+#: item.php:349
+msgid "Next Ad"
+msgstr ""
+
+#: item.php:362
+msgid "Report this ad"
+msgstr ""
+
+#: item.php:380
+msgid "Ad Location Map"
+msgstr ""
+
+#: item.php:395 user-public-profile.php:124
+msgid "Contact Seller"
+msgstr ""
+
+#: item.php:403
+msgid "The item is expired. You cannot contact the publisher."
+msgstr ""
+
+#: item.php:407
+msgid "It's your own item, you cannot contact the publisher."
+msgstr ""
+
+#: item.php:411 user-public-profile.php:136
+msgid ""
+"You must login or register a new free account in order to contact the "
+"advertiser"
+msgstr ""
+
+#: item.php:417 user-public-profile.php:142
+msgid "Register for a free account"
+msgstr ""
+
+#: mainpage-ad-loop.php:22
+msgid "Load More Item"
+msgstr ""
+
+#: print.php:22
+msgid "Print Ad"
+msgstr ""
+
+#: print.php:40
+msgid "Print"
+msgstr ""
+
+#: print.php:49
+msgid "Location"
+msgstr ""
+
+#: print.php:51
+msgid "Published"
+msgstr ""
+
+#: print.php:53
+msgid "Contact Info"
+msgstr ""
+
+#: print.php:88
+msgid "This ad was generated by"
+msgstr ""
+
+#: recent_ads.php:5
+msgid "Recently Viewed"
+msgstr ""
+
+#: search.php:13
+msgid "Filter Listings"
+msgstr ""
+
+#: search.php:44
+msgid "Normal"
+msgstr ""
+
+#: search.php:47
+msgid "Relevance"
+msgstr ""
+
+#: search.php:130
+msgid "Refine Listing"
+msgstr ""
+
+#: search_sidebar.php:21
+msgid "Refine Search"
+msgstr ""
+
+#: search_sidebar.php:26
+msgid "Keyword"
+msgstr ""
+
+#: search_sidebar.php:53 search_sidebar.php:85 user-profile.php:67
+msgid "Region"
+msgstr ""
+
+#: search_sidebar.php:87
+msgid "Enter Region"
+msgstr ""
+
+#: search_sidebar.php:96
+msgid "Enter City"
+msgstr ""
+
+#: search_sidebar.php:116
+msgid "Min"
+msgstr ""
+
+#: search_sidebar.php:119
+msgid "Min Price"
+msgstr ""
+
+#: search_sidebar.php:126
+msgid "Max Price"
+msgstr ""
+
+#: search_sidebar.php:140
+msgid "Apply"
+msgstr ""
+
+#: search_sidebar.php:142
+msgid "Reset"
+msgstr ""
+
+#: search_sidebar.php:148
+msgid "Refine Categories"
+msgstr ""
+
+#: user-alerts.php:13
+msgid "Manage Your Alerts"
+msgstr ""
+
+#: user-alerts.php:17
+msgid "Your alerts"
+msgstr ""
+
+#: user-alerts.php:19
+msgid "You do not have any alerts yet"
+msgstr ""
+
+#: user-alerts.php:24
+msgid "Alert"
+msgstr ""
+
+#: user-alerts.php:24
+msgid "Delete this alert"
+msgstr ""
+
+#: user-change_email.php:11
+msgid "Change you email address"
+msgstr ""
+
+#: user-change_email.php:16
+msgid "Change your e-mail"
+msgstr ""
+
+#: user-change_email.php:22
+msgid "Current e-mail:"
+msgstr ""
+
+#: user-change_email.php:26
+msgid "New e-mail"
+msgstr ""
+
+#: user-change_password.php:22
+msgid "Current password"
+msgstr ""
+
+#: user-change_password.php:23
+msgid "Enter Current Password"
+msgstr ""
+
+#: user-change_password.php:26
+msgid "New password"
+msgstr ""
+
+#: user-change_password.php:27
+msgid "Enter New Password"
+msgstr ""
+
+#: user-change_password.php:30
+msgid "Repeat new password"
+msgstr ""
+
+#: user-change_password.php:31
+msgid "Retype New Password"
+msgstr ""
+
+#: user-change_username.php:11 user-change_username.php:16
+msgid "Change your Username"
+msgstr ""
+
+#: user-change_username.php:22
+msgid "New Username"
+msgstr ""
+
+#: user-change_username.php:50 user-register.php:144
+msgid "Username: this field is required"
+msgstr ""
+
+#: user-change_username.php:82 user-register.php:104
+msgid "The username is available"
+msgstr ""
+
+#: user-change_username.php:85 user-register.php:107
+msgid "The username is NOT available"
+msgstr ""
+
+#: user-dashboard.php:40
+msgid "Your Stats"
+msgstr ""
+
+#: user-dashboard.php:44
+msgid "Your Total Active Ads"
+msgstr ""
+
+#: user-dashboard.php:49
+msgid "Your Favourite Ads"
+msgstr ""
+
+#: user-dashboard.php:56
+msgid "Total Views On Ads"
+msgstr ""
+
+#: user-dashboard.php:63
+msgid "Manage your social profile"
+msgstr ""
+
+#: user-dashboard.php:74
+msgid "Your Last Posted Ad"
+msgstr ""
+
+#: user-dashboard.php:88
+msgid "You have not published any Ad"
+msgstr ""
+
+#: user-favourite.php:38
+msgid "Your favourite"
+msgstr ""
+
+#: user-favourite.php:43
+msgid "Nothing interested you yet!"
+msgstr ""
+
+#: user-favourite.php:47
+msgid "Delete from your favourite list"
+msgstr ""
+
+#: user-forgot_password.php:19
+msgid "New pasword"
+msgstr ""
+
+#: user-forgot_password.php:20
+msgid "Enter Your Password"
+msgstr ""
+
+#: user-forgot_password.php:23
+msgid "Repeat new pasword"
+msgstr ""
+
+#: user-forgot_password.php:24
+msgid "Retype Your Password"
+msgstr ""
+
+#: user-items.php:16
+msgid "Manage Your Listings"
+msgstr ""
+
+#: user-items.php:20
+msgid "You don't have any items yet"
+msgstr ""
+
+#: user-login.php:10
+msgid "LogIn to your dashboard"
+msgstr ""
+
+#: user-login.php:14
+msgid "Your Email"
+msgstr ""
+
+#: user-login.php:16
+msgid "example@gmail.com"
+msgstr ""
+
+#: user-login.php:20 user-login.php:22 user-register.php:28
+msgid "Password"
+msgstr ""
+
+#: user-login.php:28
+msgid "Remember Me"
+msgstr ""
+
+#: user-login.php:30
+msgid "(if this is a private computer)"
+msgstr ""
+
+#: user-login.php:33
+msgid "Submit"
+msgstr ""
+
+#: user-login.php:36 user-register.php:54 user-register.php:57
+msgid "Or"
+msgstr ""
+
+#: user-login.php:37
+msgid "Login with Google"
+msgstr ""
+
+#: user-login.php:39
+msgid "Login with Facebook"
+msgstr ""
+
+#: user-login.php:41
+msgid "Login with Twitter"
+msgstr ""
+
+#: user-login.php:52 user-register.php:12
+msgid "Register now for"
+msgstr ""
+
+#: user-login.php:53 user-register.php:12
+msgid "FREE"
+msgstr ""
+
+#: user-login.php:55 user-register.php:76
+msgid "See all your listings"
+msgstr ""
+
+#: user-login.php:58 user-register.php:77
+msgid "Upload your avatar/logo"
+msgstr ""
+
+#: user-login.php:60 user-register.php:78
+msgid "Move listing to top"
+msgstr ""
+
+#: user-login.php:62 user-register.php:79
+msgid "Save your favorites"
+msgstr ""
+
+#: user-login.php:64 user-register.php:80
+msgid "Fast submission"
+msgstr ""
+
+#: user-login.php:65 user-register.php:81
+msgid "Edit your listings"
+msgstr ""
+
+#: user-login.php:70
+msgid "Register now!"
+msgstr ""
+
+#: user-login.php:75
+msgid "Forget you password"
+msgstr ""
+
+#: user-login.php:76
+msgid "Reset Here!"
+msgstr ""
+
+#: user-profile.php:11
+msgid "Manage Your Profile"
+msgstr ""
+
+#: user-profile.php:15
+msgid "Update your profile"
+msgstr ""
+
+#: user-profile.php:39
+msgid "User type"
+msgstr ""
+
+#: user-profile.php:46
+msgid "Cell phone"
+msgstr ""
+
+#: user-profile.php:53
+msgid "Phone"
+msgstr ""
+
+#: user-profile.php:81
+msgid "Zip/Pin Code"
+msgstr ""
+
+#: user-profile.php:88
+msgid "City area"
+msgstr ""
+
+#: user-profile.php:102
+msgid "Website"
+msgstr ""
+
+#: user-profile.php:108
+msgid "Your Description"
+msgstr ""
+
+#: user-profile.php:168
+msgid "Delete Account"
+msgstr ""
+
+#: user-profile.php:180
+msgid "Deleting your account."
+msgstr ""
+
+#: user-profile.php:183
+msgid "Are you sure you want to delete your account? This cannot be undone."
+msgstr ""
+
+#: user-profile.php:189
+msgid "OK"
+msgstr ""
+
+#: user-public-profile.php:61
+msgid "Contact User"
+msgstr ""
+
+#: user-public-profile.php:71
+msgid " Full name"
+msgstr ""
+
+#: user-public-profile.php:75
+msgid " Address"
+msgstr ""
+
+#: user-public-profile.php:79
+msgid " Location"
+msgstr ""
+
+#: user-public-profile.php:83
+msgid " Website"
+msgstr ""
+
+#: user-public-profile.php:87
+msgid " Phone No"
+msgstr ""
+
+#: user-public-profile.php:97
+msgid "Latest ads from this seller"
+msgstr ""
+
+#: user-public-profile.php:132
+msgid "It's your own page, you cannot use this feature."
+msgstr ""
+
+#: user-recover.php:24
+msgid "Send me a new password"
+msgstr ""
+
+#: user-register.php:15
+msgid "Your Name"
+msgstr ""
+
+#: user-register.php:21
+msgid "Username"
+msgstr ""
+
+#: user-register.php:23
+msgid "Enter you username"
+msgstr ""
+
+#: user-register.php:30
+msgid "Enter your password"
+msgstr ""
+
+#: user-register.php:34
+msgid "Re-type password"
+msgstr ""
+
+#: user-register.php:36
+msgid "Re Enter your Password"
+msgstr ""
+
+#: user-register.php:42
+msgid "Enter you email address"
+msgstr ""
+
+#: user-register.php:52
+msgid "Create Account"
+msgstr ""
+
+#: user-register.php:55
+msgid "Sign Up with Facebook"
+msgstr ""
+
+#: user-register.php:58
+msgid "Register with Google"
+msgstr ""
+
+#: user-register.php:60
+msgid "Register with Facebook"
+msgstr ""
+
+#: user-register.php:62
+msgid "Register with Twitter"
+msgstr ""
+
+#: user-register.php:74
+msgid "Registration Benefits"
+msgstr ""
+
+#: user-register.php:84
+msgid "Already Registered ?"
+msgstr ""
+
+#: user-register.php:85
+msgid "Login now!"
+msgstr ""
+
+#: user-register.php:140
+msgid "Name: this field is required"
+msgstr ""
+
+#: user-register.php:141 user-register.php:145
+msgid "Enter at least 5 characters"
+msgstr ""
+
+#: user-register.php:152
+msgid "Password: this field is required"
+msgstr ""
+
+#: user-register.php:153
+msgid "Password: enter at least 5 characters"
+msgstr ""
+
+#: user-register.php:156
+msgid "Second password: this field is required"
+msgstr ""
+
+#: user-register.php:157
+msgid "Second password: enter at least 5 characters"
+msgstr ""
+
+#: user-register.php:158
+msgid "Passwords don't match"
+msgstr ""
+
+#: user-sidebar.php:26
+msgid "New Ad"
+msgstr ""

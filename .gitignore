@@ -1,0 +1,7 @@
+.DS_Store
+searchd.log
+.idea
+includes/vendor
+bootswatch/bower_components/**
+bootswatch/node_modules/**
+/node_modules

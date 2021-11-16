@@ -1,0 +1,5 @@
+{
+  "require" : {
+    "hybridauth/hybridauth" : "v3.0.0-rc.6"
+  }
+}
