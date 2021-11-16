@@ -1,4 +1,6 @@
 # SHOPCLASS README #
+![ScreenShot](https://raw.githubusercontent.com/mindstellar/shopclass/master/screenshot.png)
+
 First attempt to create an open-source version of the ShopClass theme.
 Feel free submit your Pull request.
 
