@@ -1,5 +1,6 @@
 # SHOPCLASS README #
 First attempt to create an open-source version of the ShopClass theme.
+Feel free submit your Pull request.
 
 Download the latest version of the theme from [GitHub](https://github.com/mindstellar/shopclass/releases).
 
