@@ -26,179 +26,179 @@
      *
      */
 
-	namespace shopclass\includes\cacheModal\cacheClass;
+    namespace shopclass\includes\cacheModal\cacheClass;
 
-	use Exception;
-	use shopclass\includes\cacheModal\tfcAbstractCache;
+    use Exception;
+    use shopclass\includes\cacheModal\tfcAbstractCache;
 
-	/**
-	 * Created by Navjot Tomer.
-	 * User: navjottomer
-	 * Date: 15/10/17
-	 * Time: 7:41 AM
-	 */
+    /**
+     * Created by Navjot Tomer.
+     * User: navjottomer
+     * Date: 15/10/17
+     * Time: 7:41 AM
+     */
 
-	/**
-	 * Class FileCache
-	 */
-	class file extends tfcAbstractCache {
+    /**
+     * Class FileCache
+     */
+    class file extends tfcAbstractCache {
 
-		/**
-		 * FileCache constructor.
-		 */
-		public function __construct() {
-			if ( ! ( is_dir( osc_uploads_path() . 'shopclass_cache' ) ) ) {
-				mkdir( osc_uploads_path() . 'shopclass_cache' );
-			}
-		}
-
-
-		/**
-		 * @param $key
-		 * @param $data
-		 * @param $ttl
-		 *
-		 * @return mixed|void
-		 * @throws Exception
-		 */
-		function tfcStore( $key , $data , $ttl ) {
-
-			// Opening the file in read/write mode
-			$h = fopen( $this->getFileName( $key ) , 'a+' );
-			if ( ! $h ) {
-				throw new Exception( 'Could not write to cache' );
-			}
-
-			flock( $h , LOCK_EX ); // exclusive lock, will get released when the file is closed
-
-			fseek( $h , 0 ); // go to the beginning of the file
-
-			// truncate the file
-			ftruncate( $h , 0 );
-
-			// Serializing along with the TTL
-			$data = serialize(
-				array (
-					time() + $ttl ,
-					$data
-				)
-			);
-			if ( fwrite( $h , $data ) === false ) {
-				throw new Exception( 'Could not write to cache' );
-			}
-			fclose( $h );
-
-		}
+        /**
+         * FileCache constructor.
+         */
+        public function __construct() {
+            if ( ! ( is_dir( osc_uploads_path() . 'shopclass_cache' ) ) ) {
+                mkdir( osc_uploads_path() . 'shopclass_cache' );
+            }
+        }
 
 
-		/**
-		 * General function to find the filename for a certain key
-		 *
-		 * @param $key
-		 *
-		 * @return string
-		 */
-		private function getFileName( $key ) {
-			//return ini_get('session.save_path') . '/s_cache' . md5($key);
-			return osc_uploads_path() . 'shopclass_cache/s_cache' . $key;
+        /**
+         * @param $key
+         * @param $data
+         * @param $ttl
+         *
+         * @return mixed|void
+         * @throws Exception
+         */
+        function tfcStore( $key , $data , $ttl ) {
 
-		}
+            // Opening the file in read/write mode
+            $h = fopen( $this->getFileName( $key ) , 'a+' );
+            if ( ! $h ) {
+                throw new Exception( 'Could not write to cache' );
+            }
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcFetch( $key ) {
+            flock( $h , LOCK_EX ); // exclusive lock, will get released when the file is closed
 
-			$filename = $this->getFileName( $key );
-			if ( ! file_exists( $filename ) ) {
-				return false;
-			}
-			$h = fopen( $filename , 'r' );
+            fseek( $h , 0 ); // go to the beginning of the file
 
-			if ( ! $h ) {
-				return false;
-			}
+            // truncate the file
+            ftruncate( $h , 0 );
 
-			// Getting a shared lock
-			flock( $h , LOCK_SH );
+            // Serializing along with the TTL
+            $data = serialize(
+                array (
+                    time() + $ttl ,
+                    $data
+                )
+            );
+            if ( fwrite( $h , $data ) === false ) {
+                throw new Exception( 'Could not write to cache' );
+            }
+            fclose( $h );
 
-			$data = file_get_contents( $filename );
-			fclose( $h );
+        }
 
-			$data = unserialize( $data );
-			if ( ! $data ) {
 
-				// If unserializing somehow didn't work out, we'll delete the file
-				@unlink( $filename );
+        /**
+         * General function to find the filename for a certain key
+         *
+         * @param $key
+         *
+         * @return string
+         */
+        private function getFileName( $key ) {
+            //return ini_get('session.save_path') . '/s_cache' . md5($key);
+            return osc_uploads_path() . 'shopclass_cache/s_cache' . $key;
 
-				return false;
+        }
 
-			}
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcFetch( $key ) {
 
-			if ( time() > $data[ 0 ] ) {
+            $filename = $this->getFileName( $key );
+            if ( ! file_exists( $filename ) ) {
+                return false;
+            }
+            $h = fopen( $filename , 'r' );
 
-				if ( file_exists( $filename ) ) {
-					// Unlinking when the file was expired
-					unlink( $filename );
-				}
+            if ( ! $h ) {
+                return false;
+            }
 
-				return false;
+            // Getting a shared lock
+            flock( $h , LOCK_SH );
 
-			}
+            $data = file_get_contents( $filename );
+            fclose( $h );
 
-			return $data[ 1 ];
-		}
+            $data = unserialize( $data );
+            if ( ! $data ) {
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcDelete( $key ) {
+                // If unserializing somehow didn't work out, we'll delete the file
+                @unlink( $filename );
 
-			$filename = $this->getFileName( $key );
-			if ( file_exists( $filename ) ) {
-				return unlink( $filename );
-			} else {
-				return false;
-			}
+                return false;
 
-		}
+            }
 
-		/**
-		 * @return bool
-		 */
-		function flush() {
-			$cachedir = osc_uploads_path() . 'shopclass_cache/';
-			$prefix   = 's_cache';
-			chdir( $cachedir );
-			$matches = glob( $prefix . '*' , GLOB_MARK );
-			if ( is_array( $matches ) && ! empty( $matches ) ) {
-				foreach ( $matches as $match ) {
-					if ( is_file( $cachedir . $match ) ) {
+            if ( time() > $data[ 0 ] ) {
 
-						@unlink( $cachedir . $match );
+                if ( file_exists( $filename ) ) {
+                    // Unlinking when the file was expired
+                    unlink( $filename );
+                }
 
-					}
-				}
+                return false;
 
-			}
+            }
 
-			return true;
-		}
+            return $data[ 1 ];
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcExists( $key ) {
-			if ( file_exists( $this->getFileName( $key ) ) ) {
-				return true;
-			}
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcDelete( $key ) {
 
-			return false;
-		}
-	}
+            $filename = $this->getFileName( $key );
+            if ( file_exists( $filename ) ) {
+                return unlink( $filename );
+            } else {
+                return false;
+            }
+
+        }
+
+        /**
+         * @return bool
+         */
+        function flush() {
+            $cachedir = osc_uploads_path() . 'shopclass_cache/';
+            $prefix   = 's_cache';
+            chdir( $cachedir );
+            $matches = glob( $prefix . '*' , GLOB_MARK );
+            if ( is_array( $matches ) && ! empty( $matches ) ) {
+                foreach ( $matches as $match ) {
+                    if ( is_file( $cachedir . $match ) ) {
+
+                        @unlink( $cachedir . $match );
+
+                    }
+                }
+
+            }
+
+            return true;
+        }
+
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcExists( $key ) {
+            if ( file_exists( $this->getFileName( $key ) ) ) {
+                return true;
+            }
+
+            return false;
+        }
+    }

@@ -22,16 +22,16 @@
                                 </div>
 
                                 <div class="col-md-6">
-									<?php if ( osc_is_web_user_logged_in() ) { ?>
+                                    <?php if ( osc_is_web_user_logged_in() ) { ?>
                                         <input type="hidden" name="yourName"
                                                value="<?php echo osc_esc_html( osc_logged_user_name() ); ?>"/>
                                         <input type="hidden" name="yourEmail"
                                                value="<?php osc_logged_user_email(); ?>"/>
-									<?php } else { ?>
+                                    <?php } else { ?>
 
                                         <div class="form-group">
                                             <label for="name">
-												<?php _e( 'Your name' , 'shopclass' ); ?></label>
+                                                <?php _e( 'Your name' , 'shopclass' ); ?></label>
                                             <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-user"></span>
 												</span>
@@ -42,7 +42,7 @@
                                         </div>
                                         <div class="form-group">
                                             <label for="email">
-												<?php _e( 'E-mail address' , 'shopclass' ); ?></label>
+                                                <?php _e( 'E-mail address' , 'shopclass' ); ?></label>
                                             <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-envelope"></span>
 												</span>
@@ -51,10 +51,10 @@
                                                        value="">
                                             </div>
                                         </div>
-									<?php }; ?>
+                                    <?php }; ?>
                                     <div class="form-group">
                                         <label for="subject">
-											<?php _e( 'Friend Name' , 'shopclass' ); ?></label>
+                                            <?php _e( 'Friend Name' , 'shopclass' ); ?></label>
                                         <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-user"></span>
 												</span>
@@ -65,7 +65,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="email">
-											<?php _e( 'Friend E-mail' , 'shopclass' ); ?></label>
+                                            <?php _e( 'Friend E-mail' , 'shopclass' ); ?></label>
                                         <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-envelope"></span>
 												</span>
@@ -78,18 +78,18 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="name">
-											<?php _e( 'Message' , 'shopclass' ); ?></label>
+                                            <?php _e( 'Message' , 'shopclass' ); ?></label>
                                         <textarea id="message" name="message" class="form-control" rows="12" cols="25"
                                                   placeholder="<?php echo osc_esc_html( __( 'Enter your message' , 'shopclass' ) ); ?>"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
-									<?php osc_run_hook( 'tf_after_form' ); ?>
-									<?php osc_show_recaptcha(); ?>
-									<?php osc_run_hook( 'user_register_form' ); ?>
+                                    <?php osc_run_hook( 'tf_after_form' ); ?>
+                                    <?php osc_show_recaptcha(); ?>
+                                    <?php osc_run_hook( 'user_register_form' ); ?>
                                     <hr>
                                     <button type="submit" class="btn btn-primary col-md-offset-3">
-										<?php _e( 'Send Message' , 'shopclass' ); ?></button>
+                                        <?php _e( 'Send Message' , 'shopclass' ); ?></button>
                                 </div>
                     </form>
                 </div>
@@ -103,20 +103,20 @@
             </div>
             <div class="profile-usertitle">
                 <div class="profile-usertitle-name">
-					<?php echo osc_item_contact_name(); ?>
+                    <?php echo osc_item_contact_name(); ?>
                 </div>
                 <div class="profile-usertitle-job text-primary">
-					<?php if ( osc_user_is_company() ) {
-						echo( __( 'Company' , 'shopclass' ) );
-					} else {
-						echo( __( 'Individual' , 'shopclass' ) );
-					} ?>
+                    <?php if ( osc_user_is_company() ) {
+                        echo( __( 'Company' , 'shopclass' ) );
+                    } else {
+                        echo( __( 'Individual' , 'shopclass' ) );
+                    } ?>
                 </div>
-				<?php if ( function_exists( 'tfc_voting_item_detail_user' ) ) {
-					echo '<div class="tex-center">';
-					tfc_voting_item_detail_user();
-					echo '</div>';
-				} ?>
+                <?php if ( function_exists( 'tfc_voting_item_detail_user' ) ) {
+                    echo '<div class="tex-center">';
+                    tfc_voting_item_detail_user();
+                    echo '</div>';
+                } ?>
             </div>
         </div>
     </div>

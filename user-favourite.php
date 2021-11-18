@@ -25,17 +25,18 @@
  *  License along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
     use shopclass\includes\classes\tfcAdsLoop;
 
-	osc_current_web_theme_path( 'head.php' ); ?>
+    osc_current_web_theme_path( 'head.php' ); ?>
 <body>
 <?php osc_current_web_theme_path( 'header.php' ); ?>
 <?php
-	$adminoptions = false;
+    $adminoptions = false;
 ?>
 <div class="row">
     <div class="col-md-4">
-		<?php tfc_path( 'user-sidebar.php' ); ?>
+        <?php tfc_path( 'user-sidebar.php' ); ?>
     </div>
     <div class="col-md-8">
         <div class="tfc-item">
@@ -44,30 +45,30 @@
             </div>
             <div class="content user_account panel-body">
 
-				<?php if ( osc_count_items() == 0 ) { ?>
+                <?php if ( osc_count_items() == 0 ) { ?>
                     <h3><?php _e( 'Nothing interested you yet!' , 'shopclass' ); ?></h3>
-				<?php } else { ?>
-					<?php while ( osc_has_items() ) { ?>
+                <?php } else { ?>
+                    <?php while ( osc_has_items() ) { ?>
                         <div class="item col-md-12">
                             <p class="delete-btn" data-toggle="tooltip" data-animation="true" data-placement="top"
                                data-original-title="<?php
-								   _e( /** @lang text */ 'Delete from your favourite list' , 'shopclass' ) ?>"><a
+                                   _e( /** @lang text */ 'Delete from your favourite list' , 'shopclass' ) ?>"><a
                                         class="delete"
                                         onclick="javascript:return confirm('<?php _e( 'This action can not be undone. Are you sure you want to continue?' , 'shopclass' ); ?>')"
                                         href="<?php echo tfc_favourite_url() . '&delete=' . osc_item_id(); ?>"><i
                                             class="fa fa-times"></i></a>
                             </p>
-							<?php tfcAdsLoop::newInstance()->renderItem( tfcAdsLoop::newInstance()->getItemProperty( 'item' ) , 'list' ); ?>
+                            <?php tfcAdsLoop::newInstance()->renderItem( tfcAdsLoop::newInstance()->getItemProperty( 'item' ) , 'list' ); ?>
                         </div>
-					<?php } ?>
+                    <?php } ?>
 
                     <div class="col-md-6 col-md-offset-5">
-						<?php echo tfc_pagination_items( array (
-							                                 'url'       => osc_route_url( 'shopclass-favourite' , array ( 'iPage' => '{PAGE}' ) ) ,
-							                                 'first_url' => tfc_favourite_url()
-						                                 ) ); ?>
+                        <?php echo tfc_pagination_items( array (
+                                                             'url'       => osc_route_url( 'shopclass-favourite' , array ( 'iPage' => '{PAGE}' ) ) ,
+                                                             'first_url' => tfc_favourite_url()
+                                                         ) ); ?>
                     </div>
-				<?php } ?>
+                <?php } ?>
 
             </div>
         </div>

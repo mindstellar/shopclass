@@ -1,7 +1,9 @@
-<?php if ( ! defined('ABS_PATH')) exit('ABS_PATH is not loaded. Direct access is not allowed.'); ?>
+<?php if ( ! defined( 'ABS_PATH' ) ) {
+    exit( 'ABS_PATH is not loaded. Direct access is not allowed.' );
+} ?>
 <style>
-    #wrapper_voting_plugin{
-        margin-top:10px;
+    #wrapper_voting_plugin {
+        margin-top: 10px;
         padding: 5px;
     }
 
@@ -29,18 +31,22 @@
         width: 15px;
         z-index: 14;
     }
+
     .votes_star .vote2 {
         width: 30px;
         z-index: 13;
     }
+
     .votes_star .vote3 {
         width: 45px;
         z-index: 12;
     }
+
     .votes_star .vote4 {
         width: 60px;
         z-index: 11;
     }
+
     .votes_star .vote5 {
         width: 75px;
         z-index: 10;
@@ -78,55 +84,56 @@
 </style>
 
 <div class="box location">
-    <h3><strong><?php _e("Best voted", 'voting') ; ?></strong></h3>
+    <h3><strong><?php _e( "Best voted" , 'voting' ); ?></strong></h3>
     <ul>
-    <?php
-        $count = 0;
-        View::newInstance()->_erase('items');
-        View::newInstance()->_erase('item');
-        if ( isset( $results ) ) {
-            foreach($results as $item_vote):
-                $avg_vote = $item_vote['avg_vote'];
-                if($avg_vote==5) {
-                    $tooltip  = __('Essential', 'voting');
-                } else if($avg_vote>=4 && $avg_vote<5) {
-                    $tooltip = __('Very interesting', 'voting');
-                } else if($avg_vote>=3 && $avg_vote<4) {
-                    $tooltip = __('Interesting', 'voting');
-                } else if($avg_vote>=2 && $avg_vote<3) {
-                    $tooltip = __('Uninteresting', 'voting');
-                } else if($avg_vote>=1 && $avg_vote<2) {
-                    $tooltip = __('Without interest', 'voting');
-                } else {
-                    $tooltip = __('Without information', 'voting');
-                }
-
-                $total    = $item_vote['num_votes'];
-                $item    = Item::newInstance()->findByPrimaryKey($item_vote['item_id']);
-                View::newInstance()->_exportVariableToView('item', $item ) ;
-        ?>
-            <li>
-                <?php if($count+1 < count($results)){?>
-                <div style="border-bottom:1px #000000 dashed;">
-                <?php } else { ?>
-                <div>
-                <?php } ?>
-                    <p style="text-align: center;"><a href="<?php echo osc_item_url(); ?>"><?php echo osc_item_title(); ?></a></p>
-                    <p style="text-align: center;">
-                        <img title="<?php echo $tooltip; ?>" src="<?php voting_star(1, $avg_vote); ?>">
-                        <img title="<?php echo $tooltip; ?>" src="<?php voting_star(2, $avg_vote); ?>">
-                        <img title="<?php echo $tooltip; ?>" src="<?php voting_star(3, $avg_vote); ?>">
-                        <img title="<?php echo $tooltip; ?>" src="<?php voting_star(4, $avg_vote); ?>">
-                        <img title="<?php echo $tooltip; ?>" src="<?php voting_star(5, $avg_vote); ?>">
-                        <span style="position:relative; top:-5px;padding-right: 4px; padding-left: 4px; margin-bottom: 3px;"><?php echo $total;?> <?php _e('votes', 'voting');?></span>
-                    </p>
-                </div>
-            </li>
         <?php
-                $count++;
-                View::newInstance()->_erase('item') ;
-            endforeach;
-        }
-    ?>
+            $count = 0;
+            View::newInstance()->_erase( 'items' );
+            View::newInstance()->_erase( 'item' );
+            if ( isset( $results ) ) {
+                foreach ( $results as $item_vote ):
+                    $avg_vote = $item_vote[ 'avg_vote' ];
+                    if ( $avg_vote == 5 ) {
+                        $tooltip = __( 'Essential' , 'voting' );
+                    } else if ( $avg_vote >= 4 && $avg_vote < 5 ) {
+                        $tooltip = __( 'Very interesting' , 'voting' );
+                    } else if ( $avg_vote >= 3 && $avg_vote < 4 ) {
+                        $tooltip = __( 'Interesting' , 'voting' );
+                    } else if ( $avg_vote >= 2 && $avg_vote < 3 ) {
+                        $tooltip = __( 'Uninteresting' , 'voting' );
+                    } else if ( $avg_vote >= 1 && $avg_vote < 2 ) {
+                        $tooltip = __( 'Without interest' , 'voting' );
+                    } else {
+                        $tooltip = __( 'Without information' , 'voting' );
+                    }
+
+                    $total = $item_vote[ 'num_votes' ];
+                    $item  = Item::newInstance()->findByPrimaryKey( $item_vote[ 'item_id' ] );
+                    View::newInstance()->_exportVariableToView( 'item' , $item );
+                    ?>
+                    <li>
+                        <?php if ( $count + 1 < count( $results ) ){ ?>
+                        <div style="border-bottom:1px #000000 dashed;">
+                            <?php } else { ?>
+                            <div>
+                                <?php } ?>
+                                <p style="text-align: center;"><a
+                                            href="<?php echo osc_item_url(); ?>"><?php echo osc_item_title(); ?></a></p>
+                                <p style="text-align: center;">
+                                    <img title="<?php echo $tooltip; ?>" src="<?php voting_star( 1 , $avg_vote ); ?>">
+                                    <img title="<?php echo $tooltip; ?>" src="<?php voting_star( 2 , $avg_vote ); ?>">
+                                    <img title="<?php echo $tooltip; ?>" src="<?php voting_star( 3 , $avg_vote ); ?>">
+                                    <img title="<?php echo $tooltip; ?>" src="<?php voting_star( 4 , $avg_vote ); ?>">
+                                    <img title="<?php echo $tooltip; ?>" src="<?php voting_star( 5 , $avg_vote ); ?>">
+                                    <span style="position:relative; top:-5px;padding-right: 4px; padding-left: 4px; margin-bottom: 3px;"><?php echo $total; ?><?php _e( 'votes' , 'voting' ); ?></span>
+                                </p>
+                            </div>
+                    </li>
+                    <?php
+                    $count ++;
+                    View::newInstance()->_erase( 'item' );
+                endforeach;
+            }
+        ?>
     </ul>
 </div>

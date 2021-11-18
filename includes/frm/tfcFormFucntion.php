@@ -26,16 +26,16 @@
      *
      */
 
-	/**
-	 * User: navjottomer
-	 * Date: 27/03/19
-	 * Time: 2:56 PM
-	 */
+    /**
+     * User: navjottomer
+     * Date: 27/03/19
+     * Time: 2:56 PM
+     */
 
 
-	function tfc_search_drop_all_js() {
-		$sQuery = tfc_getPref( 'keyword_placeholder' );
-		?>
+    function tfc_search_drop_all_js() {
+        $sQuery = tfc_getPref( 'keyword_placeholder' );
+        ?>
         <script>
             //<![CDATA[
             var sQuery = '<?php echo ( osc_search_pattern() != '' ) ? osc_search_pattern() : $sQuery; ?>';
@@ -134,21 +134,21 @@
 
             });
 
-			<?php if (get_search_country()) { ?>
+            <?php if (get_search_country()) { ?>
             $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-			<?php } ?>
+            <?php } ?>
         </script>
-		<?php
-	}
+        <?php
+    }
 
-	function tfc_search_drop_js() {
-		?>
+    function tfc_search_drop_js() {
+        ?>
         <script>
             var sQuery = '<?php
-				if ( ! empty( $sQuery ) ) {
-					echo $sQuery;
-				}
-				?>';
+                if ( ! empty( $sQuery ) ) {
+                    echo $sQuery;
+                }
+                ?>';
 
             function doSearch() {
                 if ($('input[name=sPattern]').val().length < 3) {
@@ -207,20 +207,20 @@
 
             });
 
-			<?php if (get_search_country()) { ?>
+            <?php if (get_search_country()) { ?>
             $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-			<?php } else { ?>
+            <?php } else { ?>
 
             $('select[name="sCountry"]').find('option[value="<?php echo tfc_getPref( 'default_country' )?>"]').attr("selected", true);
-			<?php } ?>
+            <?php } ?>
 
         </script>
-	<?php }
+    <?php }
 
-	function tfc_search_default_js() {
-		?>
+    function tfc_search_default_js() {
+        ?>
         <script>
-			<?php $sQuery = isset( $sQuery ) ? $sQuery : ''; ?>
+            <?php $sQuery = isset( $sQuery ) ? $sQuery : ''; ?>
             var sQuery = '<?php echo $sQuery; ?>';
 
             function doSearch() {
@@ -289,11 +289,11 @@
             });
 
 
-			<?php if (get_search_country()) { ?>
+            <?php if (get_search_country()) { ?>
             $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-			<?php } else { ?>
+            <?php } else { ?>
 
             $('select[name="sCountry"]').find('option[value="<?php echo tfc_getPref( 'default_country' )?>"]').attr("selected", true);
-			<?php } ?>
+            <?php } ?>
         </script>
-	<?php }
+    <?php }

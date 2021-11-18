@@ -25,119 +25,121 @@
      *  License along with this program. If not, see <http://www.gnu.org/licenses/>.
      *
      */
-	namespace shopclass\includes\classes;
-	use Scripts;
 
-	/**
-	 * Just an another wrapper for existing Scripts and Style class in osclass
-	 * User: navjottomer
-	 * Date: 15/08/18
-	 * Time: 3:32 AM
-	 */
-	class tfcEnqueueStyleScript {
-		private static $instance;
-		private $styles;
-		private $Scripts;
-		private $scriptsLoaded;
+    namespace shopclass\includes\classes;
 
-		public function __construct() {
-			$this->styles = array ();
-			$this->Scripts = Scripts::newInstance();
-			$this->scriptsLoaded = array ();
-		}
+    use Scripts;
 
-		/**
-		 * @return tfcEnqueueStyleScript
-		 */
-		public static function newInstance() {
-			if ( ! self::$instance instanceof self ) {
-				self::$instance = new self;
-			}
+    /**
+     * Just an another wrapper for existing Scripts and Style class in osclass
+     * User: navjottomer
+     * Date: 15/08/18
+     * Time: 3:32 AM
+     */
+    class tfcEnqueueStyleScript {
+        private static $instance;
+        private $styles;
+        private $Scripts;
+        private $scriptsLoaded;
 
-			return self::$instance;
-		}
+        public function __construct() {
+            $this->styles        = array ();
+            $this->Scripts       = Scripts::newInstance();
+            $this->scriptsLoaded = array ();
+        }
 
-		/**
-		 * Add style to be loaded
-		 *
-		 * @param string $id
-		 * @param array|string $url
-		 */
-		public function addStyle( $id , $url ) {
-			$this->styles[ $id ] = $url;
-		}
+        /**
+         * @return tfcEnqueueStyleScript
+         */
+        public static function newInstance() {
+            if ( ! self::$instance instanceof self ) {
+                self::$instance = new self;
+            }
 
-		/**
-		 * Remove style to not be loaded
-		 *
-		 * @param string $id
-		 */
-		public function removeStyle( $id ) {
-			unset( $this->styles[ $id ] );
-		}
+            return self::$instance;
+        }
 
-		/**
-		 * Get the css styles urls
-		 */
-		public function getStyles() {
-			return $this->styles;
-		}
+        /**
+         * Add style to be loaded
+         *
+         * @param string $id
+         * @param array|string $url
+         */
+        public function addStyle( $id , $url ) {
+            $this->styles[ $id ] = $url;
+        }
 
-		/**
-		 * Print the HTML tags to load the styles
-		 */
-		public function printStyles() {
-			foreach ( $this->styles as $id => $css ) {
-				$class = null;
-				if($id == 'main-css'){
-					$class = 'class="changeme"';
-				}
-				echo '<link '.$class.' href="' . osc_apply_filter( 'style_url' , $css ) . '" rel="stylesheet" />' . PHP_EOL;
-			}
-		}
+        /**
+         * Remove style to not be loaded
+         *
+         * @param string $id
+         */
+        public function removeStyle( $id ) {
+            unset( $this->styles[ $id ] );
+        }
 
-		/**
-		 * Register Script for loading
-		 *
-		 * @param $id
-		 * @param $url
-		 * @param null $dependencies
-		 */
-		public function registerScript( $id , $url , $dependencies = null ) {
-			osc_register_script( $id , $url , $dependencies );
-		}
+        /**
+         * Get the css styles urls
+         */
+        public function getStyles() {
+            return $this->styles;
+        }
 
-		/**
-		 * Remove script to not be loaded
-		 *
-		 * @param string $id
-		 */
-		public function unregisterScript( $id ) {
-			osc_unregister_script( $id );
-		}
+        /**
+         * Print the HTML tags to load the styles
+         */
+        public function printStyles() {
+            foreach ( $this->styles as $id => $css ) {
+                $class = null;
+                if ( $id == 'main-css' ) {
+                    $class = 'class="changeme"';
+                }
+                echo '<link ' . $class . ' href="' . osc_apply_filter( 'style_url' , $css ) . '" rel="stylesheet" />' . PHP_EOL;
+            }
+        }
 
-		/**
-		 * Enqueu script to be loaded
-		 *
-		 * @param string $id
-		 */
-		public function enqueuScript( $id ) {
-			osc_enqueue_script( $id );
-		}
+        /**
+         * Register Script for loading
+         *
+         * @param $id
+         * @param $url
+         * @param null $dependencies
+         */
+        public function registerScript( $id , $url , $dependencies = null ) {
+            osc_register_script( $id , $url , $dependencies );
+        }
 
-		/**
-		 * Remove script to not be loaded
-		 *
-		 * @param string $id
-		 */
-		public function removeScript( $id ) {
-			osc_remove_script( $id );
-		}
+        /**
+         * Remove script to not be loaded
+         *
+         * @param string $id
+         */
+        public function unregisterScript( $id ) {
+            osc_unregister_script( $id );
+        }
 
-		/**
-		 *  Print the HTML tags to load the scripts
-		 */
-		public function printScripts() {
-		    $this->Scripts->printScripts();
-		}
-	}
+        /**
+         * Enqueu script to be loaded
+         *
+         * @param string $id
+         */
+        public function enqueuScript( $id ) {
+            osc_enqueue_script( $id );
+        }
+
+        /**
+         * Remove script to not be loaded
+         *
+         * @param string $id
+         */
+        public function removeScript( $id ) {
+            osc_remove_script( $id );
+        }
+
+        /**
+         *  Print the HTML tags to load the scripts
+         */
+        public function printScripts() {
+            $this->Scripts->printScripts();
+        }
+    }

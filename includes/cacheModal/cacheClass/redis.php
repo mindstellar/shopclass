@@ -26,99 +26,99 @@
      *
      */
 
-	/**
-	 * User: navjottomer
-	 * Date: 2019-07-04
-	 * Time: 10:05
-	 */
+    /**
+     * User: navjottomer
+     * Date: 2019-07-04
+     * Time: 10:05
+     */
 
-	namespace shopclass\includes\cacheModal\cacheClass;
+    namespace shopclass\includes\cacheModal\cacheClass;
 
 
-	use Exception;
-	use shopclass\includes\cacheModal\tfcAbstractCache;
+    use Exception;
+    use shopclass\includes\cacheModal\tfcAbstractCache;
 
-	/**
-	 * Class redis
-	 * @package shopclass\includes\cacheModal\cacheClass
-	 */
-	class redis extends tfcAbstractCache {
+    /**
+     * Class redis
+     * @package shopclass\includes\cacheModal\cacheClass
+     */
+    class redis extends tfcAbstractCache {
 
-		private $connection;
+        private $connection;
 
-		public function __construct() {
-			$this->connection = new \Redis();
-			global $redis_config;
-			if ( ! isset( $redis_config ) ) {
-				$redis_config = array ();
-			}
-			$this->setConnection( $redis_config );
-		}
+        public function __construct() {
+            $this->connection = new \Redis();
+            global $redis_config;
+            if ( ! isset( $redis_config ) ) {
+                $redis_config = array ();
+            }
+            $this->setConnection( $redis_config );
+        }
 
-		/**
-		 * @param array $redis_config
-		 *
-		 * @return $this
-		 */
-		private function setConnection( array $redis_config ) {
-			if ( empty( $redis_config ) ) {
-				$redis_config[] = array ( 'host' => '127.0.0.1' , 'port' => '6379' );
-			}
-			foreach ( $redis_config as $config ) {
-				try {
-					$this->connection->connect( $config[ 'host' ] , $config[ 'port' ] );
-					$this->connection->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
-				} catch ( Exception $e ) {
-					throw new Exception( $e->getMessage());
-				}
-			}
+        /**
+         * @param array $redis_config
+         *
+         * @return $this
+         */
+        private function setConnection( array $redis_config ) {
+            if ( empty( $redis_config ) ) {
+                $redis_config[] = array ( 'host' => '127.0.0.1' , 'port' => '6379' );
+            }
+            foreach ( $redis_config as $config ) {
+                try {
+                    $this->connection->connect( $config[ 'host' ] , $config[ 'port' ] );
+                    $this->connection->setOption( \Redis::OPT_SERIALIZER , \Redis::SERIALIZER_PHP );
+                } catch ( Exception $e ) {
+                    throw new Exception( $e->getMessage() );
+                }
+            }
 
-			return $this;
-		}
+            return $this;
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return mixed
-		 */
-		function tfcFetch( $key ) {
+        /**
+         * @param $key
+         *
+         * @return mixed
+         */
+        function tfcFetch( $key ) {
 
-			return $this->connection->get( $key );
-		}
+            return $this->connection->get( $key );
+        }
 
-		/**
-		 * @param $key
-		 * @param $data
-		 * @param $ttl
-		 *
-		 * @return mixed
-		 */
-		function tfcStore( $key , $data , $ttl ) {
-			return $this->connection->setex( $key , $ttl, $data );
-		}
+        /**
+         * @param $key
+         * @param $data
+         * @param $ttl
+         *
+         * @return mixed
+         */
+        function tfcStore( $key , $data , $ttl ) {
+            return $this->connection->setex( $key , $ttl , $data );
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return mixed
-		 */
-		function tfcDelete( $key ) {
-			return $this->connection->del( $key );
-		}
+        /**
+         * @param $key
+         *
+         * @return mixed
+         */
+        function tfcDelete( $key ) {
+            return $this->connection->del( $key );
+        }
 
-		/**
-		 * @return bool
-		 */
-		function flush() {
-			return $this->connection->flushAll();
-		}
+        /**
+         * @return bool
+         */
+        function flush() {
+            return $this->connection->flushAll();
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcExists( $key ) {
-			return $this->connection->exists($key);
-		}
-	}
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcExists( $key ) {
+            return $this->connection->exists( $key );
+        }
+    }

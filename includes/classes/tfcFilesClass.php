@@ -37,35 +37,33 @@
      * Date: 14/11/17
      * Time: 12:36 PM
      */
-    class tfcFilesClass
-    {
+    class tfcFilesClass {
         private static $instance;
-        private $validFiles = array();
+        private $validFiles = array ();
         private $editDirectory;
         private $directoryScope = ABS_PATH;
 
         /**
          * tfcFilesClass constructor.
          */
-        public function __construct()
-        {
-            if (empty($this->validFiles)) {
-                $validFiles = array(
-                    'php',
-                    'htaccess',
-                    'txt',
-                    'conf',
-                    'ini',
-                    'sql',
-                    'html',
-                    'js',
-                    'css',
-                    'sh',
-                    'md',
-                    'xsl',
+        public function __construct() {
+            if ( empty( $this->validFiles ) ) {
+                $validFiles = array (
+                    'php' ,
+                    'htaccess' ,
+                    'txt' ,
+                    'conf' ,
+                    'ini' ,
+                    'sql' ,
+                    'html' ,
+                    'js' ,
+                    'css' ,
+                    'sh' ,
+                    'md' ,
+                    'xsl' ,
                     'xml'
                 );
-                $this->setValidFiles($validFiles);
+                $this->setValidFiles( $validFiles );
             }
         }
 
@@ -73,9 +71,8 @@
         /**
          * @return tfcFilesClass
          */
-        public static function newInstance()
-        {
-            if (!self::$instance instanceof self) {
+        public static function newInstance() {
+            if ( ! self::$instance instanceof self ) {
                 self::$instance = new self;
             }
 
@@ -83,20 +80,48 @@
         }
 
         /**
+         * @param $src
+         * @param $dest
+         */
+        public static function copyFolder( $src , $dest ) {
+
+            $path    = realpath( $src );
+            $objects = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $path ) , RecursiveIteratorIterator::SELF_FIRST );
+
+            /** SplFileInfo $object*/
+            foreach ( $objects as $name => $object ) {
+                $startsAt = substr( dirname( $name ) , strlen( $src ) );
+
+                self::mkDir( $dest . $startsAt );
+                if ( is_writable( $dest . $startsAt ) && $object->isFile() ) {
+                    copy( (string) $name , $dest . $startsAt . DIRECTORY_SEPARATOR . basename( $name ) );
+                }
+            }
+        }
+
+        /**
+         * @param $folder
+         * @param int $perm
+         */
+        private static function mkDir( $folder , $perm = 0755 ) {
+            if ( ! is_dir( $folder ) && ! mkdir( $folder , $perm ) && ! is_dir( $folder ) ) {
+                throw new \RuntimeException( sprintf( 'Directory "%s" was not created' , $folder ) );
+            }
+        }
+
+        /**
          * @return array
          */
-        public function scanDirectories()
-        {
+        public function scanDirectories() {
             $editdirectory = $this->getEditDirectory();
 
-            return $this->scanDirList($editdirectory);
+            return $this->scanDirList( $editdirectory );
         }
 
         /**
          * @return mixed
          */
-        public function getEditDirectory()
-        {
+        public function getEditDirectory() {
             return $this->editDirectory;
         }
 
@@ -105,8 +130,7 @@
          *
          * @return $this
          */
-        public function setEditDirectory($editDirectory)
-        {
+        public function setEditDirectory( $editDirectory ) {
             $this->editDirectory = $editDirectory;
 
             return $this;
@@ -118,39 +142,38 @@
          *
          * @return array
          */
-        public function scanDirList($dir, $bool = "dirs")
-        {
+        public function scanDirList( $dir , $bool = "dirs" ) {
 
-            $truedir = rtrim($dir, '/');
-            $dir = scandir($dir);
-            if ($bool === 'files') { // dynamic function based on second param
+            $truedir = rtrim( $dir , '/' );
+            $dir     = scandir( $dir );
+            if ( $bool === 'files' ) { // dynamic function based on second param
                 $direct = 'is_dir';
-            } elseif ($bool === 'dirs') {
+            } elseif ( $bool === 'dirs' ) {
                 $direct = 'is_file';
             }
-            foreach ($dir as $k => $v) {
-                if (isset($direct)) {
-                    if ($bool === 'dirs') {
+            foreach ( $dir as $k => $v ) {
+                if ( isset( $direct ) ) {
+                    if ( $bool === 'dirs' ) {
                         //echo $truedir . $dir[ $k ];
-                        if (!is_dir($truedir . DIRECTORY_SEPARATOR . $dir[$k])) {
-                            unset($dir[$k]);
-                        } elseif ($dir[$k] === '.' || $dir[$k] === '..') {
-                            unset($dir[$k]);
+                        if ( ! is_dir( $truedir . DIRECTORY_SEPARATOR . $dir[ $k ] ) ) {
+                            unset( $dir[ $k ] );
+                        } elseif ( $dir[ $k ] === '.' || $dir[ $k ] === '..' ) {
+                            unset( $dir[ $k ] );
                         }
                     }
-                    if ($bool === 'files') {
-                        $pathinfo = pathinfo($truedir . DIRECTORY_SEPARATOR . $dir[$k]);
-                        if (isset($pathinfo['extension'])) {
-                            if (!in_array($pathinfo['extension'], $this->getValidFiles(), false)) {
-                                unset($dir[$k]);
+                    if ( $bool === 'files' ) {
+                        $pathinfo = pathinfo( $truedir . DIRECTORY_SEPARATOR . $dir[ $k ] );
+                        if ( isset( $pathinfo[ 'extension' ] ) ) {
+                            if ( ! in_array( $pathinfo[ 'extension' ] , $this->getValidFiles() , false ) ) {
+                                unset( $dir[ $k ] );
                             }
                         } else {
-                            unset($dir[$k]);
+                            unset( $dir[ $k ] );
                         }
                     }
                 }
             }
-            $dir = array_values($dir);
+            $dir = array_values( $dir );
 
             return $dir;
 
@@ -159,8 +182,7 @@
         /**
          * @return array
          */
-        public function getValidFiles()
-        {
+        public function getValidFiles() {
             return $this->validFiles;
         }
 
@@ -169,52 +191,19 @@
          *
          * @return tfcFilesClass
          */
-        public function setValidFiles($validFiles)
-        {
+        public function setValidFiles( $validFiles ) {
             $this->validFiles = $validFiles;
+
             return $this;
         }
 
         /**
          * @return array
          */
-        public function scanFilenames()
-        {
+        public function scanFilenames() {
             $editdirectory = $this->getEditDirectory();
 
-            return $this->scanDirList($editdirectory, 'files');
+            return $this->scanDirList( $editdirectory , 'files' );
 
-        }
-
-        /**
-         * @param $src
-         * @param $dest
-         */
-        public static function copyFolder($src, $dest)
-        {
-
-            $path = realpath($src);
-            $objects = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path), RecursiveIteratorIterator::SELF_FIRST);
-
-            /** SplFileInfo $object*/
-            foreach ($objects as $name => $object) {
-                $startsAt = substr(dirname($name), strlen($src));
-
-                self::mkDir($dest . $startsAt);
-                if (is_writable($dest . $startsAt) && $object->isFile()) {
-                    copy((string)$name, $dest . $startsAt . DIRECTORY_SEPARATOR . basename($name));
-                }
-            }
-        }
-
-        /**
-         * @param $folder
-         * @param int $perm
-         */
-        private static function mkDir($folder, $perm = 0755)
-        {
-            if (!is_dir($folder) && !mkdir($folder, $perm) && !is_dir($folder)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $folder));
-            }
         }
     }

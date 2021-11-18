@@ -26,23 +26,23 @@
      *
      */
 
-	define( 'ABS_PATH' , dirname( dirname( dirname( dirname( dirname( __FILE__ ) ) ) ) ) . '/' );
-	require_once ABS_PATH . 'config.php';
-	if ( $_SERVER[ 'HTTP_X_REQUESTED_WITH' ] == 'XMLHttpRequest' ) {
-		if ( $_POST[ 'token' ] == md5( DB_NAME . DB_USER . DB_PASSWORD . DB_HOST . WEB_PATH ) ) {
-			$file     = $_POST[ 'editfilename' ];
-			$filepath = urldecode( $_POST[ 'editdirectory' ] );
-			if ( file_exists( $filepath . $file ) ) {
-				$backupcontent = file_get_contents( $filepath . $file );
-				file_put_contents( $filepath . $file . '.bak' , $backupcontent );
+    define( 'ABS_PATH' , dirname( dirname( dirname( dirname( dirname( __FILE__ ) ) ) ) ) . '/' );
+    require_once ABS_PATH . 'config.php';
+    if ( $_SERVER[ 'HTTP_X_REQUESTED_WITH' ] == 'XMLHttpRequest' ) {
+        if ( $_POST[ 'token' ] == md5( DB_NAME . DB_USER . DB_PASSWORD . DB_HOST . WEB_PATH ) ) {
+            $file     = $_POST[ 'editfilename' ];
+            $filepath = urldecode( $_POST[ 'editdirectory' ] );
+            if ( file_exists( $filepath . $file ) ) {
+                $backupcontent = file_get_contents( $filepath . $file );
+                file_put_contents( $filepath . $file . '.bak' , $backupcontent );
 
-				echo '<div class="flashmessage flashmessage-ok" style="display: block;">We did backup successfully!!</div>';
-			} else {
-				echo '<div class="flashmessage flashmessage-warning" style="display: block;">File not found !!</div>';
-			}
-		} else {
-			echo '<div class="flashmessage flashmessage-error" style="display: block;">Security Error!!</div>';
-		}
-	} else {
-		echo '<div class="flashmessage flashmessage-error" style="display: block;">Not a valid request!!</div>';
-	};
+                echo '<div class="flashmessage flashmessage-ok" style="display: block;">We did backup successfully!!</div>';
+            } else {
+                echo '<div class="flashmessage flashmessage-warning" style="display: block;">File not found !!</div>';
+            }
+        } else {
+            echo '<div class="flashmessage flashmessage-error" style="display: block;">Security Error!!</div>';
+        }
+    } else {
+        echo '<div class="flashmessage flashmessage-error" style="display: block;">Not a valid request!!</div>';
+    };

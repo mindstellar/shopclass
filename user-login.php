@@ -25,21 +25,21 @@
                 <div class="form-group">
                     <div class="checkbox">
                         <label>
-							<?php UserForm::rememberme_login_checkbox(); ?><?php _e( 'Remember Me' , 'shopclass' ); ?>
+                            <?php UserForm::rememberme_login_checkbox(); ?><?php _e( 'Remember Me' , 'shopclass' ); ?>
                         </label>
                         <p class="help-block"><?php _e( '(if this is a private computer)' , 'shopclass' ); ?></p>
                     </div>
                     <button type="submit"
                             class="btn btn-success btn-block"><?php _e( 'Submit' , 'shopclass' ); ?></button>
 
-					<?php
-						echo '<div class="btn-block text-center h3">' . __( 'Or' , 'shopclass' ) . '</div>';
-						echo ( osc_get_preference( 'tfcGoogleEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Google" class="btn btn-block btn-googleplus"><i class="fa fa-google-plus"></i> ' . __( 'Login with Google' , 'shopclass' ) . '</a>' : '';
+                    <?php
+                        echo '<div class="btn-block text-center h3">' . __( 'Or' , 'shopclass' ) . '</div>';
+                        echo ( osc_get_preference( 'tfcGoogleEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Google" class="btn btn-block btn-googleplus"><i class="fa fa-google-plus"></i> ' . __( 'Login with Google' , 'shopclass' ) . '</a>' : '';
 
-						echo ( osc_get_preference( 'tfcFacebookEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Facebook" class="btn btn-block btn-facebook"><i class="fa fa-facebook"></i> ' . __( 'Login with Facebook' , 'shopclass' ) . '</a>' : '';
+                        echo ( osc_get_preference( 'tfcFacebookEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Facebook" class="btn btn-block btn-facebook"><i class="fa fa-facebook"></i> ' . __( 'Login with Facebook' , 'shopclass' ) . '</a>' : '';
 
-						echo ( osc_get_preference( 'tfcTwitterEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Twitter" class=" btn btn-block btn-twitter"><i class="fa fa-twitter"></i> ' . __( 'Login with Twitter' , 'shopclass' ) . '</a>' : '';
-					?>
+                        echo ( osc_get_preference( 'tfcTwitterEnabled' , 'shopclass_theme' ) ) ? '<a href="' . osc_base_url( true ) . '?tfclogin=Twitter" class=" btn btn-block btn-twitter"><i class="fa fa-twitter"></i> ' . __( 'Login with Twitter' , 'shopclass' ) . '</a>' : '';
+                    ?>
                 </div>
             </form>
 
@@ -72,7 +72,7 @@
         <div class="form-group">
             <div class="col-md-12">
                 <div class="text-small" style="border-top: 1px solid#888; padding-top:15px;">
-					<?php _e( "Forget you password" , 'shopclass' ); ?>?
+                    <?php _e( "Forget you password" , 'shopclass' ); ?>?
                     <a href="<?php echo osc_recover_user_password_url(); ?>"><?php _e( "Reset Here!" , 'shopclass' ); ?></a>
                 </div>
             </div>

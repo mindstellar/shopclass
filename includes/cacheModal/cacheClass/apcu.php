@@ -26,69 +26,70 @@
      *
      */
 
-	namespace shopclass\includes\cacheModal\cacheClass;
-	use shopclass\includes\cacheModal\tfcAbstractCache;
+    namespace shopclass\includes\cacheModal\cacheClass;
 
-	/**
-	 * Created by Navjot Tomer.
-	 * User: navjottomer
-	 * Date: 15/10/17
-	 * Time: 10:00 AM
-	 */
+    use shopclass\includes\cacheModal\tfcAbstractCache;
 
-	/**
-	 * Class APCuCache
-	 */
-	class apcu extends tfcAbstractCache {
+    /**
+     * Created by Navjot Tomer.
+     * User: navjottomer
+     * Date: 15/10/17
+     * Time: 10:00 AM
+     */
 
-		/**
-		 * @param $key
-		 *
-		 * @return mixed
-		 */
-		function tfcFetch( $key ) {
-			return apcu_fetch( $key );
-		}
+    /**
+     * Class APCuCache
+     */
+    class apcu extends tfcAbstractCache {
 
-		/**
-		 * @param $key
-		 * @param $data
-		 * @param $ttl
-		 *
-		 * @return array|bool
-		 */
-		function tfcStore( $key , $data , $ttl ) {
+        /**
+         * @param $key
+         *
+         * @return mixed
+         */
+        function tfcFetch( $key ) {
+            return apcu_fetch( $key );
+        }
 
-			return apcu_store( $key , $data , $ttl );
+        /**
+         * @param $key
+         * @param $data
+         * @param $ttl
+         *
+         * @return array|bool
+         */
+        function tfcStore( $key , $data , $ttl ) {
 
-		}
+            return apcu_store( $key , $data , $ttl );
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool|string[]
-		 */
-		function tfcDelete( $key ) {
+        }
 
-			return apcu_delete( $key );
+        /**
+         * @param $key
+         *
+         * @return bool|string[]
+         */
+        function tfcDelete( $key ) {
 
-		}
+            return apcu_delete( $key );
 
-		/**
-		 * @return bool
-		 */
-		function flush() {
+        }
 
-			return apcu_clear_cache();
+        /**
+         * @return bool
+         */
+        function flush() {
 
-		}
+            return apcu_clear_cache();
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcExists( $key ) {
-			return apcu_exists($key);
-		}
-	}
+        }
+
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcExists( $key ) {
+            return apcu_exists( $key );
+        }
+    }

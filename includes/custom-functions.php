@@ -31,16 +31,16 @@
 /////////////..................................//////////////////
 
 ##Function to add thousand seprator on item price. 
-	/**
-	 * @param $price
-	 *
-	 * @return string
-	 */
-	function new_osc_format_price( $price ) {
-		$currencySymbol = ( osc_item_is_premium() ) ? osc_premium_currency_symbol() : osc_item_currency_symbol();
-		$price          = str_replace( $currencySymbol , '' , $price );
-		setlocale( LC_MONETARY , 'en_US.UTF-8' ); //Set Locale to your desired currency format.
-		$currencyFormat = money_format( '%!.0n' , (double) $price ) . ' ' . $currencySymbol;
+    /**
+     * @param $price
+     *
+     * @return string
+     */
+    function new_osc_format_price( $price ) {
+        $currencySymbol = ( osc_item_is_premium() ) ? osc_premium_currency_symbol() : osc_item_currency_symbol();
+        $price          = str_replace( $currencySymbol , '' , $price );
+        setlocale( LC_MONETARY , 'en_US.UTF-8' ); //Set Locale to your desired currency format.
+        $currencyFormat = money_format( '%!.0n' , (double) $price ) . ' ' . $currencySymbol;
 
-		return $currencyFormat;
-	}
+        return $currencyFormat;
+    }

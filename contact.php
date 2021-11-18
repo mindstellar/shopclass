@@ -13,7 +13,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="yourName">
-									<?php _e( 'Your name' , 'shopclass' ); ?></label>
+                                    <?php _e( 'Your name' , 'shopclass' ); ?></label>
                                 <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-user"></span>
 												</span>
@@ -24,7 +24,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="yourEmail">
-									<?php _e( 'E-mail address' , 'shopclass' ); ?></label>
+                                    <?php _e( 'E-mail address' , 'shopclass' ); ?></label>
                                 <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-envelope"></span>
 												</span>
@@ -35,7 +35,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="subject">
-									<?php _e( 'Subject' , 'shopclass' ); ?></label>
+                                    <?php _e( 'Subject' , 'shopclass' ); ?></label>
                                 <div class="input-group">
 												<span class="input-group-addon"><span class="fa fa-inbox"></span>
 												</span>
@@ -48,18 +48,18 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="message">
-									<?php _e( 'Message' , 'shopclass' ); ?></label>
+                                    <?php _e( 'Message' , 'shopclass' ); ?></label>
                                 <textarea id="message" name="message" class="form-control" rows="9" cols="25"
                                           placeholder="<?php echo osc_esc_html( __( 'Enter your message' , 'shopclass' ) ); ?>"></textarea>
                             </div>
                         </div>
                         <div class="col-md-6">
-							<?php osc_run_hook( 'tf_after_form' ); ?>
-							<?php osc_show_recaptcha(); ?>
-							<?php osc_run_hook( 'admin_contact_form' ); ?>
+                            <?php osc_run_hook( 'tf_after_form' ); ?>
+                            <?php osc_show_recaptcha(); ?>
+                            <?php osc_run_hook( 'admin_contact_form' ); ?>
                             <hr>
                             <button type="submit" class="btn btn-primary col-md-offset-3">
-								<?php _e( 'Send Message' , 'shopclass' ); ?></button>
+                                <?php _e( 'Send Message' , 'shopclass' ); ?></button>
                         </div>
                     </div>
                 </fieldset>
@@ -67,8 +67,8 @@
         </div>
     </div>
     <div class="col-md-4 padding-top">
-		<?php if ( ! tfc_getPref( 'tfc-address' ) ) {
-			?>
+        <?php if ( ! tfc_getPref( 'tfc-address' ) ) {
+            ?>
             <address>
                 <strong>ShopClass.com</strong>
                 234- Local Street, Bareilly
@@ -81,10 +81,10 @@
                 <strong>Full Name</strong><br>
                 Navjot Tomer
             </div>
-		<?php } else {
-			echo tfc_getPref( 'tfc-address' );
-		}
-		?>
+        <?php } else {
+            echo tfc_getPref( 'tfc-address' );
+        }
+        ?>
     </div>
 </div>
 <?php osc_current_web_theme_path( 'footer.php' ); ?>

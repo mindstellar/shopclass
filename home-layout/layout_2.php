@@ -8,8 +8,8 @@
     </div>
     <div class="col-md-12">
 
-		<?php osc_count_categories(); ?>
-		<?php while ( osc_has_categories() ) { ?>
+        <?php osc_count_categories(); ?>
+        <?php while ( osc_has_categories() ) { ?>
             <div class="col-md-3 col-xs-6">
                 <div class="catcard">
                     <div class="card-image tfc-item card-box">
@@ -19,18 +19,18 @@
                         </a>
                         <span class="card-title text-center">
                     	<a href="<?php echo osc_search_category_url(); ?>"><?php echo osc_category_name(); ?></a>
-							<?php if ( View::newInstance()->_current('categories') ) { ?><i
+							<?php if ( View::newInstance()->_current( 'categories' ) ) { ?><i
                                 data-maincatid="<?php echo osc_category_id(); ?>" data-toggle="tooltip"
                                 data-placement="top"
                                 data-original-title="<?php _e( 'More' , 'shopclass' ) ?>"
                                 class="subcat-modal fa fa-plus-circle"></i>
-							<?php } ?>
+                            <?php } ?>
                     </span>
                     </div>
 
                 </div>
             </div>
-		<?php } ?>
+        <?php } ?>
         <div class="clearfix"></div>
         <h4 class="col-md-12"><a class="btn btn-primary cardbox-primary"
                                  href="<?php echo osc_search_show_all_url(); ?>"><?php _e( "See all offers" , 'shopclass' ); ?>
@@ -70,4 +70,4 @@
         });
     </script>
 <?php };
-	osc_add_hook( 'footer_scripts_loaded' , $subcat_modal_js ); ?>
+    osc_add_hook( 'footer_scripts_loaded' , $subcat_modal_js ); ?>

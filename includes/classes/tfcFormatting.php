@@ -25,147 +25,154 @@
      *  License along with this program. If not, see <http://www.gnu.org/licenses/>.
      *
      */
-	/**
-	 * User: navjottomer
-	 * Date: 03/04/19
-	 * Time: 4:14 PM
-	 */
 
-	namespace shopclass\includes\classes;
+    /**
+     * User: navjottomer
+     * Date: 03/04/19
+     * Time: 4:14 PM
+     */
+
+    namespace shopclass\includes\classes;
 
 
-	/**
-	 * Class tfcFormatting
-	 * @package shopclass\includes\classes
-	 */
-	class tfcFormatting {
+    /**
+     * Class tfcFormatting
+     * @package shopclass\includes\classes
+     */
+    class tfcFormatting {
 
-		private static $instance;
+        private static $instance;
 
-		/**
-		 * @return tfcFormatting
-		 */
-		public static function newInstance() {
-			if ( ! self::$instance instanceof self ) {
-				self::$instance = new self;
-			}
+        /**
+         * @return tfcFormatting
+         */
+        public static function newInstance() {
+            if ( ! self::$instance instanceof self ) {
+                self::$instance = new self;
+            }
 
-			return self::$instance;
-		}
-		/**
-		 * @param $string
-		 * @param bool $remove_breaks
-		 *
-		 * @return string
-		 */
-		public function strip_all_tags( $string, $remove_breaks = false ) {
-			$string = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $string );
-			$string = strip_tags( $string );
+            return self::$instance;
+        }
 
-			if ( $remove_breaks ) {
-				$string = preg_replace( '/[\r\n\t ]+/', ' ', $string );
-			}
+        /**
+         * @param $str
+         * @param bool $keep_newlines
+         *
+         * @return mixed|null|string|string[]
+         */
+        public function sanatize_text( $str , $keep_newlines = false ) {
+            if ( is_object( $str ) || is_array( $str ) ) {
+                return '';
+            }
 
-			return trim( $string );
-		}
+            $str = (string) $str;
 
-		/**
-		 * @param $str
-		 * @param bool $keep_newlines
-		 *
-		 * @return mixed|null|string|string[]
-		 */
-		public function sanatize_text( $str, $keep_newlines = false ) {
-			if ( is_object( $str ) || is_array( $str ) ) {
-				return '';
-			}
+            $filtered = $this->check_invalid_utf8( $str );
 
-			$str = (string) $str;
+            if ( strpos( $filtered , '<' ) !== false ) {
+                $filtered = $this->pre_kses_less_than( $filtered );
+                // This will strip extra whitespace for us.
+                $filtered = $this->strip_all_tags( $filtered , false );
 
-			$filtered = $this->check_invalid_utf8( $str );
+                // Use html entities in a special case to make sure no later
+                // newline stripping stage could lead to a functional tag
+                $filtered = str_replace( "<\n" , "&lt;\n" , $filtered );
+            }
 
-			if ( strpos( $filtered, '<' ) !== false ) {
-				$filtered = $this->pre_kses_less_than( $filtered );
-				// This will strip extra whitespace for us.
-				$filtered = $this->strip_all_tags( $filtered, false );
+            if ( ! $keep_newlines ) {
+                $filtered = preg_replace( '/[\r\n\t ]+/' , ' ' , $filtered );
+            }
+            $filtered = trim( $filtered );
 
-				// Use html entities in a special case to make sure no later
-				// newline stripping stage could lead to a functional tag
-				$filtered = str_replace( "<\n", "&lt;\n", $filtered );
-			}
+            $found = false;
+            while ( preg_match( '/%[a-f0-9]{2}/i' , $filtered , $match ) ) {
+                $filtered = str_replace( $match[ 0 ] , '' , $filtered );
+                $found    = true;
+            }
 
-			if ( ! $keep_newlines ) {
-				$filtered = preg_replace( '/[\r\n\t ]+/', ' ', $filtered );
-			}
-			$filtered = trim( $filtered );
+            if ( $found ) {
+                // Strip out the whitespace that may now exist after removing the octets.
+                $filtered = trim( preg_replace( '/ +/' , ' ' , $filtered ) );
+            }
 
-			$found = false;
-			while ( preg_match( '/%[a-f0-9]{2}/i', $filtered, $match ) ) {
-				$filtered = str_replace( $match[0], '', $filtered );
-				$found    = true;
-			}
+            return $filtered;
+        }
 
-			if ( $found ) {
-				// Strip out the whitespace that may now exist after removing the octets.
-				$filtered = trim( preg_replace( '/ +/', ' ', $filtered ) );
-			}
+        /**
+         * @param $string
+         * @param bool $strip
+         *
+         * @return string
+         */
+        public function check_invalid_utf8( $string , $strip = false ) {
+            $string = (string) $string;
 
-			return $filtered;
-		}
+            if ( 0 === strlen( $string ) ) {
+                return '';
+            }
 
-		/**
-		 * @param $text
-		 *
-		 * @return null|string|string[]
-		 */
-		public function pre_kses_less_than( $text ) {
-			return preg_replace_callback( '%<[^>]*?((?=<)|>|$)%', array($this,'pre_kses_less_than_callback'), $text );
-		}
+            // Check for support for utf8 in the installed PCRE library once and store the result in a static
+            static $utf8_pcre = null;
+            if ( ! isset( $utf8_pcre ) ) {
+                $utf8_pcre = @preg_match( '/^./u' , 'a' );
+            }
+            // We can't demand utf8 in the PCRE installation, so just return the string in those cases
+            if ( ! $utf8_pcre ) {
+                return $string;
+            }
 
-		/**
-		 * @param $matches
-		 *
-		 * @return mixed
-		 */
-		public function pre_kses_less_than_callback( $matches ) {
-			if ( false === strpos( $matches[0], '>' ) ) {
-				return osc_esc_html( $matches[0] );
-			}
-			return $matches[0];
-		}
-		/**
-		 * @param $string
-		 * @param bool $strip
-		 *
-		 * @return string
-		 */
-		public function check_invalid_utf8( $string, $strip = false ) {
-			$string = (string) $string;
+            // preg_match fails when it encounters invalid UTF8 in $string
+            if ( 1 === @preg_match( '/^./us' , $string ) ) {
+                return $string;
+            }
 
-			if ( 0 === strlen( $string ) ) {
-				return '';
-			}
+            // Attempt to strip the bad chars if requested (not recommended)
+            if ( $strip && function_exists( 'iconv' ) ) {
+                return iconv( 'utf-8' , 'utf-8' , $string );
+            }
 
-			// Check for support for utf8 in the installed PCRE library once and store the result in a static
-			static $utf8_pcre = null;
-			if ( ! isset( $utf8_pcre ) ) {
-				$utf8_pcre = @preg_match( '/^./u', 'a' );
-			}
-			// We can't demand utf8 in the PCRE installation, so just return the string in those cases
-			if ( ! $utf8_pcre ) {
-				return $string;
-			}
+            return '';
+        }
 
-			// preg_match fails when it encounters invalid UTF8 in $string
-			if ( 1 === @preg_match( '/^./us', $string ) ) {
-				return $string;
-			}
+        /**
+         * @param $text
+         *
+         * @return null|string|string[]
+         */
+        public function pre_kses_less_than( $text ) {
+            return preg_replace_callback( '%<[^>]*?((?=<)|>|$)%' , array (
+                $this ,
+                'pre_kses_less_than_callback'
+            ) ,                           $text );
+        }
 
-			// Attempt to strip the bad chars if requested (not recommended)
-			if ( $strip && function_exists( 'iconv' ) ) {
-				return iconv( 'utf-8', 'utf-8', $string );
-			}
+        /**
+         * @param $string
+         * @param bool $remove_breaks
+         *
+         * @return string
+         */
+        public function strip_all_tags( $string , $remove_breaks = false ) {
+            $string = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si' , '' , $string );
+            $string = strip_tags( $string );
 
-			return '';
-		}
-	}
+            if ( $remove_breaks ) {
+                $string = preg_replace( '/[\r\n\t ]+/' , ' ' , $string );
+            }
+
+            return trim( $string );
+        }
+
+        /**
+         * @param $matches
+         *
+         * @return mixed
+         */
+        public function pre_kses_less_than_callback( $matches ) {
+            if ( false === strpos( $matches[ 0 ] , '>' ) ) {
+                return osc_esc_html( $matches[ 0 ] );
+            }
+
+            return $matches[ 0 ];
+        }
+    }

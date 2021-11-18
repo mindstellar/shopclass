@@ -1,149 +1,149 @@
 <?php
 
-	namespace shopclass\includes\frm;
+    namespace shopclass\includes\frm;
 
-	use Category;
-	use CategoryForm;
-	use Form;
-	use Params;
-	use Session;
+    use Category;
+    use CategoryForm;
+    use Form;
+    use Params;
+    use Session;
 
-	/**
-	 * Class tfcForm
-	 */
-	class tfcForm extends Form {
-		/**
-		 * @param $categories
-		 * @param $category
-		 * @param null $default_item
-		 * @param string $name
-		 */
-		static public function category_select( $categories , $category , $default_item = null , $name = "sCategory" ) {
-			echo '<select class="form-control" name="' . $name . '" id="' . $name . '">';
-			if($category === null){
-			    $category_id = null;
-            }else{
-			    $category_id = $category[ 'pk_i_id' ];
+    /**
+     * Class tfcForm
+     */
+    class tfcForm extends Form {
+        /**
+         * @param $categories
+         * @param $category
+         * @param null $default_item
+         * @param string $name
+         */
+        static public function category_select( $categories , $category , $default_item = null , $name = "sCategory" ) {
+            echo '<select class="form-control" name="' . $name . '" id="' . $name . '">';
+            if ( $category === null ) {
+                $category_id = null;
+            } else {
+                $category_id = $category[ 'pk_i_id' ];
             }
-			if ( isset( $default_item ) ) {
-				echo '<option value="">' . $default_item . '</option>';
-			}
-			foreach ( $categories as $c ) {
-				echo '<option value="' . $c[ 'pk_i_id' ] . '"' . ( ( $category_id == $c[ 'pk_i_id' ] ) ? 'selected="selected"' : '' ) . '>' . $c[ 's_name' ] . '</option>';
-				if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
-					CategoryForm::subcategory_select( $c[ 'categories' ] , $category , $default_item , 1 );
-				}
-			}
-			echo '</select>';
-		}
+            if ( isset( $default_item ) ) {
+                echo '<option value="">' . $default_item . '</option>';
+            }
+            foreach ( $categories as $c ) {
+                echo '<option value="' . $c[ 'pk_i_id' ] . '"' . ( ( $category_id == $c[ 'pk_i_id' ] ) ? 'selected="selected"' : '' ) . '>' . $c[ 's_name' ] . '</option>';
+                if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
+                    CategoryForm::subcategory_select( $c[ 'categories' ] , $category , $default_item , 1 );
+                }
+            }
+            echo '</select>';
+        }
 
-		/**
-		 * @param $categories
-		 */
-		static public function category_list( $categories ) {
-			echo '<ul id="cat_tree">';
-			foreach ( $categories as $c ) {
-				echo '<li class="catId_' . $c[ 'pk_i_id' ] . '"><a href="' . osc_update_search_url( array ( 'sCategory' => $c[ 'pk_i_id' ] ) ) . '">' . ucfirst( $c[ 's_name' ] ) . '</a>';
-				if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
-					if ( count( $c[ 'categories' ] ) > 0 ) {
-						echo '<ul>';
-					} else {
-						echo '<li>';
-					}
-					tfcForm::subcategory_list( $c[ 'categories' ] );
-					if ( count( $c[ 'categories' ] ) > 0 ) {
-						echo '</ul></li>';
-					} else {
-						echo '</li></li>';
-					}
-				} else {
-					echo '</li>';
-				}
-			}
-			echo '</ul>';
-		}
+        /**
+         * @param $categories
+         */
+        static public function category_list( $categories ) {
+            echo '<ul id="cat_tree">';
+            foreach ( $categories as $c ) {
+                echo '<li class="catId_' . $c[ 'pk_i_id' ] . '"><a href="' . osc_update_search_url( array ( 'sCategory' => $c[ 'pk_i_id' ] ) ) . '">' . ucfirst( $c[ 's_name' ] ) . '</a>';
+                if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
+                    if ( count( $c[ 'categories' ] ) > 0 ) {
+                        echo '<ul>';
+                    } else {
+                        echo '<li>';
+                    }
+                    tfcForm::subcategory_list( $c[ 'categories' ] );
+                    if ( count( $c[ 'categories' ] ) > 0 ) {
+                        echo '</ul></li>';
+                    } else {
+                        echo '</li></li>';
+                    }
+                } else {
+                    echo '</li>';
+                }
+            }
+            echo '</ul>';
+        }
 
-		/**
-		 * @param $categories
-		 */
-		static public function subcategory_list( $categories ) {
-			foreach ( $categories as $c ) {
-				echo '<li class="' . $c[ 'pk_i_id' ] . '"><a href="' . osc_update_search_url( array ( 'sCategory' => $c[ 'pk_i_id' ] ) ) . '">' . ucfirst( $c[ 's_name' ] ) . '</a>';
-				if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
-					if ( count( $c[ 'categories' ] ) > 0 ) {
-						echo '<ul>';
-					}
-					tfcForm::subcategory_list( $c[ 'categories' ] );
-					if ( count( $c[ 'categories' ] ) > 0 ) {
-						echo '</ul></li>';
-					} else {
-						echo '</li>';
-					}
-				} else {
-					echo '</li>';
-				}
-			}
-		}
+        /**
+         * @param $categories
+         */
+        static public function subcategory_list( $categories ) {
+            foreach ( $categories as $c ) {
+                echo '<li class="' . $c[ 'pk_i_id' ] . '"><a href="' . osc_update_search_url( array ( 'sCategory' => $c[ 'pk_i_id' ] ) ) . '">' . ucfirst( $c[ 's_name' ] ) . '</a>';
+                if ( isset( $c[ 'categories' ] ) && is_array( $c[ 'categories' ] ) ) {
+                    if ( count( $c[ 'categories' ] ) > 0 ) {
+                        echo '<ul>';
+                    }
+                    tfcForm::subcategory_list( $c[ 'categories' ] );
+                    if ( count( $c[ 'categories' ] ) > 0 ) {
+                        echo '</ul></li>';
+                    } else {
+                        echo '</li>';
+                    }
+                } else {
+                    echo '</li>';
+                }
+            }
+        }
 
 
-		/**
-		 * @param null $categories
-		 * @param null $item
-		 * @param null $default_item
-		 * @param bool $parent_selectable
-		 */
-		static public function tfc_category_multiple_selects( $categories = null , $item = null , $default_item = null , $parent_selectable = false ) {
-			$categoryID = Params::getParam( 'sCategory' );
-			echo '<div id="select_holder"></div>';
-			parent::generic_input_hidden( "sCategory" , $categoryID );
-			/**
-			 *
-			 */
-			$multi_category_js = function () use ( $categories , $item , $default_item , $parent_selectable , $categoryID ) {
+        /**
+         * @param null $categories
+         * @param null $item
+         * @param null $default_item
+         * @param bool $parent_selectable
+         */
+        static public function tfc_category_multiple_selects( $categories = null , $item = null , $default_item = null , $parent_selectable = false ) {
+            $categoryID = Params::getParam( 'sCategory' );
+            echo '<div id="select_holder"></div>';
+            parent::generic_input_hidden( "sCategory" , $categoryID );
+            /**
+             *
+             */
+            $multi_category_js = function () use ( $categories , $item , $default_item , $parent_selectable , $categoryID ) {
 
-				if ( osc_search_category_id() != null ) {
-					$categoryID = implode( osc_search_category_id() );
-				}
+                if ( osc_search_category_id() != null ) {
+                    $categoryID = implode( osc_search_category_id() );
+                }
 
-				if ( Session::newInstance()->_getForm( 'catId' ) != '' ) {
-					$categoryID = Session::newInstance()->_getForm( 'catId' );
-				}
+                if ( Session::newInstance()->_getForm( 'catId' ) != '' ) {
+                    $categoryID = Session::newInstance()->_getForm( 'catId' );
+                }
 
-				if ( $item == null ) {
-					$item = osc_item();
-				}
+                if ( $item == null ) {
+                    $item = osc_item();
+                }
 
-				if ( isset( $item[ 'fk_i_category_id' ] ) ) {
-					$categoryID = $item[ 'fk_i_category_id' ];
-				}
+                if ( isset( $item[ 'fk_i_category_id' ] ) ) {
+                    $categoryID = $item[ 'fk_i_category_id' ];
+                }
 
-				$tmp_categories_tree = Category::newInstance()->toRootTree( $categoryID );
-				$categories_tree     = array ();
-				foreach ( $tmp_categories_tree as $t ) {
-					$categories_tree[] = $t[ 'pk_i_id' ];
-				}
-				unset( $tmp_categories_tree );
+                $tmp_categories_tree = Category::newInstance()->toRootTree( $categoryID );
+                $categories_tree     = array ();
+                foreach ( $tmp_categories_tree as $t ) {
+                    $categories_tree[] = $t[ 'pk_i_id' ];
+                }
+                unset( $tmp_categories_tree );
 
-				if ( $categories == null ) {
-					$categories = Category::newInstance()->listEnabled();
-				}
+                if ( $categories == null ) {
+                    $categories = Category::newInstance()->listEnabled();
+                }
 
-				//parent::generic_input_hidden( "sCategory" , $categoryID );
+                //parent::generic_input_hidden( "sCategory" , $categoryID );
 
-				?>
+                ?>
                 <script>
-					<?php
-					$tmp_cat = array ();
-					foreach ( $categories as $c ) {
-						if ( $c[ 'fk_i_parent_id' ] == null ) {
-							$c[ 'fk_i_parent_id' ] = 0;
-						};
-						$tmp_cat[ $c[ 'fk_i_parent_id' ] ][] = array ( $c[ 'pk_i_id' ] , $c[ 's_name' ] );
-					}
-					foreach ( $tmp_cat as $k => $v ) {
-						echo 'var categories_' . $k . ' = ' . json_encode( $v ) . ';' . PHP_EOL;
-					}
-					?>
+                    <?php
+                    $tmp_cat = array ();
+                    foreach ( $categories as $c ) {
+                        if ( $c[ 'fk_i_parent_id' ] == null ) {
+                            $c[ 'fk_i_parent_id' ] = 0;
+                        };
+                        $tmp_cat[ $c[ 'fk_i_parent_id' ] ][] = array ( $c[ 'pk_i_id' ] , $c[ 's_name' ] );
+                    }
+                    foreach ( $tmp_cat as $k => $v ) {
+                        echo 'var categories_' . $k . ' = ' . json_encode( $v ) . ';' . PHP_EOL;
+                    }
+                    ?>
 
                     if (osc == undefined) {
                         var osc = {};
@@ -162,17 +162,17 @@
                     osc.item_post.category_tree_id = <?php echo json_encode( $categories_tree ); ?>;
 
                     $(document).ready(function () {
-						<?php if($categoryID == array ()) { ?>
+                        <?php if($categoryID == array ()) { ?>
                         draw_select(1, 0);
-						<?php } else { ?>
+                        <?php } else { ?>
                         draw_select(1, 0);
-						<?php for($i = 0; $i < count( $categories_tree ); $i ++) { ?>
+                        <?php for($i = 0; $i < count( $categories_tree ); $i ++) { ?>
                         draw_select(<?php echo( $i + 2 ); ?> ,<?php echo $categories_tree[ $i ]; ?>);
-						<?php for($i = 1; $i < count( $categories_tree ); $i ++) { ?>
+                        <?php for($i = 1; $i < count( $categories_tree ); $i ++) { ?>
                         draw_select(<?php echo( $i + 2 ); ?> ,<?php echo $categories_tree[ $i ]; ?>);
-						<?php } ?>
-						<?php } ?>
-						<?php } ?>
+                        <?php } ?>
+                        <?php } ?>
+                        <?php } ?>
                         $('body').on("change", '[id^="select_"]', function () {
                             var depth = parseInt($(this).attr("depth"));
                             for (var d = (depth + 1); d <= 4; d++) {
@@ -211,17 +211,17 @@
 
                     }
                 </script>
-				<?php
-			};
-			osc_add_hook( 'footer_scripts_loaded' , $multi_category_js );
-		}
+                <?php
+            };
+            osc_add_hook( 'footer_scripts_loaded' , $multi_category_js );
+        }
 
-		/**
-		 * @return string
-		 */
-		static public function search_drop_all_js() {
-			$sQuery = tfc_getPref( 'keyword_placeholder' );
-			?>
+        /**
+         * @return string
+         */
+        static public function search_drop_all_js() {
+            $sQuery = tfc_getPref( 'keyword_placeholder' );
+            ?>
             <script>
                 //<![CDATA[
                 var sQuery = '<?php echo ( osc_search_pattern() != '' ) ? osc_search_pattern() : $sQuery; ?>';
@@ -320,25 +320,25 @@
 
                 });
 
-				<?php if (get_search_country()) { ?>
+                <?php if (get_search_country()) { ?>
                 $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-				<?php } ?>
+                <?php } ?>
             </script>
-			<?php
+            <?php
             return;
-		}
+        }
 
-		/**
-		 * @return string
-		 */
-		static public function search_drop_js() {
-			?>
+        /**
+         * @return string
+         */
+        static public function search_drop_js() {
+            ?>
             <script>
                 var sQuery = '<?php
-					if ( ! empty( $sQuery ) ) {
-						echo $sQuery;
-					}
-					?>';
+                    if ( ! empty( $sQuery ) ) {
+                        echo $sQuery;
+                    }
+                    ?>';
 
                 function doSearch() {
                     if ($('input[name=sPattern]').val().length < 3) {
@@ -397,25 +397,25 @@
 
                 });
 
-				<?php if (get_search_country()) { ?>
+                <?php if (get_search_country()) { ?>
                 $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-				<?php } else { ?>
+                <?php } else { ?>
 
                 $('select[name="sCountry"]').find('option[value="<?php echo tfc_getPref( 'default_country' )?>"]').attr("selected", true);
-				<?php } ?>
+                <?php } ?>
 
             </script>
-		<?php
-		    return;
-		}
+            <?php
+            return;
+        }
 
-		/**
-		 * @return string
-		 */
-		static public function search_default_js() {
-			?>
+        /**
+         * @return string
+         */
+        static public function search_default_js() {
+            ?>
             <script>
-				<?php $sQuery = isset( $sQuery ) ? $sQuery : ''; ?>
+                <?php $sQuery = isset( $sQuery ) ? $sQuery : ''; ?>
                 var sQuery = '<?php echo $sQuery; ?>';
 
                 function doSearch() {
@@ -484,14 +484,14 @@
                 });
 
 
-				<?php if (get_search_country()) { ?>
+                <?php if (get_search_country()) { ?>
                 $('select[name="sCountry"]').find('option[value="<?php echo get_search_country() ?>"]').attr("selected", true);
-				<?php } else { ?>
+                <?php } else { ?>
 
                 $('select[name="sCountry"]').find('option[value="<?php echo tfc_getPref( 'default_country' )?>"]').attr("selected", true);
-				<?php } ?>
+                <?php } ?>
             </script>
-		<?php
-		    return;
-		}
-	}
+            <?php
+            return;
+        }
+    }

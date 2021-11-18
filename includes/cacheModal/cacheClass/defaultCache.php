@@ -26,63 +26,63 @@
      *
      */
 
-	namespace shopclass\includes\cacheModal\cacheClass;
+    namespace shopclass\includes\cacheModal\cacheClass;
 
-	use shopclass\includes\cacheModal\tfcAbstractCache;
+    use shopclass\includes\cacheModal\tfcAbstractCache;
 
-	/**
-	 * Created by PhpStorm.
-	 * User: navjottomer
-	 * Date: 19/07/18
-	 * Time: 3:18 AM
-	 */
+    /**
+     * Created by PhpStorm.
+     * User: navjottomer
+     * Date: 19/07/18
+     * Time: 3:18 AM
+     */
 
-	/**
-	 * Class defaultCache
-	 */
-	class defaultCache extends tfcAbstractCache {
-		/**
-		 * @param $key
-		 *
-		 * @return mixed
-		 */
-		function tfcFetch( $key ) {
-			return false;
-		}
+    /**
+     * Class defaultCache
+     */
+    class defaultCache extends tfcAbstractCache {
+        /**
+         * @param $key
+         *
+         * @return mixed
+         */
+        function tfcFetch( $key ) {
+            return false;
+        }
 
-		/**
-		 * @param $key
-		 * @param $data
-		 * @param $ttl
-		 *
-		 * @return mixed
-		 */
-		function tfcStore( $key , $data , $ttl ) {
-			return true;
-		}
+        /**
+         * @param $key
+         * @param $data
+         * @param $ttl
+         *
+         * @return mixed
+         */
+        function tfcStore( $key , $data , $ttl ) {
+            return true;
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return mixed
-		 */
-		function tfcDelete( $key ) {
-			return false;
-		}
+        /**
+         * @param $key
+         *
+         * @return mixed
+         */
+        function tfcDelete( $key ) {
+            return false;
+        }
 
-		/**
-		 * @return bool
-		 */
-		function flush() {
-			return true;
-		}
+        /**
+         * @return bool
+         */
+        function flush() {
+            return true;
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcExists( $key ) {
-			return false;
-		}
-	}
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcExists( $key ) {
+            return false;
+        }
+    }

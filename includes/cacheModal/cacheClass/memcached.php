@@ -26,119 +26,119 @@
      *
      */
 
-	namespace shopclass\includes\cacheModal\cacheClass;
+    namespace shopclass\includes\cacheModal\cacheClass;
 
-	use shopclass\includes\cacheModal\tfcAbstractCache;
+    use shopclass\includes\cacheModal\tfcAbstractCache;
 
-	/**
-	 * Created by Navjot Tomer.
-	 * User: navjottomer
-	 * Date: 15/10/17
-	 * Time: 9:59 AM
-	 */
+    /**
+     * Created by Navjot Tomer.
+     * User: navjottomer
+     * Date: 15/10/17
+     * Time: 9:59 AM
+     */
 
-	/**
-	 * Class memcache
-	 */
-	class memcached extends tfcAbstractCache {
+    /**
+     * Class memcache
+     */
+    class memcached extends tfcAbstractCache {
 
-		// Memcache object
-		private $connection;
+        // Memcache object
+        private $connection;
 
-		/**
-		 * tfcCache constructor.
-		 *
-		 */
-		function __construct() {
-			$this->connection = new \Memcached();
-			global $memcached_config;
-			if ( ! isset( $memcached_config ) ) {
-				$memcached_config = array ();
-			}
-			$this->setConnection( $memcached_config );
+        /**
+         * tfcCache constructor.
+         *
+         */
+        function __construct() {
+            $this->connection = new \Memcached();
+            global $memcached_config;
+            if ( ! isset( $memcached_config ) ) {
+                $memcached_config = array ();
+            }
+            $this->setConnection( $memcached_config );
 
-		}
+        }
 
-		/**
-		 * @param array $memcached_config
-		 *
-		 * @return memcached
-		 * @internal param Memcached $connection
-		 *
-		 */
-		public function setConnection( $memcached_config = array () ) {
-			if ( empty( $memcached_config ) ) {
-				$memcached_config[] = array ( 'host' => '127.0.0.1' , 'port' => '112111' , 'weight' => '1' );
-			}
-			foreach ( $memcached_config as $config ) {
-				$this->connection->addServer( $config[ 'host' ] , $config[ 'port' ] , $config[ 'weight' ] );
-			}
+        /**
+         * @param array $memcached_config
+         *
+         * @return memcached
+         * @internal param Memcached $connection
+         *
+         */
+        public function setConnection( $memcached_config = array () ) {
+            if ( empty( $memcached_config ) ) {
+                $memcached_config[] = array ( 'host' => '127.0.0.1' , 'port' => '112111' , 'weight' => '1' );
+            }
+            foreach ( $memcached_config as $config ) {
+                $this->connection->addServer( $config[ 'host' ] , $config[ 'port' ] , $config[ 'weight' ] );
+            }
 
-			return $this;
-		}
+            return $this;
+        }
 
-		/**
-		 * @param $key
-		 * @param $data
-		 * @param $ttl
-		 *
-		 * @return bool
-		 */
-		function tfcStore( $key , $data , $ttl ) {
+        /**
+         * @param $key
+         * @param $data
+         * @param $ttl
+         *
+         * @return bool
+         */
+        function tfcStore( $key , $data , $ttl ) {
 
-			return $this->connection->set( $key , $data , $ttl );
+            return $this->connection->set( $key , $data , $ttl );
 
-		}
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return array|string
-		 */
-		function tfcFetch( $key ) {
+        /**
+         * @param $key
+         *
+         * @return array|string
+         */
+        function tfcFetch( $key ) {
 
-			return $this->connection->get( $key );
+            return $this->connection->get( $key );
 
-		}
+        }
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcDelete( $key ) {
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcDelete( $key ) {
 
-			return $this->connection->delete( $key );
+            return $this->connection->delete( $key );
 
-		}
+        }
 
-		/**
-		 * @return array
-		 */
-		public function tfcGetStats() {
-			return $this->connection->getStats();
-		}
+        /**
+         * @return array
+         */
+        public function tfcGetStats() {
+            return $this->connection->getStats();
+        }
 
-		/**
-		 * @return bool
-		 */
-		function flush() {
+        /**
+         * @return bool
+         */
+        function flush() {
 
-			return $this->connection->flush();
+            return $this->connection->flush();
 
-		}
+        }
 
 
-		/**
-		 * @param $key
-		 *
-		 * @return bool
-		 */
-		function tfcExists( $key ) {
-			if ($this->connection->get($key) ) {
-				return true;
-			} else {
-				return false;
-			}
-		}
-	}
+        /**
+         * @param $key
+         *
+         * @return bool
+         */
+        function tfcExists( $key ) {
+            if ( $this->connection->get( $key ) ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }

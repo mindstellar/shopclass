@@ -1,23 +1,23 @@
 <?php use shopclass\includes\frm\tfcContactForm;
 
-	osc_current_web_theme_path( 'head.php' ); ?>
+    osc_current_web_theme_path( 'head.php' ); ?>
 <body>
 <?php osc_current_web_theme_path( 'header.php' );
-	if ( tfc_getPref( 'enable_adba' ) && tfc_getPref( 'adsense_banner5' ) ) {
+    if ( tfc_getPref( 'enable_adba' ) && tfc_getPref( 'adsense_banner5' ) ) {
 
-		$detail_class  = "col-md-6";
-		$detail_class2 = "col-md-4 col-sm-6 col-xs-4";
-	} else {
+        $detail_class  = "col-md-6";
+        $detail_class2 = "col-md-4 col-sm-6 col-xs-4";
+    } else {
 
-		$detail_class  = "col-md-12";
-		$detail_class2 = "col-md-3 col-sm-4 col-xs-4";
-	} ?>
+        $detail_class  = "col-md-12";
+        $detail_class2 = "col-md-3 col-sm-4 col-xs-4";
+    } ?>
 <div class="row">
     <div class="col-md-12 cardbox-default item-header cardbox-primary">
         <div class="row">
             <div class="col-md-8">
                 <h1 itemprop="name"><a class="text-ellipsis" href="<?php echo osc_item_url(); ?>">
-						<?php echo osc_item_title(); ?></a>
+                        <?php echo osc_item_title(); ?></a>
                 </h1>
                 <div class="row">
                     <p class="col-md-12 text-ellipsis"><i
@@ -26,13 +26,13 @@
                 </div>
             </div>
             <div class="col-md-4">
-				<?php if ( osc_price_enabled_at_items() ) { ?>
+                <?php if ( osc_price_enabled_at_items() ) { ?>
                     <div class="text-center">
                         <h4 class="cardbox-block card-box cardbox-info"><i
                                     class="fa fa-tag fa-fw"></i><strong><?php _e( "Price:" , 'shopclass' ); ?></strong>
                             <span class="price"> <?php echo osc_item_formated_price(); ?></span></h4>
                     </div>
-				<?php } ?>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -40,11 +40,11 @@
         <div class="col-md-12 card-box cardbox-default item-content" data-listingid="<?php echo osc_item_id(); ?>">
             <div class="row">
                 <div class="<?php echo $detail_class; ?>">
-					<?php if ( osc_images_enabled_at_items() ) { ?>
-						<?php if ( osc_count_item_resources() > 0 ) { ?>
+                    <?php if ( osc_images_enabled_at_items() ) { ?>
+                        <?php if ( osc_count_item_resources() > 0 ) { ?>
                             <div class="photos img-thumbnail">
-								<?php for ( $i = 0; osc_has_item_resources(); $i ++ ) {
-									if ( $i == 0 ) { ?>
+                                <?php for ( $i = 0; osc_has_item_resources(); $i ++ ) {
+                                    if ( $i == 0 ) { ?>
                                         <div class="item-photo-main" data-toggle="tooltip" data-placement="top"
                                              data-original-title="<?php _e( "Click Image to Zoom" , 'shopclass' ); ?>">
                                             <a href="<?php echo osc_resource_url(); ?>" class="thumbnail image-group"
@@ -55,11 +55,11 @@
                                                      title="<?php echo osc_item_title(); ?>"/>
                                             </a>
                                         </div>
-										<?php
-										if ( osc_count_item_resources() > 1 ) {
-											echo '<div class="row item-photos-group">';
-										}
-									} else { ?>
+                                        <?php
+                                        if ( osc_count_item_resources() > 1 ) {
+                                            echo '<div class="row item-photos-group">';
+                                        }
+                                    } else { ?>
                                         <div class="<?php echo $detail_class2; ?>" data-mh="photo-group"
                                              data-toggle="tooltip" data-placement="top"
                                              data-original-title="<?php _e( "Click Image to Zoom" , 'shopclass' ); ?>">
@@ -69,13 +69,13 @@
                                                      src="<?php echo osc_resource_thumbnail_url(); ?>" alt=""
                                                      title=""/></a>
                                         </div>
-									<?php } ?>
-								<?php } ?>
-								<?php if ( osc_count_item_resources() > 1 ) {
-									echo '</div>';
-								} ?>
+                                    <?php } ?>
+                                <?php } ?>
+                                <?php if ( osc_count_item_resources() > 1 ) {
+                                    echo '</div>';
+                                } ?>
                             </div>
-						<?php } else { ?>
+                        <?php } else { ?>
                             <div class="thumbnail" data-toggle="tooltip"
                                  data-placement="top"
                                  data-original-title="<?php _e( "No Image Available" , 'shopclass' ); ?>">
@@ -83,14 +83,14 @@
                                      src="<?php echo tfc_category_image_url( tfc_item_parent_category_id() ) ?>"
                                      alt="No image available"/>
                             </div>
-						<?php }
-					} ?>
+                        <?php }
+                    } ?>
                 </div>
-				<?php if ( tfc_getPref( 'enable_adba' ) && tfc_getPref( 'adsense_banner5' ) ) { ?>
+                <?php if ( tfc_getPref( 'enable_adba' ) && tfc_getPref( 'adsense_banner5' ) ) { ?>
                     <div class="col-md-6" style="margin-top:8px">
-						<?php echo tfc_getPref( 'adsense_banner5' ); ?>
+                        <?php echo tfc_getPref( 'adsense_banner5' ); ?>
                     </div>
-				<?php } ?>
+                <?php } ?>
 
             </div>
             <h4><?php _e( 'Description' , 'shopclass' ); ?></h4>
@@ -127,8 +127,8 @@
                    href="https://chart.googleapis.com/chart?<?php echo htmlentities( "chs=250x250&cht=qr&chld=M%7CPT+6&chl=" . urlencode( osc_item_url() ) . "&chld=1&=UTF-8" ) ?>"
                    rel="nofollow"><i class="fa fa-qrcode"></i></a>
             </div>
-			<?php if ( ! osc_item_is_expired() ) { ?>
-				<?php if ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) { ?>
+            <?php if ( ! osc_item_is_expired() ) { ?>
+                <?php if ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) { ?>
                     <ul class="list-inline">
                         <li><a class="btn btn-warning btn-xs" href="<?php echo osc_item_edit_url(); ?>">
                                 <i class="fa fa-pencil"></i><?php _e( 'Edit' , 'shopclass' ); ?></a>
@@ -137,15 +137,15 @@
                                onclick="javascript:return confirm('<?php echo osc_esc_js( __( 'This action can not be undone. Are you sure you want to continue?' , 'shopclass' ) ); ?>')"
                                href="<?php echo osc_item_delete_url(); ?>"><i
                                         class="fa fa-trash-o"></i><?php _e( 'Delete' , 'shopclass' ); ?></a></li>
-						<?php if ( osc_item_is_inactive() ) { ?>
+                        <?php if ( osc_item_is_inactive() ) { ?>
                             <li><a class="btn btn-success btn-xs" href="<?php echo osc_item_activate_url(); ?>"><i
                                             class="fa fa-check-circle"><?php _e( 'Activate' , 'shopclass' ); ?></a>
                             </li>
-						<?php } ?>
+                        <?php } ?>
                         <li><?php tfc_push_to_top_button(); ?> </li>
                     </ul>
-				<?php }
-			} ?>
+                <?php }
+            } ?>
         </div>
         <div class="col-md-12 item-comments card-box cardbox-default">
             <h4><?php _e( 'More Details' , 'shopclass' ); ?></h4>
@@ -167,31 +167,31 @@
                                     class="meta-value">#<?php echo osc_item_id(); ?></span>
                         </div>
                     </div>
-					<?php if ( osc_count_item_meta() >= 1 ) { ?>
-						<?php while ( osc_has_item_meta() ) { ?>
-							<?php if ( osc_item_meta_value() != '' ) { ?>
+                    <?php if ( osc_count_item_meta() >= 1 ) { ?>
+                        <?php while ( osc_has_item_meta() ) { ?>
+                            <?php if ( osc_item_meta_value() != '' ) { ?>
                                 <div class="metaId-<?php echo osc_item_meta_id(); ?> meta-detail col-md-6">
                                     <div class="border-bottom-1p clearfix">
                                         <span class="meta-title "><?php echo osc_item_meta_name(); ?>:</span><span
                                                 class=" meta-value"><?php echo osc_item_meta_value(); ?></span>
                                     </div>
                                 </div>
-							<?php } ?>
-						<?php }
-					} ?>
+                            <?php } ?>
+                        <?php }
+                    } ?>
                 </div>
             </div>
 
-			<?php if ( function_exists( 'tfc_voting_item_detail' ) ) {
-				tfc_voting_item_detail();
-			} ?>
+            <?php if ( function_exists( 'tfc_voting_item_detail' ) ) {
+                tfc_voting_item_detail();
+            } ?>
             <div class="clearfix"></div>
-			<?php osc_run_hook( 'item_detail' , osc_item() ); ?>
+            <?php osc_run_hook( 'item_detail' , osc_item() ); ?>
         </div>
         <div class="col-md-12 item-comments card-box cardbox-default">
-			<?php include 'comments.php'; ?>
+            <?php include 'comments.php'; ?>
         </div>
-		<?php \shopclass\includes\classes\relatedAds::relatedAds(); ?>
+        <?php \shopclass\includes\classes\relatedAds::relatedAds(); ?>
     </div>
     <div class="left-sidebar col-md-4 ">
         <div class="row">
@@ -206,32 +206,32 @@
 
                             <div class="profile-usertitle">
                                 <div class="profile-usertitle-name">
-									<?php echo osc_item_contact_name(); ?>
+                                    <?php echo osc_item_contact_name(); ?>
                                 </div>
                                 <div class="profile-usertitle-job text-primary">
-									<?php if ( osc_user_is_company() ) {
-										echo( __( 'Company' , 'shopclass' ) );
-									} else {
-										echo( __( 'Individual' , 'shopclass' ) );
-									} ?>
+                                    <?php if ( osc_user_is_company() ) {
+                                        echo( __( 'Company' , 'shopclass' ) );
+                                    } else {
+                                        echo( __( 'Individual' , 'shopclass' ) );
+                                    } ?>
                                 </div>
-								<?php if ( function_exists( 'tfc_voting_item_detail_user' ) ) {
-									echo '<div class="tex-center">';
-									tfc_voting_item_detail_user();
-									echo '</div>';
-								} ?>
+                                <?php if ( function_exists( 'tfc_voting_item_detail_user' ) ) {
+                                    echo '<div class="tex-center">';
+                                    tfc_voting_item_detail_user();
+                                    echo '</div>';
+                                } ?>
                             </div>
                         </div>
                         <div class="col-md-12 col-sm-6">
-							<?php
-								if ( osc_user_public_profile_url( osc_item_user_id() ) ) {
-									$profileurl     = osc_user_public_profile_url( osc_item_user_id() );
-									$followDisabled = '';
-								} else {
-									$followDisabled = 'disabled';
-									$profileurl     = '#';
-								}
-							?>
+                            <?php
+                                if ( osc_user_public_profile_url( osc_item_user_id() ) ) {
+                                    $profileurl     = osc_user_public_profile_url( osc_item_user_id() );
+                                    $followDisabled = '';
+                                } else {
+                                    $followDisabled = 'disabled';
+                                    $profileurl     = '#';
+                                }
+                            ?>
                             <div class="profile-userbuttons">
                                 <a href="<?php echo $profileurl; ?>"
                                    class="btn btn-success btn-sm" <?php echo $followDisabled; ?>><i
@@ -248,35 +248,35 @@
                                 <ul class="nav" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
 
 
-									<?php if ( osc_user_phone() != '' ) { ?>
+                                    <?php if ( osc_user_phone() != '' ) { ?>
                                         <li>
                                             <div class="nav-link"><i
                                                         class="fa fa-phone"></i><?php _e( "Tel" , 'shopclass' ); ?>
                                                 .: <?php echo osc_user_phone(); ?></div>
                                         </li>
-									<?php } ?>
+                                    <?php } ?>
                                     <li>
                                         <div class="nav-link"><i
                                                     class="fa fa-map-signs"></i><?php _e( "Location :" , 'shopclass' ); ?>
-											<?php if ( osc_item_address() != "" ) { ?>
+                                            <?php if ( osc_item_address() != "" ) { ?>
                                                 <span itemprop="streetAddress"><?php echo osc_item_address(); ?>
                                                     ,</span>
-											<?php } ?>
-											<?php if ( osc_item_city_area() != "" ) { ?>
+                                            <?php } ?>
+                                            <?php if ( osc_item_city_area() != "" ) { ?>
                                                 <span itemprop="streetAddress"><?php echo osc_item_city_area(); ?>
                                                     ,</span>
-											<?php } ?>
-											<?php if ( osc_item_city() != "" ) { ?>
+                                            <?php } ?>
+                                            <?php if ( osc_item_city() != "" ) { ?>
                                                 <span itemprop="addressLocality"><?php echo osc_item_city(); ?>
                                                     ,</span>
-											<?php } ?>
-											<?php if ( osc_item_region() != "" ) { ?>
+                                            <?php } ?>
+                                            <?php if ( osc_item_region() != "" ) { ?>
                                                 <span itemprop="addressRegion"><?php echo osc_item_region(); ?>
                                                     ,</span>
-											<?php } ?>
-											<?php if ( osc_item_country() != "" ) { ?>
+                                            <?php } ?>
+                                            <?php if ( osc_item_country() != "" ) { ?>
                                                 <span itemprop="addressCountry"><?php echo osc_item_country(); ?></span>
-											<?php } ?>
+                                            <?php } ?>
                                         </div>
                                     </li>
 
@@ -284,10 +284,10 @@
                             </div>
                             <div class="col-md-12">
 
-								<?php tfc_favourite(); ?>
-								<?php
-									$item = osc_item();
-								?>
+                                <?php tfc_favourite(); ?>
+                                <?php
+                                    $item = osc_item();
+                                ?>
                                 <button class="btn btn-success btn-block btn-sm map-button" data-toggle="modal"
                                         data-target="#itemLocation">
                                     <i class="fa fa-crosshairs"></i> <?php _e( 'Location Map' , 'shopclass' ) ?>
@@ -299,13 +299,13 @@
                             </div>
                         </div>
                     </div>
-					<?php
-						if ( tfc_getPref( 'enable_adba' ) ) { ?>
+                    <?php
+                        if ( tfc_getPref( 'enable_adba' ) ) { ?>
                             <div class="text-center" style="padding-left:10px">
-								<?php echo tfc_getPref( 'adsense_banner4' ); ?>
+                                <?php echo tfc_getPref( 'adsense_banner4' ); ?>
                             </div>
-							<?php
-						} ?>
+                            <?php
+                        } ?>
                 </div>
             </div>
             <div class="col-md-12">
@@ -394,17 +394,17 @@
                   id="contact_form">
                 <div class="modal-body">
                     <div id="contact" class="tfc-form">
-						<?php if ( osc_item_is_expired() ) { ?>
+                        <?php if ( osc_item_is_expired() ) { ?>
                             <p>
-								<?php _e( 'The item is expired. You cannot contact the publisher.' , 'shopclass' ); ?>
+                                <?php _e( 'The item is expired. You cannot contact the publisher.' , 'shopclass' ); ?>
                             </p>
-						<?php } else if ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) { ?>
+                        <?php } else if ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) { ?>
                             <p>
-								<?php _e( "It's your own item, you cannot contact the publisher." , 'shopclass' ); ?>
+                                <?php _e( "It's your own item, you cannot contact the publisher." , 'shopclass' ); ?>
                             </p>
-						<?php } else if ( osc_reg_user_can_contact() && ! osc_is_web_user_logged_in() ) { ?>
+                        <?php } else if ( osc_reg_user_can_contact() && ! osc_is_web_user_logged_in() ) { ?>
                             <p>
-								<?php _e( "You must login or register a new free account in order to contact the advertiser" , 'shopclass' ); ?>
+                                <?php _e( "You must login or register a new free account in order to contact the advertiser" , 'shopclass' ); ?>
                             </p>
                             <p class="contact_button">
                                 <strong><a class="btn btn-default"
@@ -412,32 +412,32 @@
                                 <strong><a class="btn btn-default"
                                            href="<?php echo osc_register_account_url(); ?>"><?php _e( 'Register for a free account' , 'shopclass' ); ?></a></strong>
                             </p>
-						<?php } else { ?>
-							<?php if ( osc_item_user_id() != null ) { ?>
+                        <?php } else { ?>
+                            <?php if ( osc_item_user_id() != null ) { ?>
                                 <p class="name"><?php _e( 'Name' , 'shopclass' ) ?>: <a
                                             href="<?php echo osc_user_public_profile_url( osc_item_user_id() ); ?>"><?php echo osc_item_contact_name(); ?></a>
                                 </p>
-							<?php } else { ?>
+                            <?php } else { ?>
                                 <p class="name"><?php _e( 'Name' , 'shopclass' ) ?>
                                     : <?php echo osc_item_contact_name(); ?></p>
-							<?php } ?>
-							<?php if ( osc_item_show_email() ) { ?>
+                            <?php } ?>
+                            <?php if ( osc_item_show_email() ) { ?>
                                 <p class="email"><?php _e( 'E-mail' , 'shopclass' ); ?>
                                     : <?php echo osc_item_contact_email(); ?></p>
-							<?php } ?>
-							<?php if ( osc_user_phone() != '' ) { ?>
+                            <?php } ?>
+                            <?php if ( osc_user_phone() != '' ) { ?>
                                 <p class="phone"><?php _e( "Tel" , 'shopclass' ); ?>
                                     .: <?php echo osc_user_phone(); ?></p>
-							<?php } ?>
+                            <?php } ?>
                             <ul id="error_list"></ul>
-							<?php osc_prepare_user_info(); ?>
+                            <?php osc_prepare_user_info(); ?>
                             <fieldset class="tfc-form">
                                 <div class="form-group">
                                     <label for="yourName"><?php _e( 'Your name' , 'shopclass' ); ?>:</label>
                                     <div class="input-group">
                                         <span class="input-group-addon"><span class="fa fa-user"></span>
                                         </span>
-										<?php tfcContactForm::your_name(); ?>
+                                        <?php tfcContactForm::your_name(); ?>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -445,7 +445,7 @@
                                     <div class="input-group">
                                         <span class="input-group-addon"><span class="fa fa-envelope"></span>
                                         </span>
-										<?php tfcContactForm::your_email(); ?>
+                                        <?php tfcContactForm::your_email(); ?>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -454,7 +454,7 @@
                                     <div class="input-group">
                                         <span class="input-group-addon"><span class="fa fa-phone"></span>
                                         </span>
-										<?php tfcContactForm::your_phone_number(); ?>
+                                        <?php tfcContactForm::your_phone_number(); ?>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -462,27 +462,27 @@
                                     <div class="input-group">
                                         <span class="input-group-addon"><span class="fa fa-comment"></span>
                                         </span>
-										<?php tfcContactForm::your_message(); ?>
+                                        <?php tfcContactForm::your_message(); ?>
                                     </div>
                                 </div>
                                 <input type="hidden" name="action" value="contact_post"/>
                                 <input type="hidden" name="page" value="item"/>
                                 <input type="hidden" name="id" value="<?php echo osc_item_id(); ?>"/>
-								<?php osc_run_hook( 'tf_after_form' ); ?>
-								<?php osc_show_recaptcha(); ?>
+                                <?php osc_run_hook( 'tf_after_form' ); ?>
+                                <?php osc_show_recaptcha(); ?>
                             </fieldset>
-						<?php } ?>
+                        <?php } ?>
                     </div>
                 </div>
                 <div class="modal-footer">
-					<?php $contactdisabled = 'disabled'; ?>
-					<?php if ( ! osc_item_is_expired() ) { ?>
-						<?php if ( ! ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) ) { ?>
-							<?php if ( osc_reg_user_can_contact() && osc_is_web_user_logged_in() || ! osc_reg_user_can_contact() ) { ?>
-								<?php $contactdisabled = ''; ?>
-							<?php }
-						}
-					} ?>
+                    <?php $contactdisabled = 'disabled'; ?>
+                    <?php if ( ! osc_item_is_expired() ) { ?>
+                        <?php if ( ! ( ( osc_logged_user_id() == osc_item_user_id() ) && osc_logged_user_id() != 0 ) ) { ?>
+                            <?php if ( osc_reg_user_can_contact() && osc_is_web_user_logged_in() || ! osc_reg_user_can_contact() ) { ?>
+                                <?php $contactdisabled = ''; ?>
+                            <?php }
+                        }
+                    } ?>
                     <button class="btn btn-success"
                             type="submit" <?php echo $contactdisabled; ?>><?php _e( 'Send' , 'shopclass' ); ?></button>
 
@@ -604,8 +604,7 @@
     $('.map-button').click(function () {
         if (typeof google === 'object' && typeof google.maps === 'object') {
 
-        }
-        else {
+        } else {
             outputlocation();
         }
     });
@@ -670,25 +669,25 @@
                 }
             }
 
-			<?php
-			$addr = array ();
-			if ( ( $item[ 's_address' ] != '' ) && ( $item[ 's_address' ] != null ) ) {
-				$addr[] = $item[ 's_address' ];
-			}
-			if ( ( $item[ 's_city' ] != '' ) && ( $item[ 's_city' ] != null ) ) {
-				$addr[] = $item[ 's_city' ];
-			}
-			if ( ( $item[ 's_zip' ] != '' ) && ( $item[ 's_zip' ] != null ) ) {
-				$addr[] = $item[ 's_zip' ];
-			}
-			if ( ( $item[ 's_region' ] != '' ) && ( $item[ 's_region' ] != null ) ) {
-				$addr[] = $item[ 's_region' ];
-			}
-			if ( ( $item[ 's_country' ] != '' ) && ( $item[ 's_country' ] != null ) ) {
-				$addr[] = $item[ 's_country' ];
-			}
-			$address = implode( ", " , $addr );
-			?>
+            <?php
+            $addr = array ();
+            if ( ( $item[ 's_address' ] != '' ) && ( $item[ 's_address' ] != null ) ) {
+                $addr[] = $item[ 's_address' ];
+            }
+            if ( ( $item[ 's_city' ] != '' ) && ( $item[ 's_city' ] != null ) ) {
+                $addr[] = $item[ 's_city' ];
+            }
+            if ( ( $item[ 's_zip' ] != '' ) && ( $item[ 's_zip' ] != null ) ) {
+                $addr[] = $item[ 's_zip' ];
+            }
+            if ( ( $item[ 's_region' ] != '' ) && ( $item[ 's_region' ] != null ) ) {
+                $addr[] = $item[ 's_region' ];
+            }
+            if ( ( $item[ 's_country' ] != '' ) && ( $item[ 's_country' ] != null ) ) {
+                $addr[] = $item[ 's_country' ];
+            }
+            $address = implode( ", " , $addr );
+            ?>
 
             $(document).ready(function () {
                 showAddress('<?php echo osc_esc_js( $address ); ?>');

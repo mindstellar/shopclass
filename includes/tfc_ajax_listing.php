@@ -26,42 +26,42 @@
      *
      */
 
-	use shopclass\includes\classes\tfcAdsLoop;
+    use shopclass\includes\classes\tfcAdsLoop;
 
-	if ( $_SERVER[ 'HTTP_X_REQUESTED_WITH' ] == 'XMLHttpRequest' ) {
-		$start_limit = Params::getParam( 'offset' );
-		$end_limit   = Params::getParam( 'limit' );
-		$showas      = Params::getParam( 'showas' );
-		if ( $showas !== 'gallery' ) {
-			$showas = 'list';
-		}
-		$listClass = Params::getParam('listclass')?Params::getParam('listclass'):'';
-		$galleryClass = Params::getParam('galleryclass')?Params::getParam('galleryclass'):'col-md-4 col-sm-6 col-xs-12';
+    if ( $_SERVER[ 'HTTP_X_REQUESTED_WITH' ] == 'XMLHttpRequest' ) {
+        $start_limit = Params::getParam( 'offset' );
+        $end_limit   = Params::getParam( 'limit' );
+        $showas      = Params::getParam( 'showas' );
+        if ( $showas !== 'gallery' ) {
+            $showas = 'list';
+        }
+        $listClass    = Params::getParam( 'listclass' ) ? Params::getParam( 'listclass' ) : '';
+        $galleryClass = Params::getParam( 'galleryclass' ) ? Params::getParam( 'galleryclass' ) : 'col-md-4 col-sm-6 col-xs-12';
 
-		$mSearch = new Search();
-		//limiting number of ads
-		$mSearch->limit( $start_limit , $end_limit ); // fetch number of ads to show set in ajax request
+        $mSearch = new Search();
+        //limiting number of ads
+        $mSearch->limit( $start_limit , $end_limit ); // fetch number of ads to show set in ajax request
 
-		//Searching with all enabled conditions
-		$aItems = $mSearch->doSearch( true , false );
+        //Searching with all enabled conditions
+        $aItems = $mSearch->doSearch( true , false );
 
-		$global_items = View::newInstance()->_get( 'items' ); //save existing item array
-		View::newInstance()->_exportVariableToView( 'items' , $aItems ); //exporting our searched item array
+        $global_items = View::newInstance()->_get( 'items' ); //save existing item array
+        View::newInstance()->_exportVariableToView( 'items' , $aItems ); //exporting our searched item array
 
-		if ( osc_count_items() > 0 ) {
+        if ( osc_count_items() > 0 ) {
 
 
-			while ( osc_has_items() ) {
-				tfcAdsLoop::newInstance()->
-				setListClass( $listClass )->
-				setGalleryClass( $galleryClass )->
-				renderItem( tfcAdsLoop::newInstance()->
-				getItemProperty( 'item' ) , $showas );
-			}
+            while ( osc_has_items() ) {
+                tfcAdsLoop::newInstance()->
+                setListClass( $listClass )->
+                setGalleryClass( $galleryClass )->
+                renderItem(                 tfcAdsLoop::newInstance()->
+                getItemProperty( 'item' ) , $showas );
+            }
 
-		} else {
-			header( "HTTP/1.0 204 No Content" );
-		}
-		//calling stored item array
-		View::newInstance()->_exportVariableToView( 'items' , $global_items ); //restore original item array
-	}
+        } else {
+            header( "HTTP/1.0 204 No Content" );
+        }
+        //calling stored item array
+        View::newInstance()->_exportVariableToView( 'items' , $global_items ); //restore original item array
+    }
