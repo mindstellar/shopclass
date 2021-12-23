@@ -1,0 +1,6 @@
+.*
+*.xml
+*.log
+*.json
+*.lock
+/vendor

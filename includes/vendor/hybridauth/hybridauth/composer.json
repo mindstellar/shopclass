@@ -1,0 +1,35 @@
+{
+    "name": "hybridauth/hybridauth",
+    "description": "PHP Social Authentication Library",
+    "keywords": ["oauth", "openid", "authentication", "authorization", "social", "api", "google", "facebook", "twitter"],
+    "homepage": "https://hybridauth.github.io",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Miled",
+            "email": "hybridauth@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/hybridauth/hybridauth/issues",
+        "gitter": "https://gitter.im/hybridauth/hybridauth"
+    },
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "require-dev": {
+        "ext-curl": "*",
+        "phpunit/phpunit": "~4.8.35"
+    },
+    "autoload": {
+        "psr-4": {
+           "Hybridauth\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.0-dev"
+        }
+    }
+}
