@@ -107,18 +107,29 @@ class Sanitize
      */
     public function title($value)
     {
-        $value = $this->string($value);
         if ($value) {
-            // remove all characters except letters, numbers and whitespace punctuation utf8 safe
-            $value = preg_replace('/[^\p{L}\p{N}\s]/u', '', $value);
+            // Replace known HTML entities before decoding
+            $value = strtr($value, [
+                '&ndash;' => '-',
+                '&rsquo;' => "'",
+            ]);
 
-            // remove all whitespace and replace with a single space
+            // Decode HTML entities
+            $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+
+            // Strip HTML tags
+            $value = strip_tags($value);
+
+            // Allow letters, numbers, whitespace, and punctuation
+            $value = preg_replace('/[^\p{L}\p{N}\s\-\.\'\"]/u', '', $value);
+
+            // Normalize whitespace
             $value = preg_replace('/\s+/', ' ', $value);
 
-            // remove all leading and trailing whitespace
+            // Trim spaces
             $value = trim($value);
 
-            // make it html safe
+            // Encode it back to prevent XSS
             return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
         }
 
