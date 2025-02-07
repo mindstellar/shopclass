@@ -107,33 +107,37 @@ class Sanitize
      */
     public function title($value)
     {
-        if ($value) {
-            // Replace known HTML entities before decoding
-            $value = strtr($value, [
-                '&ndash;' => '-',
-                '&rsquo;' => "'",
-            ]);
-
-            // Decode HTML entities
-            $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
-
-            // Strip HTML tags
-            $value = strip_tags($value);
-
-            // Allow letters, numbers, whitespace, and punctuation
-            $value = preg_replace('/[^\p{L}\p{N}\s\-\.\'\"]/u', '', $value);
-
-            // Normalize whitespace
-            $value = preg_replace('/\s+/', ' ', $value);
-
-            // Trim spaces
-            $value = trim($value);
-
-            // Encode it back to prevent XSS
-            return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        if (!$value) {
+            return '';
         }
 
-        return '';
+        // Decode HTML entities first (to handle cases like &ndash; &rsquo;)
+        $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+
+        // Strip any remaining HTML tags
+        $value = strip_tags($value);
+
+        // Replace specific HTML entities with correct characters
+        $replaceMap = [
+            '–' => '-',  // ndash
+            '’' => "'",  // rsquo
+            '“' => '"',  // ldquo
+            '”' => '"',  // rdquo
+            '…' => '...', // ellipsis
+        ];
+        $value = strtr($value, $replaceMap);
+
+        // Remove any non-alphanumeric characters except spaces, hyphens, quotes, and dots
+        $value = preg_replace('/[^\p{L}\p{N}\s\-\'".]/u', '', $value);
+
+        // Normalize multiple spaces to a single space
+        $value = preg_replace('/\s+/', ' ', $value);
+
+        // Trim spaces
+        $value = trim($value);
+
+        // Convert to safe HTML output (prevents XSS)
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 
     /**
