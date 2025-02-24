@@ -180,6 +180,17 @@ module.exports = function (grunt) {
                     flatten: true
                 }]
             },
+            'popper': {
+                files: [{
+                    expand: true,
+                    src: [
+                        nodeDir + '/@popperjs/core/dist/umd/popper.min.js',
+                        nodeDir + '/@popperjs/core/LICENSE.md'
+                    ],
+                    dest: assetsDir + '/popper',
+                    flatten: true
+                }]
+            },
             'osclass-legacy': {
                 files: [{
                     expand: true,
@@ -225,7 +236,7 @@ module.exports = function (grunt) {
         sass: {
             options: {
                 implementation: require('sass'),
-                style: 'nested'
+                //style: 'nested'
             },
             dist: {
                 files: {
