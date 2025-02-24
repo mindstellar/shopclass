@@ -1,14 +1,14 @@
 {
   "name": "osclass",
   "devDependencies": {
-    "@popperjs/core": "^2.9.2",
-    "eslint": "^6.8.0",
-    "grunt": "^1.4.1",
-    "grunt-cli": "^1.4.3",
-    "grunt-contrib-clean": "^2.0.0",
+    "@popperjs/core": "^2.11.8",
+    "eslint": "^9.21.0",
+    "grunt": "^1.6.1",
+    "grunt-cli": "^1.5.0",
+    "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-uglify": "^5.2.2",
-    "grunt-sass": "^3.1.0",
+    "grunt-sass": "^4.0.0",
     "load-grunt-tasks": "^5.1.0",
     "sass": "^1.85.0"
   },
@@ -28,19 +28,19 @@
   },
   "homepage": "https://github.com/mindstellar/Osclass#readme",
   "dependencies": {
-    "bootstrap": "^5.0.*",
-    "bootstrap-icons": "^1.5.0",
+    "bootstrap": "^5.3.*",
+    "bootstrap-icons": "^1.11.0",
     "chart.js": "^3.5.0",
-    "jquery": "^3.6.0",
-    "jquery-migrate": "^3.3.2",
+    "jquery": "^3.7.1",
+    "jquery-migrate": "^3.5.2",
     "jquery-treeview": "^1.4.*",
-    "jquery-ui-dist": "^1.12.*",
+    "jquery-ui-dist": "^1.13.*",
     "jquery-ui-nested": "^1.3.*",
-    "jquery-validation": "^1.19.3",
+    "jquery-validation": "^1.21.0",
     "npm-font-open-sans": "^1.1.*",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
-    "sortablejs": "^1.14.0",
+    "sortablejs": "^1.15.6",
     "spectrum-colorpicker": "^1.8.*",
-    "tinymce": "^7.0.1"
+    "tinymce": "^7.7.0"
   }
 }
