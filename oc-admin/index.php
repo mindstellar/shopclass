@@ -38,7 +38,8 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 osc_register_script('admin-osc', osc_current_admin_theme_js_url('osc.js?v='.OSCLASS_VERSION), 'jquery');
 osc_register_script('admin-ui-osc', osc_current_admin_theme_js_url('ui-osc.js?v='.OSCLASS_VERSION), 'jquery-ui');
 osc_register_script('admin-location', osc_current_admin_theme_js_url('location.min.js?v='.OSCLASS_VERSION), 'bootstrap5');
-osc_register_script('bootstrap5', osc_assets_url('bootstrap/bootstrap.min.js?v='.OSCLASS_VERSION));
+osc_register_script('popper', osc_assets_url('popper/popper.min.js?v='.OSCLASS_VERSION));
+osc_register_script('bootstrap5', osc_assets_url('bootstrap/bootstrap.min.js?v='.OSCLASS_VERSION), 'popper');
 osc_register_script('sortablejs', osc_assets_url('sortablejs/Sortable.min.js?v='.OSCLASS_VERSION));
 // enqueue scripts
 osc_enqueue_script('bootstrap5');
