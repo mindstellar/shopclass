@@ -1248,7 +1248,7 @@ class Item extends DAO
 
         foreach ($items as $item) {
             if (isset($item['fk_i_category_id'], $aCategories[$item['fk_i_category_id']])) {
-                if (is_array($item['locale'])) {
+                if (isset($item['locale']) && is_array($item['locale'])) {
                     foreach ($item['locale'] as $localeCode => $itemLocale) {
                         if (isset($aCategories[$item['fk_i_category_id']]['locale'][$localeCode])) {
                             $item['locale'][$localeCode]['s_category_name'] = $aCategories[$item['fk_i_category_id']]['locale'][$localeCode]['s_category_name'];
@@ -1312,7 +1312,7 @@ class Item extends DAO
             foreach ($items as $item) {
                 if (isset($item['pk_i_id'], $aDescriptions[$item['pk_i_id']])) {
                     //if $item['locale'] exists, then we have to merge the arrays
-                    if (isset($item['locale'])) {
+                    if (isset($item['locale']) && is_array($item['locale'])) {
                         $item['locale'] = array_merge($item['locale'], $aDescriptions[$item['pk_i_id']]['locale']);
                     } else {
                         $item['locale'] = $aDescriptions[$item['pk_i_id']]['locale'];
@@ -1323,10 +1323,12 @@ class Item extends DAO
                 } else {
                     // check each locale until we find one that has a title
                     $item['s_title'] = '';
-                    foreach ($item['locale'] as $locale => $title) {
-                        if (isset($title['s_title']) && $title['s_title']  != '') {
-                            $item['s_title'] = $title['s_title'];
-                            break;
+                    if (isset($item['locale'])){
+                        foreach ($item['locale'] as $locale => $title) {
+                            if (isset($title['s_title']) && $title['s_title']  != '') {
+                                $item['s_title'] = $title['s_title'];
+                                break;
+                            }
                         }
                     }
                 }
@@ -1335,10 +1337,12 @@ class Item extends DAO
                 } else {
                     // check each locale until we find one that has a description
                     $item['s_description'] = '';
-                    foreach ($item['locale'] as $locale => $description) {
-                        if (isset($description['s_description']) && $description['s_description'] != '') {
-                            $item['s_description'] = $description['s_description'];
-                            break;
+                    if (isset($item['locale']) && is_array($item['locale'])) {
+                        foreach ($item['locale'] as $locale => $description) {
+                            if (isset($description['s_description']) && $description['s_description'] != '') {
+                                $item['s_description'] = $description['s_description'];
+                                break;
+                            }
                         }
                     }
                 }
