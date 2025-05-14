@@ -236,7 +236,7 @@ module.exports = function (grunt) {
         sass: {
             options: {
                 implementation: require('sass'),
-                //style: 'nested'
+                style: 'nested'
             },
             dist: {
                 files: {

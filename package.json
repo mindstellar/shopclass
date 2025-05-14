@@ -10,7 +10,7 @@
     "grunt-contrib-uglify": "^5.2.2",
     "grunt-sass": "^4.0.0",
     "load-grunt-tasks": "^5.1.0",
-    "sass": "^1.85.0"
+    "node-sass": "^9.0.0"
   },
   "description": "Osclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
   "scripts": {
