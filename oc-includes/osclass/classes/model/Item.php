@@ -1323,7 +1323,7 @@ class Item extends DAO
                 } else {
                     // check each locale until we find one that has a title
                     $item['s_title'] = '';
-                    if (isset($item['locale'])){
+                    if (isset($item['locale'])) {
                         foreach ($item['locale'] as $locale => $title) {
                             if (isset($title['s_title']) && $title['s_title']  != '') {
                                 $item['s_title'] = $title['s_title'];
