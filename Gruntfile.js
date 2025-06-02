@@ -76,16 +76,6 @@ module.exports = function (grunt) {
                     flatten: true
                 }]
             },
-            'jquery-ui-nested': {
-                files: [{
-                    expand: true,
-                    src: [
-                        nodeDir + '/jquery-ui-nested/jquery-ui-nested.js',
-                    ],
-                    dest: assetsDir + '/jquery-ui-nested',
-                    flatten: true
-                }]
-            },
             'spectrum-colorpicker': {
                 files: [
                     {
@@ -224,7 +214,6 @@ module.exports = function (grunt) {
         },
         sass: {
             options: {
-                implementation: require('node-sass'),
                 style: 'nested'
             },
             dist: {

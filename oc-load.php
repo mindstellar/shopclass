@@ -126,7 +126,6 @@ osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), '
 //osc_register_script('fancybox', osc_assets_url('js/fancybox/jquery.fancybox.pack.js'), array('jquery'));
 
 osc_register_script('jquery-treeview', osc_assets_url('jquery-treeview/jquery.treeview.js'), 'jquery');
-osc_register_script('jquery-nested', osc_assets_url('jquery-ui-nested/jquery-ui-nested.js'), 'jquery-ui');
 osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');
 osc_register_script('jquery-validate-additional', osc_assets_url('jquery-validation/additional-methods.min.js'), 'jquery-validate');
 

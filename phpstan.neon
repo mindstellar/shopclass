@@ -1,0 +1,11 @@
+parameters:
+    level: 0 # Start at the lowest level
+    paths:
+        - oc-admin
+        - oc-content
+        - oc-includes
+        # Add other relevant source directories if any
+    bootstrapFiles:
+        - oc-load.php
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false

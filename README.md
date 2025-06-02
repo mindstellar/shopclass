@@ -134,6 +134,14 @@ Want to help create a pull request from you clone, just make sure of few things
 * Request a feature branch if your pull request make major changes in our project or if you really need one.
 * Create a new issue before making any pull request.
 
+### Developer Notes
+
+**Removal of `pclzip/pclzip`**
+
+The `pclzip/pclzip` library has been removed from the project's dependencies. Developers should now use PHP's native `ZipArchive` class for all ZIP file operations. This change was made to reduce the number of external dependencies and rely on PHP's built-in capabilities, which can lead to better performance and security.
+
+For more information on using `ZipArchive`, please refer to the [official PHP documentation](https://www.php.net/manual/en/class.ziparchive.php).
+
 ### Support
 For any support related query, please visit our official support forum.
 
