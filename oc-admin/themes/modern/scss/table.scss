@@ -15,10 +15,10 @@
 // silently loses. Row state must go through `--bs-table-bg-state` on the cells. Everything
 // below follows from that.
 .table {
-  --#{$prefix}table-bg: #{$white};          // The Bench Rule: rows are the white bench top
-  --#{$prefix}table-border-color: #{$gray-300};
+  --#{$prefix}table-bg: var(--osc-bench);          // The Bench Rule: rows are the white bench top
+  --#{$prefix}table-border-color: var(--osc-rule);
 
-  border: 1px solid $gray-300;
+  border: 1px solid var(--osc-rule);
   width: 100%;
 
   &.table-small {
@@ -29,10 +29,10 @@
   // chrome of the admin reads as one material. Set through --bs-table-bg because the cells
   // paint their own background on top of anything the <thead> tries to set.
   > thead {
-    --#{$prefix}table-bg: #{$gray-100};
+    --#{$prefix}table-bg: var(--osc-bench-warm);
 
     th {
-      color: $gray-600;
+      color: var(--osc-ink-muted);
       font-size: .8125rem;   // Label, 13px. The system floor, and reserved for labels —
       font-weight: 500;      // it is not a body-text escape hatch (The Sixteen Pixel Floor).
       letter-spacing: .01em;
@@ -52,11 +52,11 @@
     // make the one primary action findable (The Ten Percent Rule). Rows read as content;
     // bronze arrives on hover, where it means "this is clickable".
     a {
-      color: $gray-900;
+      color: var(--osc-ink);
       text-decoration-line: none;
 
       &:hover {
-        color: $bronze;
+        color: var(--osc-bronze);
         text-decoration-line: underline;
       }
     }
@@ -72,7 +72,7 @@
       }
 
       &:hover > * {
-        --#{$prefix}table-bg-state: #{$gray-100};
+        --#{$prefix}table-bg-state: var(--osc-bench-warm);
       }
 
       // Selected. The wash is the ENHANCEMENT, never the signal — the checked box is the
@@ -80,7 +80,7 @@
       // this degrades to "no wash, checkbox still checked", which is exactly why it is safe
       // to lean on here rather than shipping JS to toggle a class.
       &:has(.col-bulkactions input:checked) > * {
-        --#{$prefix}table-bg-state: #{$bronze-tint};
+        --#{$prefix}table-bg-state: var(--osc-bronze-tint);
       }
     }
   }
@@ -202,11 +202,11 @@
 // a badge, and a plugin rendering one outside a table should get the same component.
 .osc-status {
   align-items: center;
-  background-color: $gray-200;
+  background-color: var(--osc-bench-sunk);
   // The one place a pill is allowed. Everywhere else the system is 4px and tool-like;
   // here the shape itself carries meaning, which is what earns the exception.
   border-radius: $border-radius-pill;
-  color: $gray-700;
+  color: var(--osc-ink-emphasis);
   display: inline-flex;
   font-size: .8125rem; // Label
   font-weight: 500;

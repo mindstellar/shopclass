@@ -1,54 +1,47 @@
-/* Colors */
-/* $STANDARD */
-$color-blue: $primary;
-$color-blue-hover: shade-color($blue, 10%);
-$color-blue-border: shade-color($blue, 20%);
-$color-orange: $orange;
-$color-orange-hover: shade-color($orange, 10%);
-$color-orange-border: shade-color($orange, 20%);
-$color-red: $danger;
-$color-red-hover: shade-color($red, 10%);
-$color-red-border: shade-color($red, 20%);
-$color-white: $white;
+// The alias layer is nearly gone.
+//
+// It used to restate the whole palette as Sass variables — $color-blue, $color-gray-soft,
+// $color-error-border — which components then consumed. Every one of those was a colour
+// flattened at build time, so every component that named one was a component that could
+// never see a theme change (The Token Indirection Rule). They now read var(--osc-*) from
+// _brand.scss instead, and the aliases are deleted rather than left lying around to be
+// picked up again.
+//
+// Deleting them also removed the last references to BOOTSTRAP'S OWN palette. $color-red-border
+// was shade-color($red, 20%) — a shade of stock #dc3545, not of our $danger — so .btn-error
+// has been drawing its border in a red that appears nowhere in this design system. $color-blue
+// and its hover/border pair were shades of #0d6efd, sitting in the stylesheet in defiance of
+// The Blue Exile Rule and kept alive only by the fact that nothing used them. Nothing does now.
+//
+// These are Sass variables, not CSS class names: nothing outside this stylesheet can reference
+// them, so removing them is not a compatibility event. The .btn-blue and .btn-submit CLASSES
+// are a different matter and stay exactly where they are.
+
+// What is left, and why.
+
+// The legacy dark controls (.btn-black, .action-btn-black). Off-system — there is no dark
+// button in DESIGN.md — and they need a design decision before dark mode, because "a fill the
+// colour of ink" is precisely the thing that inverts wrongly when the bench goes dark. Left on
+// Sass deliberately: tokenising them would bake the wrong role in and make it look done.
+$color-gray-hardblack: $gray-900;
+$color-gray-ash: $gray-500;
 $color-black: $black;
-$color-error-bg: $color-red;
-$color-error-border: $color-red-border;
-$color-error-text: $color-white;
-$color-submit-bg: $success;
-$color-submit-border: shade-color($success, 10%);
-$color-submit-text: $color-white;
-$color-green: $green;
-$color-green-dark: $green-900;
-$color-green-hover: $green-600;
-/* $ALERTS */
+
+// The Bootstrap-3-era alert palette, still consumed by flashmessage.scss and categories.scss
+// through Sass colour FUNCTIONS (shift-color, tint-color), which cannot take a var(). These are
+// the next pass: none of them is a Workshop colour — $info-bg is a blue — and they have to
+// become real tokens before the callouts can be themed.
 $error-bg: #F2DEDE;
 $error-text: #B94A48;
 $error-border: #EED3D7;
 
 $warning-bg: #FCF8E3;
 $warning-border: #FBEED5;
-$warning-text: #C09853;
 
-
-$success-bg: #DFF0D8;
-$success-text: #468847;
 $success-border: #D6E9C6;
 
-$info-bg: #D9EDF7;
 $info-border: #BCE8F1;
-$info-text: #3A87AD;
 
-/* $GRAY */
-$color-gray-hardblack: $gray-900;
-$color-gray-black: $gray-800;
-$color-gray-dim: $gray-700;
-$color-gray-ash: $gray-500;
-$color-gray-soft: $gray-200;
-$color-gray-light: $gray-100;
-
-/* $MARKET */
-$softgray-color: $color-gray-soft;
-$title-color: $color-gray-hardblack;
 $border-color: $color-gray-ash;
 
 $callout-colors: (

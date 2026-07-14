@@ -7,7 +7,7 @@
 }
 
 .show-grid .row-wrapper {
-  background-color: $color-gray-light;
+  background-color: var(--osc-bench-warm);
   padding: 10px 0;
   @include rounded-corners(5px);
 }

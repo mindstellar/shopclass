@@ -25,8 +25,8 @@ a.ico-32 {
 }
 
 .action-btn {
-  background-color: $color-gray-soft;
-  border: solid 1px $color-gray-dim;
+  background-color: var(--osc-bench-sunk);
+  border: solid 1px var(--osc-ink-emphasis);
   font-size: 14px;
   line-height: 14px;
   margin: 0 10px;
@@ -37,7 +37,7 @@ a.ico-32 {
 
 .action-btn-black {
   background: $color-gray-hardblack;
-  border-color: $color-gray-dim;
+  border-color: var(--osc-ink-emphasis);
   color: $color-gray-ash;
   &:hover {
     background-color: $color-black;
@@ -78,7 +78,7 @@ a.ico-32 {
 .btn-black {
   @extend .btn-dark;
   background-color: $color-gray-hardblack;
-  border: solid 1px $color-gray-dim;
+  border: solid 1px var(--osc-ink-emphasis);
 }
 
 // The secondary button — white fill, Ink text, 1px rule-strong border.
@@ -92,7 +92,7 @@ a.ico-32 {
 // Driven through Bootstrap 5.3's --bs-btn-* API rather than by re-declaring properties, so
 // .btn's own :hover / :active / :disabled / :focus-visible selectors keep working unchanged.
 //
-// The border is $gray-500 (rule-strong, 3.11:1), not $gray-300. A button whose edge you cannot
+// The border is --osc-rule-strong (3.11:1), not --osc-rule. A button whose edge you cannot
 // see is a broken button — WCAG 1.4.11 governs the boundary of a control, and the decorative
 // divider grey does not clear it.
 //
@@ -102,21 +102,21 @@ a.ico-32 {
 // `class="btn btn-dim btn-red"` therefore changed meaning — the two admin templates that did
 // that now pick one class or the other, which is what they meant anyway.
 .btn-secondary {
-  --#{$prefix}btn-color: #{$gray-900};
-  --#{$prefix}btn-bg: #{$white};
-  --#{$prefix}btn-border-color: #{$gray-500};
-  --#{$prefix}btn-hover-color: #{$gray-900};
-  --#{$prefix}btn-hover-bg: #{$gray-100};
-  --#{$prefix}btn-hover-border-color: #{$gray-600};
-  --#{$prefix}btn-active-color: #{$gray-900};
-  --#{$prefix}btn-active-bg: #{$gray-200};
-  --#{$prefix}btn-active-border-color: #{$gray-600};
-  --#{$prefix}btn-disabled-color: #{$gray-600};
-  --#{$prefix}btn-disabled-bg: #{$white};
-  --#{$prefix}btn-disabled-border-color: #{$gray-300};
+  --#{$prefix}btn-color: var(--osc-ink);
+  --#{$prefix}btn-bg: var(--osc-bench);
+  --#{$prefix}btn-border-color: var(--osc-rule-strong);
+  --#{$prefix}btn-hover-color: var(--osc-ink);
+  --#{$prefix}btn-hover-bg: var(--osc-bench-warm);
+  --#{$prefix}btn-hover-border-color: var(--osc-ink-muted);
+  --#{$prefix}btn-active-color: var(--osc-ink);
+  --#{$prefix}btn-active-bg: var(--osc-bench-sunk);
+  --#{$prefix}btn-active-border-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-bg: var(--osc-bench);
+  --#{$prefix}btn-disabled-border-color: var(--osc-rule);
   // Focus is bronze, not grey — the ring is a brand signal, and it must be the same ring on
   // every control or it stops reading as one.
-  --#{$prefix}btn-focus-shadow-rgb: #{to-rgb($bronze)};
+  --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
 }
 
 .btn-dim {
@@ -167,8 +167,8 @@ input.btn-mini,
 }
 
 .well {
-  background-color: $color-gray-light;
-  border: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: solid 1px var(--osc-bench-sunk);
   padding: 10px;
 }
 
@@ -183,7 +183,7 @@ input.btn-mini,
 .input-has-placeholder {
   position: relative;
   label {
-    color: $color-gray-dim;
+    color: var(--osc-ink-emphasis);
     font-size: .85rem;
     left: 8px;
     margin-bottom: 0 !important;
@@ -194,9 +194,9 @@ input.btn-mini,
 }
 
 textarea {
-  background-color: $color-white;
-  border: 1px solid $color-gray-soft;
-  color: $color-gray-black;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-bench-sunk);
+  color: var(--osc-ink);
   font-size: .85rem;
   line-height: 18px;
   padding: 4px 6px;
@@ -302,7 +302,7 @@ ul.showing-results {
   button {
     background: white;
     border: 0;
-    border-left: solid 1px $color-gray-soft;
+    border-left: solid 1px var(--osc-bench-sunk);
     // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
     // it is a *different* blue. The rule is about the colour, not the hex.
     color: $link-color;
@@ -344,7 +344,7 @@ ul.ui-autocomplete.ui-menu {
 }
 
 // The market (themes/plugins directory) buttons. These were a hardcoded cyan #2fbfd1 and a
-// $gray-500 fill, both with white text — 2.19:1 and 3.11:1, so BOTH failed the 4.5:1 text bar
+// mid-grey fill, both with white text — 2.19:1 and 3.11:1, so BOTH failed the 4.5:1 text bar
 // outright. Not an off-brand hue problem, a legibility one. Update is the action you came for,
 // so it takes the primary; Preview is the quiet one beside it.
 .btn-market-update,
@@ -359,24 +359,24 @@ ul.ui-autocomplete.ui-menu {
 }
 
 .btn-market-update {
-  background-color: $bronze;
-  color: $white; // 5.62:1
+  background-color: var(--osc-bronze);
+  color: var(--osc-ink-inverse); // 5.62:1
 
   &:hover {
-    background-color: $bronze-deep;
-    color: $white;
+    background-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
   }
 }
 
 .btn-market-preview {
-  background-color: $white;
-  border: 1px solid $gray-500;
-  color: $gray-900; // 17.32:1
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  color: var(--osc-ink); // 17.32:1
   margin-left: 0;
 
   &:hover {
-    background-color: $gray-100;
-    color: $gray-900;
+    background-color: var(--osc-bench-warm);
+    color: var(--osc-ink);
   }
 }
 
@@ -433,7 +433,7 @@ ul.ui-autocomplete.ui-menu {
 
   &.open {
     span {
-      background: $white;
+      background: var(--osc-ink-inverse);
 
       &:nth-child(1) {
         left: .2rem;
