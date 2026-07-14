@@ -4,8 +4,8 @@ div.guideline-header {
 
 pre,
 code {
-  background-color: $color-gray-light;
-  border: 1px solid $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-bench-sunk);
   padding: 8px;
   white-space: pre;
   white-space: pre-wrap;

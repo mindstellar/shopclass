@@ -1,12 +1,12 @@
 #content-head {
-  background-color: $color-gray-light;
-  border-bottom: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border-bottom: solid 1px var(--osc-bench-sunk);
   padding: 10px 15px;
 }
 
 #content-head {
   h1, h2 {
-    color: $color-gray-black;
+    color: var(--osc-ink);
     font-size: 30px;
     font-weight: 400;
     margin: 0;
@@ -24,11 +24,11 @@
 }
 
 #content-render {
-  background-color: $gray-200;
+  background-color: var(--osc-bench-sunk);
 }
 
 #content-page {
-  //background-color: $color-white;
+  //background-color: var(--osc-bench);
   min-height: calc(100vh - 9rem);
   padding: 22px 15px 60px;
   position: relative
@@ -63,8 +63,8 @@ h3.render-title {
 }
 
 .quick-search input.input-text {
-  background-color: $color-gray-light;
-  border: 1px solid $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-bench-sunk);
   color: #555;
   display: inline-block;
   font-size: .85rem;

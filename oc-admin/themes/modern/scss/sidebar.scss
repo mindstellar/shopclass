@@ -25,8 +25,8 @@
 
   @extend .px-sm-2, .px-0, .min-vh-100;
 
-  background-color: $gray-100;
-  border-inline-end: 1px solid $gray-300;
+  background-color: var(--osc-bench-warm);
+  border-inline-end: 1px solid var(--osc-rule);
 
   &.offcanvas {
     overflow-y: auto;
@@ -39,7 +39,7 @@
     align-items: center;
     border-inline-start: 2px solid transparent;
     border-radius: $border-radius;
-    color: $gray-600;
+    color: var(--osc-ink-muted);
     // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
     // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Osclass
     // compiles no RTL stylesheet, so in an RTL locale that float never flips and the
@@ -73,7 +73,7 @@
       // Keyboard users must be able to see where they are. Never remove this.
       &:focus-visible {
         border-radius: $border-radius;
-        outline: 2px solid $bronze;
+        outline: 2px solid var(--osc-bronze);
         outline-offset: 2px;
       }
     }
@@ -91,14 +91,14 @@
     }
 
     &:hover {
-      background-color: $white;
-      color: $gray-900;
+      background-color: var(--osc-bench);
+      color: var(--osc-ink);
     }
 
     &.active {
-      background-color: $bronze-tint;
-      border-inline-start-color: $bronze;
-      color: $gray-900;
+      background-color: var(--osc-bronze-tint);
+      border-inline-start-color: var(--osc-bronze);
+      color: var(--osc-ink);
 
       // Weight shifts too, so "where I am" survives greyscale and colour-blindness —
       // the tint and the marker are not carrying the meaning alone.
@@ -118,30 +118,30 @@
 
   a {
     border-radius: $border-radius;
-    color: $gray-600;
+    color: var(--osc-ink-muted);
     font-size: $font-size-sm;
     padding-block: .3rem;
 
     &:hover {
-      background-color: $white;
-      color: $gray-900;
+      background-color: var(--osc-bench);
+      color: var(--osc-ink);
     }
 
     // Current page.
     &.sub-active {
-      background-color: $white;
-      color: $bronze;
+      background-color: var(--osc-bench);
+      color: var(--osc-bronze);
       font-weight: 600;
     }
 
     &:focus-visible {
-      outline: 2px solid $bronze;
+      outline: 2px solid var(--osc-bronze);
       outline-offset: 2px;
     }
   }
 
   .submenu-divide {
-    color: $gray-600;
+    color: var(--osc-ink-muted);
     font-size: $font-size-sm;
     font-weight: 600;
     margin-block-start: .5rem;

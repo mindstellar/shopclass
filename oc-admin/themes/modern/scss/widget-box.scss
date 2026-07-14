@@ -17,7 +17,7 @@
 
 .widget-box-title {
   @extend .card-header;
-  color: $color-gray-black;
+  color: var(--osc-ink);
   font-size: 18px;
   position: relative;
 }
@@ -39,12 +39,12 @@
 }
 
 .widget-box-title .select-box-trigger {
-  background-color: $color-white;
+  background-color: var(--osc-bench);
 }
 
 .widget-box-content {
   @extend .card-body;
-  background-color: $color-white;
+  background-color: var(--osc-bench);
   padding: 15px;
   @include rounded-corners(4px);
   position: relative;
@@ -56,8 +56,8 @@
 }
 
 .widget-box h4 {
-  border-bottom: 1px dotted $color-gray-dim;
-  color: $color-gray-dim;
+  border-bottom: 1px dotted var(--osc-ink-emphasis);
+  color: var(--osc-ink-emphasis);
   font-size: 16px;
   margin: 20px 0 10px;
 }
@@ -67,13 +67,13 @@
 }
 
 .stats-title {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
   font-size: 16px;
   line-height: 20px;
 }
 
 .stats-detail {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
   font-size: 14px;
 }
 
@@ -96,7 +96,7 @@ div.widget-box-content-no-wrapp,
 
 div.widget-box-content-no-wrapp h4,
 div.widget-box-content-no-wrapp .first-title {
-  background: $color-gray-soft;
+  background: var(--osc-bench-sunk);
   border-bottom: 0;
   margin: 0;
   padding: 5px 15px;

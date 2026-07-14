@@ -55,7 +55,7 @@
 }
 
 .theme {
-  background-color: $color-gray-light;
+  background-color: var(--osc-bench-warm);
   float: left;
   font-size: .95rem;
   margin-bottom: 40px;
@@ -67,7 +67,7 @@
 }
 
 .theme img {
-  border: solid 1px $color-gray-soft;
+  border: solid 1px var(--osc-bench-sunk);
   margin-right: 20px;
   width: 250px;
   @include rounded-corners;
@@ -75,7 +75,7 @@
 
 .theme .theme-actions {
   background-color: rgba(243, 243, 243, 0.9);
-  border-top: solid 1px $color-gray-soft;
+  border-top: solid 1px var(--osc-bench-sunk);
   bottom: 4px;
   left: 1px;
   padding: 6px 0 1px 6px;
@@ -90,7 +90,7 @@
 }
 
 .theme-actions a.delete {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
 }
 
 .theme .theme-info,
@@ -117,7 +117,7 @@ tr.plugin td {
 
 tr.plugin h3,
 tr.plugin h3 {
-  color: $color-gray-hardblack;
+  color: var(--osc-ink);
   font-weight: bold;
   margin: 0;
 }

@@ -34,8 +34,8 @@
 
 .list-categories .category_div,
 .cfield-div {
-  background-color: $color-gray-light;
-  border: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: solid 1px var(--osc-bench-sunk);
   padding: 5px;
   @include rounded-corners;
   position: relative;
@@ -51,7 +51,7 @@
 }
 
 .ico-droppable {
-  border-right: solid 1px $color-gray-soft;
+  border-right: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
   left: 1px;
@@ -62,7 +62,7 @@
 }
 
 .ico-childrens {
-  border-right: solid 1px $color-gray-soft;
+  border-right: solid 1px var(--osc-bench-sunk);
   height: 36px;
   left: 36px;
   margin-left: 2px;
@@ -103,7 +103,7 @@
 
 .list-categories .name-cat,
 .list-fields .name-edit-cfield {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
   font-size: 15px;
   line-height: 26px;
 }
@@ -160,7 +160,7 @@ ul.subcategories {
 }
 
 #advanced_fields_iframe {
-  border-bottom: solid 1px $color-gray-soft;
+  border-bottom: solid 1px var(--osc-bench-sunk);
   font-size: 16px;
   font-weight: normal;
   margin-bottom: 10px;
