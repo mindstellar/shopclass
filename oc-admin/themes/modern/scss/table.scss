@@ -269,6 +269,30 @@
   }
 }
 
+// The one badge with no fill.
+//
+// "Not installed" is not a state the plugin is *in* — it is a plugin the owner has never
+// switched on, a file sitting on disk. A filled badge would announce it as a condition to
+// deal with, and the old row painted it in $danger, which said something considerably
+// stronger than that: red, for the ordinary fact that you have not installed something yet.
+//
+// It is also the one state that shares a screen with Disabled, so the two are told apart
+// three times over and not once by hue: hollow badge vs filled, open ring vs barred ring,
+// and two different words. Desaturate the plugins list and it still reads.
+//
+// The 1px border is paid for out of the padding (2px 10px -> 1px 9px) so the outline badge
+// occupies exactly the same box as a filled one and the column does not jitter row to row.
+.status-uninstalled .osc-status {
+  background-color: transparent;
+  border: 1px solid var(--osc-rule-strong);
+  color: var(--osc-ink-muted);
+  padding: 1px 9px;
+
+  &::before {
+    content: "\f28a"; // ○ hollow ring
+  }
+}
+
 .table-first-row {
   td {
     border-top: 0;
