@@ -2,18 +2,18 @@
   "name": "osclass",
   "devDependencies": {
     "@popperjs/core": "^2.11.8",
+    "esbuild": "^0.28.1",
     "eslint": "^9.21.0",
-    "grunt": "^1.6.1",
-    "grunt-cli": "^1.5.0",
-    "grunt-contrib-clean": "^2.0.1",
-    "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify": "^5.2.2",
-    "grunt-sass": "^4.0.0",
-    "load-grunt-tasks": "^5.1.0",
-    "node-sass": "^9.0.0"
+    "sass-embedded": "^1.100.0"
   },
   "description": "Osclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
   "scripts": {
+    "build": "npm run assets && npm run css && npm run js",
+    "assets": "node scripts/copy-assets.mjs",
+    "css": "node scripts/build-css.mjs",
+    "js": "esbuild oc-admin/themes/modern/js/location.js --minify --sourcemap --outfile=oc-admin/themes/modern/js/location.min.js",
+    "watch": "node scripts/build-css.mjs --watch",
+    "lint": "eslint oc-admin/themes/modern/js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": "git+https://github.com/mindstellar/Osclass.git",
