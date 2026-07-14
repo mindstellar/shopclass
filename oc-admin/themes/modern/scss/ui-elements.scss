@@ -71,44 +71,60 @@ a.ico-32 {
   @include submit-color;
 }
 
+// Each of these extends a Bootstrap button variant, which already carries that
+// variant's :hover selectors along with it. They previously also contained a nested
+// `:hover { @extend :hover; }`, a self-referential extend that LibSass ignored but
+// Dart Sass expands combinatorially — it inflated main.css from 260 KB to 87 MB.
 .btn-black {
   @extend .btn-dark;
   background-color: $color-gray-hardblack;
   border: solid 1px $color-gray-dim;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
-/**
-.btn-black:hover {
-  background-color: $color-black;
+// The secondary button — white fill, Ink text, 1px rule-strong border.
+//
+// This is the DEFAULT button of the admin: Cancel, Reset filters, Show filters, every
+// "Statistics" link on the dashboard. Bootstrap generated it as a solid $secondary fill, so
+// the quietest, most numerous action on every screen was arriving as a heavy grey slab — and
+// a screen full of slabs is exactly what makes the bronze primary action hard to find. Quiet
+// until you need them.
+//
+// Driven through Bootstrap 5.3's --bs-btn-* API rather than by re-declaring properties, so
+// .btn's own :hover / :active / :disabled / :focus-visible selectors keep working unchanged.
+//
+// The border is $gray-500 (rule-strong, 3.11:1), not $gray-300. A button whose edge you cannot
+// see is a broken button — WCAG 1.4.11 governs the boundary of a control, and the decorative
+// divider grey does not clear it.
+//
+// CASCADE NOTE: this rule sits AFTER Bootstrap, so it now outranks .btn-danger / .btn-success
+// on source order when both classes land on one element. Bootstrap's own variant loop put
+// .btn-secondary *before* those, so the other variant used to win. Anything writing
+// `class="btn btn-dim btn-red"` therefore changed meaning — the two admin templates that did
+// that now pick one class or the other, which is what they meant anyway.
+.btn-secondary {
+  --#{$prefix}btn-color: #{$gray-900};
+  --#{$prefix}btn-bg: #{$white};
+  --#{$prefix}btn-border-color: #{$gray-500};
+  --#{$prefix}btn-hover-color: #{$gray-900};
+  --#{$prefix}btn-hover-bg: #{$gray-100};
+  --#{$prefix}btn-hover-border-color: #{$gray-600};
+  --#{$prefix}btn-active-color: #{$gray-900};
+  --#{$prefix}btn-active-bg: #{$gray-200};
+  --#{$prefix}btn-active-border-color: #{$gray-600};
+  --#{$prefix}btn-disabled-color: #{$gray-600};
+  --#{$prefix}btn-disabled-bg: #{$white};
+  --#{$prefix}btn-disabled-border-color: #{$gray-300};
+  // Focus is bronze, not grey — the ring is a brand signal, and it must be the same ring on
+  // every control or it stops reading as one.
+  --#{$prefix}btn-focus-shadow-rgb: #{to-rgb($bronze)};
 }
- */
 
 .btn-dim {
   @extend .btn-secondary;
-
-  :hover {
-    @extend :hover;
-  }
 }
-
-/**
-.btn-dim:hover {
-  background-color: $color-gray-hardblack;
-  border-color: $color-gray-hardblack;
-}
-
- */
 
 .btn-green {
   @extend .btn-success;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 .btn-text {
@@ -121,18 +137,10 @@ a.ico-32 {
 
 .btn-red {
   @extend .btn-danger;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 .btn-orange {
   @extend .btn-warning;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 
@@ -153,21 +161,9 @@ input.ico-32 {
   @extend .float-end;
 }
 
-button {
-  @extend button;
-}
-
-.btn-mini {
-  @extend .btn-sm;
-}
-
 input.btn-mini,
 .btn-submit {
   @extend .btn-success;
-}
-
-.btn-submit:hover {
-  @extend .btn-success, :hover;
 }
 
 .well {
@@ -307,7 +303,9 @@ ul.showing-results {
     background: white;
     border: 0;
     border-left: solid 1px $color-gray-soft;
-    color: #018BE3;
+    // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
+    // it is a *different* blue. The rule is about the colour, not the hex.
+    color: $link-color;
     cursor: pointer;
     font-size: .85rem;
     font-weight: bold;
@@ -345,19 +343,41 @@ ul.ui-autocomplete.ui-menu {
   opacity: 0.7;
 }
 
+// The market (themes/plugins directory) buttons. These were a hardcoded cyan #2fbfd1 and a
+// $gray-500 fill, both with white text — 2.19:1 and 3.11:1, so BOTH failed the 4.5:1 text bar
+// outright. Not an off-brand hue problem, a legibility one. Update is the action you came for,
+// so it takes the primary; Preview is the quiet one beside it.
 .btn-market-update,
 .btn-market-preview {
-  background-color: #2fbfd1;
-  @include rounded-corners(3px);
-  color: #fff;
+  @include rounded-corners($border-radius);
+  display: inline-block;
   margin-left: 5px;
   margin-top: 5px;
   padding: 3px 10px;
+  // They are <a> elements without .btn, so Bootstrap's reboot underlines them as links.
+  text-decoration: none;
+}
+
+.btn-market-update {
+  background-color: $bronze;
+  color: $white; // 5.62:1
+
+  &:hover {
+    background-color: $bronze-deep;
+    color: $white;
+  }
 }
 
 .btn-market-preview {
-  background-color: $color-gray-ash;
+  background-color: $white;
+  border: 1px solid $gray-500;
+  color: $gray-900; // 17.32:1
   margin-left: 0;
+
+  &:hover {
+    background-color: $gray-100;
+    color: $gray-900;
+  }
 }
 
 .spinner {

@@ -1,5 +1,7 @@
+// Flat at rest. A panel is still on the page when you stop interacting with it, so it
+// has no shadow — depth comes from the border and the surface tone beneath it.
 .widget-box {
-  @extend .card, .shadow-sm;
+  @extend .card;
 }
 
 .widget-box-title select {

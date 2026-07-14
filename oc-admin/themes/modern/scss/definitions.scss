@@ -63,13 +63,34 @@ $callout-colors: (
         "light": $light,
         "dark": $dark
 ) !default;
-$table-status: (
-        "active":$blue-500,
-        "blocked":$red-500,
-        "expired": $gray-200,
-        "inactive":$gray-500,
-        "premium":$yellow-400,
-        "spam": $gray-800,
+// Status badges — three signals each: a TINT, a SHAPE, and the WORD (see DESIGN.md,
+// The Three Signal Rule). Colour was previously the only signal, and "active" was
+// $blue-500 — stock Bootstrap #0d6efd — which made the most-seen badge in the admin
+// the single clearest tell that this was an unstyled Bootstrap template.
+//
+// Colour here encodes SEVERITY, not identity: good / neutral / bad. The icon silhouette
+// and the word encode the specific state. Two reasons it is built this way rather than
+// as six distinct colours:
+//
+//   1. Six saturated colours in a dense listings view is noise, and it spends the colour
+//      budget that makes the bronze primary action findable (The Ten Percent Rule).
+//   2. A dark amber "inactive" ink would sit ΔE-OK 0.048 from the bronze. Chroma
+//      collapses at low lightness, so hue 95 and hue 75 converge once you darken them
+//      enough to be legible as text — "Inactive" and "Premium" would read as the same
+//      gold. The hue separation that works for FILLS does not survive as INK.
+//
+// So states within a severity share a colour and are told apart by silhouette. The
+// shapes are chosen to differ in outline, not just fill, so they survive greyscale and
+// deuteranopia: filled disc, hollow ring, barred ring, slashed ring, star, triangle.
+// Every ink/tint pair is measured against the 4.5:1 text bar in _brand.scss.
+$status-badge: (
+        //                                                              silhouette
+        "active":   (tint: $success-tint, ink: $success,  icon: "\f287"), // ● disc
+        "premium":  (tint: $bronze-tint,  ink: $bronze,   icon: "\f586"), // ★ star
+        "inactive": (tint: $gray-200,     ink: $gray-700, icon: "\f2e6"), // ⊖ barred ring
+        "expired":  (tint: $gray-200,     ink: $gray-700, icon: "\f28a"), // ○ hollow ring
+        "blocked":  (tint: $danger-tint,  ink: $danger,   icon: "\f567"), // ⊘ slashed ring
+        "spam":     (tint: $danger-tint,  ink: $danger,   icon: "\f33a"), // ⚠ triangle
 );
 $plugin-status:(
         "active":$success,

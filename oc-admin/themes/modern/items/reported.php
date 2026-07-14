@@ -130,7 +130,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>" />
             </div>
         </div>
-        <div class="table-contains-actions shadow-sm">
+        <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                     <tr>
@@ -148,7 +148,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <?php foreach ($rows as $key => $row) { ?>
                             <tr>
                                 <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
+                                    <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
+                                          // `items_processing_row` filter still hands plugins the plain word. ?>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                    ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>

@@ -1,3 +1,7 @@
+// Brand tokens first. Bootstrap's variables are all `!default`, so whatever is defined
+// ahead of it wins — this ordering is what makes the theme brandable at all. Moving
+// this line below the Bootstrap import silently restores stock Bootstrap blue.
+@import "brand";
 @import "bootstrap/bootstrap";
 @import "definitions.scss";
 @import "functions.scss";

@@ -100,7 +100,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
             </div>
         </div>
-        <div class="table-contains-actions shadow-sm">
+        <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                 <tr class="table-secondary">
@@ -119,7 +119,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <tr class="<?php echo implode(' ',
                                                       osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row)); ?>">
                             <?php foreach ($row as $k => $v) { ?>
-                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
+                                <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
+                                      // `comments_processing_row` filter still hands plugins the plain word. ?>
+                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                    echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                ?></td>
                             <?php } ?>
                         </tr>
                     <?php } ?>

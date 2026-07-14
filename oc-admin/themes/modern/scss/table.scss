@@ -1,58 +1,103 @@
+// The zebra stripes are gone. They were never decoration — they were doing the real job of
+// "let me follow one row across eight columns" — but they bought it by adding a band of
+// noise to half the rows of an already dense view. A 1px rule does the same job silently,
+// and the hover wash does it better, because it tracks the row you are actually looking at
+// instead of the ones you are not.
+//
+// Note WHY striping was needed here in the first place: the old `th, td { border-bottom: 0 }`
+// below killed Bootstrap's own row hairline, which left nothing separating the rows. Restore
+// the hairline and the stripes have no job left.
+//
+// HOW BOOTSTRAP PAINTS ROWS (5.3, and it is unintuitive): the background lives on the CELLS,
+// not on the row. `.table > :not(caption) > * > *` sets `background-color: var(--bs-table-bg)`
+// AND `box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, ...)`. That 9999px inset
+// shadow paints over any `background` you set on the `<tr>`, so a plain `tr:hover { background }`
+// silently loses. Row state must go through `--bs-table-bg-state` on the cells. Everything
+// below follows from that.
 .table {
-  @extend .shadow-sm, .table-striped;
-  --#{$variable-prefix}table-striped-bg: #{$gray-300}33;
-  background-color: $gray-100;
-  border: 1px solid $gray-400;
-  font-size: 14px;
+  --#{$prefix}table-bg: #{$white};          // The Bench Rule: rows are the white bench top
+  --#{$prefix}table-border-color: #{$gray-300};
+
+  border: 1px solid $gray-300;
   width: 100%;
 
   &.table-small {
     width: 280px;
   }
 
-  thead {
-    border-bottom: 1px solid $gray-400;
+  // Header: the "second surface" — same bench-warm as the sidebar and the toolbars, so the
+  // chrome of the admin reads as one material. Set through --bs-table-bg because the cells
+  // paint their own background on top of anything the <thead> tries to set.
+  > thead {
+    --#{$prefix}table-bg: #{$gray-100};
 
     th {
-      font-weight: normal;
+      color: $gray-600;
+      font-size: .8125rem;   // Label, 13px. The system floor, and reserved for labels —
+      font-weight: 500;      // it is not a body-text escape hatch (The Sixteen Pixel Floor).
+      letter-spacing: .01em;
+      white-space: nowrap;
 
       a {
+        color: inherit;
         text-decoration-line: none;
       }
     }
   }
 
-  tbody {
+  > tbody {
+    // Table data is Ink, and that includes the data that happens to be a link. Every listing
+    // title is an <a>, so colouring them $link-color made a full column of bronze the most
+    // common thing on the screen — which spends the entire colour budget that is supposed to
+    // make the one primary action findable (The Ten Percent Rule). Rows read as content;
+    // bronze arrives on hover, where it means "this is clickable".
+    a {
+      color: $gray-900;
+      text-decoration-line: none;
+
+      &:hover {
+        color: $bronze;
+        text-decoration-line: underline;
+      }
+    }
+
     .col-title {
-      font-size: ($font-size-base - 0.1);
       font-weight: 500;
+    }
 
-      a {
-        text-decoration-line: none;
+    > tr {
+      // The table's own border closes the box; a bottom rule on the last row doubles it.
+      &:last-child > * {
+        border-bottom-width: 0;
+      }
+
+      &:hover > * {
+        --#{$prefix}table-bg-state: #{$gray-100};
+      }
+
+      // Selected. The wash is the ENHANCEMENT, never the signal — the checked box is the
+      // signal (The Three Signal Rule). `:has()` is Baseline 2023, and where it is missing
+      // this degrades to "no wash, checkbox still checked", which is exactly why it is safe
+      // to lean on here rather than shipping JS to toggle a class.
+      &:has(.col-bulkactions input:checked) > * {
+        --#{$prefix}table-bg-state: #{$bronze-tint};
       }
     }
   }
 
-  th,
   td {
-    border-bottom: 0;
-    border-left: 0;
-    border-top: 0;
-    line-height: 1rem;
-    padding: 0.5rem;
-  }
-
-  td {
-    &.col-status {
-      font-weight: bold;
-      margin: 0;
-      vertical-align: middle;
-    }
-
+    // Was an empty 0.8rem <td> painted with the status colour: a side stripe wearing a table
+    // cell as a disguise, on every row of the densest view in the admin. DESIGN.md bans
+    // coloured side stripes, and the badge now does this job properly.
+    //
+    // The COLUMN stays. It is emitted by the core DataTable classes (addColumn('status-border')),
+    // and deleting it there would change both count($columns) — which templates use for the
+    // empty-state colspan — and the shape of the $row array handed to the `items_processing_row`
+    // filter, which plugins hook. Cheap to keep, needlessly risky to remove. So it simply
+    // stops being painted.
     &.col-status-border {
-      margin: 0;
       padding: 0;
-      width: 0.8rem;
+      width: 0;
     }
   }
 
@@ -66,10 +111,14 @@
       position: absolute;
 
       a {
-        color: #018be3;
+        // Was #018be3 — a hardcoded stock blue, hiding one Blue Exile check below the
+        // #0d6efd grep because it is a *different* blue. The rule is about the colour,
+        // not the hex: there is no blue in this system.
+        color: $link-color;
         text-decoration: none;
 
         &:hover {
+          color: $link-hover-color;
           text-decoration: underline;
         }
       }
@@ -126,19 +175,6 @@
     }
   }
 
-  @each $state, $bg-status in $table-status {
-    .status-#{$state} {
-      .col-status {
-        background: $bg-status;
-        color: color-contrast($bg-status);
-      }
-
-      .col-status-border {
-        background: shade-color($bg-status, 20%);
-      }
-    }
-  }
-
   .icon-new-window {
     margin-left: 5px;
 
@@ -149,19 +185,109 @@
   }
 }
 
+
+// -----------------------------------------------------------------------------
+// Status badges
+// -----------------------------------------------------------------------------
+// The signature component of the admin: "is this listing live?" is the single most common
+// question the whole product answers, and it used to be answered with colour alone — which
+// fails colourblind users outright and vanishes entirely in greyscale.
+//
+// Now every badge carries three signals: a tint, a shape, and the word (The Three Signal
+// Rule). Run the test on any listings screen — screenshot it, desaturate it, and you can
+// still tell an active listing from a blocked one, because the disc, the ring and the
+// triangle are all still there.
+//
+// Deliberately NOT scoped to .table: the `.status-*` class sits on the <tr>, but a badge is
+// a badge, and a plugin rendering one outside a table should get the same component.
+.osc-status {
+  align-items: center;
+  background-color: $gray-200;
+  // The one place a pill is allowed. Everywhere else the system is 4px and tool-like;
+  // here the shape itself carries meaning, which is what earns the exception.
+  border-radius: $border-radius-pill;
+  color: $gray-700;
+  display: inline-flex;
+  font-size: .8125rem; // Label
+  font-weight: 500;
+  gap: .35rem;
+  letter-spacing: .01em;
+  line-height: 1.4;
+  padding: 2px 10px;
+  white-space: nowrap;
+
+  // The glyph is a redundant second channel, not new information — the word sits right
+  // beside it — so there is nothing for a screen reader to lose by it living in CSS.
+  // (Icon-as-::before is already the established idiom in this file: see .icon-new-window
+  // and .sorting_asc.)
+  &::before {
+    content: "\f28a"; // ○ hollow ring — the fallback for any state not in the map below
+    font-family: "bootstrap-icons";
+    font-size: .75em;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+  }
+}
+
+@each $state, $spec in $status-badge {
+  .status-#{$state} {
+    .osc-status {
+      background-color: map-get($spec, tint);
+      color: map-get($spec, ink);
+
+      &::before {
+        content: map-get($spec, icon);
+      }
+    }
+
+    // THE COMPATIBILITY FALLBACK. Do not delete this without reading the whole comment.
+    //
+    // The old rule painted the CELL: `.status-active .col-status { background: $success }`.
+    // Third-party plugins render into the admin with our markup, and at least one installed
+    // here (apiposter) leans on exactly that — it emits its own
+    //
+    //     <tr class="status-active"><td class="col-status"><span>Enabled</span></td>
+    //
+    // with no .osc-status span, and expects us to colour the cell. Moving the state onto the
+    // badge would have left its status column with no state signal at all on a live site, and
+    // nothing would have caught it: every class name involved still exists. This is precisely
+    // the failure the compatibility contract is about — the names survived, the behaviour did
+    // not. Renaming is not the only way to break a plugin.
+    //
+    // So: markup that opts in to the badge gets the badge; markup that does not still gets a
+    // state signal on the cell, now as a tint rather than a saturated fill.
+    //
+    // Written as --bs-table-bg-state rather than `background`, because Bootstrap paints cells
+    // with an inset 9999px box-shadow that would otherwise cover a plain background on hover.
+    > .col-status:not(:has(.osc-status)) {
+      --#{$prefix}table-bg-state: #{map-get($spec, tint)};
+
+      color: map-get($spec, ink);
+      font-weight: 500;
+    }
+  }
+}
+
 .table-first-row {
   td {
     border-top: 0;
   }
 }
 
+// The row-actions strip ("Edit · Delete · …") is absolutely positioned and only revealed on
+// hover, so every row reserves 2.5rem beneath its content to stop the table reflowing under
+// the cursor. That reserve used to be applied with `.col-bulkactions ~ td`, a general SIBLING
+// selector — which silently skipped .col-status and .col-status-border, because those two
+// columns come BEFORE bulkactions in the row. Their content therefore centred against a box
+// 2.5rem taller than everyone else's, and the status badge sat visibly below the title next
+// to it. Reserve the space on every cell in the row instead, so the whole row shares one box.
 .table-contains-actions {
   clear: both;
   position: relative;
-  .col-bulkactions {
-    &~ td {
-      padding-bottom: 2.5rem;
-    }
+
+  > .table > tbody > tr > td {
+    padding-bottom: 2.5rem;
   }
 }
 

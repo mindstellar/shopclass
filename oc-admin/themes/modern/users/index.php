@@ -148,9 +148,11 @@ $withFilters = __get('withFilters');
                         <a id="btn-hide-filters" href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"
                            class="btn btn-dim"><?php _e('Reset filters'); ?></a>
                     <?php } ?>
-                    <a data-bs-toggle="modal" data-bs-target="#display-filters" href="#" class="btn btn-dim <?php if ($withFilters) {
-                        echo 'btn-red';
-                                                                                                            } ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
+                    <?php // One class or the other, never both — see items/index.php. Red is for destructive
+                          // actions; "a filter is applied" is a state. ?>
+                    <a data-bs-toggle="modal" data-bs-target="#display-filters" href="#"
+                       class="btn <?php echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>"
+                       title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
                     <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
                         <i class="bi bi-search"></i>
@@ -168,7 +170,7 @@ $withFilters = __get('withFilters');
                     <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
                 </div>
             </div>
-            <div class="table-contains-actions shadow-sm">
+            <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
                     <tr class="table-secondary">
@@ -187,7 +189,11 @@ $withFilters = __get('withFilters');
                             <tr class="<?php echo implode(' ',
                                                           osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row)); ?>">
                                 <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
+                                    <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
+                                          // `users_processing_row` filter still hands plugins the plain word. ?>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                    ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
