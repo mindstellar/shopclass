@@ -37,10 +37,18 @@
     }
   }
 
+  // STILL A SIDE STRIPE, and still colour-as-only-signal: the plugin row is tinted and marked,
+  // but nowhere does it say the words "Active" / "Disabled". DESIGN.md bans both. Fixing it
+  // properly means giving the row a real status badge, which is a template change (there is no
+  // status column in plugins/index.php to put one in) — tracked as gap #4 in MODERNISATION.md,
+  // not smuggled into this pass.
+  //
+  // What IS fixed here: `border-left` is physical, so on an RTL install the marker sat on the
+  // trailing edge. `border-inline-start` flips.
   @each $status, $border-color in $plugin-status{
     .plugin-#{$status} {
       background: tint-color($border-color, 80%);
-      border-left: .2rem solid $border-color;
+      border-inline-start: .2rem solid $border-color;
       color: color-contrast(tint-color($border-color, 80%));
     }
   }

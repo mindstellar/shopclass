@@ -1,6 +1,5 @@
 .flashmessage {
   @extend .alert;
-  @extend .shadow-sm;
 }
 
 .flashmessage-info {
@@ -64,24 +63,67 @@
   }
 }
 
-// scss-docs-end callout-variant-mixin
+// Callouts — the inline hints that sit beside a setting and explain what it does.
+//
+// They used to be marked with `border-left: .35rem solid $value`: a coloured side stripe, which
+// DESIGN.md bans outright. Two things were wrong with it, and only one of them is taste.
+//
+//   1. `border-left` is PHYSICAL. Osclass ships RTL locales, and the admin compiles no RTL
+//      stylesheet, so in Arabic or Hebrew the stripe stayed on the left — the trailing edge —
+//      where it reads as a rendering fault rather than a marker.
+//   2. It was the ONLY signal. A stripe is colour and nothing else: it does not survive
+//      greyscale, and it does not survive deuteranopia. A warning callout and an info callout
+//      were the same object in two hues.
+//
+// So the stripe is replaced by the same grammar the status badges use — a tint, a SHAPE, and
+// the word (The Three Signal Rule). The icon is what actually does the stripe's job, and does
+// it in a way that survives having the colour taken away.
+//
+// Icons only for the states that carry meaning. `light`, `dark` and `secondary` are neutral
+// containers with nothing to announce, and a decorative glyph on them would be noise.
+$callout-icons: (
+        "primary": "\f430", // info-circle-fill
+        "info":    "\f430",
+        "success": "\f26a", // check-circle-fill
+        "ok":      "\f26a",
+        "warning": "\f33a", // exclamation-triangle-fill
+        "danger":  "\f336", // exclamation-octagon-fill
+        "error":   "\f336",
+);
+
 @each $state, $value in $callout-colors {
-  $callout-background: shift-color($value, -90%);
-  $callout-border: shift-color($value, 10%);
-  $callout-color: $gray-800;
   .callout-#{$state} {
-    @include callout-variant($callout-background, $callout-border, $callout-color);
-    border-left: .35rem solid $value;
-    border-radius: 4px;
-    display: inline-block;
-    font-size: .85rem;
-    font-style: italic;
+    @include callout-variant(shift-color($value, -90%), shift-color($value, -55%), $gray-800);
+
+    align-items: flex-start;
+    border-radius: $border-radius;
+    display: inline-flex;
+    font-size: .8125rem; // Label. Was .85rem AND italic — italic microcopy is the hardest
+    gap: .4rem;          // thing on the page to read, and this copy exists to be read.
     margin-top: .2rem;
-    padding: .35rem .50rem;
+    padding: .35rem .6rem;
+    text-align: start;
+
+    @if map-has-key($callout-icons, $state) {
+      &::before {
+        // The colour now lives in the icon instead of the stripe: same signal, one tenth the
+        // area, and it still means something in greyscale.
+        color: $value;
+        content: map-get($callout-icons, $state);
+        flex: 0 0 auto;
+        font-family: "bootstrap-icons";
+        font-size: .875em;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1.5;
+      }
+    }
   }
 }
 
+// `flex`, not `block`: the base callout is an inline-flex row of [icon][text], and resetting
+// display to `block` would drop the icon out of that row and back onto its own line.
 .callout-block {
-  display: block;
+  display: flex;
   padding: 1rem .85rem;
 }

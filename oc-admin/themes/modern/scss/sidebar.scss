@@ -1,71 +1,149 @@
+// The sidebar is the "second surface": bench-warm chrome beside the white content bench.
+// It used to be near-black (.bg-black-light + .text-white), which read as a separate, cold
+// application bolted onto the admin. It is now a quiet warm neutral that recedes, with the
+// bronze reserved for one job — telling you where you are.
+//
+// The markup comes from AdminMenu::renderMenu() and cannot change without breaking plugins
+// that register menu pages, so this styles the DOM as it actually is:
+//
+//   nav.dashboard-sidebar
+//     ul#dashboard-menu.nav.nav-pills
+//       li.nav-item
+//         div.nav-link(.active)           <- the row; .active lands on the DIV, not the <a>
+//           a.h6 > i.bi                   <- label + icon
+//           i.bi-chevron-down(.collapsed) <- disclosure, only when a submenu exists
+//         ul.sidebar-submenu(.show)
+//           li > a.nav-link(.sub-active)
+//           li.submenu-divide
+//
+// Directional properties are logical (border-inline-start, margin-inline-start) because
+// Osclass ships RTL locales. `border-left` would put the active marker on the wrong edge
+// for a large part of the world.
+
 .dashboard-sidebar {
   max-width: 15rem;
 
-  @extend .px-sm-2, .px-0, .bg-black-light, .min-vh-100, .text-white;
+  @extend .px-sm-2, .px-0, .min-vh-100;
+
+  background-color: $gray-100;
+  border-inline-end: 1px solid $gray-300;
 
   &.offcanvas {
     overflow-y: auto;
   }
 
-  div {
-    &.nav-link {
-      background-color: $gray-800;
-      color: $nav-pills-link-active-color;
-
-      > i {
-        margin-left: 1rem;
-        transition: ease 250ms;
-
-        &.collapsed {
-          transform: rotate(-90deg);
-        }
-      }
-    }
-  }
-
+  // Top-level row. Bootstrap's .nav-pills paints $component-active-bg across the whole row
+  // when active; we want a tint plus an edge marker instead, so the active state is stated
+  // explicitly rather than inherited.
   .nav-link {
-    &.active {
-      & a {
-        color: $gray-200;
-
-        :hover {
-          color: $gray-100;
-        }
-      }
-    }
+    align-items: center;
+    border-inline-start: 2px solid transparent;
+    border-radius: $border-radius;
+    color: $gray-600;
+    // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
+    // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Osclass
+    // compiles no RTL stylesheet, so in an RTL locale that float never flips and the
+    // chevron collides with the label. Float has no effect on a flex child, so making the
+    // row a flex container neutralises it, and `margin-inline-start: auto` below pushes
+    // the chevron to the row's end in both directions.
+    display: flex;
+    gap: .5rem;
+    padding: .45rem .6rem;
+    transition: background-color var(--osc-duration-fast) var(--osc-ease),
+                color var(--osc-duration-fast) var(--osc-ease);
 
     a {
-      color: $gray-500;
+      color: inherit;
+      flex: 1 1 auto;
+      // The label is marked up as `<a class="h6">`, so Bootstrap already gives it
+      // heading weight (600) and a heading margin. Both are wrong here: if every item is
+      // 600, weight cannot signal the current one. Reset to 500 so `.active` can mean
+      // something.
+      font-weight: 500;
+      margin-bottom: 0;
+      @extend .text-decoration-none;
 
-      :hover {
-        color: $gray-200;
-        transition: $nav-link-transition;
+      // `&:hover`, not `:hover`. The previous rule nested a bare `:hover`, which compiles
+      // to `a *:hover` — it recoloured the icon INSIDE the link and never the link itself.
+      // Sidebar hover has been silently broken.
+      &:hover {
+        color: inherit;
       }
 
-      @extend .text-decoration-none;
+      // Keyboard users must be able to see where they are. Never remove this.
+      &:focus-visible {
+        border-radius: $border-radius;
+        outline: 2px solid $bronze;
+        outline-offset: 2px;
+      }
+    }
+
+    // The disclosure chevron. `auto` pushes it to the row's end — the right edge in LTR,
+    // the left edge in RTL — without relying on the physical float in the markup.
+    > i {
+      flex: 0 0 auto;
+      margin-inline-start: auto;
+      transition: transform var(--osc-duration-base) var(--osc-ease);
+
+      &.collapsed {
+        transform: rotate(-90deg);
+      }
+    }
+
+    &:hover {
+      background-color: $white;
+      color: $gray-900;
+    }
+
+    &.active {
+      background-color: $bronze-tint;
+      border-inline-start-color: $bronze;
+      color: $gray-900;
+
+      // Weight shifts too, so "where I am" survives greyscale and colour-blindness —
+      // the tint and the marker are not carrying the meaning alone.
+      a {
+        font-weight: 600;
+      }
     }
   }
 }
 
 .sidebar-submenu {
-
-  background-color: $color-gray-black;
-  border: $border-width solid transparent;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  background-color: transparent;
+  border: 0;
   font-size: $font-size-sm;
-  margin-top: -.1rem;
-  padding-top: .1rem;
-  @include border-radius($navbar-toggler-border-radius);
+  // Align submenu text under the parent's label rather than under its icon.
+  padding-inline-start: 1.6rem;
 
   a {
-    color: $gray-400;
+    border-radius: $border-radius;
+    color: $gray-600;
     font-size: $font-size-sm;
-    margin-bottom: $border-width;
+    padding-block: .3rem;
 
-    &.sub-active, &:hover {
-      background-color: $gray-600;
-      color: $gray-200;
+    &:hover {
+      background-color: $white;
+      color: $gray-900;
     }
+
+    // Current page.
+    &.sub-active {
+      background-color: $white;
+      color: $bronze;
+      font-weight: 600;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $bronze;
+      outline-offset: 2px;
+    }
+  }
+
+  .submenu-divide {
+    color: $gray-600;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    margin-block-start: .5rem;
   }
 }
