@@ -91,7 +91,8 @@ $tab_index = 2;
         <thead>
         <tr>
             <th><?php _e('Name'); ?></th>
-            <th colspan=""><?php _e('Description'); ?></th>
+            <th class="col-status"><?php _e('Status'); ?></th>
+            <th><?php _e('Description'); ?></th>
             <th></th>
             <th></th>
             <th></th>
@@ -101,16 +102,22 @@ $tab_index = 2;
         </thead>
         <tbody>
         <?php if (count($aData['aaData']) > 0) { ?>
-            <?php foreach ($aData['aaData'] as $array) {?>
-                <tr class="plugin-<?php echo $array['plugin_status']; unset($array['plugin_status']) ?>">
+            <?php foreach ($aData['aaData'] as $array) { ?>
+                <?php
+                // Both classes are wanted: `plugin-*` is the old row hook, kept because a site
+                // owner may have styled it, and `status-*` is what tints and shapes the badge.
+                $sStatus = $array['plugin_status'];
+                unset($array['plugin_status']);
+                ?>
+                <tr class="plugin-<?php echo $sStatus; ?> status-<?php echo $sStatus; ?>">
                     <?php foreach ($array as $key => $value) { ?>
-                        <td><?php echo $value; ?></td>
+                        <td<?php echo $key === 'status' ? ' class="col-status"' : ''; ?>><?php echo $value; ?></td>
                     <?php } ?>
                 </tr>
             <?php } ?>
         <?php } else { ?>
             <tr>
-                <td colspan="6" class="text-center">
+                <td colspan="8" class="text-center">
                     <p><?php _e('No data available in table'); ?></p>
                 </td>
             </tr>

@@ -83,17 +83,26 @@ $callout-colors: (
 // shapes are chosen to differ in outline, not just fill, so they survive greyscale and
 // deuteranopia: filled disc, hollow ring, barred ring, slashed ring, star, triangle.
 // Every ink/tint pair is measured against the 4.5:1 text bar in _brand.scss.
+//
+// The colours are named as custom properties, not as Sass variables. `var(--osc-success)`
+// is resolved by the browser at paint time and therefore follows `data-bs-theme`; the Sass
+// `$success` would have been flattened to today's light-mode hex at build time and could
+// never flip. See The Token Indirection Rule in DESIGN.md.
 $status-badge: (
-        //                                                              silhouette
-        "active":   (tint: $success-tint, ink: $success,  icon: "\f287"), // ● disc
-        "premium":  (tint: $bronze-tint,  ink: $bronze,   icon: "\f586"), // ★ star
-        "inactive": (tint: $gray-200,     ink: $gray-700, icon: "\f2e6"), // ⊖ barred ring
-        "expired":  (tint: $gray-200,     ink: $gray-700, icon: "\f28a"), // ○ hollow ring
-        "blocked":  (tint: $danger-tint,  ink: $danger,   icon: "\f567"), // ⊘ slashed ring
-        "spam":     (tint: $danger-tint,  ink: $danger,   icon: "\f33a"), // ⚠ triangle
-);
-$plugin-status:(
-        "active":$success,
-        "disabled":$warning,
-        "uninstalled":$danger,
+        //                                                                              silhouette
+        "active":   (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f287"), // ● disc
+        "premium":  (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f586"), // ★ star
+        "inactive": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
+        "expired":  (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
+        "blocked":  (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
+        "spam":     (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f33a"), // ⚠ triangle
+
+        // The plugins screen. "disabled" is the plugins-domain word for "inactive" and shares
+        // its look deliberately — an installed-but-switched-off plugin and a switched-off
+        // listing are the same kind of state, and the admin should not invent a second visual
+        // language for it. The word in the badge is what differs, and the word comes from PHP.
+        //
+        // There is no "uninstalled" entry: it is not a tint, it is the *absence* of one, and
+        // it is built as an outline variant in table.scss.
+        "disabled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
 );

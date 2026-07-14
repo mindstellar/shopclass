@@ -11,6 +11,7 @@
   --osc-rule-strong: #96918c;
   --osc-ink: #1d1a17;
   --osc-ink-muted: #67635d;
+  --osc-ink-emphasis: #4e4a44;
   --osc-success: #1d7d3e;
   --osc-success-tint: #e4f8e7;
   --osc-danger: #c22826;
@@ -13093,81 +13094,104 @@ div.widget-box-content-no-wrapp li a {
 }
 
 .status-active .osc-status {
-  background-color: #e4f8e7;
-  color: #1d7d3e;
+  background-color: var(--osc-success-tint);
+  color: var(--osc-success);
 }
 .status-active .osc-status::before {
   content: "\f287";
 }
 .status-active > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #e4f8e7;
-  color: #1d7d3e;
+  --bs-table-bg-state: var(--osc-success-tint);
+  color: var(--osc-success);
   font-weight: 500;
 }
 
 .status-premium .osc-status {
-  background-color: #fbf0e2;
-  color: #8f5d00;
+  background-color: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
 }
 .status-premium .osc-status::before {
   content: "\f586";
 }
 .status-premium > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #fbf0e2;
-  color: #8f5d00;
+  --bs-table-bg-state: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
   font-weight: 500;
 }
 
 .status-inactive .osc-status {
-  background-color: #f3efea;
-  color: #4e4a44;
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
 }
 .status-inactive .osc-status::before {
   content: "\f2e6";
 }
 .status-inactive > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #f3efea;
-  color: #4e4a44;
+  --bs-table-bg-state: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
   font-weight: 500;
 }
 
 .status-expired .osc-status {
-  background-color: #f3efea;
-  color: #4e4a44;
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
 }
 .status-expired .osc-status::before {
   content: "\f28a";
 }
 .status-expired > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #f3efea;
-  color: #4e4a44;
+  --bs-table-bg-state: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
   font-weight: 500;
 }
 
 .status-blocked .osc-status {
-  background-color: #ffe9e5;
-  color: #c22826;
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
 }
 .status-blocked .osc-status::before {
   content: "\f567";
 }
 .status-blocked > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #ffe9e5;
-  color: #c22826;
+  --bs-table-bg-state: var(--osc-danger-tint);
+  color: var(--osc-danger);
   font-weight: 500;
 }
 
 .status-spam .osc-status {
-  background-color: #ffe9e5;
-  color: #c22826;
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
 }
 .status-spam .osc-status::before {
   content: "\f33a";
 }
 .status-spam > .col-status:not(:has(.osc-status)) {
-  --bs-table-bg-state: #ffe9e5;
-  color: #c22826;
+  --bs-table-bg-state: var(--osc-danger-tint);
+  color: var(--osc-danger);
   font-weight: 500;
+}
+
+.status-disabled .osc-status {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+}
+.status-disabled .osc-status::before {
+  content: "\f2e6";
+}
+.status-disabled > .col-status:not(:has(.osc-status)) {
+  --bs-table-bg-state: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+  font-weight: 500;
+}
+
+.status-uninstalled .osc-status {
+  background-color: transparent;
+  border: 1px solid var(--osc-rule-strong);
+  color: var(--osc-ink-muted);
+  padding: 1px 9px;
+}
+.status-uninstalled .osc-status::before {
+  content: "\f28a";
 }
 
 .table-first-row td {
@@ -14300,13 +14324,16 @@ form h3, form .h3 {
   border: none;
 }
 #upload-plugins .table tr {
-  border-bottom: 0.05rem solid #f3efea;
-  border-right: 0.05rem solid #c2bdb7;
+  border-bottom: 1px solid var(--osc-rule);
+  border-inline-end: 1px solid var(--osc-rule);
   vertical-align: middle;
 }
 #upload-plugins .table thead tr {
-  border: 0.05rem solid #c2bdb7;
-  border-left-width: 0.2rem;
+  border: 1px solid var(--osc-rule);
+}
+#upload-plugins .table .col-status {
+  white-space: nowrap;
+  width: 1%;
 }
 #upload-plugins .table tbody tr a {
   font-weight: 500;
@@ -14317,21 +14344,6 @@ form h3, form .h3 {
   color: #33302b;
   font-size: 1.2rem;
   text-align: center;
-}
-#upload-plugins .plugin-active {
-  background: rgb(209.8, 229, 216.4);
-  border-inline-start: 0.2rem solid #1d7d3e;
-  color: #000;
-}
-#upload-plugins .plugin-disabled {
-  background: rgb(248.2, 241.6, 212);
-  border-inline-start: 0.2rem solid #ddbc28;
-  color: #000;
-}
-#upload-plugins .plugin-uninstalled {
-  background: rgb(242.8, 212, 211.6);
-  border-inline-start: 0.2rem solid #c22826;
-  color: #000;
 }
 
 /*!Custom Responsive rules */

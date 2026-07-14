@@ -211,6 +211,9 @@ $table-cell-vertical-align: middle;
 
   --osc-ink:           #{$gray-900};
   --osc-ink-muted:     #{$gray-600};
+  // One step up from muted, and the ink of every neutral status badge. A 13px Label on a
+  // tint has less to work with than body text on white, so it does not use the muted grey.
+  --osc-ink-emphasis:  #{$gray-700};
 
   --osc-success:       #{$success};
   --osc-success-tint:  #{$success-tint};
