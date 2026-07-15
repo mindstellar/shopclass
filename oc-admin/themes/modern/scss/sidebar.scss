@@ -443,6 +443,13 @@ $sidebar-gutter: 2.35rem;
     overflow: hidden;
     position: sticky;
     width: 15rem;
+    // position:sticky makes this a stacking context, so the collapsed flyout's
+    // z-index (1050) only ranks WITHIN the sidebar. The content column comes later
+    // in the DOM and its widgets are positioned (.card => position:relative) at the
+    // same auto level, so without a rank here the whole sidebar — flyout included —
+    // paints beneath them, and beneath the topbar (1020, which lives in that column).
+    // Lift the sidebar's context above both so the flyout escapes over the content.
+    z-index: 1040;
     // The width animates, which reflows the content column — that reflow IS the
     // feature — and it rides --osc-duration-base, so it is instant under
     // prefers-reduced-motion.

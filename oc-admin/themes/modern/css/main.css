@@ -13166,6 +13166,7 @@ div.widget-box-content-no-wrapp li a {
     overflow: hidden;
     position: sticky;
     width: 15rem;
+    z-index: 1040;
     transition: width var(--osc-duration-base) var(--osc-ease);
   }
   .sidebar-brand {
