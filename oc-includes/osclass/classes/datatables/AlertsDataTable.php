@@ -171,7 +171,7 @@ class AlertsDataTable extends DataTable
                 $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
                 // second column
                 $row['email'] =
-                    '<a href="' . osc_admin_base_url(true) . '?page=items&userId=">' . $aRow['s_email'] . '</a>'
+                    '<a href="' . osc_admin_base_url(true) . '?page=items&userId=">' . osc_esc_html($aRow['s_email']) . '</a>'
                     . $actions;
 
                 // third row
@@ -179,13 +179,13 @@ class AlertsDataTable extends DataTable
                 $pieces     = array();
                 $conditions = osc_get_raw_search((array)json_decode($aRow['s_search'], true));
                 if (isset($conditions['sPattern']) && $conditions['sPattern'] != '') {
-                    $pieces[] = sprintf(__('<b>Pattern:</b> %s'), $conditions['sPattern']);
+                    $pieces[] = sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($conditions['sPattern']));
                 }
                 if (isset($conditions['aCategories']) && !empty($conditions['aCategories'])) {
                     $l         = min(count($conditions['aCategories']), 4);
                     $cat_array = array();
                     for ($c = 0; $c < $l; $c++) {
-                        $cat_array[] = $conditions['aCategories'][$c];
+                        $cat_array[] = osc_esc_html($conditions['aCategories'][$c]);
                     }
                     if (count($conditions['aCategories']) > $l) {
                         $cat_array[] = '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
