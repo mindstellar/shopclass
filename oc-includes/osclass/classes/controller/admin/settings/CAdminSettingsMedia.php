@@ -99,9 +99,10 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                         $watermark_file = Params::getFiles('watermark_image');
                         if ($watermark_file['tmp_name'] != '' && $watermark_file['size'] > 0) {
                             if ($watermark_file['error'] == UPLOAD_ERR_OK) {
-                                if ($watermark_file['type'] === 'image/png') {
-                                    $tmpName = $watermark_file['tmp_name'];
-                                    $path    = osc_uploads_path() . '/watermark.png';
+                                $tmpName   = $watermark_file['tmp_name'];
+                                $imageInfo = @getimagesize($tmpName);
+                                if ($imageInfo !== false && $imageInfo['mime'] === 'image/png') {
+                                    $path = osc_uploads_path() . '/watermark.png';
                                     if (move_uploaded_file($tmpName, $path)) {
                                         $iUpdated += osc_set_preference('watermark_image', $path);
                                     } else {
