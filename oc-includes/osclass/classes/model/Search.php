@@ -575,13 +575,17 @@ class Search extends DAO
         $sql    = $this->makeSQL();
         $result = $this->dao->query($sql);
         if ($count) {
-            $sql     = $this->makeSQL(true);
+            // Wrap the (unlimited) match query in COUNT(*) so the total is exact and
+            // only one row crosses the wire, instead of fetching up to 100 pages of
+            // ids and counting them client-side (which also capped the total).
+            $sql     = 'SELECT COUNT(*) AS total FROM (' . $this->makeSQL(true) . ') AS search_count';
             $datatmp = $this->dao->query($sql);
 
             if ($datatmp === false) {
                 $this->total_results = 0;
             } else {
-                $this->total_results = $datatmp->numRows();
+                $row                 = $datatmp->row();
+                $this->total_results = (int)($row['total'] ?? 0);
             }
         } else {
             $this->total_results = 0;
@@ -746,12 +750,10 @@ class Search extends DAO
             }
             // ---------------------------------------------------------
 
-            // order & limit
-            $this->dao->orderBy($this->order_column, $this->order_direction);
-
-            if ($count) {
-                $this->dao->limit(100 * $this->results_per_page);
-            } else {
+            // order & limit — neither matters when we only need COUNT(*), and dropping
+            // the limit is what makes the wrapped count exact instead of capped.
+            if (!$count) {
+                $this->dao->orderBy($this->order_column, $this->order_direction);
                 $this->dao->limit($this->limit_init, $this->results_per_page);
             }
         }
