@@ -462,15 +462,11 @@ class CWebItem extends BaseModel
                 }
                 View::newInstance()->_exportVariableToView('item', $item);
 
-                require_once osc_lib_path() . 'osclass/user-agents.php';
-                foreach ($user_agents as $ua) {
-                    if (preg_match('|' . $ua . '|', Params::getServerParam('HTTP_USER_AGENT'))) {
-                        // mark item if it's not a bot
-                        $mItem = new ItemActions(false);
-                        $mItem->mark($id, $as);
-                        break;
-                    }
-                }
+                // Any gating (per-reporter dedup, rate-limit, captcha) belongs in a listener on
+                // the item_mark filter — mark() applies it. The old user-agent allowlist here was
+                // broken both ways: it silently dropped reports from browsers not on its stale
+                // list (e.g. Firefox) while letting bots that spoof a known UA straight through.
+                (new ItemActions(false))->mark($id, $as);
 
                 osc_add_flash_ok_message(_m("Thanks! That's very helpful"));
                 $this->redirectTo(osc_item_url());
