@@ -14451,5 +14451,79 @@ form h3, form .h3 {
     display: none;
   }
 }
+[data-bs-theme=dark] {
+  --osc-bench: #211e1a;
+  --osc-bench-warm: #2b2723;
+  --osc-bench-sunk: #1a1714;
+  --osc-rule: #3a352f;
+  --osc-rule-strong: #7c7264;
+  --osc-ink: #ece7e0;
+  --osc-ink-muted: #b0a99f;
+  --osc-ink-emphasis: #cbc3b8;
+  --osc-ink-inverse: #201d19;
+  --osc-bronze: #d7a54e;
+  --osc-bronze-deep: #e4b566;
+  --osc-bronze-tint: #3a2f1e;
+  --osc-bronze-rgb: 215, 165, 78;
+  --osc-success: #5cc27d;
+  --osc-success-tint: #183024;
+  --osc-success-deep: #46a866;
+  --osc-danger: #f0857f;
+  --osc-danger-tint: #331d1b;
+  --osc-danger-deep: #e56b64;
+  --osc-warning: #e8c14a;
+  --osc-warning-tint: #2e2812;
+  --osc-info: #5bb6e8;
+  --osc-info-tint: #152833;
+  --osc-shadow-overlay: 0 4px 12px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
+  --osc-shadow-modal: 0 16px 48px rgba(0, 0, 0, .60);
+  --bs-body-bg: var(--osc-bench);
+  --bs-body-bg-rgb: 33, 30, 26;
+  --bs-body-color: var(--osc-ink);
+  --bs-body-color-rgb: 236, 231, 224;
+  --bs-emphasis-color: var(--osc-ink);
+  --bs-emphasis-color-rgb: 236, 231, 224;
+  --bs-secondary-bg: var(--osc-bench-warm);
+  --bs-secondary-color: var(--osc-ink-muted);
+  --bs-tertiary-bg: var(--osc-bench-sunk);
+  --bs-tertiary-color: var(--osc-ink-muted);
+  --bs-border-color: var(--osc-rule);
+  --bs-heading-color: var(--osc-ink);
+  --bs-link-color: var(--osc-bronze);
+  --bs-link-color-rgb: 215, 165, 78;
+  --bs-link-hover-color: var(--osc-bronze-deep);
+  --bs-secondary-bg-rgb: 43, 39, 35;
+  --bs-tertiary-bg-rgb: 26, 23, 20;
+}
+[data-bs-theme=dark] .form-control, [data-bs-theme=dark] .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls [data-bs-theme=dark] input:not([type=checkbox]):not([type=radio]):not([type=submit]), [data-bs-theme=dark] .form-controls textarea, .form-controls [data-bs-theme=dark] textarea, [data-bs-theme=dark] input.large,
+[data-bs-theme=dark] input.xlarge,
+[data-bs-theme=dark] .input-text,
+[data-bs-theme=dark] .input-password, [data-bs-theme=dark] input.input-small, [data-bs-theme=dark] input.input-medium, [data-bs-theme=dark] input.input-large,
+[data-bs-theme=dark] .form-select,
+[data-bs-theme=dark] .widget-box-title select,
+.widget-box-title [data-bs-theme=dark] select,
+[data-bs-theme=dark] .form-controls select,
+.form-controls [data-bs-theme=dark] select {
+  background-color: var(--osc-bench);
+  border-color: var(--osc-rule-strong);
+  color: var(--osc-ink);
+}
+[data-bs-theme=dark] .form-control::placeholder, [data-bs-theme=dark] .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit])::placeholder, .form-controls [data-bs-theme=dark] input:not([type=checkbox]):not([type=radio]):not([type=submit])::placeholder, [data-bs-theme=dark] .form-controls textarea::placeholder, .form-controls [data-bs-theme=dark] textarea::placeholder, [data-bs-theme=dark] input.large::placeholder,
+[data-bs-theme=dark] input.xlarge::placeholder,
+[data-bs-theme=dark] .input-text::placeholder,
+[data-bs-theme=dark] .input-password::placeholder, [data-bs-theme=dark] input.input-small::placeholder, [data-bs-theme=dark] input.input-medium::placeholder, [data-bs-theme=dark] input.input-large::placeholder {
+  color: var(--osc-ink-muted);
+}
+[data-bs-theme=dark] .form-control:disabled, [data-bs-theme=dark] .form-controls input:disabled:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls [data-bs-theme=dark] input:disabled:not([type=checkbox]):not([type=radio]):not([type=submit]), [data-bs-theme=dark] .form-controls textarea:disabled, .form-controls [data-bs-theme=dark] textarea:disabled, [data-bs-theme=dark] input.large:disabled,
+[data-bs-theme=dark] input.xlarge:disabled,
+[data-bs-theme=dark] .input-text:disabled,
+[data-bs-theme=dark] .input-password:disabled, [data-bs-theme=dark] input.input-small:disabled, [data-bs-theme=dark] input.input-medium:disabled, [data-bs-theme=dark] input.input-large:disabled,
+[data-bs-theme=dark] .form-select:disabled,
+[data-bs-theme=dark] .widget-box-title select:disabled,
+.widget-box-title [data-bs-theme=dark] select:disabled,
+[data-bs-theme=dark] .form-controls select:disabled,
+.form-controls [data-bs-theme=dark] select:disabled {
+  background-color: var(--osc-bench-sunk);
+}
 
 /*# sourceMappingURL=main.css.map */
