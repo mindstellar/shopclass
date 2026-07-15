@@ -6,12 +6,19 @@ on:
 permissions:
   contents: write
 jobs:
+  # Gate the release on the same checks that run for PRs (reusable workflows).
+  test:
+    uses: ./.github/workflows/test.yml
+  drift:
+    uses: ./.github/workflows/schema-drift.yml
+
   release:
+    needs: [test, drift]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Extract OSCLASS_VERSION
         id: extract_version
         run: |
@@ -28,9 +35,6 @@ jobs:
             echo "Invalid OSCLASS_VERSION format: ${RAW_VERSION}"
             exit 1
           fi
-
-      - name: Debug OSCLASS_VERSION
-        run: echo "OSCLASS_VERSION=${{ env.OSCLASS_VERSION }}"
 
       - name: Check if Tag Exists
         id: check_tag
@@ -57,9 +61,22 @@ jobs:
           git tag -a "${OSCLASS_VERSION}" -m "Release ${OSCLASS_VERSION}"
           git push origin "${OSCLASS_VERSION}"
 
-      - name: Run Build Script
+      - name: Setup Node
         if: ${{ env.TAG_EXISTS == 'false' }}
-        run: sh ./.build.sh
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build assets
+        if: ${{ env.TAG_EXISTS == 'false' }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package release
+        if: ${{ env.TAG_EXISTS == 'false' }}
+        run: bash ./.build.sh
 
       - name: Create GitHub Release
         if: ${{ env.TAG_EXISTS == 'false' }}

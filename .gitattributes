@@ -5,6 +5,7 @@
 /.gitignore export-ignore
 /.github export-ignore
 /tests export-ignore
+/scripts export-ignore
 /.travis.yml export-ignore
 /.package.json export-ignore
 /.gitmodules export-ignore
