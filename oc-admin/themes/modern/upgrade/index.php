@@ -64,7 +64,7 @@ function customHead()
             $('#output').show();
             $('#tohide').hide();
 
-            $.get('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo Params::getParam('skipdb')?>',
+            $.get('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo Params::getParam('skipdb')?>&<?php echo osc_csrf_token_url(); ?>',
                 function
                     (data) {
                     $('#loading_image').hide();
