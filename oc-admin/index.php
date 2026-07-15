@@ -50,7 +50,9 @@ osc_add_hook('admin_footer', array('FieldForm', 'i18n_datePicker'));
 
 // register css styles
 osc_register_style('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.css?v='.OSCLASS_VERSION));
-osc_register_style('admin-css', osc_current_admin_theme_styles_url('main.css?v='.OSCLASS_VERSION));
+$adminCssFile = AdminThemes::newInstance()->getCurrentThemePath() . 'css/main.css';
+$adminCssVer = file_exists($adminCssFile) ? filemtime($adminCssFile) : OSCLASS_VERSION;
+osc_register_style('admin-css', osc_current_admin_theme_styles_url('main.css?v='.$adminCssVer));
 osc_register_style('bootstrap-icons', osc_assets_url('bootstrap-icons/bootstrap-icons.css?v='.OSCLASS_VERSION));
 
 // enqueue css styles
