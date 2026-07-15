@@ -13235,6 +13235,7 @@ div.widget-box-content-no-wrapp li a {
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-submenu,
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-flyout {
+    --osc-flyout-hide: .22s;
     background-color: var(--osc-bench);
     border: 1px solid var(--osc-rule);
     box-shadow: var(--osc-shadow-overlay);
@@ -13243,7 +13244,7 @@ div.widget-box-content-no-wrapp li a {
     opacity: 0;
     position: fixed;
     transform: translateX(-0.25rem);
-    transition: opacity var(--osc-duration-fast) var(--osc-ease), transform var(--osc-duration-fast) var(--osc-ease);
+    transition: opacity var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide), transform var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide), visibility 0s linear calc(var(--osc-duration-fast) + var(--osc-flyout-hide));
     visibility: hidden;
     z-index: 1050;
   }
@@ -13277,6 +13278,7 @@ div.widget-box-content-no-wrapp li a {
   [data-osc-sidebar=collapsed] .dashboard-sidebar .nav-item:focus-within > .sidebar-flyout {
     opacity: 1;
     transform: translateX(0);
+    transition-delay: 0s;
     visibility: visible;
   }
   [data-osc-sidebar=collapsed] .rail-flyout-title {
