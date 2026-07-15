@@ -93,11 +93,6 @@ $tab_index = 2;
             <th><?php _e('Name'); ?></th>
             <th class="col-status"><?php _e('Status'); ?></th>
             <th><?php _e('Description'); ?></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
         </tr>
         </thead>
         <tbody>
@@ -108,16 +103,29 @@ $tab_index = 2;
                 // owner may have styled it, and `status-*` is what tints and shapes the badge.
                 $sStatus = $array['plugin_status'];
                 unset($array['plugin_status']);
+                // The controller appends the action links as five trailing cells
+                // (update, configure, enable/disable, install/uninstall, delete). Gather them into
+                // the shared .actions strip under the plugin name, the same row-actions pattern the
+                // datatables use, instead of one action per empty column. The update-available
+                // notice already sits in the name cell, so it stays out of the strip.
+                $options = array();
+                foreach (array(3, 4, 5, 6) as $ak) {
+                    if (isset($array[$ak]) && trim($array[$ak]) !== '') {
+                        $options[] = $array[$ak];
+                    }
+                }
+                $actions = empty($options) ? ''
+                    : '<div class="actions"><ul><li>' . implode('</li><li>', $options) . '</li></ul></div>';
                 ?>
                 <tr class="plugin-<?php echo $sStatus; ?> status-<?php echo $sStatus; ?>">
-                    <?php foreach ($array as $key => $value) { ?>
-                        <td<?php echo $key === 'status' ? ' class="col-status"' : ''; ?>><?php echo $value; ?></td>
-                    <?php } ?>
+                    <td><?php echo $array[0] . $actions; ?></td>
+                    <td class="col-status"><?php echo $array['status']; ?></td>
+                    <td><?php echo $array[1]; ?></td>
                 </tr>
             <?php } ?>
         <?php } else { ?>
             <tr>
-                <td colspan="8" class="text-center">
+                <td colspan="3" class="text-center">
                     <p><?php _e('No data available in table'); ?></p>
                 </td>
             </tr>
@@ -191,7 +199,6 @@ $tab_index = 2;
     </div>
 </form>
 <script type="text/javascript">
-    document.querySelector("#upload-plugins > table > tbody > tr:nth-child(1) > td:nth-child(1)")
     $(document).ready(function () {
         $('.plugin-tooltip').each(function () {
             $(this).osc_tooltip('<?php echo osc_esc_js(__('Problems with this plugin? Ask for support.')); ?>', {

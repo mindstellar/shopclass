@@ -163,38 +163,50 @@ window.addEventListener('load', function () {
     }
 });
 
-// show div.actions on hover of the row in datatables
-// in pure JavaScript, we wouldn't need to use jQuery
+// Row actions live in-flow beneath each listing title and are always visible: they are quick
+// actions, so a keyboard or touch user must reach them in one click, not perform a hover the
+// pointer alone can do. (The old code revealed them on mouseover only — a WCAG 2.1.1 failure —
+// and the stylesheet reserved 2.5rem of dead space under every row so the reveal wouldn't reflow
+// the table. Both are gone.) This enhancer only (a) tags the one destructive link so the
+// stylesheet can hold it apart from the routine ones, and (b) drives the "More" overflow list as
+// an accessible click-to-open disclosure.
 window.addEventListener('load', function () {
-    var dataTablesRows = document.querySelectorAll('#datatablesForm tr');
-    for (var i = 0; i < dataTablesRows.length; i++) {
-        var actions_div = dataTablesRows[i].querySelector('.actions');
-        if (actions_div) {
-            dataTablesRows[i].onmouseover = function () {
-                this.classList.add('show-actions');
-            };
-            dataTablesRows[i].onmouseout = function () {
-                this.classList.remove('show-actions');
-            };
-            var more_trigger = dataTablesRows[i].querySelector('.show-more-trigger');
-            if (more_trigger) {
-                more_trigger.addEventListener('click', function (event) {
-                    var actions_ul = this.nextElementSibling;
-                    actions_ul.classList.add('d-block');
-                    event.target.classList.add('hide');
-                    event.stopPropagation();
-                    event.preventDefault();
-                    document.addEventListener('click', function (event) {
-                        // check parent element is not actions_ul.parentElement or doesn't have hide class
-                        if (event.target.nextElementSibling !== actions_ul) {
-                            actions_ul.classList.remove('d-block');
-                            actions_ul.parentNode.querySelector('.show-more-trigger').classList.remove('hide');
-                            //remove this event listener
-                            document.removeEventListener('click', arguments.callee);
-                        }
-                    });
-                });
-            }
+    var actionsDivs = document.querySelectorAll('#datatablesForm .actions');
+    actionsDivs.forEach(function (actions) {
+        var del = actions.querySelector('a[onclick*="delete_dialog"], a[href*="action=delete"]');
+        if (del) {
+            del.classList.add('row-action-danger');
         }
-    }
+
+        var trigger = actions.querySelector('.show-more-trigger');
+        if (!trigger) {
+            return;
+        }
+        var more = trigger.closest('.show-more');
+        trigger.setAttribute('role', 'button');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        function close() {
+            more.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        trigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var open = more.classList.toggle('is-open');
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function (event) {
+            if (!more.contains(event.target)) {
+                close();
+            }
+        });
+        more.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                close();
+                trigger.focus();
+            }
+        });
+    });
 });

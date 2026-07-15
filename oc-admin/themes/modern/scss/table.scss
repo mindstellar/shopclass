@@ -101,77 +101,94 @@
     }
   }
 
-  div {
-    &.actions {
-      display: none;
-      font-size: 0.85rem;
-      font-weight: normal;
-      padding-bottom: .85rem;
-      margin-top: 0.85rem;
-      position: absolute;
+  // Row actions sit in-flow beneath the listing title and are ALWAYS visible — they are quick
+  // actions, so they are one click away, not hidden behind a hover the keyboard and touch cannot
+  // perform. (The old rule revealed them on mouseover only, which fails WCAG 2.1.1 outright, and
+  // forced every row to reserve 2.5rem of dead space so the reveal would not reflow the table.
+  // Both are gone: the strip below is what replaces that empty band, so rows are shorter, not
+  // taller.) Muted by default — the chrome recedes so the listing is what you read. Colour goes
+  // through --osc-* tokens, not the frozen Sass $link-color it used to, so it follows dark mode.
+  .actions {
+    font-size: .8125rem;  // Label, 13px — metadata weight, matching the column headers.
+    margin-top: .3rem;
 
-      a {
-        // Was #018be3 — a hardcoded stock blue, hiding one Blue Exile check below the
-        // #0d6efd grep because it is a *different* blue. The rule is about the colour,
-        // not the hex: there is no blue in this system.
-        color: $link-color;
-        text-decoration: none;
+    ul {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .15rem .6rem;   // Wraps the "Show more…" overflow (the last, lowest-stakes item) when
+      list-style: none;    // the title column is tight, never the destructive Delete.
+      margin: 0;
+      padding: 0;
+    }
 
-        &:hover {
-          color: $link-hover-color;
-          text-decoration: underline;
-        }
+    li {
+      margin: 0;
+    }
+
+    a {
+      color: var(--osc-ink-muted);
+      text-decoration-line: none;
+      white-space: nowrap;
+
+      &:hover,
+      &:focus-visible {
+        color: var(--osc-bronze);
+        text-decoration-line: underline;
       }
+    }
 
-      ul {
-        list-style: none;
-        margin: 4px 0 0;
-        padding: 0;
-      }
-
-      li {
-        float: left;
-        margin-right: 10px;
-
-        a {
-          float: left;
-        }
-
-        ul {
-          float: left;
-          margin: 0;
-        }
-      }
-
-      .show-more {
-        ul {
-          display: none;
-        }
-      }
-
-      .hover {
-        a {
-          display: none;
-        }
-
-        ul {
-          display: block;
-
-          a {
-            display: block;
-          }
-        }
+    // The one destructive link is distinguished by turning danger-red only when you aim at it, so
+    // a column of Delete links does not spend the danger colour on every row. It is left in its
+    // natural place in the list rather than forced to the row's inline-end: an auto margin or an
+    // `order` override made Delete itself the item that wrapped to a second line the moment a row
+    // also carried "View media" (and it would wrap again under a longer translated label), which
+    // read as an orphan. In flow, it is "Show more…" — the last, lowest-stakes item — that wraps
+    // when space is tight. The confirmation modal is the real guardrail against a misclick here.
+    .row-action-danger {
+      &:hover,
+      &:focus-visible {
+        color: var(--osc-danger);
       }
     }
   }
-  .show-actions {
-    .actions {
-      display: block;
+
+  // Secondary actions (the status / premium / spam toggles) fold behind "More" — always present,
+  // one click to open. An Overlay-shadowed popover (one of the system's two shadows), not a hover.
+  .show-more {
+    position: relative;
+
+    > ul {
+      background-color: var(--osc-bench);
+      border: 1px solid var(--osc-rule);
+      border-radius: $border-radius;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .1), 0 1px 3px rgba(0, 0, 0, .06);
+      display: none;
+      flex-direction: column;
+      gap: .1rem;
+      inset-block-start: calc(100% + 4px);
+      inset-inline-start: 0;
+      min-width: 10rem;
+      padding: .3rem;
+      position: absolute;
+      z-index: $zindex-dropdown;
+
+      a {
+        border-radius: $border-radius-sm;
+        display: block;
+        padding: .25rem .5rem;
+        white-space: normal;
+
+        &:hover,
+        &:focus-visible {
+          background-color: var(--osc-bench-warm);
+          text-decoration-line: none;
+        }
+      }
     }
-    i.bi-three-dots:before {
-      opacity: 0;
-      transition: all 0.5s ease;
-      margin-left: -1.8rem;
+
+    &.is-open > ul {
+      display: flex;
     }
   }
 
@@ -299,19 +316,22 @@
   }
 }
 
-// The row-actions strip ("Edit · Delete · …") is absolutely positioned and only revealed on
-// hover, so every row reserves 2.5rem beneath its content to stop the table reflowing under
-// the cursor. That reserve used to be applied with `.col-bulkactions ~ td`, a general SIBLING
-// selector — which silently skipped .col-status and .col-status-border, because those two
-// columns come BEFORE bulkactions in the row. Their content therefore centred against a box
-// 2.5rem taller than everyone else's, and the status badge sat visibly below the title next
-// to it. Reserve the space on every cell in the row instead, so the whole row shares one box.
+// The row actions are now always visible and in-flow (see .actions above), so there is nothing
+// to reveal on hover and nothing to reserve space for — the row is exactly as tall as its
+// content. The 2.5rem-per-cell reserve this rule used to carry is deleted with that mechanism.
 .table-contains-actions {
   clear: both;
   position: relative;
+}
 
-  > .table > tbody > tr > td {
-    padding-bottom: 2.5rem;
+// Empty state: filter-aware, and quiet. Not a bordered "no data" cell — just a calm line and,
+// when a filter is what emptied the table, the one control that brings the listings back.
+.empty-listings {
+  color: var(--osc-ink-muted);
+  padding: 2.5rem 1rem;
+
+  p {
+    margin-bottom: .75rem;
   }
 }
 
@@ -403,6 +423,18 @@ td {
 
 .col-title {
   min-width: 280px;
+}
+
+// Dates on one line. Once the row-action space reserve came out, a timestamp wrapping to three
+// lines ("July 14, / 2026 8:57 / am") was the tallest thing left in a row and the new height
+// driver; the expiry ("Never / expires") wrapped too. Holding both to a single line is what
+// actually makes the listing rows dense. The header cells already nowrap; this matches the data
+// to them. On tablet and below the responsive rules re-cap these cells, so nothing overflows.
+.col-date,
+.col-exp,
+.col-expiration,
+.col-update_date {
+  white-space: nowrap;
 }
 #email-templates {
   div{

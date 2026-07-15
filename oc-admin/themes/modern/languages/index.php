@@ -108,7 +108,7 @@ osc_current_admin_theme_path('parts/header.php');
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
-                    <tr class="table-secondary">
+                    <tr>
                         <th class="col-bulkactions"><input id="check_all" type="checkbox" /></th>
                         <th><?php _e('Name'); ?></th>
                         <th class="col-short-name"><?php _e('Short name'); ?></th>
