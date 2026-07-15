@@ -208,8 +208,17 @@ $table-cell-vertical-align: middle;
   --osc-bronze-rgb:    #{red($bronze)}, #{green($bronze)}, #{blue($bronze)};
 
   --osc-bench:         #{$white};     // content surface
-  --osc-bench-warm:    #{$gray-100};  // sidebar, toolbars, table headers
+  --osc-bench-warm:    #{$gray-100};  // toolbars, table headers
   --osc-bench-sunk:    #{$gray-200};  // recessed wells
+
+  // The nav chrome surface. Deeper than bench-warm on purpose: the sidebar owns the
+  // whole left column and must read as chrome the content bench floats above, not as a
+  // near-white that dissolves into it (gray-100 is 1.08:1 on white — invisible as an
+  // edge). A one-off warm neutral between gray-200 and gray-300, its own defining edge,
+  // and a translucent hover that darkens in light / lightens in dark (see _theme-dark).
+  --osc-chrome:        #ece6dd;
+  --osc-chrome-edge:   #d8d0c4;
+  --osc-chrome-hover:  rgba(45, 26, 23, .055);
 
   --osc-rule:          #{$gray-300};  // decorative dividers
   --osc-rule-strong:   #{$gray-500};  // interactive control borders

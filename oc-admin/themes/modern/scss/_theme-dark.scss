@@ -29,8 +29,15 @@
   // Warm near-black, hue ~55. Unlike light mode, the elevated chrome (bench-warm) is
   // LIGHTER than the content bench, not darker — a raised surface catches more light.
   --osc-bench:         #211e1a; // content surface
-  --osc-bench-warm:    #2b2723; // sidebar, toolbars, table headers (raised)
+  --osc-bench-warm:    #2b2723; // toolbars, table headers (raised)
   --osc-bench-sunk:    #1a1714; // wells, disabled, neutral-badge tint (recessed)
+
+  // Nav chrome. Same rule as bench-warm — a raised surface catches more light, so the
+  // sidebar is LIGHTER than the content bench here, the inverse of light mode where it is
+  // darker. ink-muted on it: 6.4:1. The hover lightens (adds light) instead of darkening.
+  --osc-chrome:        #2f2a24;
+  --osc-chrome-edge:   #423b32;
+  --osc-chrome-hover:  rgba(255, 255, 255, .06);
 
   // --- Lines -----------------------------------------------------------------
   --osc-rule:          #3a352f; // decorative divider — deliberately low contrast
