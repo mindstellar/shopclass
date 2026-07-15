@@ -43,7 +43,7 @@ class CAdminAjax extends AdminSecBaseModel
         parent::__construct();
         $this->ajax = true;
         if ($this->isModerator()
-            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme'))
+            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state'))
         ) {
             $this->action = 'error_permissions';
         }
@@ -102,6 +102,19 @@ class CAdminAjax extends AdminSecBaseModel
                 osc_set_preference((string) osc_logged_admin_id(), $theme, 'admin_theme', 'STRING');
                 osc_reset_preferences();
                 echo json_encode(array('done' => 1, 'theme' => $theme));
+                break;
+            case 'save_sidebar_state': // persist this admin's collapsed/expanded sidebar choice
+                osc_csrf_check();
+                $state = Params::getParam('state');
+                // Whitelist: raw request data echoed straight into the data-osc-sidebar
+                // attribute on every future page load. Same store and namespacing as
+                // admin_theme above — one t_preference row per admin, no schema change.
+                if ($state !== 'collapsed' && $state !== 'expanded') {
+                    $state = 'expanded';
+                }
+                osc_set_preference((string) osc_logged_admin_id(), $state, 'admin_sidebar', 'STRING');
+                osc_reset_preferences();
+                echo json_encode(array('done' => 1, 'state' => $state));
                 break;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');

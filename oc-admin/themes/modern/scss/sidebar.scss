@@ -78,15 +78,32 @@
       }
     }
 
-    // The disclosure chevron. `auto` pushes it to the row's end — the right edge in LTR,
-    // the left edge in RTL — without relying on the physical float in the markup.
-    > i {
+    // The disclosure toggle. A real <button> (not an <i role="button">) so it
+    // carries an accessible name and aria-expanded for screen readers; Bootstrap's
+    // collapse plugin flips `.collapsed` on it. `auto` pushes it to the row's end —
+    // the inline-end edge in both directions — without the physical float. The
+    // padding enlarges the hit area past the icon glyph (the negative inline-end
+    // margin pulls that padding back so the row's edge alignment is unchanged).
+    > .nav-chevron {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      cursor: pointer;
       flex: 0 0 auto;
+      line-height: 1;
+      margin-inline-end: -.25rem;
       margin-inline-start: auto;
+      padding: .35rem;
       transition: transform var(--osc-duration-base) var(--osc-ease);
 
       &.collapsed {
         transform: rotate(-90deg);
+      }
+
+      &:focus-visible {
+        border-radius: $border-radius;
+        outline: 2px solid var(--osc-bronze);
+        outline-offset: 2px;
       }
     }
 
@@ -113,10 +130,19 @@
   background-color: transparent;
   border: 0;
   font-size: $font-size-sm;
-  // Align submenu text under the parent's label rather than under its icon.
-  padding-inline-start: 1.6rem;
+  // A hairline guide rail runs down the group so the children read as belonging
+  // to their parent rather than as more top-level rows — "hairline rules do the
+  // work" (DESIGN.md §4). Logical props keep it on the inline-start edge in RTL.
+  // The rail's own offset plus the reduced padding below reproduce the previous
+  // ~1.6rem text indent, so the labels stay under the parent's label, not its icon.
+  border-inline-start: 1px solid var(--osc-rule);
+  margin-inline-start: .95rem;
+  padding-inline-start: .25rem;
 
   a {
+    // The 2px transparent inline-start border is inherited from
+    // `.dashboard-sidebar .nav-link`; it reserves the marker's width so
+    // `.sub-active` colouring it in never shifts the label.
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     font-size: $font-size-sm;
@@ -127,9 +153,14 @@
       color: var(--osc-ink);
     }
 
-    // Current page.
+    // Current page. The same bronze language as a top-level active row — tint
+    // wash, bronze inline-start marker, weight 600 — scaled down for depth, so
+    // "you are here" is one system at both levels instead of two. (The old
+    // treatment was a full white `--osc-bench` box with no marker, which read
+    // louder than the parent's own active state.)
     &.sub-active {
-      background-color: var(--osc-bench);
+      background-color: var(--osc-bronze-tint);
+      border-inline-start-color: var(--osc-bronze);
       color: var(--osc-bronze);
       font-weight: 600;
     }
@@ -140,10 +171,438 @@
     }
   }
 
+  // A titled divider, not a link: the hairline above marks a group break and the
+  // sentence case stays (no uppercase / letter-spacing — those break cursive
+  // joining in Arabic and this string is translated). Sits at the 13px Label
+  // floor, below the 14px child links.
   .submenu-divide {
+    border-block-start: 1px solid var(--osc-rule);
     color: var(--osc-ink-muted);
-    font-size: $font-size-sm;
+    font-size: .8125rem;
     font-weight: 600;
-    margin-block-start: .5rem;
+    margin-block-start: .6rem;
+    padding-block-start: .5rem;
+    padding-inline-start: .65rem;
+  }
+}
+
+
+
+
+// =============================================================================
+// The app shell: full-height sidebar + collapsible rail
+// =============================================================================
+// The sidebar owns the whole left column, top to bottom: a brand masthead, the
+// scrolling menu, and a footer that carries the account menu, the appearance
+// toggle, and the collapse control. The old full-width top bar is gone; a slim
+// header now sits only over the content, holding the plugin toolbar and (on
+// small screens) the menu button.
+//
+// No element between a flyout and the viewport may clip: the collapsed rail's
+// flyouts are position:absolute and escape toward the inline-end, so the sidebar
+// deliberately has NO internal scroll container. Instead the page scrolls and the
+// brand (sticky top) and footer (sticky bottom) stay pinned. This is also why the
+// footer is always reachable without the "just below the fold" problem a
+// min-vh-100 column with a static control would have.
+//
+// The collapse choice is per-admin and persisted server-side (t_preference, the
+// store the dark-mode toggle shares), emitted onto `<html data-osc-sidebar>`
+// before first paint so the rail never flashes open on load.
+
+// ---- Brand masthead ---------------------------------------------------------
+.sidebar-brand {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-weight: 600;
+  gap: .5rem;
+  overflow: hidden;
+  padding: .7rem .85rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  > i {
+    color: var(--osc-bronze);
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+  }
+
+  .sidebar-brand-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover {
+    color: var(--osc-bronze-deep);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+// ---- Footer utility zone: appearance, account, collapse ---------------------
+.sidebar-footer {
+  background-color: var(--osc-bench-warm);
+  border-block-start: 1px solid var(--osc-rule);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: .1rem;
+  padding: .35rem;
+}
+
+.sidebar-util,
+.sidebar-collapse-toggle {
+  align-items: center;
+  background-color: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  gap: .5rem;
+  padding: .45rem .55rem;
+  text-align: start;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease),
+              color var(--osc-duration-fast) var(--osc-ease);
+  width: 100%;
+
+  > i {
+    flex: 0 0 auto;
+    font-size: 1.05rem;
+  }
+
+  &:hover {
+    background-color: var(--osc-bench);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.sidebar-collapse-toggle > i {
+  transition: transform var(--osc-duration-base) var(--osc-ease);
+}
+
+// The account button's expand caret rides at the row's end.
+.sidebar-util-caret {
+  color: var(--osc-ink-muted);
+  font-size: .9rem !important;
+  margin-inline-start: auto;
+}
+
+.sidebar-account {
+  .dropdown-menu {
+    --bs-dropdown-min-width: 12rem;
+
+    box-shadow: var(--osc-shadow-overlay);
+  }
+
+  .dropdown-item {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+  }
+}
+
+// ---- Slim header over the content -------------------------------------------
+.admin-topbar {
+  background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
+  gap: .25rem;
+  min-height: 3rem;
+  padding: .35rem .85rem;
+
+  .admin-topbar-tools {
+    align-items: center;
+    flex-direction: row;
+    gap: .25rem;
+  }
+
+  // Toolbar plugin items render as .nav-link inside this bar.
+  .nav-link {
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted);
+    padding: .4rem .6rem;
+
+    &:hover {
+      color: var(--osc-ink);
+    }
+  }
+
+  // The old hamburger bars were tuned for a dark navbar; ink them for the light
+  // bar so they stay visible on mobile.
+  .toggle-icon span {
+    background: var(--osc-ink);
+
+    &:hover,
+    &:focus {
+      background: var(--osc-bronze);
+    }
+  }
+}
+
+// The flyout header is rail-only: in the expanded menu the parent's own row
+// already names the section, so this injected <li> must never show inline.
+.rail-flyout-title {
+  display: none;
+}
+
+// The leaf flyout (a rail tooltip built in JS for menu items with no submenu)
+// only exists as a rail affordance; it is inert everywhere else.
+.sidebar-flyout {
+  display: none;
+}
+
+// ---- The menu scroll region + ghost scrollbar -------------------------------
+// The native scrollbar is hidden and replaced by a thin overlay bar (built in
+// footer.php) so the sidebar looks the same on platforms that reserve gutter
+// space for native bars as it does with macOS overlay bars.
+.sidebar-scroll {
+  // Firefox / legacy Edge; the WebKit pseudo below covers Chrome/Safari.
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+  }
+}
+
+.ghost-scrollbar {
+  inset-block: 4px;
+  inset-inline-end: 2px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity var(--osc-duration-base) var(--osc-ease);
+  width: 6px;
+  z-index: 4;
+
+  &.is-active {
+    opacity: 1;
+  }
+}
+
+.ghost-scrollbar-thumb {
+  background-color: var(--osc-rule-strong);
+  border-radius: 999px;
+  cursor: grab;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease);
+  width: 100%;
+
+  &:hover {
+    background-color: var(--osc-ink-muted);
+  }
+}
+
+.ghost-scrollbar.is-active .ghost-scrollbar-thumb {
+  pointer-events: auto;
+}
+
+// =============================================================================
+// Desktop shell + rail (>=1025px)
+// =============================================================================
+// Everything height- and rail-related is desktop-only. Below 1025px the sidebar
+// is a full-width off-canvas panel (see footer.php's resetSidebar) where a rail
+// and a sticky shell would be meaningless.
+@media (min-width: 1025px) {
+  #content > .row.flex-nowrap {
+    min-height: 100vh;
+  }
+
+  // A fixed-height frame stuck to the top of a scrolling page. Inside it the
+  // brand and footer are flex-fixed and the menu scrolls between them, so the
+  // account controls always sit on the bottom edge. overflow:hidden contains the
+  // ghost scrollbar; it does NOT clip the collapsed flyouts because those are
+  // position:fixed (their containing block is the viewport, not this box).
+  .dashboard-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    inset-block-start: 0;
+    overflow: hidden;
+    position: sticky;
+    width: 15rem;
+    // The width animates, which reflows the content column — that reflow IS the
+    // feature — and it rides --osc-duration-base, so it is instant under
+    // prefers-reduced-motion.
+    transition: width var(--osc-duration-base) var(--osc-ease);
+  }
+
+  .sidebar-brand {
+    flex: 0 0 auto;
+  }
+
+  // The scroll region between brand and footer. min-height:0 lets the flex item
+  // shrink below its content so it can actually scroll.
+  .sidebar-scroll-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+  }
+
+  .sidebar-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  // Above the topbar (1020): the account menu drops UP out of this footer, and
+  // its stacking context must not trap the menu behind the topbar on a short
+  // viewport.
+  .sidebar-footer {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 1030;
+  }
+
+  // The topbar stays put while the content scrolls beneath it.
+  .admin-topbar {
+    inset-block-start: 0;
+    position: sticky;
+    z-index: 1020;
+  }
+
+  [data-osc-sidebar="collapsed"] {
+    .dashboard-sidebar {
+      width: 3.5rem;
+    }
+
+    // The positioning context every flyout resolves against.
+    .dashboard-sidebar .nav-item {
+      position: relative;
+    }
+
+    // Icon-only masthead + footer rows.
+    .sidebar-brand {
+      justify-content: center;
+      padding-inline: .25rem;
+
+      .sidebar-brand-label {
+        display: none;
+      }
+    }
+
+    .sidebar-util,
+    .sidebar-collapse-toggle {
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    .sidebar-util-label,
+    .sidebar-util-caret,
+    .sidebar-collapse-toggle-label {
+      display: none;
+    }
+
+    .sidebar-collapse-toggle > i {
+      transform: rotate(180deg);
+    }
+
+    // Icon-only menu rows. `font-size: 0` collapses the label's text node while
+    // leaving it in the accessibility tree (unlike display:none), so the icon
+    // stays the only thing painted and screen readers still read the name.
+    .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link {
+      gap: 0;
+      justify-content: center;
+      padding-inline: .25rem;
+
+      // The disclosure chevron has nothing to disclose on a rail.
+      > .nav-chevron {
+        display: none;
+      }
+
+      a {
+        flex: 0 0 auto;
+        font-size: 0;
+
+        .bi {
+          font-size: 1.05rem;
+        }
+      }
+    }
+
+    // --- Flyouts ----------------------------------------------------------
+    // Both flyout kinds are position:fixed so they escape the menu's scroll
+    // frame (an overflow container would otherwise clip them). Their viewport
+    // coordinates are set in JS from the hovered row's rect; the reveal stays
+    // here. They remain DOM children of the <li>, so hovering the flyout still
+    // counts as hovering the row (hover propagates up the DOM tree), which keeps
+    // the panel open while the pointer travels to it.
+    .dashboard-sidebar .sidebar-submenu,
+    .dashboard-sidebar .sidebar-flyout {
+      background-color: var(--osc-bench);
+      border: 1px solid var(--osc-rule);
+      box-shadow: var(--osc-shadow-overlay);
+      color: var(--osc-ink);
+      // Neutralise the expanded group's indent: these are fixed and JS-positioned,
+      // so the rail's margin would otherwise offset the flyout from the hovered row.
+      margin-inline: 0;
+      opacity: 0;
+      position: fixed;
+      transform: translateX(-.25rem);
+      transition: opacity var(--osc-duration-fast) var(--osc-ease),
+                  transform var(--osc-duration-fast) var(--osc-ease);
+      visibility: hidden;
+      z-index: 1050;
+    }
+
+    // Parent panel.
+    .dashboard-sidebar .sidebar-submenu {
+      border-radius: $border-radius-lg;
+      // display:block wins over Bootstrap's `.collapse:not(.show){display:none}`.
+      display: block;
+      margin-block: 0;
+      max-height: calc(100vh - 1rem);
+      min-width: 12rem;
+      overflow-y: auto;
+      padding: .35rem;
+      padding-inline-start: .35rem;
+    }
+
+    // Leaf tooltip.
+    .dashboard-sidebar .sidebar-flyout {
+      border-radius: $border-radius;
+      display: block;
+      font-size: $font-size-sm;
+      font-weight: 500;
+      padding: .3rem .55rem;
+      white-space: nowrap;
+    }
+
+    .dashboard-sidebar .nav-item:hover > .sidebar-submenu,
+    .dashboard-sidebar .nav-item:focus-within > .sidebar-submenu,
+    .dashboard-sidebar .nav-item:hover > .sidebar-flyout,
+    .dashboard-sidebar .nav-item:focus-within > .sidebar-flyout {
+      opacity: 1;
+      transform: translateX(0);
+      visibility: visible;
+    }
+
+    .rail-flyout-title {
+      border-block-end: 1px solid var(--osc-rule);
+      color: var(--osc-ink);
+      display: block;
+      font-weight: 600;
+      margin-block-end: .25rem;
+      padding: .25rem .5rem .4rem;
+    }
+  }
+}
+
+
+// The rail collapse control is meaningless in the mobile off-canvas panel — the
+// rail is a desktop affordance — so it only exists at desktop widths.
+@media (max-width: 1024px) {
+  .sidebar-collapse-toggle {
+    display: none;
   }
 }
