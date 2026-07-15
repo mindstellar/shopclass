@@ -75,6 +75,21 @@ function osc_csrf_token_url()
 
 
 /**
+ * Hidden CSRF input fields to drop inside a &lt;form&gt;, for templates that want to emit the token
+ * explicitly instead of relying on the shutdown auto-injector. Mark the &lt;form&gt; with
+ * class="nocsrf" when using this so the injector skips it and the token is not duplicated — the
+ * same convention FormBuilder uses.
+ *
+ * @return string
+ * @since 5.3.0
+ */
+function osc_csrf_token_form()
+{
+    return (new Csrf())->tokenForm();
+}
+
+
+/**
  * Check if CSRF token is valid, die in other case
  *
  * @since 3.1
