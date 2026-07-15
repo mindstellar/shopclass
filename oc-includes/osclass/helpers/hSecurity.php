@@ -52,11 +52,11 @@ if (!defined('BCRYPT_COST')) {
 function osc_genRandomPassword($length = 8)
 {
     $dict = array_merge(range('a', 'z'), range('0', '9'), range('A', 'Z'));
-    shuffle($dict);
+    $max  = count($dict) - 1;
 
     $pass = '';
     for ($i = 0; $i < $length; $i++) {
-        $pass .= $dict[mt_rand(0, count($dict) - 1)];
+        $pass .= $dict[random_int(0, $max)];
     }
 
     return $pass;
@@ -228,7 +228,7 @@ function osc_is_username_blacklisted($username)
 function osc_verify_password($password, $hash)
 {
 
-    return password_verify($password, $hash) ? true : (sha1($password) === $hash);
+    return password_verify($password, $hash) ? true : hash_equals((string)$hash, sha1($password));
 }
 
 

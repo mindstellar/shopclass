@@ -100,8 +100,8 @@ class Csrf
             $this->csrfTokenName  = $token_name;
             $this->csrfTokenValue = $this->session->_get($token_name);
         } else {
-            $this->csrfTokenName  = $this->csrfName . '_' . mt_rand(0, mt_getrandmax());
-            $this->csrfTokenValue = hash('sha256', mt_rand(0, mt_getrandmax()));
+            $this->csrfTokenName  = $this->csrfName . '_' . bin2hex(random_bytes(8));
+            $this->csrfTokenValue = bin2hex(random_bytes(32));
             $this->session->_set('token_name', $this->csrfTokenName);
             $this->session->_set($this->csrfTokenName, $this->csrfTokenValue);
         }
@@ -214,7 +214,7 @@ class Csrf
         $name  = $this->session->_get('token_name');
         $token = $this->session->_get($csrfTokenName);
 
-        return $name === $csrfTokenName && $token === $csrfTokenValue;
+        return $name === $csrfTokenName && hash_equals((string)$token, (string)$csrfTokenValue);
     }
 
     /**

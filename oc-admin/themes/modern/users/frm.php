@@ -419,8 +419,8 @@ $aux = customFrmText();
                                         <div class="form-controls">
                                             <?php if (!empty($results)) {
                                                 foreach ($results as $r) { ?>
-                                                    <label><b><?php echo $r['s_title']; ?></b></label>
-                                                    <p><?php echo $r['s_description']; ?></p>
+                                                    <label><b><?php echo osc_esc_html($r['s_title']); ?></b></label>
+                                                    <p><?php echo osc_esc_html($r['s_description']); ?></p>
                                                 <?php }
                                             } else { ?>
                                                 <label>&nbsp;</label>
