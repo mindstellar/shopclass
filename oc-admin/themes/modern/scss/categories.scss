@@ -41,7 +41,7 @@
   position: relative;
 
   &:hover {
-    background-color: $warning-bg !important;
+    background-color: var(--osc-warning-tint) !important;
   }
 }
 
@@ -182,10 +182,12 @@ ul.subcategories {
   .category-row {
     display: flex;
     border-radius:.2rem;
-    background-color: $light;
+    background-color: var(--osc-bench-warm);
   }
   .disabled {
     .category-row {
+      // shade-color() needs a real colour at build time, so this stays on Sass for now — one
+      // of the two function-bound holdouts left in the theme (see DESIGN.md §6).
       background-color:shade-color($light,30%);
     }
   }
