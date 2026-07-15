@@ -12175,11 +12175,30 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
 }
 
 #footer-wrapper {
-  padding: 20px 0;
-  font-size: 12px;
+  border-top: 1px solid var(--osc-rule);
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+#footer-wrapper #footer {
+  align-items: center;
+  column-gap: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 0.35rem;
 }
 #footer-wrapper a {
+  color: var(--osc-bronze);
   text-decoration-line: none;
+}
+#footer-wrapper a:hover, #footer-wrapper a:focus-visible {
+  text-decoration-line: underline;
+}
+#footer-wrapper .admin-footer-version strong {
+  color: var(--osc-ink);
+  font-weight: 600;
 }
 
 h2.separate-top,
@@ -12330,6 +12349,11 @@ div.row-offset {
   background-color: var(--osc-bench-sunk);
 }
 
+#message-wrapper,
+#help-wrapper {
+  padding-inline: 15px;
+}
+
 #content-page {
   min-height: calc(100vh - 9rem);
   padding: 22px 15px 60px;
@@ -12368,7 +12392,7 @@ h3.render-title, .render-title.h3 {
 .quick-search input.input-text {
   background-color: var(--osc-bench-warm);
   border: 1px solid var(--osc-bench-sunk);
-  color: #555;
+  color: var(--osc-ink);
   display: inline-block;
   font-size: 0.85rem;
   height: 24px;
@@ -12411,14 +12435,14 @@ h3.render-title, .render-title.h3 {
 #system-info .card-body .row .col-sm-4.info-label, #system-info .iframe-category .grid-system .row .col-sm-4.info-label, .iframe-category #system-info .grid-system .row .col-sm-4.info-label, #system-info .widget-box-content .row .col-sm-4.info-label {
   font-size: 0.85rem;
   font-weight: 500;
-  background: rgba(0, 149, 255, 0.3411764706);
-  border-bottom: 1px dotted;
+  background: var(--osc-bench-warm);
+  border-bottom: 1px solid var(--osc-rule);
 }
 #system-info .card-body .row .col.info-value, #system-info .iframe-category .grid-system .row .col.info-value, .iframe-category #system-info .grid-system .row .col.info-value, #system-info .widget-box-content .row .col.info-value {
   font-size: 0.8rem;
   font-family: monospace;
-  background: rgba(255, 204, 0, 0.1607843137);
-  border-bottom: 1px dotted;
+  background: var(--osc-bench);
+  border-bottom: 1px solid var(--osc-rule);
   word-break: break-all;
 }
 

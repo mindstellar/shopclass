@@ -86,7 +86,7 @@ osc_add_hook('admin_header', 'admin_header_favicons');
 function admin_footer_html()
 {
     ?>
-    <div class="float-left">
+    <div class="admin-footer-credit">
         <?php printf(
             __('Thank you for using <a href="%s" target="_blank">Osclass</a>'),
             'https://github.com/mindstellar/Osclass/'
@@ -96,10 +96,9 @@ function admin_footer_html()
         <a title="<?php _e('Report Issue'); ?>" href="https://github.com/mindstellar/Osclass/issues/"
            target="_blank"><?php _e('Report Issue'); ?></a>
     </div>
-    <div class="float-right">
+    <div class="admin-footer-version">
         <strong>Osclass <?php echo OSCLASS_VERSION; ?></strong>
-    </div>
-    <div class="clear"></div><?php
+    </div><?php
 }
 
 
