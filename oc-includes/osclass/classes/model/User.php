@@ -138,6 +138,13 @@ class User extends DAO
      */
     public function findByPrimaryKey($id, $locale = null)
     {
+        $key   = md5(osc_base_url() . 'User:findByPrimaryKey:' . $id . $locale);
+        $found = null;
+        $cache = osc_cache_get($key, $found);
+        if ($cache !== false) {
+            return $cache;
+        }
+
         $this->dao->select();
         $this->dao->from($this->getTableName());
         $this->dao->where($this->getPrimaryKey(), $id);
@@ -150,7 +157,10 @@ class User extends DAO
             return array();
         }
 
-        return $this->extendData($result->row(), $locale);
+        $user = $this->extendData($result->row(), $locale);
+        osc_cache_set($key, $user, OSC_CACHE_TTL);
+
+        return $user;
     }
 
     /**

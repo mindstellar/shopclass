@@ -56,6 +56,12 @@ class DBCommandClass
      */
     public $queryTimes;
     /**
+     * Most recent SQL statement, tracked cheaply even when query logging is off.
+     *
+     * @var string
+     */
+    public $lastQuerySql = '';
+    /**
      *
      * @var int
      */
@@ -872,8 +878,11 @@ class DBCommandClass
             $this->query_debug($sql);
         }
 
-        $this->queries[] = $sql;
-        $timeStart       = microtime(true);
+        $this->lastQuerySql = $sql;
+        if (OSC_DEBUG_DB) {
+            $this->queries[] = $sql;
+        }
+        $timeStart = microtime(true);
 
         $this->resultId = $this->execute($sql);
 
@@ -886,8 +895,10 @@ class DBCommandClass
             return false;
         }
 
-        $timeEnd            = microtime(true);
-        $this->queryTimes[] = $timeEnd - $timeStart;
+        $timeEnd = microtime(true);
+        if (OSC_DEBUG_DB) {
+            $this->queryTimes[] = $timeEnd - $timeStart;
+        }
 
         $this->queryCount++;
 
@@ -1957,7 +1968,7 @@ class DBCommandClass
      */
     public function lastQuery()
     {
-        return end($this->queries);
+        return $this->lastQuerySql;
     }
 
     /**
