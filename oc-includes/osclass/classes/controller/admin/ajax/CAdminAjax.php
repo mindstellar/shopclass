@@ -43,7 +43,7 @@ class CAdminAjax extends AdminSecBaseModel
         parent::__construct();
         $this->ajax = true;
         if ($this->isModerator()
-            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook'))
+            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme'))
         ) {
             $this->action = 'error_permissions';
         }
@@ -87,6 +87,21 @@ class CAdminAjax extends AdminSecBaseModel
                     'format'        => Params::getParam('format'),
                     'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
                 ));
+                break;
+            case 'save_admin_theme': // persist this admin's light/dark choice
+                osc_csrf_check();
+                $theme = Params::getParam('theme');
+                // Whitelist: Params::getParam is raw request data, and this value is echoed
+                // straight into the data-bs-theme attribute on every future page load.
+                if ($theme !== 'dark' && $theme !== 'light') {
+                    $theme = 'light';
+                }
+                // Namespaced by admin id: Osclass has no admin-meta table, and t_preference
+                // keys on (section, name) with no uniqueness beyond the pair, so one row per
+                // admin under this section is a clean per-user store with no schema change.
+                osc_set_preference((string) osc_logged_admin_id(), $theme, 'admin_theme', 'STRING');
+                osc_reset_preferences();
+                echo json_encode(array('done' => 1, 'theme' => $theme));
                 break;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');
