@@ -1032,12 +1032,8 @@ class Item extends DAO
         $this->dao->where('fk_i_city_area_id', $cityAreaId);
         $result = $this->dao->get();
         $items  = $result->result();
-        $arows  = 0;
-        foreach ($items as $i) {
-            $arows += $this->deleteByPrimaryKey($i['fk_i_item_id']);
-        }
 
-        return $arows;
+        return $this->deleteItemsFiringHooks($items);
     }
 
     /**
@@ -1086,6 +1082,36 @@ class Item extends DAO
         Plugins::runHook('delete_item', $id);
 
         return parent::deleteByPrimaryKey($id);
+    }
+
+    /**
+     * Delete each of the given items by primary key, firing the standard
+     * item-lifecycle hooks (before_delete_item / after_delete_item) around
+     * every deletion. Cascade deletes triggered by removing a location then
+     * emit the same signals a direct item delete does, so listeners that keep
+     * external indexes or caches in sync do not need to special-case them.
+     *
+     * @access private
+     *
+     * @param array $items rows containing an fk_i_item_id column
+     *
+     * @return int number of affected rows
+     */
+    private function deleteItemsFiringHooks($items)
+    {
+        $arows = 0;
+        foreach ($items as $i) {
+            $itemId = $i['fk_i_item_id'];
+            $item   = $this->findByPrimaryKey($itemId);
+            osc_run_hook('before_delete_item', $itemId);
+            $deleted = $this->deleteByPrimaryKey($itemId);
+            if ($deleted !== false) {
+                $arows += $deleted;
+                osc_run_hook('after_delete_item', $itemId, $item);
+            }
+        }
+
+        return $arows;
     }
 
     /**
@@ -1162,12 +1188,8 @@ class Item extends DAO
         $this->dao->where('fk_i_city_id', $cityId);
         $result = $this->dao->get();
         $items  = $result->result();
-        $arows  = 0;
-        foreach ($items as $i) {
-            $arows += $this->deleteByPrimaryKey($i['fk_i_item_id']);
-        }
 
-        return $arows;
+        return $this->deleteItemsFiringHooks($items);
     }
 
     /**
@@ -1188,12 +1210,8 @@ class Item extends DAO
         $this->dao->where('fk_i_region_id', $regionId);
         $result = $this->dao->get();
         $items  = $result->result();
-        $arows  = 0;
-        foreach ($items as $i) {
-            $arows += $this->deleteByPrimaryKey($i['fk_i_item_id']);
-        }
 
-        return $arows;
+        return $this->deleteItemsFiringHooks($items);
     }
 
     /**
@@ -1214,12 +1232,8 @@ class Item extends DAO
         $this->dao->where('fk_c_country_code', $countryId);
         $result = $this->dao->get();
         $items  = $result->result();
-        $arows  = 0;
-        foreach ($items as $i) {
-            $arows += $this->deleteByPrimaryKey($i['fk_i_item_id']);
-        }
 
-        return $arows;
+        return $this->deleteItemsFiringHooks($items);
     }
 
     /**
