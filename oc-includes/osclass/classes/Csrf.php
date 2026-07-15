@@ -75,7 +75,6 @@ class Csrf
     {
         $this->session  = Session::newInstance();
         $this->csrfName = Preference::newInstance()->get('csrf_name');
-        $this->setToken();
     }
 
     /**
@@ -91,10 +90,16 @@ class Csrf
     }
 
     /**
-     * Ger token from previous session if found or generate a new pair
+     * Resolve the CSRF token: reuse the one already resolved for this request, then the one
+     * in the session, otherwise generate a fresh pair. Called lazily at the point a token is
+     * actually emitted (see tokenForm/tokenUrl and replaceForms) so a page with no protected
+     * form never generates a token — and therefore never starts a session.
      */
     private function setToken()
     {
+        if ($this->csrfTokenName !== null && $this->csrfTokenValue !== null) {
+            return;
+        }
         $token_name = $this->session->_get('token_name');
         if ($token_name !== '' && $this->session->_get($token_name) !== '') {
             $this->csrfTokenName  = $token_name;
@@ -153,6 +158,8 @@ class Csrf
      */
     public function tokenForm()
     {
+        $this->setToken();
+
         return "<input type='hidden' name='CSRFName' value='" . $this->csrfTokenName . "' />
         <input type='hidden' name='CSRFToken' value='" . $this->csrfTokenValue . "' />";
     }
@@ -165,6 +172,8 @@ class Csrf
      */
     public function tokenUrl()
     {
+        $this->setToken();
+
         return 'CSRFName=' . $this->csrfTokenName . '&CSRFToken=' . $this->csrfTokenValue;
     }
 
@@ -252,6 +261,8 @@ class Csrf
      */
     public function getCsrfTokenName()
     {
+        $this->setToken();
+
         return $this->csrfTokenName;
     }
 
@@ -260,6 +271,8 @@ class Csrf
      */
     public function getCsrfTokenValue()
     {
+        $this->setToken();
+
         return $this->csrfTokenValue;
     }
 }
