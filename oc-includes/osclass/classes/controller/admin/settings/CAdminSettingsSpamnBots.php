@@ -98,6 +98,14 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('alerts_post'):
+                // updating search-alert subscription option
+                osc_csrf_check();
+                $alertsRequireLogin = Params::getParam('alerts_require_login') != '' ? 1 : 0;
+                osc_set_preference('alerts_require_login', $alertsRequireLogin, 'osclass', 'BOOLEAN');
+                osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
         }
     }
 }

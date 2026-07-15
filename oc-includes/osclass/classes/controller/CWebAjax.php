@@ -216,6 +216,13 @@ class CWebAjax extends BaseModel
                 return true;
                 break;
             case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
+                // Optionally require a logged-in user before creating a subscription, to stop
+                // anonymous email harvesting / confirmation-email abuse through this endpoint.
+                if (osc_get_preference('alerts_require_login') && !osc_is_web_user_logged_in()) {
+                    echo '-4';
+
+                    return false;
+                }
                 $encoded_alert = Params::getParam('alert');
                 $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
 

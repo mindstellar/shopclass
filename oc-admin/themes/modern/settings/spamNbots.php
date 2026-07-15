@@ -167,5 +167,30 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </fieldset>
         </form>
     </div>
+    <div id="alerts-settings" class="separate-top">
+        <h3 class="render-title"><?php _e('Search alerts'); ?></h3>
+        <p><?php _e('Search alerts email visitors when new listings match a saved search. Requiring login before '
+                    . 'subscribing prevents anonymous email harvesting and confirmation-email abuse through the alert endpoint.'); ?></p>
+        <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
+            <input type="hidden" name="page" value="settings"/>
+            <input type="hidden" name="action" value="alerts_post"/>
+            <fieldset class="form-horizontal">
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Require login for alerts'); ?></div>
+                    <div class="form-controls">
+                        <label>
+                            <input type="checkbox" name="alerts_require_login" value="1"
+                                <?php echo osc_get_preference('alerts_require_login') ? 'checked="checked"' : ''; ?>/>
+                            <?php _e('Only logged-in users can subscribe to search alerts'); ?>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <input type="submit" id="submit_alerts" value="<?php echo osc_esc_html(__('Save changes')); ?>"
+                           class="btn btn-submit"/>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
