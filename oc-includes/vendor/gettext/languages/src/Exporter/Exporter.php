@@ -90,17 +90,18 @@ abstract class Exporter
      */
     final public static function toString($languages, $options = null)
     {
-        if (isset($options) && is_array($options)) {
-            if (isset($options['us-ascii']) && $options['us-ascii']) {
-                $asciiList = array();
-                foreach ($languages as $language) {
-                    $asciiList[] = $language->getUSAsciiClone();
-                }
-                $languages = $asciiList;
+        if (!isset($options) || !is_array($options)) {
+            $options = array();
+        }
+        if (isset($options['us-ascii']) && $options['us-ascii']) {
+            $asciiList = array();
+            foreach ($languages as $language) {
+                $asciiList[] = $language->getUSAsciiClone();
             }
+            $languages = $asciiList;
         }
 
-        return static::toStringDo($languages);
+        return static::toStringDoWithOptions($languages, $options);
     }
 
     /**
@@ -130,6 +131,16 @@ abstract class Exporter
     }
 
     /**
+     * Does this exporter supports exporting formulas both with and without extra parenthesis?
+     *
+     * @return bool
+     */
+    public static function supportsFormulasWithAndWithoutParenthesis()
+    {
+        return false;
+    }
+
+    /**
      * Return a short description of the exporter.
      *
      * @return string
@@ -143,11 +154,15 @@ abstract class Exporter
      * Convert a list of Language instances to string.
      *
      * @param \Gettext\Languages\Language[] $languages the Language instances to convert
+     * @param array $options export options
      *
      * @return string
      */
-    protected static function toStringDo($languages)
+    protected static function toStringDoWithOptions($languages, array $options)
     {
+        if (method_exists(get_called_class(), 'toStringDo')) {
+            return static::toStringDo($languages);
+        }
         throw new Exception(get_called_class() . ' does not implement the method ' . __FUNCTION__);
     }
 }

@@ -1,15 +1,10 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * This is a PHP library that handles calling reCAPTCHA.
  *
  * BSD 3-Clause License
- *
  * @copyright (c) 2019, Google Inc.
- *
- * @see https://www.google.com/recaptcha
+ * @link https://www.google.com/recaptcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,15 +45,23 @@ use ReCaptcha\RequestParameters;
  */
 class SocketPost implements RequestMethod
 {
-    private string $siteVerifyUrl;
+    /**
+     * Socket to the reCAPTCHA service
+     * @var Socket
+     */
+    private $socket;
+
+    private $siteVerifyUrl;
 
     /**
-     * Only needed if you want to override the defaults.
+     * Only needed if you want to override the defaults
      *
-     * @param null|string $siteVerifyUrl URL for reCAPTCHA siteverify API
+     * @param \ReCaptcha\RequestMethod\Socket $socket optional socket, injectable for testing
+     * @param string $siteVerifyUrl URL for reCAPTCHA siteverify API
      */
-    public function __construct(?string $siteVerifyUrl = null)
+    public function __construct(?Socket $socket = null, $siteVerifyUrl = null)
     {
+        $this->socket = (is_null($socket)) ? new Socket() : $socket;
         $this->siteVerifyUrl = (is_null($siteVerifyUrl)) ? ReCaptcha::SITE_VERIFY_URL : $siteVerifyUrl;
     }
 
@@ -66,56 +69,41 @@ class SocketPost implements RequestMethod
      * Submit the POST request with the specified parameters.
      *
      * @param RequestParameters $params Request parameters
-     *
      * @return string Body of the reCAPTCHA response
      */
-    public function submit(RequestParameters $params): string
+    public function submit(RequestParameters $params)
     {
         $errno = 0;
         $errstr = '';
         $urlParsed = parse_url($this->siteVerifyUrl);
 
-        if (false === $urlParsed || !isset($urlParsed['host']) || !isset($urlParsed['path'])) {
-            return '{"success": false, "error-codes": ["'.ReCaptcha::E_CONNECTION_FAILED.'"]}';
-        }
-
-        $handle = fsockopen('ssl://'.$urlParsed['host'], 443, $errno, $errstr, 30);
-
-        if (false === $handle || 0 !== $errno || '' !== $errstr) {
-            return '{"success": false, "error-codes": ["'.ReCaptcha::E_CONNECTION_FAILED.'"]}';
-        }
-
-        if (false === stream_set_timeout($handle, 60)) {
+        if (false === $this->socket->fsockopen('ssl://' . $urlParsed['host'], 443, $errno, $errstr, 30)) {
             return '{"success": false, "error-codes": ["'.ReCaptcha::E_CONNECTION_FAILED.'"]}';
         }
 
         $content = $params->toQueryString();
 
-        $request = 'POST '.$urlParsed['path']." HTTP/1.0\r\n";
-        $request .= 'Host: '.$urlParsed['host']."\r\n";
+        $request = "POST " . $urlParsed['path'] . " HTTP/1.0\r\n";
+        $request .= "Host: " . $urlParsed['host'] . "\r\n";
         $request .= "Content-Type: application/x-www-form-urlencoded\r\n";
-        $request .= 'Content-length: '.strlen($content)."\r\n";
+        $request .= "Content-length: " . strlen($content) . "\r\n";
         $request .= "Connection: close\r\n\r\n";
-        $request .= $content."\r\n\r\n";
+        $request .= $content . "\r\n\r\n";
 
-        fwrite($handle, $request);
-        $response = stream_get_contents($handle);
+        $this->socket->fwrite($request);
+        $response = '';
 
-        fclose($handle);
-
-        if (!is_string($response)) {
-            $response = '';
+        while (!$this->socket->feof()) {
+            $response .= $this->socket->fgets(4096);
         }
 
-        if (1 !== preg_match('#^HTTP/1\.[01] 200 OK#', $response)) {
+        $this->socket->fclose();
+
+        if (0 !== strpos($response, 'HTTP/1.0 200 OK')) {
             return '{"success": false, "error-codes": ["'.ReCaptcha::E_BAD_RESPONSE.'"]}';
         }
 
-        $parts = preg_split("#\n\\s*\n#Uis", $response);
-
-        if (!is_array($parts) || !isset($parts[1])) {
-            return '{"success": false, "error-codes": ["'.ReCaptcha::E_BAD_RESPONSE.'"]}';
-        }
+        $parts = preg_split("#\n\s*\n#Uis", $response);
 
         return $parts[1];
     }

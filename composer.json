@@ -27,7 +27,10 @@
   },
   "config": {
     "vendor-dir": "oc-includes/vendor",
-    "optimize-autoloader": true
+    "optimize-autoloader": true,
+    "platform": {
+      "php": "8.0.0"
+    }
   },
   "require": {
     "php": ">=8.0",
@@ -56,7 +59,7 @@
   },
   "suggest": {
     "ext-apcu": "Fast PHP user cache",
-    "ext-memcache": "Will enable to communicate with memcached server",
+    "ext-memcached": "Enables the 'memcached' object cache driver (set OSC_CACHE='memcached')",
     "ext-imagick": "Will enable to use Imagick library for image manipulation"
   }
 }
