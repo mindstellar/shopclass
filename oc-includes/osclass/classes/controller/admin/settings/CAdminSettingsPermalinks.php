@@ -504,11 +504,19 @@ HTACCESS;
                         'index.php?page=user&action=profile'
                     );
                     $rewrite->addRule(
+                        '^' . osc_get_preference('rewrite_user_profile') . '/([0-9]+)/([0-9]+)/?$',
+                        'index.php?page=user&action=pub_profile&id=$1&iPage=$2'
+                    );
+                    $rewrite->addRule(
                         '^' . osc_get_preference('rewrite_user_profile') . '/([0-9]+)/?$',
                         'index.php?page=user&action=pub_profile&id=$1'
                     );
                     $rewrite->addRule(
-                        '^' . osc_get_preference('rewrite_user_profile') . '/(.+)/?$',
+                        '^' . osc_get_preference('rewrite_user_profile') . '/([^/]+)/([0-9]+)/?$',
+                        'index.php?page=user&action=pub_profile&username=$1&iPage=$2'
+                    );
+                    $rewrite->addRule(
+                        '^' . osc_get_preference('rewrite_user_profile') . '/([^/]+)/?$',
                         'index.php?page=user&action=pub_profile&username=$1'
                     );
                     $rewrite->addRule(

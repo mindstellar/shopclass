@@ -186,15 +186,24 @@ function osc_user_public_profile_url($id = null)
 function osc_user_list_items_pub_profile_url($page = '', $itemsPerPage = false)
 {
     $path = osc_user_public_profile_url();
+
+    // On a friendly-URL install the query string is stripped before routing, so a
+    // ?iPage= page number never reaches the controller. Carry the page as a path
+    // segment instead (matched by the paginated profile rewrite rule).
+    if (osc_rewrite_enabled() && $page) {
+        $path = rtrim($path, '/') . '/' . $page;
+        if ($itemsPerPage) {
+            $path .= '?itemsPerPage=' . $itemsPerPage;
+        }
+
+        return $path;
+    }
+
     if ($itemsPerPage) {
         $path .= '?itemsPerPage=' . $itemsPerPage;
     }
     if ($page) {
-        if (!$itemsPerPage) {
-            $path .= '?iPage=' . $page;
-        } else {
-            $path .= '&iPage=' . $page;
-        }
+        $path .= ($itemsPerPage ? '&' : '?') . 'iPage=' . $page;
     }
 
     return $path;
