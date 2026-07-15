@@ -3,7 +3,10 @@
 # same database schema. A failure means struct.sql changed in a way the
 # upgrade path does not reproduce — i.e. a migration is owed.
 name: Schema Drift
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_call:
 jobs:
   drift:
     runs-on: ubuntu-latest

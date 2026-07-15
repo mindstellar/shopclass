@@ -39,7 +39,6 @@ oc-content/languages/*
 .htaccess
 nbproject/
 .sass-cache
-package-lock.json
 
 # Release
 release
