@@ -239,6 +239,12 @@ $table-cell-vertical-align: middle;
   --osc-warning:       #{$warning};
   --osc-warning-tint:  #{$warning-tint};
   --osc-info:          #{$info};
+  // The pale info surface, completing the semantic tint set the badges and callouts share.
+  // Its partner is the info GLYPH, not info text: $info is fixed dark by its white-button role
+  // (4.76:1 with white) and cannot also be darkened for text-on-tint, so $info on this tint is
+  // 4.22:1 — under the 4.5 body bar, but comfortably over the 3:1 bar that governs an icon
+  // (WCAG 1.4.11). Body ink on it is 15.2:1. No info-coloured TEXT is ever placed on it.
+  --osc-info-tint:     #e6f3fb;
 
   --osc-shadow-overlay: #{$box-shadow};
   --osc-shadow-modal:   #{$box-shadow-lg};
