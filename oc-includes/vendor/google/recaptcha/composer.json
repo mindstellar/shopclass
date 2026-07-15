@@ -1,19 +1,22 @@
 {
     "name": "google/recaptcha",
-    "description": "Client library for reCAPTCHA, a free service that protect websites from spam and abuse.",
+    "description": "Client library for reCAPTCHA, a free service that protects websites from spam and abuse.",
     "type": "library",
     "keywords": ["recaptcha", "captcha", "spam", "abuse"],
-    "homepage": "http://www.google.com/recaptcha/",
+    "homepage": "https://www.google.com/recaptcha/",
     "license": "BSD-3-Clause",
     "support": {
         "forum": "https://groups.google.com/forum/#!forum/recaptcha",
         "source": "https://github.com/google/recaptcha"
     },
     "require": {
-        "php": ">=5.5"
+        "php": ">=8.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.8"
+        "phpunit/phpunit": "^13.1",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "php-coveralls/php-coveralls": "^2.9.1",
+        "phpstan/phpstan": "^2.1.51"
     },
     "autoload": {
         "psr-4": {
@@ -22,7 +25,17 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.1.x-dev"
+            "dev-main": "1.4.x-dev"
         }
+    },
+    "scripts": {
+        "lint": "vendor/bin/php-cs-fixer -vvv check --using-cache=no",
+        "lint-fix": "vendor/bin/php-cs-fixer -vvv fix --using-cache=no",
+        "phpstan": "vendor/bin/phpstan",
+        "test": "XDEBUG_MODE=coverage vendor/bin/phpunit",
+        "serve-examples": "@php -S localhost:8080 -t examples"
+    },
+    "config": {
+        "process-timeout": 0
     }
 }
