@@ -546,6 +546,7 @@ $sidebar-gutter: 2.35rem;
       a {
         flex: 0 0 auto;
         font-size: 0;
+        gap:initial;
 
         .bi {
           font-size: 1.05rem;
@@ -569,7 +570,7 @@ $sidebar-gutter: 2.35rem;
     // panel never feels laggy to open, only reluctant to close.
     .dashboard-sidebar .sidebar-submenu,
     .dashboard-sidebar .sidebar-flyout {
-      --osc-flyout-hide: .22s;
+      --osc-flyout-hide: .15s;
 
       background-color: var(--osc-bench);
       border: 1px solid var(--osc-rule);
