@@ -556,8 +556,17 @@ $sidebar-gutter: 2.35rem;
     // here. They remain DOM children of the <li>, so hovering the flyout still
     // counts as hovering the row (hover propagates up the DOM tree), which keeps
     // the panel open while the pointer travels to it.
+    //
+    // HOVER INTENT. There is a 6px gap between the rail and the panel (the JS
+    // offset), and crossing it un-hovers the row for an instant. So the HIDE is
+    // delayed (--osc-flyout-hide) and visibility only flips after the fade, giving
+    // the pointer time to bridge the gap; re-entering within the window cancels it.
+    // The SHOW stays instant — the reveal rule below zeroes the delay — so the
+    // panel never feels laggy to open, only reluctant to close.
     .dashboard-sidebar .sidebar-submenu,
     .dashboard-sidebar .sidebar-flyout {
+      --osc-flyout-hide: .22s;
+
       background-color: var(--osc-bench);
       border: 1px solid var(--osc-rule);
       box-shadow: var(--osc-shadow-overlay);
@@ -568,8 +577,9 @@ $sidebar-gutter: 2.35rem;
       opacity: 0;
       position: fixed;
       transform: translateX(-.25rem);
-      transition: opacity var(--osc-duration-fast) var(--osc-ease),
-                  transform var(--osc-duration-fast) var(--osc-ease);
+      transition: opacity var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide),
+                  transform var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide),
+                  visibility 0s linear calc(var(--osc-duration-fast) + var(--osc-flyout-hide));
       visibility: hidden;
       z-index: 1050;
     }
@@ -614,6 +624,8 @@ $sidebar-gutter: 2.35rem;
     .dashboard-sidebar .nav-item:focus-within > .sidebar-flyout {
       opacity: 1;
       transform: translateX(0);
+      // Opening is immediate; only the hide carries the intent delay.
+      transition-delay: 0s;
       visibility: visible;
     }
 
