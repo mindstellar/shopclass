@@ -45,7 +45,7 @@ if (!is_file($baselineFile)) {
 
 define('ABS_PATH', dirname(__DIR__) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
-define('OSCLASS_VERSION', '5.3.0-dev');
+define('OSCLASS_VERSION', '5.3.0.dev');
 define('OSC_DEBUG_DB', false);
 define('OSC_DEBUG_DB_EXPLAIN', false);
 define('OSC_DEBUG_DB_LOG', false);
