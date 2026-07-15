@@ -540,7 +540,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <label>
                                     <input type="checkbox" <?php
                                     echo osc_get_preference('allow_update_prerelease') ? 'checked="checked"' : '';
-                                    ?> name="allow_update_prerelease" value="themes"/>
+                                    ?> name="allow_update_prerelease" value="1"/>
                                     <?php _e('Allow prerelease update'); ?>
                                 </label>
                             </div>

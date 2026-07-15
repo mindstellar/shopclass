@@ -142,11 +142,7 @@ function customHead()
             }).then(function(response) {
                 return response.json();
             }).then(function(json) {
-                if (json.status === 'success') {
-                    console.log('latest version: ' + json.version);
-                } else {
-                    console.log('error: ' + json.message);
-                }
+                console.log(json.error === 0 ? json.msg : ('error: ' + json.msg));
             });
             // append a message to steps
             var message1 = document.createElement('div');

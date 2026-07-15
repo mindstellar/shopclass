@@ -113,7 +113,11 @@ class Osclass extends UpgradePackage
                 return json_encode(['error' => 2, 'message' => $message]);
             }
 
-            if (osc_version() < 390) {
+            // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
+            // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
+            // the numeric comparison to numeric values — a dotted string is always newer.
+            $storedVersion = osc_version();
+            if (is_numeric($storedVersion) && (int) $storedVersion < 390) {
                 osc_delete_preference('marketAllowExternalSources');
                 osc_delete_preference('marketURL');
                 osc_delete_preference('marketAPIConnect');
