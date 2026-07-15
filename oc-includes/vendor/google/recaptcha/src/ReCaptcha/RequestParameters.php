@@ -1,27 +1,40 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * This is a PHP library that handles calling reCAPTCHA.
  *
- * @copyright Copyright (c) 2015, Google Inc.
- * @link      http://www.google.com/recaptcha
+ * BSD 3-Clause License
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * @copyright (c) 2019, Google Inc.
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * @see https://www.google.com/recaptcha
+ * All rights reserved.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 namespace ReCaptcha;
@@ -29,56 +42,31 @@ namespace ReCaptcha;
 /**
  * Stores and formats the parameters for the request to the reCAPTCHA service.
  */
-class RequestParameters
+readonly class RequestParameters
 {
-    /**
-     * Site secret.
-     * @var string
-     */
-    private $secret;
-
-    /**
-     * Form response.
-     * @var string
-     */
-    private $response;
-
-    /**
-     * Remote user's IP address.
-     * @var string
-     */
-    private $remoteIp;
-
-    /**
-     * Client version.
-     * @var string
-     */
-    private $version;
-
     /**
      * Initialise parameters.
      *
-     * @param string $secret Site secret.
-     * @param string $response Value from g-captcha-response form field.
-     * @param string $remoteIp User's IP address.
-     * @param string $version Version of this client library.
+     * @param string      $secret   site secret
+     * @param string      $response value from g-captcha-response form field
+     * @param null|string $remoteIp user's IP address
+     * @param null|string $version  version of this client library
      */
-    public function __construct($secret, $response, $remoteIp = null, $version = null)
-    {
-        $this->secret = $secret;
-        $this->response = $response;
-        $this->remoteIp = $remoteIp;
-        $this->version = $version;
-    }
+    public function __construct(
+        private string $secret,
+        private string $response,
+        private ?string $remoteIp = null,
+        private ?string $version = null,
+    ) {}
 
     /**
      * Array representation.
      *
-     * @return array Array formatted parameters.
+     * @return array<string, string> array formatted parameters
      */
-    public function toArray()
+    public function toArray(): array
     {
-        $params = array('secret' => $this->secret, 'response' => $this->response);
+        $params = ['secret' => $this->secret, 'response' => $this->response];
 
         if (!is_null($this->remoteIp)) {
             $params['remoteip'] = $this->remoteIp;
@@ -94,9 +82,9 @@ class RequestParameters
     /**
      * Query string representation for HTTP request.
      *
-     * @return string Query string formatted parameters.
+     * @return string query string formatted parameters
      */
-    public function toQueryString()
+    public function toQueryString(): string
     {
         return http_build_query($this->toArray(), '', '&');
     }
