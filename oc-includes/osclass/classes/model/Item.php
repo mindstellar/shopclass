@@ -178,6 +178,12 @@ class Item extends DAO
                 }
                 $items[$k] = $aItem;
             }
+
+            // Batch-prime the resource cache for the whole page so the theme's
+            // per-item osc_get_item_resources() calls are cache hits, not an N+1.
+            if (count($itemIds) > 1) {
+                ItemResource::newInstance()->primeResourcesCache($itemIds);
+            }
         }
 
         return $items;
