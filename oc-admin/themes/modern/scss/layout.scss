@@ -5,11 +5,39 @@
   }
 }
 
+// The content column closes on a quiet footer: a full-width hairline marks the end of
+// the content area, then one muted line of credit + version. Laid out with flexbox and
+// logical spacing (no float-left/float-right) so it reads correctly in RTL locales —
+// space-between hugs credit to the start and version to the end whichever way the page runs.
 #footer-wrapper {
-  padding: 20px 0;
-  font-size: 12px;
+  border-top: 1px solid var(--osc-rule);
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+
+  #footer {
+    align-items: center;
+    column-gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: .35rem;
+  }
+
   a {
+    color: var(--osc-bronze);
     text-decoration-line: none;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration-line: underline;
+    }
+  }
+
+  .admin-footer-version strong {
+    color: var(--osc-ink);
+    font-weight: 600;
   }
 }
 

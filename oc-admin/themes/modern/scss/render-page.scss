@@ -56,6 +56,15 @@
   background-color: var(--osc-bench-sunk);
 }
 
+// The flash and help rows sit between the header and the body. #content-head and
+// #content-page both add 15px of inline padding on top of the column gutter; give these
+// two the same so a flash message lines up under the page title instead of jutting 15px
+// further toward the sidebar than everything else in the column.
+#message-wrapper,
+#help-wrapper {
+  padding-inline: 15px;
+}
+
 #content-page {
   //background-color: var(--osc-bench);
   min-height: calc(100vh - 9rem);
@@ -94,7 +103,7 @@ h3.render-title {
 .quick-search input.input-text {
   background-color: var(--osc-bench-warm);
   border: 1px solid var(--osc-bench-sunk);
-  color: #555;
+  color: var(--osc-ink);
   display: inline-block;
   font-size: .85rem;
   height: 24px;
@@ -139,14 +148,14 @@ h3.render-title {
     .col-sm-4.info-label {
       font-size: .85rem;
       font-weight: 500;
-      background: #0095ff57;
-      border-bottom: 1px dotted;
+      background: var(--osc-bench-warm);
+      border-bottom: 1px solid var(--osc-rule);
     }
     .col.info-value {
       font-size: .8rem;
       font-family: monospace;
-      background: #ffcc0029;
-      border-bottom:1px dotted;
+      background: var(--osc-bench);
+      border-bottom: 1px solid var(--osc-rule);
       word-break:break-all;
     }
   }
