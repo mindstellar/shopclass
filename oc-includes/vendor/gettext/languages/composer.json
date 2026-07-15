@@ -46,6 +46,7 @@
         "test": "phpunit"
     },
     "bin": [
-        "bin/export-plural-rules"
+        "bin/export-plural-rules",
+        "bin/import-cldr-data"
     ]
 }

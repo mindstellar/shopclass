@@ -1,8 +1,6 @@
 <?php
-
-/* An autoloader for ReCaptcha\Foo classes. This should be required()
- * by the user before attempting to instantiate any of the ReCaptcha
- * classes.
+/**
+ * This is a PHP library that handles calling reCAPTCHA.
  *
  * BSD 3-Clause License
  * @copyright (c) 2019, Google Inc.
@@ -34,36 +32,81 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-spl_autoload_register(function ($class) {
-    if (substr($class, 0, 10) !== 'ReCaptcha\\') {
-        /* If the class does not lie under the "ReCaptcha" namespace,
-         * then we can exit immediately.
-         */
-        return;
+namespace ReCaptcha\RequestMethod;
+
+/**
+ * Convenience wrapper around native socket and file functions to allow for
+ * mocking.
+ */
+class Socket
+{
+    private $handle = null;
+
+    /**
+     * fsockopen
+     *
+     * @see http://php.net/fsockopen
+     * @param string $hostname
+     * @param int $port
+     * @param int $errno
+     * @param string $errstr
+     * @param float $timeout
+     * @return resource
+     */
+    public function fsockopen($hostname, $port = -1, &$errno = 0, &$errstr = '', $timeout = null)
+    {
+        $this->handle = fsockopen($hostname, $port, $errno, $errstr, (is_null($timeout) ? ini_get("default_socket_timeout") : $timeout));
+
+        if ($this->handle != false && $errno === 0 && $errstr === '') {
+            return $this->handle;
+        }
+        return false;
     }
 
-    /* All of the classes have names like "ReCaptcha\Foo", so we need
-     * to replace the backslashes with frontslashes if we want the
-     * name to map directly to a location in the filesystem.
+    /**
+     * fwrite
+     *
+     * @see http://php.net/fwrite
+     * @param string $string
+     * @param int $length
+     * @return int | bool
      */
-    $class = str_replace('\\', '/', $class);
-
-    /* First, check under the current directory. It is important that
-     * we look here first, so that we don't waste time searching for
-     * test classes in the common case.
-     */
-    $path = dirname(__FILE__).'/'.$class.'.php';
-    if (is_readable($path)) {
-        require_once $path;
-
-        return;
+    public function fwrite($string, $length = null)
+    {
+        return fwrite($this->handle, $string, (is_null($length) ? strlen($string) : $length));
     }
 
-    /* If we didn't find what we're looking for already, maybe it's
-     * a test class?
+    /**
+     * fgets
+     *
+     * @see http://php.net/fgets
+     * @param int $length
+     * @return string
      */
-    $path = dirname(__FILE__).'/../tests/'.$class.'.php';
-    if (is_readable($path)) {
-        require_once $path;
+    public function fgets($length = null)
+    {
+        return fgets($this->handle, $length);
     }
-});
+
+    /**
+     * feof
+     *
+     * @see http://php.net/feof
+     * @return bool
+     */
+    public function feof()
+    {
+        return feof($this->handle);
+    }
+
+    /**
+     * fclose
+     *
+     * @see http://php.net/fclose
+     * @return bool
+     */
+    public function fclose()
+    {
+        return fclose($this->handle);
+    }
+}
