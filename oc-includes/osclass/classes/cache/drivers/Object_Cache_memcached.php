@@ -27,36 +27,46 @@
  */
 
 /**
- * Object_Cache_memcache class
+ * Object_Cache_memcached class
+ *
+ * Backed by the modern `memcached` PHP extension (the `Memcached` class), which
+ * supersedes the legacy `memcache` extension used by Object_Cache_memcache. Set
+ * OSC_CACHE = 'memcached' in config.php to use it, and optionally define the
+ * $_cache_config global to point at one or more servers.
  */
-class Object_Cache_memcache implements iObject_Cache
+class Object_Cache_memcached implements iObject_Cache
 {
+
+    /**
+     * Holds the cached objects (in-process, per-request layer).
+     *
+     * @var array
+     */
+    public $cache = array();
 
     /**
      * The amount of times the cache data was already stored in the cache.
      *
-     * @since  3.4
-     * @access private
      * @var int
      */
     public $cache_hits = 0;
+
     /**
-     * Amount of times the cache did not have the request in cache
+     * Amount of times the cache did not have the request in cache.
      *
      * @var int
-     * @access public
-     * @since  3.4
      */
     public $cache_misses = 0;
+
     /**
      * The blog prefix to prepend to keys in non-global groups.
      *
-     * @var int
-     * @access private
-     * @since  3.4
+     * @var string
      */
     public $site_prefix;
+
     public $default_expiration = 60;
+
     protected $_memcache_conf = array(
         'default' => array(
             'default_host'   => '127.0.0.1',
@@ -64,49 +74,39 @@ class Object_Cache_memcache implements iObject_Cache
             'default_weight' => 1
         )
     );
-    /**
-     * Holds the memcached object
-     *
-     * @var array
-     * @access private
-     * @since  3.4
-     */
-    private $memcached;
-    private $cache;
 
     /**
-     * Sets up object properties; PHP 5 style constructor
+     * Holds the Memcached client.
      *
-     * @since 3.4
+     * @var Memcached
+     */
+    private $memcached;
+
+    /**
+     * Sets up object properties and connects to the configured server(s).
      */
     public function __construct()
     {
-        trigger_error(
-            'The "memcache" object cache driver is deprecated: the legacy PHP memcache extension is '
-            . 'unmaintained. Set OSC_CACHE to "memcached" (backed by the modern memcached extension) '
-            . 'or "apcu" instead.',
-            E_USER_DEPRECATED
-        );
         $this->site_prefix = '';
         $cache_server      = array();
         global $_cache_config;
-        if (!isset($_cache_config) && !is_array($_cache_config)) {
-            $_t['hostname'] = $this->_memcache_conf['default']['default_host'];
-            $_t['port']     = $this->_memcache_conf['default']['default_port'];
-            $_t['weight']   = $this->_memcache_conf['default']['default_weight'];
-            $cache_server[] = $_t;
+        if (!isset($_cache_config) || !is_array($_cache_config)) {
+            $cache_server[] = array(
+                'hostname' => $this->_memcache_conf['default']['default_host'],
+                'port'     => $this->_memcache_conf['default']['default_port'],
+                'weight'   => $this->_memcache_conf['default']['default_weight']
+            );
         } else {
             foreach ($_cache_config as $_server) {
-                $_array         = array(
+                $cache_server[] = array(
                     'hostname' => $_server['default_host'],
                     'port'     => $_server['default_port'],
                     'weight'   => $_server['default_weight']
                 );
-                $cache_server[] = $_array;
             }
         }
 
-        $this->memcached = new Memcache();
+        $this->memcached = new Memcached();
         foreach ($cache_server as $_config) {
             $this->memcached->addServer($_config['hostname'], $_config['port'], $_config['weight']);
         }
@@ -115,30 +115,20 @@ class Object_Cache_memcache implements iObject_Cache
     /**
      * Adds data to the cache if it doesn't already exist.
      *
-     * @param int|string $key    What to call the contents in the cache
-     * @param mixed      $data   The contents to store in the cache
-     * @param int        $expire When to expire the cache contents
+     * @param int|string $key
+     * @param mixed      $data
+     * @param int        $expire
      *
-     * @return bool False if cache key and group already exist, true on success
-     * @since 3.4
-     *
+     * @return bool False if the key already exists, true on success.
      */
     public function add($key, $data, $expire = 0)
     {
-        $id = $key;
-
         if (is_object($data)) {
             $data = clone $data;
         }
 
-        $store_data = $data;
-
-        if (is_array($data)) {
-            $store_data = new ArrayObject($data);
-        }
-
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
-        $result = $this->memcached->add($key, array($store_data, time(), $expire), 0, $expire);
+        $result = $this->memcached->add($key, $data, $expire);
         if (false !== $result) {
             $this->cache[$key] = $data;
         }
@@ -147,30 +137,24 @@ class Object_Cache_memcache implements iObject_Cache
     }
 
     /**
-     * Remove the contents of the cache key in the group
+     * Remove the contents of the cache key.
      *
-     * @param int|string $key What the contents in the cache are called
+     * @param int|string $key
      *
-     * @return bool False if the contents weren't deleted and true on success
-     * @since 3.4
-     *
+     * @return bool
      */
     public function delete($key)
     {
         $result = $this->memcached->delete($key);
-        if (false !== $result) {
-            unset($this->cache[$key]);
-        }
+        unset($this->cache[$key]);
 
         return $result;
     }
 
     /**
-     * Clears the object cache of all data
+     * Clears the object cache of all data.
      *
-     * @return bool Always returns true
-     * @since 3.4
-     *
+     * @return bool
      */
     public function flush()
     {
@@ -180,62 +164,45 @@ class Object_Cache_memcache implements iObject_Cache
     }
 
     /**
-     * Retrieves the cache contents, if it exists
+     * Retrieves the cache contents, if it exists.
      *
-     * @param int|string $key   What the contents in the cache are called
-     * @param bool       $found if can be retrieved from cache
+     * @param int|string $key
+     * @param bool       $found set true if the key was present, false otherwise
      *
-     * @return bool|mixed False on failure to retrieve contents or the cache
-     *      contents on success
-     * @since 3.4
-     *
+     * @return bool|mixed The cached contents, or false on miss.
      */
     public function get($key, &$found = null)
     {
-        $found = false;
         if (isset($this->cache[$key])) {
             $found = true;
-            if (is_object($this->cache[$key])) {
-                $value = clone $this->cache[$key];
-            } else {
-                $value = $this->cache[$key];
-            }
             ++$this->cache_hits;
-            $return = $value;
-        } else {
-            $found = true;
-            $value = $this->memcached->get($key);
-            if (is_object($value) && 'ArrayObject' === get_class($value)) {
-                $value = $value->getArrayCopy();
-            }
-            if (null === $value) {
-                $found = false;
-                $value = false;
-            }
 
-            $this->cache[$key] = is_object($value) ? clone $value : $value;
-            if ($found) {
-                ++$this->cache_hits;
-                $return = $this->cache[$key];
-            } else {
-                ++$this->cache_misses;
-                $return = false;
-            }
+            return is_object($this->cache[$key]) ? clone $this->cache[$key] : $this->cache[$key];
         }
 
-        return $return;
+        $value = $this->memcached->get($key);
+        if ($this->memcached->getResultCode() === Memcached::RES_NOTFOUND) {
+            $found = false;
+            ++$this->cache_misses;
+
+            return false;
+        }
+
+        $found             = true;
+        $this->cache[$key] = is_object($value) ? clone $value : $value;
+        ++$this->cache_hits;
+
+        return $value;
     }
 
     /**
-     * Sets the data contents into the cache
+     * Sets the data contents into the cache.
      *
-     * @param int|string $key    What to call the contents in the cache
-     * @param mixed      $data   The contents to store in the cache
-     * @param int        $expire Not Used
+     * @param int|string $key
+     * @param mixed      $data
+     * @param int        $expire
      *
-     * @return bool Always returns true on success, false on failure
-     * @since 3.4
-     *
+     * @return bool
      */
     public function set($key, $data, $expire = 0)
     {
@@ -243,24 +210,15 @@ class Object_Cache_memcache implements iObject_Cache
             $data = clone $data;
         }
 
-        $store_data = $data;
-
-        if (is_array($data)) {
-            $store_data = new ArrayObject($data);
-        }
-
         $this->cache[$key] = $data;
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
 
-        return $this->memcached->set($key, $store_data, 0, $expire);
+        return $this->memcached->set($key, $data, $expire);
     }
 
     /**
      * Echoes the stats of the caching.
-     * Gives the cache hits, and cache misses.
-     *
-     * @since 3.4
      */
     public function stats()
     {
@@ -268,7 +226,7 @@ class Object_Cache_memcache implements iObject_Cache
 <div style='float:right;
  margin-right:30px;margin-top:15px;border: 1px red solid;
 border-radius: 17px;
-padding: 1em;'><h2>Memcache stats</h2>";
+padding: 1em;'><h2>Memcached stats</h2>";
         echo '<p>';
         echo "<strong>Cache Hits:</strong> {$this->cache_hits}<br />";
         echo "<strong>Cache Misses:</strong> {$this->cache_misses}<br />";
@@ -280,13 +238,12 @@ padding: 1em;'><h2>Memcache stats</h2>";
     /**
      * is_supported()
      *
-     * Check to see if Memcache is available on this system, bail if it isn't.
+     * Check to see if the memcached extension is available on this system.
      */
     public static function is_supported()
     {
-        if (!class_exists('Memcache')) {
-            error_log('The legacy memcache PHP extension must be loaded to use the "memcache" cache driver. '
-                      . 'Consider switching OSC_CACHE to "memcached".');
+        if (!class_exists('Memcached')) {
+            error_log('The memcached PHP extension must be loaded to use Memcached Cache.');
 
             return false;
         }
@@ -306,7 +263,7 @@ padding: 1em;'><h2>Memcache stats</h2>";
      */
     public function _get_cache()
     {
-        return 'memcache';
+        return 'memcached';
     }
 
     /**
@@ -315,10 +272,6 @@ padding: 1em;'><h2>Memcache stats</h2>";
      * @param $key
      *
      * @return bool
-     * @since  3.4.0
-     *
-     * @access protected
-     *
      */
     protected function _exists($key)
     {
