@@ -918,7 +918,17 @@ class Item extends DAO
         $sql = sprintf('UPDATE %st_item SET b_enabled = %d WHERE ', DB_TABLE_PREFIX, $enable);
         $sql .= sprintf('%st_item.fk_i_category_id IN (%s)', DB_TABLE_PREFIX, implode(',', $aIds));
 
-        return $this->dao->query($sql);
+        $result = $this->dao->query($sql);
+
+        // The model fires no lifecycle event for this bulk change, so search indexes,
+        // caches and audit listeners would never see it (core only fires item hooks
+        // for single-item actions). Announce it so they can reconcile the affected
+        // items — $aIds are category ids, $enable is the new b_enabled value.
+        if ($result !== false) {
+            osc_run_hook('items_bulk_enabled_by_category', $aIds, $enable);
+        }
+
+        return $result;
     }
 
     /**
