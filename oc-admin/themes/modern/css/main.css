@@ -13230,13 +13230,14 @@ div.widget-box-content-no-wrapp li a {
   [data-osc-sidebar=collapsed] .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link a {
     flex: 0 0 auto;
     font-size: 0;
+    gap: initial;
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link a .bi {
     font-size: 1.05rem;
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-submenu,
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-flyout {
-    --osc-flyout-hide: .22s;
+    --osc-flyout-hide: .15s;
     background-color: var(--osc-bench);
     border: 1px solid var(--osc-rule);
     box-shadow: var(--osc-shadow-overlay);
