@@ -70,7 +70,7 @@ class MigrationRunner
             . ' s_migration VARCHAR(255) NOT NULL,'
             . ' dt_applied DATETIME NOT NULL,'
             . ' PRIMARY KEY (pk_i_id),'
-            . ' UNIQUE KEY uq_s_migration (s_migration)'
+            . ' UNIQUE KEY (s_migration)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI'"
         );
     }
