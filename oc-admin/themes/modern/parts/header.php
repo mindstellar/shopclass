@@ -1,8 +1,16 @@
 <?php if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
+}
+// This admin's saved light/dark choice, emitted on <html> so Bootstrap 5.3 has it before
+// first paint — no flash. Stored per admin id in t_preference (Osclass has no admin-meta
+// table); '' when never set, so the default is light. Whitelisted on the way out too, not
+// only on the way in, since a hand-edited preference row is still untrusted input.
+$oscAdminTheme = osc_get_preference((string) osc_logged_admin_id(), 'admin_theme');
+if ($oscAdminTheme !== 'dark' && $oscAdminTheme !== 'light') {
+    $oscAdminTheme = 'light';
 } ?>
 <!DOCTYPE html>
-<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>">
+<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>" data-bs-theme="<?php echo $oscAdminTheme; ?>">
 <head>
     <meta charset="utf-8">
     <title><?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Osclass'); ?></title>
@@ -24,6 +32,13 @@
             <?php AdminToolbar::newInstance()->render(); ?>
         </ul>
         <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="oscThemeToggle" role="button"
+                   title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
+                   aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
+                    <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'; ?>"></i>
+                </a>
+            </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"><div class="visually-hidden"><?php _e('User Menu'); ?></div></i>
@@ -42,6 +57,32 @@
         </ul>
     </div>
 </header>
+<script>
+    (function () {
+        var btn = document.getElementById('oscThemeToggle');
+        if (!btn) {
+            return;
+        }
+        var root = document.documentElement;
+        var icon = btn.querySelector('i');
+        // Flip the attribute first so the change is instant — the whole theme is CSS custom
+        // properties keyed off data-bs-theme, nothing to reload — then persist it best-effort.
+        // If the write fails the UI is still correct for this page; the next load reverts.
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var next = root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+            root.setAttribute('data-bs-theme', next);
+            if (icon) {
+                icon.classList.toggle('bi-moon-stars-fill', next === 'light');
+                icon.classList.toggle('bi-sun-fill', next === 'dark');
+            }
+            fetch('<?php echo osc_admin_base_url(true) . '?page=ajax&action=save_admin_theme&' . osc_csrf_token_url(); ?>&theme=' + next, {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            });
+        });
+    })();
+</script>
 <div id="content" class="container-fluid">
     <div class="row flex-nowrap">
         <nav id="sidebar-wrapper" class="col-auto dashboard-sidebar">
