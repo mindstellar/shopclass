@@ -100,6 +100,12 @@ class CWebItem extends BaseModel
                 if ($form == 0 || $form == $keepForm) {
                     Session::newInstance()->_dropKeepForm();
                 }
+                if ($form == 0) {
+                    // Fresh post form (no submitted data to restore): drop any temp
+                    // uploads a previous, abandoned posting left in the session so they
+                    // can't silently attach to this new listing.
+                    Session::newInstance()->_drop('ajax_files');
+                }
 
                 if (Session::newInstance()->_getForm('countryId') != '') {
                     $countryId = Session::newInstance()->_getForm('countryId');
@@ -184,6 +190,9 @@ class CWebItem extends BaseModel
                         }
                     }
                     Session::newInstance()->_clearVariables();
+                    // Uploads were consumed by the successful post; drop the session
+                    // mapping so it can't bleed into the next listing.
+                    Session::newInstance()->_drop('ajax_files');
                     if ($success == 1) {
                         osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                     } else if (osc_moderate_admin_post()) {
@@ -217,6 +226,11 @@ class CWebItem extends BaseModel
                     $keepForm = count(Session::newInstance()->_getKeepForm());
                     if ($form == 0 || $form == $keepForm) {
                         Session::newInstance()->_dropKeepForm();
+                    }
+                    if ($form == 0) {
+                        // Fresh edit form: drop temp uploads left by an earlier,
+                        // abandoned posting so they can't attach to this item.
+                        Session::newInstance()->_drop('ajax_files');
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -284,6 +298,9 @@ class CWebItem extends BaseModel
                             }
                         }
                         Session::newInstance()->_clearVariables();
+                        // Uploads were consumed by the successful edit; drop the session
+                        // mapping so it can't bleed into a later listing.
+                        Session::newInstance()->_drop('ajax_files');
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {
