@@ -20,24 +20,31 @@
 // Osclass ships RTL locales. `border-left` would put the active marker on the wrong edge
 // for a large part of the world.
 
+// The icon gutter: row inline padding (.6rem) + icon slot (1.25rem) + icon-to-label gap
+// (.5rem). Submenu labels are indented by exactly this so they sit under the PARENT's
+// label, not its icon — the alignment is what groups a child to its parent, which is why
+// the old hairline guide rail is gone. One Sass value keeps the two in lockstep.
+$sidebar-gutter: 2.35rem;
+
 .dashboard-sidebar {
   max-width: 15rem;
 
   @extend .px-sm-2, .px-0, .min-vh-100;
 
-  background-color: var(--osc-bench-warm);
-  border-inline-end: 1px solid var(--osc-rule);
+  background-color: var(--osc-chrome);
+  border-inline-end: 1px solid var(--osc-chrome-edge);
 
   &.offcanvas {
     overflow-y: auto;
   }
 
   // Top-level row. Bootstrap's .nav-pills paints $component-active-bg across the whole row
-  // when active; we want a tint plus an edge marker instead, so the active state is stated
-  // explicitly rather than inherited.
+  // when active; we want a soft tint pill instead — the SAME language a submenu's current
+  // item uses — so the active state is stated explicitly rather than inherited. No
+  // inline-start marker: a coloured side border is the one accent DESIGN.md bans outright,
+  // and the tint + bronze ink + weight already carry "you are here" three ways.
   .nav-link {
     align-items: center;
-    border-inline-start: 2px solid transparent;
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
@@ -47,21 +54,34 @@
     // row a flex container neutralises it, and `margin-inline-start: auto` below pushes
     // the chevron to the row's end in both directions.
     display: flex;
-    gap: .5rem;
-    padding: .45rem .6rem;
+    gap: 0;
+    min-height: 2.5rem;
+    padding: 0 .6rem;
     transition: background-color var(--osc-duration-fast) var(--osc-ease),
                 color var(--osc-duration-fast) var(--osc-ease);
 
     a {
+      align-items: center;
       color: inherit;
+      display: flex;
       flex: 1 1 auto;
+      // A fixed icon slot so every label starts at the same x — the vertical edge the
+      // eye reads as the menu's spine, and the anchor $sidebar-gutter aligns children to.
+      gap: .5rem;
       // The label is marked up as `<a class="h6">`, so Bootstrap already gives it
       // heading weight (600) and a heading margin. Both are wrong here: if every item is
       // 600, weight cannot signal the current one. Reset to 500 so `.active` can mean
       // something.
       font-weight: 500;
       margin-bottom: 0;
+      padding-block: .5rem;
       @extend .text-decoration-none;
+
+      > i {
+        flex: 0 0 1.25rem;
+        text-align: center;
+        width: 1.25rem;
+      }
 
       // `&:hover`, not `:hover`. The previous rule nested a bare `:hover`, which compiles
       // to `a *:hover` — it recoloured the icon INSIDE the link and never the link itself.
@@ -87,6 +107,7 @@
     > .nav-chevron {
       background: transparent;
       border: 0;
+      border-radius: $border-radius;
       color: inherit;
       cursor: pointer;
       flex: 0 0 auto;
@@ -101,66 +122,59 @@
       }
 
       &:focus-visible {
-        border-radius: $border-radius;
         outline: 2px solid var(--osc-bronze);
         outline-offset: 2px;
       }
     }
 
     &:hover {
-      background-color: var(--osc-bench);
+      background-color: var(--osc-chrome-hover);
       color: var(--osc-ink);
     }
 
     &.active {
       background-color: var(--osc-bronze-tint);
-      border-inline-start-color: var(--osc-bronze);
-      color: var(--osc-ink);
+      color: var(--osc-bronze);
 
-      // Weight shifts too, so "where I am" survives greyscale and colour-blindness —
-      // the tint and the marker are not carrying the meaning alone.
+      // Weight and colour both shift, so "where I am" survives greyscale and
+      // colour-blindness — the tint is not carrying the meaning alone.
       a {
+        color: var(--osc-bronze);
         font-weight: 600;
       }
     }
   }
 }
 
-.sidebar-submenu {
+// Prefixed with .dashboard-sidebar so these outrank `.dashboard-sidebar .nav-link`
+// (0,2,0): the submenu anchors also carry `.nav-link`, so an unqualified
+// `.sidebar-submenu a` (0,1,1) loses to the row rule and the gutter indent never lands.
+.dashboard-sidebar .sidebar-submenu {
   background-color: transparent;
   border: 0;
   font-size: $font-size-sm;
-  // A hairline guide rail runs down the group so the children read as belonging
-  // to their parent rather than as more top-level rows — "hairline rules do the
-  // work" (DESIGN.md §4). Logical props keep it on the inline-start edge in RTL.
-  // The rail's own offset plus the reduced padding below reproduce the previous
-  // ~1.6rem text indent, so the labels stay under the parent's label, not its icon.
-  border-inline-start: 1px solid var(--osc-rule);
-  margin-inline-start: .95rem;
-  padding-inline-start: .25rem;
+  margin: 0;
+  padding: 0;
 
   a {
-    // The 2px transparent inline-start border is inherited from
-    // `.dashboard-sidebar .nav-link`; it reserves the marker's width so
-    // `.sub-active` colouring it in never shifts the label.
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     font-size: $font-size-sm;
-    padding-block: .3rem;
+    // Indented to the icon gutter so the label sits under the parent's label. That
+    // alignment is the grouping — no guide rail, no side marker.
+    padding: .3rem .6rem .3rem $sidebar-gutter;
 
     &:hover {
-      background-color: var(--osc-bench);
+      background-color: var(--osc-chrome-hover);
       color: var(--osc-ink);
     }
 
-    // Current page. The same bronze language as a top-level active row — tint
-    // wash, bronze inline-start marker, weight 600 — scaled down for depth, so
-    // "you are here" is one system at both levels instead of two. (The old
-    // treatment was a full white `--osc-bench` box with no marker, which read
+    // Current page. The exact same bronze pill as a top-level active row — tint wash,
+    // bronze ink, weight 600 — so "you are here" is one system at both levels instead
+    // of two. (The old treatment was a full white box with a side marker, which read
     // louder than the parent's own active state.)
     &.sub-active {
       background-color: var(--osc-bronze-tint);
-      border-inline-start-color: var(--osc-bronze);
       color: var(--osc-bronze);
       font-weight: 600;
     }
@@ -171,18 +185,16 @@
     }
   }
 
-  // A titled divider, not a link: the hairline above marks a group break and the
-  // sentence case stays (no uppercase / letter-spacing — those break cursive
-  // joining in Arabic and this string is translated). Sits at the 13px Label
-  // floor, below the 14px child links.
+  // A section subhead, not a link. Sentence case stays (no uppercase / letter-spacing —
+  // those break cursive joining in Arabic and this string is translated). Aligned to the
+  // gutter like the links it heads, set a step smaller and in the muted ink.
   .submenu-divide {
-    border-block-start: 1px solid var(--osc-rule);
     color: var(--osc-ink-muted);
     font-size: .8125rem;
     font-weight: 600;
-    margin-block-start: .6rem;
-    padding-block-start: .5rem;
-    padding-inline-start: .65rem;
+    margin-block-start: .55rem;
+    padding-block: .25rem;
+    padding-inline-start: $sidebar-gutter;
   }
 }
 
@@ -244,8 +256,8 @@
 
 // ---- Footer utility zone: appearance, account, collapse ---------------------
 .sidebar-footer {
-  background-color: var(--osc-bench-warm);
-  border-block-start: 1px solid var(--osc-rule);
+  background-color: var(--osc-chrome);
+  border-block-start: 1px solid var(--osc-chrome-edge);
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -566,6 +578,17 @@
       overflow-y: auto;
       padding: .35rem;
       padding-inline-start: .35rem;
+
+      // In the expanded menu the links are indented to the icon gutter to align under
+      // the parent label; in this detached flyout there is no parent row to align to, so
+      // drop back to a normal padding and the same for the section subhead.
+      a {
+        padding-inline-start: .55rem;
+      }
+
+      .submenu-divide {
+        padding-inline-start: .55rem;
+      }
     }
 
     // Leaf tooltip.
