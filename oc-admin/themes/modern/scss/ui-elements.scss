@@ -161,9 +161,25 @@ input.ico-32 {
   @extend .float-end;
 }
 
-input.btn-mini,
-.btn-submit {
+input.btn-mini {
   @extend .btn-success;
+}
+
+// Primary submit is Workshop Bronze — the one action the owner came to do. Written with
+// var(--osc-bronze)/--osc-ink-inverse (not @extend .btn-primary) so the fill lightens under
+// data-bs-theme="dark"; Bootstrap compiles .btn-primary to a frozen light-mode hex.
+.btn-submit {
+  background-color: var(--osc-bronze);
+  border-color: var(--osc-bronze);
+  color: var(--osc-ink-inverse);
+
+  &:hover,
+  &:focus-visible,
+  &:active {
+    background-color: var(--osc-bronze-deep);
+    border-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
+  }
 }
 
 .well {

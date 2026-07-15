@@ -10,14 +10,13 @@
 }
 
 .help-box {
-  background: #caecf3;
-  border-left: 0.2rem var(--bs-info) solid;
-  color: color-contrast(#caecf3);
+  background: var(--osc-info-tint);
+  border: 1px solid var(--osc-info);
+  color: var(--osc-ink);
   border-radius: 4px;
   display: inline-block;
-  font-size: .85rem;
-  font-style: italic;
+  font-size: .875rem;
   margin-top: .2rem;
-  padding: .35rem .50rem;
+  padding: .35rem .6rem;
   width: auto;
 }
