@@ -38,6 +38,7 @@ namespace mindstellar\upgrade;
 
 use DBCommandClass;
 use DBConnectionClass;
+use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
@@ -121,6 +122,19 @@ class Osclass extends UpgradePackage
             }
 
             osc_set_preference('admin_theme', 'modern');
+
+            $runner = new MigrationRunner($comm, osc_lib_path() . 'osclass/installer/migrations');
+            $runner->ensureLedger();
+            $migrated = $runner->run();
+            if (!$migrated['ok']) {
+                return json_encode([
+                    'error'   => 3,
+                    'message' => sprintf(
+                        __('Migration failed: %s'),
+                        $migrated['failed']
+                    ) . ' — ' . $migrated['error']
+                ]);
+            }
 
             Utils::changeOsclassVersionTo(OSCLASS_VERSION);
 
