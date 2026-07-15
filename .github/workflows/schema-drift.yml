@@ -1,0 +1,48 @@
+# Verifies that a fresh install (struct.sql) and an upgraded install
+# (last release's struct.sql -> updateDB -> migrations) converge to the
+# same database schema. A failure means struct.sql changed in a way the
+# upgrade path does not reproduce — i.e. a migration is owed.
+name: Schema Drift
+on: [push, pull_request]
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout (full history for release tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+
+      - name: Resolve baseline (latest stable release tag)
+        id: baseline
+        run: |
+          TAG=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$TAG" ]; then echo "no stable release tag found"; exit 1; fi
+          echo "Using baseline tag: $TAG"
+          git show "$TAG:oc-includes/osclass/installer/struct.sql" > /tmp/baseline-struct.sql
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Schema drift check (baseline ${{ steps.baseline.outputs.tag }} -> current)
+        env:
+          DRIFT_DB_HOST: 127.0.0.1
+          DRIFT_DB_USER: root
+          DRIFT_DB_PASS: root
+        run: php tests/schema-drift.php /tmp/baseline-struct.sql

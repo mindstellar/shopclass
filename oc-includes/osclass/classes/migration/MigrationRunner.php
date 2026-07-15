@@ -28,9 +28,10 @@ use Throwable;
 /**
  * Forward-only migration runner backed by a ledger table (t_migration).
  *
- * Complements DBCommandClass::updateDB(), which only ever ADDs tables/columns/indexes by
- * diffing struct.sql against the live schema. Anything that engine cannot express — column
- * type changes, drops, renames, data backfills — is authored as an ordered, immutable
+ * Complements DBCommandClass::updateDB(), which diffs struct.sql against the live schema and
+ * can add tables/columns/indexes/foreign keys and even apply column type and default changes
+ * (CHANGE COLUMN / ALTER COLUMN). What it cannot do is DROP a column/index/table, rename, or
+ * transform/backfill data — anything of that kind is authored as an ordered, immutable
  * migration file under installer/migrations/ and applied here exactly once, in order,
  * recorded on success.
  *
