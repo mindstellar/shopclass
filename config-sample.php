@@ -54,6 +54,28 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
 //define('OSC_DEBUG_DB_EXPLAIN', false); //default is false
 
 
+/**
+ * Object cache driver. Default is 'default' (a per-request in-memory array that
+ * does NOT persist between requests). For a real shared cache, install the
+ * matching PHP extension and set one of:
+ *
+ *   'memcached' - modern memcached extension (recommended)
+ *   'apcu'      - APCu user cache (single server)
+ *   'memcache'  - DEPRECATED legacy memcache extension; use 'memcached' instead
+ */
+//define('OSC_CACHE', 'memcached');
+
+/** Cache entry lifetime in seconds. Default is 60. */
+//define('OSC_CACHE_TTL', 60);
+
+/**
+ * Optional memcached/memcache server list. Omit to use 127.0.0.1:11211.
+ * Each entry needs default_host, default_port and default_weight.
+ */
+//$_cache_config = array(
+//    array('default_host' => '127.0.0.1', 'default_port' => 11211, 'default_weight' => 1),
+//);
+
 
 
 
