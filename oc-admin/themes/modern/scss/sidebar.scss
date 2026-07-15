@@ -328,28 +328,48 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
-// ---- Slim header over the content -------------------------------------------
+// ---- Header zone over the content -------------------------------------------
+// The topbar (tools) and #content-head (page title + actions, styled in
+// render-page.scss) share one white surface and read as a single header. So the
+// topbar carries NO bottom rule — the single hairline lives under #content-head,
+// dividing the whole header zone from the content tray below.
 .admin-topbar {
   background-color: var(--osc-bench);
-  border-block-end: 1px solid var(--osc-rule);
   gap: .25rem;
-  min-height: 3rem;
-  padding: .35rem .85rem;
+  // #content-head and the content rows are Bootstrap .row's, which negative-margin
+  // out to the column's full width; this navbar is not, so without the same pull it
+  // sits inset by the .col gutter and its surface stops short of the rows below —
+  // invisible on white, a dark frame in dark mode. Pull it out to align the zone.
+  margin-inline: calc(var(--bs-gutter-x) * -.5);
+  min-height: 2.75rem;
+  // Re-inset by the same gutter so the tools align with the title row's content edge.
+  padding: .3rem calc(var(--bs-gutter-x) * .5);
 
   .admin-topbar-tools {
     align-items: center;
     flex-direction: row;
-    gap: .25rem;
+    gap: .15rem;
   }
 
-  // Toolbar plugin items render as .nav-link inside this bar.
+  // Toolbar plugin items render as .nav-link inside this bar. Quiet ghost
+  // buttons: muted at rest, a soft chrome pill + bronze ink on hover, with the
+  // icon sized to match so text and icon-only tools sit on one baseline.
   .nav-link {
+    align-items: center;
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
+    display: inline-flex;
+    gap: .35rem;
     padding: .4rem .6rem;
 
-    &:hover {
-      color: var(--osc-ink);
+    > i {
+      font-size: 1.05rem;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-bronze);
     }
   }
 

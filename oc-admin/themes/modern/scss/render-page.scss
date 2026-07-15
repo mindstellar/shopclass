@@ -1,25 +1,54 @@
+// Page title row. Shares the white bench with the topbar above so the two read as
+// one header zone; this block carries the single hairline that divides that zone
+// from the content tray. The heading is a flex row: it neutralises the physical
+// float-end / float-right on the action links (RTL-unsafe, like the sidebar chevron
+// was) and lets the actions sit at the row's end via margin-inline-start:auto.
 #content-head {
-  background-color: var(--osc-bench-warm);
-  border-bottom: solid 1px var(--osc-bench-sunk);
-  padding: 10px 15px;
-}
+  background-color: var(--osc-bench);
+  border-bottom: 1px solid var(--osc-rule);
+  padding: .3rem 15px .85rem;
 
-#content-head {
-  h1, h2 {
+  h1, h2, h3 {
+    align-items: center;
     color: var(--osc-ink);
-    font-size: 30px;
-    font-weight: 400;
+    display: flex;
+    gap: .4rem;
     margin: 0;
   }
 
-  h2 {
-    font-size: 20px;
-    font-weight: 300;
-  }
+  h1 { font-size: 1.6rem; font-weight: 600; }
+  h2 { font-size: 1.25rem; font-weight: 600; }
+  h3 { font-size: 1.125rem; font-weight: 600; }
 
-  h3 {
-    font-size: 18px;
-    font-weight: 300;
+  // Page action links (Add, help, settings…). One ghost icon-button language:
+  // neutral hit area, muted ink, soft chrome pill + bronze on hover. The colour is
+  // forced with !important to override the Bootstrap .text-success / .text-dark
+  // utilities the markup carries — that inconsistent green/bronze/black trio was
+  // the loudest thing in the header. The first action gets margin-inline-start:auto
+  // (also !important, to beat the .ms-1 utility) so the whole group hugs the end.
+  h1 a, h2 a, h3 a {
+    align-items: center;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted) !important;
+    display: inline-flex;
+    float: none !important;
+    font-size: 1.1rem;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    min-width: 2rem;
+    padding-inline: .4rem;
+    text-decoration: none;
+
+    &:first-of-type {
+      margin-inline-start: auto !important;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-bronze) !important;
+    }
   }
 }
 
