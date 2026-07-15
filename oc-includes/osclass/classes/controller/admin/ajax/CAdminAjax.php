@@ -714,6 +714,7 @@ class CAdminAjax extends AdminSecBaseModel
                 echo json_encode($result);
                 break;
             case 'upgrade_db':
+                osc_csrf_check();
                 if (defined('DEMO')) {
                     osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true));
