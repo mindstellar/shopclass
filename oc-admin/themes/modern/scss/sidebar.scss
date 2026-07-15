@@ -160,6 +160,10 @@ $sidebar-gutter: 2.35rem;
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     font-size: $font-size-sm;
+    // A hair of vertical rhythm so the hover/active pills read as separate rows
+    // instead of one continuous block. Adjacent margins collapse, so this is the
+    // gap between items, not doubled.
+    margin-block: .1rem;
     // Indented to the icon gutter so the label sits under the parent's label. That
     // alignment is the grouping — no guide rail, no side marker.
     padding: .3rem .6rem .3rem $sidebar-gutter;
