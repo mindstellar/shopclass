@@ -72,14 +72,15 @@ foreach ($aCurrencies as $currency) {
     $row[] = '<input type="checkbox" name="code[]" value="' . osc_esc_html($currency['pk_c_code']) . '" />';
 
     $options   = array();
+    $options[] = '<a href="' . osc_admin_base_url(true) . '?page=settings&amp;action=currencies&amp;type=edit&amp;code='
+                 . $currency['pk_c_code'] . '">' . __('Edit') . '</a>';
     $options[] =
         '<a onclick="return delete_dialog(\'' . $currency['pk_c_code'] . '\');" href="' . osc_admin_base_url(true)
         . '?page=settings&amp;action=currencies&amp;type=delete&amp;code=' . $currency['pk_c_code'] . '">'
         . __('Delete') . '</a>';
-    $options[] = '<a href="' . osc_admin_base_url(true) . '?page=settings&amp;action=currencies&amp;type=edit&amp;code='
-                 . $currency['pk_c_code'] . '">' . __('Edit') . '</a>';
 
-    $row[]   = $currency['pk_c_code'] . ' (' . implode(' &middot; ', $options) . ')';
+    $actions = '<div class="actions"><ul><li>' . implode('</li><li>', $options) . '</li></ul></div>';
+    $row[]   = $currency['pk_c_code'] . $actions;
     $row[]   = $currency['s_name'];
     $row[]   = $currency['s_description'];
     $aData[] = $row;
@@ -110,7 +111,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
-                <tr class="table-secondary">
+                <tr>
                     <th class="col-bulkactions"><input id="check_all" type="checkbox"/></th>
                     <th><?php _e('Code'); ?></th>
                     <th><?php _e('Name'); ?></th>

@@ -254,8 +254,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <?php } ?>
                     <?php } else { ?>
                         <tr>
-                            <td colspan="<?php echo count($columns); ?>" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
+                            <td colspan="<?php echo count($columns); ?>" class="empty-listings text-center">
+                                <?php if ($withFilters) { ?>
+                                    <p><?php _e('No listings match these filters.'); ?></p>
+                                    <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
+                                <?php } else { ?>
+                                    <p><?php _e('No listings found.'); ?></p>
+                                <?php } ?>
                             </td>
                         </tr>
                     <?php } ?>
@@ -417,8 +422,8 @@ osc_show_pagination_admin($aData);
                 </div>
             </div>
             <div class="modal-footer">
-                <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>" class="btn btn-success btn-sm" />
-                <a class="btn btn-warning btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
+                <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>" class="btn btn-primary btn-sm" />
+                <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
             </div>
         </div>
     </div>
