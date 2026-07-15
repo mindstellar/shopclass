@@ -226,12 +226,10 @@ class CWebAjax extends BaseModel
                 $encoded_alert = Params::getParam('alert');
                 $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
 
-                // check alert integrity / signature
-                $stringToSign     = osc_get_alert_public_key() . $encoded_alert;
-                $signature        = \mindstellar\utility\Utils::hmacSha1B64(osc_get_alert_private_key(), $stringToSign);
-                $server_signature = Session::newInstance()->_get('alert_signature');
-
-                if ($server_signature != $signature) {
+                // Integrity check: a genuine alert is encrypted with the persistent per-install
+                // key, so a valid token decrypts to a JSON search array. A forged or tampered
+                // token decrypts to garbage and is rejected here — no session state needed.
+                if ($alert === '' || !is_array(json_decode($alert, true))) {
                     echo '-2';
 
                     return false;

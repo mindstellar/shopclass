@@ -258,8 +258,8 @@ function osc_hash_password($password)
 function osc_encrypt_alert($alert)
 {
     $string = osc_genRandomPassword(32) . $alert;
-    osc_set_alert_private_key(); // renew private key and
-    osc_set_alert_public_key();  // public key
+    osc_set_alert_private_key(); // ensure the persistent keys exist
+    osc_set_alert_public_key();
     $key = hash('sha256', osc_get_alert_private_key(), true);
 
     if (function_exists('openssl_digest') && function_exists('openssl_encrypt') && function_exists('openssl_decrypt')
@@ -318,35 +318,52 @@ function osc_decrypt_alert($string)
 
 function osc_set_alert_public_key()
 {
-    if (!View::newInstance()->_exists('alert_public_key')) {
-        Session::newInstance()->_set('alert_public_key', osc_random_string(32));
+    if (!osc_get_preference('alert_public_key')) {
+        osc_set_preference('alert_public_key', osc_random_string(32));
+        osc_reset_preferences();
     }
 }
 
 
 /**
+ * Persistent per-install public key for search-alert tokens. Kept in preferences (not the
+ * session) so an encoded alert issued on one request stays verifiable/decryptable on a later
+ * one without a session — which is what lets anonymous search pages stay cookieless.
+ *
  * @return string
  */
 function osc_get_alert_public_key()
 {
-    return Session::newInstance()->_get('alert_public_key');
+    if (!osc_get_preference('alert_public_key')) {
+        osc_set_alert_public_key();
+    }
+
+    return osc_get_preference('alert_public_key');
 }
 
 
 function osc_set_alert_private_key()
 {
-    if (!View::newInstance()->_exists('alert_private_key')) {
-        Session::newInstance()->_set('alert_private_key', osc_random_string(32));
+    if (!osc_get_preference('alert_private_key')) {
+        osc_set_preference('alert_private_key', osc_random_string(32));
+        osc_reset_preferences();
     }
 }
 
 
 /**
+ * Persistent per-install private key backing search-alert encryption. See
+ * osc_get_alert_public_key() for why it is preference-backed rather than per-session.
+ *
  * @return string
  */
 function osc_get_alert_private_key()
 {
-    return Session::newInstance()->_get('alert_private_key');
+    if (!osc_get_preference('alert_private_key')) {
+        osc_set_alert_private_key();
+    }
+
+    return osc_get_preference('alert_private_key');
 }
 
 
