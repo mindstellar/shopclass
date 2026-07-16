@@ -42,13 +42,13 @@ osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
 {
-    ?>
+?>
     <h1><?php _e('Listings'); ?>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;action=settings" class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
         <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a href="<?php echo osc_admin_base_url(true) . '?page=items&action=post'; ?>" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add listing'); ?>"><i class="bi bi-plus-circle-fill"></i></a>
     </h1>
-    <?php
+<?php
 }
 
 
@@ -105,7 +105,7 @@ function customHead()
             });
         });
     </script>
-    <?php
+<?php
 }
 
 
@@ -128,32 +128,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <h2 class="render-title"><?php _e('Manage listings'); ?></h2>
 <div class="relative">
     <div id="listing-toolbar">
-        <div class="d-flex justify-content-end">
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
-                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                    <?php if ($key !== 'iDisplayLength') { ?>
-                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
-                    <?php }
-                } ?>
-                <select name="iDisplayLength" class="form-select form-select-sm" onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
-                    <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                                            echo 'selected';
-                                       } ?>><?php printf(__('%d Listings'), 25); ?></option>
-                    <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                                            echo 'selected';
-                                       } ?>><?php printf(__('%d Listings'), 50); ?></option>
-                    <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 100); ?></option>
-                    <option value="250" <?php if (Params::getParam('iDisplayLength') == 250) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 250); ?></option>
-                    <option value="500" <?php if (Params::getParam('iDisplayLength') == 500) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 500); ?></option>                    
-                </select>
-            </form>
+        <div class="d-flex justify-content-end gap-1">
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters">
                 <input type="hidden" name="page" value="items" />
                 <input type="hidden" name="iDisplayLength" value="<?php echo $iDisplayLength; ?>" />
@@ -180,10 +155,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <select id="filter-select" name="shortcut-filter" class="form-select form-select-sm">
                         <option value="oPattern" <?php if ($opt === 'oPattern') {
                                                         echo 'selected="selected"';
-                                                 } ?>><?php _e('Pattern'); ?></option>
+                                                    } ?>><?php _e('Pattern'); ?></option>
                         <option value="oUser" <?php if ($opt === 'oUser') {
                                                     echo 'selected="selected"';
-                                              } ?>><?php _e('Email'); ?></option>
+                                                } ?>><?php _e('Email'); ?></option>
                         <option value="oItemId" <?php if ($opt === 'oItemId') {
                                                     echo 'selected="selected"';
                                                 } ?>><?php _e('Item ID'); ?></option>
@@ -192,18 +167,38 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input id="fUser" name="user" type="text" placeholder="<?php _e('User Email') ?>" class="fUser form-control w-25 <?php echo $classUser; ?>" value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
                     <input id="fUserId" name="userId" type="hidden" placeholder="<?php _e('User ID') ?>" class="form-control w-25" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
                     <input id="fItemId" type="text" name="itemId" placeholder="<?php _e('Item ID') ?>" value="<?php echo osc_esc_html(Params::getParam('itemId')); ?>" class="form-control w-25 <?php echo $classItemId; ?>" />
-
-                    <?php // One class or the other, never both: `btn-dim btn-red` put two Bootstrap button
-                          // variants on one element and let source order decide, which is not a decision
-                          // anyone made. And red is reserved for destructive, irreversible actions — "a
-                          // filter is applied" is a state, so it reads as the active/bronze one. ?>
                     <a id="btn-display-filters" data-bs-toggle="modal" data-bs-target="#display-filters" href="#" class="btn <?php
-                    echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
+                                                                                                                                echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
                     <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
+            </form>
+            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
+                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
+                    <?php if ($key !== 'iDisplayLength') { ?>
+                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
+                <?php }
+                } ?>
+                <select name="iDisplayLength" class="form-select form-select-sm" onchange="this.form.submit();">
+                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
+                    <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
+                                            echo 'selected';
+                                        } ?>><?php printf(__('%d Listings'), 25); ?></option>
+                    <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
+                                            echo 'selected';
+                                        } ?>><?php printf(__('%d Listings'), 50); ?></option>
+                    <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
+                                            echo 'selected';
+                                        } ?>><?php printf(__('%d Listings'), 100); ?></option>
+                    <option value="250" <?php if (Params::getParam('iDisplayLength') == 250) {
+                                            echo 'selected';
+                                        } ?>><?php printf(__('%d Listings'), 250); ?></option>
+                    <option value="500" <?php if (Params::getParam('iDisplayLength') == 500) {
+                                            echo 'selected';
+                                        } ?>><?php printf(__('%d Listings'), 500); ?></option>
+                </select>
             </form>
         </div>
     </div>
@@ -243,12 +238,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         ); ?>">
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status is the one value that gets presentational markup — it becomes a badge
-                                          // (tint + icon + word). This wrap lives in the THEME, not in
-                                          // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
-                                          // word for any plugin hooked on the `items_processing_row` filter. ?>
+                                    // (tint + icon + word). This wrap lives in the THEME, not in
+                                    // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
+                                    // word for any plugin hooked on the `items_processing_row` filter. 
+                                    ?>
                                     <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
-                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                    ?></td>
+                                                                                                                    echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                                                                                                    ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
