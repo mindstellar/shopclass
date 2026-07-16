@@ -12483,16 +12483,16 @@ a.ico-32 {
 }
 
 .action-btn-black {
-  background: #1d1a17;
+  background: var(--osc-ink);
   border-color: var(--osc-ink-emphasis);
-  color: #96918c;
+  color: var(--osc-ink-inverse);
 }
 .action-btn-black:hover {
-  background-color: #000;
+  background-color: var(--osc-ink-emphasis);
 }
 
 .bg-black-light {
-  background-color: #2b2b2b;
+  background-color: var(--osc-ink);
 }
 
 .circle {
@@ -12523,8 +12523,15 @@ a.ico-32 {
 }
 
 .btn-black {
-  background-color: #1d1a17;
-  border: solid 1px var(--osc-ink-emphasis);
+  --bs-btn-bg: var(--osc-ink);
+  --bs-btn-border-color: var(--osc-ink-emphasis);
+  --bs-btn-color: var(--osc-ink-inverse);
+  --bs-btn-hover-bg: var(--osc-ink-emphasis);
+  --bs-btn-hover-border-color: var(--osc-ink-emphasis);
+  --bs-btn-hover-color: var(--osc-ink-inverse);
+  --bs-btn-active-bg: var(--osc-ink-emphasis);
+  --bs-btn-active-border-color: var(--osc-ink-emphasis);
+  --bs-btn-active-color: var(--osc-ink-inverse);
 }
 
 .btn-secondary, .btn-dim {

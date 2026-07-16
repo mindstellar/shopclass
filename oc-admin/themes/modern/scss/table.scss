@@ -87,7 +87,7 @@
 
   td {
     // Was an empty 0.8rem <td> painted with the status colour: a side stripe wearing a table
-    // cell as a disguise, on every row of the densest view in the admin. DESIGN.md bans
+    // cell as a disguise, on every row of the densest view in the admin. The design system bans
     // coloured side stripes, and the badge now does this job properly.
     //
     // The COLUMN stays. It is emitted by the core DataTable classes (addColumn('status-border')),

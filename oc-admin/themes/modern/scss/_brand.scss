@@ -12,7 +12,7 @@
 // Bootstrap's SCSS: it is gitignored and `npm run assets` deletes and re-copies it,
 // so anything written there is destroyed on the next build.
 //
-// Canonical values are OKLCH (see DESIGN.md); the hex below is the sRGB rendering.
+// Canonical values are OKLCH; the hex below is the sRGB rendering.
 // Contrast is verified, not estimated — the figure on each line is the measured ratio
 // against white. Do not "tidy" these values without re-checking them.
 // =============================================================================
