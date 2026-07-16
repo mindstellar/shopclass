@@ -115,9 +115,9 @@ class PagesDataTable extends DataTable
                 }
                 $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-                $row['bulkactions']   = '<input type="checkbox" name="id[]"" value="' . $aRow['pk_i_id'] . '"" />';
-                $row['internal_name'] = $aRow['s_internal_name'] . $actions;
-                $row['title']         = $content['s_title'];
+                $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" />';
+                $row['internal_name'] = osc_esc_html($aRow['s_internal_name']) . $actions;
+                $row['title']         = osc_esc_html($content['s_title']);
                 $row['order']         =
                     '<div class="order-box">' . $aRow['i_order'] . ' <img class="up" onclick="order_up('
                     . $aRow['pk_i_id'] . ')" src="' . osc_current_admin_theme_url('images/arrow_up.png') . '" alt="'

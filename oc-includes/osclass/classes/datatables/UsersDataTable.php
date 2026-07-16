@@ -279,9 +279,9 @@ class UsersDataTable extends DataTable
                 $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" /></div>';
                 $row['email']         =
                     '<a href="' . osc_admin_base_url(true) . '?page=items&userId=' . $aRow['pk_i_id'] . '&user='
-                    . $aRow['s_name'] . '">' . $aRow['s_email'] . '</a>' . $actions;
-                $row['username']      = $aRow['s_username'];
-                $row['name']          = $aRow['s_name'];
+                    . rawurlencode($aRow['s_name']) . '">' . osc_esc_html($aRow['s_email']) . '</a>' . $actions;
+                $row['username']      = osc_esc_html($aRow['s_username']);
+                $row['name']          = osc_esc_html($aRow['s_name']);
                 $row['date']          =
                     osc_format_date($aRow['dt_reg_date'], osc_date_format() . ' ' . osc_time_format());
                 $row['items']         = $aRow['i_items'];

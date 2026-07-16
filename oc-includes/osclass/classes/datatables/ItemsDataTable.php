@@ -343,15 +343,15 @@ class ItemsDataTable extends DataTable
                 $row['status-border'] = '';
                 $row['status']        = $status['text'];
                 $row['title']         =
-                    '<a href="' . osc_item_url() . '" target="_blank">' . $title . '</a>' . $actions;
+                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
-                        . '" target="_blank">' . $aRow['s_user_name'] . '</a>';
+                        . '" target="_blank">' . osc_esc_html($aRow['s_user_name']) . '</a>';
                 } else {
-                    $row['user'] = $aRow['s_user_name'];
+                    $row['user'] = osc_esc_html($aRow['s_user_name']);
                 }
-                $row['category']   = $aRow['s_category_name'];
+                $row['category']   = osc_esc_html($aRow['s_category_name']);
                 $row['location']   = $this->get_row_location();
                 $row['date']       = osc_format_date($aRow['dt_pub_date'], osc_date_format() . ' ' . osc_time_format());
                 $row['expiration'] =
@@ -681,8 +681,8 @@ class ItemsDataTable extends DataTable
                 $row['bulkactions'] =
                     '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" active="' . $aRow['b_active']
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
-                $row['title']       = '<a href="' . osc_item_url() . '" target="_blank">' . $title . '</a>' . $actions;
-                $row['user']        = $aRow['s_user_name'];
+                $row['title']       = '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
+                $row['user']        = osc_esc_html($aRow['s_user_name']);
                 $row['spam']        = $aRow['i_num_spam'];
                 $row['bad']         = $aRow['i_num_bad_classified'];
                 $row['rep']         = $aRow['i_num_repeated'];
