@@ -146,14 +146,16 @@ function toggleBulkActionsModal() {
 function bulkActionsSubmit() {
     document.getElementById("datatablesForm").submit();
 }
-// Set up the bulkActions modal
+// Set up the bulkActions modal. Only pages that render #bulkActionsModal use this
+// Bootstrap-modal flow; others (e.g. ban rules) own their own confirm dialog, so
+// this must not touch their form or assume the modal exists.
 window.addEventListener('load', function () {
     var datatablesForm = document.getElementById("datatablesForm");
-    if (datatablesForm) {
-        document.getElementById("datatablesForm").onsubmit = function () {
+    var bulkActionsModal = document.getElementById("bulkActionsModal");
+    if (datatablesForm && bulkActionsModal) {
+        datatablesForm.onsubmit = function () {
             toggleBulkActionsModal();
         };
-        var bulkActionsModal = document.getElementById("bulkActionsModal");
         bulkActionsModal.addEventListener("show.bs.modal", function () {
             var bulkSelect = document.getElementById("bulk_actions");
             bulkActionsModal.querySelector('.modal-body p').textContent = bulkSelect.options[bulkSelect.selectedIndex]

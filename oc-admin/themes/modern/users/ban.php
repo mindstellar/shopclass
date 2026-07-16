@@ -74,60 +74,60 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            // check_all bulkactions
-            $("#check_all").change(function () {
-                var isChecked = $(this).prop("checked");
-                $('.col-bulkactions input').each(function () {
-                    if (isChecked == 1) {
-                        this.checked = true;
-                    } else {
-                        this.checked = false;
-                    }
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('datatablesForm');
+            var bulkDialog = document.getElementById('dialog-bulk-actions');
+            var banDelete = document.getElementById('dialog-ban-delete');
+
+            // Select-all toggles every row checkbox.
+            var checkAll = document.getElementById('check_all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                        cb.checked = checkAll.checked;
+                    });
+                });
+            }
+
+            // Cancel buttons and a backdrop click close their <dialog>.
+            document.querySelectorAll('[data-osc-dialog-close]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var d = btn.closest('dialog');
+                    if (d) { d.close(); }
                 });
             });
-
-            // dialog delete
-            $("#dialog-ban-delete").dialog({
-                autoOpen: false,
-                modal: true
-            });
-
-            // dialog bulk actions
-            $("#dialog-bulk-actions").dialog({
-                autoOpen: false,
-                modal: true
-            });
-            $("#bulk-actions-submit").click(function () {
-                $("#datatablesForm").submit();
-            });
-            $("#bulk-actions-cancel").click(function () {
-                $("#datatablesForm").attr('data-dialog-open', 'false');
-                $('#dialog-bulk-actions').dialog('close');
-            });
-            // dialog bulk actions function
-            $("#datatablesForm").submit(function () {
-                if ($("#bulk_actions option:selected").val() == "") {
-                    return false;
+            [banDelete, bulkDialog].forEach(function (d) {
+                if (d) {
+                    d.addEventListener('click', function (e) { if (e.target === d) { d.close(); } });
                 }
-
-                if ($("#datatablesForm").attr('data-dialog-open') == "true") {
-                    return true;
-                }
-
-                $("#dialog-bulk-actions .form-row").html($("#bulk_actions option:selected").attr('data-dialog-content'));
-                $("#bulk-actions-submit").html($("#bulk_actions option:selected").text());
-                $("#datatablesForm").attr('data-dialog-open', 'true');
-                $("#dialog-bulk-actions").dialog('open');
-                return false;
             });
-            // /dialog bulk actions
+
+            // Bulk actions: confirm in a dialog before the form is submitted.
+            var bulkSubmit = document.getElementById('bulk-actions-submit');
+            var bulkCancel = document.getElementById('bulk-actions-cancel');
+            if (bulkCancel) { bulkCancel.addEventListener('click', function () { bulkDialog.close(); }); }
+            // form.submit() is the native call, which does NOT re-fire the submit
+            // handler below — so confirming submits straight through.
+            if (bulkSubmit) { bulkSubmit.addEventListener('click', function () { form.submit(); }); }
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    var sel = document.getElementById('bulk_actions');
+                    if (!sel || sel.value === '') { e.preventDefault(); return; }
+                    e.preventDefault();
+                    var opt = sel.options[sel.selectedIndex];
+                    bulkDialog.querySelector('.form-row').textContent = opt.getAttribute('data-dialog-content') || '';
+                    bulkSubmit.textContent = opt.text;
+                    bulkDialog.showModal();
+                });
+            }
         });
 
-        // dialog delete function
+        // Called by the ban-rule row action links.
         function delete_dialog(item_id) {
-            $("#dialog-ban-delete input[name='id[]']").attr('value', item_id);
-            $("#dialog-ban-delete").dialog('open');
+            var d = document.getElementById('dialog-ban-delete');
+            var input = d.querySelector("input[name='id[]']");
+            if (input) { input.value = item_id; }
+            d.showModal();
             return false;
         }
     </script>
@@ -212,36 +212,32 @@ function showingResults()
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);
 ?>
-    <form id="dialog-ban-delete" method="get" action="<?php echo osc_admin_base_url(true); ?>"
-          class="has-form-actions hide" title="<?php echo osc_esc_html(__('Delete rule')); ?>">
-        <input type="hidden" name="page" value="users"/>
-        <input type="hidden" name="action" value="delete_ban_rule"/>
-        <input type="hidden" name="id[]" value=""/>
-        <div class="form-horizontal">
-            <div class="form-row">
-                <?php _e('Are you sure you want to delete this ban rule?'); ?>
+    <dialog id="dialog-ban-delete" class="osc-dialog osc-dialog-danger">
+        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+            <input type="hidden" name="page" value="users"/>
+            <input type="hidden" name="action" value="delete_ban_rule"/>
+            <input type="hidden" name="id[]" value=""/>
+            <div class="osc-dialog-body">
+                <p class="osc-dialog-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <?php _e('Delete rule'); ?>
+                </p>
+                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this ban rule?'); ?></p>
             </div>
-            <div class="form-actions">
-                <div class="wrapper">
-                    <a class="btn btn-dim" href="javascript:void(0);"
-                       onclick="$('#dialog-ban-delete').dialog('close');"><?php _e('Cancel'); ?></a>
-                    <input id="ban-delete-submit" type="submit" value="<?php echo osc_esc_html(__('Delete')); ?>"
-                           class="btn btn-red"/>
-                </div>
+            <div class="osc-dialog-actions">
+                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+                <button id="ban-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
             </div>
+        </form>
+    </dialog>
+    <dialog id="dialog-bulk-actions" class="osc-dialog">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
+            <p class="osc-dialog-text form-row"></p>
         </div>
-    </form>
-    <div id="dialog-bulk-actions" title="<?php _e('Bulk actions'); ?>" class="has-form-actions hide">
-        <div class="form-horizontal">
-            <div class="form-row"></div>
-            <div class="form-actions">
-                <div class="wrapper">
-                    <a id="bulk-actions-cancel" class="btn btn-dim" href="javascript:void(0);"><?php _e('Cancel'); ?></a>
-                    <a id="bulk-actions-submit" href="javascript:void(0);"
-                       class="btn btn-red"><?php echo osc_esc_html(__('Delete')); ?></a>
-                    <div class="clear"></div>
-                </div>
-            </div>
+        <div class="osc-dialog-actions">
+            <button id="bulk-actions-cancel" type="button" class="btn btn-dim btn-sm"><?php _e('Cancel'); ?></button>
+            <button id="bulk-actions-submit" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
         </div>
-    </div>
+    </dialog>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

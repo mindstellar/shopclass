@@ -840,59 +840,6 @@
   padding-top: 1.25rem;
 }
 
-// ---- Native delete confirm dialog ------------------------------------------
-// Top-layer <dialog>: no z-index needed. Names the consequence in plain words
-// (Safety is the primary feature).
-.cat-dialog {
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: $border-radius-lg;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, .24);
-  color: var(--osc-ink);
-  inline-size: min(28rem, calc(100vw - 2rem));
-  padding: 0;
-
-  &::backdrop {
-    background-color: rgba(0, 0, 0, .38);
-  }
-}
-
-.cat-dialog-body {
-  padding: 1.35rem 1.35rem 0;
-}
-
-.cat-dialog-title {
-  align-items: center;
-  color: var(--osc-ink);
-  display: flex;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  gap: .5rem;
-  margin: 0 0 .6rem;
-
-  > i {
-    color: var(--osc-danger);
-  }
-}
-
-.cat-dialog-text {
-  color: var(--osc-ink-muted);
-  line-height: 1.55;
-  margin: 0;
-
-  strong {
-    color: var(--osc-ink);
-    font-weight: 600;
-  }
-}
-
-.cat-dialog-actions {
-  display: flex;
-  gap: .6rem;
-  justify-content: flex-end;
-  padding: 1.35rem;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cat-drawer,
   .cat-drawer-backdrop,

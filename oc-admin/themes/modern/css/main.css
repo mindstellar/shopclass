@@ -12920,6 +12920,57 @@ ul.ui-autocomplete.ui-menu {
   padding: 0.25rem 0.5rem;
 }
 
+.osc-dialog {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+  color: var(--osc-ink);
+  inline-size: min(28rem, 100vw - 2rem);
+  padding: 0;
+}
+.osc-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.38);
+}
+
+.osc-dialog-body {
+  padding: 1.35rem 1.35rem 0;
+}
+
+.osc-dialog-title {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+}
+.osc-dialog-title > i {
+  color: var(--osc-ink-muted);
+}
+
+.osc-dialog-danger .osc-dialog-title > i {
+  color: var(--osc-danger);
+}
+
+.osc-dialog-text {
+  color: var(--osc-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+.osc-dialog-text strong {
+  color: var(--osc-ink);
+  font-weight: 600;
+}
+
+.osc-dialog-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  padding: 1.35rem;
+}
+
 .widget-box-title select {
   font-size: 0.875rem;
   margin-bottom: -0.3rem;
@@ -15482,53 +15533,6 @@ code {
   gap: 0.6rem;
   margin-top: 0.25rem;
   padding-top: 1.25rem;
-}
-
-.cat-dialog {
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: 6px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
-  color: var(--osc-ink);
-  inline-size: min(28rem, 100vw - 2rem);
-  padding: 0;
-}
-.cat-dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.38);
-}
-
-.cat-dialog-body {
-  padding: 1.35rem 1.35rem 0;
-}
-
-.cat-dialog-title {
-  align-items: center;
-  color: var(--osc-ink);
-  display: flex;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  gap: 0.5rem;
-  margin: 0 0 0.6rem;
-}
-.cat-dialog-title > i {
-  color: var(--osc-danger);
-}
-
-.cat-dialog-text {
-  color: var(--osc-ink-muted);
-  line-height: 1.55;
-  margin: 0;
-}
-.cat-dialog-text strong {
-  color: var(--osc-ink);
-  font-weight: 600;
-}
-
-.cat-dialog-actions {
-  display: flex;
-  gap: 0.6rem;
-  justify-content: flex-end;
-  padding: 1.35rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

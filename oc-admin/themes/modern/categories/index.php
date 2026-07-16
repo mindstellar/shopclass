@@ -239,15 +239,15 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
         </aside>
 
         <!-- Delete confirmation -->
-        <dialog class="cat-dialog" id="catDeleteDialog">
-            <div class="cat-dialog-body">
-                <p class="cat-dialog-title">
+        <dialog class="osc-dialog osc-dialog-danger" id="catDeleteDialog">
+            <div class="osc-dialog-body">
+                <p class="osc-dialog-title">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span id="catDeleteTitle"><?php _e('Delete category'); ?></span>
                 </p>
-                <p class="cat-dialog-text" id="catDeleteText"></p>
+                <p class="osc-dialog-text" id="catDeleteText"></p>
             </div>
-            <div class="cat-dialog-actions">
+            <div class="osc-dialog-actions">
                 <button type="button" class="btn btn-dim btn-sm" id="catDeleteCancel"><?php _e('Cancel'); ?></button>
                 <button type="button" class="btn btn-danger btn-sm" id="catDeleteConfirm"><?php _e('Delete category'); ?></button>
             </div>
