@@ -113,6 +113,7 @@
     margin-top: .3rem;
 
     ul {
+      align-items: center;  // the meatball trigger is taller than the text links; centre them
       display: flex;
       flex-wrap: wrap;
       gap: .15rem .6rem;   // Wraps the "Show more…" overflow (the last, lowest-stakes item) when
@@ -165,6 +166,13 @@
       align-items: center;
       display: inline-flex;
       vertical-align: middle;
+
+      // An underline under a lone icon reads as a broken glyph; on hover the trigger
+      // shifts to the bronze accent (inherited from .actions a) with no underline.
+      &:hover,
+      &:focus-visible {
+        text-decoration-line: none;
+      }
 
       .show-more-icon::before {
         content: "\f5d4";

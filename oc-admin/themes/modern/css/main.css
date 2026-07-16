@@ -13634,6 +13634,7 @@ div.widget-box-content-no-wrapp li a {
   margin-top: 0.3rem;
 }
 .table .actions ul {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.15rem 0.6rem;
@@ -13663,6 +13664,9 @@ div.widget-box-content-no-wrapp li a {
   align-items: center;
   display: inline-flex;
   vertical-align: middle;
+}
+.table .show-more .show-more-trigger:hover, .table .show-more .show-more-trigger:focus-visible {
+  text-decoration-line: none;
 }
 .table .show-more .show-more-trigger .show-more-icon::before {
   content: "\f5d4";
