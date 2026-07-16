@@ -10,9 +10,9 @@
 
 .treeview .hitarea {
   cursor: pointer;
-  float: left;
+  float: inline-start;
   height: 12px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   width: 12px;
 
   &:before {
@@ -36,7 +36,7 @@
 }
 
 .treeview .expandable-hitarea {
-  margin-right: 5px;
+  margin-inline-end: 5px;
 
   &:before {
     content: "\f4f9";

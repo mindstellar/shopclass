@@ -193,7 +193,7 @@
   }
 
   .icon-new-window {
-    margin-left: 5px;
+    margin-inline-start: 5px;
 
     &:before {
       content: "\f1c5";
@@ -356,12 +356,12 @@
 
 td {
   &.children-cat {
-    padding-left: 20px;
+    padding-inline-start: 20px;
   }
 }
 
 .order-box {
-  padding-right: 20px;
+  padding-inline-end: 20px;
   position: relative;
 
   img {
@@ -390,7 +390,7 @@ td {
 
 .sorting_desc {
   a {
-    padding-right: 30px;
+    padding-inline-end: 30px;
 
     &:before {
       content: "\f229";
@@ -401,7 +401,7 @@ td {
 
 .sorting_asc {
   a {
-    padding-right: 30px;
+    padding-inline-end: 30px;
 
     &:before {
       content: "\f235";
