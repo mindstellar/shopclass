@@ -95,6 +95,21 @@ HTACCESS;
                     $item_url = substr(str_replace('//', '/', Params::getParam('rewrite_item_url') . '/'), 0, -1);
                     if (!osc_validate_text($item_url)) {
                         ++$errors;
+                        // Fall back to the last valid structure — $item_url feeds the item
+                        // rewrite rule built further down, and an empty value there generates a
+                        // greedy catch-all (^.*/.*$) that hijacks every URL, admin included.
+                        $item_url = osc_get_preference('rewrite_item_url');
+                    } elseif (stripos($item_url, '{ITEM_ID}') === false) {
+                        // The router resolves a listing by the id captured from its URL (the
+                        // {ITEM_ID} -> ([0-9]+) rule built further down), so a structure without
+                        // it makes every listing 404. Reject it, keep the working value, and use
+                        // that value for the rule below so it stays anchored on ([0-9]+). (#355)
+                        ++$errors;
+                        osc_add_flash_error_message(
+                            _m('The listing permalink structure must include {ITEM_ID}; it was left unchanged.'),
+                            'admin'
+                        );
+                        $item_url = osc_get_preference('rewrite_item_url');
                     } else {
                         osc_set_preference('rewrite_item_url', $item_url);
                     }
