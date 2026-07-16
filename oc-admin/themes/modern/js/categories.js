@@ -391,44 +391,10 @@
         });
     });
 
-    // Vanilla locale tabs over the CategoryForm markup (.osc-tab > ul > li > a
-    // href="#panel"). Replaces jQuery-UI tabs; the field names are untouched.
+    // Locale tabs use the shared vanilla helper (oscInitTabs, in ui-osc.js).
     function initLocaleTabs(scope) {
-        var container = scope.querySelector('.osc-tab');
-        if (!container) {
-            return;
-        }
-        // The server marks the active locale with jQuery-UI's ui-tabs-active /
-        // ui-state-active — and the global jQuery-UI stylesheet paints those blue.
-        // Remember which was active, then strip the ui-* classes so only this
-        // component's bronze styling applies.
-        var serverActive = container.querySelector('ul > li.ui-tabs-active > a');
-        container.querySelectorAll('ul > li').forEach(function (li) {
-            li.classList.remove('ui-tabs-active', 'ui-state-active', 'ui-state-default', 'ui-corner-top', 'ui-tab');
-        });
-        var links = container.querySelectorAll(':scope > ul > li > a');
-        var panels = [];
-        links.forEach(function (link) {
-            var sel = link.getAttribute('href');
-            var panel = sel && sel.charAt(0) === '#' ? scope.querySelector('[id="' + sel.slice(1) + '"]') : null;
-            if (panel) { panels.push(panel); }
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                links.forEach(function (l) { l.parentNode.classList.remove('is-active'); });
-                panels.forEach(function (p) { p.hidden = true; });
-                link.parentNode.classList.add('is-active');
-                if (panel) { panel.hidden = false; }
-            });
-        });
-        // Activate the tab the server marked active, else the first.
-        var active = serverActive || (links.length ? links[0] : null);
-        panels.forEach(function (p) { p.hidden = true; });
-        links.forEach(function (l) { l.parentNode.classList.remove('is-active'); });
-        if (active) {
-            active.parentNode.classList.add('is-active');
-            var sel = active.getAttribute('href');
-            var panel = sel ? scope.querySelector('[id="' + sel.slice(1) + '"]') : null;
-            if (panel) { panel.hidden = false; }
+        if (typeof oscInitTabs === 'function') {
+            oscInitTabs(scope);
         }
     }
 
