@@ -316,12 +316,12 @@ ul.showing-results {
     @include rounded-corners(0);
   }
   button {
-    background: white;
+    background: var(--osc-bench);
     border: 0;
     border-left: solid 1px var(--osc-bench-sunk);
     // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
     // it is a *different* blue. The rule is about the colour, not the hex.
-    color: $link-color;
+    color: var(--osc-bronze);
     cursor: pointer;
     font-size: .85rem;
     font-weight: bold;
@@ -348,7 +348,7 @@ ul.showing-results {
 }
 
 .ui-autocomplete-loading {
-  background: white url("../images/loading.gif") right center no-repeat;
+  background: var(--osc-bench) url("../images/loading.gif") right center no-repeat;
   display: block;
 }
 ul.ui-autocomplete.ui-menu {
@@ -415,7 +415,7 @@ ul.ui-autocomplete.ui-menu {
   width: 2rem;
 
   span {
-    background: $navbar-dark-color;
+    background: var(--osc-ink-muted);
     border-radius: .9rem;
     display: block;
     height: .2rem;
@@ -428,7 +428,7 @@ ul.ui-autocomplete.ui-menu {
 
     &:hover,
     &:focus {
-      background: $navbar-dark-hover-color;
+      background: var(--osc-ink);
     }
 
     &:nth-child(1) {
