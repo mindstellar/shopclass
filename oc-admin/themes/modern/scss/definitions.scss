@@ -14,8 +14,9 @@
 // The Blue Exile Rule and kept alive only by the fact that nothing used them.
 //
 // These are Sass variables, not CSS class names: nothing outside this stylesheet can reference
-// them, so removing them is not a compatibility event. The .btn-blue and .btn-submit CLASSES
-// are a different matter and stay exactly where they are.
+// them, so removing them is not a compatibility event. The .btn-submit CLASS is a different
+// matter and stays exactly where it is. (.btn-blue — a misleading @extend .btn-primary — has
+// been removed; its two bundled call sites moved to .btn-primary, which is what it rendered as.)
 
 // The legacy dark controls (.btn-black, .action-btn-black, .bg-black-light) are now tokenised
 // as inverse ink controls and flip with the theme (see ui-elements.scss). $color-gray-hardblack
