@@ -15657,6 +15657,63 @@ form h3, form .h3 {
   font-weight: normal;
 }
 
+.osc-tree,
+.osc-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.osc-tree ul {
+  margin-inline-start: 1.15rem;
+}
+
+.osc-tree li {
+  padding: 0.12rem 0;
+}
+
+.osc-tree-parent.is-collapsed > ul {
+  display: none;
+}
+
+.osc-tree-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.2rem;
+  justify-content: center;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.2rem;
+}
+.osc-tree-toggle > i {
+  font-size: 0.8rem;
+  transition: transform var(--osc-duration-fast) var(--osc-ease);
+}
+.osc-tree-toggle:hover {
+  color: var(--osc-ink);
+}
+.osc-tree-toggle:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 1px;
+}
+
+.osc-tree-parent.is-collapsed > .osc-tree-toggle > i {
+  transform: rotate(-90deg);
+}
+
+.osc-tree li:not(.osc-tree-parent) {
+  padding-inline-start: 1.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osc-tree-toggle > i {
+    transition: none;
+  }
+}
 #stats-page .widget-box-content {
   height: 225px;
 }

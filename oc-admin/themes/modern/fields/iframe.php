@@ -108,7 +108,7 @@ $selected   = __get('selected');
                 </div>
                 <div class="card-footer form-actions">
                     <input type="submit" id="cfield_save" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit" />
-                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="$('#edit-custom-field-frame').remove();" />
+                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="document.getElementById('edit-custom-field-frame').remove();" />
                 </div>
             </fieldset>
         </form>
@@ -116,92 +116,88 @@ $selected   = __get('selected');
 </div>
 <!-- /custom field frame -->
 <script type="text/javascript">
-    $("#cat_tree").treeview({
-        animated: "fast",
-        collapsed: true
-    });
-    var typeInput = $('select[name="field_type"]');
-    var optionsDiv = $('#div_field_options');
-    var optionsInput = optionsDiv.find('input[name="s_options"]')
-    var defaultLocale = '<?php echo osc_current_admin_locale(); ?>';
-    var metaNameInputs = $('input[name^="meta_s_name"][name$="]"]');
-    var message = '';
-
-    typeInput.change(function() {
-        if ($(this).prop('value') === 'DROPDOWN' || $(this).prop('value') === 'RADIO') {
-            optionsDiv.show();
-        } else {
-            optionsDiv.hide();
+    (function () {
+        if (typeof oscTreeview === 'function') {
+            oscTreeview(document.getElementById('cat_tree'), {
+                collapsed: true,
+                toggleLabel: '<?php echo osc_esc_js(__('Toggle subcategories')); ?>'
+            });
         }
 
-        ($(this).prop('value') === 'URL') ? $('#field_newtab').show(): $('#field_newtab').hide();
-    });
+        var typeInput = document.querySelector('select[name="field_type"]');
+        var optionsDiv = document.getElementById('div_field_options');
+        var optionsInput = optionsDiv ? optionsDiv.querySelector('input[name="s_options"]') : null;
+        var fieldNewtab = document.getElementById('field_newtab');
+        var defaultLocale = '<?php echo osc_esc_js(osc_current_admin_locale()); ?>';
+        var form = document.getElementById('nedit_field_form');
 
-    typeInput.change();
-
-    $('#edit-custom-field-frame form').submit(function() {
-        // meta_s_name with default locale is required
-        if (metaNameInputs.filter('[name="meta_s_name[' + defaultLocale + ']"]').val() === '') {
-            message += '<?php echo osc_esc_js(__('Name for default locale is required.')); ?>';
+        // Show the options field only for DROPDOWN/RADIO, the new-tab toggle only
+        // for URL — mirror the state on load and on every type change.
+        function syncType() {
+            var v = typeInput ? typeInput.value : '';
+            if (optionsDiv) { optionsDiv.style.display = (v === 'DROPDOWN' || v === 'RADIO') ? '' : 'none'; }
+            if (fieldNewtab) { fieldNewtab.style.display = (v === 'URL') ? '' : 'none'; }
         }
-        if (typeInput.prop('value') === 'DROPDOWN' || typeInput.prop('value') === 'RADIO') {
-            // s_options input must be filled
-            if (optionsInput.val() === '') {
-                message += '<?php echo osc_esc_js(__('Options are required.')); ?>';
-            }
-        } else {
-            // clear all options input values
-            optionsInput.val('');
-        }
-        // if message is not '' then set jsMessage and return false
-        if (message !== '') {
-            $(".jsMessage").fadeIn('fast');
-            $(".jsMessage p").html(message);
-            return false;
-        }
+        if (typeInput) { typeInput.addEventListener('change', syncType); }
+        syncType();
 
-        $.ajax({
-            type: 'POST',
-            url: '<?php echo osc_admin_base_url(true); ?>',
-            data: $(this).serialize(),
-            // Mostramos un mensaje con la respuesta de PHP
-            success: function(data) {
-                var ret = eval("(" + data + ")");
-
-                var message = "";
-                if (ret.error) {
-                    message += ret.error;
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var message = '';
+                var nameInput = form.querySelector('[name="meta_s_name[' + defaultLocale + ']"]');
+                if (nameInput && nameInput.value === '') {
+                    message += '<?php echo osc_esc_js(__('Name for default locale is required.')); ?>';
                 }
-                if (ret.ok) {
-                    $('#settings_form').fadeOut('fast', function() {
-                        $('#settings_form').remove();
-                    });
-                    message += ret.ok;
-                    $('#quick_edit_' + ret.field_id).html(ret.text);
+                var v = typeInput ? typeInput.value : '';
+                if (v === 'DROPDOWN' || v === 'RADIO') {
+                    if (optionsInput && optionsInput.value === '') {
+                        message += '<?php echo osc_esc_js(__('Options are required.')); ?>';
+                    }
+                } else if (optionsInput) {
+                    optionsInput.value = '';
+                }
+                if (message !== '') {
+                    setJsMessage('error', message);
+                    return;
                 }
 
-                $(".jsMessage").fadeIn('fast');
-                $(".jsMessage p").html(message);
-                $('div.content_list_<?php echo $field['pk_i_id']; ?>').html('');
-            },
-            error: function() {
-                $(".jsMessage").fadeIn('fast');
-                $(".jsMessage p").html('<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
-            }
-
-        })
-        return false;
-    });
-
-    $('#advanced_fields_iframe').bind('click', function() {
-        $('#more-options_iframe').toggle();
-        if ($(this).hasClass('custom-field-shrink')) {
-            $(this).removeClass('custom-field-shrink');
-            $(this).addClass('custom-field-expanded');
-        } else {
-            $(this).addClass('custom-field-shrink');
-            $(this).removeClass('custom-field-expanded');
+                fetch(form.getAttribute('action'), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new URLSearchParams(new FormData(form))
+                }).then(function (r) {
+                    return r.text();
+                }).then(function (data) {
+                    var ret;
+                    try { ret = JSON.parse(data); } catch (err) { ret = (new Function('return (' + data + ')'))(); }
+                    if (ret && ret.ok) {
+                        var label = document.getElementById('quick_edit_' + ret.field_id);
+                        if (label) { label.textContent = ret.text; }
+                        setJsMessage('ok', ret.ok);
+                        var cl = document.querySelector('.content_list_<?php echo (int)$field['pk_i_id']; ?>');
+                        if (cl) { cl.innerHTML = ''; }
+                    } else {
+                        setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                    }
+                }).catch(function () {
+                    setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                });
+            });
         }
-    });
-    $('#more-options_iframe').hide();
+
+        var advanced = document.getElementById('advanced_fields_iframe');
+        var moreOptions = document.getElementById('more-options_iframe');
+        if (moreOptions) { moreOptions.style.display = 'none'; }
+        if (advanced) {
+            advanced.addEventListener('click', function () {
+                if (moreOptions) {
+                    moreOptions.style.display = (moreOptions.style.display === 'none') ? '' : 'none';
+                }
+                advanced.classList.toggle('custom-field-shrink');
+                advanced.classList.toggle('custom-field-expanded');
+            });
+        }
+    })();
 </script>

@@ -48,3 +48,71 @@ form h3 {
   font-size: 16px;
   font-weight: normal;
 }
+
+
+// -----------------------------------------------------------------------------
+// Vanilla treeview (oscTreeview) — replaces the jQuery-treeview plugin for the
+// category / plugin checkbox trees. Parents collapse; a chevron toggle leads
+// the row and rotates when collapsed.
+// -----------------------------------------------------------------------------
+.osc-tree,
+.osc-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.osc-tree ul {
+  margin-inline-start: 1.15rem;
+}
+
+.osc-tree li {
+  padding: .12rem 0;
+}
+
+.osc-tree-parent.is-collapsed > ul {
+  display: none;
+}
+
+.osc-tree-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.2rem;
+  justify-content: center;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.2rem;
+
+  > i {
+    font-size: .8rem;
+    transition: transform var(--osc-duration-fast) var(--osc-ease);
+  }
+
+  &:hover {
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.osc-tree-parent.is-collapsed > .osc-tree-toggle > i {
+  transform: rotate(-90deg);
+}
+
+// Leaves reserve the toggle's width so their checkboxes line up under parents'.
+.osc-tree li:not(.osc-tree-parent) {
+  padding-inline-start: 1.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osc-tree-toggle > i {
+    transition: none;
+  }
+}

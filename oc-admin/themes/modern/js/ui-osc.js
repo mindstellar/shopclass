@@ -102,6 +102,46 @@ function tabberAutomatic() {
     });
 }
 
+// Make a nested <ul> collapsible — replaces the jQuery-treeview plugin. Each
+// <li> that contains a child <ul> gets a disclosure toggle; children start
+// collapsed. Idempotent per root.
+function oscTreeview(root, opts) {
+    if (!root || root.getAttribute('data-osc-tree-init')) {
+        return;
+    }
+    root.setAttribute('data-osc-tree-init', '1');
+    root.classList.add('osc-tree');
+    opts = opts || {};
+    var startCollapsed = opts.collapsed !== false;
+
+    var lis = root.querySelectorAll('li');
+    for (var i = 0; i < lis.length; i++) {
+        (function (li) {
+            var childUl = null;
+            for (var c = 0; c < li.children.length; c++) {
+                if (li.children[c].tagName === 'UL') { childUl = li.children[c]; break; }
+            }
+            if (!childUl) {
+                return;
+            }
+            li.classList.add('osc-tree-parent');
+            if (startCollapsed) { li.classList.add('is-collapsed'); }
+            var toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'osc-tree-toggle';
+            toggle.innerHTML = '<i class="bi bi-chevron-down" aria-hidden="true"></i>';
+            toggle.setAttribute('aria-expanded', startCollapsed ? 'false' : 'true');
+            toggle.setAttribute('aria-label', opts.toggleLabel || 'Toggle');
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                var collapsed = li.classList.toggle('is-collapsed');
+                toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            });
+            li.insertBefore(toggle, li.firstChild);
+        })(lis[i]);
+    }
+}
+
 // Vanilla ARIA combobox — replaces jQuery-UI .autocomplete(). Attaches to
 // `input`, debounce-fetches JSON [{id,label,value}] from opts.source (adds a
 // `term` param), shows a listbox, and drives it with the standard combobox
