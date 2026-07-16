@@ -176,13 +176,20 @@
 
       .show-more-icon::before {
         content: "\f5d4";
+        display: block;
         font-family: "bootstrap-icons";
         font-size: 1.15rem;
         line-height: 1;
+        // The glyph paints slightly below the centre of its own line box; nudge it up
+        // so the three dots sit on the text's optical midline, not under it.
+        transform: translateY(-0.06em);
       }
     }
 
     > ul {
+      // Reset the row strip's align-items:center, which cascades in here through the
+      // shared descendant selector and would otherwise centre the menu's items.
+      align-items: stretch;
       background-color: var(--osc-bench);
       border: 1px solid var(--osc-rule);
       border-radius: $border-radius;

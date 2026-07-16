@@ -13670,11 +13670,14 @@ div.widget-box-content-no-wrapp li a {
 }
 .table .show-more .show-more-trigger .show-more-icon::before {
   content: "\f5d4";
+  display: block;
   font-family: "bootstrap-icons";
   font-size: 1.15rem;
   line-height: 1;
+  transform: translateY(-0.06em);
 }
 .table .show-more > ul {
+  align-items: stretch;
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: 4px;
