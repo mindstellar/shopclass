@@ -362,9 +362,9 @@ class CAdminAdmins extends AdminSecBaseModel
 
                     $row   = array();
                     $row[] = '<input type="checkbox" name="id[]" value="' . $admin['pk_i_id'] . '" />';
-                    $row[] = $admin['s_username'] . $actions;
-                    $row[] = $admin['s_name'];
-                    $row[] = $admin['s_email'];
+                    $row[] = osc_esc_html($admin['s_username']) . $actions;
+                    $row[] = osc_esc_html($admin['s_name']);
+                    $row[] = osc_esc_html($admin['s_email']);
 
                     $aData[] = $row;
                 }
