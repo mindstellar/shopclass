@@ -164,13 +164,46 @@ $sidebar-gutter: 2.35rem;
     // instead of one continuous block. Adjacent margins collapse, so this is the
     // gap between items, not doubled.
     margin-block: .1rem;
-    // Indented to the icon gutter so the label sits under the parent's label. That
-    // alignment is the grouping — no guide rail, no side marker.
+    // Indented to the icon gutter so the label sits under the parent's label; the
+    // dot marker below rides in that gutter, on the parent icon's spine.
     padding: .3rem .6rem .3rem $sidebar-gutter;
+    position: relative;
+
+    // Leading dot, sitting in the icon gutter under the parent's icon spine. It is a
+    // marker in its own right: its colour and glow are driven by the rules below,
+    // NOT by the link's text colour — so a row hover lights the text on its own pill
+    // while the dot does its own glow, and the two never share a state.
+    &::before {
+      background-color: var(--osc-rule-strong);
+      block-size: .34rem;
+      border-radius: 50%;
+      content: "";
+      inline-size: .34rem;
+      inset-block-start: 50%;
+      inset-inline-start: 1.05rem;
+      position: absolute;
+      // Scale rides the glow so the dot pops a touch on hover; the translate keeps it
+      // vertically centred through the scale.
+      transform: translateY(-50%) scale(1);
+      transition: background-color var(--osc-duration-fast) var(--osc-ease),
+                  box-shadow var(--osc-duration-fast) var(--osc-ease),
+                  transform var(--osc-duration-fast) var(--osc-ease);
+    }
 
     &:hover {
       background-color: var(--osc-chrome-hover);
       color: var(--osc-ink);
+    }
+
+    // The dot glows on hover — bronze fill, a tight bronze ring, and a soft halo —
+    // independent of the text recolour above. The ring carries the effect even in
+    // light mode (where bronze is dark and a bare blur would read as a shadow);
+    // --osc-bronze-rgb is re-pointed in dark mode, so it all tracks the theme.
+    &:hover::before {
+      background-color: var(--osc-bronze);
+      box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .22),
+                  0 0 10px 2px rgba(var(--osc-bronze-rgb), .8);
+      transform: translateY(-50%) scale(1.15);
     }
 
     // Current page. The exact same bronze pill as a top-level active row — tint wash,
@@ -181,6 +214,12 @@ $sidebar-gutter: 2.35rem;
       background-color: var(--osc-bronze-tint);
       color: var(--osc-bronze);
       font-weight: 600;
+
+      // Solid bronze dot to match the active ink; no halo (this row is already the
+      // loud one — the glow is a hover affordance, not a resting state).
+      &::before {
+        background-color: var(--osc-bronze);
+      }
     }
 
     &:focus-visible {

@@ -13165,15 +13165,36 @@ div.widget-box-content-no-wrapp li a {
   font-size: 0.875rem;
   margin-block: 0.1rem;
   padding: 0.3rem 0.6rem 0.3rem 2.35rem;
+  position: relative;
+}
+.dashboard-sidebar .sidebar-submenu a::before {
+  background-color: var(--osc-rule-strong);
+  block-size: 0.34rem;
+  border-radius: 50%;
+  content: "";
+  inline-size: 0.34rem;
+  inset-block-start: 50%;
+  inset-inline-start: 1.05rem;
+  position: absolute;
+  transform: translateY(-50%) scale(1);
+  transition: background-color var(--osc-duration-fast) var(--osc-ease), box-shadow var(--osc-duration-fast) var(--osc-ease), transform var(--osc-duration-fast) var(--osc-ease);
 }
 .dashboard-sidebar .sidebar-submenu a:hover {
   background-color: var(--osc-chrome-hover);
   color: var(--osc-ink);
 }
+.dashboard-sidebar .sidebar-submenu a:hover::before {
+  background-color: var(--osc-bronze);
+  box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), 0.22), 0 0 10px 2px rgba(var(--osc-bronze-rgb), 0.8);
+  transform: translateY(-50%) scale(1.15);
+}
 .dashboard-sidebar .sidebar-submenu a.sub-active {
   background-color: var(--osc-bronze-tint);
   color: var(--osc-bronze);
   font-weight: 600;
+}
+.dashboard-sidebar .sidebar-submenu a.sub-active::before {
+  background-color: var(--osc-bronze);
 }
 .dashboard-sidebar .sidebar-submenu a:focus-visible {
   outline: 2px solid var(--osc-bronze);
