@@ -206,12 +206,14 @@ class CAdminItemComments extends AdminSecBaseModel
                         . Params::getParam('id'));
                 }
 
+                // Strip markup on write, mirroring the public comment path
+                // (ItemActions::add_comment) so stored values stay plain text.
                 $this->itemCommentManager->update(
                     array(
-                        's_title'        => Params::getParam('title'),
-                        's_body'         => Params::getParam('body'),
-                        's_author_name'  => Params::getParam('authorName'),
-                        's_author_email' => Params::getParam('authorEmail')
+                        's_title'        => trim(strip_tags(Params::getParam('title'))),
+                        's_body'         => trim(strip_tags(Params::getParam('body'))),
+                        's_author_name'  => trim(strip_tags(Params::getParam('authorName'))),
+                        's_author_email' => trim(strip_tags(Params::getParam('authorEmail')))
                     ),
                     array(
                         'pk_i_id' => Params::getParam('id')
