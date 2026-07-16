@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract OSCLASS_VERSION
         id: extract_version
@@ -76,7 +76,7 @@ jobs:
       # the next run.
       - name: Setup Node
         if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
@@ -96,7 +96,7 @@ jobs:
 
       - name: Create GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: release/osclass_v${{ env.OSCLASS_VERSION }}.zip
           tag_name: ${{ env.OSCLASS_VERSION }}
