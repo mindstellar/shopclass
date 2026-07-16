@@ -16,9 +16,11 @@
     margin: 0;
   }
 
-  h1 { font-size: 1.6rem; font-weight: 600; }
-  h2 { font-size: 1.25rem; font-weight: 600; }
-  h3 { font-size: 1.125rem; font-weight: 600; }
+  // Display / Headline / Title roles (DESIGN §3). The page title carries the -0.01em
+  // Display tracking so it reads as one settled word, not spaced-out letters.
+  h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+  h2 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
+  h3 { font-size: 1.0625rem; font-weight: 600; line-height: 1.4; }
 
   // Page action links (Add, help, settings…). One ghost icon-button language:
   // neutral hit area, muted ink, soft chrome pill + bronze on hover. The colour is

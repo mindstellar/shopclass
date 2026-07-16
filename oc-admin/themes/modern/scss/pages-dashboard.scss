@@ -76,6 +76,9 @@
   font-size: 1.6rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  // A large numeral wants slightly tighter tracking so the digits read as one figure.
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 .dash-stat-label {

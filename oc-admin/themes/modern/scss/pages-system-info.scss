@@ -33,8 +33,10 @@
 
   .card-title {
     color: var(--osc-ink);
-    font-size: 1rem;
+    // Title role: 17px / 600 / 1.4 (DESIGN §3).
+    font-size: 1.0625rem;
     font-weight: 600;
+    line-height: 1.4;
   }
 }
 
@@ -74,15 +76,17 @@
 
 // The verdict pill. Word + colour together, so it survives a monochrome screen and
 // colour-blindness. Warning pairs with dark ink (its own hue never clears text
-// contrast on its tint); the others use their deep semantic ink.
+// contrast on its tint); the others use their deep semantic ink. Typeset as the
+// system Label (13px / +.01em), sentence-case like the theme's other labels and
+// the .osc-status badge — a half-step heavier (600) because it is the scan anchor.
 .sysinfo-state {
-  border-radius: 999px;
-  font-size: .72rem;
+  border-radius: $border-radius-pill;
+  font-size: .8125rem;
   font-weight: 600;
-  letter-spacing: .02em;
-  padding: .18rem .1rem;
+  letter-spacing: .01em;
+  line-height: 1.4;
+  padding: .15rem .4rem;
   text-align: center;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -115,13 +119,15 @@
 .sysinfo-note {
   color: var(--osc-ink-muted);
   font-size: $font-size-sm;
+  line-height: 1.5;
   margin: .2rem 0 0;
+  max-width: 68ch;
 
   code {
     background-color: var(--osc-bench-sunk);
     border-radius: 4px;
     color: var(--osc-ink-emphasis);
-    font-size: .82em;
+    font-size: .9em;
     padding: .05rem .3rem;
     // Short tokens (OSC_CACHE, apcu, upload_max_filesize) must never split mid-word.
     white-space: nowrap;
@@ -135,6 +141,7 @@
 
   strong {
     color: var(--osc-ink);
+    font-weight: 600;
   }
 }
 
@@ -187,14 +194,15 @@
 
 .sysinfo-td-mono {
   font-family: var(--bs-font-monospace);
-  font-size: .85rem;
+  // Mono role, 14px (DESIGN §3).
+  font-size: .875rem;
 }
 
 // ---- Loaded extensions ------------------------------------------------------
 // A muted count riding beside the card title.
 .sysinfo-count {
   color: var(--osc-ink-muted);
-  font-size: .8rem;
+  font-size: .8125rem;
   font-weight: 500;
 
   &::before {
@@ -214,11 +222,12 @@
 
 .sysinfo-chip {
   background-color: var(--osc-bench-sunk);
-  border-radius: 999px;
+  border-radius: $border-radius-pill;
   color: var(--osc-ink-emphasis);
   font-family: var(--bs-font-monospace);
-  font-size: .78rem;
-  padding: .15rem .5rem;
+  font-size: .8125rem;
+  line-height: 1.5;
+  padding: .1rem .5rem;
 }
 
 // ---- "How to change things" help -------------------------------------------
@@ -238,17 +247,27 @@
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius;
     color: var(--osc-ink);
-    font-size: .82rem;
+    // Mono role, 14px — these are copy-paste config lines, so legibility wins.
+    font-size: .875rem;
+    line-height: 1.5;
     margin: .1rem 0 0;
     overflow-x: auto;
     padding: .55rem .7rem;
+  }
+
+  // Prose in the help card stays within a comfortable measure (DESIGN 65–75ch).
+  p {
+    line-height: 1.55;
+    max-width: 68ch;
   }
 }
 
 .sysinfo-help-intro {
   border-block-end: 1px solid var(--osc-rule);
   color: var(--osc-ink-muted);
+  line-height: 1.55;
   margin: 0 0 1rem;
+  max-width: 68ch;
   padding-block-end: 1rem;
 }
 
