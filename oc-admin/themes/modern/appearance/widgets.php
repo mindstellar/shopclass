@@ -136,25 +136,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 </div>
 </div>
 </div>
-<form id="dialog-widget-delete" method="get" action="<?php echo osc_admin_base_url(true); ?>"
-      class="has-form-actions hide">
-    <input type="hidden" name="page" value="appearance"/>
-    <input type="hidden" name="action" value="delete_widget"/>
-    <input type="hidden" name="id" value=""/>
-    <div class="form-horizontal">
-        <div class="form-row">
-            <?php _e('Are you sure you want to delete this widget?'); ?>
-        </div>
-        <div class="form-actions">
-            <div class="wrapper">
-                <a class="btn btn-dim" href="javascript:void(0);"
-                   onclick="$('#dialog-widget-delete').dialog('close');"><?php _e('Cancel'); ?></a>
-                <input id="widget-delete-submit" type="submit" value="<?php echo osc_esc_html(__('Delete')); ?>"
-                       class="btn btn-red"/>
-            </div>
-        </div>
-    </div>
-</form>
 <form id="deleteModal" method="get" action="<?php echo osc_admin_base_url(true); ?>"
       class="modal fade static">
     <input type="hidden" name="page" value="appearance"/>

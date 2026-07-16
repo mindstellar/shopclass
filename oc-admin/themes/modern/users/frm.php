@@ -126,16 +126,11 @@ $aux = customFrmText();
     </style>
     <script type="text/javascript">
         function delete_alert(id) {
-            $("#alert_id").attr('value', id);
-            $("#dialog-alert-delete").dialog('open');
-        };
+            document.getElementById("alert_id").value = id;
+            document.getElementById("dialog-alert-delete").showModal();
+        }
 
         $(document).ready(function () {
-            $("#dialog-alert-delete").dialog({
-                autoOpen: false,
-                modal: true
-            });
-
             $(".more-tooltip").hover(function (e) {
                 $('#more-tooltip').html($(this).attr("categories")).css({
                     top: this.offsetTop - $('#more-tooltip').height() - 15,
@@ -436,26 +431,26 @@ $aux = customFrmText();
                         </form>
                     </div>
 
-                    <form id="dialog-alert-delete" method="get" action="<?php echo osc_admin_base_url(true); ?>"
-                          class="has-form-actions hide" title="<?php echo osc_esc_html(__('Delete alert')); ?>">
-                        <input type="hidden" name="page" value="users"/>
-                        <input type="hidden" name="action" value="delete_alerts"/>
-                        <input type="hidden" id="alert_id" name="alert_id[]" value=""/>
-                        <input type="hidden" id="alert_user_id" name="alert_user_id" value="<?php echo $user['pk_i_id']; ?>"/>
-                        <div class="form-horizontal">
-                            <div class="form-row">
-                                <?php _e('Are you sure you want to delete this alert?'); ?>
+                    <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
+                        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+                            <input type="hidden" name="page" value="users"/>
+                            <input type="hidden" name="action" value="delete_alerts"/>
+                            <input type="hidden" id="alert_id" name="alert_id[]" value=""/>
+                            <input type="hidden" id="alert_user_id" name="alert_user_id" value="<?php echo $user['pk_i_id']; ?>"/>
+                            <div class="osc-dialog-body">
+                                <p class="osc-dialog-title">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <?php _e('Delete alert'); ?>
+                                </p>
+                                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this alert?'); ?></p>
                             </div>
-                            <div class="form-actions">
-                                <div class="wrapper">
-                                    <a class="btn btn-dim" href="javascript:void(0);"
-                                       onclick="$('#dialog-alert-delete').dialog('close');"><?php _e('Cancel'); ?></a>
-                                    <input id="alert-delete-submit" type="submit" value="<?php echo osc_esc_html(__('Delete')); ?>"
-                                           class="btn btn-red"/>
-                                </div>
+                            <div class="osc-dialog-actions">
+                                <button type="button" class="btn btn-dim btn-sm"
+                                        onclick="this.closest('dialog').close();"><?php _e('Cancel'); ?></button>
+                                <button id="alert-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
                             </div>
-                        </div>
-                    </form>
+                        </form>
+                    </dialog>
                     <div id="more-tooltip"></div>
                 <?php } ?>
             </div>
