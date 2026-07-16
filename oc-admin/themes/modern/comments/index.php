@@ -42,11 +42,12 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Listing'); ?>
+    <h1><?php _e('Comments'); ?>
         <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=comments'; ?>"
-           class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
+           class="ms-1 float-end" title="<?php echo osc_esc_html(__('Settings')); ?>"
+           aria-label="<?php echo osc_esc_html(__('Comment settings')); ?>"><i class="bi bi-gear-fill"></i></a>
         <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
+           href="#help-box" aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
     </h1>
     <?php
 }
@@ -76,16 +77,15 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php _e('Comments'); ?></h2>
 <div class="relative">
     <div id="listing-toolbar">
         <div class="float-right">
             <?php if (Params::getParam('showAll') !== 'off') { ?>
                 <a href="<?php echo osc_admin_base_url(true) . '?page=comments&showAll=off'; ?>"
-                   class="btn btn-sm btn-red"><?php _e('Hidden comments'); ?></a>
+                   class="btn btn-sm btn-dim"><?php _e('Hidden comments'); ?></a>
             <?php } else { ?>
                 <a href="<?php echo osc_admin_base_url(true) . '?page=comments'; ?>"
-                   class="btn btn-sm btn-primary"><?php _e('All comments'); ?></a>
+                   class="btn btn-sm btn-dim"><?php _e('All comments'); ?></a>
             <?php } ?>
         </div>
     </div>
@@ -130,7 +130,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <?php } else { ?>
                     <tr>
                         <td colspan="6" class="text-center">
-                            <p><?php _e('No data available in table'); ?></p>
+                            <p><?php _e('No comments to moderate.'); ?></p>
                         </td>
                     </tr>
                 <?php } ?>
