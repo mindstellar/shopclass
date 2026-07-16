@@ -12690,10 +12690,10 @@ ul.showing-results {
   border-radius: 0;
 }
 .pagination-input button {
-  background: white;
+  background: var(--osc-bench);
   border: 0;
   border-left: solid 1px var(--osc-bench-sunk);
-  color: #8f5d00;
+  color: var(--osc-bronze);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: bold;
@@ -12719,7 +12719,7 @@ ul.showing-results {
 }
 
 .ui-autocomplete-loading {
-  background: white url("../images/loading.gif") right center no-repeat;
+  background: var(--osc-bench) url("../images/loading.gif") right center no-repeat;
   display: block;
 }
 
@@ -12781,7 +12781,7 @@ ul.ui-autocomplete.ui-menu {
   width: 2rem;
 }
 .toggle-icon span {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--osc-ink-muted);
   border-radius: 0.9rem;
   display: block;
   height: 0.2rem;
@@ -12793,7 +12793,7 @@ ul.ui-autocomplete.ui-menu {
   width: 100%;
 }
 .toggle-icon span:hover, .toggle-icon span:focus {
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--osc-ink);
 }
 .toggle-icon span:nth-child(1) {
   top: 0.2rem;
