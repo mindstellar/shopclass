@@ -51,12 +51,41 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Listing'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"></a>
-        <a href="#" class="text-success ms-1 float-end"
-           id="add-button" title="<?php _e('Add custom field'); ?>"><i class="bi bi-plus-circle-fill"></i></a>
+    <h1><?php _e('Custom fields'); ?>
+        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+           aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
+        <a href="#" class="ms-1 float-end" id="add-button"
+           title="<?php echo osc_esc_html(__('Add custom field')); ?>"
+           aria-label="<?php echo osc_esc_html(__('Add custom field')); ?>"><i class="bi bi-plus-circle-fill"></i></a>
     </h1>
     <?php
+}
+
+if (!function_exists('cfields_type_label')) {
+    /**
+     * Human label for a custom-field storage type.
+     *
+     * @param string $type
+     *
+     * @return string
+     */
+    function cfields_type_label($type)
+    {
+        $labels = array(
+            'TEXT'          => __('Text'),
+            'TEXTAREA'      => __('Text area'),
+            'DROPDOWN'      => __('Dropdown'),
+            'RADIO'         => __('Radio'),
+            'CHECKBOX'      => __('Checkbox'),
+            'URL'           => __('URL'),
+            'DATE'          => __('Date'),
+            'DATEINTERVAL'  => __('Date range'),
+            'NUMBER'        => __('Number'),
+        );
+        $type = (string) $type;
+
+        return $labels[$type] ?? $type;
+    }
 }
 
 
@@ -112,26 +141,29 @@ function customHead()
                     success: function (res) {
                         var ret = eval("(" + res + ")");
                         if (ret.error == 0) {
-                            const customFieldMarkup = `
-                            <li id="list_${ret.field_id}" class="field_li even">
-                            <div class="cfield-div" field_id="${ret.field_id}">
-                                <div class="name-edit-cfield" id="${ret.field_id}">
-                                    ${ret.field_name}
-                                </div>
-                                <div class="ms-auto btn-group">
-                                    <a class="px-2 text-dark" href="javascript:void(0);"
-                                       onclick="show_iframe('content_list_${ret.field_id}','${ret.field_id}');"
-                                       title="<?php echo osc_esc_js(__('Edit')); ?>"><i class="bi bi-pencil-fill"></i></a>
-                                    <a class="px-2 text-dark" href="javascript:void(0);"
-                                       onclick="delete_field('${ret.field_id}');" title="<?php echo osc_esc_js(__('Delete'));?>">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
+                            // Build the row as DOM (not an HTML string) so the server-provided
+                            // field name is set via textContent and can never inject markup.
+                            var li = document.createElement('li');
+                            li.id = 'list_' + ret.field_id;
+                            li.className = 'field_li';
+                            li.setAttribute('data-field-id', ret.field_id);
+                            li.innerHTML = `
+                            <div class="cfield-div">
+                                <span class="cfield-handle handle" title="<?php echo osc_esc_js(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+                                <span class="cfield-name" id="quick_edit_${ret.field_id}"></span>
+                                <span class="cfield-type"><?php echo osc_esc_js(__('Text')); ?></span>
+                                <div class="cfield-actions ms-auto">
+                                    <button type="button" class="cfield-action"
+                                       onclick="show_iframe('content_list_${ret.field_id}','${ret.field_id}'); return false;"
+                                       title="<?php echo osc_esc_js(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                                    <button type="button" class="cfield-action cfield-action-danger"
+                                       onclick="delete_field('${ret.field_id}'); return false;" title="<?php echo osc_esc_js(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
                                 </div>
                             </div>
-                            <div class="edit content_list_${ret.field_id}"></div>
-                        </li>`;
+                            <div class="edit content_list_${ret.field_id}"></div>`;
+                            li.querySelector('.cfield-name').textContent = ret.field_name;
                             $("#fields-empty").remove();
-                            $("#ul_fields").append(customFieldMarkup);
+                            $("#ul_fields").append(li);
                             show_iframe('content_list_' + ret.field_id, ret.field_id);
                         } else {
                             var message = "";
@@ -188,68 +220,50 @@ osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <div class="header_title">
-        <h2 class="render-title">
-            <?php _e('Custom fields'); ?>
-        </h2>
-    </div>
     <!-- custom fields -->
     <div class="custom-fields">
         <!-- list fields -->
         <div class="list-fields">
+            <?php if (count($fields) === 0) { ?>
+                <div id="fields-empty" class="cfield-empty">
+                    <i class="bi bi-input-cursor-text" aria-hidden="true"></i>
+                    <p class="cfield-empty-title"><?php _e('No custom fields yet'); ?></p>
+                    <p class="cfield-empty-hint"><?php _e('Add a field to collect extra details when a listing is published — number of bedrooms, fuel type, and so on.'); ?></p>
+                    <button type="button" class="btn btn-primary btn-sm add-button"><i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add custom field'); ?></button>
+                </div>
+            <?php } ?>
             <ul id="ul_fields" class="sortable">
-                <?php $even = true;
-                if (count($fields) == 0) { ?>
-                    <span id="fields-empty"><?php _e("You don't have any custom fields yet"); ?></span>
-                <?php } else {
-                    foreach ($fields as $field) { ?>
-                        <li id="list_<?php echo $field['pk_i_id']; ?>"
-                            class="field_li <?php echo($even ? 'even' : 'odd'); ?>"
-                            data-field-id="<?php echo $field['pk_i_id']; ?>">
-                            <div class="cfield-div">
-                                <div class="px-2 border-end handle"><i class="align-middle bi bi-arrows-move" role="button"></i></div>
-                                <div class="name-edit-cfield" id="<?php echo 'quick_edit_' . $field['pk_i_id']; ?>">
-                                    <?php echo $field['s_name']; ?>
-                                </div>
-                                <div class="ms-auto btn-group">
-                                    <a class="px-2 text-dark" href="javascript:void(0);"
-                                       onclick="show_iframe('content_list_<?php echo $field['pk_i_id']; ?>','<?php echo
-                                        $field['pk_i_id']; ?>');" title="<?php _e('Edit'); ?>"><i class="bi bi-pencil-fill"></i></a>
-                                    <a class="px-2 text-dark" href="javascript:void(0);"
-                                       onclick="delete_field('<?php echo $field['pk_i_id']; ?>');" title="<?php _e('Delete');
-                                        ?>">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
-                                </div>
+                <?php foreach ($fields as $field) { ?>
+                    <li id="list_<?php echo $field['pk_i_id']; ?>"
+                        class="field_li"
+                        data-field-id="<?php echo $field['pk_i_id']; ?>">
+                        <div class="cfield-div">
+                            <span class="cfield-handle handle" title="<?php echo osc_esc_html(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+                            <span class="cfield-name" id="<?php echo 'quick_edit_' . $field['pk_i_id']; ?>"><?php echo osc_esc_html($field['s_name']); ?></span>
+                            <span class="cfield-type"><?php echo osc_esc_html(cfields_type_label($field['e_type'])); ?></span>
+                            <?php if (!empty($field['b_required'])) { ?>
+                                <span class="cfield-flag"><?php _e('Required'); ?></span>
+                            <?php } ?>
+                            <div class="cfield-actions ms-auto">
+                                <button type="button" class="cfield-action"
+                                        onclick="show_iframe('content_list_<?php echo $field['pk_i_id']; ?>','<?php echo $field['pk_i_id']; ?>'); return false;"
+                                        aria-label="<?php echo osc_esc_html(sprintf(__('Edit %s'), $field['s_name'])); ?>"
+                                        title="<?php echo osc_esc_html(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                                <button type="button" class="cfield-action cfield-action-danger"
+                                        onclick="delete_field('<?php echo $field['pk_i_id']; ?>'); return false;"
+                                        aria-label="<?php echo osc_esc_html(sprintf(__('Delete %s'), $field['s_name'])); ?>"
+                                        title="<?php echo osc_esc_html(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
                             </div>
-                            <div class="edit content_list_<?php echo $field['pk_i_id']; ?>"></div>
-                        </li>
-                        <?php $even = !$even;
-                    }
-                } ?>
+                        </div>
+                        <div class="edit content_list_<?php echo $field['pk_i_id']; ?>"></div>
+                    </li>
+                <?php } ?>
             </ul>
         </div>
         <!-- /list fields -->
     </div>
     <!-- /custom fields -->
     <div class="clear"></div>
-    <div id="dialog-delete-field" title="<?php echo osc_esc_html(__('Delete custom field')); ?>"
-         class="has-form-actions hide" data-field-id="">
-        <div class="form-horizontal">
-            <div class="form-row">
-                <?php _e('Are you sure you want to delete this custom field?'); ?>
-            </div>
-            <div class="form-actions">
-                <div class="wrapper">
-                    <a class="btn btn-dim" href="javascript:void(0);"
-                       onclick="$('#dialog-delete-field').dialog('close');"><?php _e('Cancel'); ?></a>
-                    <a id="field-delete-submit" href="javascript:void(0);"
-                       class="btn btn-red"><?php echo osc_esc_html(__('Delete')); ?></a>
-                    <div class="clear"></div>
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="deleteModal" method="get"
          action="<?php echo osc_admin_base_url(true); ?>"
          class="modal fade static"

@@ -7548,7 +7548,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   display: table-cell !important;
 }
 
-.d-flex, .cfield-div {
+.d-flex {
   display: flex !important;
 }
 
@@ -7974,7 +7974,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   justify-content: center !important;
 }
 
-.justify-content-between, .cfield-div {
+.justify-content-between {
   justify-content: space-between !important;
 }
 
@@ -9004,7 +9004,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   background-color: rgba(var(--bs-danger-rgb), var(--bs-bg-opacity)) !important;
 }
 
-.bg-light, .cfield-div {
+.bg-light {
   --bs-bg-opacity: 1;
   background-color: rgba(var(--bs-light-rgb), var(--bs-bg-opacity)) !important;
 }
@@ -9128,7 +9128,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   border-radius: 0 !important;
 }
 
-.rounded-1, .cfield-div {
+.rounded-1 {
   border-radius: var(--bs-border-radius-sm) !important;
 }
 
@@ -14779,19 +14779,141 @@ code {
 }
 
 .list-fields > ul > li {
-  margin-bottom: 10px;
+  margin-bottom: 0.5rem;
 }
 
-.list-categories .category_div,
 .cfield-div {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease), background-color var(--osc-duration-fast) var(--osc-ease);
+}
+.cfield-div:hover {
+  background-color: var(--osc-bench-warm);
+  border-color: var(--osc-rule-strong);
+}
+
+.field_li.drag-ghost .cfield-div {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+}
+
+.cfield-handle {
+  color: var(--osc-ink-muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+.cfield-handle:active {
+  cursor: grabbing;
+}
+
+.cfield-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cfield-type {
+  background-color: var(--osc-bench-sunk);
+  border-radius: 999px;
+  color: var(--osc-ink-muted);
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 0.1rem 0.55rem;
+}
+
+.cfield-flag {
+  background-color: var(--osc-bronze-tint);
+  border-radius: 999px;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.1rem 0.55rem;
+}
+
+.cfield-actions {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.cfield-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease), color var(--osc-duration-fast) var(--osc-ease);
+  width: 2rem;
+}
+.cfield-action:hover, .cfield-action:focus-visible {
+  background-color: var(--osc-chrome-hover);
+  color: var(--osc-bronze);
+}
+.cfield-action:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: -2px;
+}
+
+.cfield-action-danger:hover,
+.cfield-action-danger:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+.cfield-empty {
+  align-items: center;
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: 6px;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+.cfield-empty > i {
+  color: var(--osc-ink-muted);
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.cfield-empty-title {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cfield-empty-hint {
+  margin: 0 0 0.5rem;
+  max-width: 46ch;
+}
+
+.list-categories .category_div {
   background-color: var(--osc-bench-warm);
   border: solid 1px var(--osc-bench-sunk);
   padding: 5px;
   border-radius: 4px;
   position: relative;
 }
-.list-categories .category_div:hover,
-.cfield-div:hover {
+.list-categories .category_div:hover {
   background-color: var(--osc-warning-tint) !important;
 }
 
@@ -14851,15 +14973,10 @@ code {
   cursor: pointer;
 }
 
-.list-categories .name-cat,
-.list-fields .name-edit-cfield {
+.list-categories .name-cat {
   color: var(--osc-ink-emphasis);
   font-size: 15px;
   line-height: 26px;
-}
-
-.list-fields .name-edit-cfield {
-  padding-inline-start: 10px;
 }
 
 ul.subcategories {

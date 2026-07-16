@@ -24,16 +24,150 @@
   padding: 0;
 }
 
-.list-fields >ul >li {
-  margin-bottom: 10px;
+.list-fields > ul > li {
+  margin-bottom: .5rem;
 }
 
+// ---- Custom-field rows ------------------------------------------------------
+// A flat row on the content surface: grip | name | type badge | required flag |
+// edit/delete. Neutral hover (the amber warning wash it used to share with the
+// category rows was a caution colour on a routine row).
 .cfield-div {
-  @extend .d-flex, .bg-light, .rounded-1, .justify-content-between;
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  gap: .6rem;
+  padding: .5rem .75rem;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease),
+              background-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+    border-color: var(--osc-rule-strong);
+  }
 }
 
-.list-categories .category_div,
-.cfield-div {
+// The row being dragged (sortablejs applies .drag-ghost to the <li>).
+.field_li.drag-ghost .cfield-div {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+}
+
+.cfield-handle {
+  color: var(--osc-ink-muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.cfield-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// A neutral type badge (types aren't states, so no semantic colour).
+.cfield-type {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius-pill;
+  color: var(--osc-ink-muted);
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+  padding: .1rem .55rem;
+}
+
+.cfield-flag {
+  background-color: var(--osc-bronze-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  padding: .1rem .55rem;
+}
+
+.cfield-actions {
+  display: inline-flex;
+  gap: .15rem;
+}
+
+.cfield-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease),
+              color var(--osc-duration-fast) var(--osc-ease);
+  width: 2rem;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.cfield-action-danger:hover,
+.cfield-action-danger:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+// Empty state that teaches instead of a bare line of text.
+.cfield-empty {
+  align-items: center;
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: $border-radius-lg;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+
+  > i {
+    color: var(--osc-ink-muted);
+    font-size: 1.75rem;
+    margin-bottom: .25rem;
+  }
+}
+
+.cfield-empty-title {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cfield-empty-hint {
+  margin: 0 0 .5rem;
+  max-width: 46ch;
+}
+
+.list-categories .category_div {
   background-color: var(--osc-bench-warm);
   border: solid 1px var(--osc-bench-sunk);
   padding: 5px;
@@ -101,15 +235,10 @@
   cursor: pointer;
 }
 
-.list-categories .name-cat,
-.list-fields .name-edit-cfield {
+.list-categories .name-cat {
   color: var(--osc-ink-emphasis);
   font-size: 15px;
   line-height: 26px;
-}
-
-.list-fields .name-edit-cfield {
-  padding-inline-start: 10px;
 }
 
 ul.subcategories {
