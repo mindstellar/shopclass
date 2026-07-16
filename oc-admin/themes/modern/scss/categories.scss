@@ -310,8 +310,18 @@ ul.subcategories {
 .sortable {
   .category-row {
     display: flex;
-    border-radius:.2rem;
+    // Flat at rest — depth is the surface tone and hairline, never a shadow (the
+    // markup's old .shadow-sm broke that rule).
     background-color: var(--osc-bench-warm);
+    border: 1px solid var(--osc-rule);
+    border-radius: $border-radius;
+    transition: border-color var(--osc-duration-fast) var(--osc-ease),
+                background-color var(--osc-duration-fast) var(--osc-ease);
+
+    &:hover {
+      background-color: var(--osc-bench);
+      border-color: var(--osc-rule-strong);
+    }
   }
   .disabled {
     .category-row {

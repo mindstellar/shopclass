@@ -204,7 +204,7 @@ function drawCategory($category)
         class="category_li <?php echo($category['b_enabled'] ? 'enabled' : 'disabled'); ?> ">
         <div class="<?php echo($category['b_enabled'] ? 'enabled' : 'disabled'); ?>" category_id="<?php echo $category['pk_i_id'];
         ?>">
-            <div class="category-row shadow-sm">
+            <div class="category-row">
                 <div class="px-2 border-end handle"><i class="align-middle bi bi-arrows-move" role="button"></i></div>
                 <div class="px-2 border-end<?php echo $has_subcategories ? ' collapsed' : ''; ?>" data-bs-toggle="collapse" data-bs-target="
                 .subcategories-<?php echo
@@ -212,7 +212,7 @@ function drawCategory($category)
                     <span class="align-middle toggle bi bi-chevron-down"></span>
                 </div>
                 <div class="px-2 name-cat" id="<?php echo 'quick_edit_' . $category['pk_i_id']; ?>">
-                    <?php echo '<span class="align-middle name">' . $category['s_name'] . '</span>'; ?>
+                    <span class="align-middle name"><?php echo osc_esc_html($category['s_name']); ?></span>
                 </div>
                 <div class="px-2 ms-auto btn-group">
                     <a class="btn btn-sm" onclick="show_iframe('content_list_<?php echo $category['pk_i_id']; ?>','<?php echo

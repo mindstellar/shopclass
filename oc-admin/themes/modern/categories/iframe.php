@@ -68,7 +68,7 @@ $locales     = OSCLocale::newInstance()->listAllEnabled();
                 <div class="form-actions">
                     <input type="submit" class="btn btn-submit btn-sm"
                            value="<?php echo osc_esc_html(__('Save changes')); ?>"/>
-                    <input type="button" class="btn btn-red btn-sm" onclick="$('.iframe-category').remove();"
+                    <input type="button" class="btn btn-dim btn-sm" onclick="$('.iframe-category').remove();"
                            value="<?php echo osc_esc_html(__('Cancel')); ?>"/>
                 </div>
             </div>

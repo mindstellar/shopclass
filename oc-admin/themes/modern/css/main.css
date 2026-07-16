@@ -15048,8 +15048,14 @@ ul.subcategories {
 
 .sortable .category-row {
   display: flex;
-  border-radius: 0.2rem;
   background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease), background-color var(--osc-duration-fast) var(--osc-ease);
+}
+.sortable .category-row:hover {
+  background-color: var(--osc-bench);
+  border-color: var(--osc-rule-strong);
 }
 .sortable .disabled .category-row {
   background-color: var(--osc-bench-sunk);
