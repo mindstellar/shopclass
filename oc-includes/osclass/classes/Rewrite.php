@@ -247,15 +247,22 @@ class Rewrite
                         }
                     }
 
-                    foreach ($this->rules as $match => $uri) {
-                        // UNCOMMENT TO DEBUG
-                        // echo 'Request URI: '.$request_uri." # Match : ".$match." # URI to go : ".$uri." <br />";
-                        if (preg_match('#^' . $match . '#', $request_uri, $m)) {
-                            $request_uri = preg_replace('#' . $match . '#', $uri, $request_uri);
-                            break;
+                    // Admin requests have their own front controller (oc-admin/index.php)
+                    // and must not pass through the public friendly-URL rules. The greedy
+                    // category catch-all (^(.+)/?$ -> page=search&sCategory=$1) would
+                    // otherwise rewrite the bare admin URL and inject page=search into the
+                    // admin request, polluting every getParam('page') consumer there.
+                    if (!defined('OC_ADMIN')) {
+                        foreach ($this->rules as $match => $uri) {
+                            // UNCOMMENT TO DEBUG
+                            // echo 'Request URI: '.$request_uri." # Match : ".$match." # URI to go : ".$uri." <br />";
+                            if (preg_match('#^' . $match . '#', $request_uri, $m)) {
+                                $request_uri = preg_replace('#' . $match . '#', $uri, $request_uri);
+                                break;
+                            }
                         }
+                        $this->extractParams($request_uri);
                     }
-                    $this->extractParams($request_uri);
                 }
                 $this->request_uri = $request_uri;
 

@@ -462,6 +462,14 @@ class AdminMenu
             }
         }
 
+        // The dashboard is the default route and its menu entry points at the bare admin
+        // base, so no query fragment matches it by URL. An empty query string is the
+        // reliable signal for that route — fall back to the dashboard when nothing else
+        // matched, so the highlight never silently disappears on the home page.
+        if ($current_menu === '' && $actual_url === '') {
+            $current_menu = 'dash';
+        }
+
         $currentMenuId = $current_menu;
 
         $sMenu = '<!-- menu -->' . PHP_EOL;
