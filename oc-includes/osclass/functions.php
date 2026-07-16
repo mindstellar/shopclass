@@ -542,7 +542,7 @@ function osc_admin_toolbar_comments()
                 'id'    => 'comments',
                 'title' => $title,
                 'href'  => osc_admin_base_url(true) . '?page=comments',
-                'meta'  => array('class' => 'action-btn action-btn-black')
+                'meta'  => array('class' => 'action-btn ')
             )
         );
     }
@@ -560,7 +560,7 @@ function osc_admin_toolbar_spam()
                 'id'    => 'spam',
                 'title' => $title,
                 'href'  => osc_admin_base_url(true) . '?page=items&action=items_reported&sort=spam',
-                'meta'  => array('class' => 'action-btn action-btn-black')
+                'meta'  => array('class' => 'action-btn ')
             )
         );
     }
@@ -584,7 +584,7 @@ function osc_admin_toolbar_update_core($force = false)
                     'id'    => 'update_core',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=tools&action=upgrade',
-                    'meta'  => array('class' => 'action-btn action-btn-black')
+                    'meta'  => array('class' => 'action-btn ')
                 )
             );
         }
@@ -658,7 +658,7 @@ function osc_admin_toolbar_update_plugins($force = false)
                     'id'    => 'update_plugin',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=plugins#update-plugins',
-                    'meta'  => array('class' => 'action-btn action-btn-black')
+                    'meta'  => array('class' => 'action-btn ')
                 )
             );
         }
@@ -729,7 +729,7 @@ function osc_admin_toolbar_update_themes($force = false)
                     'id'    => 'update_theme',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=appearance',
-                    'meta'  => array('class' => 'action-btn action-btn-black')
+                    'meta'  => array('class' => 'action-btn ')
                 )
             );
         }
@@ -802,7 +802,7 @@ function osc_admin_toolbar_update_languages($force = false)
                     'id'    => 'update_language',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=languages',
-                    'meta'  => array('class' => 'action-btn action-btn-black')
+                    'meta'  => array('class' => 'action-btn ')
                 )
             );
         }
