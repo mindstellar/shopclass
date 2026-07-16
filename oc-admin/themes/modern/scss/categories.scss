@@ -186,14 +186,14 @@ ul.subcategories {
   }
   .disabled {
     .category-row {
-      // shade-color() needs a real colour at build time, so this stays on Sass for now — one
-      // of the two function-bound holdouts left in the theme (see DESIGN.md §6).
-      background-color:shade-color($light,30%);
+      // --osc-bench-sunk is the system's disabled/recessed surface token (and flips in dark),
+      // so a disabled category row now matches every other disabled surface in the admin.
+      background-color: var(--osc-bench-sunk);
     }
   }
   .drag-ghost {
     .category-row {
-      background-color:tint-color($primary,80%);
+      background-color: var(--osc-bronze-tint);
     }
   }
   list-style: none;

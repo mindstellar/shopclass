@@ -14531,10 +14531,10 @@ ul.subcategories {
   background-color: var(--osc-bench-warm);
 }
 .sortable .disabled .category-row {
-  background-color: rgb(174.3, 172.2, 169.4);
+  background-color: var(--osc-bench-sunk);
 }
 .sortable .drag-ghost .category-row {
-  background-color: rgb(232.6, 222.6, 204);
+  background-color: var(--osc-bronze-tint);
 }
 .sortable {
   list-style: none;
