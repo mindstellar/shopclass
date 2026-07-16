@@ -12559,6 +12559,118 @@ input.ico-32 {
   width: 34px !important;
 }
 
+.ms-0 {
+  margin-inline-start: 0 !important;
+}
+
+.me-0 {
+  margin-inline-end: 0 !important;
+}
+
+.ps-0 {
+  padding-inline-start: 0 !important;
+}
+
+.pe-0 {
+  padding-inline-end: 0 !important;
+}
+
+.ms-1 {
+  margin-inline-start: 0.25rem !important;
+}
+
+.me-1 {
+  margin-inline-end: 0.25rem !important;
+}
+
+.ps-1 {
+  padding-inline-start: 0.25rem !important;
+}
+
+.pe-1 {
+  padding-inline-end: 0.25rem !important;
+}
+
+.ms-2 {
+  margin-inline-start: 0.5rem !important;
+}
+
+.me-2 {
+  margin-inline-end: 0.5rem !important;
+}
+
+.ps-2 {
+  padding-inline-start: 0.5rem !important;
+}
+
+.pe-2 {
+  padding-inline-end: 0.5rem !important;
+}
+
+.ms-3 {
+  margin-inline-start: 1rem !important;
+}
+
+.me-3 {
+  margin-inline-end: 1rem !important;
+}
+
+.ps-3 {
+  padding-inline-start: 1rem !important;
+}
+
+.pe-3 {
+  padding-inline-end: 1rem !important;
+}
+
+.ms-4 {
+  margin-inline-start: 1.5rem !important;
+}
+
+.me-4 {
+  margin-inline-end: 1.5rem !important;
+}
+
+.ps-4 {
+  padding-inline-start: 1.5rem !important;
+}
+
+.pe-4 {
+  padding-inline-end: 1.5rem !important;
+}
+
+.ms-5 {
+  margin-inline-start: 3rem !important;
+}
+
+.me-5 {
+  margin-inline-end: 3rem !important;
+}
+
+.ps-5 {
+  padding-inline-start: 3rem !important;
+}
+
+.pe-5 {
+  padding-inline-end: 3rem !important;
+}
+
+.float-start, .float-left {
+  float: inline-start !important;
+}
+
+.float-end, .float-right {
+  float: inline-end !important;
+}
+
+.text-start {
+  text-align: start !important;
+}
+
+.text-end {
+  text-align: end !important;
+}
+
 .btn-submit {
   background-color: var(--osc-bronze);
   border-color: var(--osc-bronze);
@@ -12590,7 +12702,7 @@ input.ico-32 {
 .input-has-placeholder label {
   color: var(--osc-ink-emphasis);
   font-size: 0.85rem;
-  left: 8px;
+  inset-inline-start: 8px;
   margin-bottom: 0 !important;
   margin-top: 0 !important;
   position: absolute;
@@ -12792,7 +12904,7 @@ ul.ui-autocomplete.ui-menu {
   border-radius: 0.9rem;
   display: block;
   height: 0.2rem;
-  left: 0;
+  inset-inline-start: 0;
   opacity: 1;
   position: absolute;
   transform: rotate(0deg);
@@ -12818,7 +12930,7 @@ ul.ui-autocomplete.ui-menu {
   background: var(--osc-ink-inverse);
 }
 .toggle-icon.open span:nth-child(1) {
-  left: 0.2rem;
+  inset-inline-start: 0.2rem;
   top: 0;
   transform: rotate(45deg);
 }
@@ -12827,7 +12939,7 @@ ul.ui-autocomplete.ui-menu {
   width: 0%;
 }
 .toggle-icon.open span:nth-child(3) {
-  left: 0.2rem;
+  inset-inline-start: 0.2rem;
   top: 1.45rem;
   transform: rotate(-45deg);
 }
@@ -12867,7 +12979,7 @@ ul.ui-autocomplete.ui-menu {
 }
 
 .widget-box-title .select-box {
-  right: 0;
+  inset-inline-end: 0;
   top: 0;
   widows: 50%;
 }
@@ -13651,7 +13763,7 @@ td.children-cat {
   height: 10px;
   opacity: 0.5;
   position: absolute;
-  right: 5px;
+  inset-inline-end: 5px;
   width: 10px;
 }
 .order-box img:hover {
@@ -13913,7 +14025,7 @@ table.table-small td {
   background-color: rgba(243, 243, 243, 0.9);
   border-top: solid 1px var(--osc-bench-sunk);
   bottom: 4px;
-  left: 1px;
+  inset-inline-start: 1px;
   padding: 6px 0 1px 6px;
   position: absolute;
   width: 244px;
@@ -14419,7 +14531,7 @@ code {
   border-inline-end: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
-  left: 1px;
+  inset-inline-start: 1px;
   margin-inline-start: 2px;
   position: absolute;
   top: 1px;
@@ -14429,7 +14541,7 @@ code {
 .ico-childrens {
   border-inline-end: solid 1px var(--osc-bench-sunk);
   height: 36px;
-  left: 36px;
+  inset-inline-start: 36px;
   margin-inline-start: 2px;
   position: absolute;
   top: 1px;
@@ -14663,7 +14775,7 @@ form h3, form .h3 {
 .ui-dialog .form-actions {
   border-radius: 0 0 4px 4px;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   margin-bottom: 0;
   padding: 0;
   position: absolute;

@@ -370,7 +370,7 @@ td {
     height: 10px;
     opacity: 0.5;
     position: absolute;
-    right: 5px;
+    inset-inline-end: 5px;
     width: 10px;
 
     &:hover {

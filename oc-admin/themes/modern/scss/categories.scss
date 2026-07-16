@@ -54,7 +54,7 @@
   border-inline-end: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
-  left: 1px;
+  inset-inline-start: 1px;
   margin-inline-start: 2px;
   position: absolute;
   top: 1px;
@@ -64,7 +64,7 @@
 .ico-childrens {
   border-inline-end: solid 1px var(--osc-bench-sunk);
   height: 36px;
-  left: 36px;
+  inset-inline-start: 36px;
   margin-inline-start: 2px;
   position: absolute;
   top: 1px;
