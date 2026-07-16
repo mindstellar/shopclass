@@ -143,7 +143,7 @@ function customHead()
             data_country.addRows(<?php echo count($users_by_country); ?>);
             <?php foreach ($users_by_country as $k => $v) {
                 echo "data_country.setValue(" . $k . ", 0, '" . (($v['s_country'] == null) ? __('Unknown')
-                    : $v['s_country']) . "');";
+                    : osc_esc_js($v['s_country'])) . "');";
                 echo "data_country.setValue(" . $k . ", 1, " . $v['num'] . ");";
             } ?>
 
