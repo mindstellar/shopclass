@@ -142,22 +142,4 @@ h3.render-title {
     padding-top: .2rem;
   }
 }
-#system-info {
-  .card-body .row {
-    flex-flow: row;
-    .col-sm-4.info-label {
-      font-size: .85rem;
-      font-weight: 500;
-      background: var(--osc-bench-warm);
-      border-bottom: 1px solid var(--osc-rule);
-    }
-    .col.info-value {
-      font-size: .8rem;
-      font-family: monospace;
-      background: var(--osc-bench);
-      border-bottom: 1px solid var(--osc-rule);
-      word-break:break-all;
-    }
-  }
-}
 

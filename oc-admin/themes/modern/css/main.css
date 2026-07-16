@@ -12435,23 +12435,6 @@ h3.render-title, .render-title.h3 {
   padding-top: 0.2rem;
 }
 
-#system-info .card-body .row, #system-info .iframe-category .grid-system .row, .iframe-category #system-info .grid-system .row, #system-info .widget-box-content .row {
-  flex-flow: row;
-}
-#system-info .card-body .row .col-sm-4.info-label, #system-info .iframe-category .grid-system .row .col-sm-4.info-label, .iframe-category #system-info .grid-system .row .col-sm-4.info-label, #system-info .widget-box-content .row .col-sm-4.info-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  background: var(--osc-bench-warm);
-  border-bottom: 1px solid var(--osc-rule);
-}
-#system-info .card-body .row .col.info-value, #system-info .iframe-category .grid-system .row .col.info-value, .iframe-category #system-info .grid-system .row .col.info-value, #system-info .widget-box-content .row .col.info-value {
-  font-size: 0.8rem;
-  font-family: monospace;
-  background: var(--osc-bench);
-  border-bottom: 1px solid var(--osc-rule);
-  word-break: break-all;
-}
-
 .clear {
   clear: both;
 }
@@ -14955,6 +14938,174 @@ form h3, form .h3 {
   height: 225px;
 }
 
+#system-info .nav-tabs {
+  border-block-end: 1px solid var(--osc-rule);
+  gap: 0.25rem;
+}
+#system-info .nav-tabs .nav-link {
+  background: transparent;
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: 0;
+  color: var(--osc-ink-muted);
+  font-weight: 500;
+  margin-block-end: -1px;
+  padding: 0.5rem 0.9rem;
+}
+#system-info .nav-tabs .nav-link:hover {
+  color: var(--osc-ink);
+}
+#system-info .nav-tabs .nav-link.active {
+  background: transparent;
+  border-block-end-color: var(--osc-bronze);
+  color: var(--osc-bronze);
+}
+#system-info .card-title {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sysinfo-ledger {
+  display: flex;
+  flex-direction: column;
+}
+
+.sysinfo-row {
+  align-items: start;
+  border-block-start: 1px solid var(--osc-rule);
+  column-gap: 1rem;
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  padding: 0.85rem 1rem;
+  row-gap: 0.35rem;
+}
+.sysinfo-row:first-child {
+  border-block-start: 0;
+}
+
+.sysinfo-state {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.18rem 0.1rem;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sysinfo-state-ok {
+  background-color: var(--osc-success-tint);
+  color: var(--osc-success-deep);
+}
+
+.sysinfo-state-warn {
+  background-color: var(--osc-warning-tint);
+  color: var(--osc-ink-emphasis);
+}
+
+.sysinfo-state-danger {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger-deep);
+}
+
+.sysinfo-state-off {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-muted);
+}
+
+.sysinfo-fact {
+  min-width: 0;
+}
+
+.sysinfo-name {
+  color: var(--osc-ink);
+  font-weight: 600;
+}
+
+.sysinfo-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  margin: 0.2rem 0 0;
+}
+.sysinfo-note code {
+  background-color: var(--osc-bench-sunk);
+  border-radius: 4px;
+  color: var(--osc-ink-emphasis);
+  font-size: 0.82em;
+  padding: 0.05rem 0.3rem;
+  white-space: nowrap;
+}
+.sysinfo-note code.sysinfo-code-wrap {
+  white-space: normal;
+  word-break: break-all;
+}
+.sysinfo-note strong {
+  color: var(--osc-ink);
+}
+
+.sysinfo-trailing {
+  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: end;
+}
+
+.sysinfo-value {
+  color: var(--osc-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sysinfo-action {
+  white-space: nowrap;
+}
+
+.sysinfo-table {
+  inline-size: 100%;
+  margin: 0;
+}
+.sysinfo-table td {
+  border-block-start: 1px solid var(--osc-rule);
+  padding: 0.6rem 1rem;
+  vertical-align: top;
+}
+.sysinfo-table tr:first-child td {
+  border-block-start: 0;
+}
+
+.sysinfo-td-name {
+  color: var(--osc-ink-muted);
+  font-weight: 500;
+  inline-size: 34%;
+  white-space: nowrap;
+}
+
+.sysinfo-td-value {
+  color: var(--osc-ink);
+  word-break: break-word;
+}
+
+.sysinfo-td-mono {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 575.98px) {
+  .sysinfo-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .sysinfo-row .sysinfo-state {
+    grid-column: 1/-1;
+    justify-self: start;
+  }
+  .sysinfo-td-name {
+    white-space: normal;
+  }
+}
 .ui-osc-tabs {
   border: 0;
   padding: 0;

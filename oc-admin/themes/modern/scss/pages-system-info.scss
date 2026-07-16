@@ -1,0 +1,182 @@
+// Tools -> System info. A "ledger": every row is a fact with a spelled-out verdict
+// (never colour alone — see DESIGN.md), a note on why it matters, its value, and
+// sometimes one action. Flat at rest; the cards carry the grouping.
+
+#system-info {
+  // Tabs read as a quiet segmented control on the content tray, not Bootstrap's
+  // heavy boxed tabs.
+  .nav-tabs {
+    border-block-end: 1px solid var(--osc-rule);
+    gap: .25rem;
+
+    .nav-link {
+      background: transparent;
+      border: 0;
+      border-block-end: 2px solid transparent;
+      border-radius: 0;
+      color: var(--osc-ink-muted);
+      font-weight: 500;
+      margin-block-end: -1px;
+      padding: .5rem .9rem;
+
+      &:hover {
+        color: var(--osc-ink);
+      }
+
+      &.active {
+        background: transparent;
+        border-block-end-color: var(--osc-bronze);
+        color: var(--osc-bronze);
+      }
+    }
+  }
+
+  .card-title {
+    color: var(--osc-ink);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.sysinfo-ledger {
+  display: flex;
+  flex-direction: column;
+}
+
+// [ verdict ] [ fact + note ] [ value + action ]
+.sysinfo-row {
+  align-items: start;
+  border-block-start: 1px solid var(--osc-rule);
+  column-gap: 1rem;
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  padding: .85rem 1rem;
+  row-gap: .35rem;
+
+  &:first-child {
+    border-block-start: 0;
+  }
+}
+
+// The verdict pill. Word + colour together, so it survives a monochrome screen and
+// colour-blindness. Warning pairs with dark ink (its own hue never clears text
+// contrast on its tint); the others use their deep semantic ink.
+.sysinfo-state {
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: .18rem .1rem;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sysinfo-state-ok     { background-color: var(--osc-success-tint); color: var(--osc-success-deep); }
+.sysinfo-state-warn   { background-color: var(--osc-warning-tint); color: var(--osc-ink-emphasis); }
+.sysinfo-state-danger { background-color: var(--osc-danger-tint);  color: var(--osc-danger-deep); }
+.sysinfo-state-off    { background-color: var(--osc-bench-sunk);   color: var(--osc-ink-muted); }
+
+.sysinfo-fact {
+  min-width: 0;
+}
+
+.sysinfo-name {
+  color: var(--osc-ink);
+  font-weight: 600;
+}
+
+.sysinfo-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-sm;
+  margin: .2rem 0 0;
+
+  code {
+    background-color: var(--osc-bench-sunk);
+    border-radius: 4px;
+    color: var(--osc-ink-emphasis);
+    font-size: .82em;
+    padding: .05rem .3rem;
+    // Short tokens (OSC_CACHE, apcu, upload_max_filesize) must never split mid-word.
+    white-space: nowrap;
+
+    // …but a long path in a note has to be allowed to wrap, or it forces the page wide.
+    &.sysinfo-code-wrap {
+      white-space: normal;
+      word-break: break-all;
+    }
+  }
+
+  strong {
+    color: var(--osc-ink);
+  }
+}
+
+.sysinfo-trailing {
+  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  text-align: end;
+}
+
+.sysinfo-value {
+  color: var(--osc-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sysinfo-action {
+  white-space: nowrap;
+}
+
+// Plain fact tables (Environment, Paths).
+.sysinfo-table {
+  inline-size: 100%;
+  margin: 0;
+
+  td {
+    border-block-start: 1px solid var(--osc-rule);
+    padding: .6rem 1rem;
+    vertical-align: top;
+  }
+
+  tr:first-child td {
+    border-block-start: 0;
+  }
+}
+
+.sysinfo-td-name {
+  color: var(--osc-ink-muted);
+  font-weight: 500;
+  inline-size: 34%;
+  white-space: nowrap;
+}
+
+.sysinfo-td-value {
+  color: var(--osc-ink);
+  word-break: break-word;
+}
+
+.sysinfo-td-mono {
+  font-family: var(--bs-font-monospace);
+  font-size: .85rem;
+}
+
+// Below sm the value column would crush the fact; drop the verdict to its own line
+// and let the fact + value share the width.
+@media (max-width: 575.98px) {
+  .sysinfo-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    .sysinfo-state {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+  }
+
+  .sysinfo-td-name {
+    white-space: normal;
+  }
+}
