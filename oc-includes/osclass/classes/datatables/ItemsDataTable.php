@@ -318,8 +318,10 @@ class ItemsDataTable extends DataTable
                 $options_more = osc_apply_filter('more_actions_manage_items', $options_more, $aRow);
                 // more actions
                 $moreOptions =
-                    '<li class="show-more">' . PHP_EOL . '<a href="#" class="show-more-trigger">' . __('Show more')
-                    . '...</a>' . PHP_EOL . '<ul>' . PHP_EOL;
+                    '<li class="show-more">' . PHP_EOL
+                    . '<a href="#" class="show-more-trigger" aria-label="' . osc_esc_html(__('More actions'))
+                    . '" title="' . osc_esc_html(__('More actions')) . '">'
+                    . '<span class="show-more-icon" aria-hidden="true"></span></a>' . PHP_EOL . '<ul>' . PHP_EOL;
                 foreach ($options_more as $actual) {
                     $moreOptions .= '<li>' . $actual . '</li>' . PHP_EOL;
                 }

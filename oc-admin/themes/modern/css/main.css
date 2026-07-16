@@ -13659,6 +13659,17 @@ div.widget-box-content-no-wrapp li a {
 .table .show-more {
   position: relative;
 }
+.table .show-more .show-more-trigger {
+  align-items: center;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.table .show-more .show-more-trigger .show-more-icon::before {
+  content: "\f5d4";
+  font-family: "bootstrap-icons";
+  font-size: 1.15rem;
+  line-height: 1;
+}
 .table .show-more > ul {
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);

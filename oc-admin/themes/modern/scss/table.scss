@@ -157,6 +157,23 @@
   .show-more {
     position: relative;
 
+    // The overflow trigger is the odd one out in the actions strip — a menu opener, not a
+    // direct action — so it reads as the conventional meatball (three dots) rather than
+    // repeating a text label. Sized up from the 13px action text so the glyph is a
+    // comfortable target, and centred against the Edit / Delete links beside it.
+    .show-more-trigger {
+      align-items: center;
+      display: inline-flex;
+      vertical-align: middle;
+
+      .show-more-icon::before {
+        content: "\f5d4";
+        font-family: "bootstrap-icons";
+        font-size: 1.15rem;
+        line-height: 1;
+      }
+    }
+
     > ul {
       background-color: var(--osc-bench);
       border: 1px solid var(--osc-rule);
