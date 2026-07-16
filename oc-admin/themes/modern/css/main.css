@@ -13981,15 +13981,22 @@ td.children-cat {
 }
 
 .help-box {
-  background: var(--osc-info-tint);
-  border: 1px solid var(--osc-info);
-  color: var(--osc-ink);
-  border-radius: 4px;
+  color: var(--osc-ink-muted);
   display: inline-block;
   font-size: 0.875rem;
-  margin-top: 0.2rem;
-  padding: 0.35rem 0.6rem;
-  width: auto;
+  line-height: 1.5;
+  margin-top: 0.3rem;
+  max-width: 68ch;
+}
+.help-box a {
+  color: var(--osc-bronze);
+}
+.help-box a:hover {
+  color: var(--osc-bronze-deep);
+}
+.help-box strong,
+.help-box b {
+  color: var(--osc-ink-emphasis);
 }
 
 .list-latests {

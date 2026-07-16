@@ -65,14 +65,28 @@
   }
 }
 
+// Inline field hint. It explains the field it sits under, so it recedes to quiet
+// muted helper text — not the boxed blue notice it used to be, which competed with
+// the field for attention on every settings screen. (Calm, unfussy: the field is
+// the content; the hint is a whisper.)
 .help-box {
-  background: var(--osc-info-tint);
-  border: 1px solid var(--osc-info);
-  color: var(--osc-ink);
-  border-radius: 4px;
+  color: var(--osc-ink-muted);
   display: inline-block;
-  font-size: .875rem;
-  margin-top: .2rem;
-  padding: .35rem .6rem;
-  width: auto;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  margin-top: .3rem;
+  max-width: 68ch;
+
+  a {
+    color: var(--osc-bronze);
+
+    &:hover {
+      color: var(--osc-bronze-deep);
+    }
+  }
+
+  strong,
+  b {
+    color: var(--osc-ink-emphasis);
+  }
 }

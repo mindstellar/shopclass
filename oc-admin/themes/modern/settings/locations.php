@@ -84,9 +84,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="widget-box-content p-0">
                             <div id="l_countries" class="list-group list-group-flush">
                                 <?php foreach ($aCountries as $country) { ?>
-                                    <div class="list-group-item" id="country-<?php echo $country['pk_c_code']; ?>"
-                                         data-id="<?php echo $country['pk_c_code']; ?>" data-s-name="<?php echo $country['s_name']; ?>"
-                                         data-s-slug="<?php echo $country['s_slug']; ?>">
+                                    <div class="list-group-item" id="country-<?php echo osc_esc_html($country['pk_c_code']); ?>"
+                                         data-id="<?php echo osc_esc_html($country['pk_c_code']); ?>" data-s-name="<?php echo osc_esc_html($country['s_name']); ?>"
+                                         data-s-slug="<?php echo osc_esc_html($country['s_slug']); ?>">
                                         <input class="form-check-input me-1" name="country[]" type="checkbox"
                                                onclick="checkLocations('l_countries');"
                                                value="<?php echo $country['pk_c_code']; ?>">
