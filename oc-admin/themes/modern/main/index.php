@@ -224,7 +224,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                            echo ' class="table-first-row"';
                                        } ?>>
                                         <td><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo
-                                                                                                                    $c['pk_i_id']; ?>"><?php echo $c['s_name']; ?></a>
+                                                                                                                    $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_name']); ?></a>
                                         </td>
                                         <td><?php echo $c['i_num_items'] . '&nbsp;' . (($c['i_num_items'] == 1)
                                                 ? __('Listing') : __('Listings')); ?></td>
@@ -237,7 +237,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                    $even = true;
                                                } ?>>
                                                 <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;
-                                            catId=<?php echo $subc['pk_i_id']; ?>"><?php echo $subc['s_name']; ?></a>
+                                            catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
                                                 </td>
                                                 <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
                                                         ? __('Listing') : __('Listings')); ?></td>

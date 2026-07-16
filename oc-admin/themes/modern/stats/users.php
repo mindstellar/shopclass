@@ -314,11 +314,11 @@ osc_add_hook('admin_header', 'customHead', 10);
                                         </td>
                                         <td>
                                             <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                            echo $u['pk_i_id']; ?>"><?php echo $u['s_email']; ?></a>
+                                            echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_email']); ?></a>
                                         </td>
                                         <td>
                                             <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                            echo $u['pk_i_id']; ?>"><?php echo $u['s_name']; ?></a>
+                                            echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_name']); ?></a>
                                         </td>
                                     </tr>
                                 <?php } ?>

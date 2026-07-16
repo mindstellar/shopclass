@@ -236,15 +236,15 @@ osc_add_hook('admin_header', 'customHead', 10);
                                             <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo $c['pk_i_id']; ?></a>
                                         </td>
                                         <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo $c['s_title']; ?></a>
+                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_title']); ?></a>
                                         </td>
                                         <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo $c['s_author_name']
+                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_author_name']
                                                                                                                                                                                    . ' - '
-                                                                                                                                                                                   . $c['s_author_email']; ?></a>
+                                                                                                                                                                                   . $c['s_author_email']); ?></a>
                                         </td>
                                         <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo $c['s_body']; ?></a>
+                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_body']); ?></a>
                                         </td>
                                     </tr>
                                 <?php } ?>

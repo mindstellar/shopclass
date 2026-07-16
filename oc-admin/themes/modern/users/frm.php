@@ -385,7 +385,7 @@ $aux = customFrmText();
                                             <?php echo sprintf(__('Alert #%d'), ($k + 1)); ?>
                                             <br/>
                                             <?php if (isset($raw_data['sPattern']) && $raw_data['sPattern'] != '') { ?>
-                                                <?php echo sprintf(__('<b>Pattern:</b> %s'), $raw_data['sPattern']); ?><br/>
+                                                <?php echo sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($raw_data['sPattern'])); ?><br/>
                                             <?php } ?>
 
                                             <?php if (isset($raw_data['aCategories']) && !empty($raw_data['aCategories'])) {
