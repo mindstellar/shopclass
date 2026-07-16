@@ -67,79 +67,15 @@ class FieldForm extends Form
         parent::__construct($escape, $sanitize);
     }
 
+    /**
+     * Retained for backward compatibility. Custom-field dates now use a native
+     * <input type="date"> (see initDatePicker), so no jQuery-UI datepicker
+     * locale bootstrap is needed and this is a no-op.
+     *
+     * @deprecated 5.3.0 native date input needs no locale bootstrap
+     */
     public static function i18n_datePicker()
     {
-        ?>
-        <script>
-            $.datepicker.regional['custom'] = { // Default regional settings
-                closeText: '<?php echo osc_esc_js(__('Done')); ?>', // Display text for close link
-                prevText: '<?php echo osc_esc_js(__('Prev')); ?>', // Display text for previous month link
-                nextText: '<?php echo osc_esc_js(__('Next')); ?>', // Display text for next month link
-                currentText: '<?php echo osc_esc_js(__('Today')); ?>', // Display text for current month link
-                monthNames: [
-                    '<?php echo osc_esc_js(__('January')); ?>',
-                    '<?php echo osc_esc_js(__('February')); ?>',
-                    '<?php echo osc_esc_js(__('March')); ?>',
-                    '<?php echo osc_esc_js(__('April')); ?>',
-                    '<?php echo osc_esc_js(__('May')); ?>',
-                    '<?php echo osc_esc_js(__('June')); ?>',
-                    '<?php echo osc_esc_js(__('July')); ?>',
-                    '<?php echo osc_esc_js(__('August')); ?>',
-                    '<?php echo osc_esc_js(__('September')); ?>',
-                    '<?php echo osc_esc_js(__('October')); ?>',
-                    '<?php echo osc_esc_js(__('November')); ?>',
-                    '<?php echo osc_esc_js(__('December')); ?>'
-                ], // Names of months for drop-down and formatting
-                monthNamesShort: [
-                    '<?php _e('Jan'); ?>',
-                    '<?php _e('Feb'); ?>',
-                    '<?php _e('Mar'); ?>',
-                    '<?php _e('Apr'); ?>',
-                    '<?php _e('May'); ?>',
-                    '<?php _e('Jun'); ?>',
-                    '<?php _e('Jul'); ?>',
-                    '<?php _e('Aug'); ?>',
-                    '<?php _e('Sep'); ?>',
-                    '<?php _e('Oct'); ?>',
-                    '<?php _e('Nov'); ?>',
-                    '<?php _e('Dec'); ?>'
-                ], // For formatting
-                dayNames: [
-                    '<?php echo osc_esc_js(__('Sunday')); ?>',
-                    '<?php echo osc_esc_js(__('Monday')); ?>',
-                    '<?php echo osc_esc_js(__('Tuesday')); ?>',
-                    '<?php echo osc_esc_js(__('Wednesday')); ?>',
-                    '<?php echo osc_esc_js(__('Thursday')); ?>',
-                    '<?php echo osc_esc_js(__('Friday')); ?>',
-                    '<?php echo osc_esc_js(__('Saturday')); ?>'
-                ], // For formatting
-                dayNamesShort: [
-                    '<?php _e('Sun'); ?>',
-                    '<?php _e('Mon'); ?>',
-                    '<?php _e('Tue'); ?>',
-                    '<?php _e('Wed'); ?>',
-                    '<?php _e('Thu'); ?>',
-                    '<?php _e('Fri'); ?>',
-                    '<?php _e('Sat'); ?>'
-                ], // For formatting
-                dayNamesMin: [
-                    '<?php _e('Su'); ?>',
-                    '<?php _e('Mo'); ?>',
-                    '<?php _e('Tu'); ?>',
-                    '<?php _e('We'); ?>',
-                    '<?php _e('Th'); ?>',
-                    '<?php _e('Fr'); ?>',
-                    '<?php _e('Sa'); ?>'
-                ], // Column headings for days starting at Sunday
-                weekHeader: '<?php _e('Wk'); ?>', // Column header for week of the year
-                dateFormat: 'dd/mm/yy', // See format options on parseDate
-                firstDay: 0, // The first day of the week, Sun = 0, Mon = 1, ...
-                isRTL: false, // True if right-to-left language, false if left-to-right
-                showMonthAfterYear: false, // True if the year select precedes month, false for month then year
-                yearSuffix: '' // Additional text to append to the year in the month headers
-            };
-        </script>
-        <?php
     }
 
     /**
@@ -402,8 +338,10 @@ class FieldForm extends Form
                     } else {
                         $options['label'] = $label;
                     }
-                    // add cf_date class to the input field
+                    // add cf_date class to the input field; the visible control is a
+                    // native date input, the hidden field carries the unix timestamp.
                     $attributes['class'] = self::getInstance()->textClass . ' cf_date ' . $id;
+                    $attributes['type']  = 'date';
                     echo self::getInstance()->hidden($name, $value, ['id' => $id]);
                     unset($attributes['id']);
                     echo self::getInstance()->text('datepicker-placeholder', '', $attributes, $options);
@@ -421,7 +359,9 @@ class FieldForm extends Form
                         // print label tag
                         echo '<label for="meta_' . $field['s_slug'] . '_from">' . $label . '</label>';
                     }
-                    // add cf_date_interval class to the input field
+                    // add cf_date_interval class to the input field; native date
+                    // inputs, hidden fields carry the unix timestamps.
+                    $attributes['type']  = 'date';
                     $attributes['class'] = self::getInstance()->textClass . ' cf_date_interval ' . $id . '_from';
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
                     echo '<div class="input-group input-group-sm">';
@@ -478,10 +418,16 @@ class FieldForm extends Form
     }
 
     /**
+     * Wire a custom-field date input. The visible control is a native
+     * <input type="date"> (ISO yyyy-mm-dd); the hidden field submitted to the
+     * backend carries a unix timestamp (seconds) — the stored contract is
+     * unchanged. Vanilla JS, no jQuery/jQuery-UI.
+     *
      * @param        $id_field
-     * @param        $dateFormat
-     * @param        $value
-     * @param string $type
+     * @param        $dateFormat  kept for signature compatibility; unused now
+     *                            (the native input renders in the browser locale)
+     * @param        $value       stored unix timestamp, or 0
+     * @param string $type        'from' | 'to' | 'none'
      */
     public static function initDatePicker($id_field, $dateFormat, $value, $type = 'none')
     {
@@ -489,54 +435,42 @@ class FieldForm extends Form
             $value = 0;
         } ?>
         <script type="text/javascript">
-            $(document).ready(function () {
+            (function () {
+                var id = <?php echo json_encode($id_field); ?>;
+                var stored = <?php echo (int)$value; ?>;
+                var type = <?php echo json_encode($type); ?>;
 
-                var fieldIdentifier = '<?php echo $id_field; ?>';
-                var fieldValue = '<?php echo $value; ?>';
-                var dateFormat = '<?php echo $dateFormat; ?>';
-                var fieldType = '<?php echo $type; ?>';
-
-                var datePlaceholder = $('.' + fieldIdentifier);
-                var dateInput = $('#' + fieldIdentifier);
-                datePlaceholder.datepicker({
-                    onSelect: function () {
-                        // format to unix timestamp
-                        var newDate;
-                        var currentDate = $(this).datepicker('getDate');
-                        if (fieldType === 'from') {
-                            currentDate.setHours(0);
-                            currentDate.setMinutes(0);
-                            currentDate.setSeconds(0);
-                        } else if (fieldType === 'to') {
-                            currentDate.setHours(23);
-                            currentDate.setMinutes(59);
-                            currentDate.setSeconds(59);
-                        }
-
-                        // new date format
-                        newDate = date(dateFormat, currentDate.getTime() / 1000);
-                        // hack - same dateformat as php date function
-                        datePlaceholder.prop('value', newDate);
-                        dateInput.prop('value', currentDate.getTime() / 1000);
-                    },
-                    inline: true,
-                    navigationAsDateFormat: true,
-                    dateFormat: '@' // javascript timestamp
-                });
-                $.datepicker.setDefaults($.datepicker.regional['custom']);
-
-                if (fieldValue && fieldValue > 0) {
-                    // hack - same dateformat as php date function
-                    datePlaceholder.prop('value', date(dateFormat, fieldValue));
-                    dateInput.prop('value', fieldValue);
+                var hidden = document.getElementById(id);
+                var visible = document.querySelector('.' + id);
+                if (!hidden || !visible) {
+                    return;
                 }
 
-                datePlaceholder.change(function () {
-                    if (datePlaceholder.prop('value')) {
-                        dateInput.prop('value', '');
+                function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+                // Prefill the native date input from the stored timestamp.
+                if (stored > 0) {
+                    var d = new Date(stored * 1000);
+                    visible.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+                }
+
+                // On change, convert the ISO date back to a unix timestamp, keeping
+                // the from/to day-boundary behaviour of the old picker.
+                visible.addEventListener('change', function () {
+                    if (!visible.value) {
+                        hidden.value = '';
+                        return;
                     }
+                    var p = visible.value.split('-');
+                    var dt = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                    if (type === 'to') {
+                        dt.setHours(23, 59, 59, 0);
+                    } else {
+                        dt.setHours(0, 0, 0, 0);
+                    }
+                    hidden.value = Math.floor(dt.getTime() / 1000);
                 });
-            });
+            })();
         </script>
         <?php
     }

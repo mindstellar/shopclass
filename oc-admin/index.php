@@ -47,8 +47,6 @@ osc_enqueue_script('bootstrap5');
 osc_enqueue_script('admin-osc');
 osc_enqueue_script('admin-ui-osc');
 
-osc_add_hook('admin_footer', array('FieldForm', 'i18n_datePicker'));
-
 // register css styles
 osc_register_style('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.css?v='.OSCLASS_VERSION));
 $adminCssFile = AdminThemes::newInstance()->getCurrentThemePath() . 'css/main.css';
