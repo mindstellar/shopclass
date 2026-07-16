@@ -83,7 +83,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <div id="available-themes">
                 <h2 class="render-title"><?php _e('Current theme'); ?> <a
                             href="<?php echo osc_admin_base_url(true); ?>?page=appearance&amp;action=add"
-                            class="btn btn-sm btn-success"><?php _e('Add new'); ?></a></h2>
+                            class="btn btn-sm btn-primary"><?php _e('Add new'); ?></a></h2>
                 <div class="current-theme">
                     <div class="card mb-3 col-sm-12 col-md-8 col-lg-6">
                         <div class="row no-gutters">
@@ -127,19 +127,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                             <a href="<?php echo osc_admin_base_url(true);
                                             ?>?page=appearance&amp;action=activate&amp;theme=<?php
                                             echo $theme; ?>&amp;<?php echo $csrf_token;
-?>" class="btn btn-mini btn-green"><?php _e('Activate'); ?></a>
+?>" class="btn btn-mini btn-primary"><?php _e('Activate'); ?></a>
                                             <a target="_blank"
                                                href="<?php echo osc_base_url(true); ?>?theme=<?php echo $theme; ?>"
-                                               class="btn btn-mini btn-primary"><?php _e('Preview'); ?></a>
+                                               class="btn btn-mini btn-dim"><?php _e('Preview'); ?></a>
                                             <a onclick="return delete_dialog('<?php echo $theme; ?>');"
                                                href="<?php echo osc_admin_base_url(true);
                                                 ?>?page=appearance&amp;action=delete&amp;webtheme=<?php
                                                echo $theme; ?>&amp;<?php echo $csrf_token; ?>"
-                                               class="btn btn-sm btn-success delete"><?php _e('Delete'); ?></a>
+                                               class="btn btn-sm btn-dim delete"><?php _e('Delete'); ?></a>
                                             <?php
                                             if ($bThemesToUpdate && in_array($theme, $aThemesToUpdate)) { ?>
                                                 <a href='#<?php echo htmlentities(@$info['theme_update_uri']); ?>'
-                                                   class="btn btn-mini btn-orange market-popup"><?php _e('Update'); ?></a>
+                                                   class="btn btn-mini btn-primary market-popup"><?php _e('Update'); ?></a>
                                             <?php } ?>
                                         </div>
                                         <h4>
