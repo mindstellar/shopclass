@@ -76,23 +76,25 @@ function customHead()
     <script type="text/javascript">
         $(document).ready(function () {
             // users autocomplete
-            $('input[name="user"]').attr("autocomplete", "off");
-            $('#user,#fUser').autocomplete({
-                source: "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=userajax", //+$('input[name="user"]').val(), // &term=
-                minLength: 0,
-                select: function (event, ui) {
-                    if (ui.item.id == '')
-                        return false;
-                    $('#userId').val(ui.item.id);
-                    $('#fUserId').val(ui.item.id);
-                },
-                search: function () {
-                    $('#userId').val('');
-                    $('#fUserId').val('');
-                }
+            document.querySelectorAll('#user, #fUser').forEach(function (el) {
+                oscAutocomplete(el, {
+                    source: "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=userajax",
+                    minLength: 0,
+                    onSearch: function () {
+                        ['userId', 'fUserId'].forEach(function (id) {
+                            var f = document.getElementById(id);
+                            if (f) { f.value = ''; }
+                        });
+                    },
+                    onSelect: function (item) {
+                        if (item.id === '') { return false; }
+                        ['userId', 'fUserId'].forEach(function (id) {
+                            var f = document.getElementById(id);
+                            if (f) { f.value = item.id; }
+                        });
+                    }
+                });
             });
-
-            $('.ui-autocomplete').css('zIndex', 10000);
         });
     </script>
     <?php

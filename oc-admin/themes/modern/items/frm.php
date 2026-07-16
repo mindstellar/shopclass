@@ -95,22 +95,24 @@ function customHead()
     ?>
     <script type="text/javascript">
         $(document).ready(function () {
-            $('input[name="user"]').attr("autocomplete", "off");
-            $('#user,#fUser').autocomplete({
-                source: "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=userajax",
-                minLength: 0,
-                select: function (event, ui) {
-                    if (ui.item.id == '') {
-                        $("#contact_info").show();
-                        return false;
+            document.querySelectorAll('#user, #fUser').forEach(function (el) {
+                oscAutocomplete(el, {
+                    source: "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=userajax",
+                    minLength: 0,
+                    onSelect: function (item) {
+                        var ci = document.getElementById('contact_info');
+                        if (item.id === '') {
+                            if (ci) { ci.style.display = ''; }
+                            return false;
+                        }
+                        ['userId', 'fUserId'].forEach(function (id) {
+                            var f = document.getElementById(id);
+                            if (f) { f.value = item.id; }
+                        });
+                        if (ci) { ci.style.display = 'none'; }
                     }
-                    $('#userId').val(ui.item.id);
-                    $('#fUserId').val(ui.item.id);
-                    $("#contact_info").hide();
-                }
+                });
             });
-
-            $('.ui-autocomplete').css('zIndex', 10000);
 
             <?php if (osc_locale_thousands_sep() != '' || osc_locale_dec_point() != '') { ?>
             $("#price").on("blur", function (event) {
