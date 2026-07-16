@@ -12496,10 +12496,10 @@ a.ico-32 {
 }
 
 .circle {
-  background: #dee2e6;
-  border: solid 1px #6c757d;
+  background: var(--osc-bench-sunk);
+  border: solid 1px var(--osc-rule-strong);
   border-radius: 1rem;
-  color: #6c757d;
+  color: var(--osc-ink-muted);
   float: right;
   font-style: normal;
   height: 1.2rem;
