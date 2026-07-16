@@ -27,8 +27,6 @@
  *
  */
 
-use mindstellar\utility\SystemInfo;
-
 if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
@@ -192,6 +190,7 @@ $infoType     = Params::getParam('info-type');
 $overviewUrl  = osc_admin_base_url(true) . '?' . http_build_query(array('page' => 'tools', 'action' => 'system-info'));
 $phpInfoUrl   = osc_admin_base_url(true) . '?' . http_build_query(array('page' => 'tools', 'action' => 'system-info', 'info-type' => 'php-info'));
 $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
+$mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
 ?>
     <div id="system-info">
         <ul class="nav nav-tabs mb-3">
@@ -199,12 +198,123 @@ $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
                 <a class="nav-link<?php echo $infoType === 'php-info' ? '' : ' active'; ?>" href="<?php echo osc_esc_html($overviewUrl); ?>"><?php _e('Overview'); ?></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link<?php echo $infoType === 'php-info' ? ' active' : ''; ?>" href="<?php echo osc_esc_html($phpInfoUrl); ?>"><?php _e('PHP Info'); ?></a>
+                <a class="nav-link<?php echo $infoType === 'php-info' ? ' active' : ''; ?>" href="<?php echo osc_esc_html($phpInfoUrl); ?>"><?php _e('PHP settings &amp; help'); ?></a>
             </li>
         </ul>
         <?php
         if ($infoType === 'php-info') {
-            print((new SystemInfo())->getPHPInfoAllToStr());
+            // A full phpinfo() is a haystack — thousands of lines nobody reads end to end.
+            // The two useful things it holds are WHERE PHP reads its settings and the value
+            // of the handful of directives that actually affect Osclass; the rest of this
+            // tab is a plain-language guide to changing them.
+            $iniLoaded  = php_ini_loaded_file();
+            $iniScanned = trim((string)php_ini_scanned_files());
+            $directives = array(
+                array('memory_limit', __('How much memory one request may use. Resizing a big photo is the hungriest thing Osclass does.')),
+                array('upload_max_filesize', __('Largest single file a visitor can upload.')),
+                array('post_max_size', __('Largest whole request. Must be at least upload_max_filesize, ideally a little more.')),
+                array('max_file_uploads', __('How many files can ride in one upload — your photos-per-listing has to fit under this.')),
+                array('max_execution_time', __('How long one request may run. Backups and imports must finish inside it.')),
+                array('max_input_vars', __('How many form fields one request may carry. Large category trees and settings forms can approach it.')),
+                array('date.timezone', __('The server clock zone used for listing and stat dates.')),
+                array('opcache.enable', __('Keeps compiled PHP in memory instead of recompiling every request.')),
+            );
+            ?>
+            <div class="sysinfo-grid">
+                <div class="card mb-3">
+                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('Where PHP reads its settings'); ?></h6></div>
+                    <div class="card-body p-0">
+                        <table class="sysinfo-table">
+                            <tbody>
+                            <tr>
+                                <td class="sysinfo-td-name"><?php _e('Loaded php.ini'); ?></td>
+                                <td class="sysinfo-td-value sysinfo-td-mono"><?php echo $iniLoaded ? osc_esc_html($iniLoaded) : __('none — PHP is using its built-in defaults'); ?></td>
+                            </tr>
+                            <?php if ($iniScanned !== '') { ?>
+                                <tr>
+                                    <td class="sysinfo-td-name"><?php _e('Additional .ini files'); ?></td>
+                                    <td class="sysinfo-td-value sysinfo-td-mono"><?php echo nl2br(osc_esc_html(str_replace(',', ",\n", $iniScanned))); ?></td>
+                                </tr>
+                            <?php } ?>
+                            <tr>
+                                <td class="sysinfo-td-name"><?php _e('PHP interface (SAPI)'); ?></td>
+                                <td class="sysinfo-td-value sysinfo-td-mono"><?php echo osc_esc_html(PHP_SAPI); ?></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('Current PHP values'); ?></h6></div>
+                    <div class="sysinfo-ledger">
+                        <?php foreach ($directives as $directive) {
+                            $val = ini_get($directive[0]);
+                            if ($directive[0] === 'opcache.enable') {
+                                $val = $val ? __('on') : __('off');
+                            } elseif ($val === '' || $val === false) {
+                                $val = __('not set');
+                            }
+                            ?>
+                            <div class="sysinfo-row sysinfo-row-compact">
+                                <div class="sysinfo-fact">
+                                    <div class="sysinfo-name"><code><?php echo osc_esc_html($directive[0]); ?></code></div>
+                                    <p class="sysinfo-note"><?php echo osc_esc_html($directive[1]); ?></p>
+                                </div>
+                                <div class="sysinfo-trailing">
+                                    <span class="sysinfo-value"><?php echo osc_esc_html($val); ?></span>
+                                </div>
+                            </div>
+                        <?php } ?>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('How to change these'); ?></h6></div>
+                    <div class="card-body sysinfo-help">
+                        <p class="sysinfo-help-intro">
+                            <?php printf(__('These are PHP settings, not Osclass ones — they live in the %s file shown above. Edit that file, then restart PHP (or your web server) for the change to take effect. On shared hosting you usually change them from the host\'s control panel (for example cPanel\'s “MultiPHP INI Editor”) or a %s file, not by editing php.ini directly.'), '<code>php.ini</code>', '<code>.user.ini</code>'); ?>
+                        </p>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Allow bigger photo uploads'); ?></div>
+                            <p><?php printf(__('Raise %1$s and %2$s together, keeping post at least as large as upload:'), '<code>upload_max_filesize</code>', '<code>post_max_size</code>'); ?></p>
+                            <pre>upload_max_filesize = 16M
+post_max_size = 20M</pre>
+                        </div>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Let a listing carry more photos'); ?></div>
+                            <p><?php printf(__('Raise %s to at least the number of photos per listing you allow in Settings.'), '<code>max_file_uploads</code>'); ?></p>
+                            <pre>max_file_uploads = 30</pre>
+                        </div>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Give image resizing more memory'); ?></div>
+                            <p><?php printf(__('If large uploads fail with a blank page, %s is usually the cause. 256M is a comfortable floor.'), '<code>memory_limit</code>'); ?></p>
+                            <pre>memory_limit = 256M</pre>
+                        </div>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Let long jobs finish'); ?></div>
+                            <p><?php printf(__('Backups, imports and upgrades run inside %s. Raise it if they time out.'), '<code>max_execution_time</code>'); ?></p>
+                            <pre>max_execution_time = 120</pre>
+                        </div>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Turn on OPcache'); ?></div>
+                            <p><?php _e('The cheapest speed-up there is — PHP stops recompiling every file on every request.'); ?></p>
+                            <pre>opcache.enable = 1</pre>
+                        </div>
+
+                        <div class="sysinfo-help-item">
+                            <div class="sysinfo-help-title"><?php _e('Install a missing extension'); ?></div>
+                            <p><?php printf(__('Install the OS package (for example %1$s or %2$s), make sure an %3$s line is present, and restart PHP. The Overview tab will flip to “installed”.'), '<code>php-gd</code>', '<code>php-imagick</code>', '<code>extension=</code>'); ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php
         } else {
             $OK      = __('OK');
             $CHECK   = __('Check');
@@ -263,6 +373,7 @@ $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
             $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? __('unknown');
             ?>
 
+            <div class="sysinfo-grid">
             <div class="card mb-3">
                 <div class="card-header"><h6 class="card-title mb-0"><?php _e('Requirements'); ?></h6></div>
                 <div class="sysinfo-ledger">
@@ -277,7 +388,6 @@ $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
 
                     $extensions = array(
                         array('ext' => 'mysqli', 'name' => __('mysqli'), 'note' => __('How Osclass talks to the database — the site cannot run without it.')),
-                        array('ext' => 'gd', 'name' => __('GD (image processing)'), 'note' => __('Resizes and crops every uploaded photo. Without it, image uploads fail.')),
                         array('ext' => 'curl', 'name' => __('cURL'), 'note' => __('Fetches update checks and talks to the market and remote services. Without it, those downloads fail.')),
                         array('ext' => 'mbstring', 'name' => __('mbstring'), 'note' => __('Handles non-Latin text throughout the site.')),
                         array('ext' => 'fileinfo', 'name' => __('fileinfo'), 'note' => __('Detects the true type of an uploaded file. Without it, upload validation is weaker.')),
@@ -294,6 +404,43 @@ $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
                             $extension['name'],
                             $loaded ? '' : $extension['note'],
                             $loaded ? __('installed') : __('missing')
+                        );
+                    }
+
+                    // Image processing. Osclass prefers Imagick (loaded AND toggled on), and
+                    // otherwise falls back to GD. So detect Imagick first, then GD, and only
+                    // call it a problem when neither is there.
+                    $hasImagick = extension_loaded('imagick');
+                    $hasGd      = extension_loaded('gd');
+                    $imagickOn  = $hasImagick && osc_use_imagick();
+                    if ($hasImagick && $imagickOn) {
+                        oscsi_row(
+                            'ok', $OK,
+                            __('Image processing'),
+                            __('Imagick is installed and selected — the preferred library. It reads more formats and produces higher-quality resizes than GD.'),
+                            __('Imagick')
+                        );
+                    } elseif ($hasImagick) {
+                        oscsi_row(
+                            'ok', $OK,
+                            __('Image processing'),
+                            sprintf(__('Imagick is installed but not selected, so GD is doing the work. Imagick handles more formats and resizes at higher quality — switch to it under %s.'), '<strong>' . osc_esc_html(__('Settings')) . ' &rsaquo; ' . osc_esc_html(__('Media')) . '</strong>'),
+                            __('GD'),
+                            array('label' => __('Media settings'), 'url' => $mediaUrl)
+                        );
+                    } elseif ($hasGd) {
+                        oscsi_row(
+                            'ok', $OK,
+                            __('Image processing'),
+                            __('GD is resizing your photos. It works and is fully supported — but it cannot read some formats (animated GIF frames, CMYK JPEGs) and resizes at lower quality than Imagick. On a photo-heavy site, installing the Imagick extension is worth it.'),
+                            __('GD')
+                        );
+                    } else {
+                        oscsi_row(
+                            'danger', $PROBLEM,
+                            __('Image processing'),
+                            __('Neither Imagick nor GD is installed, so no uploaded photo can be resized and image uploads fail. Install the GD extension at minimum; Imagick is better still.'),
+                            __('missing')
                         );
                     }
 
@@ -548,6 +695,7 @@ $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
                     </table>
                 </div>
             </div>
+            </div><!-- .sysinfo-grid -->
             <?php
         }
         unset($infoType);

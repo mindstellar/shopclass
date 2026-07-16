@@ -38,6 +38,20 @@
   }
 }
 
+// The cards don't need the full content width on a wide screen. From lg up, flow them
+// into two masonry columns — whole cards, never split — so the ledgers sit side by side
+// and the page reads in half the height. Below lg they stack full width as before.
+.sysinfo-grid {
+  @media (min-width: 992px) {
+    column-count: 2;
+    column-gap: 1rem;
+
+    > .card {
+      break-inside: avoid;
+    }
+  }
+}
+
 .sysinfo-ledger {
   display: flex;
   flex-direction: column;
@@ -77,6 +91,11 @@
 .sysinfo-state-danger { background-color: var(--osc-danger-tint);  color: var(--osc-danger-deep); }
 .sysinfo-state-off    { background-color: var(--osc-bench-sunk);   color: var(--osc-ink-muted); }
 
+// The PHP-values list has no verdict column, so it is a two-track row.
+.sysinfo-row-compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .sysinfo-fact {
   min-width: 0;
 }
@@ -84,6 +103,13 @@
 .sysinfo-name {
   color: var(--osc-ink);
   font-weight: 600;
+
+  // A directive name (php.ini key) reads as a monospace token in bronze rather than
+  // Bootstrap's stock pink <code>.
+  code {
+    color: var(--osc-bronze);
+    font-size: .92em;
+  }
 }
 
 .sysinfo-note {
@@ -162,6 +188,56 @@
 .sysinfo-td-mono {
   font-family: var(--bs-font-monospace);
   font-size: .85rem;
+}
+
+// ---- "How to change these" help --------------------------------------------
+.sysinfo-help {
+  color: var(--osc-ink);
+
+  code {
+    background-color: var(--osc-bench-sunk);
+    border-radius: 4px;
+    color: var(--osc-ink-emphasis);
+    font-size: .85em;
+    padding: .05rem .3rem;
+    white-space: nowrap;
+  }
+
+  pre {
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    font-size: .82rem;
+    margin: .1rem 0 0;
+    overflow-x: auto;
+    padding: .55rem .7rem;
+  }
+}
+
+.sysinfo-help-intro {
+  border-block-end: 1px solid var(--osc-rule);
+  color: var(--osc-ink-muted);
+  margin: 0 0 1rem;
+  padding-block-end: 1rem;
+}
+
+.sysinfo-help-item {
+  & + & {
+    border-block-start: 1px solid var(--osc-rule);
+    margin-block-start: 1rem;
+    padding-block-start: 1rem;
+  }
+
+  p {
+    color: var(--osc-ink-muted);
+    margin: 0 0 .4rem;
+  }
+}
+
+.sysinfo-help-title {
+  color: var(--osc-ink);
+  font-weight: 600;
+  margin-block-end: .3rem;
 }
 
 // Below sm the value column would crush the fact; drop the verdict to its own line
