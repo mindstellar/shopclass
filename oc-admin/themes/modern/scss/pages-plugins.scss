@@ -7,16 +7,22 @@
     border: none;
 
     tr {
-      border-bottom: 0.05rem solid $gray-200;
-      border-right: 0.05rem solid $gray-400;
+      border-bottom: 1px solid var(--osc-rule);
+      // Was `border-right`, which put the hairline on the trailing edge of an RTL install.
+      border-inline-end: 1px solid var(--osc-rule);
       vertical-align: middle;
     }
 
     thead {
       tr {
-        border: .05rem solid $gray-400;
-        border-left-width: .2rem;
+        border: 1px solid var(--osc-rule);
       }
+    }
+
+    // The status column hugs its badge; the description column absorbs the slack.
+    .col-status {
+      white-space: nowrap;
+      width: 1%;
     }
 
     tbody {
@@ -29,7 +35,7 @@
         }
 
         i {
-          color: $gray-800;
+          color: var(--osc-ink);
           font-size: 1.2rem;
           text-align: center;
         }
@@ -37,11 +43,14 @@
     }
   }
 
-  @each $status, $border-color in $plugin-status{
-    .plugin-#{$status} {
-      background: tint-color($border-color, 80%);
-      border-left: .2rem solid $border-color;
-      color: color-contrast(tint-color($border-color, 80%));
-    }
-  }
+  // The rows are plain. They used to carry a .2rem coloured stripe on the inline-start edge
+  // and a wash of the same hue across the whole row — green for enabled, yellow for disabled,
+  // red for not-installed — which was the only thing on the screen that said what state a
+  // plugin was in. Two rules broken at once: a side stripe thicker than 1px (banned outright),
+  // and colour as the sole signal (banned by The Three Signal Rule, and invisible to the ~8%
+  // of men with a red-green deficiency who are looking at a red row that means "fine").
+  //
+  // The state now lives in a real Status column carrying an .osc-status badge — tint, shape
+  // and the word — so the row itself has nothing left to say and says it quietly. The classes
+  // are still emitted on the <tr>; a site owner may have styled them, and they cost nothing.
 }

@@ -604,12 +604,11 @@ class CWebSearch extends BaseModel
 
         // json
         $json          = $this->mSearch->toJson();
+        // The alert is encrypted with a persistent per-install key, so it is a self-contained
+        // server-issued token: verifiable and decryptable on the later subscribe request
+        // without stashing anything in the session (which would force a cookie on every search
+        // page and make it uncacheable).
         $encoded_alert = base64_encode(osc_encrypt_alert($json));
-
-        // Create the HMAC signature and convert the resulting hex hash into base64
-        $stringToSign = osc_get_alert_public_key() . $encoded_alert;
-        $signature    = \mindstellar\utility\Utils::hmacSha1B64(osc_get_alert_private_key(), $stringToSign);
-        Session::newInstance()->_set('alert_signature', $signature);
 
         $this->_exportVariableToView('search_alert', $encoded_alert);
         $alerts_sub = 0;

@@ -1,0 +1,272 @@
+// =============================================================================
+// Osclass Admin — brand tokens  ("The Workshop Bench")
+//
+// THIS FILE MUST BE IMPORTED BEFORE bootstrap/bootstrap.
+//
+// Every Bootstrap variable is declared `!default`, which means the FIRST definition
+// wins. Import Bootstrap first and its defaults are already locked in — that is why
+// definitions.scss can only alias them ($color-blue: $primary) and never change them.
+// Defining them here, ahead of Bootstrap, is what lets the brand exist at all.
+//
+// Do not put these in scss/bootstrap/. That directory is a verbatim vendor copy of
+// Bootstrap's SCSS: it is gitignored and `npm run assets` deletes and re-copies it,
+// so anything written there is destroyed on the next build.
+//
+// Canonical values are OKLCH (see DESIGN.md); the hex below is the sRGB rendering.
+// Contrast is verified, not estimated — the figure on each line is the measured ratio
+// against white. Do not "tidy" these values without re-checking them.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// Brand
+// -----------------------------------------------------------------------------
+// Deep bronze, not amber. Amber means *warning* in an admin; the brand colour is
+// pushed dark and metallic so it can never be mistaken for a caution state.
+$bronze:            #8f5d00; // oklch(.520 .115 75)  — 5.62:1. Primary actions, links, selection.
+$bronze-deep:       #7b4b00; // oklch(.455 .115 75)  — 7.40:1. Hover/active on any bronze fill.
+$bronze-tint:       #fbf0e2; // oklch(.960 .022 75)  — selected-row wash, premium badge.
+
+
+// -----------------------------------------------------------------------------
+// Neutrals — a warm-tinted grey ramp (hue 75, chroma 0.006–0.010)
+// -----------------------------------------------------------------------------
+// The tint is toward the brand's own hue, never "warm by default". definitions.scss
+// already consumes $gray-100…$gray-900, so overriding the ramp warms the whole admin
+// coherently instead of leaving cold Bootstrap greys next to a warm brand.
+$white:    #fff;
+$gray-100: #f9f6f2; //  1.08:1 — sidebar, toolbars, table headers  (the *second* surface)
+$gray-200: #f3efea; //  1.14:1 — recessed wells, disabled inputs
+$gray-300: #e0ddda; //  1.35:1 — hairline dividers, table rules     (decorative only)
+$gray-400: #c2bdb7; //  1.87:1
+$gray-500: #96918c; //  3.11:1 — borders of INTERACTIVE controls    (WCAG 1.4.11)
+$gray-600: #67635d; //  6.01:1 — secondary text, and placeholders
+$gray-700: #4e4a44; //  8.84:1
+$gray-800: #33302b; // 13.17:1
+$gray-900: #1d1a17; // 17.32:1 — body text, headings, table data
+$black:    #000;
+
+
+// -----------------------------------------------------------------------------
+// Semantic state
+// -----------------------------------------------------------------------------
+// Functional, never decorative, and never the sole carrier of meaning.
+// $warning sits at hue 95 (lemon), deliberately away from the bronze at hue 75 —
+// their perceptual separation is ΔE 0.287, so they cannot be confused.
+$success: #1d7d3e; // 5.19:1 with white text
+$info:    #0079b5; // 4.76:1 with white text — system notices ONLY, never a primary action
+$warning: #ddbc28; // pairs with dark text only; there is no solid warning button
+$danger:  #c22826; // 5.82:1 with white text
+
+// Tints. The pale wash behind a badge or a callout — never a fill, never text.
+// Each is paired with its own semantic ink, and every pair is measured, not assumed:
+//   $success on $success-tint  4.66:1
+//   $danger  on $danger-tint   4.98:1
+//   $bronze  on $bronze-tint   5.00:1
+//   $gray-700 on $gray-200     7.69:1
+// All clear the 4.5:1 body bar. A tint is a background for TEXT, so it is held to the
+// text bar, not the 3:1 non-text one.
+$success-tint: #e4f8e7;
+$danger-tint:  #ffe9e5;
+$warning-tint: #fdf4d2;
+
+$primary:   $bronze;
+$secondary: $gray-600;
+$light:     $gray-100;
+$dark:      $gray-900;
+
+
+// -----------------------------------------------------------------------------
+// Options
+// -----------------------------------------------------------------------------
+$enable-shadows:   false; // The Flat-At-Rest Rule — depth is tone and rules, not shade
+$enable-gradients: false;
+
+
+// -----------------------------------------------------------------------------
+// Body — The Bench Rule
+// -----------------------------------------------------------------------------
+// The bench top is white. The bronze belongs to the tools.
+// $body-bg is exactly #fff: never cream, sand, beige, or a warm-tinted near-white.
+// Warmth enters through the brand colour and through $gray-100 on secondary chrome.
+// A warm background AND a warm primary is the tell we are avoiding.
+$body-bg:              $white;
+$body-color:           $gray-900;
+$body-secondary-color: $gray-600;
+
+
+// -----------------------------------------------------------------------------
+// Typography — The Sixteen Pixel Floor
+// -----------------------------------------------------------------------------
+// One family, many weights. The system stack is a choice, not a default: it renders
+// with no webfont round-trip (Osclass often runs on cheap shared hosting) and looks
+// native on whatever OS the site owner happens to be using.
+//
+// Body never drops below 16px. The owner of a classifieds site is not a developer on
+// a 27" display; density is bought with spacing, never by shrinking type.
+$font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+$font-family-monospace:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+$font-size-base:         1rem;
+$headings-font-weight:   600;
+$headings-color:         $gray-900;
+
+
+// -----------------------------------------------------------------------------
+// Shape — crisp, not soft. A hand tool has clean edges.
+// -----------------------------------------------------------------------------
+$border-color:      $gray-300;
+$border-radius:     4px;   // inputs, buttons — the default
+$border-radius-sm:  4px;
+$border-radius-lg:  6px;   // panels, dialogs
+$border-radius-xl:  6px;
+$border-radius-xxl: 6px;
+$border-radius-pill: 999px; // status badges ONLY, where the shape carries meaning
+
+
+// -----------------------------------------------------------------------------
+// Elevation — The Two Shadows Rule
+// -----------------------------------------------------------------------------
+// There are two shadows, and there is no third. Anything still on the page when you
+// stop interacting with it is flat. $box-shadow-sm is aliased to the overlay value on
+// purpose, so a stray `.shadow-sm` cannot introduce a third distinct elevation.
+$box-shadow:    0 4px 12px rgba(0, 0, 0, .10), 0 1px 3px rgba(0, 0, 0, .06); // overlay: dropdowns, popovers, tooltips
+$box-shadow-lg: 0 16px 48px rgba(0, 0, 0, .18);                              // modal: dialogs, confirmation sheets
+$box-shadow-sm: $box-shadow;
+
+
+// -----------------------------------------------------------------------------
+// Links & active state
+// -----------------------------------------------------------------------------
+$link-color:              $bronze;
+$link-hover-color:        $bronze-deep;
+$component-active-bg:     $bronze;
+$component-active-color:  $white;
+
+
+// -----------------------------------------------------------------------------
+// Focus — never removed, never invisible
+// -----------------------------------------------------------------------------
+$focus-ring-width:   3px;
+$focus-ring-opacity: .2;
+$focus-ring-color:   rgba($bronze, $focus-ring-opacity);
+
+
+// -----------------------------------------------------------------------------
+// Form controls
+// -----------------------------------------------------------------------------
+// $input-border-color is $gray-500 (3.11:1), NOT $gray-300. A field whose edge you
+// cannot see is a broken field — WCAG 1.4.11 governs the boundary of a control, and
+// the decorative divider grey does not clear it.
+//
+// The placeholder is held to the full 4.5:1 body bar. Muted-grey placeholder text is
+// the single most common contrast failure in admin UIs.
+$input-border-color:       $gray-500;
+$input-placeholder-color:  $gray-600;
+$input-disabled-bg:        $gray-200;
+$input-focus-border-color: $bronze;
+$input-focus-box-shadow:   0 0 0 $focus-ring-width $focus-ring-color;
+
+
+// -----------------------------------------------------------------------------
+// Tables — the admin IS a table
+// -----------------------------------------------------------------------------
+// Almost every screen in Osclass is a list of things the owner owns: listings, users,
+// comments. The table is not a component on the product surface, it is the product
+// surface, so its density and its rules are brand-level decisions.
+//
+// No striping. Striping exists to let the eye follow one row across eight columns, and
+// it buys that by adding a band of noise to half the rows of an already dense view. A
+// 1px rule does the same job silently, and the hover wash does it better — it tracks the
+// row you are actually looking at instead of the ones you are not.
+$table-border-color:        $gray-300;
+$table-cell-padding-y:      .625rem; // 10px — density is bought with spacing, never by
+$table-cell-padding-x:      .75rem;  // 12px   shrinking type (The Sixteen Pixel Floor)
+$table-cell-vertical-align: middle;
+
+
+// -----------------------------------------------------------------------------
+// Tokens Bootstrap has no slot for
+// -----------------------------------------------------------------------------
+// Exposed as custom properties so PHP templates and plugin authors can consume the
+// system directly, rather than hardcoding hex and drifting away from it.
+:root {
+  // Native form controls — checkboxes, radios, range, progress — paint themselves with the
+  // BROWSER's accent colour, which is stock blue. The admin's bulk-action checkboxes are bare
+  // <input type="checkbox">, not .form-check-input, so no amount of Bootstrap theming reaches
+  // them: they were rendering blue on every listings screen. It is a Blue Exile violation that
+  // no grep for #0d6efd can ever find, because the colour is not in our stylesheet at all.
+  // `accent-color` inherits, so declaring it once here covers every native control in the admin.
+  accent-color: #{$bronze};
+
+  --osc-bronze:        #{$bronze};
+  --osc-bronze-deep:   #{$bronze-deep};
+  --osc-bronze-tint:   #{$bronze-tint};
+  // Bootstrap's focus/shadow properties want the channels, not the colour, so they can set
+  // their own alpha. Spelled with Sass's own red()/green()/blue() rather than Bootstrap's
+  // to-rgb(), because this file is imported BEFORE Bootstrap and its functions do not exist
+  // here yet. Derived, so it cannot drift out of step with $bronze.
+  --osc-bronze-rgb:    #{red($bronze)}, #{green($bronze)}, #{blue($bronze)};
+
+  --osc-bench:         #{$white};     // content surface
+  --osc-bench-warm:    #{$gray-100};  // toolbars, table headers
+  --osc-bench-sunk:    #{$gray-200};  // recessed wells
+
+  // The nav chrome surface. Deeper than bench-warm on purpose: the sidebar owns the
+  // whole left column and must read as chrome the content bench floats above, not as a
+  // near-white that dissolves into it (gray-100 is 1.08:1 on white — invisible as an
+  // edge). A one-off warm neutral between gray-200 and gray-300, its own defining edge,
+  // and a translucent hover that darkens in light / lightens in dark (see _theme-dark).
+  --osc-chrome:        #ece6dd;
+  --osc-chrome-edge:   #d8d0c4;
+  --osc-chrome-hover:  rgba(45, 26, 23, .055);
+
+  --osc-rule:          #{$gray-300};  // decorative dividers
+  --osc-rule-strong:   #{$gray-500};  // interactive control borders
+
+  --osc-ink:           #{$gray-900};
+  --osc-ink-muted:     #{$gray-600};
+  // One step up from muted, and the ink of every neutral status badge. A 13px Label on a
+  // tint has less to work with than body text on white, so it does not use the muted grey.
+  --osc-ink-emphasis:  #{$gray-700};
+  // The ink that sits ON a saturated fill — white text on a bronze button, on a danger
+  // button. It is NOT --osc-bench: they happen to be the same white today, but they are
+  // different jobs and they part company in the dark theme, where the bench goes to a warm
+  // near-black while text on a bronze fill has to stay light. Anything that would break if
+  // the two diverged is using the wrong one.
+  --osc-ink-inverse:   #{$white};
+
+  --osc-success:       #{$success};
+  --osc-success-tint:  #{$success-tint};
+  --osc-danger:        #{$danger};
+  --osc-danger-tint:   #{$danger-tint};
+  // The border/hover step on a semantic fill, mirroring $bronze-deep. mix($black, c, n) is
+  // what Bootstrap's shade-color() does, spelled with Sass's own mix() because this file is
+  // imported before Bootstrap. Derived from OUR danger — .btn-error's border used to be a
+  // shade of Bootstrap's stock $red (#dc3545), a colour that appears nowhere in this palette.
+  --osc-danger-deep:   #{mix($black, $danger, 20%)};
+  --osc-success-deep:  #{mix($black, $success, 10%)};
+  --osc-warning:       #{$warning};
+  --osc-warning-tint:  #{$warning-tint};
+  --osc-info:          #{$info};
+  // The pale info surface, completing the semantic tint set the badges and callouts share.
+  // Its partner is the info GLYPH, not info text: $info is fixed dark by its white-button role
+  // (4.76:1 with white) and cannot also be darkened for text-on-tint, so $info on this tint is
+  // 4.22:1 — under the 4.5 body bar, but comfortably over the 3:1 bar that governs an icon
+  // (WCAG 1.4.11). Body ink on it is 15.2:1. No info-coloured TEXT is ever placed on it.
+  --osc-info-tint:     #e6f3fb;
+
+  --osc-shadow-overlay: #{$box-shadow};
+  --osc-shadow-modal:   #{$box-shadow-lg};
+
+  // 150–250ms. The owner is in a task, not watching choreography.
+  --osc-ease:          cubic-bezier(.2, 0, 0, 1);
+  --osc-duration-fast: 150ms;
+  --osc-duration-base: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --osc-duration-fast: 0ms;
+    --osc-duration-base: 0ms;
+  }
+}

@@ -25,8 +25,8 @@ a.ico-32 {
 }
 
 .action-btn {
-  background-color: $color-gray-soft;
-  border: solid 1px $color-gray-dim;
+  background-color: var(--osc-bench-sunk);
+  border: solid 1px var(--osc-ink-emphasis);
   font-size: 14px;
   line-height: 14px;
   margin: 0 10px;
@@ -37,7 +37,7 @@ a.ico-32 {
 
 .action-btn-black {
   background: $color-gray-hardblack;
-  border-color: $color-gray-dim;
+  border-color: var(--osc-ink-emphasis);
   color: $color-gray-ash;
   &:hover {
     background-color: $color-black;
@@ -71,44 +71,60 @@ a.ico-32 {
   @include submit-color;
 }
 
+// Each of these extends a Bootstrap button variant, which already carries that
+// variant's :hover selectors along with it. They previously also contained a nested
+// `:hover { @extend :hover; }`, a self-referential extend that LibSass ignored but
+// Dart Sass expands combinatorially — it inflated main.css from 260 KB to 87 MB.
 .btn-black {
   @extend .btn-dark;
   background-color: $color-gray-hardblack;
-  border: solid 1px $color-gray-dim;
-
-  :hover {
-    @extend :hover;
-  }
+  border: solid 1px var(--osc-ink-emphasis);
 }
 
-/**
-.btn-black:hover {
-  background-color: $color-black;
+// The secondary button — white fill, Ink text, 1px rule-strong border.
+//
+// This is the DEFAULT button of the admin: Cancel, Reset filters, Show filters, every
+// "Statistics" link on the dashboard. Bootstrap generated it as a solid $secondary fill, so
+// the quietest, most numerous action on every screen was arriving as a heavy grey slab — and
+// a screen full of slabs is exactly what makes the bronze primary action hard to find. Quiet
+// until you need them.
+//
+// Driven through Bootstrap 5.3's --bs-btn-* API rather than by re-declaring properties, so
+// .btn's own :hover / :active / :disabled / :focus-visible selectors keep working unchanged.
+//
+// The border is --osc-rule-strong (3.11:1), not --osc-rule. A button whose edge you cannot
+// see is a broken button — WCAG 1.4.11 governs the boundary of a control, and the decorative
+// divider grey does not clear it.
+//
+// CASCADE NOTE: this rule sits AFTER Bootstrap, so it now outranks .btn-danger / .btn-success
+// on source order when both classes land on one element. Bootstrap's own variant loop put
+// .btn-secondary *before* those, so the other variant used to win. Anything writing
+// `class="btn btn-dim btn-red"` therefore changed meaning — the two admin templates that did
+// that now pick one class or the other, which is what they meant anyway.
+.btn-secondary {
+  --#{$prefix}btn-color: var(--osc-ink);
+  --#{$prefix}btn-bg: var(--osc-bench);
+  --#{$prefix}btn-border-color: var(--osc-rule-strong);
+  --#{$prefix}btn-hover-color: var(--osc-ink);
+  --#{$prefix}btn-hover-bg: var(--osc-bench-warm);
+  --#{$prefix}btn-hover-border-color: var(--osc-ink-muted);
+  --#{$prefix}btn-active-color: var(--osc-ink);
+  --#{$prefix}btn-active-bg: var(--osc-bench-sunk);
+  --#{$prefix}btn-active-border-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-bg: var(--osc-bench);
+  --#{$prefix}btn-disabled-border-color: var(--osc-rule);
+  // Focus is bronze, not grey — the ring is a brand signal, and it must be the same ring on
+  // every control or it stops reading as one.
+  --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
 }
- */
 
 .btn-dim {
   @extend .btn-secondary;
-
-  :hover {
-    @extend :hover;
-  }
 }
-
-/**
-.btn-dim:hover {
-  background-color: $color-gray-hardblack;
-  border-color: $color-gray-hardblack;
-}
-
- */
 
 .btn-green {
   @extend .btn-success;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 .btn-text {
@@ -121,18 +137,10 @@ a.ico-32 {
 
 .btn-red {
   @extend .btn-danger;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 .btn-orange {
   @extend .btn-warning;
-
-  :hover {
-    @extend :hover;
-  }
 }
 
 
@@ -153,26 +161,30 @@ input.ico-32 {
   @extend .float-end;
 }
 
-button {
-  @extend button;
-}
-
-.btn-mini {
-  @extend .btn-sm;
-}
-
-input.btn-mini,
-.btn-submit {
+input.btn-mini {
   @extend .btn-success;
 }
 
-.btn-submit:hover {
-  @extend .btn-success, :hover;
+// Primary submit is Workshop Bronze — the one action the owner came to do. Written with
+// var(--osc-bronze)/--osc-ink-inverse (not @extend .btn-primary) so the fill lightens under
+// data-bs-theme="dark"; Bootstrap compiles .btn-primary to a frozen light-mode hex.
+.btn-submit {
+  background-color: var(--osc-bronze);
+  border-color: var(--osc-bronze);
+  color: var(--osc-ink-inverse);
+
+  &:hover,
+  &:focus-visible,
+  &:active {
+    background-color: var(--osc-bronze-deep);
+    border-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
+  }
 }
 
 .well {
-  background-color: $color-gray-light;
-  border: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: solid 1px var(--osc-bench-sunk);
   padding: 10px;
 }
 
@@ -187,7 +199,7 @@ input.btn-mini,
 .input-has-placeholder {
   position: relative;
   label {
-    color: $color-gray-dim;
+    color: var(--osc-ink-emphasis);
     font-size: .85rem;
     left: 8px;
     margin-bottom: 0 !important;
@@ -198,9 +210,9 @@ input.btn-mini,
 }
 
 textarea {
-  background-color: $color-white;
-  border: 1px solid $color-gray-soft;
-  color: $color-gray-black;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-bench-sunk);
+  color: var(--osc-ink);
   font-size: .85rem;
   line-height: 18px;
   padding: 4px 6px;
@@ -230,7 +242,7 @@ textarea {
     display: inline;
   }
   a,span {
-    border: 1px solid #ddd;
+    border: 1px solid var(--osc-rule);
     border-left-width: 0;
     float: left;
     line-height: 30px;
@@ -238,12 +250,12 @@ textarea {
     text-decoration: none;
   }
   a:hover, .active a{
-    background-color: #f5f5f5;
+    background-color: var(--osc-bench-warm);
   }
   .disabled {
     span,a {
       background-color: transparent;
-      color: #999999;
+      color: var(--osc-ink-muted);
       cursor: default;
     }
   }
@@ -259,7 +271,7 @@ textarea {
 .pagination {
   .active {
     a {
-      color: #999999;
+      color: var(--osc-ink-muted);
       cursor: default;
     }
   }
@@ -285,7 +297,7 @@ ul.showing-results {
 }
 
 .pagination-input {
-  border: 1px solid #ddd;
+  border: 1px solid var(--osc-rule);
   border-left-width: 0;
   float: left;
   line-height: 30px;
@@ -306,8 +318,10 @@ ul.showing-results {
   button {
     background: white;
     border: 0;
-    border-left: solid 1px $color-gray-soft;
-    color: #018BE3;
+    border-left: solid 1px var(--osc-bench-sunk);
+    // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
+    // it is a *different* blue. The rule is about the colour, not the hex.
+    color: $link-color;
     cursor: pointer;
     font-size: .85rem;
     font-weight: bold;
@@ -345,19 +359,41 @@ ul.ui-autocomplete.ui-menu {
   opacity: 0.7;
 }
 
+// The market (themes/plugins directory) buttons. These were a hardcoded cyan #2fbfd1 and a
+// mid-grey fill, both with white text — 2.19:1 and 3.11:1, so BOTH failed the 4.5:1 text bar
+// outright. Not an off-brand hue problem, a legibility one. Update is the action you came for,
+// so it takes the primary; Preview is the quiet one beside it.
 .btn-market-update,
 .btn-market-preview {
-  background-color: #2fbfd1;
-  @include rounded-corners(3px);
-  color: #fff;
+  @include rounded-corners($border-radius);
+  display: inline-block;
   margin-left: 5px;
   margin-top: 5px;
   padding: 3px 10px;
+  // They are <a> elements without .btn, so Bootstrap's reboot underlines them as links.
+  text-decoration: none;
+}
+
+.btn-market-update {
+  background-color: var(--osc-bronze);
+  color: var(--osc-ink-inverse); // 5.62:1
+
+  &:hover {
+    background-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
+  }
 }
 
 .btn-market-preview {
-  background-color: $color-gray-ash;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  color: var(--osc-ink); // 17.32:1
   margin-left: 0;
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+    color: var(--osc-ink);
+  }
 }
 
 .spinner {
@@ -413,7 +449,7 @@ ul.ui-autocomplete.ui-menu {
 
   &.open {
     span {
-      background: $white;
+      background: var(--osc-ink-inverse);
 
       &:nth-child(1) {
         left: .2rem;

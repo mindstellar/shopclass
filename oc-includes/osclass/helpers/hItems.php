@@ -392,7 +392,9 @@ function osc_item_currency_symbol()
 {
     $aCurrency = Currency::newInstance()->findByPrimaryKey(osc_item_currency());
 
-    return $aCurrency['s_description'];
+    // findByPrimaryKey() returns false for a listing with no currency (e.g. "Check
+    // with seller"); indexing into that is a PHP 8 warning, so guard it.
+    return is_array($aCurrency) ? $aCurrency['s_description'] : '';
 }
 
 

@@ -34,7 +34,18 @@ class Session
 {
     //attributes
     private static $instance;
-    private $session;
+    private $session = array();
+    private $started = false;
+
+    /**
+     * Seed the in-memory default containers so reads are safe before (or without) a
+     * physical session. This touches only the in-memory copy — it never starts a session
+     * or writes $_SESSION, so anonymous read-only requests stay cookieless and cacheable.
+     */
+    public function __construct()
+    {
+        $this->seedDefaults();
+    }
 
     /**
      * @return \Session
@@ -48,22 +59,52 @@ class Session
         return self::$instance;
     }
 
+    /**
+     * Physically start (or resume) a session immediately. This is the explicit, eager
+     * entry point: any caller is guaranteed a live $_SESSION afterwards. Kept eager so the
+     * historical contract holds for third-party themes/plugins (and core logout/install)
+     * that call it and then touch $_SESSION directly.
+     */
     public function session_start()
     {
-        $currentCookieParams = session_get_cookie_params();
-        if (defined('COOKIE_DOMAIN')) {
-            $currentCookieParams['domain'] = COOKIE_DOMAIN;
+        $this->ensureStarted();
+    }
+
+    /**
+     * Lazily attach to a session: resume it only if the visitor already carries the cookie,
+     * otherwise stay deferred so anonymous read-only requests send no Set-Cookie and no
+     * no-cache headers and stay cacheable. The first write (see _set) starts one on demand.
+     * The bootstrap uses this so merely loading a page never forces a session.
+     */
+    public function session_resume()
+    {
+        $this->maybeResume();
+        $this->seedDefaults();
+    }
+
+    /**
+     * Resume the session only when a session cookie is already present.
+     */
+    private function maybeResume()
+    {
+        if (!$this->started && isset($_COOKIE['osclass'])) {
+            $this->ensureStarted();
         }
-        if (isset($_SERVER['HTTPS'])) {
-            $currentCookieParams['secure'] = true;
+    }
+
+    /**
+     * Physically start (or resume) the PHP session and mark it active. Idempotent.
+     */
+    private function ensureStarted()
+    {
+        if ($this->started) {
+            return;
         }
-        session_set_cookie_params(
-            $currentCookieParams['lifetime'],
-            $currentCookieParams['path'],
-            $currentCookieParams['domain'],
-            $currentCookieParams['secure'],
-            true
-        );
+        $this->started = true;
+
+        // Values written in-memory before the physical start (e.g. default containers).
+        $pending = $this->session;
+        $this->configureCookieParams();
 
         if (!isset($_SESSION)) {
             session_name('osclass');
@@ -74,15 +115,48 @@ class Session
             }
         }
 
+        // Persisted state wins; re-apply anything written before the session started.
+        foreach ($pending as $key => $value) {
+            if (!array_key_exists($key, $_SESSION)) {
+                $_SESSION[$key] = $value;
+            }
+        }
         $this->session = $_SESSION;
-        if (!$this->_get('messages')) {
-            $this->_set('messages', array());
+        $this->seedDefaults();
+    }
+
+    /**
+     * Apply Osclass cookie params (domain, secure under HTTPS) plus SameSite=Lax hardening.
+     */
+    private function configureCookieParams()
+    {
+        $params = session_get_cookie_params();
+        if (defined('COOKIE_DOMAIN')) {
+            $params['domain'] = COOKIE_DOMAIN;
         }
-        if (!$this->_get('keepForm')) {
-            $this->_set('keepForm', array());
+        if (isset($_SERVER['HTTPS'])) {
+            $params['secure'] = true;
         }
-        if (!$this->_get('form')) {
-            $this->_set('form', array());
+        session_set_cookie_params(array(
+            'lifetime' => $params['lifetime'],
+            'path'     => $params['path'],
+            'domain'   => $params['domain'],
+            'secure'   => $params['secure'] ?? false,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ));
+    }
+
+    /**
+     * Seed the in-memory default containers (messages/keepForm/form) without starting a
+     * session or writing $_SESSION.
+     */
+    private function seedDefaults()
+    {
+        foreach (array('messages', 'keepForm', 'form') as $key) {
+            if (!isset($this->session[$key])) {
+                $this->session[$key] = array();
+            }
         }
     }
 
@@ -114,6 +188,8 @@ class Session
      */
     public function _get($key)
     {
+        $this->maybeResume();
+
         return $this->session[$key] ?? '';
     }
 
@@ -125,8 +201,9 @@ class Session
      */
     public function _has($key)
     {
-         return isset($this->session[$key]);
-           
+        $this->maybeResume();
+
+        return isset($this->session[$key]);
     }
     /**
      * @param $key
@@ -134,6 +211,7 @@ class Session
      */
     public function _set($key, $value)
     {
+        $this->ensureStarted();
         $_SESSION[$key]      = $value;
         $this->session[$key] = $value;
     }
@@ -141,6 +219,7 @@ class Session
     public function session_destroy()
     {
         session_destroy();
+        $this->started = false;
     }
 
     /**
@@ -156,6 +235,7 @@ class Session
      */
     public function _setReferer($value)
     {
+        $this->ensureStarted();
         $_SESSION['osc_http_referer']            = $value;
         $this->session['osc_http_referer']       = $value;
         $_SESSION['osc_http_referer_state']      = 0;
@@ -205,6 +285,11 @@ class Session
     public function _dropMessage($key)
     {
         $messages = $this->_get('messages');
+        if (!isset($messages[$key])) {
+            // Nothing to drop — avoid a write that would needlessly start a session.
+            // osc_show_flash_message() calls this on every page render.
+            return;
+        }
         unset($messages[$key]);
         $this->_set('messages', $messages);
     }

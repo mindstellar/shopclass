@@ -106,7 +106,7 @@ osc_cache_init();
 
 define('__OSC_LOADED__', true);
 Params::init();
-Session::newInstance()->session_start();
+Session::newInstance()->session_resume();
 
 if (osc_timezone()) {
     date_default_timezone_set(osc_timezone());

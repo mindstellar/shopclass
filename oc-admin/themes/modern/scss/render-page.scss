@@ -1,34 +1,72 @@
+// Page title row. Shares the white bench with the topbar above so the two read as
+// one header zone; this block carries the single hairline that divides that zone
+// from the content tray. The heading is a flex row: it neutralises the physical
+// float-end / float-right on the action links (RTL-unsafe, like the sidebar chevron
+// was) and lets the actions sit at the row's end via margin-inline-start:auto.
 #content-head {
-  background-color: $color-gray-light;
-  border-bottom: solid 1px $color-gray-soft;
-  padding: 10px 15px;
-}
+  background-color: var(--osc-bench);
+  border-bottom: 1px solid var(--osc-rule);
+  padding: .3rem 15px .85rem;
 
-#content-head {
-  h1, h2 {
-    color: $color-gray-black;
-    font-size: 30px;
-    font-weight: 400;
+  h1, h2, h3 {
+    align-items: center;
+    color: var(--osc-ink);
+    display: flex;
+    gap: .4rem;
     margin: 0;
   }
 
-  h2 {
-    font-size: 20px;
-    font-weight: 300;
-  }
+  h1 { font-size: 1.6rem; font-weight: 600; }
+  h2 { font-size: 1.25rem; font-weight: 600; }
+  h3 { font-size: 1.125rem; font-weight: 600; }
 
-  h3 {
-    font-size: 18px;
-    font-weight: 300;
+  // Page action links (Add, help, settings…). One ghost icon-button language:
+  // neutral hit area, muted ink, soft chrome pill + bronze on hover. The colour is
+  // forced with !important to override the Bootstrap .text-success / .text-dark
+  // utilities the markup carries — that inconsistent green/bronze/black trio was
+  // the loudest thing in the header. The first action gets margin-inline-start:auto
+  // (also !important, to beat the .ms-1 utility) so the whole group hugs the end.
+  h1 a, h2 a, h3 a {
+    align-items: center;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted) !important;
+    display: inline-flex;
+    float: none !important;
+    font-size: 1.1rem;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    min-width: 2rem;
+    padding-inline: .4rem;
+    text-decoration: none;
+
+    &:first-of-type {
+      margin-inline-start: auto !important;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-bronze) !important;
+    }
   }
 }
 
 #content-render {
-  background-color: $gray-200;
+  background-color: var(--osc-bench-sunk);
+}
+
+// The flash and help rows sit between the header and the body. #content-head and
+// #content-page both add 15px of inline padding on top of the column gutter; give these
+// two the same so a flash message lines up under the page title instead of jutting 15px
+// further toward the sidebar than everything else in the column.
+#message-wrapper,
+#help-wrapper {
+  padding-inline: 15px;
 }
 
 #content-page {
-  //background-color: $color-white;
+  //background-color: var(--osc-bench);
   min-height: calc(100vh - 9rem);
   padding: 22px 15px 60px;
   position: relative
@@ -41,7 +79,7 @@
 
 .render-title {
   font-size: 21px;
-  font-weight: normal;
+  font-weight: 600;
   margin: 0 0 20px;
 }
 
@@ -63,9 +101,9 @@ h3.render-title {
 }
 
 .quick-search input.input-text {
-  background-color: $color-gray-light;
-  border: 1px solid $color-gray-soft;
-  color: #555;
+  background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-bench-sunk);
+  color: var(--osc-ink);
   display: inline-block;
   font-size: .85rem;
   height: 24px;
@@ -110,14 +148,14 @@ h3.render-title {
     .col-sm-4.info-label {
       font-size: .85rem;
       font-weight: 500;
-      background: #0095ff57;
-      border-bottom: 1px dotted;
+      background: var(--osc-bench-warm);
+      border-bottom: 1px solid var(--osc-rule);
     }
     .col.info-value {
       font-size: .8rem;
       font-family: monospace;
-      background: #ffcc0029;
-      border-bottom:1px dotted;
+      background: var(--osc-bench);
+      border-bottom: 1px solid var(--osc-rule);
       word-break:break-all;
     }
   }

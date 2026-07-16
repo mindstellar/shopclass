@@ -289,23 +289,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <div><?php _e('Date'); ?>:</div>
                                     <?php
                                     $custom_checked = true;
-                                    foreach ($dateFormats as $df) {
+                                    foreach ($dateFormats as $dfIndex => $df) {
                                         $checked = false;
                                         if ($df === osc_date_format()) {
                                             $custom_checked = false;
                                             $checked        = true;
                                         } ?>
                                         <div>
-                                            <input type="radio" name="df" id="<?php echo $df; ?>"
-                                                   value="<?php echo $df; ?>" <?php echo($checked ? 'checked="checked"'
+                                            <input type="radio" name="df" id="df_<?php echo $dfIndex; ?>"
+                                                   value="<?php echo osc_esc_html($df); ?>" <?php echo($checked ? 'checked="checked"'
                                                     : ''); ?>
-                                                   onclick="document.getElementById('dateFormat').value = '<?php echo $df; ?>';"/>
-                                            <?php echo date($df); ?>
+                                                   onclick="document.getElementById('dateFormat').value = '<?php echo osc_esc_js($df); ?>';"/>
+                                            <label for="df_<?php echo $dfIndex; ?>"><?php echo date($df); ?></label>
                                         </div>
                                     <?php } ?>
                                     <div class="input-group input-group-sm pe-1">
                                         <div class="input-group-text">
                                             <input type="radio" name="df" id="df_custom"
+                                                   aria-label="<?php echo osc_esc_html(__('Custom date format')); ?>"
                                                    value="df_custom" <?php echo($custom_checked ? 'checked="checked"'
                                                     : ''); ?> />
                                         </div>
@@ -324,7 +325,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <div><?php _e('Time'); ?>:</div>
                                     <?php
                                     $custom_checked = true;
-                                    foreach ($timeFormats as $tf) {
+                                    foreach ($timeFormats as $tfIndex => $tf) {
                                         $checked = false;
                                         if ($tf === osc_time_format()) {
                                             $custom_checked = false;
@@ -332,16 +333,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         }
                                         ?>
                                         <div>
-                                            <input type="radio" name="tf" id="<?php echo $tf; ?>"
-                                                   value="<?php echo $tf; ?>" <?php echo($checked ? 'checked="checked"'
+                                            <input type="radio" name="tf" id="tf_<?php echo $tfIndex; ?>"
+                                                   value="<?php echo osc_esc_html($tf); ?>" <?php echo($checked ? 'checked="checked"'
                                                     : ''); ?>
-                                                   onclick="document.getElementById('timeFormat').value = '<?php echo $tf; ?>';"/>
-                                            <?php echo date($tf); ?>
+                                                   onclick="document.getElementById('timeFormat').value = '<?php echo osc_esc_js($tf); ?>';"/>
+                                            <label for="tf_<?php echo $tfIndex; ?>"><?php echo date($tf); ?></label>
                                         </div>
                                     <?php } ?>
                                     <div class="input-group input-group-sm pe-1">
                                         <div class="input-group-text">
                                             <input type="radio" name="tf" id="tf_custom"
+                                                   aria-label="<?php echo osc_esc_html(__('Custom time format')); ?>"
                                                    value="tf_custom" <?php echo($custom_checked ? 'checked="checked"'
                                                     : ''); ?> />
                                         </div>
@@ -365,7 +367,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('RSS shows'); ?></div>
                         <div class="form-controls">
-                            <input type="text" class="input-small" name="num_rss_items"
+                            <input type="number" min="0" class="input-small" name="num_rss_items"
                                    value="<?php echo osc_esc_html(osc_num_rss_items()); ?>"/>
                             <?php _e('listings at most'); ?>
                         </div>
@@ -373,7 +375,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Latest listings shown'); ?></div>
                         <div class="form-controls">
-                            <input type="text" class="input-small" name="max_latest_items_at_home"
+                            <input type="number" min="0" class="input-small" name="max_latest_items_at_home"
                                    value="<?php echo osc_esc_html(osc_max_latest_items_at_home()); ?>"/>
                             <?php _e('at most'); ?>
                         </div>
@@ -381,7 +383,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Search page shows'); ?></div>
                         <div class="form-controls">
-                            <input type="text" class="input-small" name="default_results_per_page"
+                            <input type="number" min="0" class="input-small" name="default_results_per_page"
                                    value="<?php echo osc_esc_html(osc_default_results_per_page_at_search()); ?>"/>
                             <?php _e('listings at most'); ?>
                         </div>
@@ -433,18 +435,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </span>
                         </div>
                     </div>
-                    <h2 class="render-title"><?php _e('Google Analytics'); ?></h2>
+                    <h2 class="render-title separate-top"><?php _e('Google Analytics'); ?></h2>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Tracking ID'); ?></div>
                         <div class="form-controls">
                             <input type="text" class="xlarge" name="ga_tracking_id"
                                    value="<?php echo osc_esc_html(osc_google_analytics_id()); ?>"/>
                             <div class="help-box">
-                                <?php _e('Add your Google Analytics tracking ID. Example: UA-12345678-0'); ?>
+                                <?php _e('Add your Google Analytics measurement ID. Example: G-XXXXXXXXXX'); ?>
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title"><?php _e('Maps'); ?></h2>
+                    <h2 class="render-title separate-top"><?php _e('Maps'); ?></h2>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Google Maps key'); ?></div>
                         <div class="form-controls">
@@ -528,7 +530,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php
                                 echo __('Last checked on ') . osc_format_date(date('d-m-Y h:i:s', osc_get_preference('last_version_check'))
                                     ); ?></span>
-                            <span class="btn btn-sm btn-success" onclick="checkOsclassUpdate()"><?php _e('Check updates'); ?></span>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="checkOsclassUpdate()"><?php _e('Check updates'); ?></button>
                         </div>
                     </div>
                     <div class="form-row">
@@ -538,7 +540,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <label>
                                     <input type="checkbox" <?php
                                     echo osc_get_preference('allow_update_prerelease') ? 'checked="checked"' : '';
-                                    ?> name="allow_update_prerelease" value="themes"/>
+                                    ?> name="allow_update_prerelease" value="1"/>
                                     <?php _e('Allow prerelease update'); ?>
                                 </label>
                             </div>
@@ -561,9 +563,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_version')
             .then(response => response.json())
             .then(data => {
-                let d = new Date();
-                lastVersionElement.innerText = d;
-                setJsMessage('error', data.msg);
+                lastVersionElement.textContent = '<?php echo osc_esc_js(__('Last checked on ')); ?>' + new Date().toLocaleString();
+                setJsMessage('info', data.msg);
             })
             .catch(error => setJsMessage('error', error));
     }

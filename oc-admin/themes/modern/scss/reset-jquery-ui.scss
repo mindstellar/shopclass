@@ -5,7 +5,7 @@
 
 .ui-osc-tabs .ui-tabs-nav {
   border: 0;
-  border-bottom: solid 1px $color-gray-soft;
+  border-bottom: solid 1px var(--osc-bench-sunk);
   @include rounded-corners(4px 4px 0 0);
   padding: 4px 5px 0;
 }
@@ -15,7 +15,7 @@
 }
 
 .ui-dialog {
-  background: $color-gray-light;
+  background: var(--osc-bench-warm);
   border: 0;
   padding: 5px;
   @include rounded-corners;
@@ -23,7 +23,7 @@
 
 .ui-dialog .ui-dialog-titlebar {
   border: none;
-  color: $color-gray-black;
+  color: var(--osc-ink);
   font-size: 18px;
   margin: 0;
   padding: 7px 5px;
@@ -39,7 +39,7 @@
 }
 
 .ui-dialog .ui-dialog-content {
-  background: $color-white;
+  background: var(--osc-bench);
   padding: 15px;
   @include rounded-corners(0 0 4px 4px);
   position: relative;
@@ -60,7 +60,7 @@
 }
 
 .ui-dialog .btn a {
-  color: $white;
+  color: var(--osc-ink-inverse);
 }
 
 .ui-dialog .has-form-actions {
@@ -69,7 +69,7 @@
 }
 
 .osc-modal-content-market img {
-  border: solid 2px $color-gray-light;
+  border: solid 2px var(--osc-bench-warm);
   float: left;
   margin-right: 20px;
   max-height: 106px;

@@ -1,5 +1,7 @@
 .form-label {
-  font-size: .85rem;
+  font-size: .8125rem;
+  font-weight: 500;
+  letter-spacing: .01em;
 }
 
 .form-label-checkbox {
@@ -7,15 +9,14 @@
 }
 
 .form-row {
-  font-size: .85rem;
-  line-height: 18px;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .form-actions {
-  background: #f3f3f3;
+  background: var(--osc-bench-warm);
   border-radius: 4px;
-  box-shadow: inset 0 0 2px 0px #0000001c;
-  padding: 10px 100px;
+  padding: 12px 16px;
   width: 100%;
 }
 
@@ -27,14 +28,12 @@
   .form-label {
     float: left;
     width: 150px;
-    /*padding-top: 5px;*/
     text-align: right;
     word-break: break-word;
   }
 
   .form-controls {
     margin-left: 170px;
-
   }
 
   .form-actions {
@@ -57,7 +56,8 @@
   input {
     &:not([type="checkbox"]):not([type="radio"]):not([type="submit"]) {
       @extend .form-control, .form-control-sm;
-      width: 15rem;
+      width: 100%;
+      max-width: 24rem;
     }
   }
   textarea {
@@ -95,7 +95,8 @@ input.xlarge,
 .input-password,
 {
   @extend .form-control, .form-control-sm;
-  width: 15rem;
+  width: 100%;
+  max-width: 32rem;
 }
 
 input.input-small {

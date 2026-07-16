@@ -17,9 +17,9 @@ class Php extends Exporter
     /**
      * {@inheritdoc}
      *
-     * @see \Gettext\Languages\Exporter\Exporter::toStringDo()
+     * @see \Gettext\Languages\Exporter\Exporter::toStringDoWithOptions()
      */
-    protected static function toStringDo($languages)
+    protected static function toStringDoWithOptions($languages, array $options)
     {
         $lines = array();
         $lines[] = '<?php';

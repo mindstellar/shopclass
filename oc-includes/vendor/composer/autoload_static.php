@@ -13,27 +13,27 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
     );
 
     public static $prefixLengthsPsr4 = array (
-        'p' => 
+        'p' =>
         array (
             'phpseclib\\' => 10,
         ),
-        'm' => 
+        'm' =>
         array (
             'mindstellar\\' => 12,
         ),
-        'R' => 
+        'R' =>
         array (
             'ReCaptcha\\' => 10,
         ),
-        'P' => 
+        'P' =>
         array (
             'PHPMailer\\PHPMailer\\' => 20,
         ),
-        'O' => 
+        'O' =>
         array (
             'OpensslCryptor\\' => 15,
         ),
-        'G' => 
+        'G' =>
         array (
             'Gettext\\Languages\\' => 18,
             'Gettext\\' => 8,
@@ -41,40 +41,40 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
     );
 
     public static $prefixDirsPsr4 = array (
-        'phpseclib\\' => 
+        'phpseclib\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
         ),
-        'mindstellar\\' => 
+        'mindstellar\\' =>
         array (
             0 => __DIR__ . '/../../..' . '/oc-includes/osclass/classes',
         ),
-        'ReCaptcha\\' => 
+        'ReCaptcha\\' =>
         array (
             0 => __DIR__ . '/..' . '/google/recaptcha/src/ReCaptcha',
         ),
-        'PHPMailer\\PHPMailer\\' => 
+        'PHPMailer\\PHPMailer\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
-        'OpensslCryptor\\' => 
+        'OpensslCryptor\\' =>
         array (
             0 => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src',
         ),
-        'Gettext\\Languages\\' => 
+        'Gettext\\Languages\\' =>
         array (
             0 => __DIR__ . '/..' . '/gettext/languages/src',
         ),
-        'Gettext\\' => 
+        'Gettext\\' =>
         array (
             0 => __DIR__ . '/..' . '/gettext/gettext/src',
         ),
     );
 
     public static $prefixesPsr0 = array (
-        'H' => 
+        'H' =>
         array (
-            'HTMLPurifier' => 
+            'HTMLPurifier' =>
             array (
                 0 => __DIR__ . '/..' . '/ezyang/htmlpurifier/library',
             ),
@@ -205,7 +205,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'Gettext\\GettextTranslator' => __DIR__ . '/..' . '/gettext/gettext/src/GettextTranslator.php',
         'Gettext\\Languages\\Category' => __DIR__ . '/..' . '/gettext/languages/src/Category.php',
         'Gettext\\Languages\\CldrData' => __DIR__ . '/..' . '/gettext/languages/src/CldrData.php',
-        'Gettext\\Languages\\Exporter\\Docs' => __DIR__ . '/..' . '/gettext/languages/src/Exporter/Docs.php',
         'Gettext\\Languages\\Exporter\\Exporter' => __DIR__ . '/..' . '/gettext/languages/src/Exporter/Exporter.php',
         'Gettext\\Languages\\Exporter\\Html' => __DIR__ . '/..' . '/gettext/languages/src/Exporter/Html.php',
         'Gettext\\Languages\\Exporter\\Json' => __DIR__ . '/..' . '/gettext/languages/src/Exporter/Json.php',
@@ -487,12 +486,15 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'Object_Cache_apcu' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_apcu.php',
         'Object_Cache_default' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_default.php',
         'Object_Cache_memcache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php',
+        'Object_Cache_memcached' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php',
         'OpensslCryptor\\Cryptor' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Cryptor.php',
         'OpensslCryptor\\Exception\\ProcessException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/ProcessException.php',
         'OpensslCryptor\\Exception\\UnexpectedResultException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/UnexpectedResultException.php',
         'OpensslCryptor\\Exception\\UnknownAlgoException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/UnknownAlgoException.php',
+        'PHPMailer\\PHPMailer\\DSNConfigurator' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/DSNConfigurator.php',
         'PHPMailer\\PHPMailer\\Exception' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/Exception.php',
         'PHPMailer\\PHPMailer\\OAuth' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuth.php',
+        'PHPMailer\\PHPMailer\\OAuthTokenProvider' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuthTokenProvider.php',
         'PHPMailer\\PHPMailer\\PHPMailer' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/PHPMailer.php',
         'PHPMailer\\PHPMailer\\POP3' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/POP3.php',
         'PHPMailer\\PHPMailer\\SMTP' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/SMTP.php',
@@ -545,6 +547,8 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\form\\base\\FormInputs' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/base/FormInputs.php',
         'mindstellar\\form\\base\\InputInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/base/InputInterface.php',
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
+        'mindstellar\\migration\\MigrationInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
+        'mindstellar\\migration\\MigrationRunner' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationRunner.php',
         'mindstellar\\upgrade\\Osclass' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Osclass.php',
         'mindstellar\\upgrade\\Plugin' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Plugin.php',
         'mindstellar\\upgrade\\Theme' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Theme.php',

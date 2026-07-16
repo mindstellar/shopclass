@@ -1368,7 +1368,16 @@ class ItemActions
         }
 
         if (isset($column)) {
-            ItemStats::newInstance()->increase($column, $id);
+            // Gate the mark before it counts: a listener returns false to block it (per-reporter
+            // dedup, rate-limit, captcha) — core applies no such control of its own. Only when it
+            // passes does the counter move and the after-hook fire for the reaction (threshold
+            // auto-block, logging, notifications).
+            if (osc_apply_filter('item_mark', true, $id, $as) === false) {
+                return;
+            }
+            if (ItemStats::newInstance()->increase($column, $id) !== false) {
+                osc_run_hook('item_marked', $id, $as);
+            }
         }
     }
 

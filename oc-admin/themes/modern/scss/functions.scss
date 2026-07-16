@@ -3,28 +3,17 @@
 }
 
 @mixin error-color() {
-  background: $color-error-bg;
-  border: solid 1px $color-error-border;
-  color: $color-error-text;
+  background: var(--osc-danger);
+  border: solid 1px var(--osc-danger-deep);
+  color: var(--osc-ink-inverse);
 }
 
 @mixin submit-color() {
-  background: $color-submit-bg;
-  border: solid 1px $color-submit-border;
-  color: $color-submit-text;
+  background: var(--osc-success);
+  border: solid 1px var(--osc-success-deep);
+  color: var(--osc-ink-inverse);
 }
 
 @mixin border-radius($radius) {
   @include rounded-corners($radius);
-}
-
-// scss-docs-start callout-variant-mixin
-@mixin callout-variant($background, $border, $color) {
-  color: $color;
-  @include gradient-bg($background);
-  border-color: $border;
-
-  .callout-link {
-    color: shade-color($color, 20%);
-  }
 }

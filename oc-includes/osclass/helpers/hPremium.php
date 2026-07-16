@@ -302,7 +302,9 @@ function osc_premium_currency_symbol()
 {
     $aCurrency = Currency::newInstance()->findByPrimaryKey(osc_premium_currency());
 
-    return $aCurrency['s_description'];
+    // findByPrimaryKey() returns false for a premium item with no currency; indexing
+    // into that is a PHP 8 warning, so guard it.
+    return is_array($aCurrency) ? $aCurrency['s_description'] : '';
 }
 
 

@@ -160,10 +160,10 @@ $rows    = $aData['aRows'];
                     <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
                 </div>
             </div>
-            <div class="table-contains-actions shadow-sm">
+            <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
-                    <tr class="table-secondary">
+                    <tr>
                         <?php foreach ($columns as $k => $v) {
                             if ($direction === 'desc') {
                                 echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_desc') : '') . '">' . $v . '</th>';

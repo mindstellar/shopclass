@@ -512,6 +512,11 @@ abstract class Base
 
         if (!defined('CRYPT_BASE_USE_REG_INTVAL')) {
             switch (true) {
+                // PHP 8.5, per https://www.php.net/manual/en/migration85.incompatible.php, now emits a warning
+                // "when casting floats (or strings that look like floats) to int if they cannot be represented as one"
+                case PHP_VERSION_ID >= 80500 && PHP_INT_SIZE == 4:
+                    define('CRYPT_BASE_USE_REG_INTVAL', false);
+                    break;
                 // PHP_OS & "\xDF\xDF\xDF" == strtoupper(substr(PHP_OS, 0, 3)), but a lot faster
                 case (PHP_OS & "\xDF\xDF\xDF") === 'WIN':
                 case !function_exists('php_uname'):
@@ -611,7 +616,6 @@ abstract class Base
      *
      * @access public
      * @param string $key
-     * @internal Could, but not must, extend by the child Crypt_* class
      */
     function setKey($key)
     {
@@ -2070,7 +2074,7 @@ abstract class Base
 
         $length = ord($text[strlen($text) - 1]);
 
-        if (!$length || $length > $this->block_size) {
+        if (!$length | ($length > $this->block_size)) {
             return false;
         }
 

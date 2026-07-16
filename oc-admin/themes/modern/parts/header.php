@@ -1,8 +1,23 @@
 <?php if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
+}
+// This admin's saved light/dark choice, emitted on <html> so Bootstrap 5.3 has it before
+// first paint — no flash. Stored per admin id in t_preference (Osclass has no admin-meta
+// table); '' when never set, so the default is light. Whitelisted on the way out too, not
+// only on the way in, since a hand-edited preference row is still untrusted input.
+$oscAdminTheme = osc_get_preference((string) osc_logged_admin_id(), 'admin_theme');
+if ($oscAdminTheme !== 'dark' && $oscAdminTheme !== 'light') {
+    $oscAdminTheme = 'light';
+}
+// Same store, same reasoning as the theme above: this admin's collapsed/expanded
+// sidebar choice, emitted on <html> before first paint so the rail never flashes
+// open on load. Default expanded; whitelisted on the way out, not only in.
+$oscSidebar = osc_get_preference((string) osc_logged_admin_id(), 'admin_sidebar');
+if ($oscSidebar !== 'collapsed') {
+    $oscSidebar = 'expanded';
 } ?>
 <!DOCTYPE html>
-<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>">
+<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>" data-bs-theme="<?php echo $oscAdminTheme; ?>" data-osc-sidebar="<?php echo $oscSidebar; ?>">
 <head>
     <meta charset="utf-8">
     <title><?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Osclass'); ?></title>
@@ -13,41 +28,64 @@
     <?php osc_run_hook('admin_header'); ?>
 </head>
 <body class="<?php echo implode(' ', osc_apply_filter('admin_body_class', array())); ?>">
-<header id="header" class="navbar navbar-expand-md navbar-dark bg-dark">
-    <div class="container-fluid">
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-wrapper">
-            <div class="toggle-icon"><span></span><span></span><span></span></div>
-        </button>
-        <a id="osc_toolbar_home" class="navbar-brand ps-1" target="_blank" href="<?php echo osc_base_url(); ?>">
-            <i class="bi bi-house-fill"></i><?php echo osc_page_title() ?></a>
-        <ul class="navbar-nav navbar-collapse collapse justify-content-end">
-            <?php AdminToolbar::newInstance()->render(); ?>
-        </ul>
-        <ul class="navbar-nav">
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"><div class="visually-hidden"><?php _e('User Menu'); ?></div></i>
-                </a>
-                <div class="dropdown-menu-dark dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <a class="dropdown-item"
-                       href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
-                        <i class="bi bi-person-lines-fill"></i> <?php _e('Edit Profile'); ?></a>
-                    <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>"><i class="bi bi-gear-fill"></i>
-                        Settings</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
-                        <i class="align-middle bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
-                </div>
-            </li>
-        </ul>
-    </div>
-</header>
 <div id="content" class="container-fluid">
     <div class="row flex-nowrap">
         <nav id="sidebar-wrapper" class="col-auto dashboard-sidebar">
-            <?php osc_draw_admin_menu(); ?>
+            <a id="osc_toolbar_home" class="sidebar-brand" target="_blank" rel="noopener"
+               href="<?php echo osc_base_url(); ?>"
+               title="<?php echo osc_esc_html(__('View your site')); ?>">
+                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                <span class="sidebar-brand-label"><?php echo osc_esc_html(osc_page_title()); ?></span>
+            </a>
+            <div class="sidebar-scroll-frame">
+                <div class="sidebar-scroll">
+                    <?php osc_draw_admin_menu(); ?>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button type="button" id="oscThemeToggle" class="sidebar-util"
+                        title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
+                        aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
+                    <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'; ?>" aria-hidden="true"></i>
+                    <span class="sidebar-util-label"><?php echo $oscAdminTheme === 'dark' ? osc_esc_html(__('Light mode')) : osc_esc_html(__('Dark mode')); ?></span>
+                </button>
+                <div class="dropup sidebar-account">
+                    <button type="button" id="userDropdown" class="sidebar-util" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="<?php echo osc_esc_html(__('User Menu')); ?>">
+                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                        <span class="sidebar-util-label"><?php _e('Account'); ?></span>
+                        <i class="bi bi-chevron-expand sidebar-util-caret" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="userDropdown">
+                        <a class="dropdown-item"
+                           href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
+                            <i class="bi bi-person-lines-fill"></i> <?php _e('Edit Profile'); ?></a>
+                        <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
+                            <i class="bi bi-gear-fill"></i> <?php _e('Settings'); ?></a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
+                            <i class="bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
+                    </div>
+                </div>
+                <button type="button" id="oscSidebarToggle" class="sidebar-collapse-toggle"
+                        aria-controls="sidebar-wrapper"
+                        aria-expanded="<?php echo $oscSidebar === 'collapsed' ? 'false' : 'true'; ?>"
+                        aria-label="<?php echo osc_esc_html(__('Collapse or expand the menu')); ?>">
+                    <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+                    <span class="sidebar-collapse-toggle-label"><?php _e('Collapse'); ?></span>
+                </button>
+            </div>
         </nav>
         <main id="content-render" class="col">
+            <header id="header" class="admin-topbar navbar navbar-expand-md">
+                <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar-wrapper"
+                        aria-label="<?php echo osc_esc_html(__('Menu')); ?>">
+                    <div class="toggle-icon"><span></span><span></span><span></span></div>
+                </button>
+                <ul class="navbar-nav admin-topbar-tools ms-auto">
+                    <?php AdminToolbar::newInstance()->render(); ?>
+                </ul>
+            </header>
             <div id="content-head" class="row">
                 <div class="col">
                     <?php osc_run_hook('admin_page_header'); ?>

@@ -38,6 +38,7 @@ namespace mindstellar\upgrade;
 
 use DBCommandClass;
 use DBConnectionClass;
+use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
@@ -112,7 +113,11 @@ class Osclass extends UpgradePackage
                 return json_encode(['error' => 2, 'message' => $message]);
             }
 
-            if (osc_version() < 390) {
+            // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
+            // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
+            // the numeric comparison to numeric values — a dotted string is always newer.
+            $storedVersion = osc_version();
+            if (is_numeric($storedVersion) && (int) $storedVersion < 390) {
                 osc_delete_preference('marketAllowExternalSources');
                 osc_delete_preference('marketURL');
                 osc_delete_preference('marketAPIConnect');
@@ -121,6 +126,19 @@ class Osclass extends UpgradePackage
             }
 
             osc_set_preference('admin_theme', 'modern');
+
+            $runner = new MigrationRunner($comm, osc_lib_path() . 'osclass/installer/migrations');
+            $runner->ensureLedger();
+            $migrated = $runner->run();
+            if (!$migrated['ok']) {
+                return json_encode([
+                    'error'   => 3,
+                    'message' => sprintf(
+                        __('Migration failed: %s'),
+                        $migrated['failed']
+                    ) . ' — ' . $migrated['error']
+                ]);
+            }
 
             Utils::changeOsclassVersionTo(OSCLASS_VERSION);
 
@@ -156,7 +174,15 @@ class Osclass extends UpgradePackage
                 $json_url                  = 'https://api.github.com/repos/mindstellar/osclass/releases';
                 $osclass_package_info_json = (new FileSystem())->getContents($json_url);
                 if ($osclass_package_info_json) {
-                    $aSelfPackage = json_decode($osclass_package_info_json, true)[0];
+                    $releases = json_decode($osclass_package_info_json, true);
+                    if (is_array($releases)) {
+                        foreach ($releases as $release) {
+                            if (empty($release['draft'])) {
+                                $aSelfPackage = $release;
+                                break;
+                            }
+                        }
+                    }
                 }
             } else {
                 $json_url                  = 'https://api.github.com/repos/mindstellar/osclass/releases/latest';
@@ -170,8 +196,9 @@ class Osclass extends UpgradePackage
                 if (isset($aSelfPackage['name'])) {
                     $package_info['s_title'] = $aSelfPackage['name'];
                 }
-                if (isset($aSelfPackage['assets'][0]['browser_download_url'])) {
-                    $package_info['s_source_url'] = $aSelfPackage['assets'][0]['browser_download_url'];
+                $s_source_url = self::selectReleaseAssetUrl($aSelfPackage['assets'] ?? array());
+                if ($s_source_url !== null) {
+                    $package_info['s_source_url'] = $s_source_url;
                 }
                 if (isset($aSelfPackage['tag_name'])) {
                     $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
@@ -188,6 +215,36 @@ class Osclass extends UpgradePackage
         }
 
         return Plugins::applyFilter('osclass_upgrade_package', $package_info);
+    }
+
+    /**
+     * Pick the Osclass package asset from a GitHub release's assets list. Prefers the
+     * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
+     * selection (the old code blindly took assets[0]).
+     *
+     * @param array $assets GitHub release "assets" array
+     *
+     * @return string|null browser_download_url, or null if none suitable
+     */
+    private static function selectReleaseAssetUrl($assets)
+    {
+        if (!is_array($assets)) {
+            return null;
+        }
+        $firstZip = null;
+        foreach ($assets as $asset) {
+            if (!isset($asset['name'], $asset['browser_download_url'])) {
+                continue;
+            }
+            if (preg_match('/^osclass_v.*\.zip$/i', $asset['name'])) {
+                return $asset['browser_download_url'];
+            }
+            if ($firstZip === null && substr(strtolower($asset['name']), -4) === '.zip') {
+                $firstZip = $asset['browser_download_url'];
+            }
+        }
+
+        return $firstZip;
     }
 
     /**

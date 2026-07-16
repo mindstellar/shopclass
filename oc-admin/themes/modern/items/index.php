@@ -193,10 +193,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input id="fUserId" name="userId" type="hidden" placeholder="<?php _e('User ID') ?>" class="form-control w-25" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
                     <input id="fItemId" type="text" name="itemId" placeholder="<?php _e('Item ID') ?>" value="<?php echo osc_esc_html(Params::getParam('itemId')); ?>" class="form-control w-25 <?php echo $classItemId; ?>" />
 
-                    <a id="btn-display-filters" data-bs-toggle="modal" data-bs-target="#display-filters" href="#" class="btn btn-dim <?php
-                    if ($withFilters) {
-                        echo 'btn-red';
-                    } ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
+                    <?php // One class or the other, never both: `btn-dim btn-red` put two Bootstrap button
+                          // variants on one element and let source order decide, which is not a decision
+                          // anyone made. And red is reserved for destructive, irreversible actions — "a
+                          // filter is applied" is a state, so it reads as the active/bronze one. ?>
+                    <a id="btn-display-filters" data-bs-toggle="modal" data-bs-target="#display-filters" href="#" class="btn <?php
+                    echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
                     <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
                         <i class="bi bi-search"></i>
@@ -219,7 +221,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>" />
             </div>
         </div>
-        <div class="table-contains-actions shadow-sm">
+        <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                     <tr>
@@ -240,14 +242,25 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                             osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row)
                                         ); ?>">
                                 <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name=<?php echo ucfirst($k); ?>><?php echo $v; ?></td>
+                                    <?php // Status is the one value that gets presentational markup — it becomes a badge
+                                          // (tint + icon + word). This wrap lives in the THEME, not in
+                                          // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
+                                          // word for any plugin hooked on the `items_processing_row` filter. ?>
+                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
+                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                    ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
                     <?php } else { ?>
                         <tr>
-                            <td colspan="<?php echo count($columns); ?>" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
+                            <td colspan="<?php echo count($columns); ?>" class="empty-listings text-center">
+                                <?php if ($withFilters) { ?>
+                                    <p><?php _e('No listings match these filters.'); ?></p>
+                                    <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
+                                <?php } else { ?>
+                                    <p><?php _e('No listings found.'); ?></p>
+                                <?php } ?>
                             </td>
                         </tr>
                     <?php } ?>
@@ -409,8 +422,8 @@ osc_show_pagination_admin($aData);
                 </div>
             </div>
             <div class="modal-footer">
-                <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>" class="btn btn-success btn-sm" />
-                <a class="btn btn-warning btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
+                <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>" class="btn btn-primary btn-sm" />
+                <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
             </div>
         </div>
     </div>

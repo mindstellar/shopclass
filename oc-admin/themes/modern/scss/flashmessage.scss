@@ -1,6 +1,5 @@
 .flashmessage {
   @extend .alert;
-  @extend .shadow-sm;
 }
 
 .flashmessage-info {
@@ -32,9 +31,9 @@
 }
 
 #error_list {
-  background: $error-bg;
-  border: 1px solid;
-  color: $error-text;
+  background: var(--osc-danger-tint);
+  border: 1px solid var(--osc-danger);
+  color: var(--osc-danger); // 4.98:1 on danger-tint
   display: none;
   list-style-type: none;
   @include rounded-corners;
@@ -47,41 +46,102 @@
     @include rounded-corners;
   }
 
-  .flashmessage-info {
-    border-top: solid 1px $info-border;
-  }
-
-  .flashmessage-error {
-    border-top: solid 1px $error-border;
-  }
-
-  .flashmessage-ok {
-    border-top: solid 1px $success-border;
-  }
-
-  .flashmessage-warning {
-    border-top: solid 1px $warning-border;
-  }
+  // The per-state `border-top` overrides that used to live here are gone. A .flashmessage
+  // @extends the matching .alert-*, which ALREADY draws a 1px border in Bootstrap's
+  // --bs-*-border-subtle (derived from our semantic colours, and theme-aware). The overrides
+  // repainted just the top edge in the old Bootstrap-3 hexes — #BCE8F1 and friends, a palette
+  // that is in no part of this system — so the top of every flash message was a different,
+  // off-brand colour from its other three sides. Deleting them lets the alert's own border
+  // stand on all four sides.
 }
 
-// scss-docs-end callout-variant-mixin
-@each $state, $value in $callout-colors {
-  $callout-background: shift-color($value, -90%);
-  $callout-border: shift-color($value, 10%);
-  $callout-color: $gray-800;
+// Callouts — the inline hints that sit beside a setting and explain what it does.
+//
+// They used to be marked with `border-left: .35rem solid $value`: a coloured side stripe, which
+// DESIGN.md bans outright. Two things were wrong with it, and only one of them is taste.
+//
+//   1. `border-left` is PHYSICAL. Osclass ships RTL locales, and the admin compiles no RTL
+//      stylesheet, so in Arabic or Hebrew the stripe stayed on the left — the trailing edge —
+//      where it reads as a rendering fault rather than a marker.
+//   2. It was the ONLY signal. A stripe is colour and nothing else: it does not survive
+//      greyscale, and it does not survive deuteranopia. A warning callout and an info callout
+//      were the same object in two hues.
+//
+// So the stripe is replaced by the same grammar the status badges use — a tint, a SHAPE, and
+// the word (The Three Signal Rule). The icon is what actually does the stripe's job, and does
+// it in a way that survives having the colour taken away.
+//
+// The tint and the icon colour are the SAME tokens the badges use, so "success pale" is one
+// colour across the whole admin rather than the two slightly different pale greens it used to
+// be (the badge tint, and a separate build-time shift-color the callout computed for itself).
+// Sourcing them as var() is also what lets the callouts follow data-bs-theme; the old
+// shift-color() output was a hex frozen at build time. There is no border: the old rule set a
+// border-COLOUR with no width, so it never drew a pixel, and the tint carries the surface on
+// its own.
+//
+// Icons only for the states that carry meaning. `light`, `dark` and `secondary` are neutral
+// containers with nothing to announce, and a decorative glyph on them would be noise.
+$callout-bg: (
+        "primary":   var(--osc-bronze-tint),  "secondary": var(--osc-bench-sunk),
+        "success":   var(--osc-success-tint),  "ok":        var(--osc-success-tint),
+        "info":      var(--osc-info-tint),     "warning":   var(--osc-warning-tint),
+        "danger":    var(--osc-danger-tint),   "error":     var(--osc-danger-tint),
+        "light":     var(--osc-bench-warm),    "dark":      var(--osc-bench-sunk),
+);
+$callout-fg: ( // the icon, a glyph — semantic full colour
+        "primary": var(--osc-bronze), "info":    var(--osc-info),
+        "success": var(--osc-success), "ok":     var(--osc-success),
+        "warning": var(--osc-warning), "danger": var(--osc-danger), "error": var(--osc-danger),
+);
+$callout-icons: (
+        "primary": "\f430", // info-circle-fill
+        "info":    "\f430",
+        "success": "\f26a", // check-circle-fill
+        "ok":      "\f26a",
+        "warning": "\f33a", // exclamation-triangle-fill
+        "danger":  "\f336", // exclamation-octagon-fill
+        "error":   "\f336",
+);
+
+@each $state, $bg in $callout-bg {
   .callout-#{$state} {
-    @include callout-variant($callout-background, $callout-border, $callout-color);
-    border-left: .35rem solid $value;
-    border-radius: 4px;
-    display: inline-block;
-    font-size: .85rem;
-    font-style: italic;
+    align-items: flex-start;
+    background-color: $bg;
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    display: inline-flex;
+    font-size: .8125rem; // Label. Was .85rem AND italic — italic microcopy is the hardest
+    gap: .4rem;          // thing on the page to read, and this copy exists to be read.
     margin-top: .2rem;
-    padding: .35rem .50rem;
+    padding: .35rem .6rem;
+    text-align: start;
+
+    @if map-has-key($callout-icons, $state) {
+      &::before {
+        // The colour lives in the icon: same signal as the old stripe, one tenth the area,
+        // and it still means something in greyscale.
+        color: map-get($callout-fg, $state);
+        content: map-get($callout-icons, $state);
+        flex: 0 0 auto;
+        font-family: "bootstrap-icons";
+        font-size: .875em;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1.5;
+      }
+    }
+
+    // A link inside the hint looks like a link — bronze, the system link colour — rather than
+    // the near-black it used to inherit.
+    .callout-link {
+      color: var(--osc-bronze);
+    }
   }
 }
 
+// `flex`, not `block`: the base callout is an inline-flex row of [icon][text], and resetting
+// display to `block` would drop the icon out of that row and back onto its own line.
 .callout-block {
-  display: block;
+  display: flex;
   padding: 1rem .85rem;
 }

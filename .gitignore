@@ -39,7 +39,6 @@ oc-content/languages/*
 .htaccess
 nbproject/
 .sass-cache
-package-lock.json
 
 # Release
 release
@@ -68,3 +67,11 @@ robots.txt
 info.php
 testmail.php
 config.php.local
+
+.claude
+.impeccable
+.remember
+CLAUDE.md
+DESIGN.md
+PRODUCT.md
+MODERNISATION.md

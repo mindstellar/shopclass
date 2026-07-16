@@ -134,7 +134,7 @@ class FormulaConverter
                                 $chunk = "({$what} == {$from} || {$what} == {$to})";
                                 break;
                             case '!=':
-                                $chunk = "{$what} != {$from} && {$what} == {$to}";
+                                $chunk = "{$what} != {$from} && {$what} != {$to}";
                                 break;
                         }
                     } else {

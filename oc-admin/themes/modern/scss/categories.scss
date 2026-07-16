@@ -29,19 +29,19 @@
 }
 
 .cfield-div {
-  @extend .d-flex, .bg-light, .rounded-1, .shadow-sm, .justify-content-between;
+  @extend .d-flex, .bg-light, .rounded-1, .justify-content-between;
 }
 
 .list-categories .category_div,
 .cfield-div {
-  background-color: $color-gray-light;
-  border: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: solid 1px var(--osc-bench-sunk);
   padding: 5px;
   @include rounded-corners;
   position: relative;
 
   &:hover {
-    background-color: $warning-bg !important;
+    background-color: var(--osc-warning-tint) !important;
   }
 }
 
@@ -51,7 +51,7 @@
 }
 
 .ico-droppable {
-  border-right: solid 1px $color-gray-soft;
+  border-right: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
   left: 1px;
@@ -62,7 +62,7 @@
 }
 
 .ico-childrens {
-  border-right: solid 1px $color-gray-soft;
+  border-right: solid 1px var(--osc-bench-sunk);
   height: 36px;
   left: 36px;
   margin-left: 2px;
@@ -103,7 +103,7 @@
 
 .list-categories .name-cat,
 .list-fields .name-edit-cfield {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
   font-size: 15px;
   line-height: 26px;
 }
@@ -160,7 +160,7 @@ ul.subcategories {
 }
 
 #advanced_fields_iframe {
-  border-bottom: solid 1px $color-gray-soft;
+  border-bottom: solid 1px var(--osc-bench-sunk);
   font-size: 16px;
   font-weight: normal;
   margin-bottom: 10px;
@@ -182,10 +182,12 @@ ul.subcategories {
   .category-row {
     display: flex;
     border-radius:.2rem;
-    background-color: $light;
+    background-color: var(--osc-bench-warm);
   }
   .disabled {
     .category-row {
+      // shade-color() needs a real colour at build time, so this stays on Sass for now — one
+      // of the two function-bound holdouts left in the theme (see DESIGN.md §6).
       background-color:shade-color($light,30%);
     }
   }

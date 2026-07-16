@@ -535,9 +535,14 @@ class AdminMenu
             $str .= $menuTag . ' ' . $value[0] . '</a>';
 
             if (isset($value['sub']) && !empty($value['sub'])) {
-                $str .= ' <i class="float-end bi bi-chevron-down ' . ($activeMenu !== $menuId ? 'collapsed ' : '')
-                        . '" data-bs-target="#'
-                        . $menuId . '-submenu" data-bs-toggle="collapse" role="button" ></i>';
+                $isOpen = ($activeMenu === $menuId);
+                $str    .= ' <button type="button" class="nav-chevron' . ($isOpen ? '' : ' collapsed')
+                           . '" data-bs-target="#' . $menuId . '-submenu" data-bs-toggle="collapse"'
+                           . ' aria-expanded="' . ($isOpen ? 'true' : 'false') . '"'
+                           . ' aria-controls="' . $menuId . '-submenu"'
+                           . ' aria-label="'
+                           . osc_esc_html(sprintf(__('Toggle the %s submenu'), strip_tags($value[0]))) . '">'
+                           . '<i class="bi bi-chevron-down" aria-hidden="true"></i></button>';
                 $str .= '</div>';
                 $str .= $this->renderSubMenu($menuId, $value['sub'], $is_moderator, $activeMenu, $activeSubmenu);
             } else {

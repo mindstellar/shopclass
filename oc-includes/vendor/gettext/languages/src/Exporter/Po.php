@@ -19,9 +19,9 @@ class Po extends Exporter
     /**
      * {@inheritdoc}
      *
-     * @see \Gettext\Languages\Exporter\Exporter::toStringDo()
+     * @see \Gettext\Languages\Exporter\Exporter::toStringDoWithOptions()
      */
-    protected static function toStringDo($languages)
+    protected static function toStringDoWithOptions($languages, array $options)
     {
         if (count($languages) !== 1) {
             throw new Exception('The ' . get_called_class() . ' exporter can only export one language');

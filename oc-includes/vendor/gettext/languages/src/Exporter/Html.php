@@ -17,53 +17,47 @@ class Html extends Exporter
     /**
      * {@inheritdoc}
      *
-     * @see \Gettext\Languages\Exporter\Exporter::toStringDo()
+     * @see \Gettext\Languages\Exporter\Exporter::toStringDoWithOptions()
      */
-    protected static function toStringDo($languages)
+    protected static function toStringDoWithOptions($languages, array $options)
     {
-        return self::buildTable($languages, false);
+        $lines = array();
+        $lines[] = '<table>';
+        $lines[] = '    <thead>';
+        $lines[] = '        <tr>';
+        $lines[] = '            <th>Language code</th>';
+        $lines[] = '            <th>Language name</th>';
+        $lines[] = '            <th># plurals</th>';
+        $lines[] = '            <th>Formula</th>';
+        $lines[] = '            <th>Plurals</th>';
+        $lines[] = '        </tr>';
+        $lines[] = '    </thead>';
+        $lines[] = '    <tbody>';
+        foreach ($languages as $lc) {
+            $lines[] = '        <tr>';
+            $lines[] = '            <td>' . $lc->id . '</td>';
+            $name = self::h($lc->name);
+            if (isset($lc->supersededBy)) {
+                $name .= '<br /><small><span>Superseded by</span> ' . $lc->supersededBy . '</small>';
+            }
+            $lines[] = '            <td>' . $name . '</td>';
+            $lines[] = '            <td>' . count($lc->categories) . '</td>';
+            $lines[] = '            <td>' . self::h($lc->formula) . '</td>';
+            $cases = array();
+            foreach ($lc->categories as $c) {
+                $cases[] = '<li><span>' . $c->id . '</span><code>' . self::h($c->examples) . '</code></li>';
+            }
+            $lines[] = '            <td><ol start="0">' . implode('', $cases) . '</ol></td>';
+            $lines[] = '        </tr>';
+        }
+        $lines[] = '    </tbody>';
+        $lines[] = '</table>';
+
+        return implode("\n", $lines);
     }
 
     protected static function h($str)
     {
         return htmlspecialchars($str, ENT_COMPAT, 'UTF-8');
-    }
-
-    protected static function buildTable($languages, $forDocs)
-    {
-        $prefix = $forDocs ? '            ' : '';
-        $lines = array();
-        $lines[] = $prefix . '<table' . ($forDocs ? ' class="table table-bordered table-condensed table-striped"' : '') . '>';
-        $lines[] = $prefix . '    <thead>';
-        $lines[] = $prefix . '        <tr>';
-        $lines[] = $prefix . '            <th>Language code</th>';
-        $lines[] = $prefix . '            <th>Language name</th>';
-        $lines[] = $prefix . '            <th># plurals</th>';
-        $lines[] = $prefix . '            <th>Formula</th>';
-        $lines[] = $prefix . '            <th>Plurals</th>';
-        $lines[] = $prefix . '        </tr>';
-        $lines[] = $prefix . '    </thead>';
-        $lines[] = $prefix . '    <tbody>';
-        foreach ($languages as $lc) {
-            $lines[] = $prefix . '        <tr>';
-            $lines[] = $prefix . '            <td>' . $lc->id . '</td>';
-            $name = self::h($lc->name);
-            if (isset($lc->supersededBy)) {
-                $name .= '<br /><small><span>Superseded by</span> ' . $lc->supersededBy . '</small>';
-            }
-            $lines[] = $prefix . '            <td>' . $name . '</td>';
-            $lines[] = $prefix . '            <td>' . count($lc->categories) . '</td>';
-            $lines[] = $prefix . '            <td>' . self::h($lc->formula) . '</td>';
-            $cases = array();
-            foreach ($lc->categories as $c) {
-                $cases[] = '<li><span>' . $c->id . '</span><code>' . self::h($c->examples) . '</code></li>';
-            }
-            $lines[] = $prefix . '            <td><ol' . ($forDocs ? ' class="cases"' : '') . ' start="0">' . implode('', $cases) . '</ol></td>';
-            $lines[] = $prefix . '        </tr>';
-        }
-        $lines[] = $prefix . '    </tbody>';
-        $lines[] = $prefix . '</table>';
-
-        return implode("\n", $lines);
     }
 }

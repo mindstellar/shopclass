@@ -3,15 +3,23 @@ on:
   push:
     branches:
       - develop
+      - master
 permissions:
   contents: write
 jobs:
+  # Gate the release on the same checks that run for PRs (reusable workflows).
+  test:
+    uses: ./.github/workflows/test.yml
+  drift:
+    uses: ./.github/workflows/schema-drift.yml
+
   release:
+    needs: [test, drift]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Extract OSCLASS_VERSION
         id: extract_version
         run: |
@@ -28,12 +36,26 @@ jobs:
             echo "Invalid OSCLASS_VERSION format: ${RAW_VERSION}"
             exit 1
           fi
+          # Branch decides the release type; a mismatch publishes nothing.
+          # develop -> prereleases only (suffix required); master -> stable only (no suffix).
+          SHOULD_RELEASE=false
+          if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" ]]; then
+            SHOULD_RELEASE=true
+          elif [[ "${GITHUB_REF_NAME}" == "master" && -z "${SUFFIX}" ]]; then
+            SHOULD_RELEASE=true
+          fi
+          echo "SHOULD_RELEASE=${SHOULD_RELEASE}" >> $GITHUB_ENV
+          echo "Branch: ${GITHUB_REF_NAME}, ShouldRelease: ${SHOULD_RELEASE}"
 
-      - name: Debug OSCLASS_VERSION
-        run: echo "OSCLASS_VERSION=${{ env.OSCLASS_VERSION }}"
+      - name: Skip release (branch/version mismatch)
+        if: ${{ env.SHOULD_RELEASE != 'true' }}
+        run: |
+          echo "No release for ${OSCLASS_VERSION} on ${GITHUB_REF_NAME}."
+          echo "develop publishes prereleases (suffix required); master publishes stable (no suffix)."
 
       - name: Check if Tag Exists
         id: check_tag
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         shell: bash
         run: |
           git fetch --tags --quiet
@@ -50,19 +72,32 @@ jobs:
         run: echo "Tag already exists. Exiting."
 
       - name: Create Release Tag
-        if: ${{ env.TAG_EXISTS == 'false' }}
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git tag -a "${OSCLASS_VERSION}" -m "Release ${OSCLASS_VERSION}"
           git push origin "${OSCLASS_VERSION}"
 
-      - name: Run Build Script
-        if: ${{ env.TAG_EXISTS == 'false' }}
-        run: sh ./.build.sh
+      - name: Setup Node
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build assets
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package release
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
+        run: bash ./.build.sh
 
       - name: Create GitHub Release
-        if: ${{ env.TAG_EXISTS == 'false' }}
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           files: release/osclass_v${{ env.OSCLASS_VERSION }}.zip

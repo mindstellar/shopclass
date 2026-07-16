@@ -1,0 +1,122 @@
+// =============================================================================
+// Dark theme — "the same workshop at night" (DESIGN.md §6, The One Room Rule)
+//
+// This is not an inversion. It is the Workshop Bench under a low warm light: the bench
+// goes to a near-black on the bronze's own hue, the tools stay bronze but brighten so
+// they still read as the brightest thing in the room, and every semantic tint becomes a
+// dark tinted surface rather than a pale one.
+//
+// WHY THIS FILE IS IMPORTED LAST. Bootstrap 5.3 emits its OWN `[data-bs-theme="dark"]`
+// block (its stock cool-grey dark), from the bootstrap import on line 5 of main.scss. A
+// custom property is won by the last matching rule of equal specificity, so to re-point
+// --bs-body-bg (and the rest) to the warm bench, this block must come AFTER Bootstrap's.
+// _brand.scss is imported BEFORE Bootstrap and could never do it; that is the whole reason
+// this is a separate file at the end of the import list rather than more lines in _brand.
+//
+// Every colour here is a token. Components already read var(--osc-*) / var(--bs-*), so
+// re-pointing the tokens is the entire theme — there is almost no per-component dark CSS,
+// which is the payoff of the migration that preceded this.
+//
+// CONTRAST. Every pair a component actually forms is measured against its bar — 4.5:1 for
+// body and badge text, 3:1 for an icon glyph or a control border (WCAG 1.4.11). The figure
+// on each line is the measured ratio in THIS palette; a ratio that held on white tells you
+// nothing about what holds on the bench, so all of it is re-measured, not carried over.
+// =============================================================================
+
+[data-bs-theme="dark"] {
+
+  // --- Surfaces --------------------------------------------------------------
+  // Warm near-black, hue ~55. Unlike light mode, the elevated chrome (bench-warm) is
+  // LIGHTER than the content bench, not darker — a raised surface catches more light.
+  --osc-bench:         #211e1a; // content surface
+  --osc-bench-warm:    #2b2723; // toolbars, table headers (raised)
+  --osc-bench-sunk:    #1a1714; // wells, disabled, neutral-badge tint (recessed)
+
+  // Nav chrome. Same rule as bench-warm — a raised surface catches more light, so the
+  // sidebar is LIGHTER than the content bench here, the inverse of light mode where it is
+  // darker. ink-muted on it: 6.4:1. The hover lightens (adds light) instead of darkening.
+  --osc-chrome:        #2f2a24;
+  --osc-chrome-edge:   #423b32;
+  --osc-chrome-hover:  rgba(255, 255, 255, .06);
+
+  // --- Lines -----------------------------------------------------------------
+  --osc-rule:          #3a352f; // decorative divider — deliberately low contrast
+  --osc-rule-strong:   #7c7264; // interactive control border — 3.14:1 on bench-warm
+
+  // --- Ink -------------------------------------------------------------------
+  // Warm near-white, never pure #fff — a white text on a warm black reads cold and buzzes.
+  --osc-ink:           #ece7e0; // body/heading/data — 13.49:1 on bench
+  --osc-ink-muted:     #b0a99f; // secondary, placeholders — 7.13:1 on bench
+  --osc-ink-emphasis:  #cbc3b8; // neutral-badge ink — 10.23:1 on bench-sunk
+  // The ink that sits ON a bright fill flips: in light mode it is white, here it is the
+  // dark bench, because the fills below are luminous. This is the divergence the token was
+  // created for (see --osc-ink-inverse in _brand.scss).
+  --osc-ink-inverse:   #201d19; // 7.50:1 under bronze, 6.69:1 under danger, 7.57:1 under success
+
+  // --- Brand -----------------------------------------------------------------
+  // The bronze LIGHTENS. A colour that carried 5.62:1 on white carries nothing on near-black,
+  // so this is a brighter value of the same hue — brass catching the light. It does double
+  // duty: link text on the bench (7.41:1), and a button fill under dark ink (7.50:1).
+  --osc-bronze:        #d7a54e;
+  --osc-bronze-deep:   #e4b566; // hover/active — brightens, the dark-mode direction of "deeper"
+  --osc-bronze-tint:   #3a2f1e; // selected-row wash, premium badge — bronze on it 5.84:1, ink 10.64:1
+  --osc-bronze-rgb:    215, 165, 78;
+
+  // --- Semantic --------------------------------------------------------------
+  // All luminous, so each colour reads both as ink on its own dark tint AND as a fill under
+  // dark inverse ink. The tints are dark tinted surfaces, not pale ones.
+  --osc-success:       #5cc27d; // on success-tint 6.37:1; under ink-inverse 7.57:1
+  --osc-success-tint:  #183024; // ink on it 11.48:1
+  --osc-success-deep:  #46a866; // submit-button border
+  --osc-danger:        #f0857f; // on danger-tint 6.28:1; under ink-inverse 6.69:1
+  --osc-danger-tint:   #331d1b; // ink on it 12.81:1
+  --osc-danger-deep:   #e56b64; // error-button border
+  --osc-warning:       #e8c14a; // glyph on warning-tint 8.51:1
+  --osc-warning-tint:  #2e2812; // ink on it 11.95:1
+  --osc-info:          #5bb6e8; // glyph on info-tint 6.72:1
+  --osc-info-tint:     #152833; // ink on it 12.34:1
+
+  // --- Elevation -------------------------------------------------------------
+  // Shadows do less on a dark surface; a raised border tone carries more. Deepen the two
+  // shadows so they still register against the near-black.
+  --osc-shadow-overlay: 0 4px 12px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
+  --osc-shadow-modal:   0 16px 48px rgba(0, 0, 0, .60);
+
+  // ---------------------------------------------------------------------------
+  // Bootstrap surface tokens. Components we did not write (form controls, dropdowns, the
+  // grid, tables) read these, and Bootstrap's own dark block set them to its stock cool
+  // greys a few rules earlier. Re-point the load-bearing ones to the warm bench so the
+  // whole admin is one material, not our tokens over a cold Bootstrap shell.
+  // ---------------------------------------------------------------------------
+  --bs-body-bg:            var(--osc-bench);
+  --bs-body-bg-rgb:        33, 30, 26;
+  --bs-body-color:         var(--osc-ink);
+  --bs-body-color-rgb:     236, 231, 224;
+  --bs-emphasis-color:     var(--osc-ink);
+  --bs-emphasis-color-rgb: 236, 231, 224;
+  --bs-secondary-bg:       var(--osc-bench-warm);
+  --bs-secondary-color:    var(--osc-ink-muted);
+  --bs-tertiary-bg:        var(--osc-bench-sunk);
+  --bs-tertiary-color:     var(--osc-ink-muted);
+  --bs-border-color:       var(--osc-rule);
+  --bs-heading-color:      var(--osc-ink);
+  --bs-link-color:         var(--osc-bronze);
+  --bs-link-color-rgb:     215, 165, 78;
+  --bs-link-hover-color:   var(--osc-bronze-deep);
+  --bs-secondary-bg-rgb:   43, 39, 35;
+  --bs-tertiary-bg-rgb:    26, 23, 20;
+
+  // Form controls compile $input-bg to a literal at build time (it is a Sass value, not a
+  // var), so they do not follow the tokens on their own. Point them at the bench by hand:
+  // the field is the same tone as the page and is found by its rule-strong border, exactly
+  // as the white-on-white field is in light mode.
+  .form-control,
+  .form-select {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-rule-strong);
+    color: var(--osc-ink);
+  }
+  .form-control::placeholder { color: var(--osc-ink-muted); }
+  .form-control:disabled,
+  .form-select:disabled { background-color: var(--osc-bench-sunk); }
+}

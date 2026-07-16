@@ -1,71 +1,675 @@
+// The sidebar is the "second surface": bench-warm chrome beside the white content bench.
+// It used to be near-black (.bg-black-light + .text-white), which read as a separate, cold
+// application bolted onto the admin. It is now a quiet warm neutral that recedes, with the
+// bronze reserved for one job — telling you where you are.
+//
+// The markup comes from AdminMenu::renderMenu() and cannot change without breaking plugins
+// that register menu pages, so this styles the DOM as it actually is:
+//
+//   nav.dashboard-sidebar
+//     ul#dashboard-menu.nav.nav-pills
+//       li.nav-item
+//         div.nav-link(.active)           <- the row; .active lands on the DIV, not the <a>
+//           a.h6 > i.bi                   <- label + icon
+//           i.bi-chevron-down(.collapsed) <- disclosure, only when a submenu exists
+//         ul.sidebar-submenu(.show)
+//           li > a.nav-link(.sub-active)
+//           li.submenu-divide
+//
+// Directional properties are logical (border-inline-start, margin-inline-start) because
+// Osclass ships RTL locales. `border-left` would put the active marker on the wrong edge
+// for a large part of the world.
+
+// The icon gutter: row inline padding (.6rem) + icon slot (1.25rem) + icon-to-label gap
+// (.5rem). Submenu labels are indented by exactly this so they sit under the PARENT's
+// label, not its icon — the alignment is what groups a child to its parent, which is why
+// the old hairline guide rail is gone. One Sass value keeps the two in lockstep.
+$sidebar-gutter: 2.35rem;
+
 .dashboard-sidebar {
   max-width: 15rem;
 
-  @extend .px-sm-2, .px-0, .bg-black-light, .min-vh-100, .text-white;
+  @extend .px-sm-2, .px-0, .min-vh-100;
+
+  background-color: var(--osc-chrome);
+  border-inline-end: 1px solid var(--osc-chrome-edge);
 
   &.offcanvas {
     overflow-y: auto;
   }
 
-  div {
-    &.nav-link {
-      background-color: $gray-800;
-      color: $nav-pills-link-active-color;
-
-      > i {
-        margin-left: 1rem;
-        transition: ease 250ms;
-
-        &.collapsed {
-          transform: rotate(-90deg);
-        }
-      }
-    }
-  }
-
+  // Top-level row. Bootstrap's .nav-pills paints $component-active-bg across the whole row
+  // when active; we want a soft tint pill instead — the SAME language a submenu's current
+  // item uses — so the active state is stated explicitly rather than inherited. No
+  // inline-start marker: a coloured side border is the one accent DESIGN.md bans outright,
+  // and the tint + bronze ink + weight already carry "you are here" three ways.
   .nav-link {
-    &.active {
-      & a {
-        color: $gray-200;
-
-        :hover {
-          color: $gray-100;
-        }
-      }
-    }
+    align-items: center;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted);
+    // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
+    // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Osclass
+    // compiles no RTL stylesheet, so in an RTL locale that float never flips and the
+    // chevron collides with the label. Float has no effect on a flex child, so making the
+    // row a flex container neutralises it, and `margin-inline-start: auto` below pushes
+    // the chevron to the row's end in both directions.
+    display: flex;
+    gap: 0;
+    min-height: 2.5rem;
+    padding: 0 .6rem;
+    transition: background-color var(--osc-duration-fast) var(--osc-ease),
+                color var(--osc-duration-fast) var(--osc-ease);
 
     a {
-      color: $gray-500;
+      align-items: center;
+      color: inherit;
+      display: flex;
+      flex: 1 1 auto;
+      // A fixed icon slot so every label starts at the same x — the vertical edge the
+      // eye reads as the menu's spine, and the anchor $sidebar-gutter aligns children to.
+      gap: .5rem;
+      // The label is marked up as `<a class="h6">`, so Bootstrap already gives it
+      // heading weight (600) and a heading margin. Both are wrong here: if every item is
+      // 600, weight cannot signal the current one. Reset to 500 so `.active` can mean
+      // something.
+      font-weight: 500;
+      margin-bottom: 0;
+      padding-block: .5rem;
+      @extend .text-decoration-none;
 
-      :hover {
-        color: $gray-200;
-        transition: $nav-link-transition;
+      > i {
+        flex: 0 0 1.25rem;
+        text-align: center;
+        width: 1.25rem;
       }
 
-      @extend .text-decoration-none;
+      // `&:hover`, not `:hover`. The previous rule nested a bare `:hover`, which compiles
+      // to `a *:hover` — it recoloured the icon INSIDE the link and never the link itself.
+      // Sidebar hover has been silently broken.
+      &:hover {
+        color: inherit;
+      }
+
+      // Keyboard users must be able to see where they are. Never remove this.
+      &:focus-visible {
+        border-radius: $border-radius;
+        outline: 2px solid var(--osc-bronze);
+        outline-offset: 2px;
+      }
+    }
+
+    // The disclosure toggle. A real <button> (not an <i role="button">) so it
+    // carries an accessible name and aria-expanded for screen readers; Bootstrap's
+    // collapse plugin flips `.collapsed` on it. `auto` pushes it to the row's end —
+    // the inline-end edge in both directions — without the physical float. The
+    // padding enlarges the hit area past the icon glyph (the negative inline-end
+    // margin pulls that padding back so the row's edge alignment is unchanged).
+    > .nav-chevron {
+      background: transparent;
+      border: 0;
+      border-radius: $border-radius;
+      color: inherit;
+      cursor: pointer;
+      flex: 0 0 auto;
+      line-height: 1;
+      margin-inline-end: -.25rem;
+      margin-inline-start: auto;
+      padding: .35rem;
+      transition: transform var(--osc-duration-base) var(--osc-ease);
+
+      &.collapsed {
+        transform: rotate(-90deg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--osc-bronze);
+        outline-offset: 2px;
+      }
+    }
+
+    &:hover {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-ink);
+    }
+
+    &.active {
+      background-color: var(--osc-bronze-tint);
+      color: var(--osc-bronze);
+
+      // Weight and colour both shift, so "where I am" survives greyscale and
+      // colour-blindness — the tint is not carrying the meaning alone.
+      a {
+        color: var(--osc-bronze);
+        font-weight: 600;
+      }
     }
   }
 }
 
-.sidebar-submenu {
-
-  background-color: $color-gray-black;
-  border: $border-width solid transparent;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+// Prefixed with .dashboard-sidebar so these outrank `.dashboard-sidebar .nav-link`
+// (0,2,0): the submenu anchors also carry `.nav-link`, so an unqualified
+// `.sidebar-submenu a` (0,1,1) loses to the row rule and the gutter indent never lands.
+.dashboard-sidebar .sidebar-submenu {
+  background-color: transparent;
+  border: 0;
   font-size: $font-size-sm;
-  margin-top: -.1rem;
-  padding-top: .1rem;
-  @include border-radius($navbar-toggler-border-radius);
+  margin: 0;
+  padding: 0;
 
   a {
-    color: $gray-400;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted);
     font-size: $font-size-sm;
-    margin-bottom: $border-width;
+    // A hair of vertical rhythm so the hover/active pills read as separate rows
+    // instead of one continuous block. Adjacent margins collapse, so this is the
+    // gap between items, not doubled.
+    margin-block: .1rem;
+    // Indented to the icon gutter so the label sits under the parent's label. That
+    // alignment is the grouping — no guide rail, no side marker.
+    padding: .3rem .6rem .3rem $sidebar-gutter;
 
-    &.sub-active, &:hover {
-      background-color: $gray-600;
-      color: $gray-200;
+    &:hover {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-ink);
     }
+
+    // Current page. The exact same bronze pill as a top-level active row — tint wash,
+    // bronze ink, weight 600 — so "you are here" is one system at both levels instead
+    // of two. (The old treatment was a full white box with a side marker, which read
+    // louder than the parent's own active state.)
+    &.sub-active {
+      background-color: var(--osc-bronze-tint);
+      color: var(--osc-bronze);
+      font-weight: 600;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 2px;
+    }
+  }
+
+  // A section subhead, not a link. Sentence case stays (no uppercase / letter-spacing —
+  // those break cursive joining in Arabic and this string is translated). Aligned to the
+  // gutter like the links it heads, set a step smaller and in the muted ink.
+  .submenu-divide {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    font-weight: 600;
+    margin-block-start: .55rem;
+    padding-block: .25rem;
+    padding-inline-start: $sidebar-gutter;
+  }
+}
+
+
+
+
+// =============================================================================
+// The app shell: full-height sidebar + collapsible rail
+// =============================================================================
+// The sidebar owns the whole left column, top to bottom: a brand masthead, the
+// scrolling menu, and a footer that carries the account menu, the appearance
+// toggle, and the collapse control. The old full-width top bar is gone; a slim
+// header now sits only over the content, holding the plugin toolbar and (on
+// small screens) the menu button.
+//
+// No element between a flyout and the viewport may clip: the collapsed rail's
+// flyouts are position:absolute and escape toward the inline-end, so the sidebar
+// deliberately has NO internal scroll container. Instead the page scrolls and the
+// brand (sticky top) and footer (sticky bottom) stay pinned. This is also why the
+// footer is always reachable without the "just below the fold" problem a
+// min-vh-100 column with a static control would have.
+//
+// The collapse choice is per-admin and persisted server-side (t_preference, the
+// store the dark-mode toggle shares), emitted onto `<html data-osc-sidebar>`
+// before first paint so the rail never flashes open on load.
+
+// ---- Brand masthead ---------------------------------------------------------
+.sidebar-brand {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-weight: 600;
+  gap: .5rem;
+  overflow: hidden;
+  padding: .7rem .85rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  > i {
+    color: var(--osc-bronze);
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+  }
+
+  .sidebar-brand-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover {
+    color: var(--osc-bronze-deep);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+// ---- Footer utility zone: appearance, account, collapse ---------------------
+.sidebar-footer {
+  background-color: var(--osc-chrome);
+  border-block-start: 1px solid var(--osc-chrome-edge);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: .1rem;
+  padding: .35rem;
+}
+
+.sidebar-util,
+.sidebar-collapse-toggle {
+  align-items: center;
+  background-color: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  gap: .5rem;
+  padding: .45rem .55rem;
+  text-align: start;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease),
+              color var(--osc-duration-fast) var(--osc-ease);
+  width: 100%;
+
+  > i {
+    flex: 0 0 auto;
+    font-size: 1.05rem;
+  }
+
+  &:hover {
+    background-color: var(--osc-bench);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.sidebar-collapse-toggle > i {
+  transition: transform var(--osc-duration-base) var(--osc-ease);
+}
+
+// The account button's expand caret rides at the row's end.
+.sidebar-util-caret {
+  color: var(--osc-ink-muted);
+  font-size: .9rem !important;
+  margin-inline-start: auto;
+}
+
+.sidebar-account {
+  .dropdown-menu {
+    --bs-dropdown-min-width: 12rem;
+
+    box-shadow: var(--osc-shadow-overlay);
+  }
+
+  .dropdown-item {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+  }
+}
+
+// ---- Header zone over the content -------------------------------------------
+// The topbar (tools) and #content-head (page title + actions, styled in
+// render-page.scss) share one white surface and read as a single header. So the
+// topbar carries NO bottom rule — the single hairline lives under #content-head,
+// dividing the whole header zone from the content tray below.
+.admin-topbar {
+  background-color: var(--osc-bench);
+  gap: .25rem;
+  // #content-head and the content rows are Bootstrap .row's, which negative-margin
+  // out to the column's full width; this navbar is not, so without the same pull it
+  // sits inset by the .col gutter and its surface stops short of the rows below —
+  // invisible on white, a dark frame in dark mode. Pull it out to align the zone.
+  margin-inline: calc(var(--bs-gutter-x) * -.5);
+  min-height: 2.75rem;
+  // Re-inset by the same gutter so the tools align with the title row's content edge.
+  padding: .3rem calc(var(--bs-gutter-x) * .5);
+
+  .admin-topbar-tools {
+    align-items: center;
+    flex-direction: row;
+    gap: .15rem;
+  }
+
+  // Toolbar plugin items render as .nav-link inside this bar. Quiet ghost
+  // buttons: muted at rest, a soft chrome pill + bronze ink on hover, with the
+  // icon sized to match so text and icon-only tools sit on one baseline.
+  .nav-link {
+    align-items: center;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted);
+    display: inline-flex;
+    gap: .35rem;
+    padding: .4rem .6rem;
+
+    > i {
+      font-size: 1.05rem;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-bronze);
+    }
+  }
+
+  // The old hamburger bars were tuned for a dark navbar; ink them for the light
+  // bar so they stay visible on mobile.
+  .toggle-icon span {
+    background: var(--osc-ink);
+
+    &:hover,
+    &:focus {
+      background: var(--osc-bronze);
+    }
+  }
+}
+
+// The flyout header is rail-only: in the expanded menu the parent's own row
+// already names the section, so this injected <li> must never show inline.
+.rail-flyout-title {
+  display: none;
+}
+
+// The leaf flyout (a rail tooltip built in JS for menu items with no submenu)
+// only exists as a rail affordance; it is inert everywhere else.
+.sidebar-flyout {
+  display: none;
+}
+
+// ---- The menu scroll region + ghost scrollbar -------------------------------
+// The native scrollbar is hidden and replaced by a thin overlay bar (built in
+// footer.php) so the sidebar looks the same on platforms that reserve gutter
+// space for native bars as it does with macOS overlay bars.
+.sidebar-scroll {
+  // Firefox / legacy Edge; the WebKit pseudo below covers Chrome/Safari.
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+  }
+}
+
+.ghost-scrollbar {
+  inset-block: 4px;
+  inset-inline-end: 2px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity var(--osc-duration-base) var(--osc-ease);
+  width: 6px;
+  z-index: 4;
+
+  &.is-active {
+    opacity: 1;
+  }
+}
+
+.ghost-scrollbar-thumb {
+  background-color: var(--osc-rule-strong);
+  border-radius: 999px;
+  cursor: grab;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease);
+  width: 100%;
+
+  &:hover {
+    background-color: var(--osc-ink-muted);
+  }
+}
+
+.ghost-scrollbar.is-active .ghost-scrollbar-thumb {
+  pointer-events: auto;
+}
+
+// =============================================================================
+// Desktop shell + rail (>=1025px)
+// =============================================================================
+// Everything height- and rail-related is desktop-only. Below 1025px the sidebar
+// is a full-width off-canvas panel (see footer.php's resetSidebar) where a rail
+// and a sticky shell would be meaningless.
+@media (min-width: 1025px) {
+  #content > .row.flex-nowrap {
+    min-height: 100vh;
+  }
+
+  // A fixed-height frame stuck to the top of a scrolling page. Inside it the
+  // brand and footer are flex-fixed and the menu scrolls between them, so the
+  // account controls always sit on the bottom edge. overflow:hidden contains the
+  // ghost scrollbar; it does NOT clip the collapsed flyouts because those are
+  // position:fixed (their containing block is the viewport, not this box).
+  .dashboard-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    inset-block-start: 0;
+    overflow: hidden;
+    position: sticky;
+    width: 15rem;
+    // position:sticky makes this a stacking context, so the collapsed flyout's
+    // z-index (1050) only ranks WITHIN the sidebar. The content column comes later
+    // in the DOM and its widgets are positioned (.card => position:relative) at the
+    // same auto level, so without a rank here the whole sidebar — flyout included —
+    // paints beneath them, and beneath the topbar (1020, which lives in that column).
+    // Lift the sidebar's context above both so the flyout escapes over the content.
+    z-index: 1040;
+    // The width animates, which reflows the content column — that reflow IS the
+    // feature — and it rides --osc-duration-base, so it is instant under
+    // prefers-reduced-motion.
+    transition: width var(--osc-duration-base) var(--osc-ease);
+  }
+
+  .sidebar-brand {
+    flex: 0 0 auto;
+  }
+
+  // The scroll region between brand and footer. min-height:0 lets the flex item
+  // shrink below its content so it can actually scroll.
+  .sidebar-scroll-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+  }
+
+  .sidebar-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  // Above the topbar (1020): the account menu drops UP out of this footer, and
+  // its stacking context must not trap the menu behind the topbar on a short
+  // viewport.
+  .sidebar-footer {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 1030;
+  }
+
+  // The topbar stays put while the content scrolls beneath it.
+  .admin-topbar {
+    inset-block-start: 0;
+    position: sticky;
+    z-index: 1020;
+  }
+
+  [data-osc-sidebar="collapsed"] {
+    .dashboard-sidebar {
+      width: 3.5rem;
+    }
+
+    // The positioning context every flyout resolves against.
+    .dashboard-sidebar .nav-item {
+      position: relative;
+    }
+
+    // Icon-only masthead + footer rows.
+    .sidebar-brand {
+      justify-content: center;
+      padding-inline: .25rem;
+
+      .sidebar-brand-label {
+        display: none;
+      }
+    }
+
+    .sidebar-util,
+    .sidebar-collapse-toggle {
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    .sidebar-util-label,
+    .sidebar-util-caret,
+    .sidebar-collapse-toggle-label {
+      display: none;
+    }
+
+    .sidebar-collapse-toggle > i {
+      transform: rotate(180deg);
+    }
+
+    // Icon-only menu rows. `font-size: 0` collapses the label's text node while
+    // leaving it in the accessibility tree (unlike display:none), so the icon
+    // stays the only thing painted and screen readers still read the name.
+    .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link {
+      gap: 0;
+      justify-content: center;
+      padding-inline: .25rem;
+
+      // The disclosure chevron has nothing to disclose on a rail.
+      > .nav-chevron {
+        display: none;
+      }
+
+      a {
+        flex: 0 0 auto;
+        font-size: 0;
+        gap:initial;
+
+        .bi {
+          font-size: 1.05rem;
+        }
+      }
+    }
+
+    // --- Flyouts ----------------------------------------------------------
+    // Both flyout kinds are position:fixed so they escape the menu's scroll
+    // frame (an overflow container would otherwise clip them). Their viewport
+    // coordinates are set in JS from the hovered row's rect; the reveal stays
+    // here. They remain DOM children of the <li>, so hovering the flyout still
+    // counts as hovering the row (hover propagates up the DOM tree), which keeps
+    // the panel open while the pointer travels to it.
+    //
+    // HOVER INTENT. There is a 6px gap between the rail and the panel (the JS
+    // offset), and crossing it un-hovers the row for an instant. So the HIDE is
+    // delayed (--osc-flyout-hide) and visibility only flips after the fade, giving
+    // the pointer time to bridge the gap; re-entering within the window cancels it.
+    // The SHOW stays instant — the reveal rule below zeroes the delay — so the
+    // panel never feels laggy to open, only reluctant to close.
+    .dashboard-sidebar .sidebar-submenu,
+    .dashboard-sidebar .sidebar-flyout {
+      --osc-flyout-hide: .15s;
+
+      background-color: var(--osc-bench);
+      border: 1px solid var(--osc-rule);
+      box-shadow: var(--osc-shadow-overlay);
+      color: var(--osc-ink);
+      // Neutralise the expanded group's indent: these are fixed and JS-positioned,
+      // so the rail's margin would otherwise offset the flyout from the hovered row.
+      margin-inline: 0;
+      opacity: 0;
+      position: fixed;
+      transform: translateX(-.25rem);
+      transition: opacity var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide),
+                  transform var(--osc-duration-fast) var(--osc-ease) var(--osc-flyout-hide),
+                  visibility 0s linear calc(var(--osc-duration-fast) + var(--osc-flyout-hide));
+      visibility: hidden;
+      z-index: 1050;
+    }
+
+    // Parent panel.
+    .dashboard-sidebar .sidebar-submenu {
+      border-radius: $border-radius-lg;
+      // display:block wins over Bootstrap's `.collapse:not(.show){display:none}`.
+      display: block;
+      margin-block: 0;
+      max-height: calc(100vh - 1rem);
+      min-width: 12rem;
+      overflow-y: auto;
+      padding: .35rem;
+      padding-inline-start: .35rem;
+
+      // In the expanded menu the links are indented to the icon gutter to align under
+      // the parent label; in this detached flyout there is no parent row to align to, so
+      // drop back to a normal padding and the same for the section subhead.
+      a {
+        padding-inline-start: .55rem;
+      }
+
+      .submenu-divide {
+        padding-inline-start: .55rem;
+      }
+    }
+
+    // Leaf tooltip.
+    .dashboard-sidebar .sidebar-flyout {
+      border-radius: $border-radius;
+      display: block;
+      font-size: $font-size-sm;
+      font-weight: 500;
+      padding: .3rem .55rem;
+      white-space: nowrap;
+    }
+
+    .dashboard-sidebar .nav-item:hover > .sidebar-submenu,
+    .dashboard-sidebar .nav-item:focus-within > .sidebar-submenu,
+    .dashboard-sidebar .nav-item:hover > .sidebar-flyout,
+    .dashboard-sidebar .nav-item:focus-within > .sidebar-flyout {
+      opacity: 1;
+      transform: translateX(0);
+      // Opening is immediate; only the hide carries the intent delay.
+      transition-delay: 0s;
+      visibility: visible;
+    }
+
+    .rail-flyout-title {
+      border-block-end: 1px solid var(--osc-rule);
+      color: var(--osc-ink);
+      display: block;
+      font-weight: 600;
+      margin-block-end: .25rem;
+      padding: .25rem .5rem .4rem;
+    }
+  }
+}
+
+
+// The rail collapse control is meaningless in the mobile off-canvas panel — the
+// rail is a desktop affordance — so it only exists at desktop widths.
+@media (max-width: 1024px) {
+  .sidebar-collapse-toggle {
+    display: none;
   }
 }

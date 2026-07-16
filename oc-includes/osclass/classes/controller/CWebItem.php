@@ -100,6 +100,12 @@ class CWebItem extends BaseModel
                 if ($form == 0 || $form == $keepForm) {
                     Session::newInstance()->_dropKeepForm();
                 }
+                if ($form == 0) {
+                    // Fresh post form (no submitted data to restore): drop any temp
+                    // uploads a previous, abandoned posting left in the session so they
+                    // can't silently attach to this new listing.
+                    Session::newInstance()->_drop('ajax_files');
+                }
 
                 if (Session::newInstance()->_getForm('countryId') != '') {
                     $countryId = Session::newInstance()->_getForm('countryId');
@@ -184,6 +190,9 @@ class CWebItem extends BaseModel
                         }
                     }
                     Session::newInstance()->_clearVariables();
+                    // Uploads were consumed by the successful post; drop the session
+                    // mapping so it can't bleed into the next listing.
+                    Session::newInstance()->_drop('ajax_files');
                     if ($success == 1) {
                         osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                     } else if (osc_moderate_admin_post()) {
@@ -217,6 +226,11 @@ class CWebItem extends BaseModel
                     $keepForm = count(Session::newInstance()->_getKeepForm());
                     if ($form == 0 || $form == $keepForm) {
                         Session::newInstance()->_dropKeepForm();
+                    }
+                    if ($form == 0) {
+                        // Fresh edit form: drop temp uploads left by an earlier,
+                        // abandoned posting so they can't attach to this item.
+                        Session::newInstance()->_drop('ajax_files');
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -284,6 +298,9 @@ class CWebItem extends BaseModel
                             }
                         }
                         Session::newInstance()->_clearVariables();
+                        // Uploads were consumed by the successful edit; drop the session
+                        // mapping so it can't bleed into a later listing.
+                        Session::newInstance()->_drop('ajax_files');
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {
@@ -445,15 +462,11 @@ class CWebItem extends BaseModel
                 }
                 View::newInstance()->_exportVariableToView('item', $item);
 
-                require_once osc_lib_path() . 'osclass/user-agents.php';
-                foreach ($user_agents as $ua) {
-                    if (preg_match('|' . $ua . '|', Params::getServerParam('HTTP_USER_AGENT'))) {
-                        // mark item if it's not a bot
-                        $mItem = new ItemActions(false);
-                        $mItem->mark($id, $as);
-                        break;
-                    }
-                }
+                // Any gating (per-reporter dedup, rate-limit, captcha) belongs in a listener on
+                // the item_mark filter — mark() applies it. The old user-agent allowlist here was
+                // broken both ways: it silently dropped reports from browsers not on its stale
+                // list (e.g. Firefox) while letting bots that spoof a known UA straight through.
+                (new ItemActions(false))->mark($id, $as);
 
                 osc_add_flash_ok_message(_m("Thanks! That's very helpful"));
                 $this->redirectTo(osc_item_url());

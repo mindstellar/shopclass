@@ -56,10 +56,11 @@ class Enviro
 
     /**
      * Omit extra parenthesis in plural rule formulas.
+     * If null: formulas will be exported with and without extra parenthesis (if supported by the exporter).
      *
-     * @var bool
+     * @var bool|null
      */
-    public static $noExtraParenthesis;
+    public static $extraParenthesis;
 
     /**
      * Parse the command line options.
@@ -72,7 +73,7 @@ class Enviro
         self::$outputFilename = null;
         self::$languages = null;
         self::$reduce = null;
-        self::$noExtraParenthesis = false;
+        self::$extraParenthesis = true;
         $exporters = Exporter::getExporters();
         if (isset($argv) && is_array($argv)) {
             foreach ($argv as $argi => $arg) {
@@ -96,10 +97,13 @@ class Enviro
                             self::$reduce = false;
                             break;
                         case '--parenthesis=yes':
-                            self::$noExtraParenthesis = false;
+                            self::$extraParenthesis = true;
                             break;
                         case '--parenthesis=no':
-                            self::$noExtraParenthesis = true;
+                            self::$extraParenthesis = false;
+                            break;
+                        case '--parenthesis=both':
+                            self::$extraParenthesis = null;
                             break;
                         default:
                             if (preg_match('/^--output=.+$/', $argLC)) {
@@ -185,6 +189,8 @@ Where:
         plural rules formulas.
         Those extra parenthesis are needed to create a PHP-compatible
         formula.
+        Some exporter may also export formulas both with and without
+        The extra parenthesis: use --parenthesis=both in this case
         Defaults to 'yes'
     --output
         if specified, the output will be saved to <file name>. If not
@@ -265,7 +271,7 @@ try {
     if (Enviro::$reduce) {
         $languages = Enviro::reduce($languages);
     }
-    if (Enviro::$noExtraParenthesis) {
+    if (Enviro::$extraParenthesis === false) {
         $languages = array_map(
             function (Language $language) {
                 $language->formula = $language->buildFormula(true);
@@ -275,10 +281,18 @@ try {
             $languages
         );
     }
+    $exporterClass = Exporter::getExporterClassName(Enviro::$outputFormat);
+    $options = array(
+        'us-ascii' => Enviro::$outputUSAscii,
+        'both-formulas' => Enviro::$extraParenthesis === null,
+    );
+    if ($options['both-formulas'] && !call_user_func(array($exporterClass, 'supportsFormulasWithAndWithoutParenthesis'))) {
+        throw new Exception("The selected exporter doesn't support exporting data with and without extra paranthesis");
+    }
     if (isset(Enviro::$outputFilename)) {
-        echo call_user_func(array(Exporter::getExporterClassName(Enviro::$outputFormat), 'toFile'), $languages, Enviro::$outputFilename, array('us-ascii' => Enviro::$outputUSAscii));
+        echo call_user_func(array($exporterClass, 'toFile'), $languages, Enviro::$outputFilename, $options);
     } else {
-        echo call_user_func(array(Exporter::getExporterClassName(Enviro::$outputFormat), 'toString'), $languages, array('us-ascii' => Enviro::$outputUSAscii));
+        echo call_user_func(array($exporterClass, 'toString'), $languages, $options);
     }
 } catch (Exception $x) {
     fwrite(STDERR, $x->getMessage() . "\n");

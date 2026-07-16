@@ -1,78 +1,72 @@
-/* Colors */
-/* $STANDARD */
-$color-blue: $primary;
-$color-blue-hover: shade-color($blue, 10%);
-$color-blue-border: shade-color($blue, 20%);
-$color-orange: $orange;
-$color-orange-hover: shade-color($orange, 10%);
-$color-orange-border: shade-color($orange, 20%);
-$color-red: $danger;
-$color-red-hover: shade-color($red, 10%);
-$color-red-border: shade-color($red, 20%);
-$color-white: $white;
-$color-black: $black;
-$color-error-bg: $color-red;
-$color-error-border: $color-red-border;
-$color-error-text: $color-white;
-$color-submit-bg: $success;
-$color-submit-border: shade-color($success, 10%);
-$color-submit-text: $color-white;
-$color-green: $green;
-$color-green-dark: $green-900;
-$color-green-hover: $green-600;
-/* $ALERTS */
-$error-bg: #F2DEDE;
-$error-text: #B94A48;
-$error-border: #EED3D7;
+// The alias layer is gone.
+//
+// It used to restate the whole palette as Sass variables — $color-blue, $color-gray-soft,
+// $color-error-border, and the Bootstrap-3-era alert set ($info-bg: #D9EDF7, a blue) — which
+// components then consumed. Every one of those was a colour flattened at build time, so every
+// component that named one was a component that could never see a theme change (The Token
+// Indirection Rule). They now read var(--osc-*) from _brand.scss instead, and the aliases are
+// deleted rather than left lying around to be picked up again.
+//
+// Deleting them also removed the last references to BOOTSTRAP'S OWN palette. $color-red-border
+// was shade-color($red, 20%) — a shade of stock #dc3545, not of our $danger — so .btn-error
+// had been drawing its border in a red that appears nowhere in this design system. $color-blue
+// and its hover/border pair were shades of #0d6efd, sitting in the stylesheet in defiance of
+// The Blue Exile Rule and kept alive only by the fact that nothing used them.
+//
+// These are Sass variables, not CSS class names: nothing outside this stylesheet can reference
+// them, so removing them is not a compatibility event. The .btn-blue and .btn-submit CLASSES
+// are a different matter and stay exactly where they are.
 
-$warning-bg: #FCF8E3;
-$warning-border: #FBEED5;
-$warning-text: #C09853;
-
-
-$success-bg: #DFF0D8;
-$success-text: #468847;
-$success-border: #D6E9C6;
-
-$info-bg: #D9EDF7;
-$info-border: #BCE8F1;
-$info-text: #3A87AD;
-
-/* $GRAY */
+// What is left, and why: the legacy dark controls (.btn-black, .action-btn-black). Off-system —
+// there is no dark button in DESIGN.md — and they need a design decision before dark mode,
+// because "a fill the colour of ink" is precisely the thing that inverts wrongly when the bench
+// goes dark. Left on Sass deliberately: tokenising them would bake the wrong role in and make
+// it look done.
 $color-gray-hardblack: $gray-900;
-$color-gray-black: $gray-800;
-$color-gray-dim: $gray-700;
 $color-gray-ash: $gray-500;
-$color-gray-soft: $gray-200;
-$color-gray-light: $gray-100;
+$color-black: $black;
 
-/* $MARKET */
-$softgray-color: $color-gray-soft;
-$title-color: $color-gray-hardblack;
 $border-color: $color-gray-ash;
+// Status badges — three signals each: a TINT, a SHAPE, and the WORD (see DESIGN.md,
+// The Three Signal Rule). Colour was previously the only signal, and "active" was
+// $blue-500 — stock Bootstrap #0d6efd — which made the most-seen badge in the admin
+// the single clearest tell that this was an unstyled Bootstrap template.
+//
+// Colour here encodes SEVERITY, not identity: good / neutral / bad. The icon silhouette
+// and the word encode the specific state. Two reasons it is built this way rather than
+// as six distinct colours:
+//
+//   1. Six saturated colours in a dense listings view is noise, and it spends the colour
+//      budget that makes the bronze primary action findable (The Ten Percent Rule).
+//   2. A dark amber "inactive" ink would sit ΔE-OK 0.048 from the bronze. Chroma
+//      collapses at low lightness, so hue 95 and hue 75 converge once you darken them
+//      enough to be legible as text — "Inactive" and "Premium" would read as the same
+//      gold. The hue separation that works for FILLS does not survive as INK.
+//
+// So states within a severity share a colour and are told apart by silhouette. The
+// shapes are chosen to differ in outline, not just fill, so they survive greyscale and
+// deuteranopia: filled disc, hollow ring, barred ring, slashed ring, star, triangle.
+// Every ink/tint pair is measured against the 4.5:1 text bar in _brand.scss.
+//
+// The colours are named as custom properties, not as Sass variables. `var(--osc-success)`
+// is resolved by the browser at paint time and therefore follows `data-bs-theme`; the Sass
+// `$success` would have been flattened to today's light-mode hex at build time and could
+// never flip. See The Token Indirection Rule in DESIGN.md.
+$status-badge: (
+        //                                                                              silhouette
+        "active":   (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f287"), // ● disc
+        "premium":  (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f586"), // ★ star
+        "inactive": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
+        "expired":  (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
+        "blocked":  (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
+        "spam":     (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f33a"), // ⚠ triangle
 
-$callout-colors: (
-        "primary": $primary,
-        "secondary": $secondary,
-        "success": $success,
-        "ok": $success,
-        "info": $info,
-        "warning": $warning,
-        "danger": $danger,
-        "error" : $danger,
-        "light": $light,
-        "dark": $dark
-) !default;
-$table-status: (
-        "active":$blue-500,
-        "blocked":$red-500,
-        "expired": $gray-200,
-        "inactive":$gray-500,
-        "premium":$yellow-400,
-        "spam": $gray-800,
-);
-$plugin-status:(
-        "active":$success,
-        "disabled":$warning,
-        "uninstalled":$danger,
+        // The plugins screen. "disabled" is the plugins-domain word for "inactive" and shares
+        // its look deliberately — an installed-but-switched-off plugin and a switched-off
+        // listing are the same kind of state, and the admin should not invent a second visual
+        // language for it. The word in the badge is what differs, and the word comes from PHP.
+        //
+        // There is no "uninstalled" entry: it is not a tint, it is the *absence* of one, and
+        // it is built as an outline variant in table.scss.
+        "disabled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
 );

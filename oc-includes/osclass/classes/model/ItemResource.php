@@ -146,6 +146,44 @@ class ItemResource extends DAO
     }
 
     /**
+     * Prime the per-item resource cache for a set of items in a single query.
+     *
+     * Listing loops call getAllResourcesFromItem() once per item, which is an N+1.
+     * Calling this first (e.g. from Item::extendData) fetches every listed item's
+     * resources in one query and seeds the exact cache keys getAllResourcesFromItem
+     * reads, so those per-item calls become cache hits. Items with no resources are
+     * seeded with an empty array so they don't fall through to their own query.
+     *
+     * @param int[] $itemIds
+     *
+     * @return void
+     * @since  5.3.0
+     */
+    public function primeResourcesCache($itemIds)
+    {
+        $itemIds = array_values(array_unique(array_map('intval', (array)$itemIds)));
+        if (empty($itemIds)) {
+            return;
+        }
+
+        $this->dao->select();
+        $this->dao->from($this->getTableName());
+        $this->dao->whereIn('fk_i_item_id', $itemIds);
+        $result = $this->dao->get();
+        $rows   = ($result === false) ? array() : $result->result();
+
+        $byItem = array_fill_keys($itemIds, array());
+        foreach ($rows as $row) {
+            $byItem[(int)$row['fk_i_item_id']][] = $row;
+        }
+
+        foreach ($byItem as $id => $resources) {
+            $key = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $id);
+            osc_cache_set($key, $resources, OSC_CACHE_TTL);
+        }
+    }
+
+    /**
      * Get first resource belong to an item given it id
      *
      * @access public

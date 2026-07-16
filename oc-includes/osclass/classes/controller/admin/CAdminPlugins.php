@@ -408,18 +408,27 @@ class CAdminPlugins extends AdminSecBaseModel
                     } else {
                         $sAuthor = __('By') . ' ' . $pInfo['author'];
                     }
+                    // The state of a plugin used to reach the page as a row colour and nothing
+                    // else. It now travels as a word as well, rendered in the Status column as
+                    // a badge; the class on the <tr> only picks the badge's tint and glyph.
                     $plugin_status = 'uninstalled';
+                    $sStatusWord   = __('Not installed');
                     if ($installed) {
                         if ($enabled) {
                             $plugin_status = 'active';
+                            $sStatusWord   = __('Active');
                         } else {
                             $plugin_status = 'disabled';
+                            $sStatusWord   = __('Disabled');
                         }
                     }
                     $row['plugin_status']= $plugin_status;
                     $row[]   =
                         '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
                         . $pInfo['plugin_name'] . $sHelp . '<div>' . $sUpdate . '</div>';
+                    // Keyed, not appended: the template gives this one cell the .col-status
+                    // class, and it has to be able to tell which cell it is.
+                    $row['status'] = '<span class="osc-status">' . osc_esc_html($sStatusWord) . '</span>';
                     $row[]   = $pInfo['description'] . '<br />' . __('Version:') . $pInfo['version'] . ' | ' . $sAuthor
                         . $sSiteUrl;
                     $row[]   = ($sUpdate != '') ? $sUpdate : '';

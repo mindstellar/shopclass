@@ -58,7 +58,7 @@
 }
 
 #item-form h3.label {
-  color: $color-gray-dim;
+  color: var(--osc-ink-emphasis);
   font-size: 14px;
   font-weight: 500;
   margin: 0 0 10px;
@@ -83,8 +83,8 @@
 }
 
 #item-form #photos {
-  background-color: $color-gray-light;
-  border: solid 1px $color-gray-soft;
+  background-color: var(--osc-bench-warm);
+  border: solid 1px var(--osc-bench-sunk);
   padding: 10px;
   @include rounded-corners;
 }

@@ -81,6 +81,12 @@ class Object_Cache_memcache implements iObject_Cache
      */
     public function __construct()
     {
+        trigger_error(
+            'The "memcache" object cache driver is deprecated: the legacy PHP memcache extension is '
+            . 'unmaintained. Set OSC_CACHE to "memcached" (backed by the modern memcached extension) '
+            . 'or "apcu" instead.',
+            E_USER_DEPRECATED
+        );
         $this->site_prefix = '';
         $cache_server      = array();
         global $_cache_config;
@@ -279,7 +285,8 @@ padding: 1em;'><h2>Memcache stats</h2>";
     public static function is_supported()
     {
         if (!class_exists('Memcache')) {
-            error_log('The Memcached Extension must be loaded to use Memcached Cache.');
+            error_log('The legacy memcache PHP extension must be loaded to use the "memcache" cache driver. '
+                      . 'Consider switching OSC_CACHE to "memcached".');
 
             return false;
         }

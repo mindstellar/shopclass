@@ -467,6 +467,11 @@ function oc_install()
         );
     }
 
+    // Schema is already at target state; record every migration as applied without running it.
+    $runner = new mindstellar\migration\MigrationRunner($comm, ABS_PATH . 'oc-includes/osclass/installer/migrations');
+    $runner->ensureLedger();
+    $runner->baseline();
+
     $localeManager = OSCLocale::newInstance();
 
     $locales = osc_listLocales();
