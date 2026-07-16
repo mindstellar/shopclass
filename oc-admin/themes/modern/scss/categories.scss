@@ -1,22 +1,9 @@
-.category-details-form label {
-  display: block;
-}
-
-.category-details-form input,
-.category-details-form textarea {
-  margin-bottom: 20px;
-  width: 250px;
-}
-
-.ui-sortable {
-  margin: 0;
-  padding: 0;
-}
-
-.ui-sortable li ul {
-  margin-inline-start: 39px;
-  padding: 0;
-}
+// =============================================================================
+// Custom fields (fields/index.php, fields/iframe.php)
+// -----------------------------------------------------------------------------
+// This half of the file styles the custom-field list and its editor. It is
+// shared with the fields page; leave it intact.
+// =============================================================================
 
 .list-fields ul {
   @extend .list-unstyled;
@@ -167,127 +154,6 @@
   max-width: 46ch;
 }
 
-.list-categories .category_div {
-  background-color: var(--osc-bench-warm);
-  border: solid 1px var(--osc-bench-sunk);
-  padding: 5px;
-  @include rounded-corners;
-  position: relative;
-
-  &:hover {
-    background-color: var(--osc-warning-tint) !important;
-  }
-}
-
-.list-categories .category_row {
-  height: 26px;
-  padding-inline-start: 87px;
-}
-
-.ico-droppable {
-  border-inline-end: solid 1px var(--osc-bench-sunk);
-  cursor: move;
-  height: 36px;
-  inset-inline-start: 1px;
-  margin-inline-start: 2px;
-  position: absolute;
-  top: 1px;
-  width: 34px;
-}
-
-.ico-childrens {
-  border-inline-end: solid 1px var(--osc-bench-sunk);
-  height: 36px;
-  inset-inline-start: 36px;
-  margin-inline-start: 2px;
-  position: absolute;
-  top: 1px;
-  width: 38px;
-}
-
-.ui-sortable li ul li ul li ul .category_row {
-  padding-inline-start: 49px;
-}
-
-.ui-sortable li ul li ul li ul .subcategory .toggle,
-.subcategory .subcategory .subcategory .ico-childrens {
-  display: none;
-}
-
-/*
-.ui-sortable li ul .ico-childrens{
-    display: none
-}
-*/
-.ico-childrens .toggle {
-  display: block;
-  float: inline-start;
-  height: 10px;
-  margin-inline-start: 7px;
-  margin-top: 7px;
-  padding: 5px;
-  text-indent: -99999px;
-  width: 10px;
-}
-
-/* categories */
-.list-categories a {
-  cursor: pointer;
-}
-
-.list-categories .name-cat {
-  color: var(--osc-ink-emphasis);
-  font-size: 15px;
-  line-height: 26px;
-}
-
-ul.subcategories {
-  margin-inline-start: 20px;
-}
-
-.list-categories {
-  > ul {
-    padding-inline-start:0;
-  }
-  li {
-    margin-top: 10px;
-  }
-}
-
-.iframe-category {
-  @extend .card;
-
-  h3 {
-    @extend .card-header;
-    font-size: $h5-font-size;
-  }
-
-  .grid-system {
-    @extend .card-body;
-  }
-}
-
-.iframe-category .input-line {
-  float: inline-start;
-}
-
-.list-categories .form-actions {
-  margin-top: 0;
-}
-
-.toggle {
-  cursor: pointer;
-}
-
-/*
-.subcategory .toggle {
-    display: none;
-}*/
-/* /categories */
-.categories-tree {
-  clear: both;
-}
-
 #advanced_fields_iframe {
   border-bottom: solid 1px var(--osc-bench-sunk);
   font-size: 16px;
@@ -307,47 +173,786 @@ ul.subcategories {
   content: "\f229";
   font-family: "bootstrap-icons";
 }
-.sortable {
-  .category-row {
-    display: flex;
-    // Flat at rest — depth is the surface tone and hairline, never a shadow (the
-    // markup's old .shadow-sm broke that rule).
-    background-color: var(--osc-bench-warm);
-    border: 1px solid var(--osc-rule);
-    border-radius: $border-radius;
-    transition: border-color var(--osc-duration-fast) var(--osc-ease),
-                background-color var(--osc-duration-fast) var(--osc-ease);
 
-    &:hover {
-      background-color: var(--osc-bench);
-      border-color: var(--osc-rule-strong);
-    }
+
+// =============================================================================
+// Categories manager (categories/index.php, categories/iframe.php)
+// -----------------------------------------------------------------------------
+// A category tree the owner reorders by drag, edits in a slide-over drawer,
+// enables/disables (cascading), and deletes (cascading to listings — the one
+// dangerous act). Workshop Bench: white surface, bronze only for the primary
+// action and current selection, flat at rest, hierarchy carried by indentation
+// and hairlines. Driven by categories.js (vanilla; no jQuery).
+// =============================================================================
+
+.categories-app {
+  --cat-indent: 1.75rem;
+  max-width: 62rem;
+}
+
+// ---- Toolbar: filter + actions ---------------------------------------------
+.cat-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+
+.cat-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+// A quiet text button for the low-stakes bulk toggles (expand / collapse all).
+.cat-tool-btn {
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  font-size: .8125rem;
+  font-weight: 500;
+  padding: .4rem .5rem;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
   }
-  .disabled {
-    .category-row {
-      // --osc-bench-sunk is the system's disabled/recessed surface token (and flips in dark),
-      // so a disabled category row now matches every other disabled surface in the admin.
-      background-color: var(--osc-bench-sunk);
-    }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
   }
-  .drag-ghost {
-    .category-row {
-      background-color: var(--osc-bronze-tint);
-    }
-  }
+}
+
+// ---- The tree ---------------------------------------------------------------
+.cat-tree,
+.cat-children {
   list-style: none;
-  li {
-    padding-bottom:.5rem;
-    ul {
-      padding-inline-start:0;
-      margin-inline-start:2rem;
-    }
+  margin: 0;
+  padding: 0;
+}
+
+// Children indent one step and hang a hairline connector so depth reads at a
+// glance without boxing every level.
+.cat-children {
+  margin-inline-start: calc(var(--cat-indent) / 2);
+  padding-inline-start: calc(var(--cat-indent) / 2);
+  position: relative;
+
+  &::before {
+    background-color: var(--osc-rule);
+    content: "";
+    inset-block: 0 1.25rem;
+    inset-inline-start: 0;
+    position: absolute;
+    width: 1px;
   }
-  .collapsed span:before {
-    transform: rotate(-90deg);
+}
+
+.cat-node {
+  padding-top: .4rem;
+}
+
+// A collapsed branch hides its children; the empty leaf list stays in the DOM
+// as a drop target so a category can be dragged in to become a subcategory.
+.cat-node.is-collapsed > .cat-children {
+  display: none;
+}
+
+.cat-row {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  gap: .3rem;
+  min-height: 3rem;
+  padding: .35rem .6rem;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease),
+              background-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    border-color: var(--osc-rule-strong);
   }
-  .sortable-chosen {
-        border: 1px dashed;
+}
+
+// Selected — the row whose editor is open in the drawer.
+.cat-node.is-editing > .cat-row {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+}
+
+// Disabled branch: recede the whole row to the sunk surface and mute the name,
+// so "off" reads instantly even before the Disabled pill is parsed.
+.cat-node.is-disabled > .cat-row {
+  background-color: var(--osc-bench-sunk);
+
+  .cat-name {
+    color: var(--osc-ink-muted);
+  }
+}
+
+// The row being dragged.
+.cat-node.drag-ghost > .cat-row {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+  border-style: dashed;
+}
+
+.cat-node.sortable-chosen > .cat-row {
+  border-color: var(--osc-bronze);
+}
+
+// Drag handle: quiet at rest, bronze on row hover — a grip you reach for, not a
+// permanent fixture. Kept in the tab order out (drag is pointer-only; keyboard
+// reordering is not wired), but visible so the affordance is discoverable.
+.cat-handle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--osc-rule-strong);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  justify-content: center;
+  padding: .25rem;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.cat-row:hover .cat-handle {
+  color: var(--osc-ink-muted);
+}
+
+// Disclosure triangle — only present on branches with children.
+.cat-disclosure {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.6rem;
+  justify-content: center;
+  width: 1.6rem;
+
+  > i {
+    transition: transform var(--osc-duration-fast) var(--osc-ease);
   }
 
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -1px;
+  }
+}
+
+.cat-node.is-collapsed > .cat-row .cat-disclosure > i {
+  transform: rotate(-90deg);
+}
+
+// A leaf keeps the disclosure's width so every name column lines up.
+.cat-disclosure-spacer {
+  flex: 0 0 auto;
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+.cat-main {
+  align-items: baseline;
+  column-gap: .6rem;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  row-gap: 0;
+}
+
+.cat-name {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Quiet inline metadata: subcategory + listing counts. Tabular so the numbers
+// don't jitter as the tree filters.
+.cat-meta {
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  gap: .75rem;
+}
+
+.cat-meta-item {
+  align-items: center;
+  display: inline-flex;
+  gap: .25rem;
+  white-space: nowrap;
+
+  > i {
+    font-size: .875rem;
+  }
+}
+
+// ---- Status pill (text + shape + tint; never colour alone) ------------------
+.cat-status {
+  align-items: center;
+  border-radius: $border-radius-pill;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  font-weight: 500;
+  gap: .3rem;
+  letter-spacing: .01em;
+  padding: .1rem .55rem;
+
+  &::before {
+    block-size: .5rem;
+    border-radius: 50%;
+    content: "";
+    inline-size: .5rem;
+  }
+}
+
+.cat-status-on {
+  background-color: var(--osc-success-tint);
+  color: var(--osc-success);
+
+  &::before {
+    background-color: var(--osc-success);
+  }
+}
+
+.cat-status-off {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-muted);
+
+  &::before {
+    background-color: var(--osc-rule-strong);
+  }
+}
+
+// ---- Row actions ------------------------------------------------------------
+.cat-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: .1rem;
+}
+
+.cat-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease),
+              color var(--osc-duration-fast) var(--osc-ease);
+  width: 2rem;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+// Delete turns danger-red only when aimed at, so a column of them doesn't spend
+// the danger colour on every row.
+.cat-action-danger:hover,
+.cat-action-danger:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+// A busy row (enable/disable in flight) dims and blocks further clicks.
+.cat-row.is-busy {
+  opacity: .55;
+  pointer-events: none;
+}
+
+// ---- Empty state ------------------------------------------------------------
+.cat-empty {
+  align-items: center;
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: $border-radius-lg;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+
+  > i {
+    color: var(--osc-ink-muted);
+    font-size: 1.9rem;
+    margin-bottom: .35rem;
+  }
+}
+
+.cat-empty-title {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cat-empty-hint {
+  margin: 0 0 .75rem;
+  max-width: 44ch;
+}
+
+// ---- Slide-over drawer (edit) ----------------------------------------------
+// A drawer is an elevated overlay, so it earns a shadow (one of the system's
+// two). It slides from the inline-end edge and traps focus while open.
+.cat-drawer-backdrop {
+  background-color: rgba(0, 0, 0, .32);
+  inset: 0;
+  opacity: 0;
+  position: fixed;
+  transition: opacity var(--osc-duration-base, 200ms) var(--osc-ease);
+  visibility: hidden;
+  z-index: $zindex-modal-backdrop;
+}
+
+.cat-drawer {
+  background-color: var(--osc-bench);
+  border-inline-start: 1px solid var(--osc-rule);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, .16);
+  display: flex;
+  flex-direction: column;
+  inline-size: min(30rem, 100%);
+  inset-block: 0;
+  inset-inline-end: 0;
+  position: fixed;
+  transform: translateX(100%);
+  transition: transform var(--osc-duration-base, 200ms) var(--osc-ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  z-index: $zindex-modal;
+
+  [dir="rtl"] & {
+    transform: translateX(-100%);
+  }
+}
+
+.categories-app.drawer-open {
+  .cat-drawer-backdrop {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .cat-drawer {
+    transform: translateX(0);
+  }
+}
+
+.cat-drawer-head {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--osc-rule);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+}
+
+.cat-drawer-eyebrow {
+  color: var(--osc-ink-muted);
+  display: block;
+  font-size: .8125rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.cat-drawer-title {
+  color: var(--osc-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: .1rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.cat-drawer-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.cat-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+// A quiet loading placeholder while the editor HTML is fetched.
+.cat-drawer-loading {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: flex;
+  gap: .6rem;
+  justify-content: center;
+  padding: 3rem 1rem;
+
+  > i {
+    animation: cat-spin 700ms linear infinite;
+    font-size: 1.25rem;
+  }
+}
+
+@keyframes cat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---- Edit form inside the drawer -------------------------------------------
+// The markup comes from CategoryForm (field names are a hard contract); these
+// rules restyle it without touching those names.
+.iframe-category {
+  h3 {
+    display: none;   // the drawer header already names the category
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  fieldset {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .grid-system {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .grid-row {
+    float: none;
+    margin: 0;
+    width: auto;
+  }
+
+  label {
+    color: var(--osc-ink);
+    display: block;
+    font-size: .8125rem;
+    font-weight: 500;
+    letter-spacing: .01em;
+    margin-bottom: .3rem;
+  }
+
+  input[type="text"],
+  textarea {
+    background-color: var(--osc-bench);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    font-family: inherit;
+    font-size: 1rem;
+    padding: .5rem .7rem;
+    width: 100%;
+
+    &:focus-visible {
+      border-color: var(--osc-bronze);
+      box-shadow: 0 0 0 3px var(--osc-bronze-tint);
+      outline: none;
+    }
+  }
+
+  textarea {
+    min-height: 7rem;
+    resize: vertical;
+  }
+
+  .help-inline {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    margin: .35rem 0 0;
+  }
+}
+
+// The expiration + price block reads as one labelled group.
+.cat-edit-group {
+  background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  padding: 1rem;
+}
+
+.cat-edit-group .input.micro {
+  input[type="text"] {
+    max-width: 6rem;
+  }
+
+  // The price / apply-to-children checkboxes and their labels sit inline.
+  label {
+    align-items: center;
+    color: var(--osc-ink);
+    cursor: pointer;
+    display: flex;
+    font-size: 1rem;
+    font-weight: 400;
+    gap: .5rem;
+    margin: .9rem 0 0;
+
+    span {
+      color: var(--osc-ink-muted);
+      font-size: .875rem;
+    }
+
+    input[type="checkbox"] {
+      accent-color: var(--osc-bronze);
+      block-size: 1.05rem;
+      flex: 0 0 auto;
+      inline-size: 1.05rem;
+    }
+  }
+}
+
+// ---- Locale tabs (segmented control; vanilla, replaces jQuery-UI tabs) ------
+.iframe-category .ui-osc-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  > ul {
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .15rem;
+    list-style: none;
+    margin: 0;
+    padding: .2rem;
+
+    li {
+      margin: 0;
+    }
+
+    a {
+      border-radius: $border-radius-sm;
+      color: var(--osc-ink-muted);
+      cursor: pointer;
+      display: block;
+      font-size: .8125rem;
+      font-weight: 500;
+      padding: .3rem .7rem;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--osc-ink);
+      }
+    }
+
+    // Active locale tab (class toggled by categories.js).
+    li.is-active a {
+      background-color: var(--osc-bench);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+      color: var(--osc-ink);
+    }
+
+    // Neutralise jQuery-UI's blue theming on the server-marked active tab in
+    // case it paints before categories.js strips the ui-* classes.
+    li.ui-state-active,
+    li.ui-tabs-active {
+      background: transparent;
+      border: 0;
+    }
+  }
+}
+
+// Panels: only the active one shows (JS toggles [hidden]).
+.category-details-form[hidden] {
+  display: none;
+}
+
+.category-details-form .form-controls {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ---- Drawer footer actions --------------------------------------------------
+.iframe-category .form-actions,
+.iframe-category .form-vertical {
+  margin: 0;
+}
+
+.iframe-category .form-actions {
+  border-top: 1px solid var(--osc-rule);
+  display: flex;
+  gap: .6rem;
+  margin-top: .25rem;
+  padding-top: 1.25rem;
+}
+
+// ---- Native delete confirm dialog ------------------------------------------
+// Top-layer <dialog>: no z-index needed. Names the consequence in plain words
+// (Safety is the primary feature).
+.cat-dialog {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .24);
+  color: var(--osc-ink);
+  inline-size: min(28rem, calc(100vw - 2rem));
+  padding: 0;
+
+  &::backdrop {
+    background-color: rgba(0, 0, 0, .38);
+  }
+}
+
+.cat-dialog-body {
+  padding: 1.35rem 1.35rem 0;
+}
+
+.cat-dialog-title {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  gap: .5rem;
+  margin: 0 0 .6rem;
+
+  > i {
+    color: var(--osc-danger);
+  }
+}
+
+.cat-dialog-text {
+  color: var(--osc-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+
+  strong {
+    color: var(--osc-ink);
+    font-weight: 600;
+  }
+}
+
+.cat-dialog-actions {
+  display: flex;
+  gap: .6rem;
+  justify-content: flex-end;
+  padding: 1.35rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-drawer,
+  .cat-drawer-backdrop,
+  .cat-disclosure > i {
+    transition: none;
+  }
+
+  .cat-drawer-loading > i {
+    animation: none;
+  }
+}
+
+// ---- Compatibility stubs ----------------------------------------------------
+// The rebuilt tree no longer emits these, but they are part of the admin CSS
+// surface third-party category markup may still use. Kept (restyled to no-ops)
+// rather than deleted, so nothing that emits them renders unstyled.
+.toggle {
+  cursor: pointer;
+}
+
+.subcategory {
+  list-style: none;
+}
+
+// ---- Responsive -------------------------------------------------------------
+@media (max-width: 34rem) {
+  .categories-app {
+    --cat-indent: 1.1rem;
+  }
+
+  // On narrow screens the drawer is full width.
+  .cat-drawer {
+    inline-size: 100%;
+  }
+
+  // The row becomes two lines: [handle · disclosure · name · actions] on top,
+  // the counts and status pill beneath, so nothing crowds at phone widths.
+  .cat-row {
+    flex-wrap: wrap;
+    row-gap: .3rem;
+  }
+
+  // cat-main grows to fill line 1 (with the actions), which pushes the status
+  // pill onto line 2 — where it keeps its intrinsic pill width, not a full bar.
+  .cat-main {
+    flex: 1 1 45%;
+    order: 2;
+  }
+
+  .cat-actions {
+    order: 3;
+  }
+
+  // Counts wrap under the name rather than crowding the row.
+  .cat-meta {
+    flex-basis: 100%;
+  }
+
+  .cat-status {
+    margin-inline-start: 2.1rem;
+    order: 4;
+  }
 }

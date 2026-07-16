@@ -29,18 +29,19 @@ if (!defined('OC_ADMIN')) {
  *
  */
 
-//osc_enqueue_script('jquery-nested');
 osc_enqueue_script('sortablejs');
-//osc_enqueue_script('tabber');
+osc_enqueue_script('admin-categories');
 
 $categories = __get('categories');
 
 function addHelp()
 {
     echo '<p>'
-         . __('Add, edit or delete the categories or subcategories in which users can post listings. '
-              . 'Reorder sections by dragging and dropping, or nest a subcategory in an expanded category. '
-              . '<strong>Be careful</strong>: If you delete a category, all listings associated will also be deleted!')
+         . __('Add, edit or delete the categories in which users post listings. Drag a row by its handle to '
+              . 'reorder it, or drop it onto another category to nest it as a subcategory.')
+         . '</p>';
+    echo '<p>'
+         . __('Deleting a category also deletes every listing filed under it and its subcategories.')
          . '</p>';
 }
 
@@ -51,10 +52,8 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Categories'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"></a>
-        <a href="<?php echo osc_admin_base_url(true); ?>?page=categories&amp;action=add_post_default&<?php echo osc_csrf_token_url(); ?>"
-           class="text-success ms-1 float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add'); ?>"><i class="bi
-           bi-plus-circle-fill"></i></a>
+        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box"
+           data-bs-toggle="collapse"></a>
     </h1>
     <?php
 }
@@ -75,330 +74,184 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
-//customize Head
-function customHead()
-{
-    ?>
-    <script type="text/javascript">
-        function show_iframe(class_name, id) {
-            var url;
-            if ($('.content_list_' + id + ' .iframe-category').length === 0) {
-                $('.iframe-category').remove();
-                url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=category_edit_iframe&id=' + id;
-                $.ajax({
-                    url: url,
-                    success: function (res) {
-                        let element = $('div.' + class_name);
-                        element.html(res);
-                        element.fadeIn("fast");
-                    }
-                });
-            } else {
-                $('.iframe-category').remove();
-            }
-            return false;
-        }
-
-        function enable_cat(id) {
-            let url;
-            let enabled;
-            let jMessage = $(".jsMessage");
-            let jMessageP = $(".jsMessage p");
-            let category = 'div[category_id=' + id + ']';
-
-            jMessage.fadeIn("fast");
-            jMessageP.attr('class', '');
-            jMessageP.html('<img height="16" width="16" src="<?php echo osc_current_admin_theme_url('images/loading.gif'); ?>"> <?php echo
-            osc_esc_js(__('This action could take a while.')); ?>');
-
-            if ($(category).hasClass('disabled')) {
-                enabled = 1;
-            } else {
-                enabled = 0;
-            }
-
-            url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=enable_category&<?php echo osc_csrf_token_url(); ?>&id=' + id + '&enabled=' + enabled;
-            $.ajax({
-                url: url,
-                context: document.body,
-                success: function (res) {
-                    const ret = eval("(" + res + ")");
-                    let message = "";
-
-                    if (ret.error) {
-                        message += ret.error;
-                        jMessageP.attr('class', 'error');
-                        jMessageP.html(message);
-                    }
-                    if (ret.ok) {
-                        if (enabled === 0) {
-                            $(category).addClass('disabled')
-                                .removeClass('enabled')
-                                .prop('title', '<?php _e('Enable'); ?>');
-                            $(category + ' a i.bi-slash-circle-fill')
-                                .removeClass('bi-slash-circle-fill')
-                                .addClass('bi-play-circle-fill');
-
-                            for (var i = 0; i < ret.affectedIds.length; i++) {
-                                id = ret.affectedIds[i].id;
-                                $('div[category_id=' + id + ']').addClass('disabled')
-                                    .removeClass('enabled')
-                                    .prop('title', '<?php _e('Enable'); ?>');
-                                $('div[category_id=' + id + '] a i.bi-slash-circle-fill')
-                                    .removeClass('bi-slash-circle-fill')
-                                    .addClass('bi-play-circle-fill');
-                            }
-                        } else {
-                            $(category)
-                                .removeClass('disabled')
-                                .addClass('enabled')
-                                .prop('title', '<?php _e('Disable'); ?>');
-                            $(category + 'a i.bi-play-circle-fill')
-                                .addClass('bi-slash-circle-fill')
-                                .removeClass('bi bi-play-circle-fill');
-
-                            for (var i = 0; i < ret.affectedIds.length; i++) {
-                                id = ret.affectedIds[i].id;
-                                $('div[category_id=' + id + ']')
-                                    .removeClass('disabled')
-                                    .addClass('enabled')
-                                    .prop('title', '<?php _e('Disable'); ?>');
-                                $('div[category_id=' + id + '] a i.bi-play-circle-fill')
-                                    .addClass('bi-slash-circle-fill')
-                                    .removeClass('bi bi-play-circle-fill');
-                            }
-                        }
-
-                        message += ret.ok;
-                        jMessageP.attr('class', 'ok');
-                    }
-
-                    jMessage.show();
-                    jMessageP.html(message);
-                },
-                error: function () {
-                    jMessage.show();
-                    jMessageP.attr('class', '');
-                    jMessageP.html("<?php echo osc_esc_js(__('Ajax error, try again.')); ?>");
-                }
-            });
-        }
-    </script>
-    <?php
-}
-
-
-osc_add_hook('admin_header', 'customHead', 10);
-
 /**
- * @param $category
+ * One tree node: the row (handle, disclosure, name, counts, status, actions)
+ * plus the always-present children list (empty for leaves, so a category can be
+ * dropped in to nest it). All behaviour lives in categories.js; this only emits
+ * markup and the data-* the script reads.
+ *
+ * @param array $category
  */
 function drawCategory($category)
 {
-    if (count($category['categories']) > 0) {
-        $has_subcategories = true;
-    } else {
-        $has_subcategories = false;
-    } ?>
-    <li data-category-Id="<?php echo $category['pk_i_id']; ?>" id="list_<?php echo $category['pk_i_id']; ?>"
-        class="category_li <?php echo($category['b_enabled'] ? 'enabled' : 'disabled'); ?> ">
-        <div class="<?php echo($category['b_enabled'] ? 'enabled' : 'disabled'); ?>" category_id="<?php echo $category['pk_i_id'];
-        ?>">
-            <div class="category-row">
-                <div class="px-2 border-end handle"><i class="align-middle bi bi-arrows-move" role="button"></i></div>
-                <div class="px-2 border-end<?php echo $has_subcategories ? ' collapsed' : ''; ?>" data-bs-toggle="collapse" data-bs-target="
-                .subcategories-<?php echo
-                $category['pk_i_id']; ?>">
-                    <span class="align-middle toggle bi bi-chevron-down"></span>
-                </div>
-                <div class="px-2 name-cat" id="<?php echo 'quick_edit_' . $category['pk_i_id']; ?>">
-                    <span class="align-middle name"><?php echo osc_esc_html($category['s_name']); ?></span>
-                </div>
-                <div class="px-2 ms-auto btn-group">
-                    <a class="btn btn-sm" onclick="show_iframe('content_list_<?php echo $category['pk_i_id']; ?>','<?php echo
-                    $category['pk_i_id']; ?>');" title="<?php _e('Edit'); ?>"><i class="bi bi-pencil-fill"></i></a>
-                    <a class="btn btn-sm enable"
-                       onclick="enable_cat('<?php echo $category['pk_i_id']; ?>')" <?php
-                        if ($category['b_enabled']) {
-                            echo 'title="' . __('Disable') . '"><i class="bi bi-slash-circle-fill"></i></a>';
-                        } else {
-                            echo 'title="' . __('Enable') . '"><i class="bi bi-play-circle-fill"></i></a>';
-                        } ?> <a class="btn btn-sm" onclick="delete_category(<?php echo $category['pk_i_id']; ?>)"
-                            title="<?php _e('Delete'); ?>">
-                        <i class="text-danger bi bi-x-circle-fill"></i>
-                    </a>
-                </div>
+    $children  = isset($category['categories']) ? $category['categories'] : array();
+    $num_subs  = count($children);
+    $num_items = (int)($category['i_num_items'] ?? 0);
+    $enabled   = (bool)$category['b_enabled'];
+    $id        = (int)$category['pk_i_id'];
+    $name      = $category['s_name'];
+
+    $node_class = 'cat-node';
+    if (!$enabled) {
+        $node_class .= ' is-disabled';
+    }
+    if ($num_subs > 0) {
+        // Start collapsed so a large tree opens tidy; the disclosure expands it.
+        $node_class .= ' is-collapsed';
+    }
+    ?>
+    <li class="<?php echo $node_class; ?>" id="cat-<?php echo $id; ?>" data-cat-id="<?php echo $id; ?>"
+        data-enabled="<?php echo $enabled ? '1' : '0'; ?>" data-num-items="<?php echo $num_items; ?>"
+        data-name="<?php echo osc_esc_html($name); ?>">
+        <div class="cat-row">
+            <button type="button" class="cat-handle" tabindex="-1" aria-hidden="true"
+                    title="<?php echo osc_esc_html(__('Drag to reorder')); ?>">
+                <i class="bi bi-grip-vertical"></i>
+            </button>
+            <?php if ($num_subs > 0) { ?>
+                <button type="button" class="cat-disclosure" aria-expanded="false"
+                        aria-label="<?php echo osc_esc_html(__('Show subcategories')); ?>">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            <?php } else { ?>
+                <span class="cat-disclosure-spacer" aria-hidden="true"></span>
+            <?php } ?>
+            <div class="cat-main">
+                <span class="cat-name"><?php echo osc_esc_html($name); ?></span>
+                <span class="cat-meta">
+                    <?php if ($num_subs > 0) { ?>
+                        <span class="cat-meta-item" title="<?php echo osc_esc_html(__('Subcategories')); ?>">
+                            <i class="bi bi-diagram-3"></i><?php echo osc_esc_html(sprintf(
+                                _n('%d subcategory', '%d subcategories', $num_subs), $num_subs)); ?>
+                        </span>
+                    <?php } ?>
+                    <?php if ($num_items > 0) { ?>
+                        <span class="cat-meta-item" title="<?php echo osc_esc_html(__('Listings in this category')); ?>">
+                            <i class="bi bi-card-list"></i><?php echo osc_esc_html(sprintf(
+                                _n('%d listing', '%d listings', $num_items), $num_items)); ?>
+                        </span>
+                    <?php } ?>
+                </span>
             </div>
-            <div class="edit content_list_<?php echo $category['pk_i_id']; ?>"></div>
+            <span class="cat-status <?php echo $enabled ? 'cat-status-on' : 'cat-status-off'; ?>">
+                <?php echo $enabled ? osc_esc_html(__('Enabled')) : osc_esc_html(__('Disabled')); ?>
+            </span>
+            <div class="cat-actions">
+                <button type="button" class="cat-action" data-cat-act="edit"
+                        aria-label="<?php echo osc_esc_html(sprintf(__('Edit %s'), $name)); ?>"
+                        title="<?php echo osc_esc_html(__('Edit')); ?>">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="cat-action" data-cat-act="toggle"
+                        aria-label="<?php echo osc_esc_html(sprintf(
+                            $enabled ? __('Disable %s') : __('Enable %s'), $name)); ?>"
+                        title="<?php echo $enabled ? osc_esc_html(__('Disable')) : osc_esc_html(__('Enable')); ?>">
+                    <i class="bi <?php echo $enabled ? 'bi-pause-circle' : 'bi-play-circle'; ?>"></i>
+                </button>
+                <button type="button" class="cat-action cat-action-danger" data-cat-act="delete"
+                        aria-label="<?php echo osc_esc_html(sprintf(__('Delete %s'), $name)); ?>"
+                        title="<?php echo osc_esc_html(__('Delete')); ?>">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </div>
         </div>
-
-        <?php if ($has_subcategories === true) { ?>
-            <ul class="sortable subcategory subcategories-<?php echo $category['pk_i_id']; ?> collapse">
-                <?php foreach ($category['categories'] as $subcategory) {
-                    drawCategory($subcategory);
-                } ?>
-            </ul>
-        <?php } else { ?>
-            <ul class="sortable subcategory subcategories-<?php echo $category['pk_i_id']; ?> collapse show"></ul>
-        <?php } ?>
-
+        <ul class="cat-children">
+            <?php foreach ($children as $subcategory) {
+                drawCategory($subcategory);
+            } ?>
+        </ul>
     </li>
     <?php
-    unset($has_subcategories);
 } //End drawCategory
+
+$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <!-- right container -->
-    <div class="right">
-        <!-- categories form -->
-        <div class="categories">
-            <div class="callout-info callout-block">
-                <div class="info"><?php _e('Drag&drop the categories to reorder them the way you like. Click on edit link to edit the 
-            category'); ?></div>
-                <div><?php echo __('Note: You must expand the category in order to make it a subcategory.'); ?></div>
-            </div>
-            <div class="list-categories">
-                <ul class="sortable">
-                    <?php foreach ($categories as $category) {
-                        if (count($category['categories']) > 0) {
-                            $has_subcategories = true;
-                        } else {
-                            $has_subcategories = false;
-                        }
-                        drawCategory($category);
-                    } ?>
-                </ul>
-            </div>
-            <div class="clear"></div>
+    <div class="categories-app"
+         data-edit-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+             . '?page=ajax&action=category_edit_iframe'); ?>"
+         data-enable-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+             . '?page=ajax&action=enable_category&' . osc_csrf_token_url()); ?>"
+         data-delete-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+             . '?page=ajax&action=delete_category&' . osc_csrf_token_url()); ?>"
+         data-order-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+             . '?page=ajax&action=categories_order&' . osc_csrf_token_url()); ?>"
+         data-i18n='<?php echo osc_esc_html(json_encode(array(
+             'deleteTitle'   => __('Delete category'),
+             'deleteOne'     => __('Delete <strong>%s</strong>? This permanently removes the category and every listing filed under it. This cannot be undone.'),
+             'deleteSubs'    => __('Delete <strong>%1$s</strong>? This permanently removes it, its %2$d subcategories, and all %3$d listings filed under them. This cannot be undone.'),
+             'deleteNoItems' => __('Delete <strong>%s</strong>? This permanently removes the category. This cannot be undone.'),
+             'confirm'       => __('Delete category'),
+             'cancel'        => __('Cancel'),
+             'working'       => __('This can take a moment on a large category.'),
+             'ajaxError'     => __('Something went wrong. Please try again.'),
+             'enabled'       => __('Enabled'),
+             'disabled'      => __('Disabled'),
+             'enable'        => __('Enable'),
+             'disable'       => __('Disable'),
+             'editPrefix'    => __('Edit category'),
+         ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
+
+        <div class="cat-toolbar">
+            <button type="button" class="cat-tool-btn" data-cat-act="expand-all"><?php _e('Expand all'); ?></button>
+            <button type="button" class="cat-tool-btn" data-cat-act="collapse-all"><?php _e('Collapse all'); ?></button>
+            <div class="cat-toolbar-spacer"></div>
+            <a class="btn btn-primary btn-sm" href="<?php echo $add_url; ?>">
+                <i class="bi bi-plus-lg"></i> <?php _e('Add category'); ?>
+            </a>
         </div>
-        <!-- /categories form -->
+
+        <?php if (empty($categories)) { ?>
+            <div class="cat-empty">
+                <i class="bi bi-diagram-3"></i>
+                <p class="cat-empty-title"><?php _e('No categories yet'); ?></p>
+                <p class="cat-empty-hint">
+                    <?php _e('Categories are the sections people browse and file listings under. Add your first one to get started.'); ?>
+                </p>
+                <a class="btn btn-primary btn-sm" href="<?php echo $add_url; ?>">
+                    <i class="bi bi-plus-lg"></i> <?php _e('Add category'); ?>
+                </a>
+            </div>
+        <?php } else { ?>
+            <ul class="cat-tree">
+                <?php foreach ($categories as $category) {
+                    drawCategory($category);
+                } ?>
+            </ul>
+        <?php } ?>
+
+        <!-- Edit drawer -->
+        <div class="cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
+        <aside class="cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
+               aria-labelledby="catDrawerTitle" hidden>
+            <header class="cat-drawer-head">
+                <div>
+                    <span class="cat-drawer-eyebrow"><?php _e('Edit category'); ?></span>
+                    <h2 class="cat-drawer-title" id="catDrawerTitle"></h2>
+                </div>
+                <button type="button" class="cat-drawer-close" id="catDrawerClose"
+                        aria-label="<?php echo osc_esc_html(__('Close')); ?>">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </header>
+            <div class="cat-drawer-body" id="catDrawerBody"></div>
+        </aside>
+
+        <!-- Delete confirmation -->
+        <dialog class="cat-dialog" id="catDeleteDialog">
+            <div class="cat-dialog-body">
+                <p class="cat-dialog-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span id="catDeleteTitle"><?php _e('Delete category'); ?></span>
+                </p>
+                <p class="cat-dialog-text" id="catDeleteText"></p>
+            </div>
+            <div class="cat-dialog-actions">
+                <button type="button" class="btn btn-dim btn-sm" id="catDeleteCancel"><?php _e('Cancel'); ?></button>
+                <button type="button" class="btn btn-danger btn-sm" id="catDeleteConfirm"><?php _e('Delete category'); ?></button>
+            </div>
+        </dialog>
     </div>
-    <!-- right container -->
-    <form id="deleteModal" method="get" action="<?php echo osc_admin_base_url(true); ?>" class="modal fade static">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <?php echo __('Delete category'); ?>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <?php _e('<strong>WARNING</strong>: This will also delete the listings under that category.'
-                             . ' This action cannot be undone. Are you sure you want to continue?');
-?>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                    <button id="deleteSubmit" data-bs-dismiss="modal" class="btn btn-sm btn-red" type="submit">
-                        <?php echo __('Delete'); ?>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
-    <script>
-        function delete_category(id) {
-            var deleteModal = document.getElementById('deleteModal');
-            deleteModal.setAttribute('data-category-id', id);
-            (new bootstrap.Modal(document.getElementById('deleteModal'))).toggle();
-            return false;
-        }
 
-        document.getElementById("deleteSubmit").onclick = function (e) {
-            // prevent other events
-            e.preventDefault();
-            let categoryId = document.getElementById(
-                "deleteModal"
-            ).dataset.categoryId;
-            let url = "<?php
-                echo osc_admin_base_url(true); ?>?page=ajax&action=delete_category&<?php echo osc_csrf_token_url();
-?>&id=" + categoryId;
-            fetch(url, {
-                credentials: "same-origin"
-            }).then(function (response) {
-                    if (!response.ok) {
-                        setJsMessage("error", response.statusText);
-                    }
-                    return response.json()
-                })
-                .then(function (jsonObj) {
-                    if (jsonObj.error) {
-                        setJsMessage("error", jsonObj.error);
-                    }
-                    if (jsonObj.ok) {
-                        setJsMessage("ok", jsonObj.ok);
-                        document.getElementById('list_' + categoryId).remove()
-                    }
-                }).catch(function (error) {
-                setJsMessage("error", "<?php echo osc_esc_js(__("Ajax error, try again.")); ?>:" + error);
-            });
-        };
-
-        var nestedCategoriesRoot = document.querySelector('.sortable');
-
-        function serializeNested(rootElement, parent = null) {
-            var serialized = [];
-            var children = [].slice.call(rootElement.children);
-            for (let i = 0; i < children.length; i++) {
-                let childElement = children[i].querySelector('.sortable');
-                if (childElement) {
-                    serialized.push({
-                        c: children[i].dataset['categoryId'],
-                        p: parent
-                    });
-                    serialized = serialized.concat(serializeNested(childElement, children[i].dataset['categoryId']));
-                } else {
-                    serialized.push({
-                        c: children[i].dataset['categoryId'],
-                        p: parent
-                    });
-                }
-            }
-            return serialized
-        }
-
-        var oldNestedList = serializeNested(nestedCategoriesRoot);
-        // Nested Categories
-        var nestedSortables = [].slice.call(document.querySelectorAll('.sortable'));
-
-        // Loop through each nested sortable element
-        for (var i = 0; i < nestedSortables.length; i++) {
-            var sortable = new Sortable(nestedSortables[i], {
-                sort: true,
-                handle: '.handle',
-                group: 'nested-categories',
-                ghostClass: 'drag-ghost',
-                animation: 150,
-                fallbackOnBody: true,
-                swapThreshold: 0.10,
-                onEnd: function () {
-                    var newNestedList = serializeNested(nestedCategoriesRoot);
-                    if (oldNestedList !== newNestedList) {
-                        $.ajax({
-                            type: 'POST',
-                            url: "<?php echo osc_admin_base_url(true) . '?page=ajax&action=categories_order&' . osc_csrf_token_url(); ?>",
-                            data: {
-                                'list': JSON.stringify(newNestedList)
-                            },
-                            success: function (res) {
-                                var ret = JSON.parse(res);
-                                if (ret.error) {
-                                    setJsMessage('error', ret.error);
-                                }
-                                if (ret.ok) {
-                                    setJsMessage('ok', ret.ok);
-                                }
-                            },
-                            error: function () {
-                                setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
-                            }
-                        });
-                        oldNestedList = newNestedList;
-                    }
-                }
-            });
-        }
-    </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

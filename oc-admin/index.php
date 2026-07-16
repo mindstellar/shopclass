@@ -41,6 +41,7 @@ osc_register_script('admin-location', osc_current_admin_theme_js_url('location.m
 osc_register_script('popper', osc_assets_url('popper/popper.min.js?v='.OSCLASS_VERSION));
 osc_register_script('bootstrap5', osc_assets_url('bootstrap/bootstrap.min.js?v='.OSCLASS_VERSION), 'popper');
 osc_register_script('sortablejs', osc_assets_url('sortablejs/Sortable.min.js?v='.OSCLASS_VERSION));
+osc_register_script('admin-categories', osc_current_admin_theme_js_url('categories.js?v='.OSCLASS_VERSION), 'sortablejs');
 // enqueue scripts
 osc_enqueue_script('bootstrap5');
 osc_enqueue_script('admin-osc');
