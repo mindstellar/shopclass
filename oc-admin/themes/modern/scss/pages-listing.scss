@@ -129,3 +129,19 @@
     min-height: 30rem;
   }
 }
+// The "add another photo" affordance on the listing form. Bronze, on-brand — the
+// old green was one of the off-brand accents DESIGN calls out.
+.add-photo-btn {
+  color: var(--osc-bronze);
+  display: inline-flex;
+  line-height: 1;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze-deep);
+  }
+
+  > i {
+    margin: 0;
+  }
+}

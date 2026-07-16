@@ -225,8 +225,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <?php } ?>
                                 </div>
                                 <p>
-                                    <a href="#" title="<?php _e('Add new photo'); ?>" onclick="addNewPhoto(); return false;">
-                                        <i class="h4 text-success bi bi-plus-circle-fill"></i>
+                                    <a href="#" class="add-photo-btn" title="<?php echo osc_esc_html(__('Add new photo')); ?>"
+                                       aria-label="<?php echo osc_esc_html(__('Add new photo')); ?>" onclick="addNewPhoto(); return false;">
+                                        <i class="h4 bi bi-plus-circle-fill"></i>
                                     </a>
                                 </p>
                             </div>

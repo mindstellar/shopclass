@@ -104,7 +104,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </select>
             </form>
             <?php if ($sort !== 'date') { ?>
-                <a id="btn-reset-filters" class="btn btn-red" href="<?php
+                <a id="btn-reset-filters" class="btn btn-dim" href="<?php
                    echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
             <?php } ?>
         </div>

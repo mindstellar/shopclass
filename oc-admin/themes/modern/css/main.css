@@ -14753,6 +14753,18 @@ code {
   min-height: 30rem;
 }
 
+.add-photo-btn {
+  color: var(--osc-bronze);
+  display: inline-flex;
+  line-height: 1;
+}
+.add-photo-btn:hover, .add-photo-btn:focus-visible {
+  color: var(--osc-bronze-deep);
+}
+.add-photo-btn > i {
+  margin: 0;
+}
+
 .category-details-form label {
   display: block;
 }
