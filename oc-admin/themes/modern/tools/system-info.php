@@ -208,7 +208,9 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
             // of the handful of directives that actually affect Osclass; the rest of this
             // tab is a plain-language guide to changing them.
             $iniLoaded  = php_ini_loaded_file();
-            $iniScanned = trim((string)php_ini_scanned_files());
+            $configPath = ABS_PATH . 'config.php';
+            $extLoaded  = get_loaded_extensions();
+            natcasesort($extLoaded);
             $directives = array(
                 array('memory_limit', __('How much memory one request may use. Resizing a big photo is the hungriest thing Osclass does.')),
                 array('upload_max_filesize', __('Largest single file a visitor can upload.')),
@@ -222,26 +224,11 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
             ?>
             <div class="sysinfo-grid">
                 <div class="card mb-3">
-                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('Where PHP reads its settings'); ?></h6></div>
-                    <div class="card-body p-0">
-                        <table class="sysinfo-table">
-                            <tbody>
-                            <tr>
-                                <td class="sysinfo-td-name"><?php _e('Loaded php.ini'); ?></td>
-                                <td class="sysinfo-td-value sysinfo-td-mono"><?php echo $iniLoaded ? osc_esc_html($iniLoaded) : __('none — PHP is using its built-in defaults'); ?></td>
-                            </tr>
-                            <?php if ($iniScanned !== '') { ?>
-                                <tr>
-                                    <td class="sysinfo-td-name"><?php _e('Additional .ini files'); ?></td>
-                                    <td class="sysinfo-td-value sysinfo-td-mono"><?php echo nl2br(osc_esc_html(str_replace(',', ",\n", $iniScanned))); ?></td>
-                                </tr>
-                            <?php } ?>
-                            <tr>
-                                <td class="sysinfo-td-name"><?php _e('PHP interface (SAPI)'); ?></td>
-                                <td class="sysinfo-td-value sysinfo-td-mono"><?php echo osc_esc_html(PHP_SAPI); ?></td>
-                            </tr>
-                            </tbody>
-                        </table>
+                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('Loaded PHP extensions'); ?> <span class="sysinfo-count"><?php echo count($extLoaded); ?></span></h6></div>
+                    <div class="card-body">
+                        <div class="sysinfo-chips">
+                            <?php foreach ($extLoaded as $ext) { ?><span class="sysinfo-chip"><?php echo osc_esc_html($ext); ?></span><?php } ?>
+                        </div>
                     </div>
                 </div>
 
@@ -270,46 +257,75 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
                 </div>
 
                 <div class="card mb-3">
-                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('How to change these'); ?></h6></div>
+                    <div class="card-header"><h6 class="card-title mb-0"><?php _e('How to change things'); ?></h6></div>
                     <div class="card-body sysinfo-help">
                         <p class="sysinfo-help-intro">
-                            <?php printf(__('These are PHP settings, not Osclass ones — they live in the %s file shown above. Edit that file, then restart PHP (or your web server) for the change to take effect. On shared hosting you usually change them from the host\'s control panel (for example cPanel\'s “MultiPHP INI Editor”) or a %s file, not by editing php.ini directly.'), '<code>php.ini</code>', '<code>.user.ini</code>'); ?>
+                            <?php printf(
+                                __('Two files hold these settings. PHP\'s own limits live in %1$s%2$s; Osclass\'s own behaviour lives in %3$s in the site root%4$s. Edit the relevant one — a php.ini change needs PHP restarted (or your host\'s control panel, e.g. cPanel\'s “MultiPHP INI Editor”), while a config.php change takes effect on the next request.'),
+                                '<code>php.ini</code>',
+                                $iniLoaded ? ' (<code class="sysinfo-code-wrap">' . osc_esc_html($iniLoaded) . '</code>)' : '',
+                                '<code>config.php</code>',
+                                ' (<code class="sysinfo-code-wrap">' . osc_esc_html($configPath) . '</code>)'
+                            ); ?>
                         </p>
 
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Allow bigger photo uploads'); ?></div>
-                            <p><?php printf(__('Raise %1$s and %2$s together, keeping post at least as large as upload:'), '<code>upload_max_filesize</code>', '<code>post_max_size</code>'); ?></p>
-                            <pre>upload_max_filesize = 16M
+                        <div class="sysinfo-help-group">
+                            <div class="sysinfo-help-group-title"><?php _e('In php.ini'); ?> <small><?php _e('— PHP limits'); ?></small></div>
+
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Allow bigger photo uploads'); ?></div>
+                                <p><?php printf(__('Raise %1$s and %2$s together, keeping post at least as large as upload:'), '<code>upload_max_filesize</code>', '<code>post_max_size</code>'); ?></p>
+                                <pre>upload_max_filesize = 16M
 post_max_size = 20M</pre>
+                            </div>
+
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Let a listing carry more photos'); ?></div>
+                                <p><?php printf(__('Raise %s to at least the number of photos per listing you allow in Settings.'), '<code>max_file_uploads</code>'); ?></p>
+                                <pre>max_file_uploads = 30</pre>
+                            </div>
+
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Let long jobs finish'); ?></div>
+                                <p><?php printf(__('Backups, imports and upgrades run inside %s. Raise it if they time out.'), '<code>max_execution_time</code>'); ?></p>
+                                <pre>max_execution_time = 120</pre>
+                            </div>
+
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Turn on OPcache'); ?></div>
+                                <p><?php _e('The cheapest speed-up there is — PHP stops recompiling every file on every request.'); ?></p>
+                                <pre>opcache.enable = 1</pre>
+                            </div>
+
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Install a missing extension'); ?></div>
+                                <p><?php printf(__('Install the OS package (for example %1$s or %2$s), make sure an %3$s line is present, and restart PHP. The Overview tab will flip to “installed”.'), '<code>php-gd</code>', '<code>php-imagick</code>', '<code>extension=</code>'); ?></p>
+                            </div>
                         </div>
 
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Let a listing carry more photos'); ?></div>
-                            <p><?php printf(__('Raise %s to at least the number of photos per listing you allow in Settings.'), '<code>max_file_uploads</code>'); ?></p>
-                            <pre>max_file_uploads = 30</pre>
-                        </div>
+                        <div class="sysinfo-help-group">
+                            <div class="sysinfo-help-group-title"><?php _e('In config.php'); ?> <small><?php _e('— Osclass'); ?></small></div>
+                            <p class="sysinfo-help-groupnote"><?php printf(__('Add these near the top of %1$s, above its closing %2$s.'), '<code>config.php</code>', '<code>?&gt;</code>'); ?></p>
 
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Give image resizing more memory'); ?></div>
-                            <p><?php printf(__('If large uploads fail with a blank page, %s is usually the cause. 256M is a comfortable floor.'), '<code>memory_limit</code>'); ?></p>
-                            <pre>memory_limit = 256M</pre>
-                        </div>
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Raise memory without touching php.ini'); ?></div>
+                                <p><?php printf(__('When you cannot edit php.ini, Osclass will lift PHP\'s memory limit up to %s on its own at start-up.'), '<code>OSC_MEMORY_LIMIT</code>'); ?></p>
+                                <pre>define('OSC_MEMORY_LIMIT', '256M');</pre>
+                            </div>
 
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Let long jobs finish'); ?></div>
-                            <p><?php printf(__('Backups, imports and upgrades run inside %s. Raise it if they time out.'), '<code>max_execution_time</code>'); ?></p>
-                            <pre>max_execution_time = 120</pre>
-                        </div>
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Turn on a persistent object cache'); ?></div>
+                                <p><?php printf(__('Point %1$s at an installed driver (for example %2$s or %3$s) so category trees, user data and search stop being recomputed on every request; %4$s sets how long, in seconds, a value is kept.'), '<code>OSC_CACHE</code>', '<code>apcu</code>', '<code>memcached</code>', '<code>OSC_CACHE_TTL</code>'); ?></p>
+                                <pre>define('OSC_CACHE', 'apcu');
+define('OSC_CACHE_TTL', 300);</pre>
+                            </div>
 
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Turn on OPcache'); ?></div>
-                            <p><?php _e('The cheapest speed-up there is — PHP stops recompiling every file on every request.'); ?></p>
-                            <pre>opcache.enable = 1</pre>
-                        </div>
-
-                        <div class="sysinfo-help-item">
-                            <div class="sysinfo-help-title"><?php _e('Install a missing extension'); ?></div>
-                            <p><?php printf(__('Install the OS package (for example %1$s or %2$s), make sure an %3$s line is present, and restart PHP. The Overview tab will flip to “installed”.'), '<code>php-gd</code>', '<code>php-imagick</code>', '<code>extension=</code>'); ?></p>
+                            <div class="sysinfo-help-item">
+                                <div class="sysinfo-help-title"><?php _e('Switch debugging on'); ?></div>
+                                <p><?php printf(__('%1$s surfaces errors while you diagnose a problem; %2$s sends them to a log file instead of the page. Both belong off on a live site.'), '<code>OSC_DEBUG</code>', '<code>OSC_DEBUG_LOG</code>'); ?></p>
+                                <pre>define('OSC_DEBUG', true);
+define('OSC_DEBUG_LOG', true);</pre>
+                            </div>
                         </div>
                     </div>
                 </div>

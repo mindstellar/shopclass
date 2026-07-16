@@ -15112,6 +15112,33 @@ form h3, form .h3 {
   font-size: 0.85rem;
 }
 
+.sysinfo-count {
+  color: var(--osc-ink-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.sysinfo-count::before {
+  content: "(";
+}
+.sysinfo-count::after {
+  content: ")";
+}
+
+.sysinfo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sysinfo-chip {
+  background-color: var(--osc-bench-sunk);
+  border-radius: 999px;
+  color: var(--osc-ink-emphasis);
+  font-family: var(--bs-font-monospace);
+  font-size: 0.78rem;
+  padding: 0.15rem 0.5rem;
+}
+
 .sysinfo-help {
   color: var(--osc-ink);
 }
@@ -15138,6 +15165,28 @@ form h3, form .h3 {
   color: var(--osc-ink-muted);
   margin: 0 0 1rem;
   padding-block-end: 1rem;
+}
+
+.sysinfo-help-group + .sysinfo-help-group {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1.25rem;
+  padding-block-start: 1.25rem;
+}
+
+.sysinfo-help-group-title {
+  color: var(--osc-ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-block-end: 0.85rem;
+}
+.sysinfo-help-group-title small, .sysinfo-help-group-title .small {
+  color: var(--osc-ink-muted);
+  font-weight: 400;
+}
+
+.sysinfo-help-groupnote {
+  color: var(--osc-ink-muted);
+  margin: -0.35rem 0 0.85rem;
 }
 
 .sysinfo-help-item + .sysinfo-help-item {
