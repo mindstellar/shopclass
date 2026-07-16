@@ -105,9 +105,15 @@ if ($oscSidebar !== 'collapsed') {
             <div id="help-wrapper" class="row">
                 <div class="col">
                     <div id="help-box" class="pt-2 collapse">
-                        <div class="alert alert-warning alert-dismissible">
-                            <?php osc_run_hook('help_box'); ?>
-                            <button type="button" class="btn-close" data-bs-toggle="collapse" href="#help-box" aria-label="Close"></button>
+                        <div class="help-callout" role="note">
+                            <i class="bi bi-info-circle help-callout-icon" aria-hidden="true"></i>
+                            <div class="help-callout-body">
+                                <?php osc_run_hook('help_box'); ?>
+                            </div>
+                            <button type="button" class="help-callout-close" data-bs-toggle="collapse" href="#help-box"
+                                    aria-label="<?php echo osc_esc_html(__('Close')); ?>">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
                 </div>

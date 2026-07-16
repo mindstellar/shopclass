@@ -199,7 +199,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </span>
         </a>
     </div>
-    <div class="row g-1">
+    <div class="row g-3">
         <div class="col-lg-4 col-md-6">
             <div class="widget-box h-100">
                 <div class="widget-box-title">

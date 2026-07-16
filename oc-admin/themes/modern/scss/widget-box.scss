@@ -45,7 +45,8 @@
 .widget-box-content {
   @extend .card-body;
   background-color: var(--osc-bench);
-  padding: 15px;
+  // Standard panel padding: 1rem / 16px (DESIGN spacing.base).
+  padding: 1rem;
   @include rounded-corners(4px);
   position: relative;
 }

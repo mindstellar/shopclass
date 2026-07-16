@@ -1,11 +1,67 @@
-#help-box {
+// The page help panel, toggled by the "?" beside a page title. It is explanatory,
+// not a caution, so it reads as a quiet info note (info tint + info icon), never the
+// amber warning alert it used to borrow. Icon | body | close, on one info surface.
+.help-callout {
+  align-items: flex-start;
+  background-color: var(--osc-info-tint);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  display: flex;
+  gap: .6rem;
+  padding: 1rem;
+}
+
+.help-callout-icon {
+  color: var(--osc-info);
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.help-callout-body {
+  flex: 1 1 auto;
+  max-width: 75ch;
+  min-width: 0;
+
+  // The hook prints its own <p>/<h3>; keep them flush inside the note.
+  > :first-child { margin-block-start: 0; }
+  > :last-child { margin-block-end: 0; }
+
   h3 {
-    font-size: 14px;
-    margin: 0;
+    color: var(--osc-ink);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin-block: 0 .25rem;
   }
 
   p {
-    font-size: .85rem;
+    line-height: 1.55;
+    margin-block-end: .5rem;
+  }
+}
+
+.help-callout-close {
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: .9rem;
+  line-height: 1;
+  padding: .3rem;
+  transition: background-color var(--osc-duration-fast) var(--osc-ease),
+              color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
   }
 }
 

@@ -15,9 +15,11 @@
 // rest — depth is the border and surface tone, never a shadow.
 .dash-stats {
   display: grid;
-  gap: .75rem;
+  // Standard layout gap: 1rem / 16px (DESIGN spacing.base), matched by the widget row
+  // below and the system-info grid.
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  margin-bottom: .75rem;
+  margin-bottom: 1rem;
 }
 
 .dash-stat {
@@ -28,7 +30,7 @@
   color: inherit;
   display: flex;
   gap: .8rem;
-  padding: .9rem 1rem;
+  padding: 1rem;
   text-decoration: none;
   transition: border-color var(--osc-duration-fast) var(--osc-ease),
               background-color var(--osc-duration-fast) var(--osc-ease);
