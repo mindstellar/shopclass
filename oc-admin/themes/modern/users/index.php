@@ -350,8 +350,8 @@ osc_show_pagination_admin($aData);
                 <div class="modal-footer">
                     <div class="wrapper">
                         <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>"
-                               class="btn btn-success btn-sm"/>
-                        <a class="btn btn-warning btn-sm"
+                               class="btn btn-primary btn-sm"/>
+                        <a class="btn btn-dim btn-sm"
                            href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"><?php _e('Reset filters'); ?></a>
                     </div>
                 </div>
