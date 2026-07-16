@@ -90,6 +90,7 @@ function customHead()
     $reports = __get('reports');
     ?>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="<?php echo osc_current_admin_theme_js_url('admin-charts.js'); ?>"></script>
     <?php if (count($reports) > 0) { ?>
     <script type="text/javascript">
         // Load the Visualization API and the piechart package.
@@ -97,6 +98,7 @@ function customHead()
 
         // Set a callback to run when the Google Visualization API is loaded.
         google.setOnLoadCallback(drawChart);
+        oscChartAutoRedraw(drawChart);
 
         // Callback that creates and populates a data table,
         // instantiates the pie chart, passes in the data and
@@ -124,42 +126,10 @@ function customHead()
 
             // Instantiate and draw our chart, passing in some options.
             var chart = new google.visualization.ColumnChart(document.getElementById('placeholder'));
-            chart.draw(data, {
-                colors: ['#0d6efd', '#e6f4fa'],
-                areaOpacity: 0.1,
-                lineWidth: 3,
-                hAxis: {
-                    gridlines: {
-                        color: '#333',
-                        count: 3
-                    },
-                    viewWindow: 'explicit',
-                    showTextEvery: 2,
-                    slantedText: false,
-                    textStyle: {
-                        color: '#0d6efd',
-                        fontSize: 10
-                    }
-                },
-                vAxis: {
-                    gridlines: {
-                        color: '#DDD',
-                        count: 4,
-                        style: 'dooted'
-                    },
-                    viewWindow: 'explicit',
-                    baselineColor: '#bababa'
-
-                },
+            chart.draw(data, oscChartOpts({
                 pointSize: 6,
-                legend: 'none',
-                chartArea: {
-                    left: 10,
-                    top: 10,
-                    width: "95%",
-                    height: "80%"
-                }
-            });
+                legend: 'none'
+            }));
         }
     </script>
     <?php }
