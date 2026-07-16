@@ -209,7 +209,10 @@ function oscAutocomplete(input, opts) {
             close();
             return;
         }
-        var url = opts.source + (opts.source.indexOf('?') > -1 ? '&' : '?') + 'term=' + encodeURIComponent(term);
+        // source may be a string, or a function resolved at fetch time (so a
+        // dependent field — e.g. region needs the current country — is current).
+        var base = typeof opts.source === 'function' ? opts.source() : opts.source;
+        var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'term=' + encodeURIComponent(term);
         fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (data) { render(Array.isArray(data) ? data : []); })

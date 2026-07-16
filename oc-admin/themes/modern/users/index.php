@@ -74,7 +74,7 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
             // users autocomplete
             document.querySelectorAll('#user, #fUser').forEach(function (el) {
                 oscAutocomplete(el, {
@@ -402,15 +402,16 @@ osc_show_pagination_admin($aData);
         </div>
     </div>
     <script>
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
             // check_all bulkactions
-            $("#check_all").change(function () {
-                var isChecked = $(this).prop("checked");
-                $('.col-bulkactions input').each(function () {
-                    this.checked = isChecked == 1;
+            var checkAll = document.getElementById('check_all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                        cb.checked = checkAll.checked;
+                    });
                 });
-            });
-
+            }
         });
 
         function delete_dialog(id) {
@@ -421,67 +422,62 @@ osc_show_pagination_admin($aData);
         }
     </script>
     <script type="text/javascript">
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+            function setVal(id, v) { var el = document.getElementById(id); if (el) { el.value = v; } }
 
-            $('#countryName').attr("autocomplete", "off");
-            $('#region').attr("autocomplete", "off");
-            $('#city').attr("autocomplete", "off");
+            // Selecting a country clears the region/city chain below it.
+            var countryId = document.getElementById('countryId');
+            if (countryId) {
+                countryId.addEventListener('change', function () {
+                    setVal('regionId', ''); setVal('region', '');
+                    setVal('cityId', ''); setVal('city', '');
+                });
+            }
 
-            $('#countryId').change(function () {
-                $('#regionId').val('');
-                $('#region').val('');
-                $('#cityId').val('');
-                $('#city').val('');
-            });
-
-            $('#countryName').on('keyup.autocomplete', function () {
-                $('#countryId').val('');
-                $(this).autocomplete({
+            var countryName = document.getElementById('countryName');
+            if (countryName) {
+                oscAutocomplete(countryName, {
                     source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_countries",
                     minLength: 0,
-                    select: function (event, ui) {
-                        $('#countryId').val(ui.item.id);
-                        $('#regionId').val('');
-                        $('#region').val('');
-                        $('#cityId').val('');
-                        $('#city').val('');
+                    onSearch: function () { setVal('countryId', ''); },
+                    onSelect: function (item) {
+                        setVal('countryId', item.id);
+                        setVal('regionId', ''); setVal('region', '');
+                        setVal('cityId', ''); setVal('city', '');
                     }
                 });
-            });
+            }
 
-            $('#region').on('keyup.autocomplete', function () {
-                $('#regionId').val('');
-                if ($('#countryId').val() != '' && $('#countryId').val() != undefined) {
-                    var country = $('#countryId').val();
-                } else {
-                    var country = $('#country').val();
-                }
-                $(this).autocomplete({
-                    source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_regions&country=" + country,
+            var region = document.getElementById('region');
+            if (region) {
+                oscAutocomplete(region, {
+                    // Region depends on the chosen country, resolved at fetch time.
+                    source: function () {
+                        var country = val('countryId') || val('countryName');
+                        return "<?php echo osc_base_url(true); ?>?page=ajax&action=location_regions&country=" + encodeURIComponent(country);
+                    },
                     minLength: 2,
-                    select: function (event, ui) {
-                        $('#cityId').val('');
-                        $('#city').val('');
-                        $('#regionId').val(ui.item.id);
+                    onSearch: function () { setVal('regionId', ''); },
+                    onSelect: function (item) {
+                        setVal('cityId', ''); setVal('city', '');
+                        setVal('regionId', item.id);
                     }
                 });
-            });
+            }
 
-            $('#city').on('keyup.autocomplete', function () {
-                $('#cityId').val('');
-                if ($('#regionId').val() != '' && $('#regionId').val() != undefined) {
-                    var region = $('#regionId').val();
-                } else {
-                    var region = $('#region').val();
-                }
-                $(this).autocomplete({
-                    source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_cities&region=" + region,
+            var city = document.getElementById('city');
+            if (city) {
+                oscAutocomplete(city, {
+                    source: function () {
+                        var reg = val('regionId') || val('region');
+                        return "<?php echo osc_base_url(true); ?>?page=ajax&action=location_cities&region=" + encodeURIComponent(reg);
+                    },
                     minLength: 2,
-                    select: function (event, ui) {
-                        $('#cityId').val(ui.item.id);
-                    }
+                    onSearch: function () { setVal('cityId', ''); },
+                    onSelect: function (item) { setVal('cityId', item.id); }
                 });
-            });
+            }
         });
     </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
