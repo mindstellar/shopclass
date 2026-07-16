@@ -3231,7 +3231,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   opacity: var(--bs-btn-disabled-opacity);
 }
 
-.btn-primary, .btn-blue {
+.btn-primary {
   --bs-btn-color: #fff;
   --bs-btn-bg: #8f5d00;
   --bs-btn-border-color: #8f5d00;

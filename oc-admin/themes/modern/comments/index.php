@@ -85,7 +85,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                    class="btn btn-sm btn-red"><?php _e('Hidden comments'); ?></a>
             <?php } else { ?>
                 <a href="<?php echo osc_admin_base_url(true) . '?page=comments'; ?>"
-                   class="btn btn-sm btn-blue"><?php _e('All comments'); ?></a>
+                   class="btn btn-sm btn-primary"><?php _e('All comments'); ?></a>
             <?php } ?>
         </div>
     </div>
