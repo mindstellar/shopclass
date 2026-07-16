@@ -251,6 +251,9 @@ class ItemsDataTable extends DataTable
                 if ($title != $aRow['s_title']) {
                     $title .= '...';
                 }
+                // Escape the user-controlled title before the trusted icon markup is
+                // appended, so the span below is not escaped along with it.
+                $title = osc_esc_html($title);
 
                 // icon open add new window
                 $title .= '<span class="icon-new-window"></span>';
@@ -343,7 +346,7 @@ class ItemsDataTable extends DataTable
                 $row['status-border'] = '';
                 $row['status']        = $status['text'];
                 $row['title']         =
-                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
+                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . $title . '</a>' . $actions;
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
