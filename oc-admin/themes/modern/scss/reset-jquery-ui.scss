@@ -11,7 +11,7 @@
 }
 
 .ui-osc-tabs .ui-tabs-nav li {
-  float: right;
+  float: inline-end;
 }
 
 .ui-dialog {
@@ -48,7 +48,7 @@
 .ui-dialog .form-actions {
   @include rounded-corners(0 0 4px 4px);
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   margin-bottom: 0;
   padding: 0;
   position: absolute;
@@ -70,18 +70,18 @@
 
 .osc-modal-content-market img {
   border: solid 2px var(--osc-bench-warm);
-  float: left;
-  margin-right: 20px;
+  float: inline-start;
+  margin-inline-end: 20px;
   max-height: 106px;
   @include rounded-corners;
 }
 
 .osc-modal-content-market .table {
-  float: left;
+  float: inline-start;
   width: 300px;
 }
 
 .osc-modal-content-market .form-row .market-data {
   display: block;
-  padding-left: 100px;
+  padding-inline-start: 100px;
 }

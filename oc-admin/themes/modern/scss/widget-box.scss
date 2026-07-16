@@ -10,7 +10,7 @@
   margin-bottom: -.3rem;
   margin-top: -.3rem;
   padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
+  padding-inline-start: 0.5rem;
   padding-top: 0.25rem;
   width: 50%;
 }
@@ -33,7 +33,7 @@
 }
 
 .widget-box-title .select-box {
-  right: 0;
+  inset-inline-end: 0;
   top: 0;
   widows: 50%;
 }
@@ -52,7 +52,7 @@
 
 .widget-box-selector {
   display: block;
-  float: right;
+  float: inline-end;
 }
 
 .widget-box h4 {
@@ -82,10 +82,10 @@
 }
 
 .widget-box .form-label {
-  float: left;
-  margin-left: 10px;
+  float: inline-start;
+  margin-inline-start: 10px;
   padding-top: 5px;
-  text-align: right;
+  text-align: end;
 }
 
 div.widget-box-content-no-wrapp,

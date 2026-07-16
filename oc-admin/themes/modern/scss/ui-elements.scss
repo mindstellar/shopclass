@@ -35,28 +35,31 @@ a.ico-32 {
   text-decoration: none;
 }
 
+// Legacy "black" controls — bundled plugins still hardcode btn-black, so they stay as public API
+// — but now theme-aware: routed through the ink tokens so they read as an inverse control,
+// near-black on white in light, light on the bench in dark, never a dark slab on the dark bench.
 .action-btn-black {
-  background: $color-gray-hardblack;
+  background: var(--osc-ink);
   border-color: var(--osc-ink-emphasis);
-  color: $color-gray-ash;
+  color: var(--osc-ink-inverse);
   &:hover {
-    background-color: $color-black;
+    background-color: var(--osc-ink-emphasis);
   }
 }
 
 .bg-black-light {
-  background-color: #2b2b2b;
+  background-color: var(--osc-ink);
 }
 
 .circle {
-  background: #dee2e6;
-  border: solid 1px #6c757d;
+  background: var(--osc-bench-sunk);
+  border: solid 1px var(--osc-rule-strong);
   border-radius: 1rem;
-  color: #6c757d;
-  float: right;
+  color: var(--osc-ink-muted);
+  float: inline-end;
   font-style: normal;
   height: 1.2rem;
-  margin-left: .1rem;
+  margin-inline-start: .1rem;
   margin-top: -.2rem;
   min-width: 1.2rem;
   padding-top: .1rem;
@@ -77,8 +80,17 @@ a.ico-32 {
 // Dart Sass expands combinatorially — it inflated main.css from 260 KB to 87 MB.
 .btn-black {
   @extend .btn-dark;
-  background-color: $color-gray-hardblack;
-  border: solid 1px var(--osc-ink-emphasis);
+  // Driven through Bootstrap's --bs-btn-* API with ink tokens (base, hover, active) so the whole
+  // control flips with the theme instead of only its resting background.
+  --bs-btn-bg: var(--osc-ink);
+  --bs-btn-border-color: var(--osc-ink-emphasis);
+  --bs-btn-color: var(--osc-ink-inverse);
+  --bs-btn-hover-bg: var(--osc-ink-emphasis);
+  --bs-btn-hover-border-color: var(--osc-ink-emphasis);
+  --bs-btn-hover-color: var(--osc-ink-inverse);
+  --bs-btn-active-bg: var(--osc-ink-emphasis);
+  --bs-btn-active-border-color: var(--osc-ink-emphasis);
+  --bs-btn-active-color: var(--osc-ink-inverse);
 }
 
 // The secondary button — white fill, Ink text, 1px rule-strong border.
@@ -131,10 +143,6 @@ a.ico-32 {
   width: auto;
 }
 
-.btn-blue {
-  @extend .btn-primary;
-}
-
 .btn-red {
   @extend .btn-danger;
 }
@@ -160,6 +168,21 @@ input.ico-32 {
 .float-right {
   @extend .float-end;
 }
+
+// Bootstrap's directional spacing/float/text utilities compile to physical left/right, and the
+// admin ships no separate RTL stylesheet — so redefine them as logical here, in one place. Every
+// template and plugin that writes ms-1 / float-end / text-end (100+ call sites) then mirrors
+// under dir="rtl" without touching a single template. Legacy float-left/right map onto these.
+@each $key, $val in $spacers {
+  .ms-#{$key} { margin-inline-start:  $val !important; }
+  .me-#{$key} { margin-inline-end:    $val !important; }
+  .ps-#{$key} { padding-inline-start: $val !important; }
+  .pe-#{$key} { padding-inline-end:   $val !important; }
+}
+.float-start { float: inline-start !important; }
+.float-end   { float: inline-end   !important; }
+.text-start  { text-align: start !important; }
+.text-end    { text-align: end   !important; }
 
 input.btn-mini {
   @extend .btn-success;
@@ -201,7 +224,7 @@ input.btn-mini {
   label {
     color: var(--osc-ink-emphasis);
     font-size: .85rem;
-    left: 8px;
+    inset-inline-start: 8px;
     margin-bottom: 0 !important;
     margin-top: 0 !important;
     position: absolute;
@@ -230,7 +253,7 @@ textarea {
 }
 
 .has-pagination {
-  text-align: right;
+  text-align: end;
   ul {
     display: inline-block;
     height: 36px;
@@ -243,8 +266,8 @@ textarea {
   }
   a,span {
     border: 1px solid var(--osc-rule);
-    border-left-width: 0;
-    float: left;
+    border-inline-start-width: 0;
+    float: inline-start;
     line-height: 30px;
     padding: 0 10px;
     text-decoration: none;
@@ -260,7 +283,7 @@ textarea {
     }
   }
   .list-first {
-    border-left-width: 1px;
+    border-inline-start-width: 1px;
     @include rounded-corners(3px 0 0 3px);
   }
   .list-last {
@@ -278,13 +301,13 @@ textarea {
 }
 
 ul.showing-results {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0;
   padding: 0;
 }
 
 .showing-results span {
-  border-left-width: 1px;
+  border-inline-start-width: 1px;
   @include rounded-corners(3px);
 }
 
@@ -293,13 +316,13 @@ ul.showing-results {
 }
 
 .pagination-right {
-  text-align: right;
+  text-align: end;
 }
 
 .pagination-input {
   border: 1px solid var(--osc-rule);
-  border-left-width: 0;
-  float: left;
+  border-inline-start-width: 0;
+  float: inline-start;
   line-height: 30px;
   padding: 0;
   text-decoration: none;
@@ -316,12 +339,12 @@ ul.showing-results {
     @include rounded-corners(0);
   }
   button {
-    background: white;
+    background: var(--osc-bench);
     border: 0;
-    border-left: solid 1px var(--osc-bench-sunk);
+    border-inline-start: solid 1px var(--osc-bench-sunk);
     // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
     // it is a *different* blue. The rule is about the colour, not the hex.
-    color: $link-color;
+    color: var(--osc-bronze);
     cursor: pointer;
     font-size: .85rem;
     font-weight: bold;
@@ -334,7 +357,7 @@ ul.showing-results {
 }
 
 .display-select-bottom {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0 10px;
   padding: 0;
 }
@@ -348,7 +371,7 @@ ul.showing-results {
 }
 
 .ui-autocomplete-loading {
-  background: white url("../images/loading.gif") right center no-repeat;
+  background: var(--osc-bench) url("../images/loading.gif") right center no-repeat;
   display: block;
 }
 ul.ui-autocomplete.ui-menu {
@@ -367,7 +390,7 @@ ul.ui-autocomplete.ui-menu {
 .btn-market-preview {
   @include rounded-corners($border-radius);
   display: inline-block;
-  margin-left: 5px;
+  margin-inline-start: 5px;
   margin-top: 5px;
   padding: 3px 10px;
   // They are <a> elements without .btn, so Bootstrap's reboot underlines them as links.
@@ -388,7 +411,7 @@ ul.ui-autocomplete.ui-menu {
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule-strong);
   color: var(--osc-ink); // 17.32:1
-  margin-left: 0;
+  margin-inline-start: 0;
 
   &:hover {
     background-color: var(--osc-bench-warm);
@@ -399,9 +422,9 @@ ul.ui-autocomplete.ui-menu {
 .spinner {
   background: url("../images/loading.gif");
   display: block;
-  float: left;
+  float: inline-start;
   height: 16px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   width: 16px;
 }
 
@@ -415,11 +438,11 @@ ul.ui-autocomplete.ui-menu {
   width: 2rem;
 
   span {
-    background: $navbar-dark-color;
+    background: var(--osc-ink-muted);
     border-radius: .9rem;
     display: block;
     height: .2rem;
-    left: 0;
+    inset-inline-start: 0;
     opacity: 1;
     position: absolute;
     transform: rotate(0deg);
@@ -428,7 +451,7 @@ ul.ui-autocomplete.ui-menu {
 
     &:hover,
     &:focus {
-      background: $navbar-dark-hover-color;
+      background: var(--osc-ink);
     }
 
     &:nth-child(1) {
@@ -452,7 +475,7 @@ ul.ui-autocomplete.ui-menu {
       background: var(--osc-ink-inverse);
 
       &:nth-child(1) {
-        left: .2rem;
+        inset-inline-start: .2rem;
         top: 0;
         transform: rotate(45deg);
       }
@@ -463,7 +486,7 @@ ul.ui-autocomplete.ui-menu {
       }
 
       &:nth-child(3) {
-        left: .2rem;
+        inset-inline-start: .2rem;
         top: 1.45rem;
         transform: rotate(-45deg);
       }

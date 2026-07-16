@@ -46,20 +46,20 @@
 .current-theme .theme {
   float: none;
   height: auto !important;
-  margin-right: 0;
+  margin-inline-end: 0;
   width: auto;
 }
 
 .current-theme .theme img {
-  float: left;
+  float: inline-start;
 }
 
 .theme {
   background-color: var(--osc-bench-warm);
-  float: left;
+  float: inline-start;
   font-size: .95rem;
   margin-bottom: 40px;
-  margin-right: 20px;
+  margin-inline-end: 20px;
   padding: 10px;
 
   @include rounded-corners;
@@ -68,7 +68,7 @@
 
 .theme img {
   border: solid 1px var(--osc-bench-sunk);
-  margin-right: 20px;
+  margin-inline-end: 20px;
   width: 250px;
   @include rounded-corners;
 }
@@ -77,7 +77,7 @@
   background-color: rgba(243, 243, 243, 0.9);
   border-top: solid 1px var(--osc-bench-sunk);
   bottom: 4px;
-  left: 1px;
+  inset-inline-start: 1px;
   padding: 6px 0 1px 6px;
   position: absolute;
   width: 244px;
@@ -85,8 +85,8 @@
 
 .theme .theme-actions .btn {
   margin-bottom: 5px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-inline-start: 6px;
+  padding-inline-end: 6px;
 }
 
 .theme-actions a.delete {

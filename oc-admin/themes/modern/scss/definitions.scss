@@ -14,21 +14,19 @@
 // The Blue Exile Rule and kept alive only by the fact that nothing used them.
 //
 // These are Sass variables, not CSS class names: nothing outside this stylesheet can reference
-// them, so removing them is not a compatibility event. The .btn-blue and .btn-submit CLASSES
-// are a different matter and stay exactly where they are.
+// them, so removing them is not a compatibility event. The .btn-submit CLASS is a different
+// matter and stays exactly where it is. (.btn-blue — a misleading @extend .btn-primary — has
+// been removed; its two bundled call sites moved to .btn-primary, which is what it rendered as.)
 
-// What is left, and why: the legacy dark controls (.btn-black, .action-btn-black). Off-system —
-// there is no dark button in DESIGN.md — and they need a design decision before dark mode,
-// because "a fill the colour of ink" is precisely the thing that inverts wrongly when the bench
-// goes dark. Left on Sass deliberately: tokenising them would bake the wrong role in and make
-// it look done.
-$color-gray-hardblack: $gray-900;
+// The legacy dark controls (.btn-black, .action-btn-black, .bg-black-light) are now tokenised
+// as inverse ink controls and flip with the theme (see ui-elements.scss). $color-gray-hardblack
+// and $color-black went dead with that migration and are removed; $color-gray-ash survives only
+// because $border-color still reads it.
 $color-gray-ash: $gray-500;
-$color-black: $black;
 
 $border-color: $color-gray-ash;
-// Status badges — three signals each: a TINT, a SHAPE, and the WORD (see DESIGN.md,
-// The Three Signal Rule). Colour was previously the only signal, and "active" was
+// Status badges — three signals each: a TINT, a SHAPE, and the WORD (the Three-Signal Rule).
+// Colour was previously the only signal, and "active" was
 // $blue-500 — stock Bootstrap #0d6efd — which made the most-seen badge in the admin
 // the single clearest tell that this was an unstyled Bootstrap template.
 //
@@ -51,7 +49,7 @@ $border-color: $color-gray-ash;
 // The colours are named as custom properties, not as Sass variables. `var(--osc-success)`
 // is resolved by the browser at paint time and therefore follows `data-bs-theme`; the Sass
 // `$success` would have been flattened to today's light-mode hex at build time and could
-// never flip. See The Token Indirection Rule in DESIGN.md.
+// never flip - the Token Indirection Rule.
 $status-badge: (
         //                                                                              silhouette
         "active":   (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f287"), // ● disc
