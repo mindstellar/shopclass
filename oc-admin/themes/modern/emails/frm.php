@@ -187,7 +187,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Close'); ?></button>
-                <button id="btn-test-it" class="btn btn-sm btn-red" type="submit">
+                <button id="btn-test-it" class="btn btn-sm btn-primary" type="submit">
                     <?php _e('Send email'); ?>
                 </button>
             </div>
