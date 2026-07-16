@@ -173,6 +173,21 @@ input.ico-32 {
   @extend .float-end;
 }
 
+// Bootstrap's directional spacing/float/text utilities compile to physical left/right, and the
+// admin ships no separate RTL stylesheet — so redefine them as logical here, in one place. Every
+// template and plugin that writes ms-1 / float-end / text-end (100+ call sites) then mirrors
+// under dir="rtl" without touching a single template. Legacy float-left/right map onto these.
+@each $key, $val in $spacers {
+  .ms-#{$key} { margin-inline-start:  $val !important; }
+  .me-#{$key} { margin-inline-end:    $val !important; }
+  .ps-#{$key} { padding-inline-start: $val !important; }
+  .pe-#{$key} { padding-inline-end:   $val !important; }
+}
+.float-start { float: inline-start !important; }
+.float-end   { float: inline-end   !important; }
+.text-start  { text-align: start !important; }
+.text-end    { text-align: end   !important; }
+
 input.btn-mini {
   @extend .btn-success;
 }
@@ -213,7 +228,7 @@ input.btn-mini {
   label {
     color: var(--osc-ink-emphasis);
     font-size: .85rem;
-    left: 8px;
+    inset-inline-start: 8px;
     margin-bottom: 0 !important;
     margin-top: 0 !important;
     position: absolute;
@@ -431,7 +446,7 @@ ul.ui-autocomplete.ui-menu {
     border-radius: .9rem;
     display: block;
     height: .2rem;
-    left: 0;
+    inset-inline-start: 0;
     opacity: 1;
     position: absolute;
     transform: rotate(0deg);
@@ -464,7 +479,7 @@ ul.ui-autocomplete.ui-menu {
       background: var(--osc-ink-inverse);
 
       &:nth-child(1) {
-        left: .2rem;
+        inset-inline-start: .2rem;
         top: 0;
         transform: rotate(45deg);
       }
@@ -475,7 +490,7 @@ ul.ui-autocomplete.ui-menu {
       }
 
       &:nth-child(3) {
-        left: .2rem;
+        inset-inline-start: .2rem;
         top: 1.45rem;
         transform: rotate(-45deg);
       }
