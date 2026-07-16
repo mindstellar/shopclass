@@ -41,7 +41,7 @@ $sidebar-gutter: 2.35rem;
   // Top-level row. Bootstrap's .nav-pills paints $component-active-bg across the whole row
   // when active; we want a soft tint pill instead — the SAME language a submenu's current
   // item uses — so the active state is stated explicitly rather than inherited. No
-  // inline-start marker: a coloured side border is the one accent DESIGN.md bans outright,
+  // inline-start marker: a coloured side border is the one accent the design system bans outright,
   // and the tint + bronze ink + weight already carry "you are here" three ways.
   .nav-link {
     align-items: center;

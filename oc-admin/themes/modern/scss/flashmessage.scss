@@ -57,8 +57,8 @@
 
 // Callouts — the inline hints that sit beside a setting and explain what it does.
 //
-// They used to be marked with `border-left: .35rem solid $value`: a coloured side stripe, which
-// DESIGN.md bans outright. Two things were wrong with it, and only one of them is taste.
+// They used to be marked with `border-left: .35rem solid $value`: a coloured side stripe, which the
+// design system bans outright. Two things were wrong with it, and only one of them is taste.
 //
 //   1. `border-left` is PHYSICAL. Osclass ships RTL locales, and the admin compiles no RTL
 //      stylesheet, so in Arabic or Hebrew the stripe stayed on the left — the trailing edge —
