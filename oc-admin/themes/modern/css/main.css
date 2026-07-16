@@ -12399,15 +12399,24 @@ h3.render-title, .render-title.h3 {
   outline: none;
   padding: 4px 6px;
   vertical-align: top;
-  border-radius: 4px 0 0 4px;
+  border-start-start-radius: 4px;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  border-end-start-radius: 4px;
   width: 208px;
 }
 
 .quick-search .ico-search {
   border-inline-start: 0;
   display: block;
-  border-radius: 0px 4px 4px 0;
-  border-radius: 0px 4px 4px 0;
+  border-start-start-radius: 0px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
+  border-end-start-radius: 0;
+  border-start-start-radius: 0px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
+  border-end-start-radius: 0;
   height: 34px;
   margin-inline-start: 0;
   margin-inline-end: 10px;
@@ -12759,10 +12768,16 @@ textarea {
 }
 .has-pagination .list-first {
   border-inline-start-width: 1px;
-  border-radius: 3px 0 0 3px;
+  border-start-start-radius: 3px;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  border-end-start-radius: 3px;
 }
 .has-pagination .list-last {
-  border-radius: 0 3px 3px 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  border-end-start-radius: 0;
 }
 
 .pagination .active a {
@@ -12796,7 +12811,10 @@ ul.showing-results {
   line-height: 30px;
   padding: 0;
   text-decoration: none;
-  border-radius: 0 3px 3px 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  border-end-start-radius: 0;
 }
 .pagination-input input {
   border: 0;
@@ -12820,7 +12838,10 @@ ul.showing-results {
   margin: 0;
   padding: 0 10px;
   vertical-align: top;
-  border-radius: 0 3px 3px 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 3px;
+  border-end-end-radius: 3px;
+  border-end-start-radius: 0;
 }
 
 .display-select-bottom {
@@ -14733,7 +14754,10 @@ form h3, form .h3 {
 .ui-osc-tabs .ui-tabs-nav {
   border: 0;
   border-bottom: solid 1px var(--osc-bench-sunk);
-  border-radius: 4px 4px 0 0;
+  border-start-start-radius: 4px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
   padding: 4px 5px 0;
 }
 
@@ -14755,8 +14779,14 @@ form h3, form .h3 {
   margin: 0;
   padding: 7px 5px;
   position: relative;
-  border-radius: 4px 4px 0 0;
-  border-radius: 4px 4px 0 0;
+  border-start-start-radius: 4px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
+  border-start-start-radius: 4px;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
 }
 
 .ui-dialog .ui-dialog-title {
@@ -14768,12 +14798,18 @@ form h3, form .h3 {
 .ui-dialog .ui-dialog-content {
   background: var(--osc-bench);
   padding: 15px;
-  border-radius: 0 0 4px 4px;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 4px;
+  border-end-start-radius: 4px;
   position: relative;
 }
 
 .ui-dialog .form-actions {
-  border-radius: 0 0 4px 4px;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 4px;
+  border-end-start-radius: 4px;
   bottom: 0;
   inset-inline-start: 0;
   margin-bottom: 0;

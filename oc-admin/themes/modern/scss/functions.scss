@@ -1,5 +1,15 @@
 @mixin rounded-corners($radius: 4px) {
-  border-radius: $radius;
+  @if length($radius) == 4 {
+    // A 4-value shorthand is physical (top-left top-right bottom-right bottom-left); emit logical
+    // corner radii instead so the rounding follows dir="rtl" (a tab rounded on its leading top
+    // corner stays on the leading corner when the layout mirrors).
+    border-start-start-radius: nth($radius, 1);
+    border-start-end-radius:   nth($radius, 2);
+    border-end-end-radius:     nth($radius, 3);
+    border-end-start-radius:   nth($radius, 4);
+  } @else {
+    border-radius: $radius;
+  }
 }
 
 @mixin error-color() {
