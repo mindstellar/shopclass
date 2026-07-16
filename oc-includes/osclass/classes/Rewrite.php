@@ -252,7 +252,10 @@ class Rewrite
                     // category catch-all (^(.+)/?$ -> page=search&sCategory=$1) would
                     // otherwise rewrite the bare admin URL and inject page=search into the
                     // admin request, polluting every getParam('page') consumer there.
-                    if (!defined('OC_ADMIN')) {
+                    // OC_ADMIN is ALWAYS defined (false on the public front controller,
+                    // true in oc-admin) — so test its value, not defined(): the latter is
+                    // always true and would disable friendly URLs everywhere.
+                    if (!OC_ADMIN) {
                         foreach ($this->rules as $match => $uri) {
                             // UNCOMMENT TO DEBUG
                             // echo 'Request URI: '.$request_uri." # Match : ".$match." # URI to go : ".$uri." <br />";
