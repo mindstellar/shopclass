@@ -56,10 +56,10 @@ a.ico-32 {
   border: solid 1px var(--osc-rule-strong);
   border-radius: 1rem;
   color: var(--osc-ink-muted);
-  float: right;
+  float: inline-end;
   font-style: normal;
   height: 1.2rem;
-  margin-left: .1rem;
+  margin-inline-start: .1rem;
   margin-top: -.2rem;
   min-width: 1.2rem;
   padding-top: .1rem;
@@ -242,7 +242,7 @@ textarea {
 }
 
 .has-pagination {
-  text-align: right;
+  text-align: end;
   ul {
     display: inline-block;
     height: 36px;
@@ -255,8 +255,8 @@ textarea {
   }
   a,span {
     border: 1px solid var(--osc-rule);
-    border-left-width: 0;
-    float: left;
+    border-inline-start-width: 0;
+    float: inline-start;
     line-height: 30px;
     padding: 0 10px;
     text-decoration: none;
@@ -272,7 +272,7 @@ textarea {
     }
   }
   .list-first {
-    border-left-width: 1px;
+    border-inline-start-width: 1px;
     @include rounded-corners(3px 0 0 3px);
   }
   .list-last {
@@ -290,13 +290,13 @@ textarea {
 }
 
 ul.showing-results {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0;
   padding: 0;
 }
 
 .showing-results span {
-  border-left-width: 1px;
+  border-inline-start-width: 1px;
   @include rounded-corners(3px);
 }
 
@@ -305,13 +305,13 @@ ul.showing-results {
 }
 
 .pagination-right {
-  text-align: right;
+  text-align: end;
 }
 
 .pagination-input {
   border: 1px solid var(--osc-rule);
-  border-left-width: 0;
-  float: left;
+  border-inline-start-width: 0;
+  float: inline-start;
   line-height: 30px;
   padding: 0;
   text-decoration: none;
@@ -330,7 +330,7 @@ ul.showing-results {
   button {
     background: var(--osc-bench);
     border: 0;
-    border-left: solid 1px var(--osc-bench-sunk);
+    border-inline-start: solid 1px var(--osc-bench-sunk);
     // Was #018BE3 — another hardcoded stock blue, and invisible to a grep for #0d6efd because
     // it is a *different* blue. The rule is about the colour, not the hex.
     color: var(--osc-bronze);
@@ -346,7 +346,7 @@ ul.showing-results {
 }
 
 .display-select-bottom {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0 10px;
   padding: 0;
 }
@@ -379,7 +379,7 @@ ul.ui-autocomplete.ui-menu {
 .btn-market-preview {
   @include rounded-corners($border-radius);
   display: inline-block;
-  margin-left: 5px;
+  margin-inline-start: 5px;
   margin-top: 5px;
   padding: 3px 10px;
   // They are <a> elements without .btn, so Bootstrap's reboot underlines them as links.
@@ -400,7 +400,7 @@ ul.ui-autocomplete.ui-menu {
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule-strong);
   color: var(--osc-ink); // 17.32:1
-  margin-left: 0;
+  margin-inline-start: 0;
 
   &:hover {
     background-color: var(--osc-bench-warm);
@@ -411,9 +411,9 @@ ul.ui-autocomplete.ui-menu {
 .spinner {
   background: url("../images/loading.gif");
   display: block;
-  float: left;
+  float: inline-start;
   height: 16px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   width: 16px;
 }
 

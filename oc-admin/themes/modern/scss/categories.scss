@@ -14,7 +14,7 @@
 }
 
 .ui-sortable li ul {
-  margin-left: 39px;
+  margin-inline-start: 39px;
   padding: 0;
 }
 
@@ -47,32 +47,32 @@
 
 .list-categories .category_row {
   height: 26px;
-  padding-left: 87px;
+  padding-inline-start: 87px;
 }
 
 .ico-droppable {
-  border-right: solid 1px var(--osc-bench-sunk);
+  border-inline-end: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
   left: 1px;
-  margin-left: 2px;
+  margin-inline-start: 2px;
   position: absolute;
   top: 1px;
   width: 34px;
 }
 
 .ico-childrens {
-  border-right: solid 1px var(--osc-bench-sunk);
+  border-inline-end: solid 1px var(--osc-bench-sunk);
   height: 36px;
   left: 36px;
-  margin-left: 2px;
+  margin-inline-start: 2px;
   position: absolute;
   top: 1px;
   width: 38px;
 }
 
 .ui-sortable li ul li ul li ul .category_row {
-  padding-left: 49px;
+  padding-inline-start: 49px;
 }
 
 .ui-sortable li ul li ul li ul .subcategory .toggle,
@@ -87,9 +87,9 @@
 */
 .ico-childrens .toggle {
   display: block;
-  float: left;
+  float: inline-start;
   height: 10px;
-  margin-left: 7px;
+  margin-inline-start: 7px;
   margin-top: 7px;
   padding: 5px;
   text-indent: -99999px;
@@ -109,16 +109,16 @@
 }
 
 .list-fields .name-edit-cfield {
-  padding-left: 10px;
+  padding-inline-start: 10px;
 }
 
 ul.subcategories {
-  margin-left: 20px;
+  margin-inline-start: 20px;
 }
 
 .list-categories {
   > ul {
-    padding-left:0;
+    padding-inline-start:0;
   }
   li {
     margin-top: 10px;
@@ -139,7 +139,7 @@ ul.subcategories {
 }
 
 .iframe-category .input-line {
-  float: left;
+  float: inline-start;
 }
 
 .list-categories .form-actions {
@@ -165,7 +165,7 @@ ul.subcategories {
   font-weight: normal;
   margin-bottom: 10px;
   padding-bottom: 5px;
-  padding-left: 15px;
+  padding-inline-start: 15px;
   position: relative;
 }
 
@@ -200,8 +200,8 @@ ul.subcategories {
   li {
     padding-bottom:.5rem;
     ul {
-      padding-left:0;
-      margin-left:2rem;
+      padding-inline-start:0;
+      margin-inline-start:2rem;
     }
   }
   .collapsed span:before {

@@ -45,7 +45,7 @@
         min-width: 100px;
       }
       .col-status {
-        border-left: 1px solid rgba(0, 0, 0, 0.1);
+        border-inline-start: 1px solid rgba(0, 0, 0, 0.1);
       }
       .col-bulkactions {
         & ~ {
@@ -63,7 +63,7 @@
               max-width: 100%;
               &:before {
                 content: attr(data-col-name) ": ";
-                padding-right: 0.5rem;
+                padding-inline-end: 0.5rem;
                 font-weight: 500;
               }
             }
@@ -95,8 +95,8 @@
 @media (max-width: 576px) {
   #content-page {
     & > .col {
-      padding-left: 0.1rem;
-      padding-right: 0.1rem;
+      padding-inline-start: 0.1rem;
+      padding-inline-end: 0.1rem;
     }
   }
   .grid-10,
@@ -121,7 +121,7 @@
       width: 100%;
     }
     .form-controls {
-      margin-left: inherit;
+      margin-inline-start: inherit;
 
       select {
         width: 100%;

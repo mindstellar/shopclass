@@ -1,12 +1,12 @@
 #listing-toolbar,
 .table-toolbar {
   height: 44px;
-  float:right;
+  float: inline-end;
 }
 
 #listing-toolbar, #admins-toolbar, #users-toolbar {
   & + #datatablesForm #bulk-actions {
-    float: left;
+    float: inline-start;
   }
 }
 
@@ -28,7 +28,7 @@
 }
 
 #display-filters .form-controls {
-  margin-left: 80px;
+  margin-inline-start: 80px;
 }
 
 #item-form label {
@@ -93,7 +93,7 @@
 #plugin-hook .row{}
 #plugin-hook .row label{
     clear:both;
-    float:left;
+    float: inline-start;
     width:160px;
     min-height:30px;
     margin:0;
@@ -101,7 +101,7 @@
 }
 #plugin-hook .row select,
 #plugin-hook .row input{
-    margin-left:180px;
+    margin-inline-start:180px;
     display: block;
 }
 #plugin-hook .row br{
@@ -115,7 +115,7 @@
   @extend .card;
   padding: 0 1rem;
   .has-slider {
-    padding-left: 180px;
+    padding-inline-start: 180px;
   }
   .meta {
     select, input[type='text'], input[type='email'], input.cf_date {

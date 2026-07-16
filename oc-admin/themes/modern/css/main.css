@@ -12165,7 +12165,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
 }
 .ico-close {
   content-visibility: hidden;
-  float: right !important;
+  float: inline-end !important;
 }
 
 #header.navbar {
@@ -12294,8 +12294,8 @@ h3.separate-top,
 }
 
 div.row-offset {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  margin-inline-start: 0 !important;
+  margin-inline-end: 0 !important;
 }
 
 #content-head {
@@ -12362,7 +12362,7 @@ div.row-offset {
 #content-head h1 .ico, #content-head .h1 .ico,
 #content-head h2 .ico,
 #content-head .h2 .ico {
-  margin-left: 10px;
+  margin-inline-start: 10px;
 }
 
 .render-title {
@@ -12384,7 +12384,7 @@ h3.render-title, .render-title.h3 {
 }
 
 .form-controls a.btn-mini {
-  margin-left: 5px;
+  margin-inline-start: 5px;
   vertical-align: 2px;
 }
 
@@ -12404,13 +12404,13 @@ h3.render-title, .render-title.h3 {
 }
 
 .quick-search .ico-search {
-  border-left: 0;
+  border-inline-start: 0;
   display: block;
   border-radius: 0px 4px 4px 0;
   border-radius: 0px 4px 4px 0;
   height: 34px;
-  margin-left: 0;
-  margin-right: 10px;
+  margin-inline-start: 0;
+  margin-inline-end: 10px;
   padding: 0;
   width: 34px !important;
 }
@@ -12500,10 +12500,10 @@ a.ico-32 {
   border: solid 1px var(--osc-rule-strong);
   border-radius: 1rem;
   color: var(--osc-ink-muted);
-  float: right;
+  float: inline-end;
   font-style: normal;
   height: 1.2rem;
-  margin-left: 0.1rem;
+  margin-inline-start: 0.1rem;
   margin-top: -0.2rem;
   min-width: 1.2rem;
   padding-top: 0.1rem;
@@ -12618,7 +12618,7 @@ textarea {
 }
 
 .has-pagination {
-  text-align: right;
+  text-align: end;
 }
 .has-pagination ul {
   display: inline-block;
@@ -12631,8 +12631,8 @@ textarea {
 }
 .has-pagination a, .has-pagination span {
   border: 1px solid var(--osc-rule);
-  border-left-width: 0;
-  float: left;
+  border-inline-start-width: 0;
+  float: inline-start;
   line-height: 30px;
   padding: 0 10px;
   text-decoration: none;
@@ -12646,7 +12646,7 @@ textarea {
   cursor: default;
 }
 .has-pagination .list-first {
-  border-left-width: 1px;
+  border-inline-start-width: 1px;
   border-radius: 3px 0 0 3px;
 }
 .has-pagination .list-last {
@@ -12659,13 +12659,13 @@ textarea {
 }
 
 ul.showing-results {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0;
   padding: 0;
 }
 
 .showing-results span {
-  border-left-width: 1px;
+  border-inline-start-width: 1px;
   border-radius: 3px;
 }
 
@@ -12674,13 +12674,13 @@ ul.showing-results {
 }
 
 .pagination-right {
-  text-align: right;
+  text-align: end;
 }
 
 .pagination-input {
   border: 1px solid var(--osc-rule);
-  border-left-width: 0;
-  float: left;
+  border-inline-start-width: 0;
+  float: inline-start;
   line-height: 30px;
   padding: 0;
   text-decoration: none;
@@ -12699,7 +12699,7 @@ ul.showing-results {
 .pagination-input button {
   background: var(--osc-bench);
   border: 0;
-  border-left: solid 1px var(--osc-bench-sunk);
+  border-inline-start: solid 1px var(--osc-bench-sunk);
   color: var(--osc-bronze);
   cursor: pointer;
   font-size: 0.85rem;
@@ -12712,7 +12712,7 @@ ul.showing-results {
 }
 
 .display-select-bottom {
-  float: left;
+  float: inline-start;
   margin: 25px 0 0 10px;
   padding: 0;
 }
@@ -12743,7 +12743,7 @@ ul.ui-autocomplete.ui-menu {
 .btn-market-preview {
   border-radius: 4px;
   display: inline-block;
-  margin-left: 5px;
+  margin-inline-start: 5px;
   margin-top: 5px;
   padding: 3px 10px;
   text-decoration: none;
@@ -12762,7 +12762,7 @@ ul.ui-autocomplete.ui-menu {
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule-strong);
   color: var(--osc-ink);
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 .btn-market-preview:hover {
   background-color: var(--osc-bench-warm);
@@ -12772,9 +12772,9 @@ ul.ui-autocomplete.ui-menu {
 .spinner {
   background: url("../images/loading.gif");
   display: block;
-  float: left;
+  float: inline-start;
   height: 16px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   width: 16px;
 }
 
@@ -12841,7 +12841,7 @@ ul.ui-autocomplete.ui-menu {
   margin-bottom: -0.3rem;
   margin-top: -0.3rem;
   padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
+  padding-inline-start: 0.5rem;
   padding-top: 0.25rem;
   width: 50%;
 }
@@ -12885,7 +12885,7 @@ ul.ui-autocomplete.ui-menu {
 
 .widget-box-selector {
   display: block;
-  float: right;
+  float: inline-end;
 }
 
 .widget-box h4, .widget-box .h4 {
@@ -12915,10 +12915,10 @@ ul.ui-autocomplete.ui-menu {
 }
 
 .widget-box .form-label {
-  float: left;
-  margin-left: 10px;
+  float: inline-start;
+  margin-inline-start: 10px;
   padding-top: 5px;
-  text-align: right;
+  text-align: end;
 }
 
 div.widget-box-content-no-wrapp,
@@ -13477,7 +13477,7 @@ div.widget-box-content-no-wrapp li a {
   display: flex;
 }
 .table .icon-new-window {
-  margin-left: 5px;
+  margin-inline-start: 5px;
 }
 .table .icon-new-window:before {
   content: "\f1c5";
@@ -13638,11 +13638,11 @@ div.widget-box-content-no-wrapp li a {
 }
 
 td.children-cat {
-  padding-left: 20px;
+  padding-inline-start: 20px;
 }
 
 .order-box {
-  padding-right: 20px;
+  padding-inline-end: 20px;
   position: relative;
 }
 .order-box img {
@@ -13666,7 +13666,7 @@ td.children-cat {
 }
 
 .sorting_desc a {
-  padding-right: 30px;
+  padding-inline-end: 30px;
 }
 .sorting_desc a:before {
   content: "\f229";
@@ -13674,7 +13674,7 @@ td.children-cat {
 }
 
 .sorting_asc a {
-  padding-right: 30px;
+  padding-inline-end: 30px;
 }
 .sorting_asc a:before {
   content: "\f235";
@@ -13765,16 +13765,16 @@ td.children-cat {
   margin-bottom: 15px;
 }
 .form-horizontal .form-label {
-  float: left;
+  float: inline-start;
   width: 150px;
-  text-align: right;
+  text-align: end;
   word-break: break-word;
 }
 .form-horizontal .form-controls {
-  margin-left: 170px;
+  margin-inline-start: 170px;
 }
 .form-horizontal .form-actions {
-  padding-left: 170px;
+  padding-inline-start: 170px;
 }
 
 .form-row .input-text, .form-row input[type=text] {
@@ -13802,7 +13802,7 @@ td.children-cat {
 
 .select-box .select-box-label {
   display: block;
-  float: left;
+  float: inline-start;
   line-height: 16px;
   overflow: hidden;
 }
@@ -13883,20 +13883,20 @@ table.table-small td {
 .current-theme .theme {
   float: none;
   height: auto !important;
-  margin-right: 0;
+  margin-inline-end: 0;
   width: auto;
 }
 
 .current-theme .theme img {
-  float: left;
+  float: inline-start;
 }
 
 .theme {
   background-color: var(--osc-bench-warm);
-  float: left;
+  float: inline-start;
   font-size: 0.95rem;
   margin-bottom: 40px;
-  margin-right: 20px;
+  margin-inline-end: 20px;
   padding: 10px;
   border-radius: 4px;
   width: 250px;
@@ -13904,7 +13904,7 @@ table.table-small td {
 
 .theme img {
   border: solid 1px var(--osc-bench-sunk);
-  margin-right: 20px;
+  margin-inline-end: 20px;
   width: 250px;
   border-radius: 4px;
 }
@@ -13921,8 +13921,8 @@ table.table-small td {
 
 .theme .theme-actions .btn {
   margin-bottom: 5px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-inline-start: 6px;
+  padding-inline-end: 6px;
 }
 
 .theme-actions a.delete {
@@ -14247,11 +14247,11 @@ code {
 #listing-toolbar,
 .table-toolbar {
   height: 44px;
-  float: right;
+  float: inline-end;
 }
 
 #listing-toolbar + #datatablesForm #bulk-actions, #admins-toolbar + #datatablesForm #bulk-actions, #users-toolbar + #datatablesForm #bulk-actions {
-  float: left;
+  float: inline-start;
 }
 
 #bulk-actions {
@@ -14272,7 +14272,7 @@ code {
 }
 
 #display-filters .form-controls {
-  margin-left: 80px;
+  margin-inline-start: 80px;
 }
 
 #item-form label {
@@ -14336,7 +14336,7 @@ code {
 #plugin-hook .row{}
 #plugin-hook .row label{
     clear:both;
-    float:left;
+    float: inline-start;
     width:160px;
     min-height:30px;
     margin:0;
@@ -14344,7 +14344,7 @@ code {
 }
 #plugin-hook .row select,
 #plugin-hook .row input{
-    margin-left:180px;
+    margin-inline-start:180px;
     display: block;
 }
 #plugin-hook .row br{
@@ -14358,7 +14358,7 @@ code {
   padding: 0 1rem;
 }
 #plugin-hook .has-slider {
-  padding-left: 180px;
+  padding-inline-start: 180px;
 }
 #plugin-hook .meta select, #plugin-hook .meta input[type=text], #plugin-hook .meta input[type=email], #plugin-hook .meta input.cf_date {
   max-width: 15rem;
@@ -14384,7 +14384,7 @@ code {
 }
 
 .ui-sortable li ul {
-  margin-left: 39px;
+  margin-inline-start: 39px;
   padding: 0;
 }
 
@@ -14412,32 +14412,32 @@ code {
 
 .list-categories .category_row {
   height: 26px;
-  padding-left: 87px;
+  padding-inline-start: 87px;
 }
 
 .ico-droppable {
-  border-right: solid 1px var(--osc-bench-sunk);
+  border-inline-end: solid 1px var(--osc-bench-sunk);
   cursor: move;
   height: 36px;
   left: 1px;
-  margin-left: 2px;
+  margin-inline-start: 2px;
   position: absolute;
   top: 1px;
   width: 34px;
 }
 
 .ico-childrens {
-  border-right: solid 1px var(--osc-bench-sunk);
+  border-inline-end: solid 1px var(--osc-bench-sunk);
   height: 36px;
   left: 36px;
-  margin-left: 2px;
+  margin-inline-start: 2px;
   position: absolute;
   top: 1px;
   width: 38px;
 }
 
 .ui-sortable li ul li ul li ul .category_row {
-  padding-left: 49px;
+  padding-inline-start: 49px;
 }
 
 .ui-sortable li ul li ul li ul .subcategory .toggle,
@@ -14452,9 +14452,9 @@ code {
 */
 .ico-childrens .toggle {
   display: block;
-  float: left;
+  float: inline-start;
   height: 10px;
-  margin-left: 7px;
+  margin-inline-start: 7px;
   margin-top: 7px;
   padding: 5px;
   text-indent: -99999px;
@@ -14474,15 +14474,15 @@ code {
 }
 
 .list-fields .name-edit-cfield {
-  padding-left: 10px;
+  padding-inline-start: 10px;
 }
 
 ul.subcategories {
-  margin-left: 20px;
+  margin-inline-start: 20px;
 }
 
 .list-categories > ul {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 .list-categories li {
   margin-top: 10px;
@@ -14492,7 +14492,7 @@ ul.subcategories {
   font-size: 1.25rem;
 }
 .iframe-category .input-line {
-  float: left;
+  float: inline-start;
 }
 
 .list-categories .form-actions {
@@ -14518,7 +14518,7 @@ ul.subcategories {
   font-weight: normal;
   margin-bottom: 10px;
   padding-bottom: 5px;
-  padding-left: 15px;
+  padding-inline-start: 15px;
   position: relative;
 }
 
@@ -14550,8 +14550,8 @@ ul.subcategories {
   padding-bottom: 0.5rem;
 }
 .sortable li ul {
-  padding-left: 0;
-  margin-left: 2rem;
+  padding-inline-start: 0;
+  margin-inline-start: 2rem;
 }
 .sortable .collapsed span:before {
   transform: rotate(-90deg);
@@ -14572,9 +14572,9 @@ ul.subcategories {
 
 .treeview .hitarea {
   cursor: pointer;
-  float: left;
+  float: inline-start;
   height: 12px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   width: 12px;
 }
 .treeview .hitarea:before {
@@ -14597,7 +14597,7 @@ ul.subcategories {
 }
 
 .treeview .expandable-hitarea {
-  margin-right: 5px;
+  margin-inline-end: 5px;
 }
 .treeview .expandable-hitarea:before {
   content: "\f4f9";
@@ -14626,7 +14626,7 @@ form h3, form .h3 {
 }
 
 .ui-osc-tabs .ui-tabs-nav li {
-  float: right;
+  float: inline-end;
 }
 
 .ui-dialog {
@@ -14685,20 +14685,20 @@ form h3, form .h3 {
 
 .osc-modal-content-market img {
   border: solid 2px var(--osc-bench-warm);
-  float: left;
-  margin-right: 20px;
+  float: inline-start;
+  margin-inline-end: 20px;
   max-height: 106px;
   border-radius: 4px;
 }
 
 .osc-modal-content-market .table {
-  float: left;
+  float: inline-start;
   width: 300px;
 }
 
 .osc-modal-content-market .form-row .market-data {
   display: block;
-  padding-left: 100px;
+  padding-inline-start: 100px;
 }
 
 .plugin-support-icon {
@@ -14765,7 +14765,7 @@ form h3, form .h3 {
     min-width: 100px;
   }
   #datatablesForm .table .col-status {
-    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    border-inline-start: 1px solid rgba(0, 0, 0, 0.1);
   }
   #datatablesForm .table .col-bulkactions ~ td:not(.col-order) {
     max-width: 100%;
@@ -14781,7 +14781,7 @@ form h3, form .h3 {
   }
   #datatablesForm .table .col-bulkactions + td ~ td:not(.col-order):before {
     content: attr(data-col-name) ": ";
-    padding-right: 0.5rem;
+    padding-inline-end: 0.5rem;
     font-weight: 500;
   }
   #datatablesForm .table .col-bulkactions + th ~ th:not(.col-order) {
@@ -14797,8 +14797,8 @@ form h3, form .h3 {
 }
 @media (max-width: 576px) {
   #content-page > .col {
-    padding-left: 0.1rem;
-    padding-right: 0.1rem;
+    padding-inline-start: 0.1rem;
+    padding-inline-end: 0.1rem;
   }
   .grid-10,
   .grid-20,
@@ -14822,7 +14822,7 @@ form h3, form .h3 {
   }
   #display-filters .form-horizontal .form-controls,
   .form-horizontal .form-controls {
-    margin-left: inherit;
+    margin-inline-start: inherit;
   }
   #display-filters .form-horizontal .form-controls select,
   .form-horizontal .form-controls select {

@@ -26,18 +26,18 @@
   }
 
   .form-label {
-    float: left;
+    float: inline-start;
     width: 150px;
-    text-align: right;
+    text-align: end;
     word-break: break-word;
   }
 
   .form-controls {
-    margin-left: 170px;
+    margin-inline-start: 170px;
   }
 
   .form-actions {
-    padding-left: 170px;
+    padding-inline-start: 170px;
   }
 }
 
@@ -85,7 +85,7 @@
 
 .select-box .select-box-label {
   display: block;
-  float: left;
+  float: inline-start;
   line-height: 16px;
   overflow: hidden;
 }
