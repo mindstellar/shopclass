@@ -65,7 +65,6 @@
         if (btn) {
             var root = document.documentElement;
             var icon = btn.querySelector('i');
-            var label = btn.querySelector('.sidebar-util-label');
             // Flip the attribute first so the change is instant — the whole theme is CSS custom
             // properties keyed off data-bs-theme, nothing to reload — then persist it best-effort.
             // If the write fails the UI is still correct for this page; the next load reverts.
@@ -77,9 +76,9 @@
                     icon.classList.toggle('bi-moon-stars-fill', next === 'light');
                     icon.classList.toggle('bi-sun-fill', next === 'dark');
                 }
-                if (label) {
-                    label.textContent = next === 'dark' ? '<?php echo osc_esc_js(__('Light mode')); ?>' : '<?php echo osc_esc_js(__('Dark mode')); ?>';
-                }
+                var hint = next === 'dark' ? '<?php echo osc_esc_js(__('Switch to light mode')); ?>' : '<?php echo osc_esc_js(__('Switch to dark mode')); ?>';
+                btn.setAttribute('title', hint);
+                btn.setAttribute('aria-label', hint);
                 fetch('<?php echo osc_admin_base_url(true) . '?page=ajax&action=save_admin_theme&' . osc_csrf_token_url(); ?>&theme=' + next, {
                     method: 'POST',
                     headers: {'X-Requested-With': 'XMLHttpRequest'}

@@ -20,6 +20,8 @@
 $numItemsPerCategory = __get('numItemsPerCategory');
 $numItems            = __get('numItems');
 $numUsers            = __get('numUsers');
+$numPendingComments  = (int) __get('numPendingComments');
+$numReportedItems    = (int) __get('numReportedItems');
 $aFeatured           = __get('aFeatured');
 osc_add_filter('render-wrapper', 'render_offset');
 /**
@@ -79,58 +81,85 @@ function chartJs()
             'packages': ['corechart']
         });
         google.charts.setOnLoadCallback(drawChartListing);
-        //google.charts.setOnLoadCallback(drawChartUser);
-        function drawChartListing() {
-            var data = google.visualization.arrayToDataTable([
-                ['<?php _e('Date'); ?>', '<?php _e('Listings'); ?>', '<?php _e('Users'); ?>'],
-                <?php foreach ($items as $k => $v) {
-                    echo "['" . $k . "', $v , $users[$k]],";
-                } ?>
-            ]);
-            var options = {
-                title: '<?php _e('New listings/users'); ?>',
-                titleTextStyle: {
-                    color: '#444444',
-                    fontSize: 16,
-                    bold : false
-                },
+
+        var oscListingChart, oscListingData;
+
+        // Pull the live value of a theme token so the chart paints with the same
+        // palette as the rest of the admin — and, redrawn on toggle, follows it.
+        function oscCssVar(name, fallback) {
+            var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+            return (v && v.trim()) || fallback;
+        }
+
+        function oscChartOptions() {
+            var muted  = oscCssVar('--osc-ink-muted', '#67635d');
+            var rule   = oscCssVar('--osc-rule', '#e0dcd4');
+            var bronze = oscCssVar('--osc-bronze', '#a9703f');
+            var info   = oscCssVar('--osc-info', '#3a8fbf');
+            return {
+                title: '<?php echo osc_esc_js(__('New listings/users')); ?>',
+                titleTextStyle: { color: muted, fontSize: 14, bold: false },
+                // Transparent so the chart sits on the widget's surface in either
+                // theme instead of baking in a white fill.
+                backgroundColor: { fill: 'transparent' },
                 hAxis: {
-                    titleTextStyle: {
-                        color: '#333'
-                    },
-                    slantedText: false,
+                    textStyle: { color: muted },
+                    gridlines: { color: rule },
+                    baselineColor: rule,
+                    slantedText: false
                 },
                 vAxis: {
-                    minValue: 0
+                    minValue: 0,
+                    textStyle: { color: muted },
+                    gridlines: { color: rule },
+                    baselineColor: rule
                 },
                 legend: {
                     position: 'bottom',
                     alignment: 'center',
+                    textStyle: { color: muted }
                 },
-                colors: ['#03dffc', '#035afc'],
-                chartArea: {
-                    top:20,
-                    width: '95%',
-                    height: '80%'
-                },
-                animation: {
-                    "startup": true,
-                    duration: 250,
-                    easing: 'out',
-                           
-                }
+                colors: [bronze, info],
+                areaOpacity: 0.16,
+                lineWidth: 2,
+                chartArea: { top: 24, left: 32, width: '88%', height: '70%' },
+                animation: { startup: true, duration: 250, easing: 'out' }
             };
-
-            var chart = new google.visualization.AreaChart(document.getElementById('placeholder-listing'));
-            chart.draw(data, options);
-            var windowResizeTimer;
-            window.addEventListener('resize', function(e) {
-                clearTimeout(windowResizeTimer);
-                windowResizeTimer = setTimeout(function() {
-                    chart.draw(data, options);
-                }, 750);
-            });
         }
+
+        function drawChartListing() {
+            oscListingData = google.visualization.arrayToDataTable([
+                ['<?php echo osc_esc_js(__('Date')); ?>', '<?php echo osc_esc_js(__('Listings')); ?>', '<?php echo osc_esc_js(__('Users')); ?>'],
+                <?php foreach ($items as $k => $v) {
+                    echo "['" . osc_esc_js($k) . "', " . (int)$v . ', ' . (int)$users[$k] . '],';
+                } ?>
+            ]);
+            oscListingChart = new google.visualization.AreaChart(document.getElementById('placeholder-listing'));
+            oscListingChart.draw(oscListingData, oscChartOptions());
+        }
+
+        function oscRedrawListingChart() {
+            if (oscListingChart && oscListingData) {
+                oscListingChart.draw(oscListingData, oscChartOptions());
+            }
+        }
+
+        var oscChartResizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(oscChartResizeTimer);
+            oscChartResizeTimer = setTimeout(oscRedrawListingChart, 300);
+        });
+
+        // Redraw on theme flip so the text/grid/series colours re-resolve from the
+        // tokens instead of freezing at their load-time (light) values.
+        new MutationObserver(function (muts) {
+            for (var i = 0; i < muts.length; i++) {
+                if (muts[i].attributeName === 'data-bs-theme') {
+                    oscRedrawListingChart();
+                    break;
+                }
+            }
+        }).observe(document.documentElement, { attributes: true });
     </script>
     <?php
 }
@@ -140,6 +169,36 @@ osc_add_hook('admin_footer', 'chartJs', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="dashboard">
+    <div class="dash-stats">
+        <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=items">
+            <span class="dash-stat-icon dash-stat-icon-bronze"><i class="bi bi-card-list" aria-hidden="true"></i></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-value"><?php echo number_format((int) $numItems); ?></span>
+                <span class="dash-stat-label"><?php _e('Listings'); ?></span>
+            </span>
+        </a>
+        <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=users">
+            <span class="dash-stat-icon dash-stat-icon-info"><i class="bi bi-people" aria-hidden="true"></i></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-value"><?php echo number_format((int) $numUsers); ?></span>
+                <span class="dash-stat-label"><?php _e('Users'); ?></span>
+            </span>
+        </a>
+        <a class="dash-stat<?php echo $numPendingComments > 0 ? ' dash-stat-flag' : ''; ?>" href="<?php echo osc_admin_base_url(true); ?>?page=comments">
+            <span class="dash-stat-icon <?php echo $numPendingComments > 0 ? 'dash-stat-icon-warning' : 'dash-stat-icon-muted'; ?>"><i class="bi bi-chat-left-dots" aria-hidden="true"></i></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-value"><?php echo number_format($numPendingComments); ?></span>
+                <span class="dash-stat-label"><?php _e('Comments to moderate'); ?></span>
+            </span>
+        </a>
+        <a class="dash-stat<?php echo $numReportedItems > 0 ? ' dash-stat-flag' : ''; ?>" href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;action=items_reported&amp;sort=spam">
+            <span class="dash-stat-icon <?php echo $numReportedItems > 0 ? 'dash-stat-icon-danger' : 'dash-stat-icon-muted'; ?>"><i class="bi bi-flag" aria-hidden="true"></i></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-value"><?php echo number_format($numReportedItems); ?></span>
+                <span class="dash-stat-label"><?php _e('Reported listings'); ?></span>
+            </span>
+        </a>
+    </div>
     <div class="row g-1">
         <div class="col-lg-4 col-md-6">
             <div class="widget-box h-100">
@@ -218,6 +277,42 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php _e('Listing statistics'); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="widget-box h-100">
+                <div class="widget-box-title">
+                    <h3><?php _e('System status'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <?php
+                    $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
+                    $fmtBytes = static function ($bytes) {
+                        if (!is_numeric($bytes) || $bytes <= 0) {
+                            return '—';
+                        }
+                        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+                        $i     = (int) min(floor(log($bytes, 1024)), count($units) - 1);
+                        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
+                    };
+                    $rows = array(
+                        array('bi-box-seam', __('Osclass version'), OSCLASS_VERSION),
+                        array('bi-filetype-php', __('PHP version'), PHP_VERSION),
+                        array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
+                        array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
+                        array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
+                    );
+                    ?>
+                    <ul class="dash-system">
+                        <?php foreach ($rows as $r) { ?>
+                            <li class="dash-system-row">
+                                <i class="bi <?php echo $r[0]; ?>" aria-hidden="true"></i>
+                                <span class="dash-system-label"><?php echo osc_esc_html($r[1]); ?></span>
+                                <span class="dash-system-value"><?php echo osc_esc_html($r[2]); ?></span>
+                            </li>
+                        <?php } ?>
+                    </ul>
                 </div>
             </div>
         </div>

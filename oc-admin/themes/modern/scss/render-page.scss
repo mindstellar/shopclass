@@ -1,12 +1,12 @@
-// Page title row. Shares the white bench with the topbar above so the two read as
-// one header zone; this block carries the single hairline that divides that zone
-// from the content tray. The heading is a flex row: it neutralises the physical
-// float-end / float-right on the action links (RTL-unsafe, like the sidebar chevron
-// was) and lets the actions sit at the row's end via margin-inline-start:auto.
+// Page title row. It belongs to the content tray, not the topbar: the topbar is
+// the app-chrome bar (its own bench surface + hairline), and this row sits on the
+// sunk content surface below it as the page's own header — so it takes no bench
+// fill and no divider, letting the title read as the top of the page content. The
+// heading is a flex row: it neutralises the physical float-end / float-right on the
+// action links (RTL-unsafe, like the sidebar chevron was) and lets the actions sit
+// at the row's end via margin-inline-start:auto.
 #content-head {
-  background-color: var(--osc-bench);
-  border-bottom: 1px solid var(--osc-rule);
-  padding: .3rem 15px .85rem;
+  padding: 1.1rem 15px .35rem;
 
   h1, h2, h3 {
     align-items: center;

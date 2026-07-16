@@ -55,6 +55,14 @@ class CAdminMain extends AdminSecBaseModel
                 $this->_exportVariableToView('numUsers', User::newInstance()->count());
                 $this->_exportVariableToView('numItems', Item::newInstance()->count());
 
+                // At-a-glance moderation counters for the dashboard. Each is a single
+                // indexed COUNT on a boolean column, cheap enough to run on load.
+                $this->_exportVariableToView(
+                    'numPendingComments',
+                    ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )')
+                );
+                $this->_exportVariableToView('numReportedItems', Item::newInstance()->countByMarkas('spam'));
+
                 // stats
                 $items       = array();
                 $stats_items = Stats::newInstance()->new_items_count(date(

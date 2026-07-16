@@ -8,3 +8,114 @@
   border-bottom: solid 1px var(--osc-bench-sunk);
   padding: 5px 0;
 }
+
+// ---- Metric tiles -----------------------------------------------------------
+// A responsive row of flat cards, each an icon chip beside a big value and a
+// muted label. The whole tile is a link into the matching queue/list. Flat at
+// rest — depth is the border and surface tone, never a shadow.
+.dash-stats {
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin-bottom: .75rem;
+}
+
+.dash-stat {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  color: inherit;
+  display: flex;
+  gap: .8rem;
+  padding: .9rem 1rem;
+  text-decoration: none;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease),
+              background-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-bronze);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.dash-stat-icon {
+  align-items: center;
+  border-radius: $border-radius;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.35rem;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.dash-stat-icon-bronze  { background-color: var(--osc-bronze-tint);  color: var(--osc-bronze); }
+.dash-stat-icon-info    { background-color: var(--osc-info-tint);    color: var(--osc-info); }
+.dash-stat-icon-warning { background-color: var(--osc-warning-tint); color: var(--osc-ink-emphasis); }
+.dash-stat-icon-danger  { background-color: var(--osc-danger-tint);  color: var(--osc-danger); }
+.dash-stat-icon-muted   { background-color: var(--osc-bench-sunk);   color: var(--osc-ink-muted); }
+
+.dash-stat-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.dash-stat-value {
+  color: var(--osc-ink);
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-label {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-sm;
+}
+
+// ---- System status list -----------------------------------------------------
+.dash-system {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-system-row {
+  align-items: center;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: .6rem;
+  padding: .55rem 0;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+
+  > i {
+    color: var(--osc-ink-muted);
+    flex: 0 0 auto;
+    font-size: 1.05rem;
+  }
+}
+
+.dash-system-label {
+  color: var(--osc-ink-muted);
+}
+
+.dash-system-value {
+  color: var(--osc-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin-inline-start: auto;
+  text-align: end;
+}

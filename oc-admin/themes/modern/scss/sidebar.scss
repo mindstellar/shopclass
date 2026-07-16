@@ -258,7 +258,7 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
-// ---- Footer utility zone: appearance, account, collapse ---------------------
+// ---- Footer utility zone: collapse control ----------------------------------
 .sidebar-footer {
   background-color: var(--osc-chrome);
   border-block-start: 1px solid var(--osc-chrome-edge);
@@ -269,7 +269,6 @@ $sidebar-gutter: 2.35rem;
   padding: .35rem;
 }
 
-.sidebar-util,
 .sidebar-collapse-toggle {
   align-items: center;
   background-color: transparent;
@@ -290,6 +289,7 @@ $sidebar-gutter: 2.35rem;
   > i {
     flex: 0 0 auto;
     font-size: 1.05rem;
+    transition: transform var(--osc-duration-base) var(--osc-ease);
   }
 
   &:hover {
@@ -303,52 +303,28 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
-.sidebar-collapse-toggle > i {
-  transition: transform var(--osc-duration-base) var(--osc-ease);
-}
-
-// The account button's expand caret rides at the row's end.
-.sidebar-util-caret {
-  color: var(--osc-ink-muted);
-  font-size: .9rem !important;
-  margin-inline-start: auto;
-}
-
-.sidebar-account {
-  .dropdown-menu {
-    --bs-dropdown-min-width: 12rem;
-
-    box-shadow: var(--osc-shadow-overlay);
-  }
-
-  .dropdown-item {
-    align-items: center;
-    display: flex;
-    gap: .5rem;
-  }
-}
-
 // ---- Header zone over the content -------------------------------------------
-// The topbar (tools) and #content-head (page title + actions, styled in
-// render-page.scss) share one white surface and read as a single header. So the
-// topbar carries NO bottom rule — the single hairline lives under #content-head,
-// dividing the whole header zone from the content tray below.
+// The topbar is the admin's app-chrome bar: it carries the plugin tools plus the
+// theme toggle and account menu, and it reads as its own surface — a bench bar
+// with its own bottom hairline — distinct from #content-head (the page title +
+// actions, styled in render-page.scss), which sits on the content tray below it.
 .admin-topbar {
   background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
   gap: .25rem;
   // #content-head and the content rows are Bootstrap .row's, which negative-margin
   // out to the column's full width; this navbar is not, so without the same pull it
   // sits inset by the .col gutter and its surface stops short of the rows below —
   // invisible on white, a dark frame in dark mode. Pull it out to align the zone.
   margin-inline: calc(var(--bs-gutter-x) * -.5);
-  min-height: 2.75rem;
+  min-height: 3.25rem;
   // Re-inset by the same gutter so the tools align with the title row's content edge.
-  padding: .3rem calc(var(--bs-gutter-x) * .5);
+  padding: .35rem calc(var(--bs-gutter-x) * .5);
 
   .admin-topbar-tools {
     align-items: center;
     flex-direction: row;
-    gap: .15rem;
+    gap: .2rem;
   }
 
   // Toolbar plugin items render as .nav-link inside this bar. Quiet ghost
@@ -373,6 +349,124 @@ $sidebar-gutter: 2.35rem;
     }
   }
 
+  // A hairline separating the plugin tools from the shell controls (theme +
+  // account). Collapses to nothing when there are no plugin tools before it.
+  .admin-topbar-divider {
+    align-self: center;
+    background-color: var(--osc-rule-strong);
+    block-size: 1.4rem;
+    inline-size: 1px;
+    margin-inline: .3rem;
+  }
+
+  // Shared ghost-button language for the theme toggle and the account trigger:
+  // muted at rest, soft chrome pill + bronze ink on hover, icon on one baseline.
+  .admin-topbar-btn {
+    align-items: center;
+    background-color: transparent;
+    border: 0;
+    border-radius: $border-radius;
+    color: var(--osc-ink-muted);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    gap: .4rem;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding: .4rem .55rem;
+    transition: background-color var(--osc-duration-fast) var(--osc-ease),
+                color var(--osc-duration-fast) var(--osc-ease);
+
+    > i {
+      font-size: 1.1rem;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-bronze);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: -2px;
+    }
+  }
+
+  // The account trigger carries a name + caret. show.bs.dropdown flips
+  // aria-expanded; tint the trigger so the open menu reads as anchored to it.
+  .admin-topbar-account-btn[aria-expanded="true"] {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+
+  .admin-topbar-avatar {
+    font-size: 1.25rem !important;
+  }
+
+  .admin-topbar-account-name {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-topbar-account-caret {
+    font-size: .7rem !important;
+    opacity: .75;
+  }
+
+  // The account dropdown: a titled header block over the action items.
+  .admin-topbar-account .dropdown-menu {
+    --bs-dropdown-min-width: 14rem;
+
+    box-shadow: var(--osc-shadow-overlay);
+    margin-block-start: .35rem;
+  }
+
+  .admin-topbar-account .dropdown-item {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+  }
+
+  .admin-topbar-account-head {
+    align-items: center;
+    display: flex;
+    gap: .6rem;
+    padding: .35rem 1rem .5rem;
+
+    > i {
+      color: var(--osc-ink-muted);
+      font-size: 1.9rem;
+    }
+  }
+
+  .admin-topbar-account-head-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .admin-topbar-account-head-name {
+    color: var(--osc-ink);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-topbar-account-head-mail {
+    color: var(--osc-ink-muted);
+    font-size: $font-size-sm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   // The old hamburger bars were tuned for a dark navbar; ink them for the light
   // bar so they stay visible on mobile.
   .toggle-icon span {
@@ -382,6 +476,15 @@ $sidebar-gutter: 2.35rem;
     &:focus {
       background: var(--osc-bronze);
     }
+  }
+}
+
+// On phones the topbar also carries the hamburger, so drop the account name to the
+// avatar + caret to keep a long username from crowding the bar. The name stays in
+// the dropdown header, and the button keeps its title/aria-label.
+@media (max-width: 575.98px) {
+  .admin-topbar .admin-topbar-account-name {
+    display: none;
   }
 }
 
@@ -534,14 +637,11 @@ $sidebar-gutter: 2.35rem;
       }
     }
 
-    .sidebar-util,
     .sidebar-collapse-toggle {
       justify-content: center;
       padding-inline: 0;
     }
 
-    .sidebar-util-label,
-    .sidebar-util-caret,
     .sidebar-collapse-toggle-label {
       display: none;
     }

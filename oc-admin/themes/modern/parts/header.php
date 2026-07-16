@@ -43,30 +43,6 @@ if ($oscSidebar !== 'collapsed') {
                 </div>
             </div>
             <div class="sidebar-footer">
-                <button type="button" id="oscThemeToggle" class="sidebar-util"
-                        title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
-                        aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
-                    <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'; ?>" aria-hidden="true"></i>
-                    <span class="sidebar-util-label"><?php echo $oscAdminTheme === 'dark' ? osc_esc_html(__('Light mode')) : osc_esc_html(__('Dark mode')); ?></span>
-                </button>
-                <div class="dropup sidebar-account">
-                    <button type="button" id="userDropdown" class="sidebar-util" data-bs-toggle="dropdown" aria-expanded="false"
-                            title="<?php echo osc_esc_html(__('User Menu')); ?>">
-                        <i class="bi bi-person-circle" aria-hidden="true"></i>
-                        <span class="sidebar-util-label"><?php _e('Account'); ?></span>
-                        <i class="bi bi-chevron-expand sidebar-util-caret" aria-hidden="true"></i>
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="userDropdown">
-                        <a class="dropdown-item"
-                           href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
-                            <i class="bi bi-person-lines-fill"></i> <?php _e('Edit Profile'); ?></a>
-                        <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
-                            <i class="bi bi-gear-fill"></i> <?php _e('Settings'); ?></a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
-                            <i class="bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
-                    </div>
-                </div>
                 <button type="button" id="oscSidebarToggle" class="sidebar-collapse-toggle"
                         aria-controls="sidebar-wrapper"
                         aria-expanded="<?php echo $oscSidebar === 'collapsed' ? 'false' : 'true'; ?>"
@@ -84,6 +60,41 @@ if ($oscSidebar !== 'collapsed') {
                 </button>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
                     <?php AdminToolbar::newInstance()->render(); ?>
+                    <li class="nav-item admin-topbar-divider" aria-hidden="true"></li>
+                    <li class="nav-item">
+                        <button type="button" id="oscThemeToggle" class="admin-topbar-btn"
+                                title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
+                                aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
+                            <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'; ?>" aria-hidden="true"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown admin-topbar-account">
+                        <button type="button" id="userDropdown" class="admin-topbar-btn admin-topbar-account-btn"
+                                data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false"
+                                title="<?php echo osc_esc_html(__('User Menu')); ?>">
+                            <i class="bi bi-person-circle admin-topbar-avatar" aria-hidden="true"></i>
+                            <span class="admin-topbar-account-name"><?php echo osc_esc_html(osc_logged_admin_username()); ?></span>
+                            <i class="bi bi-chevron-down admin-topbar-account-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <div class="admin-topbar-account-head">
+                                <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                <div class="admin-topbar-account-head-text">
+                                    <span class="admin-topbar-account-head-name"><?php echo osc_esc_html(osc_logged_admin_name() ?: osc_logged_admin_username()); ?></span>
+                                    <span class="admin-topbar-account-head-mail"><?php echo osc_esc_html(osc_logged_admin_email()); ?></span>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item"
+                               href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
+                                <i class="bi bi-person-lines-fill"></i> <?php _e('Edit Profile'); ?></a>
+                            <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
+                                <i class="bi bi-gear-fill"></i> <?php _e('Settings'); ?></a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
+                                <i class="bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
+                        </div>
+                    </li>
                 </ul>
             </header>
             <div id="content-head" class="row">
