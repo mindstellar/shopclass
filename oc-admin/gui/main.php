@@ -36,7 +36,7 @@ if (!defined('ABS_PATH')) {
     <meta name="googlebot" content="noindex, nofollow, noarchive"/>
     <title><?php echo osc_page_title(); ?> &raquo; <?php _e('Log in'); ?></title>
     <link type="text/css" media="screen" rel="stylesheet"
-          href="<?php echo osc_assets_url('bootstrap/bootstrap.min.css'); ?>"/>
+          href="<?php echo osc_current_admin_theme_styles_url('main.css?v=' . OSCLASS_VERSION); ?>"/>
     <link type="text/css" media="screen" rel="stylesheet" href="style/backoffice_login.css"/>
     <link type="text/css" media="screen" rel="stylesheet"
           href="<?php echo osc_assets_url('bootstrap-icons/bootstrap-icons.css'); ?>"/>
