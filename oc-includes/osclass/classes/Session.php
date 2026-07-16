@@ -218,7 +218,12 @@ class Session
 
     public function session_destroy()
     {
-        session_destroy();
+        // Sessions are lazy now, so this can be reached with none started — e.g. the secure
+        // base controllers call logout() (which lands here) for any not-logged-in visitor.
+        // Destroying an uninitialised session raises a PHP warning, so guard on the status.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
         $this->started = false;
     }
 
