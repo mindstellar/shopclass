@@ -255,8 +255,8 @@ class ItemsDataTable extends DataTable
                 // appended, so the span below is not escaped along with it.
                 $title = osc_esc_html($title);
 
-                // icon open add new window
-                $title .= '<span class="icon-new-window"></span>';
+                // Decorative "opens in a new tab" cue; hidden from assistive tech.
+                $title .= '<span class="icon-new-window" aria-hidden="true"></span>';
 
                 // Options of each row
                 $options_more = array();
