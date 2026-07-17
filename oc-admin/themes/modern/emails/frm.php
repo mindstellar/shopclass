@@ -67,31 +67,52 @@ function customHead()
         });
 
 
-        $(document).ready(function () {
-            $('#btn-display-test-it').click(function () {
-                (new bootstrap.Modal(document.getElementById('dialog-test-it'))).toggle();
-                return false;
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            // First visible element for a selector (the active-locale field).
+            function firstVisible(sel) {
+                return Array.prototype.slice.call(document.querySelectorAll(sel))
+                    .filter(function (el) { return el.offsetParent !== null; })[0] || null;
+            }
 
-            $('#btn-test-it').click(function () {
-                var name = $('input[name*="#s_title"]:visible').attr('name');
-                var locale = name.replace("#s_title", "");
+            var displayBtn = document.getElementById('btn-display-test-it');
+            if (displayBtn) {
+                displayBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    (new bootstrap.Modal(document.getElementById('dialog-test-it'))).toggle();
+                });
+            }
 
-                var idTinymce = locale + "#s_text";
+            var testBtn = document.getElementById('btn-test-it');
+            if (testBtn) {
+                testBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var nameEl = firstVisible('input[name*="#s_title"]');
+                    if (!nameEl) { return; }
+                    var locale = nameEl.getAttribute('name').replace('#s_title', '');
+                    var idTinymce = locale + '#s_text';
+                    var emailEl = firstVisible('input[name="test_email"]');
+                    var titleEl = firstVisible('input[name*="s_title"]');
 
-                $.post('<?php echo osc_admin_base_url(true); ?>',
-                    {
-                        page: 'ajax',
-                        action: 'test_mail_template',
-                        email: $('input[name="test_email"]:visible').val(),
-                        title: $('input[name*="s_title"]:visible').val(),
-                        body: tinyMCE.get(idTinymce).getContent({format: 'html'})
-                    },
-                    function (data) {
-                        $("#dialog-test-it .modal-body").append(data.html);
-                    }, 'json');
-                return false;
-            });
+                    var body = new URLSearchParams();
+                    body.set('page', 'ajax');
+                    body.set('action', 'test_mail_template');
+                    body.set('email', emailEl ? emailEl.value : '');
+                    body.set('title', titleEl ? titleEl.value : '');
+                    body.set('body', tinyMCE.get(idTinymce).getContent({ format: 'html' }));
+
+                    fetch('<?php echo osc_admin_base_url(true); ?>', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: body
+                    }).then(function (r) {
+                        return r.json();
+                    }).then(function (data) {
+                        var mb = document.querySelector('#dialog-test-it .modal-body');
+                        if (mb) { mb.insertAdjacentHTML('beforeend', data.html); }
+                    });
+                });
+            }
         });
 
     </script>
