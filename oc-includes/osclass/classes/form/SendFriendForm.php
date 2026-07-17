@@ -116,63 +116,54 @@ class SendFriendForm extends Form
 
     public static function js_validation()
     {
+        // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
+        // external helper so it runs on any public theme.
         ?>
         <script type="text/javascript">
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=sendfriend]").validate({
-                    rules: {
-                        yourName: {
-                            required: true
-                        },
-                        yourEmail: {
-                            required: true,
-                            email: true
-                        },
-                        friendName: {
-                            required: true
-                        },
-                        friendEmail: {
-                            required: true,
-                            email: true
-                        },
-                        message: {
-                            required: true
-                        }
+            (function () {
+                var form = document.querySelector('form[name="sendfriend"]');
+                if (!form) { return; }
+                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                var fields = [
+                    {name: 'yourName', required: "<?php echo osc_esc_js(__('Your name: this field is required')); ?>."},
+                    {
+                        name: 'yourEmail',
+                        required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
+                        email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
                     },
-                    messages: {
-                        yourName: {
-                            required: "<?php _e('Your name: this field is required'); ?>."
-                        },
-                        yourEmail: {
-                            email: "<?php _e('Invalid email address'); ?>.",
-                            required: "<?php _e('Email: this field is required'); ?>."
-                        },
-                        friendName: {
-                            required: "<?php _e("Friend's name: this field is required"); ?>."
-                        },
-                        friendEmail: {
-                            required: "<?php _e("Friend's email: this field is required"); ?>.",
-                            email: "<?php _e("Invalid friend's email address"); ?>."
-                        },
-                        message: "<?php _e('Message: this field is required'); ?>."
-
+                    {name: 'friendName', required: "<?php echo osc_esc_js(__("Friend's name: this field is required")); ?>."},
+                    {
+                        name: 'friendEmail',
+                        required: "<?php echo osc_esc_js(__("Friend's email: this field is required")); ?>.",
+                        email: "<?php echo osc_esc_js(__("Invalid friend's email address")); ?>."
                     },
-                    //onfocusout: function(element) { $(element).valid(); },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+                    {name: 'message', required: "<?php echo osc_esc_js(__('Message: this field is required')); ?>."}
+                ];
+                form.addEventListener('submit', function (e) {
+                    var errors = [];
+                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                    fields.forEach(function (f) {
+                        var el = form.querySelector('[name="' + f.name + '"]');
+                        if (!el) { return; }
+                        var v = el.value.trim(), msg = null;
+                        if (v === '') { msg = f.required; }
+                        else if (f.email && !emailRe.test(v)) { msg = f.email; }
+                        if (msg) { errors.push({el: el, msg: msg}); el.classList.add('is-invalid'); }
+                    });
+                    var container = document.querySelector('#error_list');
+                    if (container) {
+                        container.innerHTML = '';
+                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+                    }
+                    if (errors.length) {
+                        e.preventDefault();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                    } else {
+                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
                     }
                 });
-            });
+            })();
         </script>
         <?php
     }

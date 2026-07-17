@@ -145,45 +145,47 @@ class ContactForm extends Form
 
     public static function js_validation()
     {
+        // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
+        // external helper so it runs on any public theme.
         ?>
         <script>
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=contact_form]").validate({
-                    rules: {
-                        message: {
-                            required: true,
-                            minlength: 1
-                        },
-                        yourEmail: {
-                            required: true,
-                            email: true
-                        }
-                    },
-                    messages: {
-                        yourEmail: {
-                            required: "<?php _e('Email: this field is required'); ?>.",
-                            email: "<?php _e('Invalid email address'); ?>."
-                        },
-                        message: {
-                            required: "<?php _e('Message: this field is required'); ?>.",
-                            minlength: "<?php _e('Message: this field is required'); ?>."
-                        }
-                    },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+            (function () {
+                var form = document.querySelector('form[name="contact_form"]');
+                if (!form) { return; }
+                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                var fields = [
+                    {name: 'message', required: "<?php echo osc_esc_js(__('Message: this field is required')); ?>."},
+                    {
+                        name: 'yourEmail',
+                        required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
+                        email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
+                    }
+                ];
+                form.addEventListener('submit', function (e) {
+                    var errors = [];
+                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                    fields.forEach(function (f) {
+                        var el = form.querySelector('[name="' + f.name + '"]');
+                        if (!el) { return; }
+                        var v = el.value.trim(), msg = null;
+                        if (v === '') { msg = f.required; }
+                        else if (f.email && !emailRe.test(v)) { msg = f.email; }
+                        if (msg) { errors.push({el: el, msg: msg}); el.classList.add('is-invalid'); }
+                    });
+                    var container = document.querySelector('#error_list');
+                    if (container) {
+                        container.innerHTML = '';
+                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+                    }
+                    if (errors.length) {
+                        e.preventDefault();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                    } else {
+                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
                     }
                 });
-            });
+            })();
         </script>
         <?php
     }
