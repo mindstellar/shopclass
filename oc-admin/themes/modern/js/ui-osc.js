@@ -416,3 +416,29 @@ document.addEventListener('click', function (e) {
         e.target.close();
     }
 });
+
+// Shift-click a checkbox to toggle every checkbox between it and the last one
+// clicked — a bulk-select convenience for the admin data tables. Scoped to the
+// nearest table or form so a range never leaks across regions. Pure vanilla,
+// replacing the jQuery shift-select this admin used to rely on.
+(function () {
+    var lastChecked = null;
+    document.addEventListener('click', function (e) {
+        var box = e.target.closest ? e.target.closest('input[type="checkbox"]') : null;
+        if (!box) {
+            return;
+        }
+        var scope = box.closest('table, form') || document;
+        var boxes = Array.prototype.slice.call(scope.querySelectorAll('input[type="checkbox"]'));
+        if (lastChecked && e.shiftKey && boxes.indexOf(lastChecked) !== -1) {
+            var start = boxes.indexOf(box);
+            var end = boxes.indexOf(lastChecked);
+            if (start !== -1) {
+                boxes.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function (b) {
+                    b.checked = lastChecked.checked;
+                });
+            }
+        }
+        lastChecked = box;
+    });
+})();
