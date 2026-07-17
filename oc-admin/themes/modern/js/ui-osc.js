@@ -388,3 +388,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     oscInitTabs(document);
 });
+
+// Shared behaviour for native <dialog class="osc-dialog">: a click on any
+// [data-osc-dialog-close] element closes its dialog, and a click on the dialog's
+// own backdrop area (the element itself, outside the content) closes it too.
+document.addEventListener('click', function (e) {
+    var closer = e.target.closest ? e.target.closest('[data-osc-dialog-close]') : null;
+    if (closer) {
+        var d = closer.closest('dialog');
+        if (d && typeof d.close === 'function') {
+            e.preventDefault();
+            d.close();
+        }
+        return;
+    }
+    if (e.target.matches && e.target.matches('dialog.osc-dialog') && typeof e.target.close === 'function') {
+        e.target.close();
+    }
+});

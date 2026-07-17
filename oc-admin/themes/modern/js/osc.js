@@ -138,35 +138,42 @@ function setJsMessage(alertClass, alertMessage) {
     jsMessage.classList.remove('hide');
     jsMessage.removeAttribute('style');
 }
-// Toggle the bulkActionsModal
+// Open the bulk-actions confirm dialog for the selected action (native <dialog>).
 function toggleBulkActionsModal() {
     var bulkSelect = document.getElementById("bulk_actions");
-    var bulkActionsModal = new bootstrap.Modal(document.getElementById("bulkActionsModal"));
-    if (bulkSelect.options[bulkSelect.selectedIndex].value !== '') {
-        bulkActionsModal.toggle();
+    var modal = document.getElementById("bulkActionsModal");
+    if (!bulkSelect || !modal || typeof modal.showModal !== 'function') {
+        return false;
     }
-    event.preventDefault();
+    var opt = bulkSelect.options[bulkSelect.selectedIndex];
+    if (opt.value !== '') {
+        // Content target works for a native .osc-dialog or a legacy .modal.
+        var body = modal.querySelector('.osc-dialog-text, .modal-body p');
+        if (body) { body.textContent = opt.getAttribute("data-dialog-content") || ''; }
+        var submit = document.getElementById('bulkActionsSubmit');
+        if (submit) { submit.textContent = opt.text; }
+        if (typeof modal.showModal === 'function') {
+            modal.showModal();
+        } else if (window.bootstrap) {
+            (new bootstrap.Modal(modal)).show();
+        }
+    }
     return false;
 }
 // Submit bulk actions
 function bulkActionsSubmit() {
     document.getElementById("datatablesForm").submit();
 }
-// Set up the bulkActions modal. Only pages that render #bulkActionsModal use this
-// Bootstrap-modal flow; others (e.g. ban rules) own their own confirm dialog, so
-// this must not touch their form or assume the modal exists.
+// Set up the bulkActions dialog. Only pages that render #bulkActionsModal use
+// this flow; others (e.g. ban rules) own their own confirm dialog, so this must
+// not touch their form or assume the dialog exists.
 window.addEventListener('load', function () {
     var datatablesForm = document.getElementById("datatablesForm");
     var bulkActionsModal = document.getElementById("bulkActionsModal");
     if (datatablesForm && bulkActionsModal) {
-        datatablesForm.onsubmit = function () {
+        datatablesForm.addEventListener('submit', function (e) {
+            e.preventDefault();
             toggleBulkActionsModal();
-        };
-        bulkActionsModal.addEventListener("show.bs.modal", function () {
-            var bulkSelect = document.getElementById("bulk_actions");
-            bulkActionsModal.querySelector('.modal-body p').textContent = bulkSelect.options[bulkSelect.selectedIndex]
-                .getAttribute("data-dialog-content");
-            bulkActionsModal.querySelector('#bulkActionsSubmit').textContent = bulkSelect.options[bulkSelect.selectedIndex].text;
         });
     }
 });
