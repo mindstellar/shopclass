@@ -1717,6 +1717,12 @@ class ItemForm extends Form
             Session::newInstance()->_dropKeepForm('photos');
         }
 
+        // Self-enqueue the uploader assets: printScripts() runs again on the footer hook
+        // (with de-dup), so enqueuing here — while the widget renders — loads them in the
+        // footer regardless of theme or page type. No theme needs to register anything.
+        osc_enqueue_script('osc-uploader');
+        osc_enqueue_style('osc-uploader');
+
         $aExt              = explode(',', osc_allowed_extension());
         $allowedExtensions = "'" . implode("','", $aExt) . "'";
         $acceptAttr        = '.' . implode(',.', $aExt);
@@ -1756,9 +1762,12 @@ class ItemForm extends Form
         </div>
         <script>
             (function () {
-                var root = document.getElementById('osc-uploader');
-                if (!root || typeof oscPhotoUploader !== 'function') { return; }
-                oscPhotoUploader(root, {
+                // osc-uploader.js is printed in the footer (self-enqueued above), so wait
+                // for the document to finish parsing before initialising.
+                function boot() {
+                    var root = document.getElementById('osc-uploader');
+                    if (!root || typeof oscPhotoUploader !== 'function') { return; }
+                    oscPhotoUploader(root, {
                     endpoint: '<?php echo osc_base_url(true); ?>?page=ajax&action=ajax_upload',
                     deleteEndpoint: '<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image',
                     tempBase: '<?php echo osc_base_url(); ?>oc-content/uploads/temp/',
@@ -1778,7 +1787,9 @@ class ItemForm extends Form
                         "delete": "<?php echo osc_esc_js(__('Delete')); ?>",
                         close: "<?php echo osc_esc_js(__('Close')); ?>"
                     }
-                });
+                    });
+                }
+                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
             })();
         </script>
         <?php
