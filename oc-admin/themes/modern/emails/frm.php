@@ -50,17 +50,11 @@ function customHead()
             width: "100%",
             height: "440px",
             language: 'en',
-            theme_advanced_toolbar_align: "left",
-            theme_advanced_toolbar_location: "top",
-            plugins: [
-                "advlist autolink lists link charmap preview anchor",
-                "searchreplace visualblocks code fullscreen",
-                "insertdatetime table paste"
-            ],
+            // TinyMCE 7: plugins is a single space-separated list (not an array of groups),
+            // and `paste` folded into the core, so it is no longer a loadable plugin.
+            plugins: "advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table",
+            toolbar: "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright | bullist numlist outdent indent | link table charmap | code preview fullscreen",
             entity_encoding: "raw",
-            theme_advanced_buttons1_add: "forecolorpicker,fontsizeselect",
-            theme_advanced_buttons3: "",
-            theme_advanced_disable: "styleselect,anchor",
             relative_urls: false,
             remove_script_host: false,
             convert_urls: false
