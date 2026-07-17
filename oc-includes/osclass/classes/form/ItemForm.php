@@ -1321,313 +1321,210 @@ class ItemForm extends Form
     {
         ?>
         <script>
-            $(document).ready(function () {
-                $("#countryId").on("change", function () {
-                    var pk_c_code = $(this).val();
-                    <?php if ($path === 'admin') { ?>
-                    var url = '<?php echo osc_admin_base_url(true)
-                        . '?page=ajax&action=regions&countryId='; ?>' + pk_c_code;
-                    <?php } else { ?>
-                    var url = '<?php echo osc_base_url(true)
-                        . '?page=ajax&action=regions&countryId='; ?>' + pk_c_code;
+            (function () {
+                // ---------- location cascade: country -> region -> city ----------
+                var base = '<?php echo ($path === 'admin') ? osc_admin_base_url(true) : osc_base_url(true); ?>';
+                var strRegion = "<?php echo osc_esc_js(__('Select a region...')); ?>";
+                var strCity = "<?php echo osc_esc_js(__('Select a city...')); ?>";
+
+                function byId(id) { return document.getElementById(id); }
+                function replaceEl(oldId, newEl) { var o = byId(oldId); if (o) { o.replaceWith(newEl); } }
+                function makeControl(tag, name) {
+                    var el = document.createElement(tag);
+                    if (tag === 'input') { el.type = 'text'; }
+                    el.name = name;
+                    el.id = name;
+                    return el;
+                }
+                function optionsHtml(placeholder, data) {
+                    var html = '<option value="">' + placeholder + '</option>';
+                    for (var k = 0; k < data.length; k++) {
+                        html += '<option value="' + data[k].pk_i_id + '">' + data[k].s_name + '</option>';
+                    }
+                    return html;
+                }
+                function post(url) {
+                    return fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                        .then(function (r) { return r.json(); }).catch(function () { return []; });
+                }
+                function fireChange(el) { if (el) { el.dispatchEvent(new Event('change', {bubbles: true})); } }
+
+                var country = byId('countryId');
+                if (country) {
+                    country.addEventListener('change', function () {
+                        var code = this.value;
+                        if (code === '') {
+                            if (byId('region')) { replaceEl('region', makeControl('select', 'regionId')); }
+                            if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                            if (byId('regionId')) { byId('regionId').innerHTML = '<option value="">' + strRegion + '</option>'; byId('regionId').disabled = true; }
+                            if (byId('cityId')) { byId('cityId').innerHTML = '<option value="">' + strCity + '</option>'; byId('cityId').disabled = true; }
+                            return;
+                        }
+                        if (byId('regionId')) { byId('regionId').disabled = false; }
+                        if (byId('cityId')) { byId('cityId').disabled = true; }
+                        post(base + '?page=ajax&action=regions&countryId=' + encodeURIComponent(code)).then(function (data) {
+                            if (data.length > 0) {
+                                if (byId('region')) { replaceEl('region', makeControl('select', 'regionId')); }
+                                if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                                if (byId('regionId')) { byId('regionId').innerHTML = optionsHtml(strRegion, data); }
+                                if (byId('cityId')) { byId('cityId').innerHTML = '<option value="">' + strCity + '</option>'; }
+                            } else {
+                                if (byId('regionId')) { replaceEl('regionId', makeControl('input', 'region')); }
+                                if (byId('cityId')) { replaceEl('cityId', makeControl('input', 'city')); }
+                            }
+                            fireChange(byId('regionId'));
+                            fireChange(byId('cityId'));
+                        });
+                    });
+                }
+
+                // Delegated so it survives #regionId being recreated by the country handler.
+                document.addEventListener('change', function (e) {
+                    if (!e.target || e.target.id !== 'regionId') { return; }
+                    var code = e.target.value;
+                    if (code === '') { if (byId('cityId')) { byId('cityId').disabled = true; } return; }
+                    if (byId('cityId')) { byId('cityId').disabled = false; }
+                    post(base + '?page=ajax&action=cities&regionId=' + encodeURIComponent(code)).then(function (data) {
+                        if (data.length > 0) {
+                            if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                            if (byId('cityId')) { byId('cityId').innerHTML = optionsHtml(strCity, data); }
+                        } else {
+                            if (byId('cityId')) { replaceEl('cityId', makeControl('input', 'city')); }
+                        }
+                        fireChange(byId('cityId'));
+                    });
+                });
+
+                var regionInit = byId('regionId');
+                if (regionInit && regionInit.value === '' && byId('cityId')) { byId('cityId').disabled = true; }
+                if (country && country.tagName === 'SELECT' && country.value === '' && byId('regionId')) { byId('regionId').disabled = true; }
+
+                // ---------- item form validation (jquery-validate-style config, vanilla) ----------
+                var rules = {
+                    catId: {required: true, digits: true},
+                    <?php if (osc_price_enabled_at_items()) { ?>
+                    price: {maxlength: 15},
+                    currency: {required: true},
                     <?php } ?>
-                    var result = '';
-
-                    if (pk_c_code != '') {
-
-                        $("#regionId").attr('disabled', false);
-                        $("#cityId").attr('disabled', true);
-
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            dataType: 'json',
-                            success: function (data) {
-                                var length = data.length;
-
-                                if (length > 0) {
-
-                                    result += '<option selected value=""><?php echo osc_esc_js(__('Select a region...')); ?></option>';
-                                    for (key in data) {
-                                        result += '<option value="' + data[key].pk_i_id + '">' + data[key].s_name + '</option>';
-                                    }
-
-                                    $("#region").before('<select name="regionId" id="regionId" ></select>');
-                                    $("#region").remove();
-
-                                    $("#city").before('<select name="cityId" id="cityId" ></select>');
-                                    $("#city").remove();
-
-                                    $("#regionId").val("");
-
-                                } else {
-
-                                    $("#regionId").before('<input type="text" name="region" id="region" />');
-                                    $("#regionId").remove();
-
-                                    $("#cityId").before('<input type="text" name="city" id="city" />');
-                                    $("#cityId").remove();
-
-                                }
-
-                                $("#regionId").html(result);
-                                $("#cityId").html('<option selected value=""><?php echo osc_esc_js(__('Select a city...')); ?></option>');
-                                $("#regionId").trigger('change');
-                                $("#cityId").trigger('change');
-                            }
-                        });
-
-                    } else {
-                        // add empty select
-                        $("#region").before('<select name="regionId" id="regionId" ><option value=""><?php
-                            echo osc_esc_js(__('Select a region...')); ?></option></select>');
-                        $("#region").remove();
-
-                        $("#city").before('<select name="cityId" id="cityId" ><option value=""><?php
-                            echo osc_esc_js(__('Select a city...')); ?></option></select>');
-                        $("#city").remove();
-
-                        if ($("#regionId").length > 0) {
-                            $("#regionId").html('<option value=""><?php echo osc_esc_js(__('Select a region...')); ?></option>');
-                        } else {
-                            $("#region").before('<select name="regionId" id="regionId" ><option value=""><?php
-                                echo osc_esc_js(__('Select a region...'));
-                            ?></option></select>');
-                            $("#region").remove();
-                        }
-                        if ($("#cityId").length > 0) {
-                            $("#cityId").html('<option value=""><?php
-                                echo osc_esc_js(__('Select a city...'));
-                            ?></option>');
-                        } else {
-                            $("#city").before('<select name="cityId" id="cityId" ><option value=""><?php
-                                echo osc_esc_js(__('Select a city...'));
-                            ?></option></select>');
-                            $("#city").remove();
-                        }
-                        $("#regionId").attr('disabled', true);
-                        $("#cityId").attr('disabled', true);
-                    }
-                });
-
-                $("#regionId").on("change", function () {
-                    var pk_c_code = $(this).val();
-                    <?php if ($path === 'admin') { ?>
-                    var url = '<?php echo osc_admin_base_url(true)
-                        . '?page=ajax&action=cities&regionId='; ?>' + pk_c_code;
-                    <?php } else { ?>
-                    var url = '<?php echo osc_base_url(true)
-                        . '?page=ajax&action=cities&regionId='; ?>' + pk_c_code;
+                    <?php if ($path === 'front') { ?>
+                    contactName: {minlength: 3, maxlength: 35},
+                    contactEmail: {required: true, email: true},
                     <?php } ?>
+                    regionId: {required: true, digits: true},
+                    cityId: {required: true, digits: true},
+                    cityArea: {minlength: 3, maxlength: 50},
+                    address: {minlength: 3, maxlength: 100}
+                    <?php osc_run_hook('item_form_validation_rules'); ?>
+                };
+                var messages = {
+                    catId: "<?php echo osc_esc_js(__('Choose one category')); ?>.",
+                    <?php if (osc_price_enabled_at_items()) { ?>
+                    price: {maxlength: "<?php echo osc_esc_js(__('Price: no more than 50 characters')); ?>."},
+                    currency: "<?php echo osc_esc_js(__('Currency: make your selection')); ?>.",
+                    <?php } ?>
+                    <?php if ($path === 'front') { ?>
+                    contactName: {
+                        minlength: "<?php echo osc_esc_js(__('Name: enter at least 3 characters')); ?>.",
+                        maxlength: "<?php echo osc_esc_js(__('Name: no more than 35 characters')); ?>."
+                    },
+                    contactEmail: {
+                        required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
+                        email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
+                    },
+                    <?php } ?>
+                    regionId: "<?php echo osc_esc_js(__('Select a region')); ?>.",
+                    cityId: "<?php echo osc_esc_js(__('Select a city')); ?>.",
+                    cityArea: {
+                        minlength: "<?php echo osc_esc_js(__('City area: enter at least 3 characters')); ?>.",
+                        maxlength: "<?php echo osc_esc_js(__('City area: no more than 50 characters')); ?>."
+                    },
+                    address: {
+                        minlength: "<?php echo osc_esc_js(__('Address: enter at least 3 characters')); ?>.",
+                        maxlength: "<?php echo osc_esc_js(__('Address: no more than 100 characters')); ?>."
+                    }
+                    <?php osc_run_hook('item_form_validation_messages'); ?>
+                };
 
-                    var result = '';
-
-                    if (pk_c_code != '') {
-
-                        $("#cityId").attr('disabled', false);
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            dataType: 'json',
-                            success: function (data) {
-                                var length = data.length;
-                                if (length > 0) {
-                                    result += '<option selected value=""><?php echo osc_esc_js(__('Select a city...')); ?></option>';
-                                    for (key in data) {
-                                        result += '<option value="' + data[key].pk_i_id + '">' + data[key].s_name + '</option>';
-                                    }
-
-                                    $("#city").before('<select name="cityId" id="cityId" ></select>');
-                                    $("#city").remove();
-                                } else {
-                                    result += '<option value=""><?php echo osc_esc_js(__('No results')); ?></option>';
-                                    $("#cityId").before('<input type="text" name="city" id="city" />');
-                                    $("#cityId").remove();
-                                }
-                                $("#cityId").html(result);
-                                $("#cityId").trigger('change');
-                            }
+                var form = document.querySelector('form[name="item"]');
+                if (form) {
+                    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    var msgFor = function (field, rule) {
+                        var m = messages[field];
+                        if (m == null) { return ''; }
+                        return (typeof m === 'string') ? m : (m[rule] || '');
+                    };
+                    var fieldError = function (name, spec) {
+                        var el = form.querySelector('[name="' + name + '"]');
+                        if (!el) { return null; }
+                        if (typeof spec === 'string') { spec = (spec === 'required') ? {required: true} : {}; }
+                        var v = (el.value == null ? '' : String(el.value)).trim();
+                        if (spec.required && v === '') { return {el: el, msg: msgFor(name, 'required')}; }
+                        if (v === '') { return null; }
+                        if (spec.minlength && v.length < spec.minlength) { return {el: el, msg: msgFor(name, 'minlength')}; }
+                        if (spec.maxlength && v.length > spec.maxlength) { return {el: el, msg: msgFor(name, 'maxlength')}; }
+                        if (spec.email && !emailRe.test(v)) { return {el: el, msg: msgFor(name, 'email')}; }
+                        if (spec.digits && !/^\d+$/.test(v)) { return {el: el, msg: msgFor(name, 'digits')}; }
+                        return null;
+                    };
+                    form.addEventListener('submit', function (e) {
+                        var errors = [];
+                        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                        Object.keys(rules).forEach(function (name) {
+                            var err = fieldError(name, rules[name]);
+                            if (err) { errors.push(err); if (err.el) { err.el.classList.add('is-invalid'); } }
                         });
-                    } else {
-                        $("#cityId").attr('disabled', true);
-                    }
-                });
-
-                if ($("#regionId").attr('value') == "") {
-                    $("#cityId").attr('disabled', true);
-                }
-
-                if ($("#countryId").length != 0) {
-                    if ($("#countryId").prop('type').match(/select-one/)) {
-                        if ($("#countryId").attr('value') == "") {
-                            $("#regionId").attr('disabled', true);
+                        var container = document.querySelector('#error_list');
+                        if (container) {
+                            container.innerHTML = '';
+                            errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
                         }
-                    }
-                }
-
-                /**
-                 * Validate form
-                 */
-
-                // Validate description without HTML.
-                $.validator.addMethod(
-                    "minstriptags",
-                    function (value, element) {
-                        altered_input = strip_tags(value);
-                        if (altered_input.length < 3) {
-                            return false;
+                        if (errors.length) {
+                            e.preventDefault();
+                            window.scrollTo({top: 0, behavior: 'smooth'});
+                            if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
                         } else {
-                            return true;
-                        }
-                    },
-                    "<?php echo osc_esc_js(__('Description needs to be longer')); ?>."
-                );
-
-                // Code for form validation
-                $("form[name=item]").validate({
-                    rules: {
-                        catId: {
-                            required: true,
-                            digits: true
-                        },
-                        <?php if (osc_price_enabled_at_items()) { ?>
-                        price: {
-                            maxlength: 15
-                        },
-                        currency: "required",
-                        <?php } ?>
-                        <?php if (osc_images_enabled_at_items()) { ?>
-                        "photos[]": {
-                            accept: "<?php echo osc_allowed_extension(); ?>"
-                        },
-                        <?php } ?>
-                        <?php if ($path === 'front') { ?>
-                        contactName: {
-                            minlength: 3,
-                            maxlength: 35
-                        },
-                        contactEmail: {
-                            required: true,
-                            email: true
-                        },
-                        <?php } ?>
-                        regionId: {
-                            required: true,
-                            digits: true
-                        },
-                        cityId: {
-                            required: true,
-                            digits: true
-                        },
-                        cityArea: {
-                            minlength: 3,
-                            maxlength: 50
-                        },
-                        address: {
-                            minlength: 3,
-                            maxlength: 100
-                        }
-                        <?php osc_run_hook('item_form_validation_rules'); ?>
-                    },
-                    messages: {
-                        catId: "<?php echo osc_esc_js(__('Choose one category')); ?>.",
-                        <?php if (osc_price_enabled_at_items()) { ?>
-                        price: {
-                            maxlength: "<?php echo osc_esc_js(__('Price: no more than 50 characters')); ?>."
-                        },
-                        currency: "<?php echo osc_esc_js(__('Currency: make your selection')); ?>.",
-                        <?php } ?>
-                        <?php if (osc_images_enabled_at_items()) { ?>
-                        "photos[]": {
-                            accept: "<?php echo osc_esc_js(sprintf(
-                                __('Photo: must be %s'),
-                                osc_allowed_extension()
-                            )); ?>."
-                        },
-                        <?php } ?>
-                        <?php if ($path === 'front') { ?>
-                        contactName: {
-                            minlength: "<?php echo osc_esc_js(__('Name: enter at least 3 characters')); ?>.",
-                            maxlength: "<?php echo osc_esc_js(__('Name: no more than 35 characters')); ?>."
-                        },
-                        contactEmail: {
-                            required: "<?php echo osc_esc_js(__('Email: this field is required')); ?>.",
-                            email: "<?php echo osc_esc_js(__('Invalid email address')); ?>."
-                        },
-                        <?php } ?>
-                        regionId: "<?php echo osc_esc_js(__('Select a region')); ?>.",
-                        cityId: "<?php echo osc_esc_js(__('Select a city')); ?>.",
-                        cityArea: {
-                            minlength: "<?php echo osc_esc_js(__('City area: enter at least 3 characters')); ?>.",
-                            maxlength: "<?php echo osc_esc_js(__('City area: no more than 50 characters')); ?>."
-                        },
-                        address: {
-                            minlength: "<?php echo osc_esc_js(__('Address: enter at least 3 characters')); ?>.",
-                            maxlength: "<?php echo osc_esc_js(__('Address: no more than 100 characters')); ?>."
-                        }
-                        <?php osc_run_hook('item_form_validation_messages'); ?>
-                    },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        setTimeout("$('button[type=submit], input[type=submit]').removeAttr('disabled')", 5000);
-                        form.submit();
-                    }
-                });
-            });
-
-            /**
-             * Strip HTML tags to count number of visible characters.
-             */
-            function strip_tags(html) {
-                if (arguments.length < 3) {
-                    html = html.replace(/<\/?(?!\!)[^>]*>/gi, '');
-                } else {
-                    var allowed = arguments[1];
-                    var specified = eval("[" + arguments[2] + "]");
-                    if (allowed) {
-                        var regex = '</?(?!(' + specified.join('|') + '))\b[^>]*>';
-                        html = html.replace(new RegExp(regex, 'gi'), '');
-                    } else {
-                        var regex = '</?(' + specified.join('|') + ')\b[^>]*>';
-                        html = html.replace(new RegExp(regex, 'gi'), '');
-                    }
-                }
-                return html;
-            }
-
-            function delete_image(id, item_id, name, secret) {
-                //alert(id + " - "+ item_id + " - "+name+" - "+secret);
-                var result = confirm('<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>');
-                if (result) {
-                    $.ajax({
-                        type: "POST",
-                        url: '<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image&id='
-                            + id + '&item=' + item_id + '&code=' + name + '&secret=' + secret,
-                        dataType: 'json',
-                        success: function (data) {
-                            var class_type = "error";
-                            if (data.success) {
-                                $("div[name=" + name + "]").remove();
-                                class_type = "ok";
-                            }
-                            var flash = $("#flash_js");
-                            var message = $('<div>').addClass('pubMessages').addClass(class_type).attr('id', 'flashmessage').html(data.msg);
-                            flash.html(message);
-                            $("#flashmessage").slideDown('slow').delay(3000).slideUp('slow');
+                            var btns = form.querySelectorAll('button[type=submit], input[type=submit]');
+                            btns.forEach(function (b) { b.disabled = true; });
+                            setTimeout(function () { btns.forEach(function (b) { b.disabled = false; }); }, 5000);
                         }
                     });
                 }
+            })();
+
+            // Strip HTML tags to count visible characters. Kept global: markup and plugins call it.
+            function strip_tags(html) {
+                if (arguments.length < 3) {
+                    return html.replace(/<\/?(?!\!)[^>]*>/gi, '');
+                }
+                var specified = ('' + arguments[2]).split(',').map(function (s) { return s.trim(); });
+                if (arguments[1]) {
+                    return html.replace(new RegExp('</?(?!(' + specified.join('|') + '))\\b[^>]*>', 'gi'), '');
+                }
+                return html.replace(new RegExp('</?(' + specified.join('|') + ')\\b[^>]*>', 'gi'), '');
             }
 
-
+            function delete_image(id, item_id, name, secret) {
+                var ok = confirm('<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>');
+                if (!ok) { return; }
+                fetch('<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image&id=' + id + '&item=' + item_id + '&code=' + name + '&secret=' + secret, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.success) {
+                        var row = document.querySelector('div[name="' + name + '"]');
+                        if (row) { row.remove(); }
+                    }
+                    var flash = document.getElementById('flash_js');
+                    if (flash) {
+                        flash.innerHTML = '<div class="pubMessages ' + (data.success ? 'ok' : 'error') + '" id="flashmessage"></div>';
+                        var fm = document.getElementById('flashmessage');
+                        fm.innerHTML = data.msg;
+                        fm.style.display = 'block';
+                        setTimeout(function () { fm.style.display = 'none'; }, 3000);
+                    }
+                });
+            }
         </script>
         <?php
     }
