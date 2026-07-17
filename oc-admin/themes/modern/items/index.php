@@ -28,6 +28,10 @@
  *
  */
 
+// ItemForm::location_javascript_new() (core, used by the listing filter) still
+// uses jQuery + jQuery-validate, so this page needs them until that method is
+// migrated. (jquery-validate pulls in jquery.)
+osc_enqueue_script('jquery-validate');
 
 function addHelp()
 {

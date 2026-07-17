@@ -30,6 +30,10 @@
 
 osc_enqueue_script('php-date');
 osc_enqueue_script('tiny_mce');
+// ItemForm::location_javascript_new()/photos_javascript() (core) still use
+// jQuery and jQuery-validate, so the item form needs them until those methods
+// are migrated. (jquery-validate-additional pulls jquery-validate + jquery.)
+osc_enqueue_script('jquery-validate-additional');
 
 /* Not used ?
 // cateogry js
