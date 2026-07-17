@@ -50,10 +50,12 @@ function customHead()
             width: "100%",
             height: "440px",
             language: 'en',
-            // TinyMCE 7: plugins is a single space-separated list (not an array of groups),
-            // and `paste` folded into the core, so it is no longer a loadable plugin.
-            plugins: "advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table",
-            toolbar: "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright | bullist numlist outdent indent | link table charmap | code preview fullscreen",
+            // Lean set for editing an email template: basic inline formatting, lists,
+            // links, and a raw-HTML view. TinyMCE 7 takes plugins as one space-separated
+            // list; bold/italic/underline/removeformat are core (no plugin needed).
+            plugins: "autolink lists link code",
+            toolbar: "undo redo | bold italic underline | bullist numlist | link | removeformat | code",
+            menubar: false,
             entity_encoding: "raw",
             relative_urls: false,
             remove_script_host: false,
