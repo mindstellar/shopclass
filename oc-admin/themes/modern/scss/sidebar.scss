@@ -267,14 +267,26 @@ $sidebar-gutter: 2.35rem;
 // ---- Brand masthead ---------------------------------------------------------
 .sidebar-brand {
   align-items: center;
+  // A white cap on the chrome sidebar: it stands out from the menu below and lines up
+  // with the white topbar to its right — same height, same bottom hairline — so the two
+  // read as one continuous header band across the top of the app.
+  background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
   color: var(--osc-ink);
   display: flex;
   font-weight: 600;
   gap: .5rem;
+  min-height: 3.25rem;
   overflow: hidden;
   padding: .7rem .85rem;
   text-decoration: none;
   white-space: nowrap;
+
+  // Cancel the sidebar's inline padding (.px-sm-2) so the cap reaches the rail's edges
+  // instead of floating inside it. Matches the topbar, which pulls out the same way.
+  @include media-breakpoint-up(sm) {
+    margin-inline: -.5rem;
+  }
 
   > i {
     color: var(--osc-bronze);

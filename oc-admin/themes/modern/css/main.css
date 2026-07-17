@@ -13184,14 +13184,22 @@ div.widget-box-content-no-wrapp li a {
 
 .sidebar-brand {
   align-items: center;
+  background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
   color: var(--osc-ink);
   display: flex;
   font-weight: 600;
   gap: 0.5rem;
+  min-height: 3.25rem;
   overflow: hidden;
   padding: 0.7rem 0.85rem;
   text-decoration: none;
   white-space: nowrap;
+}
+@media (min-width: 576px) {
+  .sidebar-brand {
+    margin-inline: -0.5rem;
+  }
 }
 .sidebar-brand > i {
   color: var(--osc-bronze);
