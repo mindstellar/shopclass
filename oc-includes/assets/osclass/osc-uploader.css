@@ -1,0 +1,157 @@
+/*
+ * Default, overridable styling for osc-uploader.js. Cosmetic and light: theme
+ * authors can restyle or replace any class. Colours resolve through --osc-* tokens
+ * when present (admin: themed, dark-mode aware) and fall back to a neutral light look.
+ */
+
+.osc-uploader {
+    display: block;
+}
+
+.osc-uploader-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    margin-block-end: .75rem;
+}
+
+.osc-uploader-grid:empty {
+    margin-block-end: 0;
+}
+
+.osc-uploader-item {
+    aspect-ratio: 1 / 1;
+    background-color: var(--osc-bench-sunk, #f1efec);
+    border: 1px solid var(--osc-rule, #d9d9d9);
+    border-radius: var(--osc-radius, .25rem);
+    overflow: hidden;
+    position: relative;
+}
+
+.osc-uploader-item.is-primary {
+    outline: 2px solid var(--osc-bronze, #8f5d00);
+    outline-offset: -2px;
+}
+
+.osc-uploader-thumb {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.osc-uploader-item.is-uploading .osc-uploader-thumb {
+    opacity: .55;
+}
+
+.osc-uploader-remove {
+    align-items: center;
+    background-color: rgba(0, 0, 0, .55);
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 1rem;
+    height: 1.6rem;
+    inset-block-start: .3rem;
+    inset-inline-end: .3rem;
+    justify-content: center;
+    line-height: 1;
+    position: absolute;
+    width: 1.6rem;
+}
+
+.osc-uploader-remove:hover,
+.osc-uploader-remove:focus-visible {
+    background-color: var(--osc-danger, #c22826);
+}
+
+.osc-uploader-badge {
+    background-color: var(--osc-bronze, #8f5d00);
+    border-radius: var(--osc-radius-sm, .2rem);
+    color: #fff;
+    font-size: .7rem;
+    inset-block-start: .3rem;
+    inset-inline-start: .3rem;
+    padding: .1rem .4rem;
+    position: absolute;
+}
+
+.osc-uploader-primary {
+    background-color: rgba(0, 0, 0, .55);
+    border: 0;
+    border-radius: var(--osc-radius-sm, .2rem);
+    bottom: .3rem;
+    color: #fff;
+    cursor: pointer;
+    font-size: .72rem;
+    inset-inline: .3rem;
+    padding: .2rem .3rem;
+    position: absolute;
+}
+
+.osc-uploader-primary:hover,
+.osc-uploader-primary:focus-visible {
+    background-color: var(--osc-bronze, #8f5d00);
+}
+
+.osc-uploader-progress {
+    background-color: rgba(0, 0, 0, .12);
+    height: 4px;
+    inset-block-end: 0;
+    inset-inline: 0;
+    position: absolute;
+}
+
+.osc-uploader-progress-bar {
+    background-color: var(--osc-bronze, #8f5d00);
+    height: 100%;
+    transition: width .15s linear;
+    width: 0;
+}
+
+.osc-uploader-drop {
+    align-items: center;
+    border: 2px dashed var(--osc-rule-strong, #96918c);
+    border-radius: var(--osc-radius, .25rem);
+    color: var(--osc-ink-muted, #67635d);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    min-height: 6rem;
+    padding: 1rem;
+    text-align: center;
+    transition: border-color .15s, background-color .15s;
+}
+
+.osc-uploader-drop.is-dragover {
+    background-color: var(--osc-bronze-tint, #fbf0e2);
+    border-color: var(--osc-bronze, #8f5d00);
+    color: var(--osc-bronze, #8f5d00);
+}
+
+.osc-uploader-errors {
+    display: block;
+}
+
+.osc-uploader-error {
+    align-items: center;
+    background-color: var(--osc-danger-tint, #ffe9e5);
+    border-radius: var(--osc-radius, .25rem);
+    color: var(--osc-danger, #c22826);
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+    margin-block-start: .5rem;
+    padding: .5rem .75rem;
+}
+
+.osc-uploader-error-close {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+}

@@ -1717,272 +1717,69 @@ class ItemForm extends Form
             Session::newInstance()->_dropKeepForm('photos');
         }
 
-        ?>
-        <div id="restricted-fine-uploader"></div>
-        <div style="clear:both;"></div>
-        <?php if (count($aImages) > 0
-        || ($resources != null && is_array($resources)
-            && count($resources) > 0)
-    ) { ?>
-        <h3><?php _e('Images already uploaded'); ?></h3>
-        <ul class="qq-upload-list">
-            <?php foreach ($resources as $_r) {
-                $img = $_r['pk_i_id'] . '.' . $_r['s_extension']; ?>
-                <li class=" qq-upload-success">
-                    <span class="qq-upload-file"><?php echo $img; ?></span>
-                    <a class="qq-upload-delete" href="#" photoid="<?php echo $_r['pk_i_id']; ?>"
-                       itemid="<?php echo $_r['fk_i_item_id']; ?>"
-                       photoname="<?php echo $_r['s_name']; ?>"
-                       photosecret="<?php echo Params::getParam('secret'); ?>"
-                       style="display: inline; cursor:pointer;"><?php _e('Delete'); ?></a>
-                    <div class="ajax_preview_img"><img
-                                src="<?php echo osc_apply_filter(
-                                        'resource_path',
-                                        osc_base_url() . $_r['s_path']
-                                     ) . $_r['pk_i_id']
-                                     . '_thumbnail.' . $_r['s_extension']; ?>"
-                                alt="<?php echo osc_esc_html($img); ?>"></div>
-                </li>
-            <?php } ?>
-            <?php foreach ($aImages as $img) { ?>
-                <li class=" qq-upload-success">
-                            <span class="qq-upload-file"><?php echo $img;
-                                $img = osc_esc_html($img); ?></span>
-                    <a class="qq-upload-delete" href="#" ajaxfile="<?php echo $img; ?>"
-                       style="display: inline; cursor:pointer;"><?php _e('Delete'); ?></a>
-                    <div class="ajax_preview_img"><img
-                                src="<?php echo osc_base_url(); ?>oc-content/uploads/temp/<?php echo $img; ?>"
-                                alt="<?php echo $img; ?>"></div>
-                    <input type="hidden" name="ajax_photos[]" value="<?php echo $img; ?>">
-                </li>
-            <?php } ?>
-        </ul>
-        <?php } ?>
-        <div style="clear:both;"></div>
-        <?php
-
-
-        $aExt = explode(',', osc_allowed_extension());
-        foreach ($aExt as $key => $value) {
-            $aExt[$key] = "'" . $value . "'";
-        }
-
-        $allowedExtensions = implode(',', $aExt);
+        $aExt              = explode(',', osc_allowed_extension());
+        $allowedExtensions = "'" . implode("','", $aExt) . "'";
+        $acceptAttr        = '.' . implode(',.', $aExt);
         $maxSize           = osc_max_size_kb() * 1024;
         $maxImages         = osc_max_images_per_item();
+        $isAdd             = Params::getParam('action') === 'item_add';
+        $secret            = Params::getParam('secret');
         ?>
-
+        <div class="osc-uploader" id="osc-uploader">
+            <div class="osc-uploader-grid">
+                <?php foreach ($resources as $_r) {
+                    $img   = $_r['pk_i_id'] . '.' . $_r['s_extension'];
+                    $thumb = osc_apply_filter('resource_path', osc_base_url() . $_r['s_path'])
+                             . $_r['pk_i_id'] . '_thumbnail.' . $_r['s_extension']; ?>
+                    <div class="osc-uploader-item"
+                         data-id="<?php echo osc_esc_html($_r['pk_i_id']); ?>"
+                         data-item="<?php echo osc_esc_html($_r['fk_i_item_id']); ?>"
+                         data-code="<?php echo osc_esc_html($_r['s_name']); ?>"
+                         data-secret="<?php echo osc_esc_html($secret); ?>">
+                        <img class="osc-uploader-thumb" src="<?php echo osc_esc_html($thumb); ?>" alt="<?php echo osc_esc_html($img); ?>">
+                        <button type="button" class="osc-uploader-remove" aria-label="<?php echo osc_esc_html(__('Delete')); ?>">&times;</button>
+                    </div>
+                <?php } ?>
+                <?php foreach ($aImages as $img) { ?>
+                    <div class="osc-uploader-item" data-temp="<?php echo osc_esc_html($img); ?>">
+                        <img class="osc-uploader-thumb" src="<?php echo osc_esc_html(osc_base_url() . 'oc-content/uploads/temp/' . $img); ?>" alt="<?php echo osc_esc_html($img); ?>">
+                        <input type="hidden" name="ajax_photos[]" value="<?php echo osc_esc_html($img); ?>">
+                        <button type="button" class="osc-uploader-remove" aria-label="<?php echo osc_esc_html(__('Delete')); ?>">&times;</button>
+                    </div>
+                <?php } ?>
+            </div>
+            <label class="osc-uploader-drop">
+                <input type="file" class="osc-uploader-input" multiple accept="<?php echo osc_esc_html($acceptAttr); ?>" hidden>
+                <span><?php _e('Click, or drop images here, to upload'); ?></span>
+            </label>
+            <div class="osc-uploader-errors"></div>
+        </div>
         <script>
-            $(document).ready(function () {
-
-                $('.qq-upload-delete').on('click', function (evt) {
-                    evt.preventDefault();
-                    var parent = $(this).parent();
-                    var result = confirm('<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>');
-                    var urlrequest = '';
-                    if ($(this).attr('ajaxfile') != undefined) {
-                        urlrequest = 'ajax_photo=' + $(this).attr('ajaxfile');
-                    } else {
-                        urlrequest = 'id=' + $(this).attr('photoid')
-                            + '&item=' + $(this).attr('itemid')
-                            + '&code=' + $(this).attr('photoname') + '&secret=' + $(this).attr('photosecret');
-                    }
-                    if (result) {
-                        $.ajax({
-                            type: "POST",
-                            url: '<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image&' + urlrequest,
-                            dataType: 'json',
-                            success: function (data) {
-                                parent.remove();
-                            }
-                        });
-                    }
-                });
-
-                $('#restricted-fine-uploader').on('click', '.primary_image', function (event) {
-                    if (parseInt($("div.primary_image").index(this)) > 0) {
-
-                        var a_src = $(this).parent().find('.ajax_preview_img img').attr('src');
-                        var a_title = $(this).parent().find('.ajax_preview_img img').attr('alt');
-                        var a_input = $(this).parent().find('input').attr('value');
-                        // info
-                        var a1 = $(this).parent().find('span.qq-upload-file').text();
-                        var a2 = $(this).parent().find('span.qq-upload-size').text();
-
-                        var li_first = $('ul.qq-upload-list li').get(0);
-
-                        var b_src = $(li_first).find('.ajax_preview_img img').attr('src');
-                        var b_title = $(li_first).find('.ajax_preview_img img').attr('alt');
-                        var b_input = $(li_first).find('input').attr('value');
-                        var b1 = $(li_first).find('span.qq-upload-file').text();
-                        var b2 = $(li_first).find('span.qq-upload-size').text();
-
-                        $(li_first).find('.ajax_preview_img img').attr('src', a_src);
-                        $(li_first).find('.ajax_preview_img img').attr('alt', a_title);
-                        $(li_first).find('input').attr('value', a_input);
-                        $(li_first).find('span.qq-upload-file').text(a1);
-                        $(li_first).find('span.qq-upload-size').text(a2);
-
-                        $(this).parent().find('.ajax_preview_img img').attr('src', b_src);
-                        $(this).parent().find('.ajax_preview_img img').attr('alt', b_title);
-                        $(this).parent().find('input').attr('value', b_input);
-                        $(this).parent().find('span.qq-upload-file').text(b1);
-                        $(this).parent().find('span.qq-upload-file').text(b2);
+            (function () {
+                var root = document.getElementById('osc-uploader');
+                if (!root || typeof oscPhotoUploader !== 'function') { return; }
+                oscPhotoUploader(root, {
+                    endpoint: '<?php echo osc_base_url(true); ?>?page=ajax&action=ajax_upload',
+                    deleteEndpoint: '<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image',
+                    tempBase: '<?php echo osc_base_url(); ?>oc-content/uploads/temp/',
+                    fieldName: 'qqfile',
+                    maxImages: <?php echo (int)$maxImages; ?>,
+                    maxSizeBytes: <?php echo (int)$maxSize; ?>,
+                    allowedExtensions: [<?php echo $allowedExtensions; ?>],
+                    showPrimary: <?php echo $isAdd ? 'true' : 'false'; ?>,
+                    i18n: {
+                        confirmDelete: "<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>",
+                        typeError: "<?php echo osc_esc_js(__('{file} has an invalid extension. Valid extension(s): {extensions}.')); ?>",
+                        sizeError: "<?php echo osc_esc_js(__('{file} is too large.')); ?>",
+                        tooMany: "<?php echo osc_esc_js(__('Too many images. The limit is {limit}.')); ?>",
+                        failUpload: "<?php echo osc_esc_js(__('{file} could not be uploaded.')); ?>",
+                        primary: "<?php echo osc_esc_js(__('Primary')); ?>",
+                        makePrimary: "<?php echo osc_esc_js(__('Make primary image')); ?>",
+                        "delete": "<?php echo osc_esc_js(__('Delete')); ?>",
+                        close: "<?php echo osc_esc_js(__('Close')); ?>"
                     }
                 });
-
-                $('#restricted-fine-uploader').on('click', '.primary_image', function (event) {
-                    $(this).addClass('over primary');
-                });
-
-                $('#restricted-fine-uploader').on('mouseenter mouseleave', '.primary_image', function (event) {
-                    if (event.type == 'mouseenter') {
-                        if (!$(this).hasClass('primary')) {
-                            $(this).addClass('primary');
-                        }
-                    } else {
-                        if (parseInt($("div.primary_image").index(this)) > 0) {
-                            $(this).removeClass('primary');
-                        }
-                    }
-                });
-
-
-                $('#restricted-fine-uploader').on('mouseenter mouseleave', 'li.qq-upload-success', function (event) {
-                    if (parseInt($("li.qq-upload-success").index(this)) > 0) {
-
-                        if (event.type == 'mouseenter') {
-                            $(this).find('div.primary_image').addClass('over');
-                        } else {
-                            $(this).find('div.primary_image').removeClass('over');
-                        }
-                    }
-                });
-
-                window.removed_images = 0;
-                $('#restricted-fine-uploader').on('click', 'a.qq-upload-delete', function (event) {
-                    window.removed_images = window.removed_images + 1;
-                    $('#restricted-fine-uploader .flashmessage-error').remove();
-                });
-
-                $('#restricted-fine-uploader').fineUploader({
-                    request: {
-                        endpoint: '<?php echo osc_base_url(true)
-                            . '?page=ajax&action=ajax_upload'; ?>'
-                    },
-                    multiple: true,
-                    validation: {
-                        allowedExtensions: [<?php echo $allowedExtensions; ?>],
-                        sizeLimit: <?php echo $maxSize; ?>,
-                        itemLimit: <?php echo $maxImages; ?>
-                    },
-                    messages: {
-                        tooManyItemsError:
-                            '<?php echo osc_esc_js(__('Too many items ({netItems}) would be uploaded. Item limit is {itemLimit}.'));?>',
-                        onLeave:
-                            '<?php echo osc_esc_js(__('The files are being uploaded, if you leave now the upload will be cancelled.'));?>',
-                        typeError: '<?php echo osc_esc_js(__('{file} has an invalid extension. Valid extension(s): {extensions}.'));?>',
-                        sizeError: '<?php echo osc_esc_js(__('{file} is too large, maximum file size is {sizeLimit}.'));?>',
-                        emptyError: '<?php echo osc_esc_js(__('{file} is empty, please select files again without it.'));?>'
-                    },
-                    deleteFile: {
-                        enabled: true,
-                        method: "POST",
-                        forceConfirm: false,
-                        endpoint: '<?php echo osc_base_url(true)
-                            . '?page=ajax&action=delete_ajax_upload'; ?>'
-                    },
-                    retry: {
-                        showAutoRetryNote: true,
-                        showButton: true
-                    },
-                    text: {
-                        uploadButton: '<?php echo osc_esc_js(__('Click or Drop for upload images')); ?>',
-                        waitingForResponse: '<?php echo osc_esc_js(__('Processing...')); ?>',
-                        retryButton: '<?php echo osc_esc_js(__('Retry')); ?>',
-                        cancelButton: '<?php echo osc_esc_js(__('Cancel')); ?>',
-                        failUpload: '<?php echo osc_esc_js(__('Upload failed')); ?>',
-                        deleteButton: '<?php echo osc_esc_js(__('Delete')); ?>',
-                        deletingStatusText: '<?php echo osc_esc_js(__('Deleting...')); ?>',
-                        formatProgress: '<?php echo osc_esc_js(__('{percent}% of {total_size}')); ?>'
-                    }
-                }).on('error', function (event, id, name, errorReason, xhrOrXdr) {
-                    $('#restricted-fine-uploader .flashmessage-error').remove();
-                    $('#restricted-fine-uploader').append('<div class="flashmessage flashmessage-error">'
-                        + errorReason + '<a class="close" onclick="$(\'.flashmessage-error\').remove();" >X</a></div>');
-                }).on('statusChange', function (event, id, old_status, new_status) {
-                    $(".alert.alert-error").remove();
-                }).on('complete', function (event, id, fileName, responseJSON) {
-                    if (responseJSON.success) {
-                        var new_id = id - removed_images;
-                        var li = $('.qq-upload-list li')[new_id];
-                        <?php if (Params::getParam('action') === 'item_add') { ?>
-                        if (parseInt(new_id) == 0) {
-                            $(li).append('<div class="primary_image primary"></div>');
-                        } else {
-                            $(li).append('<div class="primary_image"><a title="<?php
-                                echo osc_esc_js(osc_esc_html(__('Make primary image')));
-                            ?>"><?php
-                                echo osc_esc_js(osc_esc_html(__('Make primary image')));
-?></a></div>');
-                        }
-                        <?php }
-                        // @TOFIX @FIXME escape $responseJSON_uploadName below
-                        // need a js function similar to osc_esc_js(osc_esc_html()) ?>
-                        $(li).append('<div class="ajax_preview_img"><img src="<?php echo osc_base_url();
-                        ?>oc-content/uploads/temp/' + responseJSON.uploadName + '" alt="' + responseJSON.uploadName + '"></div>');
-                        $(li).append('<input type="hidden" name="ajax_photos[]" value="' + responseJSON.uploadName + '"></input>');
-                    }
-                    <?php if (Params::getParam('action') === 'item_edit') { ?>
-                }).on('validateBatch', function (event, fileOrBlobDataArray) {
-                    // clear alert messages
-                    if ($('#restricted-fine-uploader .alert-error').length > 0) {
-                        $('#restricted-fine-uploader .alert-error').remove();
-                    }
-
-                    var len = fileOrBlobDataArray.length;
-                    var result = canContinue(len);
-                    return result.success;
-
-                });
-
-                function canContinue(numUpload) {
-                    // strUrl is whatever URL you need to call
-                    var strUrl = "<?php echo osc_base_url(true)
-                        . '?page=ajax&action=ajax_validate&id=' . osc_item_id() . '&secret='
-                        . osc_item_secret(); ?>";
-                    var strReturn = {};
-
-                    jQuery.ajax({
-                        url: strUrl,
-                        success: function (html) {
-                            strReturn = html;
-                        },
-                        async: false
-                    });
-                    var json = JSON.parse(strReturn);
-                    var total = parseInt(json.count)
-                        + $("#restricted-fine-uploader input[name='ajax_photos[]']").length + (numUpload);
-                        <?php if ($maxImages > 0) { ?>
-                    if (total <=<?php echo $maxImages;?>) {
-                        json.success = true;
-                    } else {
-                        json.success = false;
-                        $('#restricted-fine-uploader .qq-uploader').after($('<div class="alert alert-error"><?php
-                            echo osc_esc_js(sprintf(
-                                __('Too many items were uploaded. Item limit is %d.'),
-                                $maxImages
-                            )); ?></div>'));
-                    }
-                        <?php } else { ?>
-                    json.success = true;
-                        <?php } ?>
-                    return json;
-                }
-                    <?php } else { ?>
-            });
-                    <?php } ?>
-            })
+            })();
         </script>
         <?php
     }
