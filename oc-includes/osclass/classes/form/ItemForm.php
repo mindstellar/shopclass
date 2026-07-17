@@ -333,12 +333,8 @@ class ItemForm extends Form
             }
             ?>
 
-            if (osc == undefined) {
-                var osc = {};
-            }
-            if (osc.langs == undefined) {
-                osc.langs = {};
-            }
+            if (typeof osc === 'undefined') { var osc = {}; }
+            if (osc.langs == undefined) { osc.langs = {}; }
             if (osc.langs.select_category == undefined) {
                 osc.langs.select_category = '<?php echo osc_esc_js(__('Select category')); ?>';
             }
@@ -349,61 +345,81 @@ class ItemForm extends Form
             osc.item_post.category_id = '<?php echo $categoryID; ?>';
             osc.item_post.category_tree_id = <?php echo json_encode($categories_tree); ?>;
 
-            $(document).ready(function () {
-                <?php if ($categoryID == array()) { ?>
-                draw_select(1, 0);
-                <?php } else { ?>
-                draw_select(1, 0);
-                    <?php for ($i = 0; $i < count($categories_tree) - 1; $i++) { ?>
-                draw_select(<?php echo($i + 2); ?> ,<?php echo $categories_tree[$i]; ?>);
-                    <?php } ?>
-                <?php } ?>
-                $('body').on("change", '[name^="select_"]', function () {
-                    var depth = parseInt($(this).attr("depth"));
-                    for (var d = (depth + 1); d <= 4; d++) {
-                        $("#select_" + d).trigger('removed');
-                        $("#select_" + d).remove();
-                    }
-                    $("#catId").attr("value", $(this).val());
-                    $("#catId").change();
-                    if (catPriceEnabled[$('#catId').val()] == 1) {
-                        $('.price').show();
-                    } else {
-                        $('.price').hide();
-                        $('#price').val('');
-                    }
-                    if ((depth == 1 && $(this).val() != 0) || (depth > 1 && $(this).val() != $("#select_" + (depth - 1)).val())) {
-                        draw_select(depth + 1, $(this).val());
-                    }
-                    return true;
-                });
-            });
-
             function draw_select(select, categoryID) {
-                tmp_categories = window['categories_' + categoryID];
-                if (tmp_categories != null && $.isArray(tmp_categories)) {
-                    $("#select_holder").before(
-                        '<select id="select_' + select + '" class="form-select form-select-sm" name="select_' + select + '" ' +
-                        'depth="' + select +
-                        '"></select>'
-                    );
-
-                    var options = '<option value="' + categoryID + '" >'
-                        + (categoryID == 0 ? osc.langs.select_category : osc.langs.select_category)
-                        + '</option>';
-
-                    $.each(tmp_categories, function (index, value) {
-                        options +=
-                            '<option value="' + value[0] + '" ' +
-                            (value[0] === osc.item_post.category_tree_id[select - 1] ? 'selected="selected"' : '')
-                            + '>' + value[1] + '</option>';
-                    });
-                    osc.item_post.category_tree_id[select - 1] = null;
-                    $('#select_' + select).html(options);
-                    $('#select_' + select).next("a").find(".select-box-label").text(osc.langs.select_subcategory);
-                    $('#select_' + select).trigger("created");
+                var tmp = window['categories_' + categoryID];
+                if (tmp == null || !Array.isArray(tmp)) { return; }
+                var holder = document.getElementById('select_holder');
+                var sel = document.createElement('select');
+                sel.id = 'select_' + select;
+                // osc-category-select is a styling hook for theme authors; the Bootstrap
+                // classes keep the default look.
+                sel.className = 'form-select form-select-sm osc-category-select';
+                sel.name = 'select_' + select;
+                sel.setAttribute('depth', select);
+                var options = '<option value="' + categoryID + '">' + osc.langs.select_category + '</option>';
+                tmp.forEach(function (value) {
+                    options += '<option value="' + value[0] + '"' +
+                        (value[0] === osc.item_post.category_tree_id[select - 1] ? ' selected="selected"' : '') +
+                        '>' + value[1] + '</option>';
+                });
+                osc.item_post.category_tree_id[select - 1] = null;
+                sel.innerHTML = options;
+                if (holder && holder.parentNode) { holder.parentNode.insertBefore(sel, holder); }
+                var next = sel.nextElementSibling;
+                if (next) {
+                    var label = next.querySelector('.select-box-label');
+                    if (label) { label.textContent = osc.langs.select_subcategory; }
                 }
+                // State hook: a 'created' event (JS) themes/plugins can react to.
+                sel.dispatchEvent(new CustomEvent('created', {bubbles: true}));
             }
+            window.draw_select = draw_select;
+
+            (function () {
+                function drawInitial() {
+                    <?php if ($categoryID == array()) { ?>
+                    draw_select(1, 0);
+                    <?php } else { ?>
+                    draw_select(1, 0);
+                        <?php for ($i = 0; $i < count($categories_tree) - 1; $i++) { ?>
+                    draw_select(<?php echo($i + 2); ?>, <?php echo $categories_tree[$i]; ?>);
+                        <?php } ?>
+                    <?php } ?>
+                }
+                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', drawInitial); } else { drawInitial(); }
+
+                document.addEventListener('change', function (e) {
+                    var t = e.target;
+                    if (!t || !t.name || t.name.indexOf('select_') !== 0) { return; }
+                    var depth = parseInt(t.getAttribute('depth'), 10);
+                    for (var d = depth + 1; d <= 4; d++) {
+                        var deeper = document.getElementById('select_' + d);
+                        if (deeper) {
+                            deeper.dispatchEvent(new CustomEvent('removed', {bubbles: true}));
+                            deeper.remove();
+                        }
+                    }
+                    var catId = document.getElementById('catId');
+                    if (catId) {
+                        catId.value = t.value;
+                        catId.dispatchEvent(new Event('change', {bubbles: true}));
+                    }
+                    var enabled = typeof catPriceEnabled !== 'undefined' && catPriceEnabled[t.value] == 1;
+                    document.querySelectorAll('.price').forEach(function (el) {
+                        el.style.display = enabled ? '' : 'none';
+                        el.classList.toggle('osc-price-visible', enabled);
+                        el.classList.toggle('osc-price-hidden', !enabled);
+                    });
+                    if (!enabled) {
+                        var price = document.getElementById('price');
+                        if (price) { price.value = ''; }
+                    }
+                    var prev = document.getElementById('select_' + (depth - 1));
+                    if ((depth === 1 && t.value != 0) || (depth > 1 && prev && t.value !== prev.value)) {
+                        draw_select(depth + 1, t.value);
+                    }
+                });
+            })();
         </script>
         <?php
     }
@@ -1659,66 +1675,53 @@ class ItemForm extends Form
                 echo 'catPriceEnabled[' . $c['pk_i_id'] . '] = ' . $c['b_price_enabled'] . ';';
             }
             ?>
-            $("#catId").change(function () {
-                var cat_id = $(this).val();
-                <?php if (defined('OC_ADMIN') && OC_ADMIN) { ?>
-                var url = '<?php echo osc_admin_base_url(true); ?>';
-                <?php } else { ?>
-                var url = '<?php echo osc_base_url(true); ?>';
-                <?php } ?>
-                var result = '';
+            (function () {
+                var url = '<?php echo (defined('OC_ADMIN') && OC_ADMIN) ? osc_admin_base_url(true) : osc_base_url(true); ?>';
 
-                if (cat_id != '') {
-                    if (catPriceEnabled[cat_id] == 1) {
-                        $("#price").closest("div").show();
-                        // trigger show-price event
-                        $('#price').trigger('show-price');
-                    } else {
-                        $("#price").closest("div").hide();
-                        $('#price').val('');
-                        // trigger hide-price event
-                        $('#price').trigger('hide-price');
+                function updatePrice(catId, fireEvents) {
+                    var price = document.getElementById('price');
+                    if (!price) { return; }
+                    var wrap = price.closest('div');
+                    var enabled = catPriceEnabled[catId] == 1;
+                    // State hooks for theme authors: a class on the wrapper (CSS) plus the
+                    // show-price/hide-price events (JS). Replaces the old jQuery .trigger().
+                    if (wrap) {
+                        wrap.style.display = enabled ? '' : 'none';
+                        wrap.classList.toggle('osc-price-visible', enabled);
+                        wrap.classList.toggle('osc-price-hidden', !enabled);
                     }
-
-                    $.ajax({
-                        type: "POST",
-                        url: url,
-                        data: 'page=ajax&action=runhook&hook=item_<?php echo $case;?>&catId=' + cat_id,
-                        dataType: 'html',
-                        success: function (data) {
-                            $("#plugin-hook").html(data);
-                        }
-                    });
-                }
-            });
-            $(document).ready(function () {
-                var cat_id = $("#catId").val();
-                <?php if (defined('OC_ADMIN') && OC_ADMIN) { ?>
-                var url = '<?php echo osc_admin_base_url(true); ?>';
-                <?php } else { ?>
-                var url = '<?php echo osc_base_url(true); ?>';
-                <?php } ?>
-                var result = '';
-
-                if (cat_id != '') {
-                    if (catPriceEnabled[cat_id] == 1) {
-                        $("#price").closest("div").show();
-                    } else {
-                        $("#price").closest("div").hide();
-                        $('#price').val('');
+                    if (!enabled) { price.value = ''; }
+                    if (fireEvents) {
+                        price.dispatchEvent(new CustomEvent(enabled ? 'show-price' : 'hide-price', {bubbles: true}));
                     }
-
-                    $.ajax({
-                        type: "POST",
-                        url: url,
-                        data: 'page=ajax&action=runhook&hook=item_<?php echo $case;?>&catId=' + cat_id,
-                        dataType: 'html',
-                        success: function (data) {
-                            $("#plugin-hook").html(data);
-                        }
-                    });
                 }
-            });
+
+                function loadHook(catId) {
+                    var body = new URLSearchParams();
+                    body.set('page', 'ajax');
+                    body.set('action', 'runhook');
+                    body.set('hook', 'item_<?php echo $case; ?>');
+                    body.set('catId', catId);
+                    fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: body})
+                        .then(function (r) { return r.text(); })
+                        .then(function (html) {
+                            var hook = document.getElementById('plugin-hook');
+                            if (hook) { hook.innerHTML = html; }
+                        });
+                }
+
+                function apply(catId, fireEvents) {
+                    if (catId !== '') { updatePrice(catId, fireEvents); loadHook(catId); }
+                }
+
+                function init() {
+                    var catId = document.getElementById('catId');
+                    if (!catId) { return; }
+                    catId.addEventListener('change', function () { apply(this.value, true); });
+                    apply(catId.value, false);
+                }
+                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+            })();
         </script>
         <div id="plugin-hook">
         </div>
