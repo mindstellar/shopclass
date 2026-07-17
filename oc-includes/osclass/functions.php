@@ -844,6 +844,21 @@ function osc_item_tinymce_header()
 }
 
 
+/**
+ * Load the shared vanilla UI helpers on the public item form (publish/edit), where
+ * ItemForm::location_javascript_new() drives the location fields with oscAutocomplete.
+ */
+function osc_ui_common_header()
+{
+    if (!osc_is_publish_page() && !osc_is_edit_page()) {
+        return;
+    }
+    osc_enqueue_script('osc-ui-common');
+    osc_enqueue_style('osc-ui-common');
+}
+osc_add_hook('header', 'osc_ui_common_header');
+
+
 function osc_item_tinymce_footer()
 {
     if (!osc_is_publish_page() && !osc_is_edit_page()) {

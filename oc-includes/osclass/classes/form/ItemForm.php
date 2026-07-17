@@ -1108,143 +1108,87 @@ class ItemForm extends Form
     {
         ?>
         <script>
-            $(document).ready(function () {
+            (function () {
+                // The location autocomplete endpoints live under the public base URL.
+                var base = '<?php echo osc_base_url(true); ?>';
 
-                $('#countryName').attr("autocomplete", "off");
-                $('#region').attr("autocomplete", "off");
-                $('#city').attr("autocomplete", "off");
+                function byId(id) { return document.getElementById(id); }
+                function setVal(id, v) { var el = byId(id); if (el) { el.value = v; } }
+                function getVal(id) { var el = byId(id); return el ? el.value : ''; }
 
-                $('#countryId').change(function () {
-                    $('#regionId').val('');
-                    $('#region').val('');
-                    $('#cityId').val('');
-                    $('#city').val('');
-                });
-
-                $('#countryName').on('keyup.autocomplete', function () {
-                    $('#countryId').val('');
-                    $(this).autocomplete({
-                        source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_countries",
-                        minLength: 0,
-                        select: function (event, ui) {
-                            $('#countryId').val(ui.item.id);
-                            $('#regionId').val('');
-                            $('#region').val('');
-                            $('#cityId').val('');
-                            $('#city').val('');
-                        }
-                    });
-                });
-
-                $('#region').on('keyup.autocomplete', function () {
-                    $('#regionId').val('');
-                    if ($('#countryId').val() != '' && $('#countryId').val() != undefined) {
-                        var country = $('#countryId').val();
-                    } else {
-                        var country = $('#country').val();
+                function initAutocomplete() {
+                    var countryName = byId('countryName');
+                    if (countryName) {
+                        oscAutocomplete(countryName, {
+                            source: base + '?page=ajax&action=location_countries',
+                            minLength: 0,
+                            onSearch: function () { setVal('countryId', ''); },
+                            onSelect: function (item) {
+                                setVal('countryId', item.id);
+                                setVal('regionId', ''); setVal('region', '');
+                                setVal('cityId', ''); setVal('city', '');
+                                return true;
+                            }
+                        });
                     }
-                    $(this).autocomplete({
-                        source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_regions&country=" + country,
-                        minLength: 2,
-                        select: function (event, ui) {
-                            $('#cityId').val('');
-                            $('#city').val('');
-                            $('#regionId').val(ui.item.id);
-                        }
-                    });
-                });
-
-                $('#city').on('keyup.autocomplete', function () {
-                    $('#cityId').val('');
-                    if ($('#regionId').val() != '' && $('#regionId').val() != undefined) {
-                        var region = $('#regionId').val();
-                    } else {
-                        var region = $('#region').val();
+                    var region = byId('region');
+                    if (region) {
+                        oscAutocomplete(region, {
+                            source: function () {
+                                var country = getVal('countryId') || getVal('country');
+                                return base + '?page=ajax&action=location_regions&country=' + encodeURIComponent(country);
+                            },
+                            minLength: 2,
+                            onSearch: function () { setVal('regionId', ''); },
+                            onSelect: function (item) {
+                                setVal('regionId', item.id);
+                                setVal('cityId', ''); setVal('city', '');
+                                return true;
+                            }
+                        });
                     }
-                    $(this).autocomplete({
-                        source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_cities&region=" + region,
-                        minLength: 2,
-                        select: function (event, ui) {
-                            $('#cityId').val(ui.item.id);
-                        }
-                    });
-                });
+                    var city = byId('city');
+                    if (city) {
+                        oscAutocomplete(city, {
+                            source: function () {
+                                var r = getVal('regionId') || getVal('region');
+                                return base + '?page=ajax&action=location_cities&region=' + encodeURIComponent(r);
+                            },
+                            minLength: 2,
+                            onSearch: function () { setVal('cityId', ''); },
+                            onSelect: function (item) { setVal('cityId', item.id); return true; }
+                        });
+                    }
+                    var countryId = byId('countryId');
+                    if (countryId) {
+                        countryId.addEventListener('change', function () {
+                            setVal('regionId', ''); setVal('region', '');
+                            setVal('cityId', ''); setVal('city', '');
+                        });
+                    }
+                }
 
-                $('.ui-autocomplete').css('zIndex', 10000);
-
-                /**
-                 * Validate form
-                 */
-
-                // Validate description without HTML.
-                $.validator.addMethod(
-                    "minstriptags",
-                    function (value, element) {
-                        altered_input = strip_tags(value);
-                        if (altered_input.length < 3) {
-                            return false;
-                        } else {
-                            return true;
-                        }
-                    },
-                    '<?php echo osc_esc_js(__('Description needs to be longer')); ?>.'
-                );
-
-                // Code for form validation
-                $("form[name=item]").validate({
-                    rules: {
-                        catId: {
-                            required: true,
-                            digits: true
-                        },
+                function initValidation() {
+                    var rules = {
+                        catId: {required: true, digits: true},
                         <?php if (osc_price_enabled_at_items()) { ?>
-                        price: {
-                            maxlength: 50
-                        },
-                        currency: "required",
-                        <?php } ?>
-                        <?php if (osc_images_enabled_at_items()) { ?>
-                        "photos[]": {
-                            accept: "<?php echo osc_esc_js(osc_allowed_extension()); ?>"
-                        },
+                        price: {maxlength: 50},
+                        currency: {required: true},
                         <?php } ?>
                         <?php if ($path === 'front') { ?>
-                        contactName: {
-                            minlength: 3,
-                            maxlength: 35
-                        },
-                        contactEmail: {
-                            required: true,
-                            email: true
-                        },
+                        contactName: {minlength: 3, maxlength: 35},
+                        contactEmail: {required: true, email: true},
                         <?php } ?>
-                        city: {
-                            maxlength: 60
-                        },
-                        region: {
-                            maxlength: 60
-                        },
-                        address: {
-                            minlength: 3,
-                            maxlength: 100
-                        }
+                        city: {maxlength: 60},
+                        region: {maxlength: 60},
+                        address: {minlength: 3, maxlength: 100}
                         <?php osc_run_hook('item_form_new_validation_rules'); ?>
-                    },
-                    messages: {
+                    };
+                    var messages = {
                         catId: "<?php echo osc_esc_js(__('Choose one category')); ?>.",
                         <?php if (osc_price_enabled_at_items()) { ?>
-                        price: {
-                            maxlength: "<?php echo osc_esc_js(__('Price: no more than 50 characters')); ?>."
-                        },
+                        price: {maxlength: "<?php echo osc_esc_js(__('Price: no more than 50 characters')); ?>."},
                         currency: "<?php echo osc_esc_js(__('Currency: make your selection')); ?>.",
-                        <?php } ?>
-                        <?php if (osc_images_enabled_at_items()) { ?>
-                        "photos[]": {
-                            accept: "<?php echo osc_esc_js(sprintf(
-                                __('Photo: must be %s'),
-                                osc_allowed_extension()
-                            )); ?>."
-                        },
                         <?php } ?>
                         <?php if ($path === 'front') { ?>
                         contactName: {
@@ -1261,70 +1205,94 @@ class ItemForm extends Form
                             maxlength: "<?php echo osc_esc_js(__('Address: no more than 100 characters')); ?>."
                         }
                         <?php osc_run_hook('item_form_new_validation_messages'); ?>
-                    },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
+                    };
+
+                    var form = document.querySelector('form[name="item"]');
+                    if (!form) { return; }
+                    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    var msgFor = function (field, rule) {
+                        var m = messages[field];
+                        if (m == null) { return ''; }
+                        return (typeof m === 'string') ? m : (m[rule] || '');
+                    };
+                    var fieldError = function (name, spec) {
+                        var el = form.querySelector('[name="' + name + '"]');
+                        if (!el) { return null; }
+                        if (typeof spec === 'string') { spec = (spec === 'required') ? {required: true} : {}; }
+                        var v = (el.value == null ? '' : String(el.value)).trim();
+                        if (spec.required && v === '') { return {el: el, msg: msgFor(name, 'required')}; }
+                        if (v === '') { return null; }
+                        if (spec.minlength && v.length < spec.minlength) { return {el: el, msg: msgFor(name, 'minlength')}; }
+                        if (spec.maxlength && v.length > spec.maxlength) { return {el: el, msg: msgFor(name, 'maxlength')}; }
+                        if (spec.email && !emailRe.test(v)) { return {el: el, msg: msgFor(name, 'email')}; }
+                        if (spec.digits && !/^\d+$/.test(v)) { return {el: el, msg: msgFor(name, 'digits')}; }
+                        return null;
+                    };
+                    form.addEventListener('submit', function (e) {
+                        var errors = [];
+                        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                        Object.keys(rules).forEach(function (name) {
+                            var err = fieldError(name, rules[name]);
+                            if (err) { errors.push(err); if (err.el) { err.el.classList.add('is-invalid'); } }
                         });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        setTimeout("$('button[type=submit], input[type=submit]').removeAttr('disabled')", 5000);
-                        form.submit();
-                    }
-                });
-            });
-
-            /**
-             * Strip HTML tags to count number of visible characters.
-             */
-            function strip_tags(html) {
-                if (arguments.length < 3) {
-                    html = html.replace(/<\/?(?!\!)[^>]*>/gi, '');
-                } else {
-                    var allowed = arguments[1];
-                    var specified = eval("[" + arguments[2] + "]");
-                    if (allowed) {
-                        var regex = '</?(?!(' + specified.join('|') + '))\b[^>]*>';
-                        html = html.replace(new RegExp(regex, 'gi'), '');
-                    } else {
-                        var regex = '</?(' + specified.join('|') + ')\b[^>]*>';
-                        html = html.replace(new RegExp(regex, 'gi'), '');
-                    }
-                }
-                return html;
-            }
-
-            function delete_image(id, item_id, name, secret) {
-                //alert(id + " - "+ item_id + " - "+name+" - "+secret);
-                var result = confirm('<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>');
-                if (result) {
-                    $.ajax({
-                        type: "POST",
-                        url: '<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image&id='
-                            + id + '&item=' + item_id + '&code=' + name + '&secret=' + secret,
-                        dataType: 'json',
-                        success: function (data) {
-                            var flash;
-                            var message;
-                            var class_type = "error";
-                            if (data.success) {
-                                $("div[name=" + name + "]").remove();
-                                class_type = "ok";
-                            }
-                            flash = $("#flash_js");
-                            message = $('<div>').addClass('pubMessages').addClass(class_type).attr('id', 'flashmessage').html(data.msg);
-                            flash.html(message);
-                            $("#flashmessage").slideDown('slow').delay(3000).slideUp('slow');
+                        var container = document.querySelector('#error_list');
+                        if (container) {
+                            container.innerHTML = '';
+                            errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+                        }
+                        if (errors.length) {
+                            e.preventDefault();
+                            window.scrollTo({top: 0, behavior: 'smooth'});
+                            if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                        } else {
+                            var btns = form.querySelectorAll('button[type=submit], input[type=submit]');
+                            btns.forEach(function (b) { b.disabled = true; });
+                            setTimeout(function () { btns.forEach(function (b) { b.disabled = false; }); }, 5000);
                         }
                     });
                 }
+
+                function boot() {
+                    if (typeof oscAutocomplete === 'function') { initAutocomplete(); }
+                    initValidation();
+                }
+                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
+            })();
+
+            // Strip HTML tags to count visible characters. Kept global: markup and plugins call it.
+            function strip_tags(html) {
+                if (arguments.length < 3) {
+                    return html.replace(/<\/?(?!\!)[^>]*>/gi, '');
+                }
+                var specified = ('' + arguments[2]).split(',').map(function (s) { return s.trim(); });
+                if (arguments[1]) {
+                    return html.replace(new RegExp('</?(?!(' + specified.join('|') + '))\\b[^>]*>', 'gi'), '');
+                }
+                return html.replace(new RegExp('</?(' + specified.join('|') + ')\\b[^>]*>', 'gi'), '');
             }
 
-
+            function delete_image(id, item_id, name, secret) {
+                var ok = confirm('<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>');
+                if (!ok) { return; }
+                fetch('<?php echo osc_base_url(true); ?>?page=ajax&action=delete_image&id=' + id + '&item=' + item_id + '&code=' + name + '&secret=' + secret, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.success) {
+                        var row = document.querySelector('div[name="' + name + '"]');
+                        if (row) { row.remove(); }
+                    }
+                    var flash = document.getElementById('flash_js');
+                    if (flash) {
+                        flash.innerHTML = '<div class="pubMessages ' + (data.success ? 'ok' : 'error') + '" id="flashmessage"></div>';
+                        var fm = document.getElementById('flashmessage');
+                        fm.innerHTML = data.msg;
+                        fm.style.display = 'block';
+                        setTimeout(function () { fm.style.display = 'none'; }, 3000);
+                    }
+                });
+            }
         </script>
         <?php
     }

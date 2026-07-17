@@ -39,7 +39,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 // jquery-ui. Those scripts remain registered (see oc-load.php); a legacy plugin
 // that still needs them must enqueue them itself.
 osc_register_script('admin-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('osc.js')));
-osc_register_script('admin-ui-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('ui-osc.js')), 'admin-osc');
+osc_register_script('admin-ui-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('ui-osc.js')), array('admin-osc', 'osc-ui-common'));
 osc_register_script('admin-location', osc_asset_url_versioned(osc_current_admin_theme_js_url('location.min.js')), 'bootstrap5');
 osc_register_script('popper', osc_asset_url_versioned(osc_assets_url('popper/popper.min.js')));
 osc_register_script('bootstrap5', osc_asset_url_versioned(osc_assets_url('bootstrap/bootstrap.min.js')), 'popper');

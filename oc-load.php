@@ -132,6 +132,11 @@ osc_register_script('jquery-validate-additional', osc_assets_url('jquery-validat
 
 osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
 
+// Shared vanilla UI helpers (oscAutocomplete, …) — no jQuery. Used by the admin
+// (as a dependency of ui-osc.js) and by the public item form via osc_ui_common_header().
+osc_register_script('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.js')));
+osc_register_style('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.css')));
+
 //Legacy js libraries
 osc_register_script('tabber', osc_assets_url('osclass-legacy/js/tabber-minimized.js'), 'jquery');
 osc_register_script('colorpicker', osc_assets_url('osclass-legacy/js/colorpicker/js/colorpicker.js'));
