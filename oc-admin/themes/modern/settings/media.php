@@ -37,7 +37,9 @@ $freeType      = array_key_exists('FreeType Support', $aGD);
 $media_js = static function () {
     ?>
     <script type="text/javascript">
-        // Code for form validation. Dimension fields must match NxN.
+        // Code for form validation. Dimension fields must match NxN. Wrapped in
+        // DOMContentLoaded so it works when ui-osc.js (oscValidateForm) is deferred.
+        document.addEventListener('DOMContentLoaded', function () {
         oscValidateForm(document.querySelector('form[name=media_form]'), {
             rules: {
                 dimThumbnail: { required: true, pattern: /^[0-9]+x[0-9]+$/i },
@@ -108,6 +110,7 @@ $media_js = static function () {
                     watermarkModal();
                 }
             }
+        });
         });
     </script>
     <?php

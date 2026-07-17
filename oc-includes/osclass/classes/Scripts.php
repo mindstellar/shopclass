@@ -112,9 +112,17 @@ class Scripts extends Dependencies
      */
     public function printScripts()
     {
+        // Emit scripts with `defer` (parallel download, non-blocking, executed in order
+        // after parsing) — the modern default. It is enabled by default in the admin,
+        // which is fully vanilla and whose inline scripts wait for DOMContentLoaded; it is
+        // left off on the public front by default, because a legacy theme's inline
+        // `$(document).ready(...)` cannot run before a deferred jQuery. Any theme or plugin
+        // can force it either way with the `scripts_defer` filter, e.g. a modern front
+        // theme opting in:  osc_add_filter('scripts_defer', static function () { return true; });
+        $defer = Plugins::applyFilter('scripts_defer', defined('OC_ADMIN') && OC_ADMIN) ? ' defer' : '';
         foreach ($this->getScripts() as $script) {
             if ($script && !in_array($script, $this->scriptsLoaded, false)) {
-                echo '<script src="' . Plugins::applyFilter('theme_url', $script) . '"></script>' . PHP_EOL;
+                echo '<script src="' . Plugins::applyFilter('theme_url', $script) . '"' . $defer . '></script>' . PHP_EOL;
                 $this->scriptsLoaded[] = $script;
             }
         }
