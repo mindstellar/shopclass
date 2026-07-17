@@ -43,18 +43,26 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            $('input[name="moderate_items"]').bind('change', function () {
-                if ($(this).is(':checked')) {
-                    $(".num-moderated-items").show();
-                    $('input[name="num_moderate_items"]').val(0);
-                } else {
-                    $('input[name="logged_user_item_validation"]').prop('checked', false);
-                    $('.num-moderated-items').hide();
+        document.addEventListener('DOMContentLoaded', function () {
+            var moderate = document.querySelector('input[name="moderate_items"]');
+            function setRows(display) {
+                document.querySelectorAll('.num-moderated-items').forEach(function (el) { el.style.display = display; });
+            }
+            if (moderate) {
+                moderate.addEventListener('change', function () {
+                    if (moderate.checked) {
+                        setRows('');
+                        var num = document.querySelector('input[name="num_moderate_items"]');
+                        if (num) { num.value = 0; }
+                    } else {
+                        var lv = document.querySelector('input[name="logged_user_item_validation"]');
+                        if (lv) { lv.checked = false; }
+                        setRows('none');
+                    }
+                });
+                if (!moderate.checked) {
+                    setRows('none');
                 }
-            });
-            if (!$('input[name="moderate_items"]').is(':checked')) {
-                $('.num-moderated-items').hide();
             }
         });
     </script>

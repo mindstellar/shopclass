@@ -33,37 +33,47 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        jQuery(document).ready(function () {
-            $('select[name="mailserver_type"]').bind('change', function () {
-                if ($(this).val() == 'gmail') {
-                    $('input[name="mailserver_host"]').val('smtp.gmail.com').attr('readonly', true);
-                    $('input[name="mailserver_port"]').val('465').attr('readonly', true);
-                    $('input[name="mailserver_username"]').val('');
-                    $('input[name="mailserver_password"]').val('');
-                    $('input[name="mailserver_ssl"]').val('ssl');
-                    $('input[name="mailserver_auth"]').prop('checked', true);
-                    $('input[name="mailserver_pop"]').prop('checked', false);
-                } else {
-                    $('input[name="mailserver_host"]').attr('readonly', false);
-                    $('input[name="mailserver_port"]').attr('readonly', false);
-                }
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            function fld(name) { return document.querySelector('[name="' + name + '"]'); }
 
-            $('#testMail').bind('click', function () {
-                $.ajax({
-                    "url": "<?php echo osc_admin_base_url(true)?>?page=ajax&action=test_mail",
-                    "dataType": 'json',
-                    success: function (data) {
-                        $('#testMail_message p').html(data.html);
-                        $('#testMail_message').css('display', 'block');
-                        if (data.status == 1) {
-                            $('#testMail_message').addClass('ok');
-                        } else {
-                            $('#testMail_message').addClass('error');
-                        }
+            var typeSel = document.querySelector('select[name="mailserver_type"]');
+            if (typeSel) {
+                typeSel.addEventListener('change', function () {
+                    var host = fld('mailserver_host');
+                    var port = fld('mailserver_port');
+                    if (typeSel.value === 'gmail') {
+                        if (host) { host.value = 'smtp.gmail.com'; host.readOnly = true; }
+                        if (port) { port.value = '465'; port.readOnly = true; }
+                        var u = fld('mailserver_username'); if (u) { u.value = ''; }
+                        var pw = fld('mailserver_password'); if (pw) { pw.value = ''; }
+                        var ssl = fld('mailserver_ssl'); if (ssl) { ssl.value = 'ssl'; }
+                        var auth = fld('mailserver_auth'); if (auth) { auth.checked = true; }
+                        var pop = fld('mailserver_pop'); if (pop) { pop.checked = false; }
+                    } else {
+                        if (host) { host.readOnly = false; }
+                        if (port) { port.readOnly = false; }
                     }
                 });
-            });
+            }
+
+            var testBtn = document.getElementById('testMail');
+            if (testBtn) {
+                testBtn.addEventListener('click', function () {
+                    fetch("<?php echo osc_admin_base_url(true)?>?page=ajax&action=test_mail", {
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function (r) {
+                        return r.json();
+                    }).then(function (data) {
+                        var msg = document.getElementById('testMail_message');
+                        if (!msg) { return; }
+                        var pEl = msg.querySelector('p');
+                        if (pEl) { pEl.innerHTML = data.html; }
+                        msg.style.display = 'block';
+                        msg.classList.add(data.status == 1 ? 'ok' : 'error');
+                    });
+                });
+            }
         });
     </script>
     <?php

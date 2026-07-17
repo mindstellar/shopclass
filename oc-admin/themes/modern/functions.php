@@ -143,13 +143,11 @@ function check_version_admin_footer()
     if ((time() - osc_last_version_check()) > (24 * 3600)) {
         ?>
         <script type="text/javascript">
-            $(document).ready(function () {
-                $.getJSON(
-                    '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_version',
-                    {},
-                    function (data) {
-                    }
-                );
+            document.addEventListener('DOMContentLoaded', function () {
+                fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_version', {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
             });
         </script>
         <?php
@@ -163,13 +161,11 @@ function check_languages_admin_footer()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            $.getJSON(
-                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_languages',
-                {},
-                function (data) {
-                }
-            );
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_languages', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
         });
     </script>
     <?php
@@ -180,13 +176,11 @@ function check_themes_admin_footer()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            $.getJSON(
-                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_themes',
-                {},
-                function (data) {
-                }
-            );
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_themes', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
         });
     </script>
     <?php
@@ -197,13 +191,11 @@ function check_plugins_admin_footer()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            $.getJSON(
-                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_plugins',
-                {},
-                function (data) {
-                }
-            );
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_plugins', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
         });
     </script>
     <?php
