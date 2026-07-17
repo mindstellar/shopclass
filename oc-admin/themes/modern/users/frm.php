@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $user      = __get('user');
 $countries = __get('countries');
@@ -130,66 +129,65 @@ $aux = customFrmText();
             document.getElementById("dialog-alert-delete").showModal();
         }
 
-        $(document).ready(function () {
-            $(".more-tooltip").hover(function (e) {
-                $('#more-tooltip').html($(this).attr("categories")).css({
-                    top: this.offsetTop - $('#more-tooltip').height() - 15,
-                    left: this.offsetLeft
-                }).show();
-            }, function () {
-                $('#more-tooltip').hide();
-            });
-            $('#more-tooltip').hide();
-
+        document.addEventListener('DOMContentLoaded', function () {
+            var tip = document.getElementById('more-tooltip');
+            if (tip) {
+                tip.style.display = 'none';
+                document.querySelectorAll('.more-tooltip').forEach(function (el) {
+                    el.addEventListener('mouseenter', function () {
+                        tip.innerHTML = el.getAttribute('categories') || '';
+                        tip.style.top = (el.offsetTop - tip.offsetHeight - 15) + 'px';
+                        tip.style.left = el.offsetLeft + 'px';
+                        tip.style.display = '';
+                    });
+                    el.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+                });
+            }
         });
     </script>
 <?php } ?>
 <script type="text/javascript">
-    $(document).ready(function () {
-        $('form#register').validate({
-            rules: {
-                s_username: {
-                    required: true
-                }
-            },
+    document.addEventListener('DOMContentLoaded', function () {
+        oscValidateForm(document.getElementById('register'), {
+            rules: { s_username: { required: true } },
             messages: {
                 s_username: {
                     required: '<?php echo osc_esc_js(__('Username: this field is required', 'modern')); ?>.'
                 }
             },
-            errorLabelContainer: "#error_list",
-            wrapper: "li",
-            invalidHandler: function (form, validator) {
-                $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-            },
-            submitHandler: function (form) {
-                $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                form.submit();
+            errorContainer: '#error_list',
+            onInvalid: function () {
+                var h1 = document.querySelector('h1');
+                if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
             }
         });
 
+        // Debounced username-availability check as the field is typed.
         var cInterval;
-        $("#s_username").keydown(function (event) {
-            if ($("#s_username").attr("value") != '') {
-                clearInterval(cInterval);
-                cInterval = setInterval(function () {
-                    $.getJSON(
-                        "<?php echo osc_base_url(true); ?>?page=ajax&action=check_username_availability",
-                        {"s_username": $("#s_username").attr("value")},
-                        function (data) {
-                            clearInterval(cInterval);
-                            if (data.exists == 0) {
-                                $("#available").text('<?php echo osc_esc_js(__('The username is available',
-                                                                               'modern')); ?>');
-                            } else {
-                                $("#available").text('<?php echo osc_esc_js(__('The username is NOT available',
-                                                                               'modern')); ?>');
+        var username = document.getElementById('s_username');
+        var available = document.getElementById('available');
+        if (username) {
+            username.addEventListener('keydown', function () {
+                if (username.value !== '') {
+                    clearInterval(cInterval);
+                    cInterval = setInterval(function () {
+                        clearInterval(cInterval);
+                        fetch("<?php echo osc_base_url(true); ?>?page=ajax&action=check_username_availability&s_username=" + encodeURIComponent(username.value), {
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(function (r) {
+                            return r.json();
+                        }).then(function (data) {
+                            if (available) {
+                                available.textContent = (data.exists == 0)
+                                    ? '<?php echo osc_esc_js(__('The username is available', 'modern')); ?>'
+                                    : '<?php echo osc_esc_js(__('The username is NOT available', 'modern')); ?>';
                             }
-                        }
-                    );
-                }, 1000);
-            }
-        });
+                        });
+                    }, 1000);
+                }
+            });
+        }
     });
 </script>
 <div class="row">

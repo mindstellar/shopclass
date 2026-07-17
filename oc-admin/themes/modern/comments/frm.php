@@ -29,7 +29,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $comment = __get('comment');
 

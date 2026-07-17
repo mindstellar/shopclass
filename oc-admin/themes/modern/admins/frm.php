@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $admin = __get('admin');
 /**

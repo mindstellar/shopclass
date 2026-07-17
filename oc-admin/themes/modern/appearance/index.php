@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 //getting variables for this view
 $themes = __get('themes');

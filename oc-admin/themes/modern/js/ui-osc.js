@@ -102,6 +102,91 @@ function tabberAutomatic() {
     });
 }
 
+// Config-driven form validation — replaces the jQuery-validate plugin. Keeps the
+// same shape so migration is a near drop-in:
+//   oscValidateForm(form, {
+//     rules:    { fieldName: { required, minlength, maxlength, email, url, digits, number } },
+//     messages: { fieldName: { required: '…', email: '…', … } },
+//     errorContainer: '#error_list',   // <ul> that lists the messages
+//     onInvalid: function (form) { … }  // e.g. scroll to the top
+//   });
+// On a valid submit the form posts natively; submit buttons are disabled to stop
+// double-submits. On an invalid submit it is cancelled and the fields flagged.
+var OSC_VALIDATORS = {
+    email: function (v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); },
+    url: function (v) { return /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v); },
+    digits: function (v) { return /^\d+$/.test(v); },
+    number: function (v) { return !isNaN(parseFloat(v)) && isFinite(v.replace(',', '.')); }
+};
+function oscValidateForm(form, config) {
+    if (!form) {
+        return;
+    }
+    config = config || {};
+    var rules = config.rules || {};
+    var messages = config.messages || {};
+
+    function fieldError(name) {
+        var el = form.querySelector('[name="' + name + '"]');
+        if (!el) {
+            return null;
+        }
+        var v = (el.value == null ? '' : String(el.value)).trim();
+        var r = rules[name] || {};
+        var m = messages[name] || {};
+        if (r.required && v === '') { return { el: el, msg: m.required }; }
+        // Custom rules run even on empty values (they may make a field
+        // conditionally required based on another field).
+        if (r.custom && !r.custom(v, form)) { return { el: el, msg: m.custom }; }
+        if (v === '') { return null; }
+        if (r.minlength && v.length < r.minlength) { return { el: el, msg: m.minlength }; }
+        if (r.maxlength && v.length > r.maxlength) { return { el: el, msg: m.maxlength }; }
+        if (r.email && !OSC_VALIDATORS.email(v)) { return { el: el, msg: m.email }; }
+        if (r.url && !OSC_VALIDATORS.url(v)) { return { el: el, msg: m.url }; }
+        if (r.digits && !OSC_VALIDATORS.digits(v)) { return { el: el, msg: m.digits }; }
+        if (r.number && !OSC_VALIDATORS.number(v)) { return { el: el, msg: m.number }; }
+        if (r.pattern && !r.pattern.test(v)) { return { el: el, msg: m.pattern }; }
+        return null;
+    }
+
+    form.addEventListener('submit', function (e) {
+        var errors = [];
+        Object.keys(rules).forEach(function (name) {
+            var err = fieldError(name);
+            var el = form.querySelector('[name="' + name + '"]');
+            if (err) {
+                errors.push(err);
+                if (el) { el.classList.add('is-invalid'); el.setAttribute('aria-invalid', 'true'); }
+            } else if (el) {
+                el.classList.remove('is-invalid');
+                el.removeAttribute('aria-invalid');
+            }
+        });
+
+        var container = config.errorContainer ? document.querySelector(config.errorContainer) : null;
+        if (container) {
+            container.innerHTML = '';
+            errors.forEach(function (er) {
+                var li = document.createElement('li');
+                li.textContent = er.msg || '';
+                container.appendChild(li);
+            });
+        }
+
+        if (errors.length) {
+            e.preventDefault();
+            if (typeof config.onInvalid === 'function') { config.onInvalid(form); }
+            if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+        } else {
+            setTimeout(function () {
+                form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (btn) {
+                    btn.disabled = true;
+                });
+            }, 0);
+        }
+    });
+}
+
 // Make a nested <ul> collapsible — replaces the jQuery-treeview plugin. Each
 // <li> that contains a child <ul> gets a disclosure toggle; children start
 // collapsed. Idempotent per root.

@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 osc_enqueue_script('tiny_mce');
 
 $info   = __get('info');
@@ -150,27 +149,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 </script>
 
 <script type="text/javascript">
-    $(document).ready(function () {
-        // Code for form validation
-        $("form[name=widget_form]").validate({
-            rules: {
-                description: {
-                    required: true
-                }
-            },
+    document.addEventListener('DOMContentLoaded', function () {
+        oscValidateForm(document.querySelector('form[name=widget_form]'), {
+            rules: { description: { required: true } },
             messages: {
                 description: {
                     required: '<?php echo osc_esc_js(__('Description: this field is required')); ?>.'
                 }
             },
-            errorLabelContainer: "#error_list",
-            wrapper: "li",
-            invalidHandler: function (form, validator) {
-                $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-            },
-            submitHandler: function (form) {
-                $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                form.submit();
+            errorContainer: '#error_list',
+            onInvalid: function () {
+                var h1 = document.querySelector('h1');
+                if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
             }
         });
     });

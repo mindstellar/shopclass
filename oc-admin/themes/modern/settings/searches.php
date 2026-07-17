@@ -28,48 +28,37 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 //customize Head
 function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            // Code for form validation
-
-            $.validator.addMethod('customrule', function (value, element) {
-                if ($('input:radio[name=purge_searches]:checked').val() === 'custom') {
-                    if ($("#custom_queries").val() == '') {
-                        return false;
-                    }
-                }
-                return true;
-            });
-
-            $("form[name=searches_form]").validate({
+        document.addEventListener('DOMContentLoaded', function () {
+            oscValidateForm(document.querySelector('form[name=searches_form]'), {
                 rules: {
                     custom_queries: {
                         digits: true,
-                        customrule: true
+                        // Required only when the "custom" purge option is selected.
+                        custom: function (value, form) {
+                            var picked = form.querySelector('input[name=purge_searches]:checked');
+                            if (picked && picked.value === 'custom') {
+                                return value !== '';
+                            }
+                            return true;
+                        }
                     }
                 },
                 messages: {
                     custom_queries: {
-                        digits: '<?php
-                            echo osc_esc_js(__('Custom number: this field must only contain numeric characters'));
-                        ?>.',
-                        customrule: '<?php echo osc_esc_js(__('Custom number: this field cannot be left empty')); ?>.'
+                        digits: '<?php echo osc_esc_js(__('Custom number: this field must only contain numeric characters')); ?>.',
+                        custom: '<?php echo osc_esc_js(__('Custom number: this field cannot be left empty')); ?>.'
                     }
                 },
-                wrapper: "li",
-                errorLabelContainer: "#error_list",
-                invalidHandler: function (form, validator) {
-                    $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-                },
-                submitHandler: function (form) {
-                    $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                    form.submit();
+                errorContainer: '#error_list',
+                onInvalid: function () {
+                    var h1 = document.querySelector('h1');
+                    if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                 }
             });
         });

@@ -28,25 +28,17 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 //customize Head
 function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            // Code for form validation
-            $("form[name=comments_form]").validate({
+        document.addEventListener('DOMContentLoaded', function () {
+            oscValidateForm(document.querySelector('form[name=comments_form]'), {
                 rules: {
-                    num_moderate_comments: {
-                        required: true,
-                        digits: true
-                    },
-                    comments_per_page: {
-                        required: true,
-                        digits: true
-                    }
+                    num_moderate_comments: { required: true, digits: true },
+                    comments_per_page: { required: true, digits: true }
                 },
                 messages: {
                     num_moderate_comments: {
@@ -58,28 +50,23 @@ function customHead()
                         digits: '<?php echo osc_esc_js(__('Comments per page: this field must only contain numeric characters')); ?>.'
                     }
                 },
-                wrapper: "li",
-                errorLabelContainer: "#error_list",
-                invalidHandler: function (form, validator) {
-                    $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-                },
-                submitHandler: function (form) {
-                    $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                    form.submit();
+                errorContainer: '#error_list',
+                onInvalid: function () {
+                    var h1 = document.querySelector('h1');
+                    if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                 }
             });
 
-            if (!$('input[name="moderate_comments"]').is(':checked')) {
-                $('.comments_approved').css('display', 'none');
+            var moderate = document.querySelector('input[name="moderate_comments"]');
+            function setApproved(display) {
+                document.querySelectorAll('.comments_approved').forEach(function (el) { el.style.display = display; });
             }
-
-            $('input[name="moderate_comments"]').bind('change', function () {
-                if ($(this).is(':checked')) {
-                    $('.comments_approved').css('display', '');
-                } else {
-                    $('.comments_approved').css('display', 'none');
-                }
-            });
+            if (moderate) {
+                if (!moderate.checked) { setApproved('none'); }
+                moderate.addEventListener('change', function () {
+                    setApproved(moderate.checked ? '' : 'none');
+                });
+            }
         });
     </script>
     <?php

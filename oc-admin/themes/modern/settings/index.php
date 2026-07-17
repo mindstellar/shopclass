@@ -30,7 +30,6 @@ if (!defined('OC_ADMIN')) {
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $dateFormats = array('F j, Y', 'Y/m/d', 'm/d/Y', 'd/m/Y');
 $timeFormats = array('g:i a', 'g:i A', 'H:i');
@@ -43,30 +42,14 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            // Code for form validation
-            $("form[name=settings_form]").validate({
+        document.addEventListener('DOMContentLoaded', function () {
+            oscValidateForm(document.querySelector('form[name=settings_form]'), {
                 rules: {
-                    pageTitle: {
-                        required: true,
-                        minlength: 1
-                    },
-                    contactEmail: {
-                        required: true,
-                        email: true
-                    },
-                    num_rss_items: {
-                        required: true,
-                        digits: true
-                    },
-                    max_latest_items_at_home: {
-                        required: true,
-                        digits: true
-                    },
-                    default_results_per_page: {
-                        required: true,
-                        digits: true
-                    }
+                    pageTitle: { required: true, minlength: 1 },
+                    contactEmail: { required: true, email: true },
+                    num_rss_items: { required: true, digits: true },
+                    max_latest_items_at_home: { required: true, digits: true },
+                    default_results_per_page: { required: true, digits: true }
                 },
                 messages: {
                     pageTitle: {
@@ -90,45 +73,30 @@ function customHead()
                         digits: '<?php echo osc_esc_js(__('The search page shows: this field must only contain numeric characters')); ?>.'
                     }
                 },
-                wrapper: "li",
-                errorLabelContainer: "#error_list",
-                invalidHandler: function (form, validator) {
-                    $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-                },
-                submitHandler: function (form) {
-                    $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                    form.submit();
+                errorContainer: '#error_list',
+                onInvalid: function () {
+                    var h1 = document.querySelector('h1');
+                    if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                 }
             });
-
         });
 
         function custom_date(date_format) {
-            $.getJSON(
-                "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=date_format",
-                {"format": date_format},
-                function (data) {
-                    if (data.str_formatted != '') {
-                        $("#custom_date").text(' <?php _e('Preview'); ?>: ' + data.str_formatted)
-                    } else {
-                        $("#custom_date").text('');
-                    }
-                }
-            );
+            fetch("<?php echo osc_admin_base_url(true); ?>?page=ajax&action=date_format&format=" + encodeURIComponent(date_format), {
+                credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                var el = document.getElementById('custom_date');
+                if (el) { el.textContent = data.str_formatted != '' ? ' <?php echo osc_esc_js(__('Preview')); ?>: ' + data.str_formatted : ''; }
+            });
         }
 
         function custom_time(time_format) {
-            $.getJSON(
-                "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=date_format",
-                {"format": time_format},
-                function (data) {
-                    if (data.str_formatted != '') {
-                        $("#custom_time").text(' <?php _e('Preview'); ?>: ' + data.str_formatted)
-                    } else {
-                        $("#custom_time").text('');
-                    }
-                }
-            );
+            fetch("<?php echo osc_admin_base_url(true); ?>?page=ajax&action=date_format&format=" + encodeURIComponent(time_format), {
+                credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                var el = document.getElementById('custom_time');
+                if (el) { el.textContent = data.str_formatted != '' ? ' <?php echo osc_esc_js(__('Preview')); ?>: ' + data.str_formatted : ''; }
+            });
         }
     </script>
     <?php

@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $info = __get('info');
 

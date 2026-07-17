@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate-additional');
 osc_enqueue_script('php-date');
 osc_enqueue_script('tiny_mce');
 

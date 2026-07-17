@@ -29,7 +29,6 @@ if (!defined('OC_ADMIN')) {
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 $current_host = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_HOST);
 if ($current_host === null) {

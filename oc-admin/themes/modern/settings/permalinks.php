@@ -28,16 +28,14 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 
 //customize Head
 function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            // Code for form validation
-            $("form[name=permalinks_form]").validate({
+        document.addEventListener('DOMContentLoaded', function () {
+            oscValidateForm(document.querySelector('form[name=permalinks_form]'), {
                 rules: {
                     rewrite_item_url: {
                         required: true,
@@ -334,32 +332,34 @@ function customHead()
                         minlength: '<?php echo osc_esc_js(__('Change email confirm url: this field is required')); ?>.'
                     }
                 },
-                wrapper: "li",
-                errorLabelContainer: "#error_list",
-                invalidHandler: function (form, validator) {
-                    $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-                },
-                submitHandler: function (form) {
-                    $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                    form.submit();
+                errorContainer: '#error_list',
+                onInvalid: function () {
+                    var h1 = document.querySelector('h1');
+                    if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                 }
             });
+
+            var re = document.getElementById('rewrite_enabled');
+            if (re) {
+                re.addEventListener('click', function () {
+                    var cr = document.getElementById('custom_rules');
+                    if (cr) { cr.style.display = (getComputedStyle(cr).display === 'none') ? '' : 'none'; }
+                });
+            }
         });
 
         function showhide() {
-            $("#inner_rules").toggle();
-            if ($("#show_hide a").html() === '<?php echo osc_esc_js(__('Show rules')); ?>') {
-                $("#show_hide a").html('<?php echo osc_esc_js(__('Hide rules')); ?>');
-            } else {
-                $("#show_hide a").html('<?php echo osc_esc_js(__('Show rules')); ?>')
+            var inner = document.getElementById('inner_rules');
+            if (inner) {
+                inner.style.display = (getComputedStyle(inner).display === 'none') ? '' : 'none';
+            }
+            var link = document.querySelector('#show_hide a');
+            if (link) {
+                link.textContent = (link.textContent === '<?php echo osc_esc_js(__('Show rules')); ?>')
+                    ? '<?php echo osc_esc_js(__('Hide rules')); ?>'
+                    : '<?php echo osc_esc_js(__('Show rules')); ?>';
             }
         }
-
-        $(function () {
-            $("#rewrite_enabled").click(function () {
-                $("#custom_rules").toggle();
-            });
-        });
     </script>
     <?php
 }

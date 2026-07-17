@@ -55,25 +55,28 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
-            if (typeof $.uniform != 'undefined') {
-                $('textarea, button,select, input:file').uniform();
-            }
-
+        document.addEventListener('DOMContentLoaded', function () {
             <?php if (Params::getParam('confirm') === 'true') {?>
-            $('#output').show();
-            $('#tohide').hide();
+            var output = document.getElementById('output');
+            if (output) { output.style.display = ''; }
+            var tohide = document.getElementById('tohide');
+            if (tohide) { tohide.style.display = 'none'; }
 
-            $.get('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo Params::getParam('skipdb')?>&<?php echo osc_csrf_token_url(); ?>',
-                function
-                    (data) {
-                    $('#loading_image').hide();
-                    if (data.error === 1) {
-                        $("#result").html("Error: " + data.message.replace(/\n/g, "<br />"));
-                    } else {
-                        $("#result").html("Success: " + data.message + "<br />");
-                    }
-                }, 'json');
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo Params::getParam('skipdb')?>&<?php echo osc_csrf_token_url(); ?>', {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (r) {
+                return r.json();
+            }).then(function (data) {
+                var loading = document.getElementById('loading_image');
+                if (loading) { loading.style.display = 'none'; }
+                var result = document.getElementById('result');
+                if (result) {
+                    result.innerHTML = (data.error === 1)
+                        ? 'Error: ' + data.message.replace(/\n/g, '<br />')
+                        : 'Success: ' + data.message + '<br />';
+                }
+            });
             <?php } ?>
         });
     </script>

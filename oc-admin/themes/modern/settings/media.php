@@ -28,7 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-validate');
 $maxPHPsize    = View::newInstance()->_get('max_size_upload');
 $imagickLoaded = extension_loaded('imagick');
 $aGD           = @gd_info();
@@ -38,56 +37,36 @@ $freeType      = array_key_exists('FreeType Support', $aGD);
 $media_js = static function () {
     ?>
     <script type="text/javascript">
-        // Code for form validation
-        $.validator.addMethod('regexp', function (value, element, param) {
-            return this.optional(element) || value.match(param);
-        }, '<?php echo osc_esc_js(__('Size is not in the correct format')); ?>');
-
-        $("form[name=media_form]").validate({
+        // Code for form validation. Dimension fields must match NxN.
+        oscValidateForm(document.querySelector('form[name=media_form]'), {
             rules: {
-                dimThumbnail: {
-                    required: true,
-                    regexp: /^[0-9]+x[0-9]+$/i
-                },
-                dimPreview: {
-                    required: true,
-                    regexp: /^[0-9]+x[0-9]+$/i
-                },
-                dimNormal: {
-                    required: true,
-                    regexp: /^[0-9]+x[0-9]+$/i
-                },
-                maxSizeKb: {
-                    required: true,
-                    digits: true
-                }
+                dimThumbnail: { required: true, pattern: /^[0-9]+x[0-9]+$/i },
+                dimPreview: { required: true, pattern: /^[0-9]+x[0-9]+$/i },
+                dimNormal: { required: true, pattern: /^[0-9]+x[0-9]+$/i },
+                maxSizeKb: { required: true, digits: true }
             },
             messages: {
                 dimThumbnail: {
                     required: '<?php echo osc_esc_js(__('Thumbnail size: this field is required')); ?>',
-                    regexp: '<?php echo osc_esc_js(__('Thumbnail size: is not in the correct format')); ?>'
+                    pattern: '<?php echo osc_esc_js(__('Thumbnail size: is not in the correct format')); ?>'
                 },
                 dimPreview: {
                     required: '<?php echo osc_esc_js(__('Preview size: this field is required')); ?>',
-                    regexp: '<?php echo osc_esc_js(__('Preview size: is not in the correct format')); ?>'
+                    pattern: '<?php echo osc_esc_js(__('Preview size: is not in the correct format')); ?>'
                 },
                 dimNormal: {
                     required: '<?php echo osc_esc_js(__('Normal size: this field is required')); ?>',
-                    regexp: '<?php echo osc_esc_js(__('Normal size: is not in the correct format')); ?>'
+                    pattern: '<?php echo osc_esc_js(__('Normal size: is not in the correct format')); ?>'
                 },
                 maxSizeKb: {
                     required: '<?php echo osc_esc_js(__('Maximum size: this field is required')); ?>',
                     digits: '<?php echo osc_esc_js(__('Maximum size: this field must only contain numeric characters')); ?>'
                 }
             },
-            wrapper: "li",
-            errorLabelContainer: "#error_list",
-            invalidHandler: function (form, validator) {
-                $('html,body').animate({scrollTop: $('h1').offset().top}, {duration: 250, easing: 'swing'});
-            },
-            submitHandler: function (form) {
-                $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                form.submit();
+            errorContainer: '#error_list',
+            onInvalid: function () {
+                var h1 = document.querySelector('h1');
+                if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
             }
         });
 
