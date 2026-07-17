@@ -12183,79 +12183,8 @@ h3.separate-top,
   position: relative;
 }
 
-.grid-system {
-  --bs-gutter-x: 1.5rem;
-  --bs-gutter-y: 0;
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: calc(-1 * var(--bs-gutter-y));
-  margin-right: calc(-0.5 * var(--bs-gutter-x));
-  margin-left: calc(-0.5 * var(--bs-gutter-x));
-}
-
 .row-wrapper {
   padding: 0.5rem;
-}
-
-.show-grid .row-wrapper {
-  background-color: var(--osc-bench-warm);
-  padding: 10px 0;
-  border-radius: 5px;
-}
-
-.grid-10 {
-  flex: 0 0 auto;
-  width: 10%;
-}
-
-.grid-20 {
-  flex: 0 0 auto;
-  width: 20%;
-}
-
-.grid-30 {
-  flex: 0 0 auto;
-  width: 30%;
-}
-
-.grid-33 {
-  flex: 0 0 auto;
-  width: 33%;
-}
-
-.grid-40 {
-  flex: 0 0 auto;
-  width: 40%;
-}
-
-.grid-50 {
-  flex: 0 0 auto;
-  width: 50%;
-}
-
-.grid-60 {
-  flex: 0 0 auto;
-  width: 60%;
-}
-
-.grid-70 {
-  flex: 0 0 auto;
-  width: 70%;
-}
-
-.grid-80 {
-  flex: 0 0 auto;
-  width: 80%;
-}
-
-.grid-80 {
-  flex: 0 0 auto;
-  width: 90%;
-}
-
-.grid-100 {
-  flex: 0 0 auto;
-  width: 100%;
 }
 
 div.row-offset {
@@ -12264,6 +12193,7 @@ div.row-offset {
 }
 
 #content-head {
+  --bs-gutter-x: 0;
   padding: 1.1rem var(--osc-page-inset-x) 0.35rem;
 }
 #content-head h1, #content-head .h1, #content-head h2, #content-head .h2, #content-head h3, #content-head .h3 {
@@ -12319,11 +12249,13 @@ div.row-offset {
 
 #message-wrapper,
 #help-wrapper {
+  --bs-gutter-x: 0;
   padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
+  --bs-gutter-x: 0;
   padding: 1.25rem var(--osc-page-inset-x) 3.5rem;
   position: relative;
 }
@@ -16207,22 +16139,6 @@ form h3, form .h3 {
   }
 }
 @media (max-width: 576px) {
-  #content-page > .col {
-    padding-inline-start: 0.1rem;
-    padding-inline-end: 0.1rem;
-  }
-  .grid-10,
-  .grid-20,
-  .grid-30,
-  .grid-33,
-  .grid-40,
-  .grid-50,
-  .grid-60,
-  .grid-70,
-  .grid-80,
-  .grid-80 {
-    width: 100%;
-  }
   #display-filters .form-horizontal .form-label,
   .form-horizontal .form-label {
     float: none;

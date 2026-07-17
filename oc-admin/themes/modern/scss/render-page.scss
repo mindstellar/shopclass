@@ -6,6 +6,11 @@
 // action links (RTL-unsafe, like the sidebar chevron was) and lets the actions sit
 // at the row's end via margin-inline-start:auto.
 #content-head {
+  // This is a Bootstrap .row (> .col). Zero its gutter so the inset comes only from
+  // padding-inline below — otherwise the row's negative inline margin and the child
+  // .col's gutter both fight the padding for control of the same edge. Inner grids a
+  // page builds are unaffected: every .row re-declares its own --bs-gutter-x.
+  --bs-gutter-x: 0;
   padding: 1.1rem var(--osc-page-inset-x) .35rem;
 
   h1, h2, h3 {
@@ -66,14 +71,17 @@
 
 #message-wrapper,
 #help-wrapper {
+  --bs-gutter-x: 0;
   padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  // The single, predictable page inset. #content-page is a .row, so its own inline
-  // padding plus the child .col gutter net out to exactly --osc-page-inset-x (the row's
-  // negative margin cancels the gutter at the edges).
+  // The single, predictable page inset. #content-page is a .row (> .col); zeroing its
+  // gutter means the row's negative inline margin and the .col gutter are both 0, so the
+  // inset is exactly --osc-page-inset-x with nothing fighting it at the edge. A page's
+  // own inner .row grids re-declare --bs-gutter-x, so their gutters are untouched.
+  --bs-gutter-x: 0;
   padding: 1.25rem var(--osc-page-inset-x) 3.5rem;
   position: relative;
 

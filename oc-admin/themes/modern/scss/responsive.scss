@@ -93,24 +93,6 @@
 }
 
 @media (max-width: 576px) {
-  #content-page {
-    & > .col {
-      padding-inline-start: 0.1rem;
-      padding-inline-end: 0.1rem;
-    }
-  }
-  .grid-10,
-  .grid-20,
-  .grid-30,
-  .grid-33,
-  .grid-40,
-  .grid-50,
-  .grid-60,
-  .grid-70,
-  .grid-80,
-  .grid-80 {
-    width: 100%;
-  }
   #display-filters .form-horizontal,
   .form-horizontal {
     .form-label {
