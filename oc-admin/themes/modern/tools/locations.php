@@ -54,29 +54,29 @@ function customHead()
         }
 
         function ajax_() {
-            $.ajax({
-                type: "POST",
-                url: '<?php echo osc_admin_base_url(true)?>?page=ajax&action=location_stats&<?php echo osc_csrf_token_url(); ?>',
-                dataType: 'json',
-                success: function (data) {
-                    if (data.status == 'done') {
-                        $('span#percent').html(100);
-                        $('.spinner-border').remove();
-                    } else {
-                        var pending = data.pending;
-                        var all = <?php echo osc_esc_js($all);?>;
-                        var percent = parseInt(((all - pending) * 100) / all);
-                        $('span#percent').html(percent);
-                        ajax_();
-                    }
+            fetch('<?php echo osc_admin_base_url(true)?>?page=ajax&action=location_stats&<?php echo osc_csrf_token_url(); ?>', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (r) {
+                return r.json();
+            }).then(function (data) {
+                var pct = document.querySelector('span#percent');
+                if (data.status == 'done') {
+                    if (pct) { pct.innerHTML = 100; }
+                    document.querySelectorAll('.spinner-border').forEach(function (el) { el.remove(); });
+                } else {
+                    var pending = data.pending;
+                    var all = <?php echo osc_esc_js($all);?>;
+                    var percent = parseInt(((all - pending) * 100) / all);
+                    if (pct) { pct.innerHTML = percent; }
+                    ajax_();
                 }
             });
         }
 
-        $(document).ready(function () {
-            if (<?php echo $worktodo;?>>
-            0)
-            {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (<?php echo $worktodo;?> > 0) {
                 ajax_();
             }
         });

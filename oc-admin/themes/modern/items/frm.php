@@ -94,7 +94,7 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('#user, #fUser').forEach(function (el) {
                 oscAutocomplete(el, {
                     source: "<?php echo osc_admin_base_url(true); ?>?page=ajax&action=userajax",
@@ -115,33 +115,40 @@ function customHead()
             });
 
             <?php if (osc_locale_thousands_sep() != '' || osc_locale_dec_point() != '') { ?>
-            $("#price").on("blur", function (event) {
-                var price = $("#price").prop("value");
-                <?php if (osc_locale_thousands_sep()) { ?>
-                while (price.indexOf('<?php echo osc_esc_js(osc_locale_thousands_sep());  ?>') !== -1) {
-                    price = price.replace('<?php echo osc_esc_js(osc_locale_thousands_sep());  ?>', '');
-                }
-                <?php } ?>
-                <?php if (osc_locale_dec_point() != '') { ?>
-                var tmp = price.split('<?php echo osc_esc_js(osc_locale_dec_point())?>');
-                if (tmp.length > 2) {
-                    price = tmp[0] + '<?php echo osc_esc_js(osc_locale_dec_point())?>' + tmp[1];
-                }
-                <?php } ?>
-                $("#price").prop("value", price);
-
-            });
+            var priceInput = document.getElementById('price');
+            if (priceInput) {
+                priceInput.addEventListener('blur', function () {
+                    var price = priceInput.value;
+                    <?php if (osc_locale_thousands_sep()) { ?>
+                    while (price.indexOf('<?php echo osc_esc_js(osc_locale_thousands_sep());  ?>') !== -1) {
+                        price = price.replace('<?php echo osc_esc_js(osc_locale_thousands_sep());  ?>', '');
+                    }
+                    <?php } ?>
+                    <?php if (osc_locale_dec_point() != '') { ?>
+                    var tmp = price.split('<?php echo osc_esc_js(osc_locale_dec_point())?>');
+                    if (tmp.length > 2) {
+                        price = tmp[0] + '<?php echo osc_esc_js(osc_locale_dec_point())?>' + tmp[1];
+                    }
+                    <?php } ?>
+                    priceInput.value = price;
+                });
+            }
             <?php } ?>
 
-            $('#update_expiration').change(function () {
-                if ($(this).attr("checked")) {
-                    $('#dt_expiration').prop('value', '');
-                    $('div.update_expiration').show();
-                } else {
-                    $('#dt_expiration').prop('value', '-1');
-                    $('div.update_expiration').hide();
-                }
-            });
+            var updateExp = document.getElementById('update_expiration');
+            if (updateExp) {
+                updateExp.addEventListener('change', function () {
+                    var dt = document.getElementById('dt_expiration');
+                    var rows = document.querySelectorAll('div.update_expiration');
+                    if (updateExp.checked) {
+                        if (dt) { dt.value = ''; }
+                        rows.forEach(function (el) { el.style.display = ''; });
+                    } else {
+                        if (dt) { dt.value = '-1'; }
+                        rows.forEach(function (el) { el.style.display = 'none'; });
+                    }
+                });
+            }
         });
     </script>
     <?php ItemForm::location_javascript_new('admin'); ?>

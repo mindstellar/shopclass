@@ -210,15 +210,15 @@ osc_show_pagination_admin($aData);
     </div>
     <div id="more-tooltip"></div>
     <script>
-        $(document).ready(function () {
-            // check_all bulkactions
-            $("#check_all").change(function () {
-                var isChecked = $(this).prop("checked");
-                $('.col-bulkactions input').each(function () {
-                    this.checked = isChecked == 1;
+        document.addEventListener('DOMContentLoaded', function () {
+            var checkAll = document.getElementById('check_all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                        cb.checked = checkAll.checked;
+                    });
                 });
-            });
-
+            }
         });
 
         function delete_alert(id) {

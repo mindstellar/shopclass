@@ -72,7 +72,7 @@ function customHead()
     ItemForm::location_javascript_new('admin'); ?>
     <script type="text/javascript">
         // autocomplete users
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function () {
 
             document.querySelectorAll('#user, #fUser').forEach(function (el) {
                 oscAutocomplete(el, {
@@ -95,16 +95,14 @@ function customHead()
             });
 
             // check_all bulkactions
-            $("#check_all").change(function() {
-                var isChecked = $(this).prop("checked");
-                $('.col-bulkactions input').each(function() {
-                    if (isChecked == 1) {
-                        this.checked = true;
-                    } else {
-                        this.checked = false;
-                    }
+            var checkAll = document.getElementById('check_all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                        cb.checked = checkAll.checked;
+                    });
                 });
-            });
+            }
         });
     </script>
 <?php
