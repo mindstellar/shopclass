@@ -209,18 +209,15 @@ osc_show_pagination_admin($aData);
     }
 </script>
 <script type="text/javascript">
-    $(document).ready(function () {
-        // check_all bulkactions
-        $("#check_all").change(function () {
-            var isChecked = $(this).prop("checked");
-            $('.col-bulkactions input').each(function () {
-                if (isChecked == 1) {
-                    this.checked = true;
-                } else {
-                    this.checked = false;
-                }
+    document.addEventListener('DOMContentLoaded', function () {
+        var checkAll = document.getElementById('check_all');
+        if (checkAll) {
+            checkAll.addEventListener('change', function () {
+                document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                    cb.checked = checkAll.checked;
+                });
             });
-        });
+        }
     });
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

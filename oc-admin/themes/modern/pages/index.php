@@ -73,48 +73,29 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        function order_up(id) {
-            $('#datatables_list_processing').show();
-            $.ajax({
-                url: "<?php echo osc_admin_base_url(true)?>?page=ajax&action=order_pages&id=" + id + "&order=up&<?php echo osc_csrf_token_url(); ?>",
-                success: function (res) {
-                    // TODO improve
-                    window.location.reload(true);
-                },
-                error: function () {
-                    // alert error
-                    // TODO
-                }
+        function orderPage(id, dir) {
+            var proc = document.getElementById('datatables_list_processing');
+            if (proc) { proc.style.display = ''; }
+            fetch("<?php echo osc_admin_base_url(true)?>?page=ajax&action=order_pages&id=" + id + "&order=" + dir + "&<?php echo osc_csrf_token_url(); ?>", {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function () {
+                window.location.reload();
             });
         }
 
-        function order_down(id) {
-            $('#datatables_list_processing').show();
-            $.ajax({
-                url: "<?php echo osc_admin_base_url(true)?>?page=ajax&action=order_pages&id=" + id + "&order=down&<?php echo osc_csrf_token_url(); ?>",
-                success: function (res) {
-                    // TODO improve
-                    window.location.reload(true);
-                },
-                error: function () {
-                    // alert error
-                    // TODO
-                }
-            });
-        }
+        function order_up(id) { orderPage(id, 'up'); }
+        function order_down(id) { orderPage(id, 'down'); }
 
-        $(document).ready(function () {
-            // check_all bulkactions
-            $("#check_all").change(function () {
-                var isChecked = $(this).prop("checked");
-                $('.col-bulkactions input').each(function () {
-                    if (isChecked == 1) {
-                        this.checked = true;
-                    } else {
-                        this.checked = false;
-                    }
+        document.addEventListener('DOMContentLoaded', function () {
+            var checkAll = document.getElementById('check_all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
+                        cb.checked = checkAll.checked;
+                    });
                 });
-            });
+            }
         });
     </script>
     <?php
