@@ -46,24 +46,22 @@ unset($customPageTitle, $customPageHeader);
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-<div class="row-wrapper">
-    <div class="widget-box">
-        <div class="widget-box-title">
-            <h3>Osclass <?php echo OSCLASS_VERSION; ?></h3>
-        </div>
-        <div class="widget-box-content">
+<div class="widget-box">
+    <div class="widget-box-title">
+        <h3>Osclass <?php echo OSCLASS_VERSION; ?></h3>
+    </div>
+    <div class="widget-box-content">
 
-            <?php
-            $changelog = file_get_contents(ABS_PATH . '/CHANGELOG.md');
+        <?php
+        $changelog = file_get_contents(ABS_PATH . '/CHANGELOG.md');
 
-            $changelog = preg_replace('/\r\n{2,}/', "\n", $changelog);
-            $changelog = preg_replace('/^(#+)(.*)$/m', '<h3>$2</h3>', $changelog);
-            $changelog = preg_replace('/^(##+)(.*)$/m', '<h4>$2</h4>', $changelog);
-            $changelog = preg_replace('/^(###+)(.*)$/m', '<h5>$2</h5>', $changelog);
-            $changelog = preg_replace('/^\*(.*)$/m', '<li>$1</li>', $changelog);
-            echo $changelog;
-            ?>
-        </div>
+        $changelog = preg_replace('/\r\n{2,}/', "\n", $changelog);
+        $changelog = preg_replace('/^(#+)(.*)$/m', '<h3>$2</h3>', $changelog);
+        $changelog = preg_replace('/^(##+)(.*)$/m', '<h4>$2</h4>', $changelog);
+        $changelog = preg_replace('/^(###+)(.*)$/m', '<h5>$2</h5>', $changelog);
+        $changelog = preg_replace('/^\*(.*)$/m', '<li>$1</li>', $changelog);
+        echo $changelog;
+        ?>
     </div>
 </div>
 <?php

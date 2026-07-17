@@ -12264,7 +12264,7 @@ div.row-offset {
 }
 
 #content-head {
-  padding: 1.1rem 15px 0.35rem;
+  padding: 1.1rem var(--osc-page-inset-x) 0.35rem;
 }
 #content-head h1, #content-head .h1, #content-head h2, #content-head .h2, #content-head h3, #content-head .h3 {
   align-items: center;
@@ -12313,18 +12313,22 @@ div.row-offset {
 }
 
 #content-render {
+  --osc-page-inset-x: 1.25rem;
   background-color: var(--osc-bench-sunk);
 }
 
 #message-wrapper,
 #help-wrapper {
-  padding-inline: 15px;
+  padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  padding: 22px 15px 60px;
+  padding: 1.25rem var(--osc-page-inset-x) 3.5rem;
   position: relative;
+}
+#content-page > .col > .row-wrapper {
+  padding: 0;
 }
 
 #content-head h1 .ico, #content-head .h1 .ico,
