@@ -28,8 +28,6 @@
  *
  */
 
-osc_enqueue_script('jquery-treeview');
-
 $categories  = __get('categories');
 $selected    = __get('selected');
 $plugin_data = __get('plugin_data');
@@ -48,24 +46,28 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        // check all the categories
+        // check all the categories in a subtree
         function checkAll(id, check) {
-            aa = $('#' + id + ' input[type=checkbox]').each(function () {
-                $(this).prop('checked', check);
-            });
+            var root = document.getElementById(id);
+            if (root) {
+                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
+            }
         }
 
         function checkCat(id, check) {
-            aa = $('#cat' + id + ' input[type=checkbox]').each(function () {
-                $(this).prop('checked', check);
-            });
+            var root = document.getElementById('cat' + id);
+            if (root) {
+                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
+            }
         }
 
-        $(document).ready(function () {
-            $("#plugin_tree").treeview({
-                animated: "fast",
-                collapsed: true
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof oscTreeview === 'function') {
+                oscTreeview(document.getElementById('plugin_tree'), {
+                    collapsed: true,
+                    toggleLabel: '<?php echo osc_esc_js(__('Toggle subcategories')); ?>'
+                });
+            }
         });
     </script>
     <?php
