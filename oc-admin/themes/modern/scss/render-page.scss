@@ -1,10 +1,4 @@
-// Page title row. It belongs to the content tray, not the topbar: the topbar is
-// the app-chrome bar (its own bench surface + hairline), and this row sits on the
-// sunk content surface below it as the page's own header — so it takes no bench
-// fill and no divider, letting the title read as the top of the page content. The
-// heading is a flex row: it neutralises the physical float-end / float-right on the
-// action links (RTL-unsafe, like the sidebar chevron was) and lets the actions sit
-// at the row's end via margin-inline-start:auto.
+
 #content-head {
   // Inline inset + gutter reset come from the shared rule below; only the block
   // padding is specific to the title row.
@@ -24,12 +18,7 @@
   h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.005em; line-height: 1.3; }
   h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
 
-  // Page action links (Add, help, settings…). One ghost icon-button language:
-  // neutral hit area, muted ink, soft chrome pill + bronze on hover. The colour is
-  // forced with !important to override the Bootstrap .text-success / .text-dark
-  // utilities the markup carries — that inconsistent green/bronze/black trio was
-  // the loudest thing in the header. The first action gets margin-inline-start:auto
-  // (also !important, to beat the .ms-1 utility) so the whole group hugs the end.
+
   h1 a, h2 a, h3 a {
     align-items: center;
     border-radius: $border-radius;
@@ -60,30 +49,16 @@
   background-color: var(--osc-bench-sunk);
 }
 
-// One inset governs the whole content column. The page title (#content-head), the
-// flash/help rows and the page body (#content-page) are each a Bootstrap `.row > .col`.
-// Put the inline inset on the row and zero the gutter, so the `.col` underneath does not
-// add a *second* inline padding on top of it: without `--bs-gutter-x: 0` the row's own
-// padding and the col's gutter both inset the same edge, and the row's negative margin
-// only papers over it. One token, applied once here, keeps every row aligned on the same
-// edge. A page's own inner `.row` grids re-declare `--bs-gutter-x`, so they are untouched.
 #content-head,
 #message-wrapper,
 #help-wrapper,
 #content-page {
   --bs-gutter-x: 0;
-  padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  padding-block: 1.25rem 3.5rem;
   position: relative;
-
-  // The shell's content tray — footer.php closes this .row-wrapper, and it wraps every
-  // page body. The inset lives on #content-page, so the tray adds none: this ends the
-  // historical #content-page + .col + .row-wrapper triple-stack. Deeper page-nested
-  // wrappers (e.g. the stats two-column grid) are not direct children and keep spacing.
   > .col > .row-wrapper {
     padding: 0;
   }

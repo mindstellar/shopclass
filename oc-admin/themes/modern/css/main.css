@@ -12251,12 +12251,10 @@ div.row-offset {
 #help-wrapper,
 #content-page {
   --bs-gutter-x: 0;
-  padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  padding-block: 1.25rem 3.5rem;
   position: relative;
 }
 #content-page > .col > .row-wrapper {
