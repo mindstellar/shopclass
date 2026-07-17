@@ -71,10 +71,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
 </div>
 </div> <!-- -->
-<div class="grid-system">
+<div class="row g-3">
     <?php if (isset($info['locations']) && is_array($info['locations'])) { ?>
         <?php foreach ($info['locations'] as $location) { ?>
-            <div class="grid-row grid-50">
+            <div class="col-md-6">
                 <div class="row-wrapper">
                     <div class="widget-box">
                         <div class="widget-box-title">
@@ -120,7 +120,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
         <?php } ?>
     <?php } else { ?>
-        <div class="grid-row grid-50">
+        <div class="col-md-6">
             <div class="row-wrapper">
                 <div class="widget-box">
                     <div class="widget-box-title"><h3><?php _e('Current theme does not support widgets'); ?></h3></div>
@@ -131,7 +131,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
         </div>
     <?php } ?>
-    <div class="clear"></div>
 </div>
 </div>
 </div>
@@ -162,7 +161,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         return false;
     }
 </script>
-<div class="grid-system">
-    <div class="grid-row grid-100">
+<div class="row">
+    <div class="col-12">
         <div class="row-wrapper">
             <?php osc_current_admin_theme_path('parts/footer.php'); ?>

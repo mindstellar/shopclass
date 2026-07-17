@@ -672,18 +672,6 @@
     padding: 0;
   }
 
-  .grid-system {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .grid-row {
-    float: none;
-    margin: 0;
-    width: auto;
-  }
-
   label {
     color: var(--osc-ink);
     display: block;

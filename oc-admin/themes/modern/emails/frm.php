@@ -142,11 +142,7 @@ $locales = OSCLocale::newInstance()->listAllEnabled();
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 
-<div class="grid-row mb-0">
-    <div class="row-wrapper">
-        <h2 class="render-title"><?php _e('Edit email template'); ?></h2>
-    </div>
-</div>
+<h2 class="render-title"><?php _e('Edit email template'); ?></h2>
 <div id="pretty-form">
     <div class="col">
         <div class="row-wrapper">

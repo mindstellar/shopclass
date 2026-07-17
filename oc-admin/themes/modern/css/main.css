@@ -15432,16 +15432,6 @@ code {
   min-width: 0;
   padding: 0;
 }
-.iframe-category .grid-system {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-.iframe-category .grid-row {
-  float: none;
-  margin: 0;
-  width: auto;
-}
 .iframe-category label {
   color: var(--osc-ink);
   display: block;

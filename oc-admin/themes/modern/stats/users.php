@@ -178,15 +178,12 @@ osc_add_hook('admin_header', 'customHead', 10);
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <div class="grid-system" id="stats-page">
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <h2 class="render-title"><?php _e('User Statistics'); ?></h2>
-            </div>
+    <div class="row g-3 align-items-center mb-1">
+        <div class="col-md-6">
+            <h2 class="render-title mb-0"><?php _e('User Statistics'); ?></h2>
         </div>
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <div class="btn-group btn-group-sm float-end">
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group btn-group-sm">
                 <?php
                 $comments_stats_intervals = ['month', 'week', 'day'];
                 if (!$type) {
@@ -207,113 +204,103 @@ osc_add_hook('admin_header', 'customHead', 10);
                     }
                     echo '</a>';
                 } ?>
-                </div>
             </div>
         </div>
-        <div class="grid-row grid-50 clear">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('New users'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"></b>
-                        <div id="placeholder" class="graph-placeholder" style="height:150px">
-                            <?php if (count($users) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
-                    </div>
+    </div>
+    <div class="row g-3" id="stats-page">
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('New users'); ?></h3>
                 </div>
-            </div>
-        </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('Users per country'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"></b>
-                        <div id="by_country" class="graph-placeholder" style="height:150px">
-                            <?php if (count($users_by_country) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"></b>
+                    <div id="placeholder" class="graph-placeholder" style="height:150px">
+                        <?php if (count($users) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('Users per region'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"></b>
-                        <div id="by_region" class="graph-placeholder" style="height:150px">
-                            <?php if (count($users_by_region) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('Users per country'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"></b>
+                    <div id="by_country" class="graph-placeholder" style="height:150px">
+                        <?php if (count($users_by_country) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title"><h3><?php _e('Latest users on the web'); ?></h3></div>
-                    <div class="widget-box-content">
-                        <?php if (count($latest_users) > 0) { ?>
-                            <table class="table" cellpadding="0" cellspacing="0">
-                                <thead>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('Users per region'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"></b>
+                    <div id="by_region" class="graph-placeholder" style="height:150px">
+                        <?php if (count($users_by_region) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title"><h3><?php _e('Latest users on the web'); ?></h3></div>
+                <div class="widget-box-content">
+                    <?php if (count($latest_users) > 0) { ?>
+                        <table class="table" cellpadding="0" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th><?php _e('E-Mail'); ?></th>
+                                <th><?php _e('Name'); ?></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($latest_users as $u) { ?>
                                 <tr>
-                                    <th>ID</th>
-                                    <th><?php _e('E-Mail'); ?></th>
-                                    <th><?php _e('Name'); ?></th>
+                                    <td>
+                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
+                                        echo $u['pk_i_id']; ?>"><?php echo $u['pk_i_id']; ?></a>
+                                    </td>
+                                    <td>
+                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
+                                        echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_email']); ?></a>
+                                    </td>
+                                    <td>
+                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
+                                        echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_name']); ?></a>
+                                    </td>
                                 </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($latest_users as $u) { ?>
-                                    <tr>
-                                        <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                            echo $u['pk_i_id']; ?>"><?php echo $u['pk_i_id']; ?></a>
-                                        </td>
-                                        <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                            echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_email']); ?></a>
-                                        </td>
-                                        <td>
-                                            <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                            echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_name']); ?></a>
-                                        </td>
-                                    </tr>
-                                <?php } ?>
-                                </tbody>
-                            </table>
-                        <?php } else { ?>
-                            <p><?php _e('There are no statistics yet'); ?></p>
-                        <?php } ?>
+                            <?php } ?>
+                            </tbody>
+                        </table>
+                    <?php } else { ?>
+                        <p><?php _e('There are no statistics yet'); ?></p>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title"><h3><?php _e('Avg. items per user'); ?></h3></div>
+                <div class="widget-box-content">
+                    <div class="stats-detail">
+                        <?php printf(__('%s listings per user'), number_format($item, 2)); ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title"><h3><?php _e('Avg. items per user'); ?></h3></div>
-                    <div class="widget-box-content">
-                        <div class="stats-detail">
-                            <?php printf(__('%s listings per user'), number_format($item, 2)); ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="clear"></div>
     </div>
 
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

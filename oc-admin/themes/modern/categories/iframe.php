@@ -39,14 +39,14 @@ $locales     = OSCLocale::newInstance()->listAllEnabled();
         <input type="hidden" name="action" value="edit_category_post"/>
         <?php CategoryForm::primary_input_hidden($category); ?>
         <fieldset>
-            <div class="grid-system">
-                <div class="grid-row grid-70 mb-0">
-                    <div class="row-wrapper form-row">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="form-row">
                         <?php CategoryForm::multilanguage_name_description($locales, $category); ?>
                     </div>
                 </div>
-                <div class="grid-row grid-first-row grid-30 mb-0">
-                    <div class="row-wrapper form-row">
+                <div class="col-12">
+                    <div class="form-row">
                         <div class="cat-edit-group">
                             <label for="i_expiration_days"><?php _e('Expiration (days)'); ?></label>
                             <div class="input micro">
@@ -62,7 +62,6 @@ $locales     = OSCLocale::newInstance()->listAllEnabled();
                         </div>
                     </div>
                 </div>
-                <div class="clear"></div>
             </div>
             <div class="form-vertical">
                 <div class="form-actions">

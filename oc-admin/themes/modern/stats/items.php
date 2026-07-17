@@ -210,107 +210,95 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="grid-system" id="stats-page">
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <h2 class="render-title"><?php _e('Listing Statistics'); ?></h2>
-            </div>
+    <div class="row g-3 align-items-center mb-1">
+        <div class="col-md-6">
+            <h2 class="render-title mb-0"><?php _e('Listing Statistics'); ?></h2>
         </div>
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <div class="btn-group btn-group-sm float-end">
-                    <?php
-                    $stats_intervals = ['month', 'week', 'day'];
-                    if (!$type) {
-                        $type = 'day';
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group btn-group-sm">
+                <?php
+                $stats_intervals = ['month', 'week', 'day'];
+                if (!$type) {
+                    $type = 'day';
+                }
+                foreach ($stats_intervals as $k => $v) {
+                    echo '<a id="' . $v . '" class="btn btn-outline-primary';
+                    if ($type === $v) {
+                        echo ' active';
                     }
-                    foreach ($stats_intervals as $k => $v) {
-                        echo '<a id="' . $v . '" class="btn btn-outline-primary';
-                        if ($type === $v) {
-                            echo ' active';
-                        }
-                        echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=items&amp;type_stat=' . $v . '">';
-                        if ($v === 'month') {
-                            echo __('Last 10 months');
-                        } elseif ($v === 'week') {
-                            echo __('Last 10 weeks');
-                        } elseif ($v === 'day') {
-                            echo __('Last 10 days');
-                        }
-                        echo '</a>';
-                    } ?>
-                </div>
+                    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=items&amp;type_stat=' . $v . '">';
+                    if ($v === 'month') {
+                        echo __('Last 10 months');
+                    } elseif ($v === 'week') {
+                        echo __('Last 10 weeks');
+                    } elseif ($v === 'day') {
+                        echo __('Last 10 days');
+                    }
+                    echo '</a>';
+                } ?>
             </div>
         </div>
-        <div class="grid-row grid-50 clear">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('New listing'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"><?php _e('Number of new listings'); ?></b>
-                        <div id="placeholder" class="graph-placeholder" style="height:150px">
-                            <?php if (count($items) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+    </div>
+    <div class="row g-3" id="stats-page">
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('New listing'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"><?php _e('Number of new listings'); ?></b>
+                    <div id="placeholder" class="graph-placeholder" style="height:150px">
+                        <?php if (count($items) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('Listings\' views'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"><?php _e("Total number of listings' views"); ?></b>
-                        <div id="placeholder_total" class="graph-placeholder" style="height:150px">
-                            <?php if (count($reports) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('Listings\' views'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"><?php _e("Total number of listings' views"); ?></b>
+                    <div id="placeholder_total" class="graph-placeholder" style="height:150px">
+                        <?php if (count($reports) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="clear"></div>
-        <div class="grid-row grid-50 clear">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('New alerts'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"><?php _e('Number of new alerts'); ?></b>
-                        <div id="placeholder_alerts" class="graph-placeholder" style="height:150px">
-                            <?php if (count($alerts) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('New alerts'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"><?php _e('Number of new alerts'); ?></b>
+                    <div id="placeholder_alerts" class="graph-placeholder" style="height:150px">
+                        <?php if (count($alerts) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-50">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('New subscribers'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"><?php _e('Number of new subscribers'); ?></b>
-                        <div id="placeholder_subscribers" class="graph-placeholder" style="height:150px">
-                            <?php if (count($subscribers) == 0) {
-                                _e("There're no statistics yet");
-                            } ?>
-                        </div>
+        <div class="col-md-6">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('New subscribers'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"><?php _e('Number of new subscribers'); ?></b>
+                    <div id="placeholder_subscribers" class="graph-placeholder" style="height:150px">
+                        <?php if (count($subscribers) == 0) {
+                            _e("There're no statistics yet");
+                        } ?>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="clear"></div>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

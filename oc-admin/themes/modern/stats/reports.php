@@ -139,15 +139,12 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="grid-system" id="stats-page">
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <h2 class="render-title"><?php _e('Report Statistics'); ?></h2>
-            </div>
+    <div class="row g-3 align-items-center mb-1">
+        <div class="col-md-6">
+            <h2 class="render-title mb-0"><?php _e('Report Statistics'); ?></h2>
         </div>
-        <div class="grid-row grid-50 mb-0">
-            <div class="row-wrapper">
-                <div class="btn-group btn-group-sm float-end">
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group btn-group-sm">
                 <?php
                 $comments_stats_intervals = ['month', 'week', 'day'];
                 if (!$type) {
@@ -168,26 +165,24 @@ osc_add_hook('admin_header', 'customHead', 10);
                     }
                     echo '</a>';
                 } ?>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3" id="stats-page">
+        <div class="col-12">
+            <div class="widget-box">
+                <div class="widget-box-title">
+                    <h3><?php _e('Total number of reports'); ?></h3>
+                </div>
+                <div class="widget-box-content">
+                    <b class="stats-title"></b>
+                    <div id="placeholder" class="graph-placeholder" style="height:150px">
+                        <?php if (count($reports) == 0) {
+                            _e('There are no statistics yet');
+                        } ?>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="grid-row grid-100 clear">
-            <div class="row-wrapper">
-                <div class="widget-box">
-                    <div class="widget-box-title">
-                        <h3><?php _e('Total number of reports'); ?></h3>
-                    </div>
-                    <div class="widget-box-content">
-                        <b class="stats-title"></b>
-                        <div id="placeholder" class="graph-placeholder" style="height:150px">
-                            <?php if (count($reports) == 0) {
-                                _e('There are no statistics yet');
-                            } ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="clear"></div>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
