@@ -193,90 +193,37 @@ class LanguageForm extends Form
      */
     public static function js_validation($admin = false)
     {
+        // Admin-only form: uses the admin's native validator (ui-osc.js), not jQuery.
         ?>
         <script type="text/javascript">
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=language_form]").validate({
+            document.addEventListener('DOMContentLoaded', function () {
+                oscValidateForm(document.querySelector('form[name="language_form"]'), {
                     rules: {
-                        s_name: {
-                            required: true,
-                            minlength: 1
-                        },
-                        s_short_name: {
-                            required: true,
-                            minlength: 1
-                        },
-                        s_description: {
-                            required: true,
-                            minlength: 1
-                        },
-                        s_currency_format: {
-                            required: true,
-                            minlength: 1
-                        },
-                        i_num_dec: {
-                            required: true,
-                            digits: true
-                        },
-                        s_dec_point: {
-                            required: true,
-                            minlength: 1
-                        },
-                        s_thousand_sep: {
-                            required: true,
-                            minlength: 1
-                        },
-                        s_date_format: {
-                            required: true,
-                            minlength: 1
-                        }
+                        s_name: {required: true},
+                        s_short_name: {required: true},
+                        s_description: {required: true},
+                        s_currency_format: {required: true},
+                        i_num_dec: {required: true, digits: true},
+                        s_dec_point: {required: true},
+                        s_thousand_sep: {required: true},
+                        s_date_format: {required: true}
                     },
                     messages: {
-                        s_name: {
-                            required: "<?php _e('Name: this field is required'); ?>.",
-                            minlength: "<?php _e('Name: this field is required'); ?>."
-                        },
-                        s_short_name: {
-                            required: "<?php _e('Short name: this field is required'); ?>.",
-                            minlength: "<?php _e('Short name: this field is required'); ?>."
-                        },
-                        s_description: {
-                            required: "<?php _e('Description: this field is required'); ?>.",
-                            minlength: "<?php _e('Description: this field is required'); ?>."
-                        },
-                        s_currency_format: {
-                            required: "<?php _e('Currency format: this field is required'); ?>.",
-                            minlength: "<?php _e('Currency format: this field is required'); ?>."
-                        },
+                        s_name: {required: "<?php _e('Name: this field is required'); ?>."},
+                        s_short_name: {required: "<?php _e('Short name: this field is required'); ?>."},
+                        s_description: {required: "<?php _e('Description: this field is required'); ?>."},
+                        s_currency_format: {required: "<?php _e('Currency format: this field is required'); ?>."},
                         i_num_dec: {
                             required: "<?php _e('Number of decimals: this field is required'); ?>.",
                             digits: "<?php _e('Number of decimals: this field must only contain numeric characters'); ?>."
                         },
-                        s_dec_point: {
-                            required: "<?php _e('Decimal point: this field is required'); ?>.",
-                            minlength: "<?php _e('Decimal point: this field is required'); ?>."
-                        },
-                        s_thousand_sep: {
-                            required: "<?php _e('Thousands separator: this field is required'); ?>.",
-                            minlength: "<?php _e('Thousands separator: this field is required'); ?>."
-                        },
-                        s_date_format: {
-                            required: "<?php _e('Date format: this field is required'); ?>.",
-                            minlength: "<?php _e('Date format: this field is required'); ?>."
-                        }
+                        s_dec_point: {required: "<?php _e('Decimal point: this field is required'); ?>."},
+                        s_thousand_sep: {required: "<?php _e('Thousands separator: this field is required'); ?>."},
+                        s_date_format: {required: "<?php _e('Date format: this field is required'); ?>."}
                     },
-                    wrapper: "li",
-                    errorLabelContainer: "#error_list",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+                    errorContainer: '#error_list',
+                    onInvalid: function () {
+                        window.scrollTo({top: 0, behavior: 'smooth'});
                     }
                 });
             });

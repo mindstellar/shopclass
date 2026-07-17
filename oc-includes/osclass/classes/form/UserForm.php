@@ -410,174 +410,92 @@ class UserForm extends Form
 
     public static function js_validation()
     {
+        // Self-contained vanilla validation (no jQuery). Renders on the public register
+        // form and the admin add-user form, so it depends on no external helper.
         ?>
         <script type="text/javascript">
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=register]").validate({
-                    rules: {
-                        s_name: {
-                            required: true
-                        },
-                        s_email: {
-                            required: true,
-                            email: true
-                        },
-                        s_password: {
-                            required: true,
-                            minlength: 5
-                        },
-                        s_password2: {
-                            required: true,
-                            minlength: 5,
-                            equalTo: "#s_password"
-                        }
-                    },
-                    messages: {
-                        s_name: {
-                            required: "<?php _e('Name: this field is required'); ?>."
-                        },
-                        s_email: {
-                            required: "<?php _e('Email: this field is required'); ?>.",
-                            email: "<?php _e('Invalid email address'); ?>."
-                        },
-                        s_password: {
-                            required: "<?php _e('Password: this field is required'); ?>.",
-                            minlength: "<?php _e('Password: enter at least 5 characters'); ?>."
-                        },
-                        s_password2: {
-                            required: "<?php _e('Second password: this field is required'); ?>.",
-                            minlength: "<?php _e('Second password: enter at least 5 characters'); ?>.",
-                            equalTo: "<?php _e("Passwords don't match"); ?>."
-                        }
-                    },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+            (function () {
+                var form = document.querySelector('form[name="register"]');
+                if (!form) { return; }
+                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                form.addEventListener('submit', function (e) {
+                    var errors = [];
+                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                    function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value.trim() : ''; }
+                    function flag(name, msg) {
+                        var el = form.querySelector('[name="' + name + '"]');
+                        errors.push({el: el, msg: msg});
+                        if (el) { el.classList.add('is-invalid'); }
+                    }
+                    if (val('s_name') === '') { flag('s_name', "<?php echo osc_esc_js(__('Name: this field is required')); ?>."); }
+                    var em = val('s_email');
+                    if (em === '') { flag('s_email', "<?php echo osc_esc_js(__('Email: this field is required')); ?>."); }
+                    else if (!emailRe.test(em)) { flag('s_email', "<?php echo osc_esc_js(__('Invalid email address')); ?>."); }
+                    var p1 = val('s_password'), p2 = val('s_password2');
+                    if (p1 === '') { flag('s_password', "<?php echo osc_esc_js(__('Password: this field is required')); ?>."); }
+                    else if (p1.length < 5) { flag('s_password', "<?php echo osc_esc_js(__('Password: enter at least 5 characters')); ?>."); }
+                    if (p2 === '') { flag('s_password2', "<?php echo osc_esc_js(__('Second password: this field is required')); ?>."); }
+                    else if (p2.length < 5) { flag('s_password2', "<?php echo osc_esc_js(__('Second password: enter at least 5 characters')); ?>."); }
+                    else if (p1 !== p2) { flag('s_password2', "<?php echo osc_esc_js(__("Passwords don't match")); ?>."); }
+                    var container = document.querySelector('#error_list');
+                    if (container) {
+                        container.innerHTML = '';
+                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+                    }
+                    if (errors.length) {
+                        e.preventDefault();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                    } else {
+                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
                     }
                 });
-            });
-        </script>
-        <?php
-    }
-
-    public static function js_validation_old()
-    {
-        ?>
-        <script>
-            $(document).ready(function () {
-                $('#s_name').focus(function () {
-                    $('#s_name').css('border', '');
-                });
-
-                $('#s_email').focus(function () {
-                    $('#s_email').css('border', '');
-                });
-
-                $('#s_password').focus(function () {
-                    $('#s_password').css('border', '');
-                    $('#password-error').css('display', 'none');
-                });
-
-                $('#s_password2').focus(function () {
-                    $('#s_password2').css('border', '');
-                    $('#password-error').css('display', 'none');
-                });
-            });
-
-            function checkForm() {
-                var num_errors = 0;
-                if ($('#s_name').val() == '') {
-                    $('#s_name').css('border', '1px solid red');
-                    num_errors = num_errors + 1;
-                }
-                if ($('#s_email').val() == '') {
-                    $('#s_email').css('border', '1px solid red');
-                    num_errors = num_errors + 1;
-                }
-                if ($('#s_password').val() != $('#s_password2').val()) {
-                    $('#password-error').css('display', 'block');
-                    num_errors = num_errors + 1;
-                }
-                if ($('#s_password').val() == '') {
-                    $('#s_password').css('border', '1px solid red');
-                    num_errors = num_errors + 1;
-                }
-                if ($('#s_password2').val() == '') {
-                    $('#s_password2').css('border', '1px solid red');
-                    num_errors = num_errors + 1;
-                }
-                if (num_errors > 0) {
-                    return false;
-                }
-
-                return true;
-            }
+            })();
         </script>
         <?php
     }
 
     public static function js_validation_edit()
     {
+        // Self-contained vanilla validation (no jQuery). Editing a user: the password
+        // fields are optional, but if filled they must be >= 5 chars and match.
         ?>
         <script>
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=register]").validate({
-                    rules: {
-                        s_name: {
-                            required: true
-                        },
-                        s_email: {
-                            required: true,
-                            email: true
-                        },
-                        s_password: {
-                            minlength: 5
-                        },
-                        s_password2: {
-                            minlength: 5,
-                            equalTo: "#s_password"
-                        }
-                    },
-                    messages: {
-                        s_name: {
-                            required: "<?php _e('Name: this field is required'); ?>."
-                        },
-                        s_email: {
-                            required: "<?php _e('Email: this field is required'); ?>.",
-                            email: "<?php _e('Invalid email address'); ?>."
-                        },
-                        s_password: {
-                            minlength: "<?php _e('Password: enter at least 5 characters'); ?>."
-                        },
-                        s_password2: {
-                            minlength: "<?php _e('Second password: enter at least 5 characters'); ?>.",
-                            equalTo: "<?php _e("Passwords don't match"); ?>."
-                        }
-                    },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+            (function () {
+                var form = document.querySelector('form[name="register"]');
+                if (!form) { return; }
+                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                form.addEventListener('submit', function (e) {
+                    var errors = [];
+                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+                    function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value.trim() : ''; }
+                    function flag(name, msg) {
+                        var el = form.querySelector('[name="' + name + '"]');
+                        errors.push({el: el, msg: msg});
+                        if (el) { el.classList.add('is-invalid'); }
+                    }
+                    if (val('s_name') === '') { flag('s_name', "<?php echo osc_esc_js(__('Name: this field is required')); ?>."); }
+                    var em = val('s_email');
+                    if (em === '') { flag('s_email', "<?php echo osc_esc_js(__('Email: this field is required')); ?>."); }
+                    else if (!emailRe.test(em)) { flag('s_email', "<?php echo osc_esc_js(__('Invalid email address')); ?>."); }
+                    var p1 = val('s_password'), p2 = val('s_password2');
+                    if (p1 !== '' && p1.length < 5) { flag('s_password', "<?php echo osc_esc_js(__('Password: enter at least 5 characters')); ?>."); }
+                    if (p2 !== '' && p2.length < 5) { flag('s_password2', "<?php echo osc_esc_js(__('Second password: enter at least 5 characters')); ?>."); }
+                    else if (p1 !== p2) { flag('s_password2', "<?php echo osc_esc_js(__("Passwords don't match")); ?>."); }
+                    var container = document.querySelector('#error_list');
+                    if (container) {
+                        container.innerHTML = '';
+                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+                    }
+                    if (errors.length) {
+                        e.preventDefault();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                    } else {
+                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
                     }
                 });
-            });
+            })();
         </script>
         <?php
     }
@@ -587,131 +505,101 @@ class UserForm extends Form
      */
     public static function location_javascript($path = 'front')
     {
+        // Vanilla (no jQuery) country -> region -> city cascade. Region/city each toggle
+        // between a <select> (id regionId/cityId) when the parent has children, and a free
+        // text <input> (id region/city) when it does not. Renders on the admin user editor
+        // and the public register/profile forms, so it depends on no external library.
+        $base = ($path === 'admin') ? osc_admin_base_url(true) : osc_base_url(true);
         ?>
         <script>
-            $(document).ready(function () {
-                $("#countryId").on("change", function () {
-                    var pk_c_code = $(this).val();
-                    <?php if ($path == 'admin') { ?>
-                    var url = '<?php echo osc_admin_base_url(true)
-                        . '?page=ajax&action=regions&countryId='; ?>' + pk_c_code;
-                    <?php } else { ?>
-                    var url = '<?php echo osc_base_url(true)
-                        . '?page=ajax&action=regions&countryId='; ?>' + pk_c_code;
-                    <?php } ?>
-                    var result = '';
+            (function () {
+                var base = '<?php echo $base; ?>';
+                var strRegion = "<?php echo osc_esc_js(__('Select a region...')); ?>";
+                var strCity = "<?php echo osc_esc_js(__('Select a city...')); ?>";
 
-                    if (pk_c_code != '') {
-
-                        $("#regionId").attr('disabled', false);
-                        $("#cityId").attr('disabled', true);
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            dataType: 'json',
-                            success: function (data) {
-                                var length = data.length;
-                                if (length > 0) {
-                                    result += '<option value=""><?php _e('Select a region...'); ?></option>';
-                                    for (key in data) {
-                                        result += '<option value="' + data[key].pk_i_id + '">' + data[key].s_name + '</option>';
-                                    }
-                                    $("#region").before('<select name="regionId" id="regionId" ></select>');
-                                    $("#region").remove();
-
-                                    $("#city").before('<select name="cityId" id="cityId" ></select>');
-                                    $("#city").remove();
-
-                                } else {
-                                    result += '<option value=""><?php _e('No results') ?></option>';
-                                    $("#regionId").before('<input type="text" name="region" id="region" />');
-                                    $("#regionId").remove();
-
-                                    $("#cityId").before('<input type="text" name="city" id="city" />');
-                                    $("#cityId").remove();
-                                }
-                                $("#regionId").html(result);
-                                $("#cityId").html('<option selected value=""><?php _e('Select a city...'); ?></option>');
-                            }
-                        });
-                    } else {
-                        // add empty select
-                        $("#region").before('<select name="regionId" id="regionId" ><option value=""><?php _e('Select a region...'); ?></option></select>');
-                        $("#region").remove();
-
-                        $("#city").before('<select name="cityId" id="cityId" ><option value=""><?php _e('Select a city...'); ?></option></select>');
-                        $("#city").remove();
-
-                        if ($("#regionId").length > 0) {
-                            $("#regionId").html('<option value=""><?php _e('Select a region...'); ?></option>');
-                        } else {
-                            $("#region").before('<select name="regionId" id="regionId" ><option value=""><?php _e('Select a region...'); ?></option></select>');
-                            $("#region").remove();
-                        }
-                        if ($("#cityId").length > 0) {
-                            $("#cityId").html('<option value=""><?php _e('Select a city...'); ?></option>');
-                        } else {
-                            $("#city").before('<select name="cityId" id="cityId" ><option value=""><?php _e('Select a city...'); ?></option></select>');
-                            $("#city").remove();
-                        }
-
-                        $("#regionId").attr('disabled', true);
-                        $("#cityId").attr('disabled', true);
+                function byId(id) { return document.getElementById(id); }
+                function replaceEl(oldId, newEl) {
+                    var old = byId(oldId);
+                    if (old) { old.replaceWith(newEl); }
+                }
+                function makeControl(tag, name) {
+                    var el = document.createElement(tag);
+                    if (tag === 'input') { el.type = 'text'; }
+                    el.name = name;
+                    el.id = name;
+                    return el;
+                }
+                function optionsHtml(placeholder, data) {
+                    var html = '<option value="">' + placeholder + '</option>';
+                    for (var k = 0; k < data.length; k++) {
+                        html += '<option value="' + data[k].pk_i_id + '">' + data[k].s_name + '</option>';
                     }
-                });
-
-                $("#regionId").on("change", function () {
-                    var pk_c_code = $(this).val();
-                    <?php if ($path == 'admin') { ?>
-                    var url = '<?php echo osc_admin_base_url(true)
-                        . '?page=ajax&action=cities&regionId='; ?>' + pk_c_code;
-                    <?php } else { ?>
-                    var url = '<?php echo osc_base_url(true)
-                        . '?page=ajax&action=cities&regionId='; ?>' + pk_c_code;
-                    <?php } ?>
-
-                    var result = '';
-
-                    if (pk_c_code != '') {
-
-                        $("#cityId").attr('disabled', false);
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            dataType: 'json',
-                            success: function (data) {
-                                var length = data.length;
-                                if (length > 0) {
-                                    result += '<option selected value=""><?php _e('Select a city...'); ?></option>';
-                                    for (key in data) {
-                                        result += '<option value="' + data[key].pk_i_id + '">' + data[key].s_name + '</option>';
-                                    }
-                                    $("#city").before('<select name="cityId" id="cityId" ></select>');
-                                    $("#city").remove();
-                                } else {
-                                    result += '<option value=""><?php _e('No results') ?></option>';
-                                    $("#cityId").before('<input type="text" name="city" id="city" />');
-                                    $("#cityId").remove();
-                                }
-                                $("#cityId").html(result);
-                            }
-                        });
-                    } else {
-                        $("#cityId").attr('disabled', true);
-                    }
-                });
-
-
-                if ($("#regionId").attr('value') == "") {
-                    $("#cityId").attr('disabled', true);
+                    return html;
+                }
+                function post(url) {
+                    return fetch(url, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    }).then(function (r) { return r.json(); }).catch(function () { return []; });
                 }
 
-                if ($("#countryId").prop('type').match(/select-one/)) {
-                    if ($("#countryId").attr('value') == "") {
-                        $("#regionId").attr('disabled', true);
-                    }
+                var country = byId('countryId');
+                if (country) {
+                    country.addEventListener('change', function () {
+                        var code = this.value;
+                        if (code === '') {
+                            // No country: reset region + city to empty, disabled selects.
+                            if (byId('region')) { replaceEl('region', makeControl('select', 'regionId')); }
+                            if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                            if (byId('regionId')) { byId('regionId').innerHTML = '<option value="">' + strRegion + '</option>'; byId('regionId').disabled = true; }
+                            if (byId('cityId')) { byId('cityId').innerHTML = '<option value="">' + strCity + '</option>'; byId('cityId').disabled = true; }
+                            return;
+                        }
+                        if (byId('regionId')) { byId('regionId').disabled = false; }
+                        if (byId('cityId')) { byId('cityId').disabled = true; }
+                        post(base + '?page=ajax&action=regions&countryId=' + encodeURIComponent(code)).then(function (data) {
+                            if (data.length > 0) {
+                                if (byId('region')) { replaceEl('region', makeControl('select', 'regionId')); }
+                                if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                                if (byId('regionId')) { byId('regionId').innerHTML = optionsHtml(strRegion, data); }
+                                if (byId('cityId')) { byId('cityId').innerHTML = '<option value="">' + strCity + '</option>'; }
+                            } else {
+                                // No sub-regions: fall back to free-text inputs.
+                                if (byId('regionId')) { replaceEl('regionId', makeControl('input', 'region')); }
+                                if (byId('cityId')) { replaceEl('cityId', makeControl('input', 'city')); }
+                            }
+                        });
+                    });
                 }
-            });
+
+                // Delegated so it keeps working after #regionId is recreated by the country
+                // handler (the old jQuery bound directly and lost the handler on rebuild).
+                document.addEventListener('change', function (e) {
+                    if (!e.target || e.target.id !== 'regionId') { return; }
+                    var code = e.target.value;
+                    if (code === '') {
+                        if (byId('cityId')) { byId('cityId').disabled = true; }
+                        return;
+                    }
+                    if (byId('cityId')) { byId('cityId').disabled = false; }
+                    post(base + '?page=ajax&action=cities&regionId=' + encodeURIComponent(code)).then(function (data) {
+                        if (data.length > 0) {
+                            if (byId('city')) { replaceEl('city', makeControl('select', 'cityId')); }
+                            if (byId('cityId')) { byId('cityId').innerHTML = optionsHtml(strCity, data); }
+                        } else {
+                            if (byId('cityId')) { replaceEl('cityId', makeControl('input', 'city')); }
+                        }
+                    });
+                });
+
+                // Initial disabled state.
+                var region = byId('regionId');
+                if (region && region.value === '' && byId('cityId')) { byId('cityId').disabled = true; }
+                if (country && country.tagName === 'SELECT' && country.value === '' && byId('regionId')) {
+                    byId('regionId').disabled = true;
+                }
+            })();
         </script>
         <?php
     }

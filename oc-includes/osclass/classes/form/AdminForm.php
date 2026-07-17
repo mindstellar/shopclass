@@ -106,37 +106,21 @@ class AdminForm extends Form
 
     public static function js_validation()
     {
+        // Admin-only form: uses the admin's native validator (ui-osc.js), not jQuery.
         ?>
         <script>
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=admin_form]").validate({
+            document.addEventListener('DOMContentLoaded', function () {
+                oscValidateForm(document.querySelector('form[name="admin_form"]'), {
                     rules: {
-                        s_name: {
-                            required: true,
-                            minlength: 3,
-                            maxlength: 50
-                        },
-                        s_username: {
-                            required: true,
-                            minlength: 3,
-                            maxlength: 50
-                        },
-                        s_email: {
-                            required: true,
-                            email: true
-                        },
-                        old_password: {
-                            required: false
-                        },
-                        s_password: {
-                            required: false,
-                            minlength: 5
-                        },
+                        s_name: {required: true, minlength: 3, maxlength: 50},
+                        s_username: {required: true, minlength: 3, maxlength: 50},
+                        s_email: {required: true, email: true},
+                        s_password: {minlength: 5},
                         s_password2: {
-                            required: false,
                             minlength: 5,
-                            equalTo: "#s_password"
+                            custom: function (v, form) {
+                                return v === form.querySelector('[name="s_password"]').value;
+                            }
                         }
                     },
                     messages: {
@@ -154,24 +138,12 @@ class AdminForm extends Form
                             required: "<?php _e('Email: this field is required'); ?>.",
                             email: "<?php _e('Invalid email address'); ?>."
                         },
-                        s_password: {
-                            minlength: "<?php _e('Password: enter at least 5 characters'); ?>."
-                        },
-                        s_password2: {
-                            equalTo: "<?php _e("Passwords don't match"); ?>."
-                        }
+                        s_password: {minlength: "<?php _e('Password: enter at least 5 characters'); ?>."},
+                        s_password2: {custom: "<?php echo osc_esc_js(__("Passwords don't match")); ?>."}
                     },
-                    errorLabelContainer: "#error_list",
-                    wrapper: "li",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+                    errorContainer: '#error_list',
+                    onInvalid: function () {
+                        window.scrollTo({top: 0, behavior: 'smooth'});
                     }
                 });
             });

@@ -115,59 +115,51 @@ class CommentForm extends Form
      */
     public static function js_validation($admin = false)
     {
+        // Self-contained vanilla validation (no jQuery / jquery-validate). This form
+        // renders on both the admin (comment edit) and the public theme, so it depends
+        // on neither jQuery nor the admin's ui-osc.js helper.
+        $errorContainer = $admin ? '#error_list' : '#comment_error_list';
         ?>
         <script>
-            $(document).ready(function () {
-                // Code for form validation
-                $("form[name=comment_form]").validate({
-                    rules: {
-                        body: {
-                            required: true,
-                            minlength: 1
-                        },
-                        authorEmail: {
-                            required: true,
-                            email: true
-                        }
-                    },
-                    messages: {
-                        authorEmail: {
-                            required: "<?php _e('Email: this field is required'); ?>.",
-                            email: "<?php _e('Invalid email address'); ?>."
-                        },
-                        body: {
-                            required: "<?php _e('Comment: this field is required'); ?>.",
-                            minlength: "<?php _e('Comment: this field is required'); ?>."
-                        }
-                    },
-                    wrapper: "li",
-                    <?php if ($admin) { ?>
-                    errorLabelContainer: "#error_list",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('h1').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+            (function () {
+                var form = document.querySelector('form[name="comment_form"]');
+                if (!form) { return; }
+                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                form.addEventListener('submit', function (e) {
+                    var errors = [];
+                    var body = form.querySelector('[name="body"]');
+                    var email = form.querySelector('[name="authorEmail"]');
+                    [body, email].forEach(function (el) { if (el) { el.classList.remove('is-invalid'); } });
+                    if (body && body.value.trim() === '') {
+                        errors.push({el: body, msg: "<?php echo osc_esc_js(__('Comment: this field is required')); ?>."});
                     }
-                    <?php } else { ?>
-                    errorLabelContainer: "#comment_error_list",
-                    invalidHandler: function (form, validator) {
-                        $('html,body').animate({scrollTop: $('#comment_error_list').offset().top}, {
-                            duration: 250,
-                            easing: 'swing'
-                        });
-                    },
-                    submitHandler: function (form) {
-                        $('button[type=submit], input[type=submit]').attr('disabled', 'disabled');
-                        form.submit();
+                    if (email) {
+                        var ev = email.value.trim();
+                        if (ev === '') {
+                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Email: this field is required')); ?>."});
+                        } else if (!emailRe.test(ev)) {
+                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Invalid email address')); ?>."});
+                        }
                     }
-                    <?php } ?>
+                    var container = document.querySelector('<?php echo $errorContainer; ?>');
+                    if (container) {
+                        container.innerHTML = '';
+                        errors.forEach(function (er) {
+                            var li = document.createElement('li');
+                            li.textContent = er.msg;
+                            container.appendChild(li);
+                            if (er.el) { er.el.classList.add('is-invalid'); }
+                        });
+                    }
+                    if (errors.length) {
+                        e.preventDefault();
+                        if (container && container.scrollIntoView) { container.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
+                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
+                    } else {
+                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
+                    }
                 });
-            });
+            })();
         </script>
         <?php
     }
