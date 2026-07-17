@@ -258,6 +258,11 @@ $table-cell-vertical-align: middle;
   --osc-shadow-overlay: #{$box-shadow};
   --osc-shadow-modal:   #{$box-shadow-lg};
 
+  // The single inline inset for the content column — the page title, the flash/help
+  // rows and the page body all read this so they line up on one edge. A runtime token
+  // (not a Sass value) so responsive.scss can retune it per breakpoint in one place.
+  --osc-page-inset-x: 1.25rem;
+
   // 150–250ms. The owner is in a task, not watching choreography.
   --osc-ease:          cubic-bezier(.2, 0, 0, 1);
   --osc-duration-fast: 150ms;

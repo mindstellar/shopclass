@@ -36,8 +36,13 @@
       position: absolute;
     }
   }
+  // Tighter inline inset on small screens — retuned in one place so the title, the
+  // flash/help rows and the page body all move together and stay aligned.
+  #content-render {
+    --osc-page-inset-x: 0.5rem;
+  }
   #content-page {
-    padding: 0.5rem 0.5rem 3rem;
+    padding-block: 0.5rem 3rem;
   }
   #datatablesForm {
     .table {

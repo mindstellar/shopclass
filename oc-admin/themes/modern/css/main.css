@@ -29,6 +29,7 @@
   --osc-info-tint: #e6f3fb;
   --osc-shadow-overlay: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
   --osc-shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.18);
+  --osc-page-inset-x: 1.25rem;
   --osc-ease: cubic-bezier(.2, 0, 0, 1);
   --osc-duration-fast: 150ms;
   --osc-duration-base: 200ms;
@@ -12193,8 +12194,7 @@ div.row-offset {
 }
 
 #content-head {
-  --bs-gutter-x: 0;
-  padding: 1.1rem var(--osc-page-inset-x) 0.35rem;
+  padding: var(--osc-page-inset-x);
 }
 #content-head h1, #content-head .h1, #content-head h2, #content-head .h2, #content-head h3, #content-head .h3 {
   align-items: center;
@@ -12243,7 +12243,6 @@ div.row-offset {
 }
 
 #content-render {
-  --osc-page-inset-x: 1.25rem;
   background-color: var(--osc-bench-sunk);
 }
 
@@ -16101,8 +16100,11 @@ form h3, form .h3 {
   #header .navbar-nav .dropdown-menu {
     position: absolute;
   }
+  #content-render {
+    --osc-page-inset-x: 0.5rem;
+  }
   #content-page {
-    padding: 0.5rem 0.5rem 3rem;
+    padding-block: 0.5rem 3rem;
   }
   #datatablesForm .table .col-title {
     min-width: 100px;

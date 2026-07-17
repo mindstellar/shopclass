@@ -6,12 +6,7 @@
 // action links (RTL-unsafe, like the sidebar chevron was) and lets the actions sit
 // at the row's end via margin-inline-start:auto.
 #content-head {
-  // This is a Bootstrap .row (> .col). Zero its gutter so the inset comes only from
-  // padding-inline below — otherwise the row's negative inline margin and the child
-  // .col's gutter both fight the padding for control of the same edge. Inner grids a
-  // page builds are unaffected: every .row re-declares its own --bs-gutter-x.
-  --bs-gutter-x: 0;
-  padding: 1.1rem var(--osc-page-inset-x) .35rem;
+  padding:var(--osc-page-inset-x);
 
   h1, h2, h3 {
     align-items: center;
@@ -65,7 +60,6 @@
 // padding. This is the standard: a page drops its content into the shell tray and
 // inherits the column's inset — it does not re-pad itself.
 #content-render {
-  --osc-page-inset-x: 1.25rem;
   background-color: var(--osc-bench-sunk);
 }
 
