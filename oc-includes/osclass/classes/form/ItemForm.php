@@ -1686,7 +1686,7 @@ class ItemForm extends Form
 
             function addNewPhoto() {
                 var max = <?php echo osc_max_images_per_item(); ?>;
-                var num_img = $('input[name="photos[]"]').length + $("a.delete").length;
+                var num_img = document.querySelectorAll('input[name="photos[]"]').length + document.querySelectorAll('a.delete').length;
                 if ((max != 0 && num_img < max) || max == 0) {
                     var id = 'p-' + photoIndex++;
 
@@ -1720,20 +1720,21 @@ class ItemForm extends Form
             }
 
             // Listener: automatically add new file field when the visible ones are full.
-            setInterval("add_file_field()", 250);
+            setInterval(add_file_field, 250);
 
             /**
              * Timed: if there are no empty file fields, add new file field.
              */
             function add_file_field() {
+                var fields = document.querySelectorAll('input[name="photos[]"]');
                 var count = 0;
-                $('input[name="photos[]"]').each(function (index) {
-                    if ($(this).val() == '') {
+                fields.forEach(function (el) {
+                    if (el.value === '') {
                         count++;
                     }
                 });
                 var max = <?php echo osc_max_images_per_item(); ?>;
-                var num_img = $('input[name="photos[]"]').length + $("a.delete").length;
+                var num_img = fields.length + document.querySelectorAll('a.delete').length;
                 if (count == 0 && (max == 0 || (max != 0 && num_img < max))) {
                     addNewPhoto();
                 }
