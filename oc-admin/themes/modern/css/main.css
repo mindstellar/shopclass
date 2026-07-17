@@ -12194,7 +12194,7 @@ div.row-offset {
 }
 
 #content-head {
-  padding: var(--osc-page-inset-x);
+  padding-block: var(--osc-page-inset-x);
 }
 #content-head h1, #content-head .h1, #content-head h2, #content-head .h2, #content-head h3, #content-head .h3 {
   align-items: center;
@@ -12246,16 +12246,17 @@ div.row-offset {
   background-color: var(--osc-bench-sunk);
 }
 
+#content-head,
 #message-wrapper,
-#help-wrapper {
+#help-wrapper,
+#content-page {
   --bs-gutter-x: 0;
   padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  --bs-gutter-x: 0;
-  padding: 1.25rem var(--osc-page-inset-x) 3.5rem;
+  padding-block: 1.25rem 3.5rem;
   position: relative;
 }
 #content-page > .col > .row-wrapper {

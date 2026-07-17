@@ -6,7 +6,9 @@
 // action links (RTL-unsafe, like the sidebar chevron was) and lets the actions sit
 // at the row's end via margin-inline-start:auto.
 #content-head {
-  padding:var(--osc-page-inset-x);
+  // Inline inset + gutter reset come from the shared rule below; only the block
+  // padding is specific to the title row.
+  padding-block: var(--osc-page-inset-x);
 
   h1, h2, h3 {
     align-items: center;
@@ -54,36 +56,34 @@
   }
 }
 
-// One inset governs the whole content column. The page title (#content-head), the
-// flash/help rows, and the page body (#content-page) all read this single token, so
-// they line up on the same vertical edge instead of each carrying its own hand-tuned
-// padding. This is the standard: a page drops its content into the shell tray and
-// inherits the column's inset — it does not re-pad itself.
 #content-render {
   background-color: var(--osc-bench-sunk);
 }
 
+// One inset governs the whole content column. The page title (#content-head), the
+// flash/help rows and the page body (#content-page) are each a Bootstrap `.row > .col`.
+// Put the inline inset on the row and zero the gutter, so the `.col` underneath does not
+// add a *second* inline padding on top of it: without `--bs-gutter-x: 0` the row's own
+// padding and the col's gutter both inset the same edge, and the row's negative margin
+// only papers over it. One token, applied once here, keeps every row aligned on the same
+// edge. A page's own inner `.row` grids re-declare `--bs-gutter-x`, so they are untouched.
+#content-head,
 #message-wrapper,
-#help-wrapper {
+#help-wrapper,
+#content-page {
   --bs-gutter-x: 0;
   padding-inline: var(--osc-page-inset-x);
 }
 
 #content-page {
   min-height: calc(100vh - 9rem);
-  // The single, predictable page inset. #content-page is a .row (> .col); zeroing its
-  // gutter means the row's negative inline margin and the .col gutter are both 0, so the
-  // inset is exactly --osc-page-inset-x with nothing fighting it at the edge. A page's
-  // own inner .row grids re-declare --bs-gutter-x, so their gutters are untouched.
-  --bs-gutter-x: 0;
-  padding: 1.25rem var(--osc-page-inset-x) 3.5rem;
+  padding-block: 1.25rem 3.5rem;
   position: relative;
 
   // The shell's content tray — footer.php closes this .row-wrapper, and it wraps every
-  // page body. The inset now lives on #content-page, so the tray adds none: this is what
-  // ends the historical #content-page + .col + .row-wrapper triple-stack that pushed the
-  // body 35px in while the title sat at 15px. Deeper page-nested wrappers (e.g. the stats
-  // two-column grid) are not direct children and keep their own column spacing.
+  // page body. The inset lives on #content-page, so the tray adds none: this ends the
+  // historical #content-page + .col + .row-wrapper triple-stack. Deeper page-nested
+  // wrappers (e.g. the stats two-column grid) are not direct children and keep spacing.
   > .col > .row-wrapper {
     padding: 0;
   }
