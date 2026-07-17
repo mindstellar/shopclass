@@ -38,24 +38,22 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 // are vanilla, so they no longer depend on (and no longer pull in) jquery or
 // jquery-ui. Those scripts remain registered (see oc-load.php); a legacy plugin
 // that still needs them must enqueue them itself.
-osc_register_script('admin-osc', osc_current_admin_theme_js_url('osc.js?v='.OSCLASS_VERSION));
-osc_register_script('admin-ui-osc', osc_current_admin_theme_js_url('ui-osc.js?v='.OSCLASS_VERSION), 'admin-osc');
-osc_register_script('admin-location', osc_current_admin_theme_js_url('location.min.js?v='.OSCLASS_VERSION), 'bootstrap5');
-osc_register_script('popper', osc_assets_url('popper/popper.min.js?v='.OSCLASS_VERSION));
-osc_register_script('bootstrap5', osc_assets_url('bootstrap/bootstrap.min.js?v='.OSCLASS_VERSION), 'popper');
-osc_register_script('sortablejs', osc_assets_url('sortablejs/Sortable.min.js?v='.OSCLASS_VERSION));
-osc_register_script('admin-categories', osc_current_admin_theme_js_url('categories.js?v='.OSCLASS_VERSION), 'sortablejs');
+osc_register_script('admin-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('osc.js')));
+osc_register_script('admin-ui-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('ui-osc.js')), 'admin-osc');
+osc_register_script('admin-location', osc_asset_url_versioned(osc_current_admin_theme_js_url('location.min.js')), 'bootstrap5');
+osc_register_script('popper', osc_asset_url_versioned(osc_assets_url('popper/popper.min.js')));
+osc_register_script('bootstrap5', osc_asset_url_versioned(osc_assets_url('bootstrap/bootstrap.min.js')), 'popper');
+osc_register_script('sortablejs', osc_asset_url_versioned(osc_assets_url('sortablejs/Sortable.min.js')));
+osc_register_script('admin-categories', osc_asset_url_versioned(osc_current_admin_theme_js_url('categories.js')), 'sortablejs');
 // enqueue scripts
 osc_enqueue_script('bootstrap5');
 osc_enqueue_script('admin-osc');
 osc_enqueue_script('admin-ui-osc');
 
 // register css styles
-osc_register_style('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.css?v='.OSCLASS_VERSION));
-$adminCssFile = AdminThemes::newInstance()->getCurrentThemePath() . 'css/main.css';
-$adminCssVer = file_exists($adminCssFile) ? filemtime($adminCssFile) : OSCLASS_VERSION;
-osc_register_style('admin-css', osc_current_admin_theme_styles_url('main.css?v='.$adminCssVer));
-osc_register_style('bootstrap-icons', osc_assets_url('bootstrap-icons/bootstrap-icons.css?v='.OSCLASS_VERSION));
+osc_register_style('jquery-ui', osc_asset_url_versioned(osc_assets_url('jquery-ui/jquery-ui.min.css')));
+osc_register_style('admin-css', osc_asset_url_versioned(osc_current_admin_theme_styles_url('main.css')));
+osc_register_style('bootstrap-icons', osc_asset_url_versioned(osc_assets_url('bootstrap-icons/bootstrap-icons.css')));
 
 // enqueue css styles. jquery-ui CSS is not enqueued — no jQuery-UI widgets are
 // used; it stays registered for any plugin that still needs it.

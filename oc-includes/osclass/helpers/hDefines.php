@@ -362,6 +362,34 @@ function osc_assets_url($file = '', $assets_base_url = null)
 }
 
 /**
+ * Append a cache-busting version query to an asset URL.
+ *
+ * When the URL resolves to a file on disk the file's modification time is used, so the
+ * query changes on every rebuild or redeploy and browsers refetch the asset — this is
+ * what a plain OSCLASS_VERSION query cannot do between releases (a rebuilt file keeps the
+ * same URL and stays cached). Falls back to OSCLASS_VERSION for external URLs or files
+ * that cannot be located.
+ *
+ * @param string $url an asset URL, optionally already carrying a query string
+ *
+ * @return string the URL with a `v=` cache-busting parameter appended
+ */
+function osc_asset_url_versioned($url)
+{
+    $version = defined('OSCLASS_VERSION') ? OSCLASS_VERSION : '1';
+    $path    = explode('?', $url, 2)[0];
+    if (defined('WEB_PATH') && defined('ABS_PATH') && strpos($path, WEB_PATH) === 0) {
+        $file = ABS_PATH . substr($path, strlen(WEB_PATH));
+        if (is_file($file)) {
+            $version = filemtime($file);
+        }
+    }
+    $separator = (strpos($url, '?') === false) ? '?' : '&';
+
+    return $url . $separator . 'v=' . $version;
+}
+
+/**
  *  Create automatically the contact url
  *
  * @return string
