@@ -30,7 +30,7 @@
  * ===================================================
  * Usage:
  * Display a custom tooltip on mouse over.
- * $(selector).tooltip(message, {options});
+ * oscTooltip(element | NodeList, message, {options});
  *
  * options = {
  *     layout: ['gray-tooltip', 'black-tooltip','info-tooltip','warning-tooltip','success-tooltip','error-tooltip'],
@@ -41,70 +41,76 @@
  * }
  **/
 /*jshint browser: true*/
-osc.tooltip = function (message, options) {
-    defaults = {
-        position: {
-            y: 'middle',
-            x: 'right'
-        },
-        layout: 'black-tooltip'
+// Custom hover tooltip (vanilla). osc.tooltip(el, message, options) attaches the
+// tooltip to a single element; oscTooltip(target, ...) accepts an element or a
+// NodeList/array. Replaces the former jQuery $.fn.osc_tooltip plugin.
+osc.tooltip = function (element, message, options) {
+    if (!element) {
+        return;
     }
-    var opts = $.extend({}, defaults, options);
+    options = options || {};
+    var pos = options.position || { y: 'middle', x: 'right' };
+    var layout = options.layout || 'black-tooltip';
 
-    // check if exists tooltip
-    var $tooltip = $('#osc-tooltip');
-    if ($tooltip.length === 0) {
-        $tooltip = $('<div id="osc-tooltip"></div>');
-        $('body').append($tooltip);
+    var tip = document.getElementById('osc-tooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'osc-tooltip';
+        document.body.appendChild(tip);
     }
 
-    //Add the message
-    var hovered;
-    $(this).hover(function () {
+    var hovered = false;
+    element.addEventListener('mouseenter', function () {
         hovered = true;
-        var offset = $(this).offset();
-        var tooltipContainer = $('<div class="tooltip-message"></div>');
-        tooltipContainer.append(message);
-        $tooltip.html(tooltipContainer).attr('class', opts.layout + ' ' + opts.position.x + '-' + opts.position.y).append('<div class="tooltip-arrow"></div>').show();
-        switch (opts.position.y) {
-            case 'top':
-                positionTop = offset.top - ($tooltip.outerHeight());
-                break
-            case 'middle':
-                positionTop = offset.top - ($tooltip.outerHeight() / 2) + ($(this).outerHeight() / 2);
-                break
-            case 'bottom':
-                positionTop = offset.top + $(this).outerHeight();
-                break
-        }
-        switch (opts.position.x) {
-            case 'left':
-                positionLeft = offset.left - $tooltip.outerWidth();
-                break
-            case 'middle':
-                positionLeft = offset.left - ($tooltip.outerWidth() / 2) + ($(this).outerWidth() / 2);
-                break
-            case 'right':
-                positionLeft = offset.left + $(this).width();
-                break
-        }
-        $tooltip.css({
-            left: positionLeft,
-            top: positionTop
-        });
+        var r = element.getBoundingClientRect();
+        var offTop = r.top + window.pageYOffset;
+        var offLeft = r.left + window.pageXOffset;
 
-    }, function () {
+        var msg = document.createElement('div');
+        msg.className = 'tooltip-message';
+        msg.textContent = message;
+        tip.innerHTML = '';
+        tip.appendChild(msg);
+        tip.className = layout + ' ' + pos.x + '-' + pos.y;
+        var arrow = document.createElement('div');
+        arrow.className = 'tooltip-arrow';
+        tip.appendChild(arrow);
+        tip.style.display = 'block';
+
+        var top = offTop;
+        switch (pos.y) {
+            case 'top': top = offTop - tip.offsetHeight; break;
+            case 'middle': top = offTop - (tip.offsetHeight / 2) + (element.offsetHeight / 2); break;
+            case 'bottom': top = offTop + element.offsetHeight; break;
+        }
+        var left = offLeft;
+        switch (pos.x) {
+            case 'left': left = offLeft - tip.offsetWidth; break;
+            case 'middle': left = offLeft - (tip.offsetWidth / 2) + (element.offsetWidth / 2); break;
+            case 'right': left = offLeft + r.width; break;
+        }
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+    });
+    element.addEventListener('mouseleave', function () {
         hovered = false;
         setTimeout(function () {
-            if (!hovered) {
-                $tooltip.hide();
-            }
+            if (!hovered) { tip.style.display = 'none'; }
         }, 100);
     });
 };
 
-//extend
-$.fn.osc_tooltip = osc.tooltip;
+// Attach the tooltip to a single element or a NodeList/array of them.
+window.oscTooltip = function (target, message, options) {
+    if (!target) {
+        return;
+    }
+    if (typeof target.forEach === 'function') {
+        target.forEach(function (el) { osc.tooltip(el, message, options); });
+    } else {
+        osc.tooltip(target, message, options);
+    }
+};
 
 
 var OSC_ESC_MAP = {

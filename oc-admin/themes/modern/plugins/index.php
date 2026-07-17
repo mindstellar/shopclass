@@ -199,14 +199,11 @@ $tab_index = 2;
     </div>
 </form>
 <script type="text/javascript">
-    $(document).ready(function () {
-        $('.plugin-tooltip').each(function () {
-            $(this).osc_tooltip('<?php echo osc_esc_js(__('Problems with this plugin? Ask for support.')); ?>', {
-                layout: 'gray-tooltip',
-                position: {x: 'right', y: 'middle'}
-            });
+    document.addEventListener('DOMContentLoaded', function () {
+        oscTooltip(document.querySelectorAll('.plugin-tooltip'), '<?php echo osc_esc_js(__('Problems with this plugin? Ask for support.')); ?>', {
+            layout: 'gray-tooltip',
+            position: {x: 'right', y: 'middle'}
         });
-
     });
     function uninstall_dialog(plugin, title) {
         var pluginModal = document.getElementById("pluginModal")
