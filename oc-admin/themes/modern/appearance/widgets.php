@@ -135,36 +135,30 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 </div>
 </div>
 </div>
-<form id="deleteModal" method="get" action="<?php echo osc_admin_base_url(true); ?>"
-      class="modal fade static">
-    <input type="hidden" name="page" value="appearance"/>
-    <input type="hidden" name="action" value="delete_widget"/>
-    <input type="hidden" name="id" value=""/>
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <?php echo __('Delete widget'); ?>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <?php _e('Are you sure you want to delete this widget?'); ?>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="deleteSubmit" class="btn btn-sm btn-red" type="submit">
-                    <?php echo __('Delete'); ?>
-                </button>
-            </div>
+<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
+    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="appearance"/>
+        <input type="hidden" name="action" value="delete_widget"/>
+        <input type="hidden" name="id" value=""/>
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php echo __('Delete widget'); ?>
+            </p>
+            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this widget?'); ?></p>
         </div>
-    </div>
-</form>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
+        </div>
+    </form>
+</dialog>
 <script type="text/javascript">
     function delete_dialog(id) {
-        var deleteModal = document.getElementById('deleteModal')
-        deleteModal.querySelector('input[name=\'id\']').value = id;
-        (new bootstrap.Modal(document.getElementById('deleteModal'))).toggle()
+        var deleteModal = document.getElementById('deleteModal');
+        var input = deleteModal.querySelector("input[name='id']");
+        if (input) { input.value = id; }
+        deleteModal.showModal();
         return false;
     }
 </script>

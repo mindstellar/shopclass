@@ -78,7 +78,7 @@ function customHead()
             if (displayBtn) {
                 displayBtn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    (new bootstrap.Modal(document.getElementById('dialog-test-it'))).toggle();
+                    document.getElementById('dialog-test-it').showModal();
                 });
             }
 
@@ -108,7 +108,7 @@ function customHead()
                     }).then(function (r) {
                         return r.json();
                     }).then(function (data) {
-                        var mb = document.querySelector('#dialog-test-it .modal-body');
+                        var mb = document.querySelector('#dialog-test-it .osc-dialog-body');
                         if (mb) { mb.insertAdjacentHTML('beforeend', data.html); }
                     });
                 });
@@ -193,27 +193,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
-<div id="dialog-test-it" class="modal fade static">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <?php echo __('Send email'); ?>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <input placeholder="someone@example.com" type="text" name="test_email" class="form-control
-                form-control-sm"/>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Close'); ?></button>
-                <button id="btn-test-it" class="btn btn-sm btn-primary" type="submit">
-                    <?php _e('Send email'); ?>
-                </button>
-            </div>
-        </div>
+<dialog id="dialog-test-it" class="osc-dialog">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title"><?php echo __('Send email'); ?></p>
+        <input placeholder="someone@example.com" type="text" name="test_email" class="form-control form-control-sm"/>
     </div>
-</div>
+    <div class="osc-dialog-actions">
+        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
+        <button id="btn-test-it" class="btn btn-primary btn-sm" type="button">
+            <?php _e('Send email'); ?>
+        </button>
+    </div>
+</dialog>
 
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

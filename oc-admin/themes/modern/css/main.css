@@ -12927,10 +12927,16 @@ ul.ui-autocomplete.ui-menu {
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
   color: var(--osc-ink);
   inline-size: min(28rem, 100vw - 2rem);
+  max-block-size: calc(100vh - 4rem);
+  overflow: auto;
   padding: 0;
 }
 .osc-dialog::backdrop {
   background-color: rgba(0, 0, 0, 0.38);
+}
+
+.osc-dialog-wide {
+  inline-size: min(48rem, 100vw - 2rem);
 }
 
 .osc-dialog-body {

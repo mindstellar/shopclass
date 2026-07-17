@@ -152,7 +152,7 @@ $withFilters = __get('withFilters');
                     <?php } ?>
                     <?php // One class or the other, never both — see items/index.php. Red is for destructive
                           // actions; "a filter is applied" is a state. ?>
-                    <a data-bs-toggle="modal" data-bs-target="#display-filters" href="#"
+                    <a data-osc-dialog-open="#display-filters" href="#"
                        class="btn <?php echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>"
                        title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
@@ -228,17 +228,10 @@ function showingResults()
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);
 ?>
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="display-filters"
-          class="modal fade nocsrf"
-          data-bs-backdrop="static"
-          data-bs-keyboard="false" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="staticBackdropLabel"><?php _e('Filters') ?></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
+    <dialog id="display-filters" class="osc-dialog osc-dialog-wide">
+        <form method="get" action="<?php echo osc_admin_base_url(true); ?>" nocsrf>
+                <div class="osc-dialog-body">
+                    <p class="osc-dialog-title"><?php _e('Filters') ?></p>
                     <input type="hidden" name="page" value="users"/>
                     <input type="hidden" name="iDisplayLength" value="<?php echo $iDisplayLength; ?>"/>
                     <input type="hidden" name="sort" value="<?php echo $sort; ?>"/>
@@ -347,17 +340,14 @@ osc_show_pagination_admin($aData);
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <div class="wrapper">
-                        <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>"
-                               class="btn btn-primary btn-sm"/>
-                        <a class="btn btn-dim btn-sm"
-                           href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"><?php _e('Reset filters'); ?></a>
-                    </div>
+                <div class="osc-dialog-actions">
+                    <a class="btn btn-dim btn-sm"
+                       href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"><?php _e('Reset filters'); ?></a>
+                    <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>"
+                           class="btn btn-primary btn-sm"/>
                 </div>
-            </div>
-        </div>
-    </form>
+        </form>
+    </dialog>
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
         <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
             <input type="hidden" name="page" value="users"/>

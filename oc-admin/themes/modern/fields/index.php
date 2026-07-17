@@ -243,35 +243,24 @@ osc_current_admin_theme_path('parts/header.php');
     </div>
     <!-- /custom fields -->
     <div class="clear"></div>
-    <div id="deleteModal" method="get"
-         action="<?php echo osc_admin_base_url(true); ?>"
-         class="modal fade static"
-         data-field-id="">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <?php echo __('Delete custom field'); ?>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <?php _e('Are you sure you want to delete this custom field?'); ?>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                    <button id="deleteSubmit" data-bs-dismiss="modal" class="btn btn-sm btn-red" type="submit">
-                        <?php echo __('Delete'); ?>
-                    </button>
-                </div>
-            </div>
+    <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php echo __('Delete custom field'); ?>
+            </p>
+            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this custom field?'); ?></p>
         </div>
-    </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="deleteSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
+        </div>
+    </dialog>
     <script>
         document.getElementById("deleteSubmit").onclick = function() {
-            let fieldId = document.getElementById(
-                "deleteModal"
-            ).dataset.fieldId;
+            let deleteModal = document.getElementById("deleteModal");
+            let fieldId = deleteModal.dataset.fieldId;
+            deleteModal.close();
             let url = "<?php
                 echo osc_admin_base_url(true); ?>?page=ajax&action=delete_field&<?php echo osc_csrf_token_url();
 ?>&id=" + fieldId;
@@ -299,7 +288,7 @@ osc_current_admin_theme_path('parts/header.php');
         function delete_field(id) {
             var deleteModal = document.getElementById("deleteModal");
             deleteModal.setAttribute("data-field-id", id);
-            (new bootstrap.Modal(document.getElementById("deleteModal"))).toggle();
+            deleteModal.showModal();
             return false;
         }
 

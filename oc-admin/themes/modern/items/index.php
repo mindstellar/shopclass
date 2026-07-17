@@ -170,7 +170,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input id="fUser" name="user" type="text" placeholder="<?php _e('User Email') ?>" class="fUser form-control w-25 <?php echo $classUser; ?>" value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
                     <input id="fUserId" name="userId" type="hidden" placeholder="<?php _e('User ID') ?>" class="form-control w-25" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
                     <input id="fItemId" type="text" name="itemId" placeholder="<?php _e('Item ID') ?>" value="<?php echo osc_esc_html(Params::getParam('itemId')); ?>" class="form-control w-25 <?php echo $classItemId; ?>" />
-                    <a id="btn-display-filters" data-bs-toggle="modal" data-bs-target="#display-filters" href="#" class="btn <?php
+                    <a id="btn-display-filters" data-osc-dialog-open="#display-filters" href="#" class="btn <?php
                                                                                                                                 echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
                     <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
@@ -287,18 +287,15 @@ function showingResults()
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);
 ?>
-<form id="display-filters" method="get" action="<?php echo osc_admin_base_url(true); ?>" class="modal fade nocsrf" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="staticBackdropLabel"><?php _e('Filters') ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+<dialog id="display-filters" class="osc-dialog osc-dialog-wide">
+    <form method="get" action="<?php echo osc_admin_base_url(true); ?>" nocsrf>
+            <div class="osc-dialog-body">
+            <p class="osc-dialog-title"><?php _e('Filters') ?></p>
             <input type="hidden" name="page" value="items" />
             <input type="hidden" name="iDisplayLength" value="<?php echo $iDisplayLength; ?>" />
             <input type="hidden" name="sort" value="<?php echo $sort; ?>" />
             <input type="hidden" name="direction" value="<?php echo $direction; ?>" />
-            <div class="form-horizontal modal-body">
+            <div class="form-horizontal">
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="row-wrapper">
@@ -420,54 +417,41 @@ osc_show_pagination_admin($aData);
                     <?php osc_run_hook('filters_manage_item_search'); ?>
                 </div>
             </div>
-            <div class="modal-footer">
+            </div>
+            <div class="osc-dialog-actions">
+                <a class="btn btn-dim btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
                 <input id="show-filters" type="submit" value="<?php echo osc_esc_html(__('Apply filters')); ?>" class="btn btn-primary btn-sm" />
-                <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
             </div>
+    </form>
+</dialog>
+<dialog id="itemDeleteModal" class="osc-dialog osc-dialog-danger">
+    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="items" />
+        <input type="hidden" name="action" value="delete" />
+        <input type="hidden" name="id[]" value="" />
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php _e('Delete listing'); ?>
+            </p>
+            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this listing?'); ?></p>
         </div>
-    </div>
-</form>
-<form id="itemDeleteModal" method="get" action="<?php echo osc_admin_base_url(true); ?>" class="modal fade static">
-    <input type="hidden" name="page" value="items" />
-    <input type="hidden" name="action" value="delete" />
-    <input type="hidden" name="id[]" value="" />
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <?php _e('Delete listing'); ?>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <?php _e('Are you sure you want to delete this listing?'); ?>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="itemDeleteSubmit" class="btn btn-sm btn-red" type="submit">
-                    <?php echo __('Delete'); ?>
-                </button>
-            </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="itemDeleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
         </div>
+    </form>
+</dialog>
+<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
+        <p class="osc-dialog-text"></p>
     </div>
-</form>
-<div id="bulkActionsModal" class="modal fade static" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bulkActionsModalLabel"><?php _e('Bulk actions'); ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" class="btn btn-sm btn-red"><?php echo osc_esc_html(__('Delete')); ?></button>
-            </div>
-        </div>
+    <div class="osc-dialog-actions">
+        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
     </div>
-</div>
+</dialog>
 <script>
     var filterSelect = document.getElementById("filter-select")
     filterSelect.onchange = function() {
@@ -483,9 +467,10 @@ osc_show_pagination_admin($aData);
     }
 
     function delete_dialog(item_id) {
-        var deleteModal = document.getElementById("itemDeleteModal")
-        deleteModal.querySelector("input[name='id[]']").value = item_id;
-        (new bootstrap.Modal(document.getElementById("itemDeleteModal"))).toggle()
+        var deleteModal = document.getElementById("itemDeleteModal");
+        var input = deleteModal.querySelector("input[name='id[]']");
+        if (input) { input.value = item_id; }
+        deleteModal.showModal();
         return false;
     }
 </script>

@@ -176,28 +176,21 @@ $tab_index = 2;
         </form>
     </div>
 </div>
-<form id="pluginModal" method="get" action="<?php echo osc_admin_base_url(true); ?>"
-      class="modal fade static">
-    <input type="hidden" name="page" value="plugins"/>
-    <input type="hidden" name="action" value=""/>
-    <input type="hidden" name="plugin" value=""/>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="pluginModalSubmit" class="btn btn-sm btn-red" type="submit">
-                </button>
-            </div>
+<dialog id="pluginModal" class="osc-dialog osc-dialog-danger">
+    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="plugins"/>
+        <input type="hidden" name="action" value=""/>
+        <input type="hidden" name="plugin" value=""/>
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title"></p>
+            <p class="osc-dialog-text"></p>
         </div>
-    </div>
-</form>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="pluginModalSubmit" class="btn btn-danger btn-sm" type="submit"></button>
+        </div>
+    </form>
+</dialog>
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
         oscTooltip(document.querySelectorAll('.plugin-tooltip'), '<?php echo osc_esc_js(__('Problems with this plugin? Ask for support.')); ?>', {
@@ -211,15 +204,15 @@ $tab_index = 2;
             .value = plugin;
         pluginModal.querySelector("input[name='action']")
             .value = "uninstall";
-        pluginModal.querySelector(".modal-title")
+        pluginModal.querySelector(".osc-dialog-title")
             .textContent = title;
-        pluginModal.querySelector(".modal-body")
+        pluginModal.querySelector(".osc-dialog-text")
             .textContent = "<?php echo osc_esc_js(__('This action can not be undone.'
                                                      . ' Uninstalling plugins may result in a permanent loss of data. '
                                                      . 'Are you sure you want to continue?')); ?>";
         pluginModal.querySelector("#pluginModalSubmit")
             .textContent = "<?php echo osc_esc_js(__('Uninstall')); ?>";
-        (new bootstrap.Modal(document.getElementById("pluginModal"))).toggle()
+        pluginModal.showModal();
         return false;
     }
 
@@ -229,13 +222,13 @@ $tab_index = 2;
             .value = plugin;
         pluginModal.querySelector("input[name='action']")
             .value = "delete";
-        pluginModal.querySelector(".modal-title")
+        pluginModal.querySelector(".osc-dialog-title")
             .textContent = "<?php echo osc_esc_js(__('Delete Plugin'))?>:" + plugin
-        pluginModal.querySelector(".modal-body")
+        pluginModal.querySelector(".osc-dialog-text")
             .textContent = "<?php echo osc_esc_js(__('You are about to delete the files of the plugin. Do you want to continue?'))?>";
         pluginModal.querySelector("#pluginModalSubmit")
             .textContent = "<?php echo osc_esc_js(__('Delete')); ?>";
-        (new bootstrap.Modal(document.getElementById("pluginModal"))).toggle()
+        pluginModal.showModal();
         return false;
     }
 </script>

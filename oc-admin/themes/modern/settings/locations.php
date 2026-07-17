@@ -146,27 +146,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
         </div>
     </div>
-    <div id="locationModal" class="modal fade static">
+    <dialog id="locationModal" class="osc-dialog">
         <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                        <button class="btn btn-sm btn-red" type="submit">
-                            <?php echo __('Delete'); ?>
-                        </button>
-                    </div>
-                </div>
+            <div class="osc-dialog-body">
+                <p class="osc-dialog-title"></p>
+                <div class="osc-dialog-content"></div>
+            </div>
+            <div class="osc-dialog-actions">
+                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+                <button class="btn btn-primary btn-sm" type="submit"><?php echo __('Delete'); ?></button>
             </div>
         </form>
-    </div>
+    </dialog>
     <!-- End form add country -->
     <script>
         // Location constant

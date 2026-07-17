@@ -78,7 +78,7 @@ $media_js = static function () {
         });
 
         function watermarkModal() {
-            (new bootstrap.Modal(document.getElementById('dialog-watermark-warning'))).toggle()
+            document.getElementById('dialog-watermark-warning').showModal();
             return false;
         }
 
@@ -483,24 +483,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </fieldset>
         </form>
     </div>
-    <div id="dialog-watermark-warning" class="modal fade">
-        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <?php echo osc_esc_html(__('Recommendation')); ?>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <?php _e("We highly recommend you have the 'Keep original image' option active when you use watermarks."); ?>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
+    <dialog id="dialog-watermark-warning" class="osc-dialog">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title"><?php echo osc_esc_html(__('Recommendation')); ?></p>
+            <p class="osc-dialog-text"><?php _e("We highly recommend you have the 'Keep original image' option active when you use watermarks."); ?></p>
+        </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+        </div>
+    </dialog>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

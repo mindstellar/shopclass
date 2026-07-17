@@ -146,7 +146,7 @@ document.getElementById("b_import").addEventListener("click", function () {
         });
     // Create form body from formInputs array using getHiddenInputs
     let hiddenInputs = getHiddenInputs(formInputs);
-    document.getElementById("locationModal").querySelector('.modal-body').appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector('.osc-dialog-content').appendChild(hiddenInputs);
 });
 // Open location modal for country add
 document.getElementById("b_new_country").addEventListener('click', function () {
@@ -210,7 +210,7 @@ document.getElementById("b_new_country").addEventListener('click', function () {
     secondDiv.appendChild(inputTwo);
 
     hiddenInputs.appendChild(secondDiv);
-    document.getElementById("locationModal").querySelector('.modal-body').appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector('.osc-dialog-content').appendChild(hiddenInputs);
 
 });
 // Open location modal for region add
@@ -268,7 +268,7 @@ document.getElementById("b_new_region").addEventListener("click", function () {
     firstDiv.appendChild(labelOne);
     firstDiv.appendChild(inputOne);
     hiddenInputs.appendChild(firstDiv);
-    document.getElementById("locationModal").querySelector('.modal-body').appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector('.osc-dialog-content').appendChild(hiddenInputs);
 });
 // Open location modal for city add
 document.getElementById("b_new_city").addEventListener("click", function () {
@@ -327,12 +327,12 @@ document.getElementById("b_new_city").addEventListener("click", function () {
     firstDiv.appendChild(labelOne);
     firstDiv.appendChild(inputOne);
     hiddenInputs.appendChild(firstDiv);
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(hiddenInputs);
 });
-// Reset locationModal content on hidden.bs.modal event
-document.getElementById("locationModal").addEventListener("hidden.bs.modal", function () {
-    document.getElementById("locationModal").querySelector(".modal-body").textContent = "";
-    document.getElementById("locationModal").querySelector(".modal-title").textContent = "";
+// Reset locationModal content when the native dialog closes
+document.getElementById("locationModal").addEventListener("close", function () {
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").textContent = "";
+    document.getElementById("locationModal").querySelector(".osc-dialog-title").textContent = "";
     document.getElementById("locationModal").querySelector("button[type='submit']").textContent = "";
 });
 
@@ -427,13 +427,13 @@ function deleteMultipleLocations(type) {
     // Create form body from formInputs array using getHiddenInputs
     let hiddenInputs = getHiddenInputs(formInputs);
     // attach hiddenInputs to modal body
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(hiddenInputs);
 
     // add delete help text to modal body
     let helpText = document.createElement("p");
     helpText.setAttribute("class", "help-block");
     helpText.textContent = stringDeleteWarning;
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(helpText);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(helpText);
     // done
 }
 
@@ -606,7 +606,7 @@ function editLocations(element, editType) {
     secondDiv.appendChild(inputTwo);
     secondDiv.appendChild(helpDiv);
     hiddenInputs.appendChild(secondDiv);
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(hiddenInputs);
 
 }
 
@@ -642,8 +642,8 @@ function deleteLocations(element, editType) {
     let firstDiv = document.createElement("div");
     firstDiv.setAttribute("class", "mb-3");
     firstDiv.textContent = stringDeleteWarning;
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(firstDiv);
-    document.getElementById("locationModal").querySelector(".modal-body").appendChild(hiddenInputs);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(firstDiv);
+    document.getElementById("locationModal").querySelector(".osc-dialog-content").appendChild(hiddenInputs);
 }
 
 // Function to fetch json data from url
@@ -668,10 +668,10 @@ function fetchData(url, credentials = null) {
 // Toggle location modal with given title,body and submit button title
 function toggleLocationModal(title, body, submitTitle) {
     let locationModal = document.getElementById("locationModal");
-    locationModal.querySelector(".modal-body").textContent = body;
-    locationModal.querySelector(".modal-title").textContent = title;
+    locationModal.querySelector(".osc-dialog-content").textContent = body;
+    locationModal.querySelector(".osc-dialog-title").textContent = title;
     locationModal.querySelector("button[type='submit']").textContent = submitTitle;
-    (new bootstrap.Modal(locationModal)).toggle();
+    locationModal.showModal();
 }
 
 // Function to create Form with hidden inputs and return form body

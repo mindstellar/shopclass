@@ -172,52 +172,40 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <?php
 osc_show_pagination_admin($aData);
 ?>
-<form id="deleteModal" method="get" action="<?php echo osc_admin_base_url(true); ?>" class="modal fade static">
-    <input type="hidden" name="page" value="items" />
-    <input type="hidden" name="action" value="delete" />
-    <input type="hidden" name="id[]" value="" />
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <?php _e('Delete listing'); ?>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <?php _e('Are you sure you want to delete this listing?'); ?>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="deleteSubmit" class="btn btn-sm btn-red" type="submit">
-                    <?php echo __('Delete'); ?>
-                </button>
-            </div>
+<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
+    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+        <input type="hidden" name="page" value="items" />
+        <input type="hidden" name="action" value="delete" />
+        <input type="hidden" name="id[]" value="" />
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php _e('Delete listing'); ?>
+            </p>
+            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this listing?'); ?></p>
         </div>
-    </div>
-</form>
-<div id="bulkActionsModal" class="modal fade static" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bulkActionsModalLabel"><?php _e('Bulk actions'); ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"><?php _e('Cancel'); ?></button>
-                <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" class="btn btn-sm btn-red"><?php echo osc_esc_html(__('Delete')); ?></button>
-            </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php _e('Delete'); ?></button>
         </div>
+    </form>
+</dialog>
+<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
+        <p class="osc-dialog-text"></p>
     </div>
-</div>
+    <div class="osc-dialog-actions">
+        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
+    </div>
+</dialog>
 <script>
     function delete_dialog(id) {
-        var deleteModal = document.getElementById('deleteModal')
-        deleteModal.querySelector('input[name=\'id[]\']').value = id;
-        (new bootstrap.Modal(document.getElementById('deleteModal'))).toggle()
+        var deleteModal = document.getElementById('deleteModal');
+        var input = deleteModal.querySelector("input[name='id[]'], input[name='id']");
+        if (input) { input.value = id; }
+        deleteModal.showModal();
         return false;
     }
 </script>
