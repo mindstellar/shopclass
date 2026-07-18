@@ -868,17 +868,20 @@ function osc_item_tinymce_footer()
     }
     ?>
     <script>
-        tinyMCE.init({
-            mode: 'none',
-            theme_advanced_toolbar_align: 'left',
-            theme_advanced_toolbar_location: 'top',
-            theme_advanced_buttons1_add: 'forecolorpicker,fontsizeselect',
-            theme_advanced_buttons2_add: 'media',
-            plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen table paste'
-        });
-        $(function () {
-            $('textarea[id^=description]').each(function () {
-                tinyMCE.execCommand('mceAddEditor', true, this.id);
+        // Vanilla (no jQuery) TinyMCE 7 init on the listing description fields. Selector-
+        // based init replaces the old mode:'none' + per-textarea mceAddEditor loop; the
+        // plugin/toolbar set is the same lean, basic-formatting config as the admin editor.
+        document.addEventListener('DOMContentLoaded', function () {
+            tinyMCE.init({
+                selector: 'textarea[id^="description"]',
+                promotion: false,
+                menubar: false,
+                plugins: 'autolink lists link code',
+                toolbar: 'undo redo | bold italic underline | bullist numlist | link | removeformat | code',
+                entity_encoding: 'raw',
+                relative_urls: false,
+                remove_script_host: false,
+                convert_urls: false
             });
         });
     </script>

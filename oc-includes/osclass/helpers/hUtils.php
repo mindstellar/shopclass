@@ -285,8 +285,12 @@ function osc_private_user_menu($options = null)
     $options = osc_apply_filter('user_menu_filter', $options);
 
     echo '<script type="text/javascript">';
-    echo '$(".user_menu > :first-child").addClass("first");';
-    echo '$(".user_menu > :last-child").addClass("last");';
+    // Vanilla, and DOMContentLoaded-wrapped so it runs after the list below exists (the
+    // old jQuery ran inline before the <ul> and matched nothing). No jQuery dependency.
+    echo 'document.addEventListener("DOMContentLoaded",function(){'
+         . 'var m=document.querySelector(".user_menu");if(m){'
+         . 'if(m.firstElementChild){m.firstElementChild.classList.add("first");}'
+         . 'if(m.lastElementChild){m.lastElementChild.classList.add("last");}}});';
     echo '</script>';
     echo '<ul class="user_menu">';
 
