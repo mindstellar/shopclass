@@ -421,20 +421,6 @@ class CWebAjax extends BaseModel
                 );
                 echo json_encode($result);
                 break;
-            case 'delete_ajax_upload':
-                $files    = Session::newInstance()->_get('ajax_files');
-                $success  = false;
-                $filename = '';
-                if (isset($files[Params::getParam('qquuid')])
-                    && $files[Params::getParam('qquuid')] != ''
-                ) {
-                    $filename = $files[Params::getParam('qquuid')];
-                    unset($files[Params::getParam('qquuid')]);
-                    Session::newInstance()->_set('ajax_files', $files);
-                    $success = @unlink(osc_content_path() . 'uploads/temp/' . $filename);
-                }
-                echo json_encode(array('success' => $success, 'uploadName' => $filename));
-                break;
             default:
                 echo json_encode(array('error' => __('no action defined')));
                 break;

@@ -145,7 +145,6 @@ osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('oscla
 osc_register_script('tabber', osc_assets_url('osclass-legacy/js/tabber-minimized.js'), 'jquery');
 osc_register_script('colorpicker', osc_assets_url('osclass-legacy/js/colorpicker/js/colorpicker.js'));
 osc_register_script('php-date', osc_assets_url('osclass-legacy/js/date.js'));
-osc_register_script('jquery-fineuploader', osc_assets_url('osclass-legacy/js/fineuploader/jquery.fineuploader.min.js'), 'jquery');
 
 Plugins::init();
 if (defined('OC_ADMIN') && OC_ADMIN) {
