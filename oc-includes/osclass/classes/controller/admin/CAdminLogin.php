@@ -226,7 +226,7 @@ class CAdminLogin extends AdminBaseModel
     {
         $login_admin_title = osc_apply_filter('login_admin_title', 'Shopclass');
         $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/shopclass/');
-        $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/osclass-logo.png');
+        $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/shopclass-logo.svg');
 
         View::newInstance()->_exportVariableToView('login_admin_title', $login_admin_title);
         View::newInstance()->_exportVariableToView('login_admin_url', $login_admin_url);

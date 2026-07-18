@@ -43,39 +43,42 @@ function admin_header_favicons()
 {
     $favicons   = array();
     $favicons[] = array(
-        'rel'   => 'shortcut icon',
-        'sizes' => '',
-        'href'  => osc_current_admin_theme_url('images/favicon-48.png')
+        'rel'   => 'icon',
+        'type'  => 'image/svg+xml',
+        'href'  => osc_current_admin_theme_url('images/shopclass-favicon.svg')
     );
     $favicons[] = array(
-        'rel'   => 'apple-touch-icon-precomposed',
-        'sizes' => '144x144',
-        'href'  => osc_current_admin_theme_url('images/favicon-144.png')
+        'rel'   => 'icon',
+        'type'  => 'image/png',
+        'sizes' => '32x32',
+        'href'  => osc_current_admin_theme_url('images/favicon-32.png')
     );
     $favicons[] = array(
-        'rel'   => 'apple-touch-icon-precomposed',
-        'sizes' => '114x114',
-        'href'  => osc_current_admin_theme_url('images/favicon-114.png')
+        'rel'   => 'icon',
+        'type'  => 'image/png',
+        'sizes' => '16x16',
+        'href'  => osc_current_admin_theme_url('images/favicon-16.png')
     );
     $favicons[] = array(
-        'rel'   => 'apple-touch-icon-precomposed',
-        'sizes' => '72x72',
-        'href'  => osc_current_admin_theme_url('images/favicon-72.png')
+        'rel'   => 'apple-touch-icon',
+        'sizes' => '180x180',
+        'href'  => osc_current_admin_theme_url('images/favicon-180.png')
     );
     $favicons[] = array(
-        'rel'   => 'apple-touch-icon-precomposed',
-        'sizes' => '',
-        'href'  => osc_current_admin_theme_url('images/favicon-57.png')
+        'rel'   => 'manifest',
+        'href'  => osc_current_admin_theme_url('images/site.webmanifest')
     );
 
     $favicons = osc_apply_filter('admin_favicons', $favicons);
 
     foreach ($favicons as $f) { ?>
-        <link <?php if ($f['rel'] !== '') {
-            ?>rel="<?php echo $f['rel']; ?>" <?php
-              } if ($f['sizes'] !== '') {
-                    ?>sizes="<?php echo $f['sizes']; ?>" <?php
-              } ?>href="<?php echo $f['href']; ?>">
+        <link<?php
+            foreach (array('rel', 'type', 'sizes') as $attr) {
+                if (!empty($f[$attr])) {
+                    echo ' ' . $attr . '="' . osc_esc_html($f[$attr]) . '"';
+                }
+            }
+        ?> href="<?php echo osc_esc_html($f['href']); ?>">
     <?php }
 }
 

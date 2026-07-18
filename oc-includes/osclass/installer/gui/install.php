@@ -26,7 +26,7 @@
                 <div class="card rounded-3" tabindex="-1">
                     <div id="header" class="card-header text-dark bg-light installation">
                         <div class="text-center">
-                            <img width="350" src="<?php echo get_absolute_url(); ?>oc-includes/images/osclass-logo.png" alt="Shopclass" title="Shopclass" />
+                            <img width="350" src="<?php echo get_absolute_url(); ?>oc-includes/images/shopclass-logo.svg" alt="Shopclass" title="Shopclass" />
                         </div>
                         <?php if (in_array($step, array(2, 3))) { ?>
                             <?php if ($step === 2) {

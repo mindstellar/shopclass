@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="ShopClass">
+<mask id="cut-i">
+  <rect width="96" height="96" fill="#fff"/>
+  <circle cx="71" cy="63" r="15" fill="#000"/>
+  <rect x="2" y="35.5" width="36" height="21" rx="8" transform="rotate(-33 20 46)" fill="#000"/>
+</mask>
+<g mask="url(#cut-i)" fill="none" stroke="#0F2742" stroke-width="8" stroke-linecap="round">
+  <path d="M14 40 L14 74 Q14 84 24 84 L56 84"/>
+  <path d="M82 32 L82 46"/>
+</g>
+<rect x="8" y="6" width="80" height="12" rx="4" fill="#0F2742"/>
+<path d="M8 17.5 A13.33 13.33 0 0 0 34.67 17.5 Z" fill="#0F2742"/>
+<path d="M34.67 17.5 A13.33 13.33 0 0 0 61.33 17.5 Z" fill="#12A6A0"/>
+<path d="M61.33 17.5 A13.33 13.33 0 0 0 88 17.5 Z" fill="#12A6A0"/>
+<path fill-rule="evenodd" transform="rotate(-33 20 46)" fill="#0F2742"
+      d="M11.5 38.5 H28.5 Q34 38.5 34 44 V48 Q34 53.5 28.5 53.5 H11.5 Q6 53.5 6 48 V44 Q6 38.5 11.5 38.5 Z
+         M13.5 46 A2.5 2.5 0 1 1 8.5 46 A2.5 2.5 0 1 1 13.5 46 Z"/>
+<path fill-rule="evenodd" fill="#12A6A0"
+      d="M47 40.3 C41.9 40.3 37.8 44.4 37.8 49.5 C37.8 56.5 47 66 47 66 C47 66 56.2 56.5 56.2 49.5 C56.2 44.4 52.1 40.3 47 40.3 Z
+         M51 49.5 A4 4 0 1 1 43 49.5 A4 4 0 1 1 51 49.5 Z"/>
+<path d="M64 71 L57.5 78.5 L68 74.5 Z" fill="#12A6A0"/>
+<path fill-rule="evenodd" fill="#12A6A0"
+      d="M82.5 63 A11.5 11.5 0 1 1 59.5 63 A11.5 11.5 0 1 1 82.5 63 Z
+         M67.5 63 A2 2 0 1 1 63.5 63 A2 2 0 1 1 67.5 63 Z
+         M73 63 A2 2 0 1 1 69 63 A2 2 0 1 1 73 63 Z
+         M78.5 63 A2 2 0 1 1 74.5 63 A2 2 0 1 1 78.5 63 Z"/>
+</svg>

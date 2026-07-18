@@ -19,31 +19,39 @@
 
 
 // -----------------------------------------------------------------------------
-// Brand
+// Brand — Shopclass teal
 // -----------------------------------------------------------------------------
-// Deep bronze, not amber. Amber means *warning* in an admin; the brand colour is
-// pushed dark and metallic so it can never be mistaken for a caution state.
-$bronze:            #8f5d00; // oklch(.520 .115 75)  — 5.62:1. Primary actions, links, selection.
-$bronze-deep:       #7b4b00; // oklch(.455 .115 75)  — 7.40:1. Hover/active on any bronze fill.
-$bronze-tint:       #fbf0e2; // oklch(.960 .022 75)  — selected-row wash, premium badge.
+// The brand identity colour is the logo teal, #12A6A0. At 3.0:1 on white it is a
+// brand ACCENT — good for a glyph, a selection wash, a focus ring — but it is too
+// light to carry text or a button fill. Interactive teal is therefore pushed darker
+// to $teal (5.79:1), the way the previous bronze was pushed dark: a primary you can
+// read is worth more than one that merely matches the logo.
+$teal-brand:   #12a6a0; // oklch(.660 .105 190) — 3.01:1. Brand glyph/accent ONLY, never text.
+$teal:         #0b7269; // oklch(.505 .078 187) — 5.79:1. Primary actions, links, selection.
+$teal-deep:    #09625c; // oklch(.448 .068 187) — 7.21:1. Hover/active on any teal fill.
+$teal-tint:    #e6f6f4; // oklch(.965 .017 187) — selected-row wash, badge. teal on it: 5.20:1.
+
+// Deep navy — the brand's dark. Used for headings, so the type carries brand colour
+// without tinting body text or dropping below the contrast of near-black.
+$navy:         #0f2742; // oklch(.268 .058 250) — 15.12:1.
 
 
 // -----------------------------------------------------------------------------
-// Neutrals — a warm-tinted grey ramp (hue 75, chroma 0.006–0.010)
+// Neutrals — a cool-tinted grey ramp (tinted toward the navy/teal end, not warm)
 // -----------------------------------------------------------------------------
-// The tint is toward the brand's own hue, never "warm by default". definitions.scss
-// already consumes $gray-100…$gray-900, so overriding the ramp warms the whole admin
-// coherently instead of leaving cold Bootstrap greys next to a warm brand.
+// The tint is toward the brand's own hue. definitions.scss consumes $gray-100…$gray-900,
+// so overriding the ramp cools the whole admin coherently instead of leaving warm
+// Bootstrap-adjacent greys next to a cool brand.
 $white:    #fff;
-$gray-100: #f9f6f2; //  1.08:1 — sidebar, toolbars, table headers  (the *second* surface)
-$gray-200: #f3efea; //  1.14:1 — recessed wells, disabled inputs
-$gray-300: #e0ddda; //  1.35:1 — hairline dividers, table rules     (decorative only)
-$gray-400: #c2bdb7; //  1.87:1
-$gray-500: #96918c; //  3.11:1 — borders of INTERACTIVE controls    (WCAG 1.4.11)
-$gray-600: #67635d; //  6.01:1 — secondary text, and placeholders
-$gray-700: #4e4a44; //  8.84:1
-$gray-800: #33302b; // 13.17:1
-$gray-900: #1d1a17; // 17.32:1 — body text, headings, table data
+$gray-100: #f7f9fb; //  1.06:1 — sidebar, toolbars, table headers  (the *second* surface)
+$gray-200: #eef1f5; //  1.13:1 — recessed wells, disabled inputs
+$gray-300: #dde3ea; //  1.29:1 — hairline dividers, table rules     (decorative only)
+$gray-400: #bcc4cf; //  1.76:1
+$gray-500: #8b95a3; //  3.03:1 — borders of INTERACTIVE controls    (WCAG 1.4.11)
+$gray-600: #5f6b7a; //  5.43:1 — secondary text, and placeholders
+$gray-700: #46505d; //  8.18:1
+$gray-800: #2b333d; // 12.78:1
+$gray-900: #14181f; // 17.79:1 — body text, table data
 $black:    #000;
 
 
@@ -51,8 +59,8 @@ $black:    #000;
 // Semantic state
 // -----------------------------------------------------------------------------
 // Functional, never decorative, and never the sole carrier of meaning.
-// $warning sits at hue 95 (lemon), deliberately away from the bronze at hue 75 —
-// their perceptual separation is ΔE 0.287, so they cannot be confused.
+// $warning sits at hue 95 (lemon), far from the brand teal at hue 187 — they cannot be
+// confused. $info is a true blue, held distinct from the teal-green primary.
 $success: #1d7d3e; // 5.19:1 with white text
 $info:    #0079b5; // 4.76:1 with white text — system notices ONLY, never a primary action
 $warning: #ddbc28; // pairs with dark text only; there is no solid warning button
@@ -62,15 +70,15 @@ $danger:  #c22826; // 5.82:1 with white text
 // Each is paired with its own semantic ink, and every pair is measured, not assumed:
 //   $success on $success-tint  4.66:1
 //   $danger  on $danger-tint   4.98:1
-//   $bronze  on $bronze-tint   5.00:1
-//   $gray-700 on $gray-200     7.69:1
+//   $teal    on $teal-tint     5.20:1
+//   $gray-700 on $gray-200     7.22:1
 // All clear the 4.5:1 body bar. A tint is a background for TEXT, so it is held to the
 // text bar, not the 3:1 non-text one.
 $success-tint: #e4f8e7;
 $danger-tint:  #ffe9e5;
 $warning-tint: #fdf4d2;
 
-$primary:   $bronze;
+$primary:   $teal;
 $secondary: $gray-600;
 $light:     $gray-100;
 $dark:      $gray-900;
@@ -86,10 +94,9 @@ $enable-gradients: false;
 // -----------------------------------------------------------------------------
 // Body — The Bench Rule
 // -----------------------------------------------------------------------------
-// The bench top is white. The bronze belongs to the tools.
-// $body-bg is exactly #fff: never cream, sand, beige, or a warm-tinted near-white.
-// Warmth enters through the brand colour and through $gray-100 on secondary chrome.
-// A warm background AND a warm primary is the tell we are avoiding.
+// The bench top is white. The teal belongs to the tools.
+// $body-bg is exactly #fff: never cream, sand, beige, or a tinted near-white. Colour
+// enters through the brand and through $gray-100 on secondary chrome, never the body.
 $body-bg:              $white;
 $body-color:           $gray-900;
 $body-secondary-color: $gray-600;
@@ -104,11 +111,14 @@ $body-secondary-color: $gray-600;
 //
 // Body never drops below 16px. The owner of a classifieds site is not a developer on
 // a 27" display; density is bought with spacing, never by shrinking type.
+//
+// Headings take the brand navy — the type carries the brand colour so the chrome does
+// not have to, and at 15.12:1 it reads harder than body text, not softer.
 $font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 $font-family-monospace:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 $font-size-base:         1rem;
 $headings-font-weight:   600;
-$headings-color:         $gray-900;
+$headings-color:         $navy;
 
 
 // -----------------------------------------------------------------------------
@@ -137,9 +147,9 @@ $box-shadow-sm: $box-shadow;
 // -----------------------------------------------------------------------------
 // Links & active state
 // -----------------------------------------------------------------------------
-$link-color:              $bronze;
-$link-hover-color:        $bronze-deep;
-$component-active-bg:     $bronze;
+$link-color:              $teal;
+$link-hover-color:        $teal-deep;
+$component-active-bg:     $teal;
 $component-active-color:  $white;
 
 
@@ -148,13 +158,13 @@ $component-active-color:  $white;
 // -----------------------------------------------------------------------------
 $focus-ring-width:   3px;
 $focus-ring-opacity: .2;
-$focus-ring-color:   rgba($bronze, $focus-ring-opacity);
+$focus-ring-color:   rgba($teal, $focus-ring-opacity);
 
 
 // -----------------------------------------------------------------------------
 // Form controls
 // -----------------------------------------------------------------------------
-// $input-border-color is $gray-500 (3.11:1), NOT $gray-300. A field whose edge you
+// $input-border-color is $gray-500 (3.03:1), NOT $gray-300. A field whose edge you
 // cannot see is a broken field — WCAG 1.4.11 governs the boundary of a control, and
 // the decorative divider grey does not clear it.
 //
@@ -163,7 +173,7 @@ $focus-ring-color:   rgba($bronze, $focus-ring-opacity);
 $input-border-color:       $gray-500;
 $input-placeholder-color:  $gray-600;
 $input-disabled-bg:        $gray-200;
-$input-focus-border-color: $bronze;
+$input-focus-border-color: $teal;
 $input-focus-box-shadow:   0 0 0 $focus-ring-width $focus-ring-color;
 
 
@@ -189,6 +199,13 @@ $table-cell-vertical-align: middle;
 // -----------------------------------------------------------------------------
 // Exposed as custom properties so PHP templates and plugin authors can consume the
 // system directly, rather than hardcoding hex and drifting away from it.
+//
+// The brand colour tokens are still spelled `--osc-bronze*`. The brand is teal now, but
+// the NAME is a published API: bundled and third-party plugins read `var(--osc-bronze)`,
+// and renaming it would leave them unstyled on a live site (the same reason `.btn-blue`
+// still exists and renders in-brand). Restyling is safe; renaming is not. So the name
+// stays and the value is teal — like every other token here, consume it, do not assume
+// its literal hue from the name.
 :root {
   // Native form controls — checkboxes, radios, range, progress — paint themselves with the
   // BROWSER's accent colour, which is stock blue. The admin's bulk-action checkboxes are bare
@@ -196,29 +213,35 @@ $table-cell-vertical-align: middle;
   // them: they were rendering blue on every listings screen. It is a Blue Exile violation that
   // no grep for #0d6efd can ever find, because the colour is not in our stylesheet at all.
   // `accent-color` inherits, so declaring it once here covers every native control in the admin.
-  accent-color: #{$bronze};
+  accent-color: #{$teal};
 
-  --osc-bronze:        #{$bronze};
-  --osc-bronze-deep:   #{$bronze-deep};
-  --osc-bronze-tint:   #{$bronze-tint};
+  --osc-bronze:        #{$teal};       // brand primary (name retained for plugin compat)
+  --osc-bronze-deep:   #{$teal-deep};
+  --osc-bronze-tint:   #{$teal-tint};
   // Bootstrap's focus/shadow properties want the channels, not the colour, so they can set
   // their own alpha. Spelled with Sass's own red()/green()/blue() rather than Bootstrap's
   // to-rgb(), because this file is imported BEFORE Bootstrap and its functions do not exist
-  // here yet. Derived, so it cannot drift out of step with $bronze.
-  --osc-bronze-rgb:    #{red($bronze)}, #{green($bronze)}, #{blue($bronze)};
+  // here yet. Derived, so it cannot drift out of step with the primary.
+  --osc-bronze-rgb:    #{red($teal)}, #{green($teal)}, #{blue($teal)};
+
+  // The bright logo teal. The brand's identity colour, kept separate from the interactive
+  // primary above so a glyph or a wash can use the vivid brand hue without failing the text
+  // contrast bar the primary has to clear.
+  --osc-accent-brand:  #{$teal-brand};
+  --osc-navy:          #{$navy};
 
   --osc-bench:         #{$white};     // content surface
-  --osc-bench-warm:    #{$gray-100};  // toolbars, table headers
+  --osc-bench-warm:    #{$gray-100};  // toolbars, table headers (name retained; ramp is cool now)
   --osc-bench-sunk:    #{$gray-200};  // recessed wells
 
   // The nav chrome surface. Deeper than bench-warm on purpose: the sidebar owns the
   // whole left column and must read as chrome the content bench floats above, not as a
-  // near-white that dissolves into it (gray-100 is 1.08:1 on white — invisible as an
-  // edge). A one-off warm neutral between gray-200 and gray-300, its own defining edge,
-  // and a translucent hover that darkens in light / lightens in dark (see _theme-dark).
-  --osc-chrome:        #ece6dd;
-  --osc-chrome-edge:   #d8d0c4;
-  --osc-chrome-hover:  rgba(45, 26, 23, .055);
+  // near-white that dissolves into it. A one-off cool neutral between gray-200 and
+  // gray-300, its own defining edge, and a translucent hover that darkens in light /
+  // lightens in dark (see _theme-dark).
+  --osc-chrome:        #e4e9ef;
+  --osc-chrome-edge:   #cfd6df;
+  --osc-chrome-hover:  rgba(15, 24, 40, .05);
 
   --osc-rule:          #{$gray-300};  // decorative dividers
   --osc-rule-strong:   #{$gray-500};  // interactive control borders
@@ -228,10 +251,10 @@ $table-cell-vertical-align: middle;
   // One step up from muted, and the ink of every neutral status badge. A 13px Label on a
   // tint has less to work with than body text on white, so it does not use the muted grey.
   --osc-ink-emphasis:  #{$gray-700};
-  // The ink that sits ON a saturated fill — white text on a bronze button, on a danger
+  // The ink that sits ON a saturated fill — white text on a teal button, on a danger
   // button. It is NOT --osc-bench: they happen to be the same white today, but they are
-  // different jobs and they part company in the dark theme, where the bench goes to a warm
-  // near-black while text on a bronze fill has to stay light. Anything that would break if
+  // different jobs and they part company in the dark theme, where the bench goes to a cool
+  // near-black while text on a teal fill has to stay light. Anything that would break if
   // the two diverged is using the wrong one.
   --osc-ink-inverse:   #{$white};
 
@@ -239,10 +262,9 @@ $table-cell-vertical-align: middle;
   --osc-success-tint:  #{$success-tint};
   --osc-danger:        #{$danger};
   --osc-danger-tint:   #{$danger-tint};
-  // The border/hover step on a semantic fill, mirroring $bronze-deep. mix($black, c, n) is
+  // The border/hover step on a semantic fill, mirroring $teal-deep. mix($black, c, n) is
   // what Bootstrap's shade-color() does, spelled with Sass's own mix() because this file is
-  // imported before Bootstrap. Derived from OUR danger — .btn-error's border used to be a
-  // shade of Bootstrap's stock $red (#dc3545), a colour that appears nowhere in this palette.
+  // imported before Bootstrap.
   --osc-danger-deep:   #{mix($black, $danger, 20%)};
   --osc-success-deep:  #{mix($black, $success, 10%)};
   --osc-warning:       #{$warning};

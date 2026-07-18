@@ -26,41 +26,43 @@
 [data-bs-theme="dark"] {
 
   // --- Surfaces --------------------------------------------------------------
-  // Warm near-black, hue ~55. Unlike light mode, the elevated chrome (bench-warm) is
-  // LIGHTER than the content bench, not darker — a raised surface catches more light.
-  --osc-bench:         #211e1a; // content surface
-  --osc-bench-warm:    #2b2723; // toolbars, table headers (raised)
-  --osc-bench-sunk:    #1a1714; // wells, disabled, neutral-badge tint (recessed)
+  // Cool near-black, tinted toward the navy end. Unlike light mode, the elevated chrome
+  // (bench-warm) is LIGHTER than the content bench, not darker — a raised surface catches
+  // more light.
+  --osc-bench:         #1a1f27; // content surface
+  --osc-bench-warm:    #232a35; // toolbars, table headers (raised)
+  --osc-bench-sunk:    #14181f; // wells, disabled, neutral-badge tint (recessed)
 
   // Nav chrome. Same rule as bench-warm — a raised surface catches more light, so the
   // sidebar is LIGHTER than the content bench here, the inverse of light mode where it is
-  // darker. ink-muted on it: 6.4:1. The hover lightens (adds light) instead of darkening.
-  --osc-chrome:        #2f2a24;
-  --osc-chrome-edge:   #423b32;
+  // darker. The hover lightens (adds light) instead of darkening.
+  --osc-chrome:        #262d39;
+  --osc-chrome-edge:   #3a424f;
   --osc-chrome-hover:  rgba(255, 255, 255, .06);
 
   // --- Lines -----------------------------------------------------------------
-  --osc-rule:          #3a352f; // decorative divider — deliberately low contrast
-  --osc-rule-strong:   #7c7264; // interactive control border — 3.14:1 on bench-warm
+  --osc-rule:          #333a45; // decorative divider — deliberately low contrast
+  --osc-rule-strong:   #79828f; // interactive control border — 3.72:1 on bench-warm
 
   // --- Ink -------------------------------------------------------------------
-  // Warm near-white, never pure #fff — a white text on a warm black reads cold and buzzes.
-  --osc-ink:           #ece7e0; // body/heading/data — 13.49:1 on bench
-  --osc-ink-muted:     #b0a99f; // secondary, placeholders — 7.13:1 on bench
-  --osc-ink-emphasis:  #cbc3b8; // neutral-badge ink — 10.23:1 on bench-sunk
+  // Cool near-white, never pure #fff — pure white on a dark ground buzzes.
+  --osc-ink:           #e6ebf2; // body/heading/data — 13.81:1 on bench
+  --osc-ink-muted:     #a6b0be; // secondary, placeholders — 7.54:1 on bench
+  --osc-ink-emphasis:  #c6cdd8; // neutral-badge ink — 11.12:1 on bench-sunk
   // The ink that sits ON a bright fill flips: in light mode it is white, here it is the
   // dark bench, because the fills below are luminous. This is the divergence the token was
   // created for (see --osc-ink-inverse in _brand.scss).
-  --osc-ink-inverse:   #201d19; // 7.50:1 under bronze, 6.69:1 under danger, 7.57:1 under success
+  --osc-ink-inverse:   #14181f; // 8.37:1 under teal, 6.69:1 under danger, 7.57:1 under success
 
   // --- Brand -----------------------------------------------------------------
-  // The bronze LIGHTENS. A colour that carried 5.62:1 on white carries nothing on near-black,
-  // so this is a brighter value of the same hue — brass catching the light. It does double
-  // duty: link text on the bench (7.41:1), and a button fill under dark ink (7.50:1).
-  --osc-bronze:        #d7a54e;
-  --osc-bronze-deep:   #e4b566; // hover/active — brightens, the dark-mode direction of "deeper"
-  --osc-bronze-tint:   #3a2f1e; // selected-row wash, premium badge — bronze on it 5.84:1, ink 10.64:1
-  --osc-bronze-rgb:    215, 165, 78;
+  // The teal LIGHTENS. A colour that carried 5.79:1 on white carries nothing on near-black,
+  // so this is a brighter value of the same hue. It does double duty: link text on the
+  // bench (7.78:1), and a button fill under dark ink (8.37:1). Name retained for plugin
+  // compat (see _brand.scss).
+  --osc-bronze:        #45c4bc;
+  --osc-bronze-deep:   #5ed6ce; // hover/active — brightens, the dark-mode direction of "deeper"
+  --osc-bronze-tint:   #103330; // selected-row wash, badge — teal on it 6.42:1, ink 11.40:1
+  --osc-bronze-rgb:    69, 196, 188;
 
   // --- Semantic --------------------------------------------------------------
   // All luminous, so each colour reads both as ink on its own dark tint AND as a fill under
@@ -101,7 +103,7 @@
   --bs-border-color:       var(--osc-rule);
   --bs-heading-color:      var(--osc-ink);
   --bs-link-color:         var(--osc-bronze);
-  --bs-link-color-rgb:     215, 165, 78;
+  --bs-link-color-rgb:     var(--osc-bronze-rgb);
   --bs-link-hover-color:   var(--osc-bronze-deep);
   --bs-secondary-bg-rgb:   43, 39, 35;
   --bs-tertiary-bg-rgb:    26, 23, 20;
