@@ -38,12 +38,17 @@ jobs:
         id: baseline
         run: |
           TAG=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -z "$TAG" ]; then echo "no stable release tag found"; exit 1; fi
+          if [ -z "$TAG" ]; then
+            echo "::notice::No stable release tag found — skipping schema-drift check (no baseline to diff against yet)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "Using baseline tag: $TAG"
           git show "$TAG:oc-includes/osclass/installer/struct.sql" > /tmp/baseline-struct.sql
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Schema drift check (baseline ${{ steps.baseline.outputs.tag }} -> current)
+        if: ${{ steps.baseline.outputs.skip != 'true' }}
         env:
           DRIFT_DB_HOST: 127.0.0.1
           DRIFT_DB_USER: root
