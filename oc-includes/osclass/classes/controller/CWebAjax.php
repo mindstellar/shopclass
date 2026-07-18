@@ -400,27 +400,6 @@ class CWebAjax extends BaseModel
                 $result['uploadName'] = 'auto_' . $filename;
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
-            case 'ajax_validate':
-                $id = Params::getParam('id');
-                if (!is_numeric($id)) {
-                    echo json_encode(array('success' => false));
-                    die();
-                }
-                $secret = Params::getParam('secret');
-
-                $item = Item::newInstance()->findByPrimaryKey($id);
-
-                if ($item['s_secret'] != $secret) {
-                    echo json_encode(array('success' => false));
-                    die();
-                }
-                $nResources = ItemResource::newInstance()->countResources($id);
-                $result     = array(
-                    'success' => $nResources < osc_max_images_per_item(),
-                    'count'   => $nResources
-                );
-                echo json_encode($result);
-                break;
             default:
                 echo json_encode(array('error' => __('no action defined')));
                 break;
