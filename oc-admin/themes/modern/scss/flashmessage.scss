@@ -1,22 +1,107 @@
+// Flash messages — the banner shown after an action (saved, deleted, an error).
+// Same grammar as the callouts and the status badges: a tint surface, a semantic
+// icon (a SHAPE, so the meaning survives greyscale and colour-blindness), and the
+// message text — The Three Signal Rule. Colour is never the only signal.
+//
+// `.flashmessage` and `.flashmessage-*` are a published API: core renders them, and
+// bundled and third-party plugins render their own markup with these classes. They
+// are restyled here, never renamed. ui-osc.js progressively enhances any element
+// carrying them (role/aria-live, a labelled dismiss button, animated removal), so a
+// plugin's own flash markup gets the same behaviour for free.
+$flashmessage-states: (
+  "ok":      (tint: var(--osc-success-tint), edge: var(--osc-success), icon: "\f26a"), // check-circle-fill
+  "error":   (tint: var(--osc-danger-tint),  edge: var(--osc-danger),  icon: "\f336"), // exclamation-octagon-fill
+  "warning": (tint: var(--osc-warning-tint), edge: var(--osc-warning), icon: "\f33a"), // exclamation-triangle-fill
+  "info":    (tint: var(--osc-info-tint),    edge: var(--osc-info),    icon: "\f430"), // info-circle-fill
+);
+
 .flashmessage {
-  @extend .alert;
+  align-items: flex-start;
+  background-color: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  color: var(--osc-ink);
+  display: flex;
+  font-size: .9375rem;
+  gap: .625rem;
+  line-height: 1.5;
+  margin-block-end: .75rem;
+  padding: .85rem 1rem;
+  text-align: start;
+  // Appears right after an action — a short settle reads as feedback, not
+  // choreography. Reduced-motion gets the resting state with no movement.
+  animation: osc-flash-in var(--osc-duration-base) var(--osc-ease);
+
+  // The semantic glyph. States below set the character and its colour; a plain
+  // .flashmessage with no state draws no icon.
+  &::before {
+    flex: 0 0 auto;
+    font-family: "bootstrap-icons";
+    font-size: 1.05em;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1.45;
+  }
+
+  p { margin: 0; }
+  p + p { margin-block-start: .35rem; }
+
+  // A link in the message reads as a link (brand colour), not the near-black it
+  // would otherwise inherit.
+  a:not(.ico-close) {
+    color: var(--osc-bronze);
+    font-weight: 500;
+  }
+
+  // Dismiss. `.ico-close` is globally Bootstrap's `.btn-close` (an SVG ×, drawn as a
+  // background so it survives the global `content-visibility: hidden` that hides the
+  // literal "×"/"x" text, and auto-inverted under data-bs-theme="dark"). So it only
+  // needs placement here: its global `float: inline-end` is ignored on a flex item, so
+  // `order` moves it past the bare message text node (which can't take an order of its
+  // own) and an auto inline-start margin parks it at the trailing edge — top-aligned
+  // with the icon so it stays put on multi-line messages.
+  .ico-close {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    margin-block-start: .1rem;
+    margin-inline-start: auto;
+    order: 1;
+  }
+
+  // Exit: ui-osc.js adds this, then removes the node on animationend.
+  &.is-dismissing {
+    animation: osc-flash-out var(--osc-duration-fast) var(--osc-ease) forwards;
+    pointer-events: none;
+  }
 }
 
-.flashmessage-info {
-  @extend .alert-info;
+@each $state, $props in $flashmessage-states {
+  .flashmessage-#{$state} {
+    background-color: map-get($props, tint);
+    border-color: map-get($props, edge);
+
+    &::before {
+      color: map-get($props, edge);
+      content: map-get($props, icon);
+    }
+  }
 }
 
-.flashmessage-error,
-.flashmessage-error td {
-  @extend .alert-danger;
-}
+// A legacy shape: `.flashmessage-error` applied to a table row/cell. Keep the tint
+// readable there rather than inheriting a semantic ink on a semantic tint.
+.flashmessage-error td { color: var(--osc-ink); }
 
-.flashmessage-ok {
-  @extend .alert-success;
+@keyframes osc-flash-in {
+  from { opacity: 0; transform: translateY(-.375rem); }
+  to   { opacity: 1; transform: none; }
 }
-
-.flashmessage-warning {
-  @extend .alert-warning;
+@keyframes osc-flash-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-.25rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flashmessage { animation: none; }
+  .flashmessage.is-dismissing { animation: none; opacity: 0; }
 }
 
 .flashmessage-inline {
@@ -39,20 +124,6 @@
   @include rounded-corners;
   padding: 15px;
 
-}
-
-#content-page {
-  .flashmessage {
-    @include rounded-corners;
-  }
-
-  // The per-state `border-top` overrides that used to live here are gone. A .flashmessage
-  // @extends the matching .alert-*, which ALREADY draws a 1px border in Bootstrap's
-  // --bs-*-border-subtle (derived from our semantic colours, and theme-aware). The overrides
-  // repainted just the top edge in the old Bootstrap-3 hexes — #BCE8F1 and friends, a palette
-  // that is in no part of this system — so the top of every flash message was a different,
-  // off-brand colour from its other three sides. Deleting them lets the alert's own border
-  // stand on all four sides.
 }
 
 // Callouts — the inline hints that sit beside a setting and explain what it does.

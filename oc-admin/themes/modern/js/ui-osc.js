@@ -227,16 +227,53 @@ function oscTreeview(root, opts) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Close a flash message when its × is clicked. (The help box now closes via
-    // Bootstrap's own collapse toggle, so it needs no handler here.)
-    document.querySelectorAll('.flashmessage .ico-close').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            var fm = btn.closest('.flashmessage');
-            if (fm) { fm.style.display = 'none'; }
-        });
+// Flash messages — progressive enhancement shared by core- and plugin-rendered
+// markup (anything carrying .flashmessage). Adds the ARIA a screen reader needs,
+// a labelled dismiss control, and an animated removal that respects reduced motion.
+function oscDismissFlash(fm) {
+    if (!fm) { return; }
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { fm.remove(); return; }
+    var done = false;
+    var finish = function () { if (!done) { done = true; fm.remove(); } };
+    fm.classList.add('is-dismissing');
+    fm.addEventListener('animationend', finish, { once: true });
+    setTimeout(finish, 400); // fallback if animationend never fires (e.g. hidden tab)
+}
+
+function oscEnhanceFlash(root) {
+    (root || document).querySelectorAll('.flashmessage').forEach(function (fm) {
+        if (fm.dataset.oscFlash) { return; }
+        fm.dataset.oscFlash = '1';
+        var isError = fm.classList.contains('flashmessage-error');
+        // An error interrupts; anything else is a passive confirmation.
+        if (!fm.hasAttribute('role')) { fm.setAttribute('role', isError ? 'alert' : 'status'); }
+        if (!fm.hasAttribute('aria-live')) { fm.setAttribute('aria-live', isError ? 'assertive' : 'polite'); }
+        var close = fm.querySelector('.ico-close');
+        if (close) {
+            close.setAttribute('role', 'button');
+            if (!close.hasAttribute('tabindex')) { close.setAttribute('tabindex', '0'); }
+            if (!close.hasAttribute('aria-label')) { close.setAttribute('aria-label', 'Dismiss'); }
+        }
     });
+}
+
+// Delegated, so it also covers flash messages shown after load (e.g. #jsMessage on
+// an AJAX result), not just those present at DOMContentLoaded.
+document.addEventListener('click', function (e) {
+    var close = e.target.closest ? e.target.closest('.flashmessage .ico-close') : null;
+    if (close) { e.preventDefault(); oscDismissFlash(close.closest('.flashmessage')); }
+});
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') { return; }
+    var close = e.target.closest ? e.target.closest('.flashmessage .ico-close') : null;
+    if (close) { e.preventDefault(); oscDismissFlash(close.closest('.flashmessage')); }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Flash messages: announce them to assistive tech and wire up dismissal. (The
+    // help box closes via Bootstrap's own collapse toggle, so no handler here.)
+    oscEnhanceFlash(document);
 
     oscInitTabs(document);
 });
