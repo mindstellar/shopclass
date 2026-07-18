@@ -153,6 +153,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'CommentsDataTable' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/datatables/CommentsDataTable.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'ContactForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/ContactForm.php',
+        'Cleanup' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Cleanup.php',
         'Cookie' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Cookie.php',
         'Country' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Country.php',
         'CountryStats' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/CountryStats.php',

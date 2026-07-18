@@ -338,6 +338,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
+            __('Cleanup'),
+            osc_admin_base_url(true) . '?page=tools&action=cleanup',
+            'tools_cleanup',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
             __('System info'),
             osc_admin_base_url(true) . '?page=tools&action=system_info',
             'tools_system_info',

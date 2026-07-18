@@ -894,6 +894,37 @@ if (osc_tinymce_frontend()) {
     osc_add_hook('footer', 'osc_item_tinymce_footer');
 }
 
+
+/**
+ * Run the enabled Tools > Cleanup rules once — a single batch of the configured size per
+ * rule — removing stale listings/users. Returns the total number removed. Shared by the
+ * manual "run now" action and the daily cron. The first-class replacement for the Butler
+ * plugin's cron.
+ *
+ * @return int
+ */
+function osc_run_cleanup()
+{
+    $limit = (int)osc_get_preference('batch_limit', 'cleanup');
+    if ($limit < 1) {
+        $limit = 250;
+    }
+    $engine = Cleanup::newInstance();
+    $total  = 0;
+    foreach (Cleanup::RULES as $rule) {
+        if (osc_get_preference('enabled_' . $rule, 'cleanup') != 1) {
+            continue;
+        }
+        $days   = $rule === 'reported' ? 0 : (int)osc_get_preference('days_' . $rule, 'cleanup');
+        $total += $engine->purge($rule, $days, $limit);
+    }
+    osc_reset_preferences();
+
+    return $total;
+}
+osc_add_hook('cron_daily', 'osc_run_cleanup');
+
+
 function osc_show_maintenance()
 {
     if (defined('__OSC_MAINTENANCE__')) { ?>

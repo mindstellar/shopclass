@@ -77,6 +77,7 @@ return array(
     'CommentsDataTable' => $baseDir . '/oc-includes/osclass/classes/datatables/CommentsDataTable.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'ContactForm' => $baseDir . '/oc-includes/osclass/classes/form/ContactForm.php',
+    'Cleanup' => $baseDir . '/oc-includes/osclass/classes/Cleanup.php',
     'Cookie' => $baseDir . '/oc-includes/osclass/classes/Cookie.php',
     'Country' => $baseDir . '/oc-includes/osclass/classes/model/Country.php',
     'CountryStats' => $baseDir . '/oc-includes/osclass/classes/model/CountryStats.php',

@@ -297,6 +297,42 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 $this->doView('tools/maintenance.php');
                 break;
+            case 'cleanup':
+                $this->doView('tools/cleanup.php');
+                break;
+            case 'cleanup_post':
+                if (defined('DEMO')) {
+                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                }
+                osc_csrf_check();
+                $limit = (int)Params::getParam('batch_limit');
+                osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'cleanup', 'INTEGER');
+                foreach (Cleanup::RULES as $rule) {
+                    osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'cleanup', 'BOOLEAN');
+                    if ($rule !== 'reported') {
+                        $days = (int)Params::getParam('days_' . $rule);
+                        osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'cleanup', 'INTEGER');
+                    }
+                }
+                osc_reset_preferences();
+                osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                break;
+            case 'cleanup_run':
+                if (defined('DEMO')) {
+                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                }
+                osc_csrf_check();
+                $total = osc_run_cleanup();
+                if ($total > 0) {
+                    osc_add_flash_ok_message(sprintf(_m('Cleanup removed %d item(s). Run again to clear any remaining backlog.'), $total), 'admin');
+                } else {
+                    osc_add_flash_warning_message(_m('Cleanup ran, but nothing matched the enabled rules.'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                break;
             case 'system_info':
             default:
                 $this->doView('tools/system-info.php');
