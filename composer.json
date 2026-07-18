@@ -1,16 +1,17 @@
 {
   "name": "mindstellar/shopclass",
   "type": "project",
+  "version": "5.3.0-dev3",
   "description": "With Shopclass, get your own  classifieds site for free. Build your own Shopclass installation and start advertising real estate, jobs or whatever you want- in minutes! ",
   "keywords": [
-    "osclass",
+    "shopclass",
     "classified",
     "open-source",
     "php-classified",
     "cms"
   ],
   "homepage": "https://github.com/mindstellar/shopclass",
-  "license": "Apache-2.0",
+  "license": "GPL-3.0-or-later",
   "authors": [
     {
       "name": "Shopclass Community",
