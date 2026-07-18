@@ -1,155 +1,147 @@
-![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
-[![CodeFactor](https://www.codefactor.io/repository/github/mindstellar/osclass/badge)](https://www.codefactor.io/repository/github/mindstellar/osclass)
-[![Test PHP|8.0|8.1|8.2|8.3|8.4](https://github.com/mindstellar/shopclass/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/mindstellar/shopclass/actions/workflows/test.yml)
-![Forks](https://img.shields.io/github/forks/mindstellar/osclass)
-![Stars](https://img.shields.io/github/stars/mindstellar/osclass)
-[![Latest Release](https://img.shields.io/badge/dynamic/json?label=Latest%20Release&query=%24.tag_name&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmindstellar%2Fosclass%2Freleases%2Flatest)](https://github.com/mindstellar/shopclass/releases/latest)
-![Downloads](https://img.shields.io/github/downloads/mindstellar/Shopclass/total)
+<p align="center">
+  <a href="https://github.com/mindstellar/shopclass-brand">
+    <img src="https://raw.githubusercontent.com/mindstellar/shopclass-brand/main/brand/shopclass-logo.svg" alt="Shopclass" width="360">
+  </a>
+</p>
 
-# 📦 Shopclass <sub>by Mindstellar</sub>
+<p align="center">
+  <strong>Open-source, self-hosted classifieds — by Mindstellar.</strong><br>
+  Build and run your own ads marketplace: real estate, jobs, vehicles, anything.
+</p>
 
-#### 💻 A free and open-source script to create your own classifieds site.
+<p align="center">
+  <a href="https://github.com/mindstellar/shopclass/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
+  <a href="https://github.com/mindstellar/shopclass/actions/workflows/test.yml"><img src="https://github.com/mindstellar/shopclass/actions/workflows/test.yml/badge.svg?branch=develop" alt="Tests"></a>
+  <a href="https://github.com/mindstellar/shopclass/releases/latest"><img src="https://img.shields.io/github/v/release/mindstellar/shopclass?include_prereleases&label=release" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/PHP-8.0%2B-777bb4" alt="PHP 8.0+">
+  <a href="https://github.com/mindstellar/shopclass/stargazers"><img src="https://img.shields.io/github/stars/mindstellar/shopclass" alt="Stars"></a>
+</p>
 
-### 🤔 What is Shopclass?
+---
 
-Shopclass is a powerful script that allows you to create and manage your own online classifieds website. 
+## What is Shopclass?
 
-With features like customizable themes and plugins, powerful search and filtering options, user registration and management, and free plugins for integration with popular payment gateways.
+Shopclass is a PHP application that lets you launch a full classifieds website on
+your own hosting — listings with photos, categories and locations, user accounts,
+comments, search and filtering, multi-language support, and an admin panel to run
+it all. It ships as a zip you install on ordinary shared or VPS hosting; there is
+no build step or bundler to run on the server.
 
-Shopclass is the perfect solution for anyone looking to build a successful online marketplace.
+Shopclass is the modernised, community-maintained successor to **Osclass**. It
+keeps Osclass's plugin and theme APIs (the `osc_*` helpers, hook names, and asset
+paths) so existing extensions keep working, while replacing the legacy frontend:
+a Bootstrap 5 admin theme, jQuery removed from the core, PHP 8 throughout, and a
+first-class maintenance/cleanup toolset built in.
 
-### 🔥 Features
+## Features
 
-Some of the amazing features of Shopclass include:
+- 🗂️ Listings with photos, categories, and hierarchical locations
+- 🔍 Search, filtering, and SEO-friendly URLs
+- 👥 User registration, accounts, and moderation
+- 🎨 Themeable frontend + a modern, accessible (WCAG-checked) admin panel
+- 🧩 Plugin & theme system — compatible with the Osclass extension API
+- 🌎 Multi-language / i18n support
+- 🔒 CSRF protection, CAPTCHA, and hardened sessions
+- 🧹 Built-in Tools → Cleanup for expired, spam, blocked, and unactivated content
+- ♻️ One-click self-updater that pulls release packages
 
-- 🎨 Customizable themes and plugins
-- 🔍 Powerful search and filtering options
-- 👥 User registration and management
-- 💰 Integration with popular payment gateways
-- 🌎 Multi-language support
-- 🔒 CAPTCHA and other security measures
-- 💻 Responsive design for mobile and desktop
+## Requirements
 
-### 🤝 Contributing
+- PHP **8.0+** with `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`,
+  `ctype`, `fileinfo`, and `posix`
+- MySQL 5.7+ / MariaDB 10.2+
+- Any web server (Apache or nginx)
 
-We welcome contributions of all kinds, from bug fixes to new features. If you're interested in contributing to Shopclass, please follow these steps:
+## Install
 
-1. Fork the repository and clone it to your local machine.
-2. Install the required dependencies using `npm install`.
-3. Create a new branch for your changes.
-4. Make your changes and test them thoroughly.
-5. Commit your changes and push them to your forked repository.
-6. Submit a pull request to the main repository.
+> Deploy from a **release zip**, never from a branch — `master`/`develop` may
+> contain untested code, and releases carry the compiled CSS/JS the branches
+> don't rebuild for you.
 
-### 📜 License
+1. Download the latest package from the [**Releases**](https://github.com/mindstellar/shopclass/releases) page and unpack it into your web root (e.g. `public_html`).
+2. Open your site in a browser — `https://example.com/` — and the installer starts automatically (or go straight to `oc-includes/osclass/install.php`).
+3. Follow the installer: confirm file permissions, enter your database details, set the site name and country, and finish.
+4. Sign in at `https://example.com/oc-admin/` with the generated admin password.
 
-Shopclass is released under the GPLv3 license. See [LICENSE](https://github.com/mindstellar/shopclass/blob/master/LICENSE) for more information.
+## Local development
 
-### 🚀 Getting Started
+The runtime needs no build tools, but the admin theme's CSS/JS are compiled from
+source. You only need Node to work on them.
 
-To get started with Shopclass, follow these easy steps:
-***
-
-1. Download the latest zip package of Shopclass from [GitHub Release](https://github.com/mindstellar/shopclass/releases) and
-   unpack it in your web-server root, i.e. `public_html` directory.
-2. Execute the Shopclass installation script by accessing index.php `oc-includes/osclass/install.php` from your browser:
-    * If you’ve installed it in the domain’s root directory, you’ll have to go to: `http://example.com/index.php` or
-      directly to **http://example.com/oc-includes/osclass/install.php**
-    * If you’ve installed it in a subdirectory inside the domain, classifieds, for example, go to: `http://example.com/classifieds/index.php` or directly to `http://example.com/classifieds/oc-includes/osclass/install.php`  
-        This will lead you to osclass inbuilt installer.
-3. Follow Shopclass installer instructions:
-     * #### Step 3.1  
-        ![Step-1](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/Installer-step-1.png)  
-      Make sure the server has the required permissions to write in the files and directories specified. This will allow you to create a basic configuration file as well as upload images, documents, etc.
-     * #### Step 3.2  
-       ![Step-2](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/Installer-step-2.png)  
-      Add your access details to the database. If you haven’t created it yet, the installer will ask for another account with permissions that will allow to do it for you.
-     * #### Step 3.3
-       ![Step-3](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/installer-step-3.png)  
-      Add the basic installation details and select your classifieds site’s country.
-     * #### Step 3.4  
-       ![Step-3](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/installer-step-3.png)
-      Installation finished. Use the automatically-generated password to access your admin panel (example.com/oc-admin).
-
-### 📚 How to get latest version of Shopclass
-Checkout our [GitHub Release](https://github.com/mindstellar/shopclass/releases) section to get latest version of osclass.
- 
-Do not use master branch for your deployment, it may include untested code. Only use zip file provided in our release section.
-
-### Run osclass locally using Docker #
-First Clone the repository and the submodules.
-
-```
-$> git clone --recursive git@github.com:mindstellar/Shopclass.git
+```bash
+git clone --recursive git@github.com:mindstellar/shopclass.git
+cd shopclass
+npm install
+npm run build        # vendor assets + SCSS → CSS + JS
+npm run watch        # rebuild CSS on change while developing
 ```
 
-Dependencies:
+Compiled output (`oc-admin/themes/modern/css/main.css`, `oc-includes/assets/…`)
+is **committed** — releases are cut with `git archive`, so whatever is committed
+is exactly what users receive. Rebuild and commit the output with any SCSS/JS
+change.
 
-  * Docker engine v1.13 or higher. Your OS provided package might be a little old, if you encounter problems, do upgrade. See [https://docs.docker.com/engine/installation](https://docs.docker.com/engine/installation)
+### Run it with Docker
 
-Once you're done, simply `cd` to Shopclass directory and run `docker-compose up -d`. This will initialise and start all the containers, then leave them running in the background.
+```bash
+docker compose up -d
+```
 
-* #### Services exposed outside your environment ##
-  You can access your application via **`localhost`**, if you're running the containers directly. nginx and mailhog both
-  respond to any hostname, in case you want to add your own hostname on your `/etc/hosts`
+| Service | Address |
+|---|---|
+| Web server | http://localhost:5080 |
+| phpMyAdmin | http://localhost:5800 |
+| MySQL | `localhost:5306` |
+| Mailhog | http://localhost:5025 |
 
-  Service|Address outside containers
-  ------|---------
-  Webserver|[localhost:5080](http://localhost:5080)
-  PhpMyAdmin web interface|[localhost:5800](http://localhost:5800)
-  MySQL|**host:** `localhost`; **port:** `5306`
-  Mailhog web interface|[localhost:5025](http://localhost:5025)
+Inside the network, services resolve as `php-fpm:9000`, `mysql:3306`,
+`memcached:11211`, and `mailhog:1025`.
 
-* #### Hosts for osclass docker environment ##
+## Brand
 
-  You'll need to configure osclass to use enabled services:
+Logos, the mark, the favicon set, and the palette live in the
+[**shopclass-brand**](https://github.com/mindstellar/shopclass-brand) repository.
 
-  Service|Hostname|Port number
-  ------|---------|-----------
-  php-fpm|php-fpm|9000
-  MySQL|mysql|3306 (default)
-  Memcached|memcached|11211 (default)
-  SMTP (Mailhog)|mailhog|1025 (default)
+| Role | Color | Hex |
+|---|---|---|
+| Deep Navy | dark / headings | `#0F2742` |
+| Teal | brand / identity | `#12A6A0` |
+| Slate Gray | neutral | `#435466` |
+| Warm Off-White | surface | `#F7F5F1` |
+| Coral | accent | `#FF6B4A` |
 
-* #### Docker compose cheatsheet #
+Brand assets are licensed **CC BY-ND 4.0**: use them to refer to Shopclass, but
+please don't modify the marks or imply endorsement.
 
-  **Note:** you need to cd first to where your docker-compose.yml file lives.
+## Contributing
 
-    * Start containers in the background: `docker-compose up -d`
-    * Start containers on the foreground: `docker-compose up`. You will see a stream of logs for every container
-      running.
-    * Stop containers: `docker-compose stop`
-    * Kill containers: `docker-compose kill`
-    * View container logs: `docker-compose logs`
-    * Execute command inside of container: `docker-compose exec SERVICE_NAME COMMAND` where `COMMAND` is whatever you
-      want to run. Examples:
-    * Shell into the PHP container, `docker-compose exec php-fpm bash`
-    * Open a mysql shell, `docker-compose exec mysql mysql -uroot -pCHOSEN_ROOT_PASSWORD`
+Contributions are welcome — bug fixes, features, translations, docs.
 
-### Pull Request
-Want to help create a pull request from you clone, just make sure of few things
+1. Open an issue describing the change before you start.
+2. Branch from **`develop`** (never target `master`).
+3. Make your change; if it touches the admin theme, run `npm run build` and commit the compiled output.
+4. Open a pull request against `develop`.
 
-* Never target master-branch
-* Target develop branch if you want to merge your fixes.
-* Request a feature branch if your pull request make major changes in our project or if you really need one.
-* Create a new issue before making any pull request.
+Because Shopclass runs on installs with third-party themes and plugins, treat the
+`osc_*` helpers, hook names, admin CSS class names, and `oc-includes/assets/`
+paths as a public API — restyle freely, but don't rename or remove them.
 
-### Support
-For any support related query, please visit our official support forum.
+## Support
 
-* [Shopclass Discourse][support-forum]
+Questions, help, and discussion happen on
+[**GitHub Discussions**](https://github.com/mindstellar/shopclass/discussions).
+For reproducible bugs, open an [issue](https://github.com/mindstellar/shopclass/issues).
 
-### Installation Guide
-* Visit our documentation : https://docs.mindstellar.com/osclass-docs/beginners/install
+## License
 
-### 🔗 Links
+Shopclass is distributed under the **GNU General Public License v3.0 or later**
+([LICENSE](LICENSE)). It derives from Osclass, whose original code is licensed
+under the **Apache License 2.0** ([LICENSE-APACHE](LICENSE-APACHE)); those
+notices are retained in [NOTICE](NOTICE) as that license requires.
 
-- [Official Website][official-website]
-- [Documentation][documentation]
-- [Support Forum][support-forum]
-- [GitHub Repository][github-repo]
+## Links
 
-[official-website]: https://osclass.org
-[documentation]: https://docs.mindstellar.com/osclass-docs/beginners/install
-[support-forum]: https://osclass.discourse.group
-[github-repo]: https://github.com/mindstellar/shopclass
+- 📦 [Releases](https://github.com/mindstellar/shopclass/releases)
+- 🐛 [Issues](https://github.com/mindstellar/shopclass/issues)
+- 💬 [Discussions](https://github.com/mindstellar/shopclass/discussions)
+- 🎨 [Brand kit](https://github.com/mindstellar/shopclass-brand)
