@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -429,7 +429,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                                     ) . 'watermark.png' ?>"/></div>
                                 <?php } ?>
                                 <div class="help-box"><?php _e('It has to be a .PNG image'); ?></div>
-                                <div class="help-box"><?php _e("Osclass doesn't check the watermark image size"); ?></div>
+                                <div class="help-box"><?php _e("Shopclass doesn't check the watermark image size"); ?></div>
                             </div>
                         </div>
                         <div class="form-row">

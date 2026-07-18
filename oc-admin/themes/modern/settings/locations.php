@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -17,7 +17,7 @@ $aCountries = __get('aCountries');
 function addHelp()
 {
     echo '<p>'
-         . __("Add, edit or delete the countries, regions and cities installed on your Osclass. "
+         . __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
               . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
               . "until they're recalculated. Modify only if you're sure what you're doing!")
          . '</p>';

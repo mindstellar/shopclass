@@ -1,5 +1,5 @@
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2021-2026 Mindstellar Community
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
@@ -8,7 +8,7 @@
  */
 
 /*
- * osc-uploader — a framework-free image uploader for the Osclass item form.
+ * osc-uploader — a framework-free image uploader for the Shopclass item form.
  * Replaces the jQuery fine-uploader plugin. Drag-and-drop or click to add, instant
  * local previews, per-file upload progress, remove, and set-primary (the first item
  * is the primary image, mirrored in the ajax_photos[] input order the server reads).

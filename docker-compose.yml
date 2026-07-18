@@ -1,4 +1,4 @@
-# Docker Compose Configuration for Osclass Application
+# Docker Compose Configuration for Shopclass Application
 name: osclass
 services:
   # PHP-FPM Service

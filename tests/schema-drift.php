@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2021-2026 Mindstellar Community
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.

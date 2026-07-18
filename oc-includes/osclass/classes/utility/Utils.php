@@ -77,7 +77,7 @@ class Utils
         $data              = http_build_query($query_data);
         $out               = 'POST ' . $path . ' HTTP/1.1' . PHP_EOL;
         $out               .= 'Host: ' . $parsed_url['host'] . PHP_EOL;
-        $out               .= 'Referer: Osclass ' . OSCLASS_VERSION . PHP_EOL;
+        $out               .= 'Referer: Shopclass ' . OSCLASS_VERSION . PHP_EOL;
         $out               .= 'Content-type: application/x-www-form-urlencoded' . PHP_EOL;
         $out               .= 'Content-Length: ' . strlen($data) . PHP_EOL;
         $out               .= 'Connection: close' . PHP_EOL . PHP_EOL;

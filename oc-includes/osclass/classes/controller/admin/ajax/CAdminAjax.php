@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\upgrade\Osclass;
+use mindstellar\upgrade\Shopclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\Utils;
 
@@ -81,7 +81,7 @@ class CAdminAjax extends AdminSecBaseModel
                 if ($theme !== 'dark' && $theme !== 'light') {
                     $theme = 'light';
                 }
-                // Namespaced by admin id: Osclass has no admin-meta table, and t_preference
+                // Namespaced by admin id: Shopclass has no admin-meta table, and t_preference
                 // keys on (section, name) with no uniqueness beyond the pair, so one row per
                 // admin under this section is a clean per-user store with no schema change.
                 osc_set_preference((string) osc_logged_admin_id(), $theme, 'admin_theme', 'STRING');
@@ -686,7 +686,7 @@ class CAdminAjax extends AdminSecBaseModel
                     try {
                         $upgradeOsclass->doUpgrade();
                         $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(), true);
-                        $result            = ['error' => 0, 'message' => __('Osclass upgraded successfully.')];
+                        $result            = ['error' => 0, 'message' => __('Shopclass upgraded successfully.')];
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');

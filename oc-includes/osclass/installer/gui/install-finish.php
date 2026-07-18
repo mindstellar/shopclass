@@ -14,7 +14,7 @@ $data = finish_installation($password);
     </div>
 <?php } ?>
 <h2 class="display-6 text-success"><?php _e('Congratulations!'); ?></h2>
-<div class="alert alert-success shadow-sm mb3"><?php _e("Osclass has been installed. Were you expecting more steps? Sorry to disappoint you!");
+<div class="alert alert-success shadow-sm mb3"><?php _e("Shopclass has been installed. Were you expecting more steps? Sorry to disappoint you!");
 ?></div>
 <div class="alert alert-info shadow-sm mb-3">
     <?php echo sprintf(

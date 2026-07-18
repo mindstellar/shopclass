@@ -6,7 +6,7 @@ Please report security issues to `security@mindstellar.com`# Security Policy �
 
 ## Reporting a Vulnerability 🚨
 
-If you believe you have found a security vulnerability in Osclass, please do not hesitate to contact us immediately at navjottomer@gmail.com.
+If you believe you have found a security vulnerability in Shopclass, please do not hesitate to contact us immediately at navjottomer@gmail.com.
 
 When reporting a security vulnerability, please include as much information as possible, such as:
 
@@ -16,7 +16,7 @@ When reporting a security vulnerability, please include as much information as p
 - Any relevant logs or error messages
 - Any suggested mitigation or remediation steps
 
-We take security vulnerabilities very seriously and will do our best to respond to your report as soon as possible. We appreciate your help in making Osclass more secure for everyone.
+We take security vulnerabilities very seriously and will do our best to respond to your report as soon as possible. We appreciate your help in making Shopclass more secure for everyone.
 
 ## Responsible Disclosure 🤝
 
@@ -26,4 +26,4 @@ We ask that you do not publicly disclose the details of any security vulnerabili
 
 We currently do not have a bug bounty program in place, but we appreciate and acknowledge all security vulnerability reports we receive.
 
-Thank you for your help in keeping Osclass secure! 🙏
+Thank you for your help in keeping Shopclass secure! 🙏

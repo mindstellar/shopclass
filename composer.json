@@ -1,7 +1,7 @@
 {
-  "name": "mindstellar/osclass",
+  "name": "mindstellar/shopclass",
   "type": "project",
-  "description": "With Osclass, get your own  classifieds site for free. Build your own Osclass installation and start advertising real estate, jobs or whatever you want- in minutes! ",
+  "description": "With Shopclass, get your own  classifieds site for free. Build your own Shopclass installation and start advertising real estate, jobs or whatever you want- in minutes! ",
   "keywords": [
     "osclass",
     "classified",
@@ -9,12 +9,12 @@
     "php-classified",
     "cms"
   ],
-  "homepage": "https://github.com/mindstellar/osclass",
+  "homepage": "https://github.com/mindstellar/shopclass",
   "license": "Apache-2.0",
   "authors": [
     {
-      "name": "Osclass Community",
-      "homepage": "https://github.com/mindstellar/Osclass/graphs/contributors"
+      "name": "Shopclass Community",
+      "homepage": "https://github.com/mindstellar/shopclass/graphs/contributors"
     }
   ],
   "autoload": {

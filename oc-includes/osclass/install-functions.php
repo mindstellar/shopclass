@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -113,7 +113,7 @@ function get_relative_url()
 
 
 /**
- * Get the requirements to install Osclass
+ * Get the requirements to install Shopclass
  *
  * @return array Requirements
  * @since 1.2
@@ -125,7 +125,7 @@ function get_requirements()
         'PHP version >= 8.0.0' => array(
             'requirement' => __('PHP version >= 8.0.0'),
             'fn'          => version_compare(PHP_VERSION, '8.0.0', '>='),
-            'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Osclass. '
+            'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. '
                 . 'You may talk with your hosting to upgrade your PHP version.'), 7.2, 7.3)
         ),
 
@@ -242,7 +242,7 @@ function get_requirements()
         $array['File <code>config-sample.php</code> exists'] = array(
             'requirement' => __('<code>config-sample.php</code> file exists'),
             'fn'          => $config_sample,
-            'solution'    => __('<code>config-sample.php</code> file is required, you should re-download Osclass.')
+            'solution'    => __('<code>config-sample.php</code> file is required, you should re-download Shopclass.')
         );
     }
 
@@ -251,7 +251,7 @@ function get_requirements()
 
 
 /**
- * Check if some of the requirements to install Osclass are correct or not
+ * Check if some of the requirements to install Shopclass are correct or not
  *
  * @param $array
  *
@@ -289,7 +289,7 @@ function set_allow_report_osclass($value)
 
 
 /**
- * Install Osclass database
+ * Install Shopclass database
  *
  * @return mixed Error messages of the installation
  * @since 1.2
@@ -637,10 +637,10 @@ function create_config_file($dbname, $username, $password, $dbhost, $tableprefix
     $config_text = <<<CONFIG
 <?php
 /**
- * The base MySQL settings of Osclass
+ * The base MySQL settings of Shopclass
  */
 
-/** MySQL database name for Osclass */
+/** MySQL database name for Shopclass */
 define('DB_NAME', '$dbname');
 
 /** MySQL database username */
@@ -894,7 +894,7 @@ function basic_info()
     );
 
     $body = sprintf(__('Hi %s,'), Params::getParam('webtitle')) . '<br/>';
-    $body .= sprintf(__('Your Osclass installation at %s is up and running.'
+    $body .= sprintf(__('Your Shopclass installation at %s is up and running.'
         . ' ' . 'You can access the administration panel with these details:'), WEB_PATH);
     $body .= '<br/>';
     $body .= '<ul>';
@@ -906,7 +906,7 @@ function basic_info()
         'https://osclass.gitbook.io/osclass-docs/'
     );
     $body .= __('Cheers,') . '<br/>';
-    $body .= __('The <a href="https://github.com/mindstellar/osclass">Osclass</a> team');
+    $body .= __('The <a href="https://github.com/mindstellar/shopclass">Shopclass</a> team');
 
     $sitename = strtolower(Params::getServerParam('SERVER_NAME'));
     if (0 === strpos($sitename, 'www.')) {
@@ -917,9 +917,9 @@ function basic_info()
     $mail->CharSet  = 'utf-8';
     $mail->Host     = 'localhost';
     $mail->From     = 'osclass@' . $sitename;
-    $mail->FromName = 'Osclass';
-    $mail->Subject  = 'Osclass successfully installed!';
-    $mail->addAddress(Params::getParam('email'), 'Osclass administrator');
+    $mail->FromName = 'Shopclass';
+    $mail->Subject  = 'Shopclass successfully installed!';
+    $mail->addAddress(Params::getParam('email'), 'Shopclass administrator');
     $mail->Body    = $body;
     $mail->AltBody = $body;
 

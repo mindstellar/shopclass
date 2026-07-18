@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -15,7 +15,7 @@
 /**
  * Database connection object
  *
- * @package    Osclass
+ * @package    Shopclass
  * @subpackage Database
  * @since      2.3
  */
@@ -51,7 +51,7 @@ class DBConnectionClass
      */
     private $dbHost;
     /**
-     * Database name where it's installed Osclass
+     * Database name where it's installed Shopclass
      *
      * @access private
      * @since  2.3
@@ -75,7 +75,7 @@ class DBConnectionClass
      */
     private $dbPassword;
     /**
-     * Database connection object to Osclass database
+     * Database connection object to Shopclass database
      *
      * @access private
      * @since  2.3
@@ -134,7 +134,7 @@ class DBConnectionClass
     }
 
     /**
-     * Connect to Osclass database
+     * Connect to Shopclass database
      *
      * @access public
      * @return boolean It returns true if the connection has been successful or false if not
@@ -146,8 +146,8 @@ class DBConnectionClass
 
         if ($conn === false) {
             $this->handleDbError(
-                'Osclass &raquo; Error',
-                'Osclass database server is not available. <a href="https://github.com/mindstellar/Osclass/discussions">Need more help?</a></p>'
+                'Shopclass &raquo; Error',
+                'Shopclass database server is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
             );
             return false;
         }
@@ -164,8 +164,8 @@ class DBConnectionClass
             $this->errorReport();
             $this->releaseDb();
             $this->handleDbError(
-                'Osclass &raquo; Error',
-                'Osclass database is not available. <a href="https://github.com/mindstellar/Osclass/discussions">Need more help?</a></p>'
+                'Shopclass &raquo; Error',
+                'Shopclass database is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
             );
         }
 
@@ -466,7 +466,7 @@ class DBConnectionClass
     }
 
     /**
-     * It reconnects to Osclass database. First, it releases the database link connection and it connects again
+     * It reconnects to Shopclass database. First, it releases the database link connection and it connects again
      *
      * @access private
      * @since  2.3

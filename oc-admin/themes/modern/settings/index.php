@@ -4,7 +4,7 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -102,7 +102,7 @@ function render_offset()
 function addHelp()
 {
     echo '<p>'
-         . __("Change the basic configuration of your Osclass. From here, you can modify variables such as the site’s name, "
+         . __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
               . "the default currency or how lists of listings are displayed. <strong>Be careful</strong> when modifying default "
               . "values if you're not sure what you're doing!")
          . '</p>';
@@ -377,7 +377,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <input type="checkbox" <?php echo(osc_auto_cron() ? 'checked="checked"' : ''); ?>
                                            name="auto_cron"/>
                                     <?php printf(
-                                        __('Allow Osclass to run a built-in <a href="%s" target="_blank">cron</a>' . ' '
+                                        __('Allow Shopclass to run a built-in <a href="%s" target="_blank">cron</a>' . ' '
                                            . 'automatically without setting crontab'),
                                         'http://en.wikipedia.org/wiki/Cron'
                                     ); ?>

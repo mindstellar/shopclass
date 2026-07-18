@@ -24,7 +24,7 @@ class Deprecate
      * Fire a 'd_function_run' hook when deprecated function is called.
      *
      * @param string      $function    Deprecated function name
-     * @param string      $version     The version of Osclass that deprecated the file.
+     * @param string      $version     The version of Shopclass that deprecated the file.
      * @param string|null $replacement The function that should have been used.
      */
     public static function deprecatedFunction(
@@ -90,7 +90,7 @@ class Deprecate
      * Deprecate Hook
      *
      * @param string      $hook        Hook name to run
-     * @param string      $version     The version of Osclass that deprecated this Hook
+     * @param string      $version     The version of Shopclass that deprecated this Hook
      * @param string|null $replacement Replacement Hook name if available
      * @param string|null $message     A message regarding the change.
      * @param mixed       $args,...    hook arguments
@@ -166,7 +166,7 @@ class Deprecate
      *
      * @param string      $filter      Filter name to run
      * @param mixed       $content     Content to filter
-     * @param string      $version     The version of Osclass that deprecated this Filter
+     * @param string      $version     The version of Shopclass that deprecated this Filter
      * @param null|string $replacement Replacement Filter name if available.
      * @param null|string $message     A messaged regarding the change.
      * @param mixed       $args,...    filter arguments.
@@ -193,7 +193,7 @@ class Deprecate
      *
      * @param string $file        The file that was called.
      * @param string $replacement The file that should have been included based on ABS_PATH.
-     * @param string $version     The version of Osclass that deprecated the file.
+     * @param string $version     The version of Shopclass that deprecated the file.
      * @param string $message     A message regarding the change.
      */
     public static function deprecatedFile(

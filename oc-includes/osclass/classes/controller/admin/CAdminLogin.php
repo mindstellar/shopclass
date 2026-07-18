@@ -5,7 +5,7 @@ if (!defined('ABS_PATH')) {
 }
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -224,8 +224,8 @@ class CAdminLogin extends AdminBaseModel
      */
     public function doView($file = 'gui/main.php')
     {
-        $login_admin_title = osc_apply_filter('login_admin_title', 'Osclass');
-        $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/osclass/');
+        $login_admin_title = osc_apply_filter('login_admin_title', 'Shopclass');
+        $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/shopclass/');
         $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/osclass-logo.png');
 
         View::newInstance()->_exportVariableToView('login_admin_title', $login_admin_title);

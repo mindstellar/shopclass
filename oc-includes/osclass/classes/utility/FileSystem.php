@@ -631,7 +631,7 @@ class FileSystem
             curl_setopt(
                 $ch,
                 CURLOPT_USERAGENT,
-                Params::getServerParam('HTTP_USER_AGENT') . ' Osclass (v.' . OSCLASS_VERSION . ')'
+                Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
             );
             if (!defined('CURLOPT_RETURNTRANSFER')) {
                 define('CURLOPT_RETURNTRANSFER', 1);
@@ -740,7 +740,7 @@ class FileSystem
                 curl_setopt(
                     $ch,
                     CURLOPT_USERAGENT,
-                    Params::getServerParam('HTTP_USER_AGENT') . ' Osclass (v.' . OSCLASS_VERSION . ')'
+                    Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
                 );
                 curl_setopt($ch, CURLOPT_FILE, $fp);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);

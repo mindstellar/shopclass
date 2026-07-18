@@ -1,4 +1,4 @@
-# GitHub Action for Osclass
+# GitHub Action for Shopclass
 name: Test PHP
 on:
   push:

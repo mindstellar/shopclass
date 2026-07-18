@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -14,9 +14,9 @@
 /**
  * Helper Users
  *
- * @package    Osclass
+ * @package    Shopclass
  * @subpackage Helpers
- * @author     Osclass
+ * @author     Shopclass
  */
 
 /**

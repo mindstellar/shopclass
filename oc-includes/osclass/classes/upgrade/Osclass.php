@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -59,7 +59,7 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Upgrade Osclass Database
+     * Upgrade Shopclass Database
      *
      * @param bool $skip_db
      *
@@ -83,7 +83,7 @@ class Osclass extends UpgradePackage
             if (!$skip_db && count($errorQueries) > 0) {
                 $skip_db_link = osc_admin_base_url(true) . '?page=upgrade&confirm=true&skipdb=true';
                 $message      = '<p>';
-                $message      .= __('Osclass &raquo; Has some errors') . PHP_EOL;
+                $message      .= __('Shopclass &raquo; Has some errors') . PHP_EOL;
                 $message      .= __('We\'ve encountered some problems while updating the database structure. The following queries failed:');
                 $message      .= '</p>' . PHP_EOL;
                 $message      .= '<pre>';
@@ -127,7 +127,7 @@ class Osclass extends UpgradePackage
 
             Utils::changeOsclassVersionTo(OSCLASS_VERSION);
 
-            return json_encode(['error' => 0, 'message' => __('Osclass DB Upgraded Successfully')]);
+            return json_encode(['error' => 0, 'message' => __('Shopclass DB Upgraded Successfully')]);
         }
 
         return json_encode(['error' => 1, 'message' => __('Unable to upgrade Database')]);
@@ -203,7 +203,7 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Pick the Osclass package asset from a GitHub release's assets list. Prefers the
+     * Pick the Shopclass package asset from a GitHub release's assets list. Prefers the
      * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
      * selection (the old code blindly took assets[0]).
      *

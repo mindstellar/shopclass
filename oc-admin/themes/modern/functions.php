@@ -88,16 +88,16 @@ function admin_footer_html()
     ?>
     <div class="admin-footer-credit">
         <?php printf(
-            __('Thank you for using <a href="%s" target="_blank">Osclass</a>'),
-            'https://github.com/mindstellar/Osclass/'
+            __('Thank you for using <a href="%s" target="_blank">Shopclass</a>'),
+            'https://github.com/mindstellar/shopclass/'
         ); ?> -
         <a title="<?php _e('Forums'); ?>" href="https://osclass.discourse.group"
            target="_blank"><?php _e('Forums'); ?></a> &middot;
-        <a title="<?php _e('Report Issue'); ?>" href="https://github.com/mindstellar/Osclass/issues/"
+        <a title="<?php _e('Report Issue'); ?>" href="https://github.com/mindstellar/shopclass/issues/"
            target="_blank"><?php _e('Report Issue'); ?></a>
     </div>
     <div class="admin-footer-version">
-        <strong>Osclass <?php echo OSCLASS_VERSION; ?></strong>
+        <strong>Shopclass <?php echo OSCLASS_VERSION; ?></strong>
     </div><?php
 }
 

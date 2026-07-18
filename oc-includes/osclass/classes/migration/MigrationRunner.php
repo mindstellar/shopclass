@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2021-2026 Mindstellar Community
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
@@ -35,7 +35,7 @@ class MigrationRunner
     private string $table;
 
     /**
-     * @param DBCommandClass $comm         command object bound to the Osclass DB
+     * @param DBCommandClass $comm         command object bound to the Shopclass DB
      * @param string         $migrationsDir absolute path to the migrations directory
      */
     public function __construct(DBCommandClass $comm, string $migrationsDir)

@@ -23,7 +23,7 @@
             <div class="col-md-3 col-sm-6">
                 <input class="form-control" type="text" id="dbname" name="dbname" value="<?php echo $form_data['dbname']??'osclass'; ?>" size="25" />
             </div>
-            <div class="small"><?php _e('The name of the database you want to run Osclass in');
+            <div class="small"><?php _e('The name of the database you want to run Shopclass in');
             ?></div>
         </div>
         <div class="row mb-3">
@@ -48,7 +48,7 @@
             <div class="col-md-3 col-sm-6">
                 <input class="form-control" type="text" id="tableprefix" name="tableprefix" value="<?php echo $form_data['tableprefix']??'oc_'; ?>" size="25" />
             </div>
-            <div class="small"><?php _e('If you want to run multiple Osclass installations in a single database, change this'); ?></div>
+            <div class="small"><?php _e('If you want to run multiple Shopclass installations in a single database, change this'); ?></div>
         </div>
         <div class="accordion mb-3" id="accordianAdvance">
             <div class="accordion-item">

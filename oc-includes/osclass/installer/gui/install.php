@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php _e('Osclass Installation'); ?></title>
+    <title><?php _e('Shopclass Installation'); ?></title>
     <link rel="stylesheet" type="text/css" media="all" href="<?php echo get_absolute_url(); ?>oc-includes/assets/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" media="all" href="<?php echo get_absolute_url(); ?>oc-includes/assets/bootstrap-icons/bootstrap-icons.css" />
     <link rel="stylesheet" type="text/css" media="all" href="<?php echo get_absolute_url(); ?>oc-includes/osclass/installer/vtip/css/vtip.css" />
@@ -26,7 +26,7 @@
                 <div class="card rounded-3" tabindex="-1">
                     <div id="header" class="card-header text-dark bg-light installation">
                         <div class="text-center">
-                            <img width="350" src="<?php echo get_absolute_url(); ?>oc-includes/images/osclass-logo.png" alt="Osclass" title="Osclass" />
+                            <img width="350" src="<?php echo get_absolute_url(); ?>oc-includes/images/osclass-logo.png" alt="Shopclass" title="Shopclass" />
                         </div>
                         <?php if (in_array($step, array(2, 3))) { ?>
                             <?php if ($step === 2) {
@@ -91,7 +91,7 @@
                                                     <?php } ?>
                                                 <?php } ?>
                                                 <li class="small">
-                                                    <a href="https://github.com/mindstellar/Osclass/discussions" target="_blank" hreflang="en"><?php _e('Need more help?'); ?></a>
+                                                    <a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" hreflang="en"><?php _e('Need more help?'); ?></a>
                                                 </li>
                                             </ul>
                                         </div>
@@ -188,8 +188,8 @@
                     <div class="card-footer" id="footer">
                         <ul class="list-inline">
                             <li class="list-inline-item"><a href="https://docs.mindstellar.com/osclass-docs/" target="_blank" hreflang="en"><?php _e('Documentation'); ?></a></li>
-                            <li class="list-inline-item"><a href="https://github.com/mindstellar/Osclass/" target="_blank" hreflang="en"><?php _e('Feedback'); ?></a></li>
-                            <li class="list-inline-item"><a href="https://github.com/mindstellar/Osclass/discussions" target="_blank" hreflang="en"><?php _e('Forums'); ?></a></li>
+                            <li class="list-inline-item"><a href="https://github.com/mindstellar/shopclass/" target="_blank" hreflang="en"><?php _e('Feedback'); ?></a></li>
+                            <li class="list-inline-item"><a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" hreflang="en"><?php _e('Forums'); ?></a></li>
                         </ul>
                     </div>
                 </div>

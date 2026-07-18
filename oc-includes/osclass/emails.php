@@ -3,7 +3,7 @@
 }
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -1981,19 +1981,19 @@ function fn_email_auto_upgrade($result)
 
     $body = __('<p>Dear {WEB_TITLE} admin,</p>');
     if ($result['error'] == 0 || $result['error'] == 6) {
-        $title = __('{WEB_TITLE} - Your site has upgraded to Osclass {VERSION}');
-        $body  .= __('<p>Your site at {WEB_LINK} has been updated automatically to Osclass {VERSION}</p>');
+        $title = __('{WEB_TITLE} - Your site has upgraded to Shopclass {VERSION}');
+        $body  .= __('<p>Your site at {WEB_LINK} has been updated automatically to Shopclass {VERSION}</p>');
         if ($result['error'] == 6) {
             $body .= __('<p>There were some minor errors removing temporary files. '
                 .'Please manually remove the "oc-content/downloads/oc-temp" folder</p>');
         }
     } else {
-        $title = __('{WEB_TITLE} - We failed trying to upgrade your site to Osclass {VERSION}');
-        $body  .= '<p>We failed trying to upgrade your site to Osclass {VERSION}. Heres is the error message: {MESSAGE}</p>';
+        $title = __('{WEB_TITLE} - We failed trying to upgrade your site to Shopclass {VERSION}');
+        $body  .= '<p>We failed trying to upgrade your site to Shopclass {VERSION}. Heres is the error message: {MESSAGE}</p>';
     }
-    $body .= '<p>If you experience any issues or need support, we will be happy to help you at the Osclass support forums</p>';
-    $body .= '<p><a href="https://github.com/mindstellar/Osclass/discussions">https://github.com/mindstellar/Osclass/discussions</a></p>';
-    $body .= '<p>The Osclass team</p>';
+    $body .= '<p>If you experience any issues or need support, we will be happy to help you at the Shopclass support forums</p>';
+    $body .= '<p><a href="https://github.com/mindstellar/shopclass/discussions">https://github.com/mindstellar/shopclass/discussions</a></p>';
+    $body .= '<p>The Shopclass team</p>';
 
     $words   = array();
     $words[] = array(

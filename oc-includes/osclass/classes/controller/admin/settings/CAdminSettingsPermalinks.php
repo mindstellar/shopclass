@@ -3,7 +3,7 @@
 }
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -741,7 +741,7 @@ HTACCESS;
                         );
                     } else {
                         osc_add_flash_warning_message(
-                            _m('Friendly URLs deactivated, but .htaccess file was modified outside Osclass and was not deleted'),
+                            _m('Friendly URLs deactivated, but .htaccess file was modified outside Shopclass and was not deleted'),
                             'admin'
                         );
                     }

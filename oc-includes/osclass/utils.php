@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -585,7 +585,7 @@ function osc_dbdump($path, $file)
         't_meta_categories',
         't_item_meta'
     );
-    // Backup default Osclass tables in order, so no problem when importing them back
+    // Backup default Shopclass tables in order, so no problem when importing them back
     foreach ($tables_order as $table) {
         if (array_key_exists(DB_TABLE_PREFIX . $table, $tables)) {
             $dump->table_structure($path, DB_TABLE_PREFIX . $table);
@@ -773,7 +773,7 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
         return false;
     }
 
-    $ua  = Params::getServerParam('HTTP_USER_AGENT') . ' Osclass (v.' . OSCLASS_VERSION . ')';
+    $ua  = Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')';
     $out = ($post_data != null && is_array($post_data) ? 'POST' : 'GET') . " $link HTTP/1.1\r\n";
     $out .= "Host: $host\r\n";
     $out .= "User-Agent: $ua\r\n";
@@ -860,7 +860,7 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
 
 
 /**
- * Osclass file_get_contents implementation
+ * Shopclass file_get_contents implementation
  *
  * @param      $url
  * @param null $post_data

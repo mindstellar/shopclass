@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -16,7 +16,7 @@
 function addHelp()
 {
     echo '<p>'
-         . __('With Osclass you can create static pages on which information can be stored, '
+         . __('With Shopclass you can create static pages on which information can be stored, '
               . 'such as "About Us" or "Info" pages. From here you can create, edit or delete your site\'s static pages.')
          . '</p>';
 }

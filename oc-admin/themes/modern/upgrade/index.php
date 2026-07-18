@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -77,11 +77,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="result">
         <div id="output" style="display:none">
             <span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>
-            <?php _e('Upgrading your Osclass installation (this could take a while): ', 'admin'); ?>
+            <?php _e('Upgrading your Shopclass installation (this could take a while): ', 'admin'); ?>
         </div>
         <div id="tohide">
             <p>
-                <?php _e('You have uploaded a new version of Osclass, you need to upgrade Osclass for it to work correctly.'); ?>
+                <?php _e('You have uploaded a new version of Shopclass, you need to upgrade Shopclass for it to work correctly.'); ?>
             </p>
             <a class="btn btn-dim"
                href="<?php echo osc_admin_base_url(true); ?>?page=upgrade&confirm=true"><?php _e('Upgrade now'); ?></a>

@@ -1,5 +1,5 @@
 // =============================================================================
-// Osclass Admin — brand tokens  ("The Workshop Bench")
+// Shopclass Admin — brand tokens  ("The Workshop Bench")
 //
 // THIS FILE MUST BE IMPORTED BEFORE bootstrap/bootstrap.
 //
@@ -99,7 +99,7 @@ $body-secondary-color: $gray-600;
 // Typography — The Sixteen Pixel Floor
 // -----------------------------------------------------------------------------
 // One family, many weights. The system stack is a choice, not a default: it renders
-// with no webfont round-trip (Osclass often runs on cheap shared hosting) and looks
+// with no webfont round-trip (Shopclass often runs on cheap shared hosting) and looks
 // native on whatever OS the site owner happens to be using.
 //
 // Body never drops below 16px. The owner of a classifieds site is not a developer on
@@ -170,7 +170,7 @@ $input-focus-box-shadow:   0 0 0 $focus-ring-width $focus-ring-color;
 // -----------------------------------------------------------------------------
 // Tables — the admin IS a table
 // -----------------------------------------------------------------------------
-// Almost every screen in Osclass is a list of things the owner owns: listings, users,
+// Almost every screen in Shopclass is a list of things the owner owns: listings, users,
 // comments. The table is not a component on the product surface, it is the product
 // surface, so its density and its rules are brand-level decisions.
 //

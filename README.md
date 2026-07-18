@@ -1,26 +1,26 @@
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 [![CodeFactor](https://www.codefactor.io/repository/github/mindstellar/osclass/badge)](https://www.codefactor.io/repository/github/mindstellar/osclass)
-[![Test PHP|8.0|8.1|8.2|8.3|8.4](https://github.com/mindstellar/Osclass/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/mindstellar/Osclass/actions/workflows/test.yml)
+[![Test PHP|8.0|8.1|8.2|8.3|8.4](https://github.com/mindstellar/shopclass/actions/workflows/test.yml/badge.svg?branch=develop)](https://github.com/mindstellar/shopclass/actions/workflows/test.yml)
 ![Forks](https://img.shields.io/github/forks/mindstellar/osclass)
 ![Stars](https://img.shields.io/github/stars/mindstellar/osclass)
-[![Latest Release](https://img.shields.io/badge/dynamic/json?label=Latest%20Release&query=%24.tag_name&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmindstellar%2Fosclass%2Freleases%2Flatest)](https://github.com/mindstellar/Osclass/releases/latest)
-![Downloads](https://img.shields.io/github/downloads/mindstellar/Osclass/total)
+[![Latest Release](https://img.shields.io/badge/dynamic/json?label=Latest%20Release&query=%24.tag_name&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmindstellar%2Fosclass%2Freleases%2Flatest)](https://github.com/mindstellar/shopclass/releases/latest)
+![Downloads](https://img.shields.io/github/downloads/mindstellar/Shopclass/total)
 
-# 📦 Osclass <sub>by Mindstellar</sub>
+# 📦 Shopclass <sub>by Mindstellar</sub>
 
 #### 💻 A free and open-source script to create your own classifieds site.
 
-### 🤔 What is Osclass?
+### 🤔 What is Shopclass?
 
-Osclass is a powerful script that allows you to create and manage your own online classifieds website. 
+Shopclass is a powerful script that allows you to create and manage your own online classifieds website. 
 
 With features like customizable themes and plugins, powerful search and filtering options, user registration and management, and free plugins for integration with popular payment gateways.
 
-Osclass is the perfect solution for anyone looking to build a successful online marketplace.
+Shopclass is the perfect solution for anyone looking to build a successful online marketplace.
 
 ### 🔥 Features
 
-Some of the amazing features of Osclass include:
+Some of the amazing features of Shopclass include:
 
 - 🎨 Customizable themes and plugins
 - 🔍 Powerful search and filtering options
@@ -32,7 +32,7 @@ Some of the amazing features of Osclass include:
 
 ### 🤝 Contributing
 
-We welcome contributions of all kinds, from bug fixes to new features. If you're interested in contributing to Osclass, please follow these steps:
+We welcome contributions of all kinds, from bug fixes to new features. If you're interested in contributing to Shopclass, please follow these steps:
 
 1. Fork the repository and clone it to your local machine.
 2. Install the required dependencies using `npm install`.
@@ -43,36 +43,36 @@ We welcome contributions of all kinds, from bug fixes to new features. If you're
 
 ### 📜 License
 
-Osclass is released under the GPLv3 license. See [LICENSE](https://github.com/mindstellar/Osclass/blob/master/LICENSE) for more information.
+Shopclass is released under the GPLv3 license. See [LICENSE](https://github.com/mindstellar/shopclass/blob/master/LICENSE) for more information.
 
 ### 🚀 Getting Started
 
-To get started with Osclass, follow these easy steps:
+To get started with Shopclass, follow these easy steps:
 ***
 
-1. Download the latest zip package of Osclass from [GitHub Release](https://github.com/mindstellar/Osclass/releases) and
+1. Download the latest zip package of Shopclass from [GitHub Release](https://github.com/mindstellar/shopclass/releases) and
    unpack it in your web-server root, i.e. `public_html` directory.
-2. Execute the Osclass installation script by accessing index.php `oc-includes/osclass/install.php` from your browser:
+2. Execute the Shopclass installation script by accessing index.php `oc-includes/osclass/install.php` from your browser:
     * If you’ve installed it in the domain’s root directory, you’ll have to go to: `http://example.com/index.php` or
       directly to **http://example.com/oc-includes/osclass/install.php**
     * If you’ve installed it in a subdirectory inside the domain, classifieds, for example, go to: `http://example.com/classifieds/index.php` or directly to `http://example.com/classifieds/oc-includes/osclass/install.php`  
         This will lead you to osclass inbuilt installer.
-3. Follow Osclass installer instructions:
+3. Follow Shopclass installer instructions:
      * #### Step 3.1  
-        ![Step-1](https://raw.githubusercontent.com/mindstellar/Osclass-Docs/master/.gitbook/assets/Installer-step-1.png)  
+        ![Step-1](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/Installer-step-1.png)  
       Make sure the server has the required permissions to write in the files and directories specified. This will allow you to create a basic configuration file as well as upload images, documents, etc.
      * #### Step 3.2  
-       ![Step-2](https://raw.githubusercontent.com/mindstellar/Osclass-Docs/master/.gitbook/assets/Installer-step-2.png)  
+       ![Step-2](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/Installer-step-2.png)  
       Add your access details to the database. If you haven’t created it yet, the installer will ask for another account with permissions that will allow to do it for you.
      * #### Step 3.3
-       ![Step-3](https://raw.githubusercontent.com/mindstellar/Osclass-Docs/master/.gitbook/assets/installer-step-3.png)  
+       ![Step-3](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/installer-step-3.png)  
       Add the basic installation details and select your classifieds site’s country.
      * #### Step 3.4  
-       ![Step-3](https://raw.githubusercontent.com/mindstellar/Osclass-Docs/master/.gitbook/assets/installer-step-3.png)
+       ![Step-3](https://raw.githubusercontent.com/mindstellar/Shopclass-Docs/master/.gitbook/assets/installer-step-3.png)
       Installation finished. Use the automatically-generated password to access your admin panel (example.com/oc-admin).
 
-### 📚 How to get latest version of Osclass
-Checkout our [GitHub Release](https://github.com/mindstellar/Osclass/releases) section to get latest version of osclass.
+### 📚 How to get latest version of Shopclass
+Checkout our [GitHub Release](https://github.com/mindstellar/shopclass/releases) section to get latest version of osclass.
  
 Do not use master branch for your deployment, it may include untested code. Only use zip file provided in our release section.
 
@@ -80,14 +80,14 @@ Do not use master branch for your deployment, it may include untested code. Only
 First Clone the repository and the submodules.
 
 ```
-$> git clone --recursive git@github.com:mindstellar/Osclass.git
+$> git clone --recursive git@github.com:mindstellar/Shopclass.git
 ```
 
 Dependencies:
 
   * Docker engine v1.13 or higher. Your OS provided package might be a little old, if you encounter problems, do upgrade. See [https://docs.docker.com/engine/installation](https://docs.docker.com/engine/installation)
 
-Once you're done, simply `cd` to Osclass directory and run `docker-compose up -d`. This will initialise and start all the containers, then leave them running in the background.
+Once you're done, simply `cd` to Shopclass directory and run `docker-compose up -d`. This will initialise and start all the containers, then leave them running in the background.
 
 * #### Services exposed outside your environment ##
   You can access your application via **`localhost`**, if you're running the containers directly. nginx and mailhog both
@@ -137,7 +137,7 @@ Want to help create a pull request from you clone, just make sure of few things
 ### Support
 For any support related query, please visit our official support forum.
 
-* [Osclass Discourse][support-forum]
+* [Shopclass Discourse][support-forum]
 
 ### Installation Guide
 * Visit our documentation : https://docs.mindstellar.com/osclass-docs/beginners/install
@@ -152,4 +152,4 @@ For any support related query, please visit our official support forum.
 [official-website]: https://osclass.org
 [documentation]: https://docs.mindstellar.com/osclass-docs/beginners/install
 [support-forum]: https://osclass.discourse.group
-[github-repo]: https://github.com/mindstellar/Osclass
+[github-repo]: https://github.com/mindstellar/shopclass

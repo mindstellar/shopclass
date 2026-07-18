@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -16,7 +16,7 @@
 function addHelp()
 {
     echo '<p>'
-        . __("Add, edit or delete the language in which your Osclass is displayed, "
+        . __("Add, edit or delete the language in which your Shopclass is displayed, "
             . "both the part that's viewable by users and the admin panel.")
         . '</p>';
 }

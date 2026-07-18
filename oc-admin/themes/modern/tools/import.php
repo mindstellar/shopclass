@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -28,7 +28,7 @@ function addHelp()
 {
     /* xgettext:no-php-format */
     echo '<p>'
-         . __("Upload registers from other Osclass installations or upload new geographic information to your site. "
+         . __("Upload registers from other Shopclass installations or upload new geographic information to your site. "
               . "<strong>Be careful</strong>: don’t use this option if you're not 100% sure what you're doing.")
          . '</p>';
 }

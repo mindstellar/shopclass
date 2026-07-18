@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2021-2026 Mindstellar Community
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
@@ -139,7 +139,7 @@ if (!function_exists('oscsi_row')) {
 
 function addHelp()
 {
-    echo '<p>' . __('A checked view of the environment Osclass is running on: what it needs, what it can and cannot do, and where a quiet misconfiguration would bite.') . '</p>';
+    echo '<p>' . __('A checked view of the environment Shopclass is running on: what it needs, what it can and cannot do, and where a quiet misconfiguration would bite.') . '</p>';
 }
 
 
@@ -186,14 +186,14 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
         if ($infoType === 'php-info') {
             // A full phpinfo() is a haystack — thousands of lines nobody reads end to end.
             // The two useful things it holds are WHERE PHP reads its settings and the value
-            // of the handful of directives that actually affect Osclass; the rest of this
+            // of the handful of directives that actually affect Shopclass; the rest of this
             // tab is a plain-language guide to changing them.
             $iniLoaded  = php_ini_loaded_file();
             $configPath = ABS_PATH . 'config.php';
             $extLoaded  = get_loaded_extensions();
             natcasesort($extLoaded);
             $directives = array(
-                array('memory_limit', __('How much memory one request may use. Resizing a big photo is the hungriest thing Osclass does.')),
+                array('memory_limit', __('How much memory one request may use. Resizing a big photo is the hungriest thing Shopclass does.')),
                 array('upload_max_filesize', __('Largest single file a visitor can upload.')),
                 array('post_max_size', __('Largest whole request. Must be at least upload_max_filesize, ideally a little more.')),
                 array('max_file_uploads', __('How many files can ride in one upload — your photos-per-listing has to fit under this.')),
@@ -242,7 +242,7 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
                     <div class="card-body sysinfo-help">
                         <p class="sysinfo-help-intro">
                             <?php printf(
-                                __('Two files hold these settings. PHP\'s own limits live in %1$s%2$s; Osclass\'s own behaviour lives in %3$s in the site root%4$s. Edit the relevant one — a php.ini change needs PHP restarted (or your host\'s control panel, e.g. cPanel\'s “MultiPHP INI Editor”), while a config.php change takes effect on the next request.'),
+                                __('Two files hold these settings. PHP\'s own limits live in %1$s%2$s; Shopclass\'s own behaviour lives in %3$s in the site root%4$s. Edit the relevant one — a php.ini change needs PHP restarted (or your host\'s control panel, e.g. cPanel\'s “MultiPHP INI Editor”), while a config.php change takes effect on the next request.'),
                                 '<code>php.ini</code>',
                                 $iniLoaded ? ' (<code class="sysinfo-code-wrap">' . osc_esc_html($iniLoaded) . '</code>)' : '',
                                 '<code>config.php</code>',
@@ -285,12 +285,12 @@ post_max_size = 20M</pre>
                         </div>
 
                         <div class="sysinfo-help-group">
-                            <div class="sysinfo-help-group-title"><?php _e('In config.php'); ?> <small><?php _e('— Osclass'); ?></small></div>
+                            <div class="sysinfo-help-group-title"><?php _e('In config.php'); ?> <small><?php _e('— Shopclass'); ?></small></div>
                             <p class="sysinfo-help-groupnote"><?php printf(__('Add these near the top of %1$s, above its closing %2$s.'), '<code>config.php</code>', '<code>?&gt;</code>'); ?></p>
 
                             <div class="sysinfo-help-item">
                                 <div class="sysinfo-help-title"><?php _e('Raise memory without touching php.ini'); ?></div>
-                                <p><?php printf(__('When you cannot edit php.ini, Osclass will lift PHP\'s memory limit up to %s on its own at start-up.'), '<code>OSC_MEMORY_LIMIT</code>'); ?></p>
+                                <p><?php printf(__('When you cannot edit php.ini, Shopclass will lift PHP\'s memory limit up to %s on its own at start-up.'), '<code>OSC_MEMORY_LIMIT</code>'); ?></p>
                                 <pre>define('OSC_MEMORY_LIMIT', '256M');</pre>
                             </div>
 
@@ -378,13 +378,13 @@ define('OSC_DEBUG_LOG', true);</pre>
                     if ($php80) {
                         oscsi_row('ok', $OK, __('PHP version'), __('Supported.'), PHP_VERSION);
                     } elseif ($php74) {
-                        oscsi_row('warn', $CHECK, __('PHP version'), __('Osclass runs, but PHP 7.x is past end of life and no longer gets security fixes. Osclass targets PHP 8.0 and up — move to PHP 8.'), PHP_VERSION);
+                        oscsi_row('warn', $CHECK, __('PHP version'), __('Shopclass runs, but PHP 7.x is past end of life and no longer gets security fixes. Shopclass targets PHP 8.0 and up — move to PHP 8.'), PHP_VERSION);
                     } else {
-                        oscsi_row('danger', $PROBLEM, __('PHP version'), __('Too old. Osclass is built and tested against PHP 8.0 and up.'), PHP_VERSION);
+                        oscsi_row('danger', $PROBLEM, __('PHP version'), __('Too old. Shopclass is built and tested against PHP 8.0 and up.'), PHP_VERSION);
                     }
 
                     $extensions = array(
-                        array('ext' => 'mysqli', 'name' => __('mysqli'), 'note' => __('How Osclass talks to the database — the site cannot run without it.')),
+                        array('ext' => 'mysqli', 'name' => __('mysqli'), 'note' => __('How Shopclass talks to the database — the site cannot run without it.')),
                         array('ext' => 'curl', 'name' => __('cURL'), 'note' => __('Fetches update checks and talks to the market and remote services. Without it, those downloads fail.')),
                         array('ext' => 'mbstring', 'name' => __('mbstring'), 'note' => __('Handles non-Latin text throughout the site.')),
                         array('ext' => 'fileinfo', 'name' => __('fileinfo'), 'note' => __('Detects the true type of an uploaded file. Without it, upload validation is weaker.')),
@@ -404,7 +404,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                         );
                     }
 
-                    // Image processing. Osclass prefers Imagick (loaded AND toggled on), and
+                    // Image processing. Shopclass prefers Imagick (loaded AND toggled on), and
                     // otherwise falls back to GD. So detect Imagick first, then GD, and only
                     // call it a problem when neither is there.
                     $hasImagick = extension_loaded('imagick');
@@ -462,8 +462,8 @@ define('OSC_DEBUG_LOG', true);</pre>
                         $uploadsWritable ? $OK : $PROBLEM,
                         __('Uploads folder is writable'),
                         $uploadsWritable
-                            ? sprintf(__('Osclass can write to %s.'), '<code class="sysinfo-code-wrap">' . osc_esc_html($uploadsPath) . '</code>')
-                            : sprintf(__('Osclass cannot write to %s, so no photo or file upload can be saved. Fix the folder permissions so the web server user can write to it.'), '<code class="sysinfo-code-wrap">' . osc_esc_html($uploadsPath) . '</code>'),
+                            ? sprintf(__('Shopclass can write to %s.'), '<code class="sysinfo-code-wrap">' . osc_esc_html($uploadsPath) . '</code>')
+                            : sprintf(__('Shopclass cannot write to %s, so no photo or file upload can be saved. Fix the folder permissions so the web server user can write to it.'), '<code class="sysinfo-code-wrap">' . osc_esc_html($uploadsPath) . '</code>'),
                         $uploadsWritable ? __('writable') : __('read-only')
                     );
 
@@ -499,7 +499,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                             'danger', $PROBLEM,
                             __('Fewer uploads allowed than photos offered'),
                             sprintf(
-                                __('Osclass lets a seller attach %1$s photos to a listing, but PHP accepts only %2$s files per request and drops the rest. Raise %3$s to at least %4$s.'),
+                                __('Shopclass lets a seller attach %1$s photos to a listing, but PHP accepts only %2$s files per request and drops the rest. Raise %3$s to at least %4$s.'),
                                 '<strong>' . (int)$photos . '</strong>',
                                 '<strong>' . (int)$maxFiles . '</strong>',
                                 '<code>max_file_uploads</code>',
@@ -512,7 +512,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                         oscsi_row(
                             'ok', $OK,
                             __('Photos per listing'),
-                            sprintf(__('Osclass offers %1$s photos per listing; PHP accepts %2$s files per request.'), '<strong>' . (int)$photos . '</strong>', '<strong>' . (int)$maxFiles . '</strong>'),
+                            sprintf(__('Shopclass offers %1$s photos per listing; PHP accepts %2$s files per request.'), '<strong>' . (int)$photos . '</strong>', '<strong>' . (int)$maxFiles . '</strong>'),
                             $photos . ' / ' . $maxFiles
                         );
                     }
@@ -522,7 +522,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                         $memOk ? 'ok' : 'warn',
                         $memOk ? $OK : $CHECK,
                         __('Memory limit'),
-                        $memOk ? '' : __('Under 128M. Resizing a large photo is the most memory-hungry thing Osclass does, and this is where it fails first.'),
+                        $memOk ? '' : __('Under 128M. Resizing a large photo is the most memory-hungry thing Shopclass does, and this is where it fails first.'),
                         oscsi_size($memory)
                     );
 
@@ -548,7 +548,7 @@ define('OSC_DEBUG_LOG', true);</pre>
             </div>
 
             <div class="card mb-3">
-                <div class="card-header"><h6 class="card-title mb-0"><?php _e('Osclass health'); ?></h6></div>
+                <div class="card-header"><h6 class="card-title mb-0"><?php _e('Shopclass health'); ?></h6></div>
                 <div class="sysinfo-ledger">
                     <?php
                     // Cron drives update checks, alert emails and cleanup. If it never runs, all of
@@ -649,7 +649,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                         <tbody>
                         <?php
                         $envRows = array(
-                            array(__('Osclass version'), OSCLASS_VERSION),
+                            array(__('Shopclass version'), OSCLASS_VERSION),
                             array(__('PHP version'), PHP_VERSION),
                             array(__('Database server'), $dbServer),
                             array(__('Web server'), $serverSoftware),

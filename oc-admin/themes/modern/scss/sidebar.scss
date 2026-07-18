@@ -17,7 +17,7 @@
 //           li.submenu-divide
 //
 // Directional properties are logical (border-inline-start, margin-inline-start) because
-// Osclass ships RTL locales. `border-left` would put the active marker on the wrong edge
+// Shopclass ships RTL locales. `border-left` would put the active marker on the wrong edge
 // for a large part of the world.
 
 // The icon gutter: row inline padding (.6rem) + icon slot (1.25rem) + icon-to-label gap
@@ -48,7 +48,7 @@ $sidebar-gutter: 2.35rem;
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
-    // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Osclass
+    // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Shopclass
     // compiles no RTL stylesheet, so in an RTL locale that float never flips and the
     // chevron collides with the label. Float has no effect on a flex child, so making the
     // row a flex container neutralises it, and `margin-inline-start: auto` below pushes

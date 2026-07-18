@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -15,7 +15,7 @@
 
 
 $customPageHeader = static function () { ?>
-    <h1><?php printf(__('Osclass %s'), OSCLASS_VERSION); ?>
+    <h1><?php printf(__('Shopclass %s'), OSCLASS_VERSION); ?>
         <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
     </h1>
     <?php
@@ -23,7 +23,7 @@ $customPageHeader = static function () { ?>
 osc_add_hook('admin_page_header', $customPageHeader);
 
 $customPageTitle = static function ($string) {
-    return sprintf(__('Osclass %s &raquo; %s'), OSCLASS_VERSION, $string);
+    return sprintf(__('Shopclass %s &raquo; %s'), OSCLASS_VERSION, $string);
 };
 osc_add_filter('admin_title', $customPageTitle);
 
@@ -33,7 +33,7 @@ osc_current_admin_theme_path('parts/header.php');
 ?>
 <div class="widget-box">
     <div class="widget-box-title">
-        <h3>Osclass <?php echo OSCLASS_VERSION; ?></h3>
+        <h3>Shopclass <?php echo OSCLASS_VERSION; ?></h3>
     </div>
     <div class="widget-box-content">
 

@@ -1,6 +1,6 @@
 <?php
 
-use mindstellar\upgrade\Osclass;
+use mindstellar\upgrade\Shopclass;
 
 if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
@@ -30,7 +30,7 @@ function customHead()
         var steps = document.getElementById('steps');
         var remoteVersion = '<?php echo $remoteVersion; ?>';
         // get release body from github api url using remote version as tag
-        var releaseUrl = 'https://api.github.com/repos/mindstellar/Osclass/releases/tags/' + remoteVersion;
+        var releaseUrl = 'https://api.github.com/repos/mindstellar/Shopclass/releases/tags/' + remoteVersion;
         var isUpgradeAvailable = <?php echo $is_upgrade_available ? 'true' : 'false'; ?>;
         var upgradeUrl = '<?php echo osc_admin_base_url(true) . '?page=tools&action=upgrade&confirm=true'; ?>';
         var upgradeActionUrl = '<?php echo osc_admin_base_url(true) . '?page=ajax&action=upgrade&' . osc_csrf_token_url(); ?>';
@@ -85,7 +85,7 @@ function customHead()
             var message1 = document.createElement('div');
             message1.className = 'step';
             message1.innerHTML = '<h3><span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>' +
-                '<?php echo osc_esc_js(__('Upgrading your Osclass installation (this could take a while):')); ?>' +
+                '<?php echo osc_esc_js(__('Upgrading your Shopclass installation (this could take a while):')); ?>' +
                 '</h3>';
             steps.innerHTML = '';
             steps.appendChild(message1);
@@ -102,7 +102,7 @@ function customHead()
                             var message2 = document.createElement('div');
                             message2.className = 'step';
                             message2.innerHTML = '<h3 class="text-success strong"><?php _e('Upgrade Successful'); ?></h3>' +
-                                '<p><?php _e('Your Osclass installation has been upgraded to version ') ?>' + remoteVersion + '</p>' +
+                                '<p><?php _e('Your Shopclass installation has been upgraded to version ') ?>' + remoteVersion + '</p>' +
                                 '<p><a href="<?php echo osc_esc_js(osc_admin_base_url(true)); ?>?page=tools&action=version" class="button btn btn-success"><?php _e('Check release notes'); ?></a></p>';
                             steps.innerHTML = '';
                             steps.appendChild(message2);
@@ -148,7 +148,7 @@ function customHead()
             var message1 = document.createElement('div');
             message1.className = 'step';
             message1.innerHTML = '<h3><?php _e('No Upgrade Available'); ?></h3>' +
-                '<p><?php echo osc_esc_js(__('Congratulations! Your Osclass installation is up to date!')); ?></p>'
+                '<p><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></p>'
             steps.innerHTML = '';
             steps.appendChild(message1);
             steps_div.style.display = 'block';
@@ -173,7 +173,7 @@ function render_offset()
 function addHelp()
 {
     echo '<p>'
-        . __("Check to see if you're using the latest version of Osclass. If you're not, 
+        . __("Check to see if you're using the latest version of Shopclass. If you're not, 
         the system will let you know so you can update and use the newest features.")
         . '</p>';
 }
@@ -218,10 +218,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <p class="text">
                                 <?php
                                 printf(
-                                    __('Your Osclass installation can be auto-upgraded. 
+                                    __('Your Shopclass installation can be auto-upgraded. 
                                         Please, back up your database and the folder oc-content before attempting to 
-                                        upgrade your Osclass installation. 
-                                        You can also upgrade Osclass manually, more information in the %s'),
+                                        upgrade your Shopclass installation. 
+                                        You can also upgrade Shopclass manually, more information in the %s'),
                                     '<a href="https://docs.mindstellar.com/">Documentation</a>'
                                 );
                                 ?>

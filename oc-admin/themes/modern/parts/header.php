@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 // This admin's saved light/dark choice, emitted on <html> so Bootstrap 5.3 has it before
-// first paint — no flash. Stored per admin id in t_preference (Osclass has no admin-meta
+// first paint — no flash. Stored per admin id in t_preference (Shopclass has no admin-meta
 // table); '' when never set, so the default is light. Whitelisted on the way out too, not
 // only on the way in, since a hand-edited preference row is still untrusted input.
 $oscAdminTheme = osc_get_preference((string) osc_logged_admin_id(), 'admin_theme');
@@ -20,8 +20,8 @@ if ($oscSidebar !== 'collapsed') {
 <html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>" data-bs-theme="<?php echo $oscAdminTheme; ?>" data-osc-sidebar="<?php echo $oscSidebar; ?>">
 <head>
     <meta charset="utf-8">
-    <title><?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Osclass'); ?></title>
-    <meta name="title" content="<?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Osclass'); ?>"/>
+    <title><?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Shopclass'); ?></title>
+    <meta name="title" content="<?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Shopclass'); ?>"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="content-language" content="<?php echo osc_current_admin_locale(); ?>"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>

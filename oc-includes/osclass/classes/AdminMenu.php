@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -16,9 +16,9 @@
  * AdminMenu class
  *
  * @since      3.0
- * @package    Osclass
+ * @package    Shopclass
  * @subpackage classes
- * @author     Osclass
+ * @author     Shopclass
  */
 class AdminMenu
 {
@@ -295,7 +295,7 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
-            __('Upgrade Osclass'),
+            __('Upgrade Shopclass'),
             osc_admin_base_url(true) . '?page=tools&action=upgrade',
             'tools_upgrade',
             'administrator'

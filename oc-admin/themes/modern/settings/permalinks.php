@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -403,8 +403,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <!-- settings form -->
         <div id="mail-settings">
             <h2 class="render-title"><?php _e('Permalinks'); ?></h2>
-            <?php _e('By default Osclass uses web URLs which have question marks and lots of numbers in them. '
-                     . 'However, Osclass offers you friendly urls. This can improve the aesthetics, usability, '
+            <?php _e('By default Shopclass uses web URLs which have question marks and lots of numbers in them. '
+                     . 'However, Shopclass offers you friendly urls. This can improve the aesthetics, usability, '
                      . 'and forward-compatibility of your links'); ?>
             <ul id="error_list"></ul>
             <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">

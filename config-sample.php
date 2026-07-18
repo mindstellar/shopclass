@@ -1,6 +1,6 @@
 <?php
 /**
- * The base configuration for Osclass
+ * The base configuration for Shopclass
  *
  * The config.php creation script uses this file during the installation.
  * You don't have to use the web site, you can copy this file to "config.php"
@@ -12,10 +12,10 @@
  * * Database table prefix
  * * Optional settings
  *
- * @package Osclass
+ * @package Shopclass
  */
 
-/** MySQL database name for Osclass */
+/** MySQL database name for Shopclass */
 define('DB_NAME', 'database_name');
 
 /** MySQL database username */

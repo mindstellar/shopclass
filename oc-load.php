@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -22,10 +22,10 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 if (!file_exists(ABS_PATH . 'config.php')) {
-    $title   = 'Osclass &raquo; Error';
+    $title   = 'Shopclass &raquo; Error';
     $message =
-        'There doesn\'t seem to be a <code>config.php</code> file. Osclass isn\'t installed. '
-        . '<a href="https://github.com/mindstellar/Osclass/discussions">Need more help?</a></p>';
+        'There doesn\'t seem to be a <code>config.php</code> file. Shopclass isn\'t installed. '
+        . '<a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>';
     $message .= '<p><a class="btn btn-primary" href="' . osc_get_absolute_url()
         . 'oc-includes/osclass/install.php">'
         . 'Install</a></p>';
@@ -44,12 +44,12 @@ require_once LIB_PATH . 'vendor/autoload.php';
 OsclassErrors::newInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
-// check if Osclass is installed
+// check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {
-    $title   = 'Osclass &raquo; Error';
+    $title   = 'Shopclass &raquo; Error';
     $message =
-        '<code>config.php</code> file is present but Osclass isn\'t installed. '
-        .'Are you sure you want to install Osclass?'
+        '<code>config.php</code> file is present but Shopclass isn\'t installed. '
+        .'Are you sure you want to install Shopclass?'
         . '<p><a class="button" href="' . osc_get_absolute_url()
         . 'oc-includes/osclass/install.php">Install</a></p>';
     osc_die($title, $message);

@@ -2,7 +2,7 @@
     exit('Direct access is not allowed.');
 }
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -74,7 +74,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                        value="<?php echo osc_esc_html(osc_base_path()); ?>"/>
                                 <div class="help-box">
                                     <?php _e("<strong>WARNING</strong>: If you don't specify a backup folder, "
-                                             . "the backup files will be created in the root of your Osclass installation."); ?>
+                                             . "the backup files will be created in the root of your Shopclass installation."); ?>
                                     <br/>
                                     <?php _e('This is the folder in which your backups will be created. We recommend that you choose a non-public path.'); ?>
                                 </div>

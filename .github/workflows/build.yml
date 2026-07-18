@@ -102,7 +102,7 @@ jobs:
           if [ ! -s release_notes.md ]; then
             echo "See the commit history for changes in this release." > release_notes.md
           fi
-          printf '\n\nFull changelog: https://github.com/mindstellar/Osclass/blob/%s/CHANGELOG.md\n' "${GITHUB_REF_NAME}" >> release_notes.md
+          printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${GITHUB_REF_NAME}" >> release_notes.md
 
       - name: Create GitHub Release
         if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}

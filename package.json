@@ -1,12 +1,12 @@
 {
-  "name": "osclass",
+  "name": "shopclass",
   "devDependencies": {
     "@popperjs/core": "^2.11.8",
     "esbuild": "^0.28.1",
     "eslint": "^9.21.0",
     "sass-embedded": "^1.100.0"
   },
-  "description": "Osclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
+  "description": "Shopclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
   "scripts": {
     "build": "npm run assets && npm run css && npm run js",
     "assets": "node scripts/copy-assets.mjs",
@@ -16,17 +16,17 @@
     "lint": "eslint oc-admin/themes/modern/js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "git+https://github.com/mindstellar/Osclass.git",
+  "repository": "git+https://github.com/mindstellar/shopclass.git",
   "keywords": [
     "Classifieds",
-    "Osclass"
+    "Shopclass"
   ],
   "author": "Navjot Tomer",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/mindstellar/Osclass/issues"
+    "url": "https://github.com/mindstellar/shopclass/issues"
   },
-  "homepage": "https://github.com/mindstellar/Osclass#readme",
+  "homepage": "https://github.com/mindstellar/shopclass#readme",
   "dependencies": {
     "bootstrap": "^5.3.*",
     "bootstrap-icons": "^1.11.0",

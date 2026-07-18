@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -563,7 +563,7 @@ function osc_admin_toolbar_update_core($force = false)
         }
         if (getPreference('update_core_available')) {
             $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
-            $title       = __('Osclass ') . $update_json->s_new_version . __(' is available');
+            $title       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
             AdminToolbar::newInstance()->add_menu(
                 array(
                     'id'    => 'update_core',
@@ -937,7 +937,7 @@ osc_add_hook('header', 'osc_show_maintenance');
 
 function osc_meta_generator()
 {
-    echo '<meta name="generator" content="Osclass ' . OSCLASS_VERSION . '" />';
+    echo '<meta name="generator" content="Shopclass ' . OSCLASS_VERSION . '" />';
 }
 
 

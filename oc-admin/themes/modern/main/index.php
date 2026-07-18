@@ -2,19 +2,15 @@
     exit('Direct access is not allowed.');
 }
 /*
- *  Osclass
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
+ * Copyright (c) 2021-2026 Mindstellar Community
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Distributed under the GNU General Public License v3.0 or later. The original
+ * Osclass code it derives from was licensed under the Apache License 2.0.
+ * See LICENSE (GPL-3.0) and LICENSE-APACHE (Apache-2.0).
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 $numItemsPerCategory = __get('numItemsPerCategory');
@@ -297,7 +293,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
                     };
                     $rows = array(
-                        array('bi-box-seam', __('Osclass version'), OSCLASS_VERSION),
+                        array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
                         array('bi-filetype-php', __('PHP version'), PHP_VERSION),
                         array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
                         array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),

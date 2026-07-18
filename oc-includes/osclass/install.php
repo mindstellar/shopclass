@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of Osclass (Mindstellar).
+ * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
  * Copyright (c) 2021-2026 Mindstellar Community
  *
@@ -75,8 +75,8 @@ Translation::newInstance(true);
 
 if (is_osclass_installed()) {
     $message =
-        __("Looks like you've already installed Osclass. To reinstall please clear your old database tables first.");
-    osc_die('Osclass &raquo; Error', $message);
+        __("Looks like you've already installed Shopclass. To reinstall please clear your old database tables first.");
+    osc_die('Shopclass &raquo; Error', $message);
 }
 
 switch ($step) {
