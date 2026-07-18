@@ -5,9 +5,10 @@
  * path (there is no bundler and no asset hashing), and the copied output is committed to
  * git — `.build.sh` packages releases with `git archive`, so nothing rebuilds them at
  * release time. Both destinations are wiped first so a removed dependency cannot leave
- * an orphaned file behind that would still ship.
+ * an orphaned file behind that would still ship — except the first-party asset dirs in
+ * PRESERVE, which are hand-written source committed under ASSETS, not vendor copies.
  */
-import { rm, mkdir, cp, chmod, glob } from 'node:fs/promises';
+import { rm, mkdir, cp, chmod, glob, readdir } from 'node:fs/promises';
 import { dirname, join, basename, relative } from 'node:path';
 
 const ASSETS = 'oc-includes/assets';
@@ -63,9 +64,21 @@ async function expand(patterns, cwd) {
   return found;
 }
 
-for (const dir of [ASSETS, SCSS_VENDOR]) {
-  await rm(dir, { recursive: true, force: true });
-  await mkdir(dir, { recursive: true });
+// First-party assets committed under ASSETS that are authored by hand, not copied from
+// node_modules. They live inside the vendor tree (served by literal path) and must
+// survive the wipe — otherwise a full `npm run assets` deletes them and the next release
+// ships without them.
+const PRESERVE = new Set(['osclass']);
+
+// SCSS_VENDOR is entirely vendor output — wipe it wholesale.
+await rm(SCSS_VENDOR, { recursive: true, force: true });
+await mkdir(SCSS_VENDOR, { recursive: true });
+
+// ASSETS mixes vendor copies with the PRESERVE dirs — clear every child except those.
+await mkdir(ASSETS, { recursive: true });
+for (const entry of await readdir(ASSETS)) {
+  if (PRESERVE.has(entry)) continue;
+  await rm(join(ASSETS, entry), { recursive: true, force: true });
 }
 
 let copied = 0;
