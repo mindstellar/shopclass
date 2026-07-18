@@ -1,4 +1,13 @@
 /*
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * osc-uploader — a framework-free image uploader for the Osclass item form.
  * Replaces the jQuery fine-uploader plugin. Drag-and-drop or click to add, instant
  * local previews, per-file upload progress, remove, and set-primary (the first item

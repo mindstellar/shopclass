@@ -2,14 +2,12 @@
     exit('Direct access is not allowed.');
 }
 /*
- * Osclass - software for creating and publishing online classified advertising platforms
- * Maintained and supported by Mindstellar Community
- * https://github.com/mindstellar/Osclass
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
  *
- * This program is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version. Distributed WITHOUT ANY
- * WARRANTY. See the GNU Affero General Public License for more details.
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 function addHelp()

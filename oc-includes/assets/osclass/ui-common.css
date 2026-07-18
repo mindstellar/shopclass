@@ -1,4 +1,13 @@
 /*
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * Default, overridable styling for the shared Osclass UI widgets (ui-common.js).
  * Cosmetic only: the widgets carry their own structural styles inline, so a theme
  * that ships none of this still works. Colours resolve through --osc-* tokens when

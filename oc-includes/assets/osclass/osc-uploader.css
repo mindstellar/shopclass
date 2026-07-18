@@ -1,4 +1,13 @@
 /*
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * Default, overridable styling for osc-uploader.js. Cosmetic and light: theme
  * authors can restyle or replace any class. Colours resolve through --osc-* tokens
  * when present (admin: themed, dark-mode aware) and fall back to a neutral light look.

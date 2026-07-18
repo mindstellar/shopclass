@@ -1,4 +1,13 @@
 /*
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * Shared Osclass front-end/back-end UI helpers (no framework, no jQuery).
  * Loaded on both the admin and the public site so core widgets that render on
  * both (e.g. the item-form location fields) can rely on the same API.

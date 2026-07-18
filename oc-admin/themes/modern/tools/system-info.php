@@ -1,30 +1,11 @@
 <?php
 /*
- * @author: Navjot Tomer
+ * This file is part of Osclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
  *
- * OSClass – software for creating and publishing online classified advertising platforms
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
- * Copyright (c) 2021.  Mindstellar
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- *                     GNU GENERAL PUBLIC LICENSE
- *                        Version 3, 29 June 2007
- *
- *  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
- *  Everyone is permitted to copy and distribute verbatim copies
- *  of this license document, but changing it is not allowed.
- *
- *  You should have received a copy of the GNU Affero General Public
- *  License along with this program. If not, see <http://www.gnu.org/licenses/>.
- *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 if (!defined('OC_ADMIN')) {
