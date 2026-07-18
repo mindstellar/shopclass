@@ -1,6 +1,6 @@
 <?php
 
-use mindstellar\upgrade\Shopclass;
+use mindstellar\upgrade\Osclass;
 
 if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');

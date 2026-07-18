@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\upgrade\Shopclass;
+use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\Utils;
 
@@ -612,25 +612,29 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 break;
             case 'check_version':
+                // The whole flow is wrapped: getPackageInfo() reaches out to GitHub, and both
+                // it and the Osclass constructor can throw when the API returns an unexpected
+                // payload (rate limit, outage, a release with no downloadable asset). An
+                // uncaught throwable here is a 500 on a routine background poll, so degrade to
+                // a plain "couldn't check" instead. \Throwable, not Exception: a missing class
+                // or type error is an Error, and Error is not an Exception.
                 try {
                     $package_json = Osclass::getPackageInfo(true);
-                } catch (Exception $e) {
-                        echo json_encode(array('error' => 1, 'msg' => $e->getMessage()));
-                }
-                if (isset($package_json) && is_array($package_json)) {
-                    $upgradeOsclass    = new Osclass($package_json);
-                    $upgrade_available = $upgradeOsclass->isUpgradable();
-                    if ($upgrade_available) {
-                        osc_set_preference('update_core_available', $upgradeOsclass->isUpgradable());
-                        echo json_encode(array('error' => 0, 'msg' => __('Update available')));
+                    if (is_array($package_json) && !empty($package_json)) {
+                        $upgradeOsclass    = new Osclass($package_json);
+                        $upgrade_available = $upgradeOsclass->isUpgradable();
+                        osc_set_preference('update_core_available', $upgrade_available ? '1' : '');
+                        osc_set_preference('update_core_json', json_encode($package_json));
+                        osc_set_preference('last_version_check', time());
+                        echo json_encode(array(
+                            'error' => 0,
+                            'msg'   => $upgrade_available ? __('Update available') : __('No update available'),
+                        ));
                     } else {
-                        osc_set_preference('update_core_available', '');
-                        echo json_encode(array('error' => 0, 'msg' => __('No update available')));
+                        echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
                     }
-                    osc_set_preference('update_core_json', json_encode($package_json));
-                    osc_set_preference('last_version_check', time());
-                } else {
-                    echo json_encode(array('error' => 1, 'msg' => __('Network error')));
+                } catch (\Throwable $e) {
+                    echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
                 }
 
                 break;
