@@ -153,13 +153,13 @@ class Osclass extends UpgradePackage
             )
         ) {
             if ((defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) || osc_get_bool_preference('allow_update_prerelease')) {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/osclass/releases';
+                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases';
                 $osclass_package_info_json = (new FileSystem())->getContents($json_url);
                 if ($osclass_package_info_json) {
                     $aSelfPackage = json_decode($osclass_package_info_json, true)[0];
                 }
             } else {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/osclass/releases/latest';
+                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases/latest';
                 $osclass_package_info_json = (new FileSystem())->getContents($json_url);
                 if ($osclass_package_info_json) {
                     $aSelfPackage = json_decode($osclass_package_info_json, true);
