@@ -833,22 +833,27 @@ class Item extends DAO
             $expired_old = osc_isExpired($item['dt_expiration']);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
-                    $dt_expiration = sprintf(
+                    $dt_expiration     = sprintf(
                         'DATE_ADD(%s.dt_pub_date, INTERVAL %d DAY)',
                         $this->getTableName(),
                         $expiration_time
                     );
+                    // A raw SQL expression: it must reach the column unquoted.
+                    $escape_expiration = false;
                 } else {
-                    $dt_expiration = '9999-12-31 23:59:59';
+                    $dt_expiration     = '9999-12-31 23:59:59';
+                    $escape_expiration = true;
                 }
             } else {
-                $dt_expiration = $expiration_time;
+                $dt_expiration     = $expiration_time;
+                $escape_expiration = true;
             }
-            $result = $this->dao->update(
-                $this->getTableName(),
-                sprintf('dt_expiration = %s', $dt_expiration),
-                ['pk_i_id', $id]
-            );
+            // Build the write through the DAO's own set()/where() so both clauses render
+            // correctly. A DATE_ADD(...) expression stays unescaped; a literal datetime is
+            // escaped (and thereby quoted) like any other value.
+            $this->dao->set('dt_expiration', $dt_expiration, $escape_expiration);
+            $this->dao->where('pk_i_id', $id);
+            $result = $this->dao->update($this->getTableName());
             if ($result && $result > 0) {
                 $this->dao->select('i.dt_expiration, i.fk_i_user_id, i.fk_i_category_id, l.fk_c_country_code');
                 $this->dao->select('l.fk_i_region_id, l.fk_i_city_id');
