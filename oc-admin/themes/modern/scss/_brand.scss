@@ -62,7 +62,9 @@ $black:    #000;
 // $warning sits at hue 95 (lemon), far from the brand teal at hue 187 — they cannot be
 // confused. $info is a true blue, held distinct from the teal-green primary.
 $success: #1d7d3e; // 5.19:1 with white text
-$info:    #0079b5; // 4.76:1 with white text — system notices ONLY, never a primary action
+$info:    #006c9c; // 5.79:1 with white text — system notices ONLY, never a primary action.
+                   // Darkened from #0079b5 so it also clears 4.5:1 as TEXT on its own tint
+                   // (5.12:1), matching success/danger; the old value was glyph-only there.
 $warning: #ddbc28; // pairs with dark text only; there is no solid warning button
 $danger:  #c22826; // 5.82:1 with white text
 
@@ -241,10 +243,19 @@ $table-cell-vertical-align: middle;
   // lightens in dark (see _theme-dark).
   --osc-chrome:        #e4e9ef;
   --osc-chrome-edge:   #cfd6df;
-  --osc-chrome-hover:  rgba(15, 24, 40, .05);
+  --osc-chrome-hover:  rgba(15, 24, 40, .07);
+  // Resting nav-label ink. It sits on --osc-chrome, NOT white, so it cannot use --osc-ink-muted
+  // (#5f6b7a): that pair is 4.44:1 on chrome, just under the 4.5 text bar. This is one step
+  // darker — 5.02:1 on chrome — and still reads as "resting/muted" against the ink the label
+  // takes on hover/active. Dark mode keeps ink-muted (6.31:1 on the dark chrome).
+  --osc-nav-label:     #576371;
 
   --osc-rule:          #{$gray-300};  // decorative dividers
-  --osc-rule-strong:   #{$gray-500};  // interactive control borders
+  // Interactive control border (WCAG 1.4.11, 3:1). One step darker than the ramp's $gray-500
+  // (#8b95a3): that value clears 3:1 on white (3.03) but a control on a bench-warm toolbar or
+  // table header falls to 2.87. This decoupled value holds on every surface a control sits on
+  // — white 3.55:1, bench-warm 3.36:1, bench-sunk 3.13:1 — while $gray-500 stays the ramp step.
+  --osc-rule-strong:   #7e8998;
 
   --osc-ink:           #{$gray-900};
   --osc-ink-muted:     #{$gray-600};
@@ -269,12 +280,18 @@ $table-cell-vertical-align: middle;
   --osc-success-deep:  #{mix($black, $success, 10%)};
   --osc-warning:       #{$warning};
   --osc-warning-tint:  #{$warning-tint};
+  // The warning GLYPH/edge colour. $warning (#ddbc28) is a badge-BACKGROUND yellow that
+  // "pairs with dark text only"; as a foreground on the pale tint it is 1.69:1 — under even
+  // the 3:1 icon bar (WCAG 1.4.11), so a warning drawn in it has no signal once colour is
+  // taken away. This darkened step is 5.03:1 on the tint, matching the other semantic glyphs.
+  // Dark mode overrides it (the dark $warning already clears 8:1 on the dark tint). Used by
+  // the callout and flash warning icons; never a fill.
+  --osc-warning-deep:  #{mix($black, $warning, 45%)};
   --osc-info:          #{$info};
   // The pale info surface, completing the semantic tint set the badges and callouts share.
-  // Its partner is the info GLYPH, not info text: $info is fixed dark by its white-button role
-  // (4.76:1 with white) and cannot also be darkened for text-on-tint, so $info on this tint is
-  // 4.22:1 — under the 4.5 body bar, but comfortably over the 3:1 bar that governs an icon
-  // (WCAG 1.4.11). Body ink on it is 15.2:1. No info-coloured TEXT is ever placed on it.
+  // With $info darkened to #006c9c it carries both the info GLYPH and info TEXT here: $info on
+  // this tint is 5.12:1, clearing the 4.5 body bar the way success (4.66) and danger (4.98) do
+  // on theirs — so the four semantics behave uniformly. Body ink on it is 15.2:1.
   --osc-info-tint:     #e6f3fb;
 
   --osc-shadow-overlay: #{$box-shadow};
