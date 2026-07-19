@@ -29,7 +29,7 @@
   "homepage": "https://github.com/mindstellar/shopclass#readme",
   "dependencies": {
     "bootstrap": "^5.3.*",
-    "bootstrap-icons": "^1.11.0",
+    "bootstrap-icons": "^1.13.1",
     "chart.js": "^3.5.0",
     "jquery": "^3.7.1",
     "jquery-migrate": "^3.5.2",
