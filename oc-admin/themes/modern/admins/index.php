@@ -41,7 +41,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Admins'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=admins&amp;action=add" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add admin'); ?>"><i class="bi bi-plus-circle-fill"></i></a>
     </h1>
     <?php

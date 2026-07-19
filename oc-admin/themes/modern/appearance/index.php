@@ -35,7 +35,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Appearance'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a class="text-success ms-1 float-end"
            href="<?php echo osc_admin_base_url(true); ?>?page=appearance&amp;action=add"
            title="<?php _e('Add theme'); ?>">

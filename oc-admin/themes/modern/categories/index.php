@@ -37,7 +37,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Categories'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box"
+        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box"
            data-bs-toggle="collapse"></a>
     </h1>
     <?php

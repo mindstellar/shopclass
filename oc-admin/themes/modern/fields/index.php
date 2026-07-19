@@ -36,7 +36,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Custom fields'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
         <a href="#" class="ms-1 float-end" id="add-button"
            title="<?php echo osc_esc_html(__('Add custom field')); ?>"

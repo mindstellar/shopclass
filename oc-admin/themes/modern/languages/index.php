@@ -28,7 +28,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a href="#" onclick="languageModal()" class="ms-1 text-success float-end" title="<?php _e('Download language'); ?>">
             <i class="bi bi-arrow-down-circle-fill"></i>
         </a>
