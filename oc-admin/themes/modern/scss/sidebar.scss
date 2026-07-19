@@ -212,8 +212,6 @@ $sidebar-gutter: 2.35rem;
     // --osc-bronze-rgb is re-pointed in dark mode, so it all tracks the theme.
     &:hover::before {
       background-color: var(--osc-bronze);
-      box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .22),
-                  0 0 10px 2px rgba(var(--osc-bronze-rgb), .8);
       transform: translateY(-50%) scale(1.15);
     }
 

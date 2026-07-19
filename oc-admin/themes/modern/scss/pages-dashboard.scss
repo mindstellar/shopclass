@@ -18,8 +18,19 @@
   // Standard layout gap: 1rem / 16px (DESIGN spacing.base), matched by the widget row
   // below and the system-info grid.
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  // Structural breakpoints, not auto-fit. There are exactly four tiles; auto-fit with a
+  // 190px min landed on THREE columns through the tablet band (~768–991px), orphaning the
+  // fourth tile on its own row. Step 1 → 2×2 → 4 so the row is always evenly filled.
+  grid-template-columns: 1fr;
   margin-bottom: 1rem;
+
+  @media (min-width: 576px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 992px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .dash-stat {
@@ -86,6 +97,17 @@
 .dash-stat-label {
   color: var(--osc-ink-muted);
   font-size: $font-size-sm;
+}
+
+// ---- Listings-by-category scroll region -------------------------------------
+// The category ledger can run long; it scrolls inside the panel so the three
+// dashboard columns keep an even height. Was an inline style with overflow on the
+// WRONG axis (overflow-x for a vertically-overflowing list) plus a magic height —
+// moved to a class and corrected to overflow-y.
+.dash-category-scroll {
+  max-height: 19rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 // ---- System status list -----------------------------------------------------

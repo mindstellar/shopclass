@@ -87,8 +87,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <h2 class="render-title lead"><?php _e('Available themes'); ?></h2>
-                <hr>
+                <h2 class="render-title separate-top"><?php _e('Available themes'); ?></h2>
                 <div class="available-theme row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4">
                     <?php
                     $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
