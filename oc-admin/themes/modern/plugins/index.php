@@ -62,7 +62,7 @@ $tab_index = 2;
 
 <?php if (Params::getParam('error') != '') { ?>
     <!-- flash message -->
-    <div class="flashmessage flashmessage-error" style="display:block">
+    <div class="flashmessage flashmessage-error">
         <?php _e("Plugin couldn't be installed because it triggered a <strong>fatal error</strong>"); ?>
         <a class="btn ico btn-mini ico-close">x</a>
         <iframe style="border:0;" width="100%" height="60"

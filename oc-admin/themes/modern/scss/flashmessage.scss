@@ -11,14 +11,16 @@
 $flashmessage-states: (
   "ok":      (tint: var(--osc-success-tint), edge: var(--osc-success), icon: "\f26a"), // check-circle-fill
   "error":   (tint: var(--osc-danger-tint),  edge: var(--osc-danger),  icon: "\f336"), // exclamation-octagon-fill
-  "warning": (tint: var(--osc-warning-tint), edge: var(--osc-warning), icon: "\f33a"), // exclamation-triangle-fill
+  "warning": (tint: var(--osc-warning-tint), edge: var(--osc-warning-deep), icon: "\f33a"), // exclamation-triangle-fill
   "info":    (tint: var(--osc-info-tint),    edge: var(--osc-info),    icon: "\f430"), // info-circle-fill
 );
 
 .flashmessage {
+  // Borderless, like the callouts below — the tint, the semantic glyph, and the text are the
+  // three signals; a saturated state border would be a redundant fourth and, stacked, reads
+  // like the notice pile-up this admin is meant NOT to be. The tint carries the surface.
   align-items: flex-start;
   background-color: var(--osc-bench-warm);
-  border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
   color: var(--osc-ink);
   display: flex;
@@ -31,6 +33,12 @@ $flashmessage-states: (
   // Appears right after an action — a short settle reads as feedback, not
   // choreography. Reduced-motion gets the resting state with no movement.
   animation: osc-flash-in var(--osc-duration-base) var(--osc-ease);
+
+  // `display: flex` above is a single-class rule, so it would otherwise beat the equal-
+  // specificity `.hide` utility that comes earlier in the file — leaving the JS message box
+  // (#jsMessage starts `flashmessage flashmessage-info hide`) rendered as an empty visible
+  // box until JS fills it. This compound selector outranks both, so hidden stays hidden.
+  &.hide { display: none; }
 
   // The semantic glyph. States below set the character and its colour; a plain
   // .flashmessage with no state draws no icon.
@@ -62,9 +70,15 @@ $flashmessage-states: (
   // with the icon so it stays put on multi-line messages.
   .ico-close {
     align-self: flex-start;
+    // A 24×24 hit area (WCAG 2.2 target-size floor) around the small glyph, which stays its
+    // own size, centred. The negative top margin keeps the glyph optically level with the
+    // message icon despite the taller box.
+    background-position: center;
     flex: 0 0 auto;
-    margin-block-start: .1rem;
+    margin-block-start: -.15rem;
     margin-inline-start: auto;
+    min-block-size: 1.5rem;
+    min-inline-size: 1.5rem;
     order: 1;
   }
 
@@ -78,7 +92,6 @@ $flashmessage-states: (
 @each $state, $props in $flashmessage-states {
   .flashmessage-#{$state} {
     background-color: map-get($props, tint);
-    border-color: map-get($props, edge);
 
     &::before {
       color: map-get($props, edge);
@@ -104,15 +117,21 @@ $flashmessage-states: (
   .flashmessage.is-dismissing { animation: none; opacity: 0; }
 }
 
+// A compact, inline-level variant (theme admin panels use it). Still a flex row — so the
+// semantic icon and the text align on one baseline the same way the block form does — just
+// tighter. It must stay a flex context: with plain `display: block`/`inline-block` the icon
+// pseudo and the <p> stack onto separate lines. Legacy markup that forced `style="display:
+// block"` is being cleaned up in the bundled templates; third-party callers still doing it
+// degrade to a readable two-line block rather than breaking.
 .flashmessage-inline {
-  display: inline-block;
+  display: inline-flex;
   min-height: 0;
-  padding: 0 10px;
+  padding: .4rem .7rem;
   @include rounded-corners;
 }
 
 .flashmessage-inline p {
-  margin: 5px 0;
+  margin: 0;
 }
 
 #error_list {
@@ -162,7 +181,7 @@ $callout-bg: (
 $callout-fg: ( // the icon, a glyph — semantic full colour
         "primary": var(--osc-bronze), "info":    var(--osc-info),
         "success": var(--osc-success), "ok":     var(--osc-success),
-        "warning": var(--osc-warning), "danger": var(--osc-danger), "error": var(--osc-danger),
+        "warning": var(--osc-warning-deep), "danger": var(--osc-danger), "error": var(--osc-danger),
 );
 $callout-icons: (
         "primary": "\f430", // info-circle-fill
