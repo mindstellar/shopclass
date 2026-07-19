@@ -29,65 +29,19 @@
   }
 }
 
-.current-theme .theme {
-  float: none;
-  height: auto !important;
-  margin-inline-end: 0;
-  width: auto;
-}
-
-.current-theme .theme img {
-  float: inline-start;
-}
-
-.theme {
-  background-color: var(--osc-bench-warm);
-  float: inline-start;
-  font-size: .95rem;
-  margin-bottom: 40px;
-  margin-inline-end: 20px;
-  padding: 10px;
-
-  @include rounded-corners;
-  width: 250px;
-}
-
-.theme img {
-  border: solid 1px var(--osc-bench-sunk);
-  margin-inline-end: 20px;
-  width: 250px;
-  @include rounded-corners;
-}
-
-.theme .theme-actions {
-  background-color: rgba(243, 243, 243, 0.9);
-  border-top: solid 1px var(--osc-bench-sunk);
-  bottom: 4px;
-  inset-inline-start: 1px;
-  padding: 6px 0 1px 6px;
-  position: absolute;
-  width: 244px;
-}
-
-.theme .theme-actions .btn {
-  margin-bottom: 5px;
-  padding-inline-start: 6px;
-  padding-inline-end: 6px;
-}
-
-.theme-actions a.delete {
-  color: var(--osc-ink-emphasis);
-}
-
-.theme .theme-info,
-.theme .theme-info h3 {
-  font-weight: normal;
-}
-
+// The legacy `.theme` card layout is gone — a floated 250px box with a fixed 285px
+// height and an absolutely-positioned `.theme-actions` bar (whose fill was a stray
+// rgba(243,243,243,0.9) that named no token and could not follow dark mode). Both the
+// current-theme and available-theme cards now render as Bootstrap `.card`s (see
+// appearance/index.php); none of the removed selectors matched any admin template or
+// third-party markup under oc-content.
 .theme-stage {
   position: relative;
 }
 
+// Retained for the `.appearance` scoping only: `.theme` no longer exists so these match
+// nothing today, but `.appearance` is a name shipped themes also define, so it stays in
+// the admin CSS rather than being dropped (restyling is safe, removing a public name is not).
 .appearance .theme {
   height: 285px;
 }

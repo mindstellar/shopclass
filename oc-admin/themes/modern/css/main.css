@@ -14309,61 +14309,6 @@ table.table-small td {
   text-transform: capitalize;
 }
 
-.current-theme .theme {
-  float: none;
-  height: auto !important;
-  margin-inline-end: 0;
-  width: auto;
-}
-
-.current-theme .theme img {
-  float: inline-start;
-}
-
-.theme {
-  background-color: var(--osc-bench-warm);
-  float: inline-start;
-  font-size: 0.95rem;
-  margin-bottom: 40px;
-  margin-inline-end: 20px;
-  padding: 10px;
-  border-radius: 4px;
-  width: 250px;
-}
-
-.theme img {
-  border: solid 1px var(--osc-bench-sunk);
-  margin-inline-end: 20px;
-  width: 250px;
-  border-radius: 4px;
-}
-
-.theme .theme-actions {
-  background-color: rgba(243, 243, 243, 0.9);
-  border-top: solid 1px var(--osc-bench-sunk);
-  bottom: 4px;
-  inset-inline-start: 1px;
-  padding: 6px 0 1px 6px;
-  position: absolute;
-  width: 244px;
-}
-
-.theme .theme-actions .btn {
-  margin-bottom: 5px;
-  padding-inline-start: 6px;
-  padding-inline-end: 6px;
-}
-
-.theme-actions a.delete {
-  color: var(--osc-ink-emphasis);
-}
-
-.theme .theme-info,
-.theme .theme-info h3,
-.theme .theme-info .h3 {
-  font-weight: normal;
-}
-
 .theme-stage {
   position: relative;
 }
