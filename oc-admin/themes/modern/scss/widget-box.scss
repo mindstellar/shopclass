@@ -82,12 +82,11 @@
   margin-bottom: 15px;
 }
 
-.widget-box .form-label {
-  float: inline-start;
-  margin-inline-start: 10px;
-  padding-top: 5px;
-  text-align: end;
-}
+// `.form-label` gets its layout from the single `.form-horizontal` flex rule (forms.scss).
+// A widget-box-scoped float override lived here from before that conversion and was the
+// last float-based form-label in the theme — two mechanisms for one role. No template
+// renders a form-label in a widget-box outside a `.form-horizontal`, so it is removed and
+// the flex rule is now the only form-label layout.
 
 div.widget-box-content-no-wrapp,
 #dashboard div.widget-box-content-no-wrapp {

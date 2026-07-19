@@ -13019,13 +13019,6 @@ ul.ui-autocomplete.ui-menu {
   margin-bottom: 15px;
 }
 
-.widget-box .form-label {
-  float: inline-start;
-  margin-inline-start: 10px;
-  padding-top: 5px;
-  text-align: end;
-}
-
 div.widget-box-content-no-wrapp,
 #dashboard div.widget-box-content-no-wrapp {
   height: 250px;
