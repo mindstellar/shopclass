@@ -14271,6 +14271,58 @@ table.table-small td {
   vertical-align: bottom;
 }
 
+.settings-lead {
+  color: var(--osc-ink-muted);
+  max-width: 68ch;
+  margin-block: 6px 20px;
+}
+
+.rules-disclosure {
+  margin-block: 12px;
+}
+.rules-disclosure > summary {
+  color: var(--osc-bronze);
+  cursor: pointer;
+  font-weight: 500;
+  padding-block: 4px;
+  width: fit-content;
+}
+.rules-disclosure > summary:hover {
+  color: var(--osc-bronze-deep);
+  text-decoration: underline;
+}
+.rules-disclosure[open] > summary {
+  margin-block-end: 12px;
+}
+
+.server-config {
+  margin-block-start: 20px;
+}
+.server-config .settings-lead {
+  margin-block: 8px 12px;
+}
+.server-config .server-config-grid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+.server-config .server-config-block {
+  min-width: 0;
+}
+.server-config .server-config-block h4, .server-config .server-config-block .h4 {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-block-end: 6px;
+}
+.server-config .server-config-block pre {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .custom-date-time #date {
   width: 150px;
 }

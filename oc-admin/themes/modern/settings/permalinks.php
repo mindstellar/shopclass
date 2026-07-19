@@ -20,7 +20,7 @@ function customHead()
     ?>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function () {
-            oscValidateForm(document.querySelector('form[name=permalinks_form]'), {
+            oscValidateForm(document.querySelector('form[name=settings_form]'), {
                 rules: {
                     rewrite_item_url: {
                         required: true,
@@ -325,26 +325,13 @@ function customHead()
             });
 
             var re = document.getElementById('rewrite_enabled');
-            if (re) {
-                re.addEventListener('click', function () {
-                    var cr = document.getElementById('custom_rules');
-                    if (cr) { cr.style.display = (getComputedStyle(cr).display === 'none') ? '' : 'none'; }
+            var customRules = document.getElementById('custom_rules');
+            if (re && customRules) {
+                re.addEventListener('change', function () {
+                    customRules.classList.toggle('hide', !re.checked);
                 });
             }
         });
-
-        function showhide() {
-            var inner = document.getElementById('inner_rules');
-            if (inner) {
-                inner.style.display = (getComputedStyle(inner).display === 'none') ? '' : 'none';
-            }
-            var link = document.querySelector('#show_hide a');
-            if (link) {
-                link.textContent = (link.textContent === '<?php echo osc_esc_js(__('Show rules')); ?>')
-                    ? '<?php echo osc_esc_js(__('Hide rules')); ?>'
-                    : '<?php echo osc_esc_js(__('Show rules')); ?>';
-            }
-        }
     </script>
     <?php
 }
@@ -403,9 +390,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <!-- settings form -->
         <div id="mail-settings">
             <h2 class="render-title"><?php _e('Permalinks'); ?></h2>
-            <?php _e('By default Shopclass uses web URLs which have question marks and lots of numbers in them. '
+            <p class="settings-lead"><?php _e('By default Shopclass uses web URLs which have question marks and lots of numbers in them. '
                      . 'However, Shopclass offers you friendly urls. This can improve the aesthetics, usability, '
-                     . 'and forward-compatibility of your links'); ?>
+                     . 'and forward-compatibility of your links'); ?></p>
             <ul id="error_list"></ul>
             <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
                 <input type="hidden" name="page" value="settings"/>
@@ -419,14 +406,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         ? 'checked="checked"' : ''); ?> name="rewrite_enabled" id="rewrite_enabled"
                                                                         value="1"/>
                                 </div>
+                                <div class="help-box">
+                                    <?php _e('Turns links like index.php?page=item&id=42 into readable ones like '
+                                             . '/listing/blue-bicycle-42. Your web server needs URL rewriting enabled '
+                                             . 'for this to work.'); ?>
+                                </div>
                             </div>
                         </div>
                         <div id="custom_rules" <?php if (!osc_rewrite_enabled()) {
                             echo 'class="hide"';
                                                } ?>>
-                            <div id="show_hide"><a href="#"
-                                                   onclick="javascript:showhide();"><?php _e('Show rules'); ?></a></div>
-                            <div id="inner_rules" class="hide">
+                            <details class="rules-disclosure">
+                                <summary><?php _e('Advanced: customize URL structure'); ?></summary>
+                                <h3 class="render-title"><?php _e('Listings, pages &amp; categories'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('Listing URL:'); ?></div>
                                     <div class="form-controls">
@@ -460,6 +452,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         </div>
                                     </div>
                                 </div>
+                                <h3 class="render-title separate-top"><?php _e('Search'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('Search prefix URL:'); ?></div>
                                     <div class="form-controls">
@@ -526,6 +519,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_search_pattern')); ?>"/>
                                     </div>
                                 </div>
+                                <h3 class="render-title separate-top"><?php _e('Contact, feed &amp; language'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('Contact'); ?></div>
                                     <div class="form-controls">
@@ -547,6 +541,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_language')); ?>"/>
                                     </div>
                                 </div>
+                                <h3 class="render-title separate-top"><?php _e('Listing actions'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('Listing mark'); ?></div>
                                     <div class="form-controls">
@@ -603,6 +598,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_item_resource_delete')); ?>"/>
                                     </div>
                                 </div>
+                                <h3 class="render-title separate-top"><?php _e('User account'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('User login'); ?></div>
                                     <div class="form-controls">
@@ -708,22 +704,32 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_user_change_username')); ?>"/>
                                     </div>
                                 </div>
-                            </div>
+                            </details>
                         </div>
-                        <?php if (osc_rewrite_enabled()) { ?>
-                            <?php if (file_exists(osc_base_path() . '.htaccess')) { ?>
-                                <div class="form-row">
-                                    <h3 class="separate-top"><?php _e('Your .htaccess file') ?></h3>
-                                    <pre><?php
-                                        $htaccess_content = file_get_contents(osc_base_path() . '.htaccess');
-                                        echo htmlentities($htaccess_content);
-                                    ?></pre>
+                        <?php if (osc_rewrite_enabled()) {
+                            $rewrite_base    = REL_WEB_URL;
+                            $server_software = strtolower(Params::getServerParam('SERVER_SOFTWARE'));
+                            $is_nginx        = strpos($server_software, 'nginx') !== false;
+                            if ($is_nginx) {
+                                $nginx_conf = <<<NGINX
+location {$rewrite_base} {
+    try_files \$uri \$uri/ {$rewrite_base}index.php?\$args;
+}
+NGINX;
+                                ?>
+                                <div class="server-config">
+                                    <h3 class="render-title separate-top"><?php _e('Server rules (nginx)'); ?></h3>
+                                    <p class="settings-lead"><?php _e('nginx does not read .htaccess files. Add the '
+                                             . 'block below to your site\'s nginx server configuration, then reload '
+                                             . 'nginx.'); ?></p>
+                                    <div class="server-config-grid">
+                                        <div class="server-config-block">
+                                            <pre><?php echo htmlentities($nginx_conf, ENT_COMPAT, 'UTF-8'); ?></pre>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-row">
-                                    <h3 class="separate-top"><?php _e('What your .htaccess file should look like'); ?></h3>
-                                    <pre><?php
-                                        $rewrite_base = REL_WEB_URL;
-                                        $htaccess     = <<<HTACCESS
+                            <?php } else {
+                                $htaccess = <<<HTACCESS
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase {$rewrite_base}
@@ -733,11 +739,31 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . {$rewrite_base}index.php [L]
 </IfModule>
 HTACCESS;
-                                        echo htmlentities($htaccess);
-                                    ?></pre>
+                                $htaccess_exists = file_exists(osc_base_path() . '.htaccess');
+                                ?>
+                                <div class="server-config">
+                                    <h3 class="render-title separate-top"><?php _e('Server rules (.htaccess)'); ?></h3>
+                                    <div class="server-config-grid">
+                                        <?php if ($htaccess_exists) { ?>
+                                            <div class="server-config-block">
+                                                <h4><?php _e('Your current .htaccess file'); ?></h4>
+                                                <pre><?php echo htmlentities(
+                                                    file_get_contents(osc_base_path() . '.htaccess'),
+                                                    ENT_COMPAT,
+                                                    'UTF-8'
+                                                ); ?></pre>
+                                            </div>
+                                        <?php } ?>
+                                        <div class="server-config-block">
+                                            <h4><?php echo $htaccess_exists
+                                                    ? osc_esc_html(__('What it should look like'))
+                                                    : osc_esc_html(__('What your .htaccess file should look like')); ?></h4>
+                                            <pre><?php echo htmlentities($htaccess, ENT_COMPAT, 'UTF-8'); ?></pre>
+                                        </div>
+                                    </div>
                                 </div>
-                            <?php } ?>
-                        <?php } ?>
+                            <?php }
+                        } ?>
                         <div class="form-actions">
                             <input type="submit" id="save_changes"
                                    value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
