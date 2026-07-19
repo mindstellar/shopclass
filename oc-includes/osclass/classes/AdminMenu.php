@@ -82,7 +82,7 @@ class AdminMenu
         );
 
         $this->add_menu(__('Appearance'), osc_admin_base_url(true) . '?page=appearance', 'appearance', 'administrator',
-                        'bi bi-palette-fill');
+                        'bi bi-palette');
         $this->add_submenu(
             'appearance',
             __('Manage themes'),
@@ -98,7 +98,7 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Plugins'), osc_admin_base_url(true) . '?page=plugins', 'plugins', 'administrator', 'bi bi-plug-fill');
+        $this->add_menu(__('Plugins'), osc_admin_base_url(true) . '?page=plugins', 'plugins', 'administrator', 'bi bi-plugin');
         $this->add_submenu(
             'plugins',
             __('Manage plugins'),
@@ -108,7 +108,7 @@ class AdminMenu
         );
 
         $this->add_menu(__('Statistics'), osc_admin_base_url(true) . '?page=stats&action=items', 'stats', 'moderator',
-                        'bi bi-bar-chart-fill');
+                        'bi bi-bar-chart');
         $this->add_submenu(
             'stats',
             __('Listings'),
@@ -138,7 +138,7 @@ class AdminMenu
             'moderator'
         );
 
-        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear-fill');
+        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
         $this->add_submenu(
             'settings',
             __('General'),
@@ -232,9 +232,9 @@ class AdminMenu
         );
 
         $this->add_menu(__('Pages'), osc_admin_base_url(true) . '?page=pages', 'pages', 'administrator',
-                        'bi bi-file-earmark-richtext-fill');
+                        'bi bi-file-earmark-text');
 
-        $this->add_menu(__('Users'), osc_admin_base_url(true) . '?page=users', 'users', 'moderator', 'bi bi-people-fill');
+        $this->add_menu(__('Users'), osc_admin_base_url(true) . '?page=users', 'users', 'moderator', 'bi bi-people');
         $this->add_submenu(
             'users',
             __('Users'),

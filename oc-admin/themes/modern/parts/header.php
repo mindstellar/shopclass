@@ -34,7 +34,7 @@ if ($oscSidebar !== 'collapsed') {
             <a id="osc_toolbar_home" class="sidebar-brand" target="_blank" rel="noopener"
                href="<?php echo osc_base_url(); ?>"
                title="<?php echo osc_esc_html(__('View your site')); ?>">
-                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                <i class="bi bi-house-door" aria-hidden="true"></i>
                 <span class="sidebar-brand-label"><?php echo osc_esc_html(osc_page_title()); ?></span>
             </a>
             <div class="sidebar-scroll-frame">
@@ -65,7 +65,7 @@ if ($oscSidebar !== 'collapsed') {
                         <button type="button" id="oscThemeToggle" class="admin-topbar-btn"
                                 title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
                                 aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
-                            <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'; ?>" aria-hidden="true"></i>
+                            <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun' : 'bi-moon'; ?>" aria-hidden="true"></i>
                         </button>
                     </li>
                     <li class="nav-item dropdown admin-topbar-account">
@@ -87,9 +87,9 @@ if ($oscSidebar !== 'collapsed') {
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item"
                                href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
-                                <i class="bi bi-person-lines-fill"></i> <?php _e('Edit Profile'); ?></a>
+                                <i class="bi bi-person"></i> <?php _e('Edit Profile'); ?></a>
                             <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
-                                <i class="bi bi-gear-fill"></i> <?php _e('Settings'); ?></a>
+                                <i class="bi bi-gear"></i> <?php _e('Settings'); ?></a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
                                 <i class="bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
