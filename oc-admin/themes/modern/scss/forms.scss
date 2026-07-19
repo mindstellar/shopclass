@@ -21,19 +21,33 @@
 }
 
 .form-horizontal {
+  // Was a float layout: the label floated into a 150px well and the control was given a
+  // matching 170px inline-start margin to clear it. Floats need clearfix hacks (there is
+  // a stray `clear:both` in the settings template that existed only for this) and can
+  // collapse under wrapping content. A flex row holds the identical geometry — a 150px
+  // label plus a 20px gutter puts the control edge at 170px — without any of that, and
+  // min-width:0 lets long control content shrink instead of forcing overflow. Only the
+  // rows are flex; the section headings (h2.render-title) stay block-flow siblings.
   .form-row {
+    column-gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
     margin-bottom: 15px;
   }
 
   .form-label {
-    float: inline-start;
-    width: 150px;
+    flex: 0 0 150px;
+    // Optically drop the label to the small input's text baseline (the input carries its
+    // own top padding + border). The row stays top-aligned, so a tall control like the
+    // date-format radio list keeps its label pinned to the first line rather than centred.
+    padding-block-start: 6px;
     text-align: end;
     word-break: break-word;
   }
 
   .form-controls {
-    margin-inline-start: 170px;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .form-actions {

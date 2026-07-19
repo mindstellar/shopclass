@@ -100,15 +100,15 @@
 @media (max-width: 576px) {
   #display-filters .form-horizontal,
   .form-horizontal {
+    // Stack: the label takes a full-width flex basis so the control wraps beneath it.
     .form-label {
-      float: none;
+      flex-basis: 100%;
       font-weight: 600;
-      padding-top: 0.5rem;
-      text-align: inherit;
-      width: 100%;
+      padding-block-start: 0.5rem;
+      text-align: start;
     }
     .form-controls {
-      margin-inline-start: inherit;
+      flex-basis: 100%;
 
       select {
         width: 100%;

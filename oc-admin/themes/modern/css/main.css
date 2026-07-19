@@ -14201,16 +14201,20 @@ td.children-cat {
 }
 
 .form-horizontal .form-row {
+  column-gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
   margin-bottom: 15px;
 }
 .form-horizontal .form-label {
-  float: inline-start;
-  width: 150px;
+  flex: 0 0 150px;
+  padding-block-start: 6px;
   text-align: end;
   word-break: break-word;
 }
 .form-horizontal .form-controls {
-  margin-inline-start: 170px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .form-horizontal .form-actions {
   padding-inline-start: 170px;
@@ -16271,15 +16275,14 @@ form h3, form .h3 {
 @media (max-width: 576px) {
   #display-filters .form-horizontal .form-label,
   .form-horizontal .form-label {
-    float: none;
+    flex-basis: 100%;
     font-weight: 600;
-    padding-top: 0.5rem;
-    text-align: inherit;
-    width: 100%;
+    padding-block-start: 0.5rem;
+    text-align: start;
   }
   #display-filters .form-horizontal .form-controls,
   .form-horizontal .form-controls {
-    margin-inline-start: inherit;
+    flex-basis: 100%;
   }
   #display-filters .form-horizontal .form-controls select,
   .form-horizontal .form-controls select {
