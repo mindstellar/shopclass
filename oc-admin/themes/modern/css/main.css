@@ -13951,6 +13951,7 @@ td.children-cat {
   color: var(--osc-ink);
   display: flex;
   gap: 0.6rem;
+  margin-block-end: 1rem;
   padding: 1rem;
 }
 
@@ -13984,15 +13985,22 @@ td.children-cat {
 }
 
 .help-callout-close {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: 4px;
   color: var(--osc-ink-muted);
   cursor: pointer;
+  display: inline-flex;
   flex: 0 0 auto;
   font-size: 0.9rem;
+  justify-content: center;
   line-height: 1;
-  padding: 0.3rem;
+  margin-block-start: -0.15rem;
+  margin-inline-start: auto;
+  min-height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0;
   transition: background-color var(--osc-duration-fast) var(--osc-ease), color var(--osc-duration-fast) var(--osc-ease);
 }
 .help-callout-close:hover {
