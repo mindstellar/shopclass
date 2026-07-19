@@ -458,7 +458,7 @@ class AdminMenu
         // base, so no query fragment matches it by URL. An empty query string is the
         // reliable signal for that route — fall back to the dashboard when nothing else
         // matched, so the highlight never silently disappears on the home page.
-        if ($current_menu === '' && $actual_url === '') {
+        if ($current_menu === '' && ($actual_url === '' || $actual_page === 'dashboard')) {
             $current_menu = 'dash';
         }
 
