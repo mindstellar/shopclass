@@ -481,7 +481,7 @@ class Item extends DAO
      */
     public function findByUserID($userId, $start = 0, $end = null)
     {
-        $condition = "fk_i_user_id = $userId";
+        $condition = 'fk_i_user_id = ' . (int)$userId;
 
         return $this->findItemByTypes($condition, 'all', false, $start, $end);
     }
@@ -613,7 +613,7 @@ class Item extends DAO
      */
     public function countItemTypesByUserID($userId, $itemType = false, $cond = '')
     {
-        $condition[] = "fk_i_user_id = $userId";
+        $condition[] = 'fk_i_user_id = ' . (int)$userId;
         if ($cond) {
             $condition[] = $cond;
         }
@@ -635,7 +635,7 @@ class Item extends DAO
      */
     public function findByUserIDEnabled($userId, $start = 0, $end = null)
     {
-        $condition = "fk_i_user_id = $userId";
+        $condition = 'fk_i_user_id = ' . (int)$userId;
 
         return $this->findItemByTypes($condition, false, false, $start, $end);
     }
@@ -705,7 +705,7 @@ class Item extends DAO
      */
     public function findItemTypesByUserID($userId, $start = 0, $end = null, $itemType = false)
     {
-        return $this->findItemByTypes("fk_i_user_id = $userId", $itemType, false, $start, $end);
+        return $this->findItemByTypes('fk_i_user_id = ' . (int)$userId, $itemType, false, $start, $end);
     }
 
     /**
@@ -905,6 +905,10 @@ class Item extends DAO
      */
     public function enableByCategory($enable, $aIds)
     {
+        $aIds = array_map('intval', (array)$aIds);
+        if (empty($aIds)) {
+            return false;
+        }
         $sql = sprintf('UPDATE %st_item SET b_enabled = %d WHERE ', DB_TABLE_PREFIX, $enable);
         $sql .= sprintf('%st_item.fk_i_category_id IN (%s)', DB_TABLE_PREFIX, implode(',', $aIds));
 

@@ -477,7 +477,7 @@ class Page extends DAO
         $this->dao->select();
         $this->dao->from($this->tableName);
         $this->dao->where('b_indelible', 0);
-        $this->dao->where('i_order < ' . $order);
+        $this->dao->where('i_order < ' . (int)$order);
         $this->dao->orderBy('i_order', 'DESC');
         $this->dao->limit(1);
         $result = $this->dao->get();
@@ -509,7 +509,7 @@ class Page extends DAO
         $this->dao->select();
         $this->dao->from($this->tableName);
         $this->dao->where('b_indelible', 0);
-        $this->dao->where('i_order > ' . $order);
+        $this->dao->where('i_order > ' . (int)$order);
         $this->dao->orderBy('i_order', 'ASC');
         $this->dao->limit(1);
         $result = $this->dao->get();
@@ -685,7 +685,7 @@ class Page extends DAO
         $this->dao->select();
         $this->dao->from($this->tableName);
         $this->dao->where('s_internal_name', $internalName);
-        $this->dao->where('pk_i_id <> ' . $id);
+        $this->dao->where('pk_i_id <> ' . (int)$id);
         $result = $this->dao->get();
 
         return $result->numRows() > 0;

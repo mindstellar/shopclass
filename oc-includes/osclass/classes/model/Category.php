@@ -583,7 +583,7 @@ class Category extends DAO
             } elseif ($fields['i_expiration_days'] == 0) {
                 $update_dt_expiration = sprintf("update %st_item as a
                         set a.dt_expiration = '9999-12-31 23:59:59'
-                        where a.fk_i_category_id = %s", DB_TABLE_PREFIX, $pk);
+                        where a.fk_i_category_id = %d", DB_TABLE_PREFIX, (int)$pk);
 
                 $this->dao->query($update_dt_expiration);
             }

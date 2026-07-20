@@ -428,7 +428,7 @@ class CWebSearch extends BaseModel
                                 $aux         = "%$aux%";
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
                                 $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value LIKE ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -439,7 +439,7 @@ class CWebSearch extends BaseModel
                             if ($aux != '') {
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
                                 $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value = ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -448,7 +448,7 @@ class CWebSearch extends BaseModel
                         case 'CHECKBOX':
                             if ($aux != '') {
                                 $sql = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql .= $table . '.s_value = 1';
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -462,7 +462,7 @@ class CWebSearch extends BaseModel
                                 $start = mktime('0', '0', '0', $m, $d, $y);
                                 $end   = mktime('23', '59', '59', $m, $d, $y);
                                 $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql   .= $table . '.s_value >= ' . $start . ' AND ';
                                 $sql   .= $table . '.s_value <= ' . $end;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
@@ -470,17 +470,20 @@ class CWebSearch extends BaseModel
                             }
                             break;
                         case 'DATEINTERVAL':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))) {
-                                $from         = $aux['from'];
-                                $to           = $aux['to'];
+                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
+                                && is_numeric($aux['from']) && is_numeric($aux['to'])
+                            ) {
+                                // s_value stores unix timestamps for DATEINTERVAL fields
+                                $from         = (int)$aux['from'];
+                                $to           = (int)$aux['to'];
                                 $start        = $from;
                                 $end          = $to;
                                 $sql          = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql          .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql          .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql          .= $start . ' >= ' . $table
                                     . ".s_value AND s_multi = 'from'";
                                 $sql1         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql1         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql1         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql1         .= $end . ' <= ' . $table
                                     . ".s_value AND s_multi = 'to'";
                                 $sql_interval = 'select a.fk_i_item_id from (' . $sql
@@ -490,11 +493,13 @@ class CWebSearch extends BaseModel
                             }
                             break;
                         case 'NUMBER':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))) {
-                                $min   = $aux['from'];
-                                $max   = $aux['to'];
+                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
+                                && is_numeric($aux['from']) && is_numeric($aux['to'])
+                            ) {
+                                $min   = (float)$aux['from'];
+                                $max   = (float)$aux['to'];
                                 $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql   .= $table . '.s_value >= ' . $min . ' AND ';
                                 $sql   .= $table . '.s_value <= ' . $max;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
