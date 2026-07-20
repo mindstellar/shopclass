@@ -631,18 +631,24 @@ class User extends DAO
      *
      * @access public
      *
-     * @param int $id user id
+     * @param int $id    user id
+     * @param int $items number of items to add (default 1)
      *
      * @return bool|\DBRecordsetClass number of affected rows, id error occurred return false
      * @since  unknown
      */
-    public function increaseNumItems($id)
+    public function increaseNumItems($id, $items = 1)
     {
         if (!is_numeric($id)) {
             return false;
         }
 
-        $sql = sprintf('UPDATE %s SET i_items = i_items + 1 WHERE pk_i_id = %d', $this->getTableName(), $id);
+        $sql = sprintf(
+            'UPDATE %s SET i_items = i_items + %d WHERE pk_i_id = %d',
+            $this->getTableName(),
+            (int)$items,
+            $id
+        );
 
         return $this->dao->query($sql);
     }

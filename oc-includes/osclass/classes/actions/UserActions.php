@@ -170,7 +170,7 @@ class UserActions
                     array('s_contact_email' => $input['s_email'])
                 );
             if ($items_updated !== false && $items_updated > 0) {
-                User::newInstance()->update('i_items = i_items + ' . (int)$items_updated, array('pk_i_id' => $userId));
+                User::newInstance()->increaseNumItems($userId, $items_updated);
             }
             // update alerts user id with the same email
             Alerts::newInstance()->update(array('fk_i_user_id' => $userId), array('s_email' => $input['s_email']));
@@ -462,7 +462,7 @@ class UserActions
                 array('s_contact_email' => $user['s_email'])
             );
         if ($items_updated !== false && $items_updated > 0) {
-            User::newInstance()->update('i_items = i_items + ' . (int)$items_updated, array('pk_i_id' => $user_id));
+            User::newInstance()->increaseNumItems($user_id, $items_updated);
         }
         // update alerts user id with the same email
         Alerts::newInstance()->update(array('fk_i_user_id' => $user_id), array('s_email' => $user['s_email']));
