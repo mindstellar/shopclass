@@ -808,6 +808,7 @@ return array(
     'mindstellar\\database\\Connection' => $baseDir . '/oc-includes/osclass/classes/database/Connection.php',
     'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',
     'mindstellar\\database\\DbException' => $baseDir . '/oc-includes/osclass/classes/database/DbException.php',
+    'mindstellar\\database\\QueryBuilder' => $baseDir . '/oc-includes/osclass/classes/database/QueryBuilder.php',
     'mindstellar\\form\\admin\\Item' => $baseDir . '/oc-includes/osclass/classes/form/admin/Item.php',
     'mindstellar\\form\\base\\FormBuilder' => $baseDir . '/oc-includes/osclass/classes/form/base/FormBuilder.php',
     'mindstellar\\form\\base\\FormInputs' => $baseDir . '/oc-includes/osclass/classes/form/base/FormInputs.php',

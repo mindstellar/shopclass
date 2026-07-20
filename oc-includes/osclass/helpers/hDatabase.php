@@ -97,6 +97,24 @@ if (!function_exists('osc_db_insert_id')) {
     }
 }
 
+if (!function_exists('osc_db_table')) {
+    /**
+     * Start an immutable fluent query builder for $table.
+     *
+     * Every clause method returns a cloned builder, so the returned object can
+     * be reused and branched safely; terminals compile to prepared statements
+     * and run through the injection-safe Connection API.
+     *
+     * @param string $table
+     *
+     * @return \mindstellar\database\QueryBuilder
+     */
+    function osc_db_table(string $table): \mindstellar\database\QueryBuilder
+    {
+        return \mindstellar\database\Db::table($table);
+    }
+}
+
 if (!function_exists('osc_db_transaction')) {
     /**
      * Run $fn inside a database transaction (or a savepoint when nested),

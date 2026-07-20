@@ -56,6 +56,22 @@ class Db
     }
 
     /**
+     * Start a new immutable query builder for $table.
+     *
+     * Entry point to the fluent QueryBuilder: every clause method returns a
+     * cloned builder, so the returned object can be reused and branched without
+     * shared state, and terminals compile to prepared statements.
+     *
+     * @param string $table
+     *
+     * @return QueryBuilder
+     */
+    public static function table(string $table): QueryBuilder
+    {
+        return new QueryBuilder($table);
+    }
+
+    /**
      * Start a new transaction and increment the nesting depth.
      *
      * @return bool
