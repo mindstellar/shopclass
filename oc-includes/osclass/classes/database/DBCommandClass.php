@@ -15,9 +15,19 @@
 /**
  * Database command object
  *
+ * A stateful, string-concatenation query builder (a CodeIgniter-2-era Active
+ * Record fork). Two footguns to know: its clause state is shared per instance
+ * and only cleared by _resetSelect()/_resetWrite(), so unreset state can leak
+ * between queries; and limit()/offset() compile to the inverted
+ * `LIMIT <offset>, <count>` form.
+ *
  * @package    Shopclass
  * @subpackage Database
  * @since      2.3
+ * @deprecated 5.3 For new code prefer the parameterized, injection-safe
+ *             mindstellar\database\Connection and the immutable
+ *             mindstellar\database\QueryBuilder. This class remains the legacy
+ *             query layer that existing models and plugins depend on.
  */
 class DBCommandClass
 {
@@ -340,6 +350,10 @@ class DBCommandClass
 
     /**
      * Add the apostrophe if it's an string; 0 or 1 if it's a bool ;  NULL
+     *
+     * Note: this escape-then-concatenate approach is the legacy path and is easy
+     * to misuse. For new code prefer bound parameters via
+     * mindstellar\database\Connection; never use escape() for identifiers.
      *
      * @access private
      *

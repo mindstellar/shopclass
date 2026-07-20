@@ -514,6 +514,8 @@ class DBConnectionClass
      * @sugession use getDb() method
      * @access    public
      * @since     2.3
+     * @deprecated 5.3 Returns the raw mysqli handle; for new code prefer the
+     *             wrapped, parameterized mindstellar\database\Connection.
      */
     public function getOsclassDb()
     {

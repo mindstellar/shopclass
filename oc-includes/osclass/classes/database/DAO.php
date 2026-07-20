@@ -21,6 +21,11 @@ define('DB_CUSTOM_COND', 'DB_CUSTOM_COND');
 /**
  * DAO base model
  *
+ * Models still extend this. For new ad-hoc queries, however, prefer the
+ * parameterized mindstellar\database\Connection or the immutable
+ * mindstellar\database\QueryBuilder over reaching into the stateful
+ * $this->dao (DBCommandClass) builder.
+ *
  * @package    Shopclass
  * @subpackage Model
  * @since      2.3
@@ -29,6 +34,10 @@ class DAO
 {
     /**
      * DBCommandClass object
+     *
+     * The legacy stateful query builder. For new query code prefer
+     * mindstellar\database\Connection / QueryBuilder instead of building SQL
+     * through this object.
      *
      * @acces public
      * @since 2.3
