@@ -179,6 +179,11 @@ class DBConnectionClass
      */
     private function connectToDb()
     {
+        static $reportSet = false;
+        if (!$reportSet) {
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+            $reportSet = true;
+        }
         try {
             $this->connId = new mysqli($this->dbHost, $this->dbUser, $this->dbPassword);
         } catch (Exception $e) {
@@ -221,7 +226,13 @@ class DBConnectionClass
     private function setSQLMode($modes = [])
     {
         if (empty($modes)) {
-            $res = $this->connId->query('SELECT @@SESSION.sql_mode');
+            try {
+                $res = $this->connId->query('SELECT @@SESSION.sql_mode');
+            } catch (Exception $e) {
+                $this->errorReport();
+
+                return;
+            }
 
             if (empty($res)) {
                 return;
@@ -249,7 +260,11 @@ class DBConnectionClass
         }
 
         $modes_str = implode(',', $modes);
-        $this->connId->query("SET SESSION sql_mode='$modes_str'");
+        try {
+            $this->connId->query("SET SESSION sql_mode='$modes_str'");
+        } catch (Exception $e) {
+            $this->errorReport();
+        }
     }
 
     /**
@@ -310,7 +325,11 @@ class DBConnectionClass
      */
     private function setCharset($charset)
     {
-        $this->connId->set_charset($charset);
+        try {
+            $this->connId->set_charset($charset);
+        } catch (Exception $e) {
+            $this->errorReport();
+        }
     }
 
     /**
@@ -326,7 +345,13 @@ class DBConnectionClass
             return false;
         }
 
-        return $this->connId->select_db($this->dbName);
+        try {
+            return $this->connId->select_db($this->dbName);
+        } catch (Exception $e) {
+            $this->errorReport();
+
+            return false;
+        }
     }
 
     /**
