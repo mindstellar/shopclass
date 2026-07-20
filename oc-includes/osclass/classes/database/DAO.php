@@ -118,11 +118,14 @@ class DAO
     }
 
     /**
-     * Get the result matching of the primary key passed by parameter
-     * Check if Item exists
+     * Check whether a row with the given primary key value exists
+     *
      * @access public
-     * @param int $value
-     * @return bool If the result has been found, it return the array row. If not, it returns false
+     * @param int|string $value
+     * @return bool True if a matching row exists, false otherwise
+     *
+     * @since  5.3 return value corrected; previously this returned the logical
+     *         inverse (false when the row existed, true when it did not).
      */
     public function existsByPrimaryKey($value)
     {
@@ -135,11 +138,28 @@ class DAO
             return false;
         }
 
-        if ($result->numRows() > 0) {
+        return $result->numRows() > 0;
+    }
+
+    /**
+     * Check whether at least one row matches the given conditions
+     *
+     * @access public
+     * @param array $where Array with keys (database field) and values
+     * @return bool True if a matching row exists, false otherwise
+     */
+    public function exists(array $where): bool
+    {
+        if (!$this->checkFieldKeys(array_keys($where))) {
             return false;
         }
 
-        return true;
+        $this->dao->select($this->getPrimaryKey());
+        $this->dao->from($this->getTableName());
+        $this->dao->where($where);
+        $result = $this->dao->get();
+
+        return ($result !== false && $result->numRows() > 0);
     }
 
     /**
