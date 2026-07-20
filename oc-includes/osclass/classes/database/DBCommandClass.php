@@ -1522,10 +1522,10 @@ class DBCommandClass
      * @param array|string array or string with the SQL queries.
      *
      * @return array true on success, false on fail
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     public function updateDB($queries = '')
     {
-        error_log(' ----- START updateDB ----- ');
         if (!is_array($queries)) {
             $queries = $this->splitSQL($queries, ';');
         }
@@ -1576,11 +1576,6 @@ class DBCommandClass
         }
 
 
-        error_log(' --- last_struct_queries ---');
-        foreach ($struct_queries as $q) {
-            error_log(' --- ' . $q);
-        }
-
         $queries = array_merge($struct_queries, $data_queries);
 
         $ok            = true;
@@ -1592,15 +1587,8 @@ class DBCommandClass
                 $error_queries[] = $query;
             }
         }
-        if (!empty($error_queries)) {
-            error_log(' --- error_queries ---');
-            foreach ($struct_queries as $q) {
-                error_log(' --- ' . $q);
-            }
-        }
         // Set foreign_key_checks to 1
         $this->query('SET FOREIGN_KEY_CHECKS = 1');
-        error_log(' ----- END updateDB ----- ');
 
         return array($ok, $queries, $error_queries);
     }
@@ -1611,6 +1599,7 @@ class DBCommandClass
      * @param array $queries
      * @param array $data_queries
      * @param array $struct_queries
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function prepareAndSepareQueries($queries, &$data_queries, &$struct_queries)
     {
@@ -1634,6 +1623,7 @@ class DBCommandClass
      * @param array  $struct_queries
      *
      * @return bool
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function existTableIntoStruct($table, $struct_queries)
     {
@@ -1647,6 +1637,7 @@ class DBCommandClass
      * @param array  $struct_queries
      *
      * @return array|bool
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function getTableFieldsFromStruct($table, &$struct_queries)
     {
@@ -1670,6 +1661,7 @@ class DBCommandClass
      * @param $indexes
      * @param $constrains
      * @param $lastTable
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function classifyFieldsSql($fields, &$normal_fields, &$indexes, &$constrains, &$lastTable)
     {
@@ -1724,6 +1716,7 @@ class DBCommandClass
      * @param string $table
      * @param        $normal_fields
      * @param        $struct_queries
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function createAlterTable($tbl_fields, $table, &$normal_fields, &$struct_queries)
     {
@@ -1762,7 +1755,6 @@ class DBCommandClass
                             . $normal_fields[strtolower($tbl_field['Field'])];
                     }
                 }
-                error_log(' --- ' . $normal_fields[strtolower($tbl_field['Field'])]);
 
                 // Have we changed the default value? [with quotes]
                 if (preg_match(
@@ -1815,6 +1807,7 @@ class DBCommandClass
      * @param      $indexes
      * @param      $table
      * @param      $struct_queries
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function createNewIndex($tbl_indexes, &$indexes, $table, &$struct_queries)
     {
@@ -1897,6 +1890,7 @@ class DBCommandClass
      * @param string $table
      * @param array  $struct_queries
      * @param array  $constrains
+     * @deprecated 5.3 Author schema changes as versioned migrations under installer/migrations/ (see MigrationRunner); updateDB() remains only as an upgrade backstop.
      */
     private function createForeignKey($tbl_constraint, $table, &$struct_queries, $constrains)
     {
@@ -1926,7 +1920,6 @@ class DBCommandClass
         $delete_foreign = array();
         if (count($foreignRepited) > 0) {
             foreach ($foreignRepited as $_key) {
-                echo 'ALTER TABLE ' . $table . ' DROP FOREIGN KEY ' . $_key . '<br>';
                 $struct_queries[] = 'ALTER TABLE ' . $table . ' DROP FOREIGN KEY ' . $_key;
             }
         }
