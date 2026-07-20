@@ -314,6 +314,23 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
 
+CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_type VARCHAR(20) NOT NULL,
+    s_storage VARCHAR(30) NOT NULL,
+    s_payload TEXT NOT NULL,
+    s_status VARCHAR(10) NOT NULL DEFAULT 'pending',
+    i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    s_last_error VARCHAR(250) NULL,
+    s_worker VARCHAR(30) NULL,
+    dt_next_run DATETIME NOT NULL,
+    dt_locked DATETIME NULL,
+    dt_created DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_status_next (s_status, dt_next_run)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,

@@ -528,6 +528,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'Session' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Session.php',
         'Sitemap' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Sitemap.php',
         'SocketWriteRead' => __DIR__ . '/../../..' . '/oc-includes/Akismet.class.php',
+        'StorageQueue' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/StorageQueue.php',
         'Stats' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Stats.php',
         'Styles' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Styles.php',
         'Themes' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/themes/abstract/Themes.php',

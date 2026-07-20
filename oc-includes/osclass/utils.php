@@ -84,20 +84,25 @@ function osc_deleteResource($id, $admin)
             $admin ? osc_logged_admin_id() : osc_logged_user_id()
         );
         // check if resource s_path, pk_i_id and s_extension are set and not empty
-        try {
-            $filesToRemove = [
-                $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
-            ];
-            foreach ($filesToRemove as $file) {
-                if (file_exists($file) && !is_dir($file)) {
-                    (new mindstellar\utility\FileSystem)->remove($file);
+        if (($resource['s_storage'] ?? 'local') === 'local'
+            && \mindstellar\storage\StorageManager::instance()->remote() === null) {
+            try {
+                $filesToRemove = [
+                    $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
+                ];
+                foreach ($filesToRemove as $file) {
+                    if (file_exists($file) && !is_dir($file)) {
+                        (new mindstellar\utility\FileSystem)->remove($file);
+                    }
                 }
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+        } else {
+            \StorageQueue::newInstance()->enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
         }
         osc_run_hook('delete_resource', $resource);
     }

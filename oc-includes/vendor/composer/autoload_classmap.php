@@ -452,6 +452,7 @@ return array(
     'Session' => $baseDir . '/oc-includes/osclass/classes/Session.php',
     'Sitemap' => $baseDir . '/oc-includes/osclass/classes/Sitemap.php',
     'SocketWriteRead' => $baseDir . '/oc-includes/Akismet.class.php',
+    'StorageQueue' => $baseDir . '/oc-includes/osclass/classes/model/StorageQueue.php',
     'Stats' => $baseDir . '/oc-includes/osclass/classes/Stats.php',
     'Styles' => $baseDir . '/oc-includes/osclass/classes/Styles.php',
     'Themes' => $baseDir . '/oc-includes/osclass/classes/themes/abstract/Themes.php',

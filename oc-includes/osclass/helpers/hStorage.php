@@ -36,3 +36,9 @@ StorageManager::instance()->boot();
 osc_add_hook('init', static function () {
     osc_run_hook('register_storage_adapters', StorageManager::instance());
 });
+
+// The worker self-exits instantly when the queue is empty, so running it on
+// every cron tick is cheap for installs that never queue a job.
+osc_add_hook('cron', static function () {
+    \mindstellar\storage\StorageWorker::run();
+});
