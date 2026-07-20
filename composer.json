@@ -52,7 +52,8 @@
     "pensiero/php-openssl-cryptor": "0.1.*",
     "google/recaptcha": "^1.3",
     "gettext/gettext": "4.8.*",
-    "phpseclib/mcrypt_compat": "^1.0"
+    "phpseclib/mcrypt_compat": "^1.0",
+    "async-aws/s3": "^2.10"
   }
   ,
   "require-dev": {

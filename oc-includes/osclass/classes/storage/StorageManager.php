@@ -93,10 +93,10 @@ class StorageManager
         $this->register(new LocalStorage());
 
         osc_add_filter('resource_path', [self::class, 'filterResourcePath'], 6);
-        osc_add_filter('resource_url', [self::class, 'filterResourceUrl']);
-        osc_add_filter('resource_thumbnail_url', [self::class, 'filterResourceUrl']);
-        osc_add_filter('resource_preview_url', [self::class, 'filterResourceUrl']);
-        osc_add_filter('resource_original_url', [self::class, 'filterResourceUrl']);
+        osc_add_filter('resource_url', [self::class, 'filterResourceUrlMain']);
+        osc_add_filter('resource_thumbnail_url', [self::class, 'filterResourceUrlThumbnail']);
+        osc_add_filter('resource_preview_url', [self::class, 'filterResourceUrlPreview']);
+        osc_add_filter('resource_original_url', [self::class, 'filterResourceUrlOriginal']);
     }
 
     /**
@@ -120,17 +120,81 @@ class StorageManager
     }
 
     /**
-     * Phase-1 no-op: the remote-URL hooks exist so adapters can implement
-     * presigned/expiring URLs in a later phase; nothing to do while every
-     * install is 'local'.
-     *
      * @param string     $url
      * @param array|null $resource
      *
      * @return string
      */
-    public static function filterResourceUrl($url, $resource = null)
+    public static function filterResourceUrlMain($url, $resource = null)
     {
-        return $url;
+        return self::presignVariant($resource, '', $url);
+    }
+
+    /**
+     * @param string     $url
+     * @param array|null $resource
+     *
+     * @return string
+     */
+    public static function filterResourceUrlThumbnail($url, $resource = null)
+    {
+        return self::presignVariant($resource, '_thumbnail', $url);
+    }
+
+    /**
+     * @param string     $url
+     * @param array|null $resource
+     *
+     * @return string
+     */
+    public static function filterResourceUrlPreview($url, $resource = null)
+    {
+        return self::presignVariant($resource, '_preview', $url);
+    }
+
+    /**
+     * @param string     $url
+     * @param array|null $resource
+     *
+     * @return string
+     */
+    public static function filterResourceUrlOriginal($url, $resource = null)
+    {
+        return self::presignVariant($resource, '_original', $url);
+    }
+
+    /**
+     * Shared implementation behind the four resource-url filters above.
+     * Public (non-signed) remote adapters are already handled by
+     * filterResourcePath's prefix substitution, so this only has work to do
+     * for a private bucket: swap in a time-limited presigned URL for the
+     * requested variant, falling back to the original URL whenever the
+     * adapter can't produce one.
+     *
+     * @param array|null $resource
+     * @param string     $variant
+     * @param string     $fallbackUrl
+     *
+     * @return string
+     */
+    private static function presignVariant($resource, string $variant, string $fallbackUrl): string
+    {
+        if (!is_array($resource) || ($resource['s_storage'] ?? 'local') === 'local') {
+            return $fallbackUrl;
+        }
+
+        $adapter = self::instance()->forResource($resource);
+        if (!$adapter->isRemote() || $adapter->isPublic()) {
+            return $fallbackUrl;
+        }
+
+        if (!method_exists($adapter, 'presignedUrl')) {
+            return $fallbackUrl;
+        }
+
+        $key = ResourceLocator::storageKey($resource, $variant);
+        $presigned = $adapter->presignedUrl($key);
+
+        return $presigned !== '' ? $presigned : $fallbackUrl;
     }
 }
