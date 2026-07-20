@@ -43,6 +43,7 @@ require_once LIB_PATH . 'vendor/autoload.php';
 //Register error handler
 OsclassErrors::newInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
+require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 // check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {

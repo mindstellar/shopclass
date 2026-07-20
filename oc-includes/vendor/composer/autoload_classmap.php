@@ -805,6 +805,7 @@ return array(
     'Widget' => $baseDir . '/oc-includes/osclass/classes/model/Widget.php',
     'iObject_Cache' => $baseDir . '/oc-includes/osclass/classes/cache/interface/iObject_Cache.php',
     'mindstellar\\Csrf' => $baseDir . '/oc-includes/osclass/classes/Csrf.php',
+    'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',
     'mindstellar\\form\\admin\\Item' => $baseDir . '/oc-includes/osclass/classes/form/admin/Item.php',
     'mindstellar\\form\\base\\FormBuilder' => $baseDir . '/oc-includes/osclass/classes/form/base/FormBuilder.php',
     'mindstellar\\form\\base\\FormInputs' => $baseDir . '/oc-includes/osclass/classes/form/base/FormInputs.php',
