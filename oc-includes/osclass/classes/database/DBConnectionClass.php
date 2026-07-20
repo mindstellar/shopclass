@@ -221,10 +221,31 @@ class DBConnectionClass
     /**
      * Set sql_mode
      *
+     * By default this reads the server's session sql_mode and strips a list of
+     * strict modes ($incompatible_modes: NO_ZERO_DATE, ONLY_FULL_GROUP_BY,
+     * STRICT_TRANS_TABLES, STRICT_ALL_TABLES, TRADITIONAL) before re-applying the
+     * reduced mode, loosening the connection to tolerate zero dates, over-length
+     * inserts and non-aggregated GROUP BY.
+     *
+     * Define the optional constant OSC_DB_STRICT_MODE (truthy) to opt out of that
+     * loosening: when set, the server's own sql_mode is left exactly as configured
+     * (early return, connection untouched) so the server's modern strict defaults
+     * stand. It defaults OFF, so every install that does not define it keeps the
+     * historic behaviour byte-for-byte.
+     *
+     * Before enabling, operators should audit for runtime risks: INSERT/UPDATE
+     * truncation from over-length or out-of-range values, and non-aggregated
+     * columns in GROUP BY queries. The bundled schema (struct.sql) carries no
+     * '0000-00-00' zero-date defaults, so it is strict-safe on its own; the risk
+     * is in runtime data and queries, not the schema.
+     *
      * @param array $modes
      */
     private function setSQLMode($modes = [])
     {
+        if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
+            return;
+        }
         if (empty($modes)) {
             try {
                 $res = $this->connId->query('SELECT @@SESSION.sql_mode');
