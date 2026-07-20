@@ -219,6 +219,58 @@ class QueryBuilder
     }
 
     /**
+     * OR variant of whereRaw(). Same trusted-SQL contract.
+     *
+     * @param string $expr
+     * @param array  $params
+     *
+     * @return self A cloned builder
+     */
+    public function orWhereRaw(string $expr, array $params = []): self
+    {
+        $c = clone $this;
+        $c->wheres[] = ['type' => 'raw', 'sql' => $expr, 'params' => array_values($params), 'boolean' => 'OR'];
+
+        return $c;
+    }
+
+    /**
+     * Add a parenthesised group of conditions joined to the rest with AND. The
+     * callback receives a fresh builder and must RETURN it after adding
+     * conditions (the builder is immutable, so the fluent chain's result is what
+     * gets used):
+     *
+     *   ->where('b_active', 1)
+     *   ->whereGroup(fn($q) => $q->where('s_title', 'LIKE', $t)->orWhere('s_body', 'LIKE', $t))
+     *   // => WHERE b_active = ? AND (s_title LIKE ? OR s_body LIKE ?)
+     *
+     * Groups may nest. Every condition inside the group still binds its values
+     * and validates its identifiers exactly as at the top level.
+     *
+     * @param callable $fn
+     *
+     * @return self A cloned builder
+     * @throws DbException when the callback does not return the builder
+     */
+    public function whereGroup(callable $fn): self
+    {
+        return $this->addGroup($fn, 'AND');
+    }
+
+    /**
+     * OR variant of whereGroup(): the parenthesised group is joined with OR.
+     *
+     * @param callable $fn
+     *
+     * @return self A cloned builder
+     * @throws DbException when the callback does not return the builder
+     */
+    public function orWhereGroup(callable $fn): self
+    {
+        return $this->addGroup($fn, 'OR');
+    }
+
+    /**
      * Add an INNER JOIN. The ON clause compares two COLUMNS (both validated
      * identifiers), never a bound value; the operator is whitelisted.
      *
@@ -416,21 +468,40 @@ class QueryBuilder
     }
 
     /**
-     * Count matching rows, honoring where/join. A GROUP BY is ignored here: this
-     * is a plain COUNT(*) over the where/join filter, not a count of the grouped
-     * result set (that derived-set count is out of scope).
+     * Count matching rows, honoring where/join. When a GROUP BY is set, this
+     * returns the number of GROUPS (the grouped query wrapped in a derived
+     * table), not the number of underlying rows.
      *
      * @return int
      * @throws DbException
      */
     public function count(): int
     {
-        $sql = 'SELECT COUNT(*) AS aggregate FROM ' . $this->quoteIdent($this->table);
+        if ($this->groups === []) {
+            $sql = 'SELECT COUNT(*) AS aggregate FROM ' . $this->quoteIdent($this->table);
+            $bindings = [];
+            $sql .= $this->compileJoins();
+            [$whereSql, $whereBindings] = $this->compileWheres();
+            $sql .= $whereSql;
+            $bindings = array_merge($bindings, $whereBindings);
+
+            return (int) Connection::instance()->scalar($sql, $bindings);
+        }
+
+        // Grouped: count the number of groups by wrapping the grouped query in a
+        // derived table, so count() honours GROUP BY (and HAVING) instead of
+        // silently dropping them.
+        $inner = 'SELECT 1 FROM ' . $this->quoteIdent($this->table);
         $bindings = [];
-        $sql .= $this->compileJoins();
+        $inner .= $this->compileJoins();
         [$whereSql, $whereBindings] = $this->compileWheres();
-        $sql .= $whereSql;
+        $inner .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
+        $inner .= ' GROUP BY ' . implode(', ', array_map([$this, 'quoteIdent'], $this->groups));
+        [$havingSql, $havingBindings] = $this->compileHavings();
+        $inner .= $havingSql;
+        $bindings = array_merge($bindings, $havingBindings);
+        $sql = 'SELECT COUNT(*) AS aggregate FROM (' . $inner . ') AS oscsub';
 
         return (int) Connection::instance()->scalar($sql, $bindings);
     }
@@ -587,6 +658,29 @@ class QueryBuilder
     }
 
     /**
+     * Shared whereGroup()/orWhereGroup() implementation. Runs the callback
+     * against a fresh builder for the same table and captures its where
+     * descriptors as a nested, parenthesised group.
+     *
+     * @param callable $fn
+     * @param string   $boolean 'AND' or 'OR'
+     *
+     * @return self
+     * @throws DbException when the callback does not return a QueryBuilder
+     */
+    private function addGroup(callable $fn, string $boolean): self
+    {
+        $group = $fn(new self($this->table));
+        if (!$group instanceof self) {
+            throw new DbException('Group callback must return the QueryBuilder it received');
+        }
+        $c = clone $this;
+        $c->wheres[] = ['type' => 'group', 'wheres' => $group->wheres, 'boolean' => $boolean];
+
+        return $c;
+    }
+
+    /**
      * Shared join()/leftJoin() implementation.
      *
      * @param string $type INNER or LEFT
@@ -681,12 +775,31 @@ class QueryBuilder
      */
     private function compileWheres(): array
     {
-        if ($this->wheres === []) {
+        [$conditions, $bindings] = $this->compileWhereConditions($this->wheres);
+        if ($conditions === '') {
             return ['', []];
         }
-        $sql = ' WHERE ';
+
+        return [' WHERE ' . $conditions, $bindings];
+    }
+
+    /**
+     * Compile a list of where descriptors into a boolean expression (without the
+     * leading WHERE keyword) and its bindings, in order. Recurses into nested
+     * groups so a group's own AND/OR structure is preserved inside parentheses.
+     *
+     * @param array $wheres
+     *
+     * @return array [string $sql, array $bindings]
+     */
+    private function compileWhereConditions(array $wheres): array
+    {
+        if ($wheres === []) {
+            return ['', []];
+        }
+        $sql = '';
         $bindings = [];
-        foreach ($this->wheres as $i => $where) {
+        foreach ($wheres as $i => $where) {
             if ($i > 0) {
                 $sql .= ' ' . $where['boolean'] . ' ';
             }
@@ -703,6 +816,13 @@ class QueryBuilder
                 case 'raw':
                     $sql .= '(' . $where['sql'] . ')';
                     $bindings = array_merge($bindings, $where['params']);
+                    break;
+                case 'group':
+                    [$innerSql, $innerBindings] = $this->compileWhereConditions($where['wheres']);
+                    // An empty group emits a harmless TRUE so a surrounding AND/OR
+                    // still parses.
+                    $sql .= '(' . ($innerSql === '' ? '1 = 1' : $innerSql) . ')';
+                    $bindings = array_merge($bindings, $innerBindings);
                     break;
             }
         }
