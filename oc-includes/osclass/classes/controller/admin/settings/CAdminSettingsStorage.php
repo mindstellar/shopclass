@@ -13,6 +13,7 @@
 
 use mindstellar\storage\ProviderPresets;
 use mindstellar\storage\S3Storage;
+use mindstellar\storage\StorageManager;
 use mindstellar\storage\StorageWorker;
 
 /**
@@ -65,6 +66,13 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 $this->_exportVariableToView(
                     'better_s3_active',
                     (bool) osc_get_preference('s3_enable_plugin', 'betters3')
+                );
+                $this->_exportVariableToView(
+                    'better_s3_configured',
+                    osc_get_preference('s3_bucket_name', 'betters3') !== ''
+                    && osc_get_preference('s3_access_key', 'betters3') !== ''
+                    && osc_get_preference('s3_secret_key', 'betters3') !== ''
+                    && osc_get_preference('s3_endpoint', 'betters3') !== ''
                 );
 
                 $this->doView('settings/storage.php');
@@ -140,7 +148,115 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Storage queue processed'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=storage');
                 break;
+            case ('storage_migrate_post'):
+                osc_csrf_check();
+
+                $op = Params::getParam('op');
+
+                switch ($op) {
+                    case 'offload_all':
+                        $remote = StorageManager::instance()->remote();
+                        if ($remote === null) {
+                            osc_add_flash_error_message(_m('Configure and activate a remote backend first.'), 'admin');
+                            break;
+                        }
+
+                        $n = $this->_enqueueByStorage('offload', 'local', $remote->getId());
+                        osc_add_flash_ok_message(
+                            sprintf(_m('Queued %d images to offload to remote storage.'), $n),
+                            'admin'
+                        );
+                        break;
+                    case 'restore_all':
+                        $remote = StorageManager::instance()->remote();
+                        if ($remote === null) {
+                            osc_add_flash_error_message(_m('Configure and activate a remote backend first.'), 'admin');
+                            break;
+                        }
+
+                        $n = $this->_enqueueByStorage('restore', $remote->getId(), $remote->getId());
+                        osc_add_flash_ok_message(
+                            sprintf(_m('Queued %d images to download back to local storage.'), $n),
+                            'admin'
+                        );
+                        break;
+                    case 'adopt_better_s3':
+                        $bucket = osc_get_preference('s3_bucket_name', 'betters3');
+                        $accessKey = osc_get_preference('s3_access_key', 'betters3');
+                        $secretKey = osc_get_preference('s3_secret_key', 'betters3');
+                        $endpoint = osc_get_preference('s3_endpoint', 'betters3');
+
+                        if ($bucket === '' || $accessKey === '' || $secretKey === '' || $endpoint === '') {
+                            osc_add_flash_error_message(_m('Better S3 is not configured; nothing to adopt.'), 'admin');
+                            break;
+                        }
+
+                        $cdnPath = osc_get_preference('s3_cdn_path', 'betters3');
+
+                        osc_set_preference('storage_s3_endpoint', $this->_httpUrlOrEmpty('https://' . $endpoint));
+                        osc_set_preference('storage_s3_bucket', $bucket);
+                        osc_set_preference('storage_s3_access_key', $accessKey);
+                        osc_set_preference('storage_s3_secret_key', $secretKey);
+                        osc_set_preference('storage_s3_region', 'auto');
+                        osc_set_preference('storage_s3_path_style', true);
+                        osc_set_preference('storage_s3_public_url', $cdnPath ? $this->_httpUrlOrEmpty('https://' . $cdnPath) : '');
+                        osc_set_preference('storage_active', 's3');
+
+                        // Adoption relies on the frozen storage-key scheme (path + id + variant
+                        // suffix + extension) being identical to the one the Better S3 plugin used,
+                        // so objects it already uploaded are addressable at the same keys without a
+                        // re-upload. The 's3' adapter for this run may not exist yet if it wasn't
+                        // already active; the worker resolves it fresh from the prefs saved above
+                        // on the next cron run, once hStorage.php has registered it.
+                        $n = $this->_enqueueByStorage('adopt', 'local', 's3');
+                        osc_add_flash_ok_message(
+                            sprintf(_m('Better S3 settings imported and %d local images queued for adoption.'), $n),
+                            'admin'
+                        );
+                        break;
+                }
+
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=storage');
+                break;
         }
+    }
+
+    /**
+     * Pages through every resource currently on $sourceStorage and enqueues
+     * a $jobType job targeting $targetStorageId for each one. Full rows are
+     * passed to StorageQueue::enqueue() (not just ids): the queue trims each
+     * snapshot to the fields its handlers need (s_path, s_extension,
+     * s_content_type, ...), and those fields have to come from somewhere.
+     *
+     * @param string $jobType
+     * @param string $sourceStorage
+     * @param string $targetStorageId
+     *
+     * @return int
+     */
+    private function _enqueueByStorage(string $jobType, string $sourceStorage, string $targetStorageId): int
+    {
+        $queue = StorageQueue::newInstance();
+        $model = ItemResource::newInstance();
+        $total = 0;
+        $offset = 0;
+        $batch = 500;
+
+        while (true) {
+            $rows = $model->getResourcesBatchByStorage($sourceStorage, $offset, $batch);
+            if (empty($rows)) {
+                break;
+            }
+
+            foreach ($rows as $row) {
+                $queue->enqueue($jobType, $targetStorageId, $row);
+                $total++;
+            }
+
+            $offset += $batch;
+        }
+
+        return $total;
     }
 
     /**

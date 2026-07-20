@@ -211,15 +211,35 @@ class StorageWorker
     }
 
     /**
-     * Adoption of pre-existing remote objects into the resource table is not
-     * implemented yet; dead-letter visibly rather than silently no-op.
+     * Adopts a resource already sitting in a remote bucket (e.g. one an
+     * older Better S3 install uploaded and then deleted locally) without
+     * re-uploading it: flips s_storage once the object is confirmed present
+     * remotely and confirmed absent locally. Idempotent: re-running just
+     * re-flips a row that may already point at the adapter.
      *
      * @param array $job
      * @param array $snapshot
      */
     private static function handleAdopt(array $job, array $snapshot): void
     {
-        throw new RuntimeException('not implemented');
+        $adapter = StorageManager::instance()->adapter($job['s_storage']);
+        if ($adapter === null || !$adapter->isRemote()) {
+            return;
+        }
+
+        // Only adopt rows whose local base copy is gone (better-s3 deleted locals after upload).
+        // If a local copy still exists, leave the resource local — nothing to adopt.
+        if (is_file(ResourceLocator::localPath($snapshot, ''))) {
+            return;
+        }
+
+        if (!$adapter->exists(ResourceLocator::storageKey($snapshot, ''))) {
+            return;
+        }
+
+        if (!empty($snapshot['pk_i_id'])) {
+            ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $job['s_storage']), $snapshot['pk_i_id']);
+        }
     }
 
     /**

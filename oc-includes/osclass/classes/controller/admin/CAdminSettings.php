@@ -72,6 +72,7 @@ class CAdminSettings
             case ('storage_post'):
             case ('storage_test_post'):
             case ('storage_queue_run'):
+            case ('storage_migrate_post'):
                 $do = new CAdminSettingsStorage();
                 break;
             case ('update'):

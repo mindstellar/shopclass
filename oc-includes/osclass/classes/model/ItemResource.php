@@ -359,6 +359,37 @@ class ItemResource extends DAO
     }
 
     /**
+     * Get a page of full resource rows for a given storage adapter id,
+     * ordered by pk_i_id. Used by the admin migration actions to walk every
+     * resource currently on one storage backend (e.g. 'local') and enqueue
+     * a job per row without loading the whole table into memory at once.
+     *
+     * @param string $storage
+     * @param int    $offset
+     * @param int    $limit
+     *
+     * @return array
+     * @since  5.3.0
+     */
+    public function getResourcesBatchByStorage(string $storage, int $offset, int $limit): array
+    {
+        $this->dao->select($this->getFields());
+        $this->dao->from($this->getTableName());
+        $this->dao->where('s_storage', $storage);
+        $this->dao->orderBy('pk_i_id', 'ASC');
+        $this->dao->limit($offset);
+        $this->dao->offset($limit);
+
+        $result = $this->dao->get();
+
+        if ($result === false) {
+            return array();
+        }
+
+        return $result->result();
+    }
+
+    /**
      * Delete all resources where id is in $ids
      *
      * @param array $ids

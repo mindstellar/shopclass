@@ -17,6 +17,7 @@ $prefs         = __get('prefs');
 $providers     = __get('provider_presets');
 $queueStats    = __get('queue_stats');
 $betterS3Active = __get('better_s3_active');
+$betterS3Configured = __get('better_s3_configured');
 
 //customize Head
 $storage_js = static function () use ($providers) {
@@ -277,6 +278,58 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     </li>
                                 <?php } ?>
                             </ul>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+
+            <h2 class="render-title"><?php _e('Migration'); ?></h2>
+            <div class="form-row">
+                <div class="form-controls">
+                    <p><?php _e('Backfill existing images between local disk and remote storage. Each action queues '
+                                 . 'jobs processed by the storage queue above (or by cron) rather than running immediately.'); ?></p>
+
+                    <form name="storage_offload_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
+                          onsubmit="return confirm('<?php echo osc_esc_js(__('Queue every local image for upload to remote storage?')); ?>');">
+                        <input type="hidden" name="page" value="settings"/>
+                        <input type="hidden" name="action" value="storage_migrate_post"/>
+                        <input type="hidden" name="op" value="offload_all"/>
+                        <input type="submit"
+                               value="<?php echo osc_esc_html(__('Offload all local images to remote storage')); ?>"
+                               class="btn btn-dim"/>
+                    </form>
+                    <div class="help-box">
+                        <?php _e('Backfills every image still on local disk to the active remote storage backend. '
+                                 . 'Existing images are queued for upload; new uploads are already handled automatically.'); ?>
+                    </div>
+
+                    <form name="storage_restore_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
+                          onsubmit="return confirm('<?php echo osc_esc_js(__('Download every remote image back to local disk?')); ?>');">
+                        <input type="hidden" name="page" value="settings"/>
+                        <input type="hidden" name="action" value="storage_migrate_post"/>
+                        <input type="hidden" name="op" value="restore_all"/>
+                        <input type="submit"
+                               value="<?php echo osc_esc_html(__('Download all remote images back to local (offline copy)')); ?>"
+                               class="btn btn-dim"/>
+                    </form>
+                    <div class="help-box">
+                        <?php _e('Brings every remote image back to local disk and switches it back to local storage. '
+                                 . 'Use this to keep a local copy, or before disabling remote storage.'); ?>
+                    </div>
+
+                    <?php if ($betterS3Configured) { ?>
+                        <form name="storage_adopt_better_s3_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
+                              onsubmit="return confirm('<?php echo osc_esc_js(__('Import your Better S3 settings and adopt images already in that bucket?')); ?>');">
+                            <input type="hidden" name="page" value="settings"/>
+                            <input type="hidden" name="action" value="storage_migrate_post"/>
+                            <input type="hidden" name="op" value="adopt_better_s3"/>
+                            <input type="submit"
+                                   value="<?php echo osc_esc_html(__('Adopt existing Better S3 images')); ?>"
+                                   class="btn btn-dim"/>
+                        </form>
+                        <div class="help-box">
+                            <?php _e('Imports your Better S3 connection settings and marks images already uploaded to that '
+                                     . 'bucket as remote, without re-uploading them.'); ?>
                         </div>
                     <?php } ?>
                 </div>
