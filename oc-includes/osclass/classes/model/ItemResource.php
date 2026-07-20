@@ -331,6 +331,34 @@ class ItemResource extends DAO
     }
 
     /**
+     * Get a page of resource ids, ordered by pk_i_id, without loading the
+     * full rows. Used by low-memory batch operations — e.g. queuing images
+     * for background regeneration — that need to walk the whole table.
+     *
+     * @param int $offset
+     * @param int $limit
+     *
+     * @return int[]
+     * @since  5.3.0
+     */
+    public function getResourceIdsBatch(int $offset, int $limit): array
+    {
+        $this->dao->select('pk_i_id');
+        $this->dao->from($this->getTableName());
+        $this->dao->orderBy('pk_i_id', 'ASC');
+        $this->dao->limit($offset);
+        $this->dao->offset($limit);
+
+        $result = $this->dao->get();
+
+        if ($result === false) {
+            return array();
+        }
+
+        return array_map('intval', array_column($result->result(), 'pk_i_id'));
+    }
+
+    /**
      * Delete all resources where id is in $ids
      *
      * @param array $ids

@@ -187,68 +187,45 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 }
                 osc_csrf_check();
 
-                $aResources = ItemResource::newInstance()->getAllResources();
-                foreach ($aResources as $resource) {
-                    osc_run_hook('regenerate_image', $resource);
-                    if (strpos($resource['s_content_type'], 'image') !== false) {
-                        if (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
-                            . $resource['s_extension'])
-                        ) {
-                            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
-                                . $resource['s_extension'];
-                            $use_original = true;
-                        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-                            . $resource['s_extension'])
-                        ) {
-                            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-                                . $resource['s_extension'];
-                            $use_original = false;
-                        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-                            . $resource['s_extension'])
-                        ) {
-                            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-                                . $resource['s_extension'];
-                            $use_original = false;
-                        } else {
-                            $use_original = false;
-                            continue;
-                        }
-
-                        // Create normal size
-                        $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-                            . $resource['s_extension'];
-                        $path_normal = $path;
-                        $size        = explode('x', osc_normal_dimensions());
-                        $img         = ImageProcessing::fromFile($image_tmp)->resizeTo($size[0], $size[1]);
-                        if ($use_original) {
-                            if (osc_is_watermark_text()) {
-                                $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-                            } elseif (osc_is_watermark_image()) {
-                                $img->doWatermarkImage();
-                            }
-                        }
-                        $img->saveToFile($path);
-
-                        // Create preview
-                        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-                            . $resource['s_extension'];
-                        $size = explode('x', osc_preview_dimensions());
-                        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
-
-                        // Create thumbnail
-                        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
-                            . $resource['s_extension'];
-                        $size = explode('x', osc_thumbnail_dimensions());
-                        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
-
-                        osc_run_hook(
-                            'regenerated_image',
-                            ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])
-                        );
+                if (\mindstellar\storage\StorageManager::instance()->remote() === null) {
+                    // No remote storage configured: regenerate every resource inline, exactly as before.
+                    $aResources = ItemResource::newInstance()->getAllResources();
+                    foreach ($aResources as $resource) {
+                        ItemActions::regenerateResourceImages($resource);
                     }
+
+                    osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
+                } else {
+                    // A remote adapter is active: regenerating inline would mean one synchronous
+                    // download per resource, so page through resource ids (never loading full rows)
+                    // and queue a 'regenerate' job per resource for the storage worker to process.
+                    $remoteId = \mindstellar\storage\StorageManager::instance()->remote()->getId();
+                    $itemResourceManager = ItemResource::newInstance();
+                    $batchSize = 500;
+                    $offset    = 0;
+                    $count     = 0;
+                    do {
+                        $ids = $itemResourceManager->getResourceIdsBatch($offset, $batchSize);
+                        foreach ($ids as $id) {
+                            StorageQueue::newInstance()->enqueue(
+                                'regenerate',
+                                $remoteId,
+                                array('pk_i_id' => $id, 's_storage' => $remoteId)
+                            );
+                            $count++;
+                        }
+                        $offset += $batchSize;
+                    } while (count($ids) === $batchSize);
+
+                    osc_add_flash_ok_message(
+                        sprintf(
+                            _m('Queued %d images for background regeneration. They will process automatically via cron.'),
+                            $count
+                        ),
+                        'admin'
+                    );
                 }
 
-                osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=media');
                 break;
         }

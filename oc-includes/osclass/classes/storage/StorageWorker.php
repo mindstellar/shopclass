@@ -79,6 +79,9 @@ class StorageWorker
                 case 'adopt':
                     self::handleAdopt($job, $snapshot);
                     break;
+                case 'regenerate':
+                    self::handleRegenerate($job, $snapshot);
+                    break;
                 default:
                     throw new RuntimeException('Unknown storage queue job type: ' . $job['s_type']);
             }
@@ -217,5 +220,27 @@ class StorageWorker
     private static function handleAdopt(array $job, array $snapshot): void
     {
         throw new RuntimeException('not implemented');
+    }
+
+    /**
+     * Regenerates a single resource's image variants. Queued by the
+     * "Regenerate images" admin action instead of run inline, one job per
+     * resource, when a remote storage adapter is active — that keeps each
+     * regeneration (and any pull-back of a remote-only source) off the
+     * request thread. The 'regenerated_image' hook fired from inside
+     * regenerateResourceImages() enqueues the offload back to remote
+     * storage via the existing listener.
+     *
+     * @param array $job
+     * @param array $snapshot
+     */
+    private static function handleRegenerate(array $job, array $snapshot): void
+    {
+        $resource = ItemResource::newInstance()->findByPrimaryKey($snapshot['pk_i_id'] ?? 0);
+        if ($resource === false) {
+            return; // resource deleted meanwhile; nothing to regenerate
+        }
+
+        \ItemActions::regenerateResourceImages($resource);
     }
 }

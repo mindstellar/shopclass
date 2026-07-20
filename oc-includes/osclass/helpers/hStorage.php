@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\storage\ResourceLocator;
 use mindstellar\storage\StorageManager;
 
 /**
@@ -70,4 +71,63 @@ osc_add_hook('init', static function () {
 // every cron tick is cheap for installs that never queue a job.
 osc_add_hook('cron', static function () {
     \mindstellar\storage\StorageWorker::run();
+});
+
+// Queue a freshly uploaded resource for offload to the configured remote
+// adapter. No-op on installs that never configured one.
+osc_add_hook('uploaded_file', static function ($resource) {
+    $remote = StorageManager::instance()->remote();
+    if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
+        return;
+    }
+    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
+});
+
+// Same as above, for variants rewritten by the "regenerate images" admin
+// action.
+osc_add_hook('regenerated_image', static function ($resource) {
+    $remote = StorageManager::instance()->remote();
+    if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
+        return;
+    }
+    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
+});
+
+// Regenerating images needs a local source file to resize from. When the
+// resource lives on a remote adapter and local copies were removed
+// (storage_keep_local = 'none'), pull one back down synchronously before the
+// regenerate action looks for it.
+osc_add_hook('regenerate_image', static function ($resource) {
+    if (!is_array($resource) || ($resource['s_storage'] ?? 'local') === 'local') {
+        return;
+    }
+
+    $adapter = StorageManager::instance()->forResource($resource);
+    if (!$adapter->isRemote()) {
+        return;
+    }
+
+    // A local source already exists; nothing to do.
+    foreach (array('_original', '') as $variant) {
+        if (is_file(ResourceLocator::localPath($resource, $variant))) {
+            return;
+        }
+    }
+
+    // Pull the best available source (_original preferred, then base) to local.
+    foreach (array('_original', '') as $variant) {
+        $key = ResourceLocator::storageKey($resource, $variant);
+        if (!$adapter->exists($key)) {
+            continue;
+        }
+
+        $data = $adapter->get($key);
+        if ($data === false) {
+            return;
+        }
+
+        (new \mindstellar\utility\FileSystem())->writeToFile(ResourceLocator::localPath($resource, $variant), $data);
+
+        return;
+    }
 });

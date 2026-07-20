@@ -70,6 +70,82 @@ class ItemActions
     }
 
     /**
+     * Regenerate the normal/preview/thumbnail variants of a single resource
+     * from its best available local source (preferring the original, then
+     * the current normal, then the preview). No-op when none of those exist
+     * locally or the resource isn't an image.
+     *
+     * Used by the "Regenerate images" admin action, run inline for every
+     * resource on local installs and via the storage queue 'regenerate' job,
+     * one resource at a time, on installs backed by a remote adapter.
+     *
+     * @param array $resource
+     *
+     * @return void
+     */
+    public static function regenerateResourceImages(array $resource): void
+    {
+        osc_run_hook('regenerate_image', $resource);
+        if (strpos($resource['s_content_type'], 'image') === false) {
+            return;
+        }
+
+        if (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
+                . $resource['s_extension'];
+            $use_original = true;
+        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+                . $resource['s_extension'];
+            $use_original = false;
+        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+                . $resource['s_extension'];
+            $use_original = false;
+        } else {
+            return;
+        }
+
+        // Create normal size
+        $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+            . $resource['s_extension'];
+        $path_normal = $path;
+        $size        = explode('x', osc_normal_dimensions());
+        $img         = ImageProcessing::fromFile($image_tmp)->resizeTo($size[0], $size[1]);
+        if ($use_original) {
+            if (osc_is_watermark_text()) {
+                $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
+            } elseif (osc_is_watermark_image()) {
+                $img->doWatermarkImage();
+            }
+        }
+        $img->saveToFile($path);
+
+        // Create preview
+        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+            . $resource['s_extension'];
+        $size = explode('x', osc_preview_dimensions());
+        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+
+        // Create thumbnail
+        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
+            . $resource['s_extension'];
+        $size = explode('x', osc_thumbnail_dimensions());
+        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+
+        osc_run_hook(
+            'regenerated_image',
+            ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])
+        );
+    }
+
+    /**
      * @return boolean
      */
     public function add()
