@@ -72,29 +72,53 @@ class Db
     }
 
     /**
-     * Start a new transaction and increment the nesting depth.
+     * Start a transaction, or a SAVEPOINT when one is already open, and increment
+     * the nesting depth. This is depth-aware on purpose: a bare
+     * begin_transaction() issued while a transaction is already open would cause
+     * MySQL to implicitly COMMIT the outer transaction, so nesting is done with
+     * savepoints instead. Pairs with commit()/rollBack(), which unwind the same
+     * levels — so mixing these raw helpers with transaction() is safe.
      *
      * @return bool
      */
     public static function beginTransaction(): bool
     {
+        if (self::$depth > 0) {
+            if (!self::savepoint('oscsp' . self::$depth)) {
+                return false;
+            }
+            self::$depth++;
+
+            return true;
+        }
+
         try {
             $result = self::conn()->begin_transaction();
         } catch (Throwable $e) {
             return false;
         }
-        self::$depth++;
+        if ($result) {
+            self::$depth++;
+        }
 
         return $result;
     }
 
     /**
-     * Commit the current transaction and decrement the nesting depth.
+     * Commit the innermost level: release its SAVEPOINT when nested, or commit the
+     * real transaction at the outermost level. Decrements the nesting depth.
      *
      * @return bool
      */
     public static function commit(): bool
     {
+        if (self::$depth > 1) {
+            $result = self::releaseSavepoint('oscsp' . (self::$depth - 1));
+            self::$depth--;
+
+            return $result;
+        }
+
         try {
             return self::conn()->commit();
         } catch (Throwable $e) {
@@ -107,12 +131,20 @@ class Db
     }
 
     /**
-     * Roll back the current transaction and decrement the nesting depth.
+     * Roll back the innermost level: to its SAVEPOINT when nested, or the whole
+     * transaction at the outermost level. Decrements the nesting depth.
      *
      * @return bool
      */
     public static function rollBack(): bool
     {
+        if (self::$depth > 1) {
+            $result = self::rollbackToSavepoint('oscsp' . (self::$depth - 1));
+            self::$depth--;
+
+            return $result;
+        }
+
         try {
             return self::conn()->rollback();
         } catch (Throwable $e) {
@@ -205,34 +237,17 @@ class Db
      */
     public static function transaction(callable $fn)
     {
-        if (!self::inTransaction()) {
-            self::beginTransaction();
-            try {
-                $result = $fn();
-                self::commit();
-
-                return $result;
-            } catch (Throwable $e) {
-                self::rollBack();
-                throw $e;
-            }
-        }
-
-        // Each nesting level gets a distinct savepoint name; reusing a name would
-        // make MySQL replace the earlier savepoint of that name and corrupt
-        // deeper nesting. Bump depth only after the savepoint is established.
-        $name = 'oscsp' . self::$depth;
-        self::savepoint($name);
-        self::$depth++;
+        // beginTransaction()/commit()/rollBack() are depth-aware (a real
+        // transaction at the top level, SAVEPOINTs when nested), so this one
+        // path handles both the outer and any nested call correctly.
+        self::beginTransaction();
         try {
             $result = $fn();
-            self::releaseSavepoint($name);
-            self::$depth--;
+            self::commit();
 
             return $result;
         } catch (Throwable $e) {
-            self::rollbackToSavepoint($name);
-            self::$depth--;
+            self::rollBack();
             throw $e;
         }
     }
