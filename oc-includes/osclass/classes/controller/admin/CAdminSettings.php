@@ -68,6 +68,12 @@ class CAdminSettings
             case ('latestsearches_post'):
                 $do = new CAdminSettingsLatestSearches();
                 break;
+            case ('storage'):
+            case ('storage_post'):
+            case ('storage_test_post'):
+            case ('storage_queue_run'):
+                $do = new CAdminSettingsStorage();
+                break;
             case ('update'):
             case ('check_updates'):
             default:

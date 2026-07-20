@@ -218,6 +218,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
+            __('Storage'),
+            osc_admin_base_url(true) . '?page=settings&action=storage',
+            'settings_storage',
+            'administrator'
+        );
+        $this->add_submenu(
+            'settings',
             __('Latest searches'),
             osc_admin_base_url(true) . '?page=settings&action=latestsearches',
             'settings_searches',
