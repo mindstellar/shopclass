@@ -152,7 +152,7 @@ class DBConnectionClass
             return false;
         }
 
-        $this->setCharset('utf8');
+        $this->setCharset('utf8mb4');
 
 
         if (!$this->dbName) {
@@ -315,7 +315,11 @@ class DBConnectionClass
     }
 
     /**
-     * Set charset of the database passed per parameter
+     * Set charset of the database passed per parameter.
+     *
+     * Attempts the requested charset and, if that fails, falls back to plain
+     * 'utf8' so a server without utf8mb4 support still connects. Non-fatal: any
+     * failure is reported but never aborts the connection.
      *
      * @param string $charset The charset to be set
      * @param mysqli $connId  Database link connector
@@ -326,9 +330,18 @@ class DBConnectionClass
     private function setCharset($charset)
     {
         try {
-            $this->connId->set_charset($charset);
+            if ($this->connId->set_charset($charset) === false && $charset !== 'utf8') {
+                $this->connId->set_charset('utf8');
+            }
         } catch (Exception $e) {
             $this->errorReport();
+            if ($charset !== 'utf8') {
+                try {
+                    $this->connId->set_charset('utf8');
+                } catch (Exception $e2) {
+                    $this->errorReport();
+                }
+            }
         }
     }
 

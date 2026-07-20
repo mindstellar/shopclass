@@ -76,7 +76,7 @@ if ($admin->connect_errno) {
 }
 foreach (array($freshDb, $upgradeDb) as $db) {
     $admin->query("DROP DATABASE IF EXISTS `$db`");
-    if (!$admin->query("CREATE DATABASE `$db` DEFAULT CHARACTER SET utf8")) {
+    if (!$admin->query("CREATE DATABASE `$db` DEFAULT CHARACTER SET utf8mb4")) {
         fwrite(STDERR, "cannot create $db: " . $admin->error . "\n");
         exit(2);
     }
