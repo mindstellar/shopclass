@@ -12,11 +12,90 @@
 /**
  * Helper Database
  *
- * Thin global wrappers around mindstellar\database\Db for transaction control.
+ * Thin global wrappers around mindstellar\database\Db for transaction control
+ * and mindstellar\database\Connection for injection-safe parameterized queries.
  *
  * @package    Shopclass
  * @subpackage Helpers
  */
+
+if (!function_exists('osc_db_select')) {
+    /**
+     * Run a parameterized SELECT and return every row as an associative array.
+     *
+     * Values in $params are bound as positional '?' parameters, so they can
+     * never be interpreted as SQL.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return array List of rows (empty when none match)
+     */
+    function osc_db_select(string $sql, array $params = []): array
+    {
+        return \mindstellar\database\Connection::instance()->select($sql, $params);
+    }
+}
+
+if (!function_exists('osc_db_select_one')) {
+    /**
+     * Run a parameterized SELECT and return the first row, or null.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return array|null
+     */
+    function osc_db_select_one(string $sql, array $params = []): ?array
+    {
+        return \mindstellar\database\Connection::instance()->selectOne($sql, $params);
+    }
+}
+
+if (!function_exists('osc_db_scalar')) {
+    /**
+     * Run a parameterized SELECT and return the first column of the first row.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return mixed Null when there are no rows
+     */
+    function osc_db_scalar(string $sql, array $params = [])
+    {
+        return \mindstellar\database\Connection::instance()->scalar($sql, $params);
+    }
+}
+
+if (!function_exists('osc_db_execute')) {
+    /**
+     * Run a parameterized INSERT/UPDATE/DELETE and return affected rows.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return int
+     */
+    function osc_db_execute(string $sql, array $params = []): int
+    {
+        return \mindstellar\database\Connection::instance()->execute($sql, $params);
+    }
+}
+
+if (!function_exists('osc_db_insert_id')) {
+    /**
+     * Run a parameterized INSERT and return the generated AUTO_INCREMENT id.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return int
+     */
+    function osc_db_insert_id(string $sql, array $params = []): int
+    {
+        return \mindstellar\database\Connection::instance()->insertGetId($sql, $params);
+    }
+}
 
 if (!function_exists('osc_db_transaction')) {
     /**
