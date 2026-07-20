@@ -75,6 +75,7 @@ require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/formatting.php';
 require_once LIB_PATH . 'osclass/locales.php';
 require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
+require_once LIB_PATH . 'osclass/helpers/hStorage.php';
 require_once LIB_PATH . 'osclass/emails.php';
 require_once LIB_PATH . 'osclass/alerts.php';
 require_once LIB_PATH . 'osclass/functions.php';

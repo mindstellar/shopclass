@@ -39,7 +39,7 @@ class ItemResource extends DAO
         parent::__construct();
         $this->setTableName('t_item_resource');
         $this->setPrimaryKey('pk_i_id');
-        $this->setFields(array('pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path'));
+        $this->setFields(array('pk_i_id', 'fk_i_item_id', 's_name', 's_extension', 's_content_type', 's_path', 's_storage'));
     }
 
     /**

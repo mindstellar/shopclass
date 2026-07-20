@@ -157,7 +157,8 @@ class MediaDataTable extends DataTable
                 $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" />';
                 $row['file']        = '<div id="media_list_pic"><img src="' . osc_apply_filter(
                         'resource_path',
-                        osc_base_url() . $aRow['s_path']
+                        osc_base_url() . $aRow['s_path'],
+                        $aRow
                     ) . $aRow['pk_i_id'] . '_thumbnail.' . $aRow['s_extension']
                     . '" style="max-width: 60px; max-height: 60px;" /></div> <div id="media_list_filename">'
                     . $aRow['s_content_type'];

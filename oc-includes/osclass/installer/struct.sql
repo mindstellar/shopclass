@@ -306,6 +306,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
     s_extension VARCHAR(10) NULL,
     s_content_type VARCHAR(40) NULL,
     s_path VARCHAR(250) NULL,
+    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),

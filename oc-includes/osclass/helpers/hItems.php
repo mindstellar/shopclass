@@ -991,7 +991,7 @@ function osc_resource_extension()
  */
 function osc_resource_path()
 {
-    return (string)osc_apply_filter('resource_path', osc_base_url() . osc_resource_field('s_path'));
+    return (string)osc_apply_filter('resource_path', osc_base_url() . osc_resource_field('s_path'), osc_resource());
 }
 
 
@@ -1004,7 +1004,8 @@ function osc_resource_url()
 {
     return (string)osc_apply_filter(
         'resource_url',
-        osc_resource_path() . osc_resource_id() . '.' . osc_resource_field('s_extension')
+        osc_resource_path() . osc_resource_id() . '.' . osc_resource_field('s_extension'),
+        osc_resource()
     );
 }
 
@@ -1018,7 +1019,8 @@ function osc_resource_thumbnail_url()
 {
     return (string)osc_apply_filter(
         'resource_thumbnail_url',
-        osc_resource_path() . osc_resource_id() . '_thumbnail.' . osc_resource_field('s_extension')
+        osc_resource_path() . osc_resource_id() . '_thumbnail.' . osc_resource_field('s_extension'),
+        osc_resource()
     );
 }
 
@@ -1033,7 +1035,8 @@ function osc_resource_preview_url()
 {
     return (string)osc_apply_filter(
         'resource_preview_url',
-        osc_resource_path() . osc_resource_id() . '_preview.' . osc_resource_field('s_extension')
+        osc_resource_path() . osc_resource_id() . '_preview.' . osc_resource_field('s_extension'),
+        osc_resource()
     );
 }
 
@@ -1047,7 +1050,8 @@ function osc_resource_original_url()
 {
     return (string)osc_apply_filter(
         'resource_original_url',
-        osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension')
+        osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension'),
+        osc_resource()
     );
 }
 

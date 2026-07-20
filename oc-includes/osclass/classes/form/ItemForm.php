@@ -1289,7 +1289,8 @@ class ItemForm extends Form
                         <img src="
                         <?php echo osc_apply_filter(
                                 'resource_path',
-                                osc_base_url() . $_r['s_path']
+                                osc_base_url() . $_r['s_path'],
+                                $_r
                             )
                             . $_r['pk_i_id'] . '_thumbnail.'
                             . $_r['s_extension']; ?>"/><a
@@ -1486,7 +1487,7 @@ class ItemForm extends Form
             <div class="osc-uploader-grid">
                 <?php foreach ($resources as $_r) {
                     $img   = $_r['pk_i_id'] . '.' . $_r['s_extension'];
-                    $thumb = osc_apply_filter('resource_path', osc_base_url() . $_r['s_path'])
+                    $thumb = osc_apply_filter('resource_path', osc_base_url() . $_r['s_path'], $_r)
                              . $_r['pk_i_id'] . '_thumbnail.' . $_r['s_extension']; ?>
                     <div class="osc-uploader-item"
                          data-id="<?php echo osc_esc_html($_r['pk_i_id']); ?>"
