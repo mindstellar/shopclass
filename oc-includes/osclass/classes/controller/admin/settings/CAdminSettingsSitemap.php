@@ -22,12 +22,21 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
 {
     /** @var string[] Boolean include-toggle preference keys, all under the `sitemap` group. */
     private static $toggleKeys = array(
+        'sitemap_categories',
+        'sitemap_pages',
         'sitemap_cities',
         'sitemap_regions',
         'sitemap_countries',
         'sitemap_cat_regions',
         'sitemap_cat_city',
     );
+
+    /**
+     * @var string[] Toggles that default to ON: categories and static pages are
+     *               core content, included unless the admin explicitly opts out.
+     *               (The location toggles above default to off/opt-in.)
+     */
+    private static $defaultOnToggleKeys = array('sitemap_categories', 'sitemap_pages');
 
     /** @var string[] Allowed `changefreq` values for a custom URL (sitemaps.org). */
     private static $allowedFreq = array('always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never');
@@ -158,6 +167,11 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
         }
         foreach (self::$toggleKeys as $key) {
             $prefs[$key] = osc_get_bool_preference($key, Sitemap::PREF_GROUP);
+        }
+        // Categories and pages default to on: an unset preference is "included",
+        // so the checkbox shows checked until the admin explicitly opts out.
+        foreach (self::$defaultOnToggleKeys as $key) {
+            $prefs[$key] = osc_get_preference($key, Sitemap::PREF_GROUP) !== '0';
         }
 
         $path    = $this->_robotsPath();

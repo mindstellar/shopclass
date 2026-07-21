@@ -129,9 +129,15 @@ class Sitemap extends DAO
                 $this->generateItemSitemap($page);
                 break;
             case 'category':
+                if (!$this->includeCategories()) {
+                    $this->notFound();
+                }
                 $this->generateCategorySitemap();
                 break;
             case 'pages':
+                if (!$this->includePages()) {
+                    $this->notFound();
+                }
                 $this->generatePageSitemap();
                 break;
             case 'cities':
@@ -184,7 +190,9 @@ class Sitemap extends DAO
                 $this->addSitemap(osc_base_url() . 'sitemap/item-sitemap_s' . $i . '.xml', date('Y-m-d'));
             }
 
-            $this->addSitemap(osc_base_url() . 'sitemap/category.xml', date('Y-m-d'));
+            if ($this->includeCategories()) {
+                $this->addSitemap(osc_base_url() . 'sitemap/category.xml', date('Y-m-d'));
+            }
 
             if (osc_get_preference('sitemap_cat_regions', self::PREF_GROUP)) {
                 $this->addSitemap(osc_base_url() . 'sitemap/categories-regions.xml', date('Y-m-d'));
@@ -202,7 +210,9 @@ class Sitemap extends DAO
                 $this->addSitemap(osc_base_url() . 'sitemap/countries.xml', date('Y-m-d'));
             }
 
-            $this->addSitemap(osc_base_url() . 'sitemap/pages.xml', $this->pagesModificationDate());
+            if ($this->includePages()) {
+                $this->addSitemap(osc_base_url() . 'sitemap/pages.xml', $this->pagesModificationDate());
+            }
         });
 
         return $this->deliver($xml, $output);
@@ -597,18 +607,23 @@ class Sitemap extends DAO
         $done = array();
 
         $build = array(
-            'category' => function () {
-                $this->generateCategorySitemap(false);
-            },
             'items' => function () {
                 for ($i = 0, $last = $this->lastItemPage(); $i <= $last; $i++) {
                     $this->generateItemSitemap($i, false);
                 }
             },
-            'pages' => function () {
-                $this->generatePageSitemap(false);
-            },
         );
+
+        if ($this->includeCategories()) {
+            $build['category'] = function () {
+                $this->generateCategorySitemap(false);
+            };
+        }
+        if ($this->includePages()) {
+            $build['pages'] = function () {
+                $this->generatePageSitemap(false);
+            };
+        }
 
         if (osc_get_preference('sitemap_cities', self::PREF_GROUP)) {
             $build['cities'] = function () {
@@ -848,6 +863,28 @@ class Sitemap extends DAO
         if (!empty($entry['changefreq'])) {
             $url->appendChild($this->dom->createElement('changefreq', $entry['changefreq']));
         }
+    }
+
+    /**
+     * Whether the category sitemap is included. Defaults to on (opt-out): only
+     * an explicit '0' preference disables it, so existing installs that never
+     * had the toggle keep emitting it.
+     *
+     * @return bool
+     */
+    private function includeCategories()
+    {
+        return osc_get_preference('sitemap_categories', self::PREF_GROUP) !== '0';
+    }
+
+    /**
+     * Whether the static-pages sitemap is included. Defaults to on (opt-out).
+     *
+     * @return bool
+     */
+    private function includePages()
+    {
+        return osc_get_preference('sitemap_pages', self::PREF_GROUP) !== '0';
     }
 
     /**

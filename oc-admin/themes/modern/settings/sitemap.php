@@ -51,6 +51,8 @@ $robots_writable = __get('robots_writable');
 $sitemap_index_url = __get('sitemap_index_url');
 
 $sitemapChecks = array(
+    'sitemap_categories'  => __('Include categories'),
+    'sitemap_pages'       => __('Include pages'),
     'sitemap_cities'      => __('Include cities'),
     'sitemap_regions'     => __('Include regions'),
     'sitemap_countries'   => __('Include countries'),
