@@ -164,6 +164,93 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php PageForm::primary_input_hidden($page); ?>
 
                     <div id="left-side" class="col">
+                        <?php
+                        // Page-builder canvas. A page whose saved template is a builder
+                        // template composes its body from widget blocks stored at the
+                        // page's own location (page.{id}). Blocks reuse the appearance
+                        // widget form/CRUD, threaded with page_builder_id so add/edit/
+                        // delete return here. The canvas needs a saved id for the
+                        // location, so it appears only when editing an existing page.
+                        $savedTemplate = isset($meta['template']) ? (string)$meta['template'] : '';
+                        $savedSpec     = ($savedTemplate !== '') ? osc_page_template($savedTemplate) : null;
+                        $pageId        = isset($page['pk_i_id']) ? (int)$page['pk_i_id'] : 0;
+                        if ($savedSpec !== null && !empty($savedSpec['builder']) && $pageId > 0) {
+                            $blockLocation = 'page.' . $pageId;
+                            $blocks        = Widget::newInstance()->findByLocation($blockLocation);
+                            $widgetTypes   = osc_widget_types();
+                            $addBlockUrl   = osc_admin_base_url(true) . '?page=appearance&action=add_widget'
+                                . '&location=' . rawurlencode($blockLocation) . '&page_builder_id=' . $pageId;
+                            ?>
+                            <div class="card mb-3 page-blocks-card">
+                                <div class="card-body">
+                                    <div class="page-blocks-head">
+                                        <h3 class="label"><?php _e('Page blocks'); ?></h3>
+                                        <a href="<?php echo osc_esc_html($addBlockUrl); ?>"
+                                           class="btn btn-secondary btn-sm">
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add block'); ?>
+                                        </a>
+                                    </div>
+                                    <p class="page-field-hint">
+                                        <?php _e('This page is built from the blocks below. The text editor content '
+                                            . 'is not shown on the page while the Page builder template is active.'); ?>
+                                    </p>
+                                    <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none"
+                                         role="alert"></div>
+                                    <?php if (count($blocks) > 0) { ?>
+                                        <ul class="page-blocks-list js-page-blocks"
+                                            data-location="<?php echo osc_esc_html($blockLocation); ?>">
+                                            <?php foreach ($blocks as $b) {
+                                                $wid       = (int)$b['pk_i_id'];
+                                                $typeLabel = (!empty($b['s_type']) && isset($widgetTypes[$b['s_type']]))
+                                                    ? $widgetTypes[$b['s_type']]['label']
+                                                    : __('Custom HTML');
+                                                $editUrl   = osc_admin_base_url(true) . '?page=appearance'
+                                                    . '&action=edit_widget&id=' . $wid
+                                                    . '&location=' . rawurlencode($blockLocation)
+                                                    . '&page_builder_id=' . $pageId;
+                                                $deleteUrl = osc_admin_base_url(true) . '?page=appearance'
+                                                    . '&action=delete_widget&id=' . $wid
+                                                    . '&page_builder_id=' . $pageId . '&' . osc_csrf_token_url();
+                                                ?>
+                                                <li class="page-block-row" data-widget-id="<?php echo $wid; ?>">
+                                                    <span class="page-block-handle" draggable="true" tabindex="0"
+                                                          role="button"
+                                                          aria-label="<?php echo osc_esc_html(sprintf(
+                                                              __('Reorder block %s. Drag, or focus and press the up'
+                                                              . ' or down arrow keys.'),
+                                                              $b['s_description']
+                                                          )); ?>">
+                                                        <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                                                    </span>
+                                                    <span class="page-block-main">
+                                                        <span class="page-block-desc">
+                                                            <?php echo osc_esc_html($b['s_description']); ?>
+                                                        </span>
+                                                        <span class="page-block-type">
+                                                            <?php echo osc_esc_html($typeLabel); ?>
+                                                        </span>
+                                                    </span>
+                                                    <span class="page-block-actions">
+                                                        <a href="<?php echo osc_esc_html($editUrl); ?>">
+                                                            <?php _e('Edit'); ?>
+                                                        </a>
+                                                        <a href="<?php echo osc_esc_html($deleteUrl); ?>"
+                                                           class="page-block-delete"
+                                                           data-confirm="<?php echo osc_esc_html(
+                                                               __('Delete this block?')
+                                                           ); ?>"><?php _e('Delete'); ?></a>
+                                                    </span>
+                                                </li>
+                                            <?php } ?>
+                                        </ul>
+                                    <?php } else { ?>
+                                        <p class="page-blocks-empty">
+                                            <?php _e('No blocks yet. Add your first block to build this page.'); ?>
+                                        </p>
+                                    <?php } ?>
+                                </div>
+                            </div>
+                        <?php } ?>
                         <?php PageForm::printMultiLangTitleDesc($page); ?>
                         <?php // Plugin fields render full-width here, as they did before the rail existed. ?>
                         <?php osc_run_hook('page_meta'); ?>
@@ -238,4 +325,112 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
+<script>
+    // Page-builder blocks: confirm deletes and persist drag/keyboard reordering to
+    // the shared reorder endpoint (scoped by the list's data-location). Mirrors the
+    // appearance widgets screen; no-op when the canvas is absent.
+    (function () {
+        'use strict';
+
+        document.querySelectorAll('.page-block-delete').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                if (!window.confirm(link.getAttribute('data-confirm') || 'Delete this block?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        var list = document.querySelector('.js-page-blocks');
+        if (!list) {
+            return;
+        }
+
+        var reorderUrl = <?php echo json_encode(
+            osc_admin_base_url(true) . '?page=appearance&action=reorder_widgets_post&' . osc_csrf_token_url()
+        ); ?>;
+        var errorBox = document.querySelector('.page-blocks-reorder-error');
+
+        function blockIds() {
+            return Array.prototype.map.call(
+                list.querySelectorAll('li[data-widget-id]'),
+                function (li) { return li.getAttribute('data-widget-id'); }
+            );
+        }
+
+        function commitOrder() {
+            var body = new URLSearchParams();
+            body.set('location', list.getAttribute('data-location') || '');
+            blockIds().forEach(function (id) { body.append('ids[]', id); });
+            fetch(reorderUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: body
+            }).then(function (r) { return r.json(); }).then(function (json) {
+                if (json && !json.error) {
+                    if (errorBox) { errorBox.classList.add('d-none'); }
+                } else {
+                    showError();
+                }
+            }).catch(showError);
+        }
+
+        function showError() {
+            if (errorBox) {
+                errorBox.textContent = <?php echo json_encode(
+                    __('Could not save the new block order. Reloading the page.')
+                ); ?>;
+                errorBox.classList.remove('d-none');
+            }
+            window.setTimeout(function () { window.location.reload(); }, 1500);
+        }
+
+        function move(row, dir) {
+            var sibling = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
+            if (!sibling) { return; }
+            if (dir < 0) { list.insertBefore(row, sibling); } else { list.insertBefore(sibling, row); }
+            var handle = row.querySelector('.page-block-handle');
+            if (handle) { handle.focus(); }
+            commitOrder();
+        }
+
+        var dragged = null, orderAtStart = null;
+        list.querySelectorAll('.page-block-handle').forEach(function (handle) {
+            handle.addEventListener('dragstart', function (e) {
+                dragged = handle.closest('li');
+                if (!dragged) { return; }
+                orderAtStart = blockIds().join(',');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', dragged.getAttribute('data-widget-id') || ''); } catch (err) {}
+                dragged.classList.add('page-block-dragging');
+            });
+            handle.addEventListener('dragend', function () {
+                if (dragged) {
+                    dragged.classList.remove('page-block-dragging');
+                    if (orderAtStart !== null && blockIds().join(',') !== orderAtStart) { commitOrder(); }
+                }
+                dragged = null;
+                orderAtStart = null;
+            });
+            handle.addEventListener('keydown', function (e) {
+                var row = handle.closest('li');
+                if (!row) { return; }
+                if (e.key === 'ArrowUp') { e.preventDefault(); move(row, -1); }
+                else if (e.key === 'ArrowDown') { e.preventDefault(); move(row, 1); }
+            });
+        });
+
+        list.querySelectorAll('li[data-widget-id]').forEach(function (row) {
+            row.addEventListener('dragover', function (e) {
+                if (!dragged || dragged === row) { return; }
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                var rect = row.getBoundingClientRect();
+                var before = (e.clientY - rect.top) < rect.height / 2;
+                list.insertBefore(dragged, before ? row : row.nextElementSibling);
+            });
+            row.addEventListener('drop', function (e) { e.preventDefault(); });
+        });
+    })();
+</script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

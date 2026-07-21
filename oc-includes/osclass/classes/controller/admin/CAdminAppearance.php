@@ -122,13 +122,13 @@ class CAdminAppearance extends AdminSecBaseModel
                     array('pk_i_id' => Params::getParam('id'))
                 );
                 osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+                $this->redirectTo($this->widgetReturnUrl());
                 break;
             case ('edit_widget_post'):
                 osc_csrf_check();
                 if (!osc_validate_text(Params::getParam('description'))) {
                     osc_add_flash_error_message(_m('Description field is required'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+                    $this->redirectTo($this->widgetReturnUrl());
                 }
 
                 $type = $this->resolveWidgetType(Params::getParam('s_type'));
@@ -158,13 +158,13 @@ class CAdminAppearance extends AdminSecBaseModel
                 } else {
                     osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+                $this->redirectTo($this->widgetReturnUrl());
                 break;
             case ('add_widget_post'):
                 osc_csrf_check();
                 if (!osc_validate_text(Params::getParam('description'))) {
                     osc_add_flash_error_message(_m('Description field is required'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+                    $this->redirectTo($this->widgetReturnUrl());
                 }
 
                 $location = Params::getParam('location');
@@ -194,7 +194,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     );
                 }
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+                $this->redirectTo($this->widgetReturnUrl());
                 break;
             case ('reorder_widgets_post'):
                 // JSON endpoint: flagging the request as AJAX makes the CSRF check
@@ -285,6 +285,25 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Where a widget add/edit/delete returns to. A widget managed from a static
+     * page's block canvas carries page_builder_id, so the action returns to that
+     * page editor instead of the appearance widgets screen. The id is rebuilt
+     * server-side into a fixed internal URL (never a caller-supplied redirect),
+     * so it cannot be turned into an open redirect.
+     *
+     * @return string
+     */
+    private function widgetReturnUrl()
+    {
+        $pageBuilderId = (int) Params::getParam('page_builder_id');
+        if ($pageBuilderId > 0) {
+            return osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $pageBuilderId;
+        }
+
+        return osc_admin_base_url(true) . '?page=appearance&action=widgets';
+    }
 
     /**
      * Resolve a posted s_type into a registered widget-type spec, enforcing the

@@ -64,6 +64,87 @@
     margin-block: .35rem 0;
   }
 
+  // Page-builder canvas: the list of blocks that compose a widgetized page.
+  .page-blocks-head {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+
+    .label {
+      margin-block-end: 0;
+    }
+  }
+
+  .page-blocks-list {
+    list-style: none;
+    margin: .75rem 0 0;
+    padding: 0;
+  }
+
+  .page-block-row {
+    align-items: center;
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 4px;
+    display: flex;
+    gap: .5rem;
+    margin-block-end: .5rem;
+    padding: .5rem .75rem;
+
+    &.page-block-dragging {
+      opacity: .5;
+    }
+  }
+
+  .page-block-handle {
+    align-items: center;
+    color: var(--osc-ink-muted);
+    cursor: grab;
+    display: inline-flex;
+    padding: .15rem;
+
+    &:focus-visible {
+      border-radius: 4px;
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 1px;
+    }
+  }
+
+  .page-block-main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+
+    .page-block-desc {
+      color: var(--osc-ink);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .page-block-type {
+      color: var(--osc-ink-muted);
+      font-size: .8125rem;
+    }
+  }
+
+  .page-block-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: .75rem;
+
+    a { text-decoration: none; }
+    .page-block-delete { color: var(--osc-danger); }
+  }
+
+  .page-blocks-empty {
+    color: var(--osc-ink-muted);
+    margin-block: .75rem 0;
+  }
+
   .page-footer-toggle {
     align-items: center;
     display: flex;

@@ -207,6 +207,10 @@ class CAdminPages extends AdminSecBaseModel
                             break;
                         case 1:
                             $page_deleted_correcty++;
+                            // Remove any page-builder blocks placed on this page.
+                            Widget::newInstance()->delete(
+                                array('s_location' => 'page.' . (int)$_id)
+                            );
                     }
                 }
 

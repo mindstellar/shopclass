@@ -305,6 +305,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input type="hidden" name="id" value="<?php echo Params::getParam('id', true); ?>"/>
                 <?php } ?>
                 <input type="hidden" name="location" value="<?php echo Params::getParam('location', true); ?>"/>
+                <?php // When managing a static page's blocks, carry the page id so the ?>
+                <?php // save returns to that page editor instead of the appearance screen. ?>
+                <?php if ((int)Params::getParam('page_builder_id') > 0) { ?>
+                    <input type="hidden" name="page_builder_id"
+                           value="<?php echo (int)Params::getParam('page_builder_id'); ?>"/>
+                <?php } ?>
                 <fieldset>
                     <div class="input-line">
                         <label><?php _e('Description (for internal purposes only)'); ?></label>
