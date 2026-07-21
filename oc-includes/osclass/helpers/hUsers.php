@@ -753,6 +753,56 @@ function osc_alert_is_active()
 
 
 /**
+ * Public URL of a user's avatar, or a bundled placeholder when they have none.
+ *
+ * Resolves the user's single 'user'-owned resource through the polymorphic
+ * resource layer, so the URL reflects whichever storage adapter the avatar lives
+ * on (local or remote). The main image is stored at the 'normal' variant (its
+ * base file, no suffix) and a 'thumbnail' variant; pass 'normal' for the base
+ * file or 'thumbnail' (the default) for the small one.
+ *
+ * @param int|null $userId  defaults to the logged-in web user
+ * @param string   $variant 'normal' (base file), 'thumbnail', 'preview', 'original'
+ *
+ * @return string
+ */
+function osc_user_avatar_url(?int $userId = null, string $variant = 'thumbnail'): string
+{
+    if ($userId === null) {
+        $userId = osc_logged_user_id();
+    }
+    $userId = (int)$userId;
+
+    if ($userId > 0) {
+        $resources = osc_get_resources('user', $userId);
+        if (!empty($resources)) {
+            return osc_get_resource_url($resources[0], $variant === 'normal' ? '' : $variant);
+        }
+    }
+
+    return osc_base_url() . 'oc-includes/images/avatar-placeholder.svg';
+}
+
+
+/**
+ * Whether a user has an uploaded avatar.
+ *
+ * @param int|null $userId defaults to the logged-in web user
+ *
+ * @return bool
+ */
+function osc_has_user_avatar(?int $userId = null): bool
+{
+    if ($userId === null) {
+        $userId = osc_logged_user_id();
+    }
+    $userId = (int)$userId;
+
+    return $userId > 0 && !empty(osc_get_resources('user', $userId));
+}
+
+
+/**
  * Gets next user in users array
  *
  * @return array
