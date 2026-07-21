@@ -618,16 +618,22 @@ class FileSystem
      * @param      $url
      * @param null $post_data
      * @param bool $verify_ssl
+     * @param int  $timeout Total transfer timeout in seconds. 0 (default) leaves
+     *                      no overall limit, matching the historic behaviour, so
+     *                      callers such as large-file downloads are unaffected.
      *
      * @return bool|string $data
      */
-    public function getContents($url, $post_data = null, bool $verify_ssl = true)
+    public function getContents($url, $post_data = null, bool $verify_ssl = true, int $timeout = 0)
     {
         $data = null;
         if ($this->testCurl()) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
             @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            if ($timeout > 0) {
+                @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+            }
             curl_setopt(
                 $ch,
                 CURLOPT_USERAGENT,

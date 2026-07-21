@@ -140,6 +140,25 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                      . 'both to let Turnstile take over instead. Pick a provider to force it, or None to '
                                      . 'turn captchas off.'); ?>
                         </div>
+                        <?php
+                        // A forced provider (Turnstile/reCAPTCHA) whose keys are blank
+                        // resolves to 'none', silently disabling captcha site-wide.
+                        // Warn the admin instead of leaving only the help text.
+                        if (osc_captcha_provider() === 'none'
+                            && ($captcha_provider_pref === 'turnstile' || $captcha_provider_pref === 'recaptcha')
+                        ) {
+                            $captcha_missing_keys = ($captcha_provider_pref === 'turnstile')
+                                ? __('Turnstile site key and Turnstile secret key')
+                                : __('reCAPTCHA site key and reCAPTCHA secret key');
+                            ?>
+                            <div class="callout-warning separate-top-medium">
+                                <p><?php echo osc_esc_html(sprintf(
+                                    __('Captcha is currently off: you forced a provider but its keys are empty. '
+                                       . 'Enter the %s below to turn captcha on.'),
+                                    $captcha_missing_keys
+                                )); ?></p>
+                            </div>
+                        <?php } ?>
                     </div>
                 </div>
                 <div class="form-row">

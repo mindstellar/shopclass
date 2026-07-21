@@ -872,13 +872,15 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to false
  *                         for backward compatibility; pass true for requests
  *                         carrying secrets.
+ * @param int  $timeout    total transfer timeout in seconds; 0 (default) leaves
+ *                         no overall limit, so existing callers are unaffected.
  *
  * @return bool|string|null
  */
-function osc_file_get_contents($url, $post_data = null, $verify_ssl = false)
+function osc_file_get_contents($url, $post_data = null, $verify_ssl = false, $timeout = 0)
 {
     try {
-        return (new FileSystem())->getContents($url, $post_data, $verify_ssl);
+        return (new FileSystem())->getContents($url, $post_data, $verify_ssl, (int)$timeout);
     } catch (Exception $e) {
         trigger_error($e->getMessage(), E_USER_WARNING);
 
@@ -1006,7 +1008,8 @@ function osc_check_captcha()
                         'response' => $token,
                         'remoteip' => Params::getServerParam('REMOTE_ADDR'),
                     ),
-                    true
+                    true,
+                    8
                 );
             } catch (Exception $e) {
                 return false;
