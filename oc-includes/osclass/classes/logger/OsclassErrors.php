@@ -233,17 +233,18 @@ class OsclassErrors
             . (isset($detail['line']) ? $detail['line'] : '');
         $ref  = date('ymd-His') . '-' . substr(md5($seed), 0, 6);
 
-        $oscError = array(
-            'isDebug' => $this->debugEnabled,
+        $oscSys = array(
+            'title'   => 'Something went wrong',
             'heading' => 'Something went wrong',
             'body'    => "This page ran into an unexpected error and couldn't finish loading. The problem has been "
                 . 'logged. Please try again in a moment — if it keeps happening, contact the site administrator with '
                 . 'the reference below.',
+            'tone'    => 'danger',
             'ref'     => $ref,
-            'detail'  => $detail,
+            'detail'  => $this->debugEnabled ? $detail : null,
         );
 
-        $this->includeTemplate($oscError, 'Something went wrong', 'This page could not be loaded.');
+        $this->includeTemplate($oscSys, 'Something went wrong', 'This page could not be loaded.');
         exit(1);
     }
 
@@ -267,32 +268,32 @@ class OsclassErrors
             @ob_end_clean();
         }
 
-        $oscError = array(
-            'isDebug' => $this->debugEnabled,
+        $oscSys = array(
+            'title'   => "Can't reach the database",
             'heading' => "Can't reach the database",
             'body'    => "Shopclass is running, but it can't connect to its database right now. This is usually a "
                 . 'temporary hosting hiccup or a wrong value in config.php. Please try again in a moment; if it '
                 . 'persists, check that the database server is up and that the credentials in config.php are correct.',
-            'ref'     => null,
+            'tone'    => 'warning',
             'detail'  => ($this->debugEnabled && $detailMessage !== '')
                 ? array('type' => 'Database', 'message' => $detailMessage, 'file' => '', 'line' => '', 'trace' => '')
                 : null,
         );
 
-        $this->includeTemplate($oscError, 'Database unavailable', 'Please try again shortly.');
+        $this->includeTemplate($oscSys, 'Database unavailable', 'Please try again shortly.');
         exit(1);
     }
 
     /**
      * Include the shared error template, or a bare fallback if it is missing.
      *
-     * @param array  $oscError     Data for the template
+     * @param array  $oscSys       Data for the template
      * @param string $fbHeading    Fallback heading if the template is absent
      * @param string $fbBody       Fallback body if the template is absent
      */
-    private function includeTemplate(array $oscError, string $fbHeading, string $fbBody): void
+    private function includeTemplate(array $oscSys, string $fbHeading, string $fbBody): void
     {
-        $template = ABS_PATH . 'oc-includes/osclass/gui/error.php';
+        $template = ABS_PATH . 'oc-includes/osclass/gui/system-page.php';
         if (is_file($template)) {
             include $template;
 

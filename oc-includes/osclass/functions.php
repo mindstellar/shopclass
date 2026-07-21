@@ -913,20 +913,27 @@ osc_add_hook('cron_daily', 'osc_run_cleanup');
 function osc_show_maintenance()
 {
     if (defined('__OSC_MAINTENANCE__')) { ?>
-        <div id="maintenance" name="maintenance">
-            <?php _e('The website is currently undergoing maintenance'); ?>
+        <div id="osc-maintenance-bar" role="status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+            </svg>
+            <?php _e('Maintenance mode is on — only signed-in admins can see the site right now.'); ?>
         </div>
         <style>
-            #maintenance {
-                position: static;
-                top: 0px;
-                right: 0px;
-                background-color: #ff5252;
+            #osc-maintenance-bar {
                 width: 100%;
                 text-align: center;
-                padding: 10px 0;
-                font-size: 14px;
-                color: #fefefe;
+                padding: 10px 16px;
+                background-color: #fdf4d2;
+                color: #7a6716;
+                border-bottom: 1px solid #ecdca0;
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 500;
+            }
+            #osc-maintenance-bar svg {
+                vertical-align: -3px;
+                margin-inline-end: 8px;
             }
         </style>
     <?php }

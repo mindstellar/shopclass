@@ -20,44 +20,54 @@
  */
 
 /**
- * Kill Shopclass with an error message
+ * Stop Shopclass and render a full-page system message on the shared, on-brand
+ * system page (no Bootstrap, self-contained). The message is trusted HTML, so
+ * callers may include links and <code>; embedded .button/.btn links are styled
+ * automatically.
  *
- * @param string $message Error message
- * @param string $title   Error title
+ * @param string $title   Page title (a legacy "Foo &raquo; Bar" title is
+ *                        cleaned into a heading)
+ * @param string $message Message body (trusted HTML)
+ * @param array  $options Optional: 'heading', 'tone' (info|warning|danger|
+ *                        success), 'actions' ([['label','href','primary']]),
+ *                        'status' (HTTP code)
  *
  * @since 1.2
- *
  */
-function osc_die($title, $message)
+function osc_die($title, $message, $options = array())
 {
-    ?>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?php echo $title; ?></title>
-        <link rel="stylesheet" type="text/css" media="all"
-              href="<?php echo osc_get_absolute_url(); ?>oc-includes/assets/bootstrap/bootstrap.min.css"/>
-        <link rel="stylesheet" type="text/css" media="all"
-              href="<?php echo osc_get_absolute_url(); ?>oc-includes/assets/bootstrap-icons/bootstrap-icons.css"/>
-        <script src="<?php echo osc_get_absolute_url(); ?>oc-includes/assets/bootstrap/bootstrap.min.js"
-                type="text/javascript"></script>
-    </head>
-    <body>
-    <div id="wrapper" class="container-md">
-        <div class="row">
-            <div class="offset-md-1 col-md-10 col-sm-12 align-self-center p-5" id="container">
-                <div class="card rounded-3" tabindex="-1">
-                    <div class="card-body bg-light" id="content">
-                        <h1 class="display-6"><i class="small bi bi-info-circle"></i> <?php echo $title; ?></h1>
-                        <p class="alert alert-danger shadow"><?php echo $message; ?></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    </html>
-    <?php die();
+    $heading = isset($options['heading']) ? $options['heading'] : trim(preg_replace('/\s*&raquo;.*$/', '', $title));
+    if ($heading === '') {
+        $heading = strip_tags($title);
+    }
+
+    $oscSys = array(
+        'title'     => strip_tags($title),
+        'heading'   => $heading,
+        'body'      => $message,
+        'bodyHtml'  => true,
+        'tone'      => isset($options['tone']) ? $options['tone'] : 'danger',
+        'actions'   => isset($options['actions']) ? $options['actions'] : array(),
+        'brandName' => isset($options['brandName']) ? $options['brandName'] : null,
+        'brandLogo' => isset($options['brandLogo']) ? $options['brandLogo'] : null,
+    );
+
+    if (!headers_sent()) {
+        http_response_code(isset($options['status']) ? (int)$options['status'] : 500);
+    }
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+
+    $template = ABS_PATH . 'oc-includes/osclass/gui/system-page.php';
+    if (is_file($template)) {
+        include $template;
+    } else {
+        echo '<!doctype html><meta charset="utf-8"><title>' . htmlspecialchars(strip_tags($title), ENT_QUOTES, 'UTF-8')
+            . '</title><h1>' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h1>' . $message;
+    }
+
+    die();
 }
 
 

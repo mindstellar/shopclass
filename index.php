@@ -54,12 +54,21 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 
         require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 
-        $title   = sprintf(__('Maintenance &raquo; %s'), osc_page_title());
-        $message = sprintf(
-            __('We are sorry for any inconvenience. %s is undergoing maintenance.') . '.',
-            osc_page_title()
+        osc_die(
+            sprintf(__('Maintenance &raquo; %s'), osc_page_title()),
+            sprintf(
+                __('%s is undergoing maintenance right now. We\'re making some improvements and will be back shortly — thanks for your patience.'),
+                osc_page_title()
+            ),
+            array(
+                'heading'   => __('We\'ll be right back'),
+                'tone'      => 'info',
+                'status'    => 503,
+                // The database is reachable in maintenance mode, so show the
+                // site's own name rather than the generic wordmark.
+                'brandName' => osc_page_title(),
+            )
         );
-        osc_die($title, $message);
     }
 }
 

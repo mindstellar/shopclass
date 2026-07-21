@@ -26,15 +26,25 @@ require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/config-loader.php';
 
 if (!osc_is_configured()) {
-    $title   = 'Shopclass &raquo; Error';
-    $message =
-        'Shopclass isn\'t configured yet — there is no <code>config.php</code> file and no database '
-        . 'settings were found in the environment. '
-        . '<a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>';
-    $message .= '<p><a class="btn btn-primary" href="' . osc_get_absolute_url()
-        . 'oc-includes/osclass/install.php">'
-        . 'Install</a></p>';
-    osc_die($title, $message);
+    osc_die(
+        'Shopclass isn\'t set up yet',
+        'There\'s no <code>config.php</code> file and no database settings in the environment yet. '
+        . 'Run the installer to get started.',
+        array(
+            'tone'    => 'info',
+            'actions' => array(
+                array(
+                    'label'   => 'Run the installer',
+                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
+                    'primary' => true,
+                ),
+                array(
+                    'label' => 'Need help?',
+                    'href'  => 'https://github.com/mindstellar/shopclass/discussions',
+                ),
+            ),
+        )
+    );
 }
 
 // load default constants
@@ -49,13 +59,20 @@ require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 // check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {
-    $title   = 'Shopclass &raquo; Error';
-    $message =
-        '<code>config.php</code> file is present but Shopclass isn\'t installed. '
-        .'Are you sure you want to install Shopclass?'
-        . '<p><a class="button" href="' . osc_get_absolute_url()
-        . 'oc-includes/osclass/install.php">Install</a></p>';
-    osc_die($title, $message);
+    osc_die(
+        'Shopclass isn\'t installed yet',
+        'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
+        array(
+            'tone'    => 'info',
+            'actions' => array(
+                array(
+                    'label'   => 'Run the installer',
+                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
+                    'primary' => true,
+                ),
+            ),
+        )
+    );
 }
 require_once LIB_PATH . 'osclass/helpers/hDefines.php';
 require_once LIB_PATH . 'osclass/helpers/hLocale.php';
