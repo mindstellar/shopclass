@@ -79,3 +79,30 @@ function osc_render_widget($widgetRow)
     // Legacy stored-content path — byte-identical to the historical behaviour.
     echo $widgetRow['s_content'];
 }
+
+
+/*
+ * Core "Custom Code" widget type — the sanctioned raw HTML/JavaScript escape
+ * hatch. Registered unconditionally so the type always exists; who may author
+ * it is enforced per-user by its 'super_admin' capability (the type picker and
+ * the save path both reject it for a moderator). Its single 'code' field is
+ * stored unfiltered (bypassing HTMLPurifier) only because the type is
+ * super_admin-gated — see CAdminAppearance::buildWidgetConfig(). Render echoes
+ * the stored code verbatim onto the public page.
+ */
+osc_register_widget('core.custom_code', array(
+    'capability'  => 'super_admin',
+    'label'       => 'Custom Code (HTML / JavaScript)',
+    'description' => 'Runs unfiltered HTML and JavaScript on your public pages. '
+        . 'Anyone who can edit this widget can take over the site.',
+    'fields'      => array(
+        array(
+            'name'  => 'code',
+            'label' => 'Code',
+            'type'  => 'code',
+        ),
+    ),
+    'render'      => static function ($config) {
+        echo $config['code'] ?? '';
+    },
+));

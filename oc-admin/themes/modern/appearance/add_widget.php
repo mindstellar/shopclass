@@ -202,6 +202,20 @@ function renderWidgetConfigField($typeId, $field, $value, $disabled)
                               <?php echo $disabledAttr; ?>><?php echo osc_esc_html((string) $value); ?></textarea>
                     <?php
                     break;
+                case 'code': ?>
+                    <?php // Raw HTML/JS editor: a plain monospace textarea, never
+                          // TinyMCE (it mangles script markup). The widget-code-editor
+                          // class keeps the global TinyMCE init from attaching. The
+                          // value is osc_esc_html()'d so stored code round-trips into
+                          // the field for editing without executing in this admin page. ?>
+                    <textarea id="<?php echo osc_esc_html($fieldId); ?>"
+                              class="form-control widget-code-editor"
+                              style="font-family: monospace;"
+                              name="<?php echo osc_esc_html($inputName); ?>" rows="10"
+                              spellcheck="false" autocomplete="off"
+                              <?php echo $disabledAttr; ?>><?php echo osc_esc_html((string) $value); ?></textarea>
+                    <?php
+                    break;
                 default: ?>
                     <input type="text" id="<?php echo osc_esc_html($fieldId); ?>" class="input-large"
                            name="<?php echo osc_esc_html($inputName); ?>"
@@ -221,6 +235,17 @@ $widgetTypeDescriptions = array('' => '');
 foreach ($widgetTypes as $typeId => $typeSpec) {
     $widgetTypeDescriptions[$typeId] = isset($typeSpec['description']) && is_string($typeSpec['description'])
         ? $typeSpec['description'] : '';
+}
+
+// Type id => danger warning, populated only for super_admin-capability types
+// (which store raw HTML/JS). The client toggle shows an alert-danger box with
+// this copy while such a type is selected. A non-super_admin type maps to an
+// empty string, which hides the box.
+$widgetTypeDanger = array('' => '');
+foreach ($widgetTypes as $typeId => $typeSpec) {
+    $isSuperAdminType = isset($typeSpec['capability']) && $typeSpec['capability'] === 'super_admin';
+    $widgetTypeDanger[$typeId] = ($isSuperAdminType && isset($typeSpec['description'])
+        && is_string($typeSpec['description'])) ? $typeSpec['description'] : '';
 }
 
 osc_add_hook('admin_page_header', 'customPageHeader');
@@ -306,6 +331,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                         <div class="help-box" id="widget_type_description"></div>
                     </div>
+                    <div class="alert alert-danger" role="alert" id="widget_type_danger" hidden></div>
                     <div class="input-description-wide" id="widget-legacy-content"
                         <?php echo ($currentTypeId !== '') ? 'hidden' : ''; ?>>
                         <label><?php _e('HTML Code for the Widget'); ?></label>
@@ -346,7 +372,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 </div>
 <script type="text/javascript">
     tinyMCE.init({
-        selector: "textarea",
+        selector: "textarea:not(.widget-code-editor)",
         promotion: false,
         width: "500px",
         height: "340px",
@@ -372,9 +398,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     document.addEventListener('DOMContentLoaded', function () {
         var typeSelect   = document.getElementById('widget_type_select');
         var descBox      = document.getElementById('widget_type_description');
+        var dangerBox    = document.getElementById('widget_type_danger');
         var legacyWrap   = document.getElementById('widget-legacy-content');
         var fieldsWrap   = document.getElementById('widget-type-fields');
         var descriptions = <?php echo json_encode($widgetTypeDescriptions); ?>;
+        var dangers      = <?php echo json_encode($widgetTypeDanger); ?>;
 
         if (!typeSelect) {
             return;
@@ -403,6 +431,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
             if (descBox) {
                 descBox.textContent = descriptions[typeId] || '';
+            }
+
+            if (dangerBox) {
+                var danger = dangers[typeId] || '';
+                dangerBox.textContent = danger;
+                dangerBox.hidden = (danger === '');
             }
         }
 

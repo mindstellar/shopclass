@@ -337,6 +337,19 @@ class CAdminAppearance extends AdminSecBaseModel
             $posted = array();
         }
 
+        // Unpurified copy of the same posted values, used only by 'code' fields
+        // on a super_admin-gated type so their raw HTML/JS survives. Fetched
+        // fully raw (no xss_check, no html_encode, no quotes_encode).
+        $postedRaw = Params::getParam('config', false, false, false);
+        if (!is_array($postedRaw)) {
+            $postedRaw = array();
+        }
+
+        // Whether this widget type may store raw code at all. A 'code' field on
+        // any non-super_admin type falls back to purified text (defence in
+        // depth: a moderator-reachable type must never persist raw markup).
+        $isSuperAdmin = ($type['capability'] ?? 'admin') === 'super_admin';
+
         $config = array();
         foreach ($type['fields'] as $field) {
             if (empty($field['name'])) {
@@ -361,6 +374,19 @@ class CAdminAppearance extends AdminSecBaseModel
                     $allowed = $this->selectAllowedValues($options);
                     $value   = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
                     $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
+                    break;
+                case 'code':
+                    // Raw HTML/JS, stored unfiltered — but ONLY for a
+                    // super_admin-gated type. For any other type a 'code' field
+                    // degrades to purified text so raw markup can never reach
+                    // storage from a moderator-reachable path (stored-XSS guard).
+                    if ($isSuperAdmin) {
+                        $hasRaw     = array_key_exists($name, $postedRaw);
+                        $rawValue   = $hasRaw ? $postedRaw[$name] : null;
+                        $config[$name] = $hasRaw && is_string($rawValue) ? $rawValue : (string) $default;
+                    } else {
+                        $config[$name] = $hasValue && is_string($raw) ? $raw : (string) $default;
+                    }
                     break;
                 case 'textarea':
                 case 'text':
