@@ -120,7 +120,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: var(--ins-space-5);
-    max-width: 640px;
+    max-width: 800px;
     margin-inline: auto;
 }
 
