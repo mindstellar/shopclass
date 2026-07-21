@@ -1,158 +1,450 @@
-function db_admin(){
-    var checkbox = document.getElementById('createdb');
-    var admin_username = document.getElementById('admin_username_row');
-    var admin_password = document.getElementById('admin_password_row');
-    var input_username = document.getElementById('admin_username');
-    var input_password = document.getElementById('admin_password');
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
-    if(checkbox.checked) {
-        admin_username.removeAttribute('class');
-        admin_password.removeAttribute('class');
-        input_username.disabled = false;
-        input_password.disabled = false;
-    } else {
-        admin_username.setAttribute('class', 'disabled');
-        admin_password.setAttribute('class', 'disabled');
-        input_username.disabled = true;
-        input_password.disabled = true;
-    }
-}
+(function () {
+    'use strict';
 
-function check_all (frm, check) {
-    var aa = document.getElementById(frm);
-    for (var i = 0; i < aa.elements.length; i++) {
-        aa.elements[i].checked = check;
-    }
-}
-
-function check_cat(id, check) {
-    var lay = document.getElementById("cat" + id);
-    inp = lay.getElementsByTagName("input");
-
-    for (var i = 0, maxI = inp.length; i < maxI; ++i) {
-        if(inp[i].type == "checkbox") {
-            inp[i].checked = check;
+    var i18n = {};
+    var i18nNode = document.getElementById('ins-i18n');
+    if (i18nNode) {
+        try {
+            i18n = JSON.parse(i18nNode.textContent);
+        } catch (e) {
+            i18n = {};
         }
     }
-}
 
-function check(id) {
-    if( !$('#'+id).prop('checked') )
-        $('#'+id).prop('checked',true);
-
-    var category_id = id.replace('category-','');
-    var categories = $("#cat" + category_id + " input");
-    var sum = 0;
-    $.each(categories, function(i, val){
-       if(val.checked)
-           sum++;
-    });
-    if(sum == 0)
-        $("#category-" + category_id ).prop('checked', false);
-}
-
-function validate_form() {
-    admin_user        = document.getElementById('admin_user');
-    error_admin_user  = document.getElementById('admin-user-error');
-    email = document.getElementById('email');
-    error = document.getElementById('email-error');
-    var pattern=/^([a-zA-Z0-9_\.\-\+])+@([a-zA-Z0-9_\.\-])+\.([a-zA-Z])+([a-zA-Z])+$/;
-    var num_error = 0;
-    if( !pattern.test(email.value) ) {
-        email.setAttribute('style', 'color:red;');
-        error.setAttribute('style', 'display:block;');
-        error.setAttribute('aria-hidden', 'false');
-        num_error = num_error + 1;
+    function text(key, fallback) {
+        return i18n[key] || fallback;
     }
 
-
-    var pattern_notnull=/^[a-zA-Z0-9]+$/;
-    if( !pattern_notnull.test(admin_user.value) ) {
-        error_admin_user.setAttribute('style', 'display:block;');
-        error_admin_user.setAttribute('aria-hidden', 'false');
-        num_error = num_error + 1;
-    }
-
-    if(num_error > 0) {
-        return false;
-    }
-
-    var input = $("#target_form input, #target_form select");
-    $("#lightbox").css('display','');
-
-
-    $.ajax({
-        type: 'POST',
-        dataType: 'json',
-        url: 'install-location.php',
-        data: input,
-        timeout: 600000,
-        success: function(data) {
-            if(data.status == true) {
-                var form = document.createElement("form");
-                form.setAttribute("method", 'POST');
-                form.setAttribute("action", 'install.php');
-
-                var hiddenField = document.createElement("input");
-                hiddenField.setAttribute("type", "hidden");
-                hiddenField.setAttribute("name", 'step');
-                hiddenField.setAttribute("value", '4');
-                form.appendChild(hiddenField);
-
-                hiddenField = document.createElement("input");
-                hiddenField.setAttribute("type", "hidden");
-                hiddenField.setAttribute("name", 'result');
-                hiddenField.setAttribute("value", data.email_status);
-                form.appendChild(hiddenField);
-
-                hiddenField = document.createElement("input");
-                hiddenField.setAttribute("type", "hidden");
-                hiddenField.setAttribute("name", 'password');
-                hiddenField.setAttribute("value", data.password);
-                form.appendChild(hiddenField);
-
-                document.body.appendChild(form);
-                form.submit();
-
-            } else {
-                alert("Error:<br/>"+data);
-                window.location = 'install.php?step=4&error_location=1';
-            }
-        },
-        error: function(data) {
-            $("#lightbox").css('display','none').attr('aria-hidden', 'true');
+    function formToUrlEncoded(form, extra) {
+        var params = new URLSearchParams();
+        var data = new FormData(form);
+        data.forEach(function (value, key) {
+            params.append(key, value);
+        });
+        if (extra) {
+            Object.keys(extra).forEach(function (key) {
+                params.set(key, extra[key]);
+            });
         }
-    });
-    return false;
-}
+        return params;
+    }
 
-$(document).ready(function(){
-    $("#email").focus(function() {
-        $("#email").attr('style', '');
-        $('#email-error').attr({
-            'style'         : 'display:none;',
-            'aria-hidden'   : 'true'
-        });
-    });
+    function addHiddenField(form, name, value) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
 
-    $("#admin_user").focus(function() {
-        $('#admin-user-error').attr({
-            'style'         : 'display:none;',
-            'aria-hidden'   : 'true'
-        });
-    });
-});
-
-/* Extension of jQuery */
-(function( $ ) {
-    $( ".ui-autocomplete-input" ).on( "autocompleteopen", function() {
-        var autocomplete = $( this ).data( "autocomplete" ),
-        menu = autocomplete.menu;
-        if ( !autocomplete.options.selectFirst ) {
+    function announce(message) {
+        var el = document.getElementById('ins-copy-announcer');
+        if (!el) {
             return;
         }
-        menu.activate( $.Event({
-            type: "mouseenter"
-        }), menu.element.children().first() );
+        el.textContent = '';
+        window.setTimeout(function () {
+            el.textContent = message;
+        }, 30);
+    }
+
+    /* -----------------------------------------------------------------
+       Step 1: language select reloads the page with ?install_locale=
+       ------------------------------------------------------------- */
+    function initLocaleSelect() {
+        var select = document.getElementById('install_locale');
+        if (!select) {
+            return;
+        }
+        select.addEventListener('change', function () {
+            window.location.href = '?install_locale=' + encodeURIComponent(select.value);
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Password / value reveal toggles (used on step 2, step 3, finish)
+       ------------------------------------------------------------- */
+    function initReveal() {
+        var toggles = document.querySelectorAll('[data-reveal-target]');
+        toggles.forEach(function (btn) {
+            var input = document.getElementById(btn.getAttribute('data-reveal-target'));
+            if (!input) {
+                return;
+            }
+            btn.addEventListener('click', function () {
+                var willShow = input.type === 'password';
+                input.type = willShow ? 'text' : 'password';
+                btn.setAttribute('aria-pressed', willShow ? 'true' : 'false');
+                btn.setAttribute(
+                    'aria-label',
+                    willShow ? text('hidePassword', 'Hide password') : text('showPassword', 'Show password')
+                );
+            });
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Copy-to-clipboard buttons (finish screen credentials)
+       ------------------------------------------------------------- */
+    function fallbackCopy(input) {
+        var wasReadOnly = input.hasAttribute('readonly');
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, 999999);
+        var ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (e) {
+            ok = false;
+        }
+        if (wasReadOnly) {
+            input.setAttribute('readonly', 'readonly');
+        }
+        return ok;
+    }
+
+    function initCopy() {
+        var buttons = document.querySelectorAll('.ins-copy-btn');
+        buttons.forEach(function (btn) {
+            var targetId = btn.getAttribute('data-copy-target');
+            var input = document.getElementById(targetId);
+            var label = btn.querySelector('.ins-btn-label');
+            if (!input || !label) {
+                return;
+            }
+            var originalLabel = label.textContent;
+            var resetTimer = null;
+
+            function onCopied(ok) {
+                if (resetTimer) {
+                    window.clearTimeout(resetTimer);
+                }
+                if (ok) {
+                    label.textContent = text('copied', 'Copied');
+                    btn.classList.add('is-copied');
+                    announce(text('copied', 'Copied'));
+                    resetTimer = window.setTimeout(function () {
+                        label.textContent = originalLabel;
+                        btn.classList.remove('is-copied');
+                    }, 2000);
+                } else {
+                    announce(text('copyFailed', "Couldn't copy. Select the text and copy it manually."));
+                }
+            }
+
+            btn.addEventListener('click', function () {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(input.value).then(
+                        function () {
+                            onCopied(true);
+                        },
+                        function () {
+                            onCopied(fallbackCopy(input));
+                        }
+                    );
+                } else {
+                    onCopied(fallbackCopy(input));
+                }
+            });
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Dismissible panels (finish screen: error_location warning)
+       ------------------------------------------------------------- */
+    function initDismissiblePanels() {
+        document.querySelectorAll('[data-dismiss-after]').forEach(function (panel) {
+            var delay = parseInt(panel.getAttribute('data-dismiss-after'), 10) || 6000;
+            window.setTimeout(function () {
+                dismissPanel(panel);
+            }, delay);
+        });
+        document.querySelectorAll('.ins-panel-dismiss').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var panel = btn.closest('.ins-panel');
+                if (panel) {
+                    dismissPanel(panel);
+                }
+            });
+        });
+    }
+
+    function dismissPanel(panel) {
+        panel.classList.add('is-dismissing');
+        window.setTimeout(function () {
+            panel.hidden = true;
+        }, 260);
+    }
+
+    /* -----------------------------------------------------------------
+       Step 2: "Create the database" reveals the DB admin fields
+       ------------------------------------------------------------- */
+    function initCreateDbToggle() {
+        var checkbox = document.getElementById('createdb');
+        if (!checkbox) {
+            return;
+        }
+        var wrap = document.getElementById('ins-createdb-fields');
+        var adminUser = document.getElementById('admin_username');
+        var adminPass = document.getElementById('admin_password');
+        var dbUser = document.getElementById('username');
+        var dbPass = document.getElementById('password');
+
+        function sync() {
+            var checked = checkbox.checked;
+            if (wrap) {
+                wrap.hidden = !checked;
+            }
+            if (adminUser) {
+                adminUser.disabled = !checked;
+            }
+            if (adminPass) {
+                adminPass.disabled = !checked;
+            }
+            if (checked) {
+                if (adminUser && dbUser && !adminUser.value) {
+                    adminUser.value = dbUser.value;
+                }
+                if (adminPass && dbPass && !adminPass.value) {
+                    adminPass.value = dbPass.value;
+                }
+            }
+        }
+
+        checkbox.addEventListener('change', sync);
+        sync();
+    }
+
+    /* -----------------------------------------------------------------
+       Step 2: "Test connection" — advisory, never blocks "Continue"
+       ------------------------------------------------------------- */
+    function initDbTest() {
+        var btn = document.getElementById('ins-test-btn');
+        var form = document.getElementById('ins-database-form');
+        var resultEl = document.getElementById('ins-test-result');
+        if (!btn || !form || !resultEl) {
+            return;
+        }
+
+        var fieldNames = [
+            'dbhost',
+            'dbname',
+            'username',
+            'password',
+            'tableprefix',
+            'createdb',
+            'admin_username',
+            'admin_password',
+        ];
+
+        function clearFieldFlags() {
+            fieldNames.forEach(function (name) {
+                var el = form.elements[name];
+                if (el) {
+                    el.removeAttribute('aria-invalid');
+                }
+            });
+        }
+
+        fieldNames.forEach(function (name) {
+            var el = form.elements[name];
+            if (el) {
+                el.addEventListener('input', function () {
+                    el.removeAttribute('aria-invalid');
+                });
+            }
+        });
+
+        btn.addEventListener('click', function () {
+            var originalLabel = btn.textContent.trim();
+            clearFieldFlags();
+            resultEl.textContent = '';
+            resultEl.className = 'ins-test-result';
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+            btn.querySelector('.ins-btn-label').textContent = text('testing', 'Testing…');
+
+            var params = formToUrlEncoded(form, { action: 'test_db' });
+
+            fetch('install.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    resultEl.textContent = data.message || '';
+                    resultEl.classList.add('ins-test-result-' + (data.level || 'error'));
+                    if (data.field) {
+                        var el = form.elements[data.field];
+                        if (el) {
+                            el.setAttribute('aria-invalid', 'true');
+                        }
+                    }
+                })
+                .catch(function () {
+                    resultEl.textContent = text('networkError', 'Something went wrong. Check your connection and try again.');
+                    resultEl.classList.add('ins-test-result-error');
+                })
+                .then(function () {
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    btn.querySelector('.ins-btn-label').textContent = originalLabel;
+                });
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Step 3: site + admin form, submitted via fetch, then a synthetic
+       POST to install.php carrying the result to step 4.
+       ------------------------------------------------------------- */
+    function initTargetForm() {
+        var form = document.getElementById('ins-target-form');
+        if (!form) {
+            return;
+        }
+        var wrap = document.getElementById('ins-target-wrap');
+        var overlay = document.getElementById('ins-setup-overlay');
+        var errorPanel = document.getElementById('ins-target-error');
+
+        var adminUser = document.getElementById('admin_user');
+        var adminUserError = document.getElementById('admin-user-error');
+        var email = document.getElementById('email');
+        var emailError = document.getElementById('email-error');
+
+        var userPattern = /^[A-Za-z0-9]+$/;
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        function setInvalid(input, errorEl) {
+            input.setAttribute('aria-invalid', 'true');
+            if (errorEl) {
+                errorEl.hidden = false;
+            }
+        }
+
+        function clearInvalid(input, errorEl) {
+            input.removeAttribute('aria-invalid');
+            if (errorEl) {
+                errorEl.hidden = true;
+            }
+        }
+
+        if (adminUser) {
+            adminUser.addEventListener('input', function () {
+                clearInvalid(adminUser, adminUserError);
+            });
+        }
+        if (email) {
+            email.addEventListener('input', function () {
+                clearInvalid(email, emailError);
+            });
+        }
+
+        function showOverlay() {
+            if (wrap) {
+                wrap.setAttribute('aria-busy', 'true');
+            }
+            form.hidden = true;
+            if (overlay) {
+                overlay.hidden = false;
+            }
+        }
+
+        function hideOverlay() {
+            if (wrap) {
+                wrap.removeAttribute('aria-busy');
+            }
+            form.hidden = false;
+            if (overlay) {
+                overlay.hidden = true;
+            }
+        }
+
+        function showServerError(message) {
+            if (!errorPanel) {
+                return;
+            }
+            errorPanel.textContent = message;
+            errorPanel.hidden = false;
+        }
+
+        function submitStepFour(emailStatus, password) {
+            var nextForm = document.createElement('form');
+            nextForm.method = 'POST';
+            nextForm.action = 'install.php';
+            nextForm.style.display = 'none';
+            addHiddenField(nextForm, 'step', '4');
+            addHiddenField(nextForm, 'result', emailStatus || '');
+            addHiddenField(nextForm, 'password', password || '');
+            var nonceField = form.elements.install_nonce;
+            addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
+            document.body.appendChild(nextForm);
+            nextForm.submit();
+        }
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            var hasError = false;
+            if (adminUser && !userPattern.test(adminUser.value)) {
+                setInvalid(adminUser, adminUserError);
+                hasError = true;
+            }
+            if (email && !emailPattern.test(email.value)) {
+                setInvalid(email, emailError);
+                hasError = true;
+            }
+            if (hasError) {
+                return;
+            }
+
+            if (errorPanel) {
+                errorPanel.hidden = true;
+            }
+            showOverlay();
+
+            var params = formToUrlEncoded(form);
+
+            fetch('install-location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data && data.status) {
+                        submitStepFour(data.email_status, data.password);
+                        return;
+                    }
+                    hideOverlay();
+                    showServerError((data && data.error) || text('networkError', 'Something went wrong. Check your connection and try again.'));
+                })
+                .catch(function () {
+                    hideOverlay();
+                    showServerError(text('networkError', 'Something went wrong. Check your connection and try again.'));
+                });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initLocaleSelect();
+        initReveal();
+        initCopy();
+        initDismissiblePanels();
+        initCreateDbToggle();
+        initDbTest();
+        initTargetForm();
     });
-}( jQuery ));
+})();

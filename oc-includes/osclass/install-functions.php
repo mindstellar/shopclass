@@ -126,7 +126,7 @@ function get_requirements()
             'requirement' => __('PHP version >= 8.0.0'),
             'fn'          => version_compare(PHP_VERSION, '8.0.0', '>='),
             'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. '
-                . 'You may talk with your hosting to upgrade your PHP version.'), 7.2, 7.3)
+                . 'You may talk with your hosting to upgrade your PHP version.'), '8.0', '8.2')
         ),
 
         'MySQLi extension for PHP' => array(
@@ -271,6 +271,228 @@ function check_requirements($array)
 
 
 /**
+ * Turn a MySQL/mysqli error code into a plain-language message a non-technical
+ * site owner can act on. Single source of truth shared by the install routine
+ * and the "Test connection" endpoint so both speak the same words.
+ *
+ * The message answers, in order: what happened, whose side it is on, what to do
+ * next — never a bare "Error number: N". Any host/database name folded in comes
+ * from the installer form and MUST be escaped at render time (osc_esc_html for
+ * HTML, json_encode for the JSON endpoint); it is left raw here so the caller
+ * controls the context.
+ *
+ * @param int   $code Connection or query error number
+ * @param array $ctx  Optional context: 'dbhost', 'dbname'
+ *
+ * @return array{error: string, field: ?string} Message plus the form field to
+ *         flag, when the error points at one.
+ */
+function install_db_error_message($code, array $ctx = array())
+{
+    $host   = isset($ctx['dbhost']) ? $ctx['dbhost'] : '';
+    $dbname = isset($ctx['dbname']) ? $ctx['dbname'] : '';
+
+    switch ((int)$code) {
+        case 2002:
+        case 2003:
+        case 2005:
+            return array(
+                'error' => sprintf(
+                    __("We couldn't reach a database server at %s. If your site and database are on the "
+                        . "same hosting, 'localhost' is usually the right host."),
+                    $host
+                ),
+                'field' => 'dbhost',
+            );
+        case 1045:
+            return array(
+                'error' => __('The database server rejected that username and password. Re-copy them from '
+                    . 'your hosting panel — passwords are easy to mistype.'),
+                'field' => 'password',
+            );
+        case 1044:
+            return array(
+                'error' => sprintf(
+                    __("That user connected, but isn't allowed to use the database %s. In your hosting "
+                        . 'panel, give the user access to this database.'),
+                    $dbname
+                ),
+                'field' => 'dbname',
+            );
+        case 1049:
+            return array(
+                'error' => sprintf(
+                    __("There's no database called %s yet. Open More options below and let Shopclass create "
+                        . 'it for you, or create it in your hosting panel first.'),
+                    $dbname
+                ),
+                'field' => 'dbname',
+            );
+        case 1006:
+            return array(
+                'error' => __("This user isn't allowed to create databases. Create the database in your "
+                    . 'hosting panel first, then leave "Create the database" unchecked.'),
+                'field' => 'createdb',
+            );
+        case 1050:
+            return array(
+                'error' => __('This database already has Shopclass tables in it. Choose a different table '
+                    . 'prefix under More options, or point Shopclass at an empty database.'),
+                'field' => 'tableprefix',
+            );
+        case 1142:
+        case 1471:
+            return array(
+                'error' => __("The user connected, but isn't allowed to write to this database. Grant it "
+                    . 'full privileges on the database and try again.'),
+                'field' => 'username',
+            );
+        default:
+            return array(
+                'error' => sprintf(
+                    __('The database returned an unexpected error (code %s). Your hosting support will '
+                        . 'recognise this number.'),
+                    (int)$code
+                ),
+                'field' => null,
+            );
+    }
+}
+
+
+/**
+ * Try the database settings entered on step 2 without committing to them, so the
+ * owner can confirm the connection works before running the real install. This
+ * is the installer's biggest fear-reducer.
+ *
+ * Uses only ad-hoc connections — it must NEVER establish the shared singleton,
+ * or a wrong password typed here would poison the real install that follows.
+ *
+ * @return array{ok: bool, level: string, message: string, field: ?string}
+ *         level is 'success' | 'warning' | 'error'; field names the form field
+ *         to flag, when the result points at one.
+ */
+function install_test_db_connection()
+{
+    $dbhost      = Params::getParam('dbhost');
+    $dbname      = Params::getParam('dbname');
+    $username    = Params::getParam('username');
+    $password    = Params::getParam('password', false, false);
+    $tableprefix = Params::getParam('tableprefix');
+    $createdb    = Params::getParam('createdb') != '';
+    $ctx         = array('dbhost' => $dbhost, 'dbname' => $dbname);
+
+    if ($tableprefix === '') {
+        $tableprefix = 'oc_';
+    }
+
+    if ($dbhost === '' || $dbname === '' || $username === '') {
+        return array(
+            'ok'      => false,
+            'level'   => 'error',
+            'message' => __('Fill in the host, database name and username first.'),
+            'field'   => $dbhost === '' ? 'dbhost' : ($dbname === '' ? 'dbname' : 'username'),
+        );
+    }
+
+    // When asked to create the database, the meaningful test is whether the
+    // admin credentials can reach the server at all.
+    if ($createdb) {
+        $adminUser = Params::getParam('admin_username');
+        $adminPwd  = Params::getParam('admin_password', false, false);
+        $probe     = new DBConnectionClass($dbhost, $adminUser, $adminPwd, '');
+        $code      = $probe->getErrorConnectionLevel();
+        if ($code > 0) {
+            $msg = install_db_error_message($code, $ctx);
+
+            return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
+        }
+
+        return array(
+            'ok'      => true,
+            'level'   => 'success',
+            'message' => sprintf(
+                __('Connected to the server. The database %s will be created during install.'),
+                $dbname
+            ),
+            'field'   => null,
+        );
+    }
+
+    // Otherwise connect as the real user, to the target database.
+    $probe = new DBConnectionClass($dbhost, $username, $password, $dbname);
+    $code  = $probe->getErrorConnectionLevel();
+    if ($code === 0) {
+        $code = $probe->getErrorLevel();
+    }
+    if ($code > 0) {
+        $msg = install_db_error_message($code, $ctx);
+
+        return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
+    }
+
+    // Connected. Warn early if this prefix already has Shopclass tables — the
+    // 1050 collision the real install would otherwise hit halfway through. The
+    // LIKE pattern is escaped so a literal prefix can't act as a wildcard.
+    $db = $probe->getOsclassDb();
+    if ($db instanceof mysqli) {
+        $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $tableprefix) . 't_preference';
+        $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
+        if ($res instanceof mysqli_result && $res->num_rows > 0) {
+            return array(
+                'ok'      => false,
+                'level'   => 'warning',
+                'message' => __('Connected, but this database already has Shopclass tables with that '
+                    . 'prefix. Choose a different table prefix under More options, or use an empty database.'),
+                'field'   => 'tableprefix',
+            );
+        }
+    }
+
+    return array(
+        'ok'      => true,
+        'level'   => 'success',
+        'message' => sprintf(__('Connected to %s. Ready to install.'), $dbname),
+        'field'   => null,
+    );
+}
+
+
+/**
+ * Per-session installer nonce. The installer runs before any preference exists
+ * (so osc_csrf_check() cannot yet work), so state-changing installer requests
+ * carry this token instead. Created on first render, stable for the session.
+ *
+ * @return string
+ */
+function install_nonce()
+{
+    $nonce = Session::newInstance()->_get('install_nonce');
+    if (!$nonce) {
+        $nonce = bin2hex(random_bytes(16));
+        Session::newInstance()->_set('install_nonce', $nonce);
+    }
+
+    return $nonce;
+}
+
+
+/**
+ * Verify the nonce submitted with a state-changing installer request against the
+ * one stored in the session, in constant time.
+ *
+ * @return bool
+ */
+function install_nonce_check()
+{
+    $token   = (string)Params::getParam('install_nonce');
+    $session = (string)Session::newInstance()->_get('install_nonce');
+
+    return $token !== '' && $session !== '' && hash_equals($session, $token);
+}
+
+
+/**
  * insert/update preference allow_report_osclass
  *
  * @param $value
@@ -309,6 +531,18 @@ function oc_install()
         $tableprefix = 'oc_';
     }
 
+    // The table prefix becomes a SQL identifier: it is concatenated into the
+    // table names every later query targets, and identifiers cannot be bound as
+    // parameters. Whoever submits the installer form controls it, so validate it
+    // strictly here — a stray backtick or comment must not be able to break out
+    // of an identifier. Prefixes are code-facing and near-always [A-Za-z0-9_].
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableprefix)) {
+        return array(
+            'error' => __('The table prefix can only contain letters, numbers and underscores.'),
+            'field' => 'tableprefix',
+        );
+    }
+
     if (Params::getParam('createdb') != '') {
         $createdb = true;
     }
@@ -317,57 +551,36 @@ function oc_install()
         $adminuser = Params::getParam('admin_username');
         $adminpwd  = Params::getParam('admin_password', false, false);
 
+        // Probe with an ad-hoc connection: it must never become the shared
+        // singleton, so a wrong password here can't poison later queries.
         $adminInstance = new DBConnectionClass($dbhost, $adminuser, $adminpwd, '');
         $error_num   = $adminInstance->getErrorConnectionLevel();
 
         if ($error_num > 0) {
-            switch ($error_num) {
-                case 1049:
-                    return array(
-                        'error' => __("The database doesn't exist. You should check the \"Create DB\" "
-                            . 'checkbox and fill in a username and password with the right privileges')
-                    );
-                case 1045:
-                    return array('error' => __('Cannot connect to the database. Check if the user has privileges.'));
-                case 1044:
-                    return array(
-                        'error' => __('Cannot connect to the database. Check if the username and password are correct.')
-                    );
-                case 2002:
-                case 2005:
-                    return array('error' => __("Can't resolve MySQL host. Check if the host is correct."));
-                default:
-                    return array(
-                        'error' => sprintf(__('Cannot connect to the database. Error number: %s'), $error_num),
-                    );
-            }
+            return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
         $m_db = $adminInstance->getOsclassDb();
         $comm = new DBCommandClass($m_db);
+        // Backtick-quote the database name (escaping any backtick) so a name with
+        // a hyphen or other punctuation — common on shared hosting — is created
+        // safely and can't break out of the identifier.
+        $quotedDbName = '`' . str_replace('`', '``', $dbname) . '`';
         $comm->query(sprintf(
-            "CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI'",
-            $dbname
+            "CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'",
+            $quotedDbName
         ));
 
         $error_num = $comm->getErrorLevel();
 
         if ($error_num > 0) {
-            if (in_array($error_num, array(1006, 1044, 1045))) {
-                return array(
-                    'error' => __("Can't create the database. Check if the admin username "
-                        . 'and password are correct.')
-                );
-            }
-
-            return array(
-                'error' => sprintf(__("Can't create the database. Error number: %s"), $error_num)
-            );
+            return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
         unset($dbInstance, $comm, $adminInstance);
     }
 
+    // Ad-hoc probe of the real Shopclass credentials (still not the singleton).
     $dbInstance      = new DBConnectionClass($dbhost, $username, $password, $dbname);
     $error_num = $dbInstance->getErrorConnectionLevel();
 
@@ -376,36 +589,7 @@ function oc_install()
     }
 
     if ($error_num > 0) {
-        switch ($error_num) {
-            case 1049:
-                return array(
-                    'error' => __("The database doesn't exist. You should check the \"Create DB\" "
-                        . "checkbox and fill in a username and password with the right privileges")
-                );
-                break;
-            case 1045:
-                return array('error' => __('Cannot connect to the database. Check if the user has privileges.'));
-                break;
-            case 1044:
-                return array(
-                    'error' => __('Cannot connect to the database. Check if the username and password '
-                        . 'are correct.')
-                );
-                break;
-            case 2002:
-            case 2005:
-                return array('error' => __("Can't resolve MySQL host. Check if the host is correct."));
-                break;
-            default:
-                return array(
-                    'error' => sprintf(
-                        __('Cannot connect to the database. Check if you host, username, password, '
-                            . 'database. Error number: %s'),
-                        $error_num
-                    )
-                );
-                break;
-        }
+        return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
 
     if (file_exists(ABS_PATH . 'config.php')) {
@@ -427,37 +611,26 @@ function oc_install()
 
     define_install_constants($dbhost, $dbname, $username, $password, $tableprefix);
 
-    $sql = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
-
-    $conn = new DBConnectionClass(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    // Establish the shared singleton connection now. Every write below — the DAO
+    // models, the migration ledger and the parameterized osc_db_* API — resolves
+    // this same handle, so they all run over one connection to the new schema.
+    $conn = DBConnectionClass::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $c_db = $conn->getOsclassDb();
     $comm = new DBCommandClass($c_db);
+
+    $sql = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
     $comm->importSQL($sql);
 
     $error_num = $comm->getErrorLevel();
 
     if ($error_num > 0) {
-        if ($error_num === 1050) {
-            return array(
-                'error' => __('There are tables with the same name in the database. '
-                    . 'Change the table prefix or the database and try again.')
-            );
-        }
-
-        return array(
-            'error' => sprintf(
-                __("Can't create the database structure. Error number: %s"),
-                $error_num
-            )
-        );
+        return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
 
     // Schema is already at target state; record every migration as applied without running it.
     $runner = new mindstellar\migration\MigrationRunner($comm, ABS_PATH . 'oc-includes/osclass/installer/migrations');
     $runner->ensureLedger();
     $runner->baseline();
-
-    $localeManager = OSCLocale::newInstance();
 
     $locales = osc_listLocales();
     $values  = array(
@@ -478,7 +651,20 @@ function oc_install()
     if (isset($locales[osc_current_admin_locale()]['stop_words'])) {
         $values['s_stop_words'] = $locales[osc_current_admin_locale()]['stop_words'];
     }
-    $localeManager->insert($values);
+
+    // The site language row must exist before the mail templates import: those
+    // rows carry a foreign key to t_locale. Written through the parameterized
+    // query builder (bound values, one prepared statement).
+    try {
+        osc_db_table(DB_TABLE_PREFIX . 't_locale')->insert($values);
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: could not save the site language row: ' . $e->getMessage());
+
+        return array(
+            'error' => __("Setup couldn't save the site language. The database user may not be able to "
+                . 'write to the database — grant it full privileges and try again.')
+        );
+    }
 
     $required_files = array(
         ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql',
@@ -509,26 +695,43 @@ function oc_install()
     $error_num = $comm->getErrorLevel();
 
     if ($error_num > 0) {
-        if ($error_num === 1471) {
-            return array(
-                'error' => __("Can't insert basic configuration. "
-                    . "This user has no privileges to 'INSERT' into the database.")
-            );
-        }
+        return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+    }
+
+    // Seed the installer's own preference rows through the parameterized API,
+    // grouped in one transaction so a mid-write failure leaves none of them
+    // behind. REPLACE INTO (matching Preference::replace) keeps a retry
+    // idempotent instead of hitting a duplicate key.
+    try {
+        $prefTable   = DB_TABLE_PREFIX . 't_preference';
+        $adminLocale = osc_current_admin_locale();
+        osc_db_transaction(static function () use ($prefTable, $adminLocale) {
+            $replace = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+            osc_db_execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
+            osc_db_execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
+            osc_db_execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
+        });
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: seeding preferences failed: ' . $e->getMessage());
 
         return array(
-            'error' => sprintf(
-                __("Can't insert basic configuration. Error number: %s"),
-                $error_num
-            )
+            'error' => __('Setup could not finish writing its initial settings. Nothing partial was saved '
+                . '— press the button to try again.')
         );
     }
 
-    osc_set_preference('language', osc_current_admin_locale());
-    osc_set_preference('admin_language', osc_current_admin_locale());
-    osc_set_preference('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()));
+    // Sample categories, a demo listing and the default page. These run on the
+    // existing models (their per-locale child rows carry real domain logic), so
+    // they stay on the legacy path and, crucially, are non-fatal: a site with no
+    // sample content still installs cleanly. A failure is flagged for the finish
+    // screen rather than aborting the install.
+    try {
+        oc_install_example_data();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: sample content could not be added: ' . $e->getMessage());
+        Session::newInstance()->_set('install_sample_warning', 1);
+    }
 
-    oc_install_example_data();
     copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
 
     return false;
@@ -735,23 +938,21 @@ function is_osclass_installed()
 
     require_once ABS_PATH . 'config.php';
 
-    $conn = new DBConnectionClass(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-    $c_db = $conn->getOsclassDb();
-    $comm = new DBCommandClass($c_db);
-    $rs   = $comm->query(sprintf(
-        "SELECT * FROM %st_preference WHERE s_name = 'osclass_installed'",
-        DB_TABLE_PREFIX
-    ));
-
-    if ($rs == false) {
+    try {
+        // Establish the shared connection, then ask through the parameterized
+        // API. Any failure — no server, missing table, wrong credentials —
+        // means "not installed", exactly as the previous raw query behaved.
+        // The table prefix is a config constant, never request input.
+        DBConnectionClass::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        $count = osc_db_scalar(
+            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_preference WHERE s_name = ?',
+            array('osclass_installed')
+        );
+    } catch (\Throwable $e) {
         return false;
     }
 
-    if ($rs->numRows() != 1) {
-        return false;
-    }
-
-    return true;
+    return (int)$count === 1;
 }
 
 
@@ -764,27 +965,35 @@ function finish_installation($password)
 {
     require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 
-    $data = array();
+    // Whether the owner opted in to search-engine pings on step 2 (short-lived
+    // cookie). Read before the finalize so the pref row records the choice.
+    $pingEngines = isset($_COOKIE['osclass_ping_engines']) && (int)$_COOKIE['osclass_ping_engines'] === 1;
 
-    $mAdmin = new Admin();
+    // Finalize in one transaction. The osclass_installed sentinel is written
+    // LAST, so the row that is_osclass_installed() and upgrades key off can never
+    // land beside a half-written finalize. REPLACE keeps a step-4 page refresh
+    // from tripping a duplicate key; the row values are byte-identical to before.
+    osc_db_transaction(static function () use ($pingEngines) {
+        $prefTable = DB_TABLE_PREFIX . 't_preference';
+        $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+        osc_db_execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
+        osc_db_execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
+    });
 
-    $mPreference = Preference::newInstance();
-    $mPreference->insert(
-        array(
-            's_section' => 'osclass',
-            's_name'    => 'osclass_installed',
-            's_value'   => '1',
-            'e_type'    => 'BOOLEAN'
-        )
+    // Network I/O never belongs inside a transaction: ping only after the
+    // finalize has committed, and only if the owner opted in.
+    if ($pingEngines) {
+        install_ping_search_engines();
+    }
+
+    // Admin account for the credentials shown on the finish screen.
+    $admin = osc_db_table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
+
+    return array(
+        's_email'    => $admin['s_email'] ?? '',
+        'admin_user' => $admin['s_username'] ?? '',
+        'password'   => $password,
     );
-
-    $admin = $mAdmin->findByPrimaryKey(1);
-
-    $data['s_email']    = $admin['s_email'];
-    $data['admin_user'] = $admin['s_username'];
-    $data['password']   = $password;
-
-    return $data;
 }
 
 
@@ -804,39 +1013,25 @@ function display_target()
 
 
 /**
- * @param $bool
- *
+ * Notify the major search engines that the sitemap exists. Network I/O only —
+ * the ping_search_engines preference is recorded by the finalize transaction in
+ * finish_installation(). Best-effort: each request is isolated so a slow or dead
+ * endpoint can never block the finish screen.
  */
-function ping_search_engines($bool)
+function install_ping_search_engines()
 {
-    $mPreference = Preference::newInstance();
-    if ($bool == 1) {
-        $mPreference->insert(
-            array(
-                's_section' => 'osclass',
-                's_name'    => 'ping_search_engines',
-                's_value'   => '1',
-                'e_type'    => 'BOOLEAN'
-            )
-        );
-        // GOOGLE
-        Utils::doRequest('http://www.google.com/webmasters/sitemaps/ping?sitemap='
-            . urlencode(osc_search_url(array('sFeed' => 'rss'))), array());
-        // BING
-        Utils::doRequest('http://www.bing.com/webmaster/ping.aspx?siteMap='
-            . urlencode(osc_search_url(array('sFeed' => 'rss'))), array());
-        // YAHOO!
-        Utils::doRequest('http://search.yahooapis.com/SiteExplorerService/V1/ping?sitemap='
-            . urlencode(osc_search_url(array('sFeed' => 'rss'))), array());
-    } else {
-        $mPreference->insert(
-            array(
-                's_section' => 'osclass',
-                's_name'    => 'ping_search_engines',
-                's_value'   => '0',
-                'e_type'    => 'BOOLEAN'
-            )
-        );
+    $sitemap = urlencode(osc_search_url(array('sFeed' => 'rss')));
+    $targets = array(
+        'http://www.google.com/webmasters/sitemaps/ping?sitemap=' . $sitemap,
+        'http://www.bing.com/webmaster/ping.aspx?siteMap=' . $sitemap,
+    );
+
+    foreach ($targets as $target) {
+        try {
+            Utils::doRequest($target, array());
+        } catch (\Throwable $e) {
+            error_log('Shopclass install: search-engine ping failed: ' . $e->getMessage());
+        }
     }
 }
 
@@ -865,33 +1060,29 @@ function basic_info()
         $password = osc_genRandomPassword();
     }
     Params::setParam('password', $password);
-    Admin::newInstance()->insert(
-        array(
+
+    $adminUser  = $admin;
+    $adminEmail = Params::getParam('email');
+    $adminHash  = osc_hash_password($password);
+    $webTitle   = Params::getParam('webtitle');
+
+    // The admin account and the site's identity preferences are written together
+    // in one transaction through the parameterized API: either the site has an
+    // owner and a title, or nothing is saved. Success is the returned insert id,
+    // never affected-rows (which don't propagate on the shared handle).
+    osc_db_transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
+        osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert(array(
             's_name'     => 'Administrator',
-            's_username' => $admin,
-            's_password' => osc_hash_password($password),
-            's_email'    => Params::getParam('email')
-        )
-    );
+            's_username' => $adminUser,
+            's_password' => $adminHash,
+            's_email'    => $adminEmail,
+        ));
 
-    $mPreference = Preference::newInstance();
-    $mPreference->insert(
-        array(
-            's_section' => 'osclass',
-            's_name'    => 'pageTitle',
-            's_value'   => Params::getParam('webtitle'),
-            'e_type'    => 'STRING'
-        )
-    );
-
-    $mPreference->insert(
-        array(
-            's_section' => 'osclass',
-            's_name'    => 'contactEmail',
-            's_value'   => Params::getParam('email'),
-            'e_type'    => 'STRING'
-        )
-    );
+        $prefTable = DB_TABLE_PREFIX . 't_preference';
+        $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+        osc_db_execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
+        osc_db_execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
+    });
 
     $body = sprintf(__('Hi %s,'), Params::getParam('webtitle')) . '<br/>';
     $body .= sprintf(__('Your Shopclass installation at %s is up and running.'

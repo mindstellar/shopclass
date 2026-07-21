@@ -20,23 +20,33 @@ define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
 require_once LIB_PATH . 'vendor/autoload.php';
 mindstellar\logger\OsclassErrors::newInstance()->register();
+// Helper load order mirrors the main bootstrap (oc-load.php) and is
+// dependency-ordered: hDefines (osc_plugins_path et al.) before hPlugins, and
+// hPlugins (the hook API) before hCache, which registers item-cache
+// invalidation onto lifecycle hooks at load time. Getting this order wrong
+// leaves the installer unable to render.
+require_once LIB_PATH . 'osclass/helpers/hErrors.php';
+require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
+require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 if (extension_loaded('mysqli')) {
     require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 }
-require_once LIB_PATH . 'osclass/helpers/hCache.php';
-require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDefines.php';
-require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/helpers/hLocale.php';
 require_once LIB_PATH . 'osclass/helpers/hSearch.php';
-require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 require_once LIB_PATH . 'osclass/helpers/hUtils.php';
 require_once LIB_PATH . 'osclass/helpers/hTranslations.php';
 require_once LIB_PATH . 'osclass/helpers/hSanitize.php';
+// Path constants (PLUGINS_PATH, THEMES_PATH, ...) must exist before hPlugins/
+// hCache: registering a hook resolves osc_plugins_path(), which reads
+// PLUGINS_PATH. default-constants.php only defines guarded constants from
+// CONTENT_PATH and calls no helper, so it is safe this early.
+require_once LIB_PATH . 'osclass/default-constants.php';
+require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
+require_once LIB_PATH . 'osclass/helpers/hCache.php';
 require_once LIB_PATH . 'osclass/install-functions.php';
 require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/locales.php';
-require_once LIB_PATH . 'osclass/default-constants.php';
 define('WEB_PATH', osc_get_absolute_url());
 Params::init();
 Session::newInstance()->session_start();
@@ -73,10 +83,34 @@ Session::newInstance()->_set('adminLocale', $current_locale);
 
 Translation::newInstance(true);
 
-if (is_osclass_installed()) {
-    $message =
-        __("Looks like you've already installed Shopclass. To reinstall please clear your old database tables first.");
-    osc_die('Shopclass &raquo; Error', $message);
+// Installer nonce for this session, embedded into every form and the test-db
+// request. Created here so it exists for both the rendered pages and the guards.
+$install_nonce = install_nonce();
+
+$already_installed = is_osclass_installed();
+
+// AJAX: test the database settings entered on step 2 without committing to them.
+// Answered as JSON and handled before any HTML is produced. Guarded by the
+// installer nonce (osc_csrf_check() cannot work yet — no preferences exist).
+if (!$already_installed && Params::getParam('action') === 'test_db') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!install_nonce_check()) {
+        echo json_encode(array(
+            'ok'      => false,
+            'level'   => 'error',
+            'message' => __('Your session expired. Reload the page and try again.'),
+            'field'   => null,
+        ));
+        exit;
+    }
+    echo json_encode(install_test_db_connection());
+    exit;
+}
+
+// Already installed: render the calm "already installed" card, never the form.
+if ($already_installed) {
+    include_once LIB_PATH . 'osclass/installer/gui/install.php';
+    exit;
 }
 
 switch ($step) {
@@ -134,16 +168,17 @@ switch ($step) {
         break;
     case 3:
         if (Params::getParam('dbname') != '') {
-            $error = oc_install();
+            if (!install_nonce_check()) {
+                $error = array('error' => __('Your session expired — please submit the form again.'));
+            } else {
+                $error = oc_install();
+            }
         }
         break;
     case 4:
         if (Params::getParam('result') != '') {
             $error = Params::getParam('result');
         }
-        $password = Params::getParam('password', false, false);
-        break;
-    case 5:
         $password = Params::getParam('password', false, false);
         break;
     default:
