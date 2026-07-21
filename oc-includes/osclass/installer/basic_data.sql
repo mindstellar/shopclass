@@ -131,12 +131,18 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'description_character_length', '5000', 'INTEGER')
     ,('osclass', 'update_core_json', '', 'STRING')
     ,('sitemap', 'sitemap_number', '5000', 'INTEGER')
+    ,('sitemap', 'sitemap_categories', '1', 'BOOLEAN')
+    ,('sitemap', 'sitemap_pages', '1', 'BOOLEAN')
     ,('sitemap', 'sitemap_cities', '0', 'BOOLEAN')
     ,('sitemap', 'sitemap_regions', '0', 'BOOLEAN')
     ,('sitemap', 'sitemap_countries', '0', 'BOOLEAN')
     ,('sitemap', 'sitemap_cat_regions', '0', 'BOOLEAN')
     ,('sitemap', 'sitemap_cat_city', '0', 'BOOLEAN')
-    ,('sitemap', 'custom_urls', '', 'STRING');
+    ,('sitemap', 'custom_urls', '', 'STRING')
+    ,('moderation', 'keyword_spam_enabled', '0', 'BOOLEAN')
+    ,('moderation', 'keyword_spam_hard_block', '0', 'BOOLEAN')
+    ,('moderation', 'report_autoblock', '1', 'BOOLEAN')
+    ,('moderation', 'report_threshold', '5', 'INTEGER');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

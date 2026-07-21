@@ -536,3 +536,39 @@ CREATE TABLE /*TABLE_PREFIX*/t_migration (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY (s_migration)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_keyword_block (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_keyword VARCHAR(191) NOT NULL DEFAULT '',
+    s_scope ENUM('title','description','all','meta') NOT NULL DEFAULT 'all',
+    b_substring TINYINT(1) NOT NULL DEFAULT 0,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Charset kept at UTF8 to stay byte-compatible with the report-log table an
+-- already installed classifieds theme creates via its own IF NOT EXISTS import.
+CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_reporter   VARCHAR(70) NOT NULL,
+    fk_i_user_id INT UNSIGNED NULL,
+    s_ip         VARCHAR(64) NULL,
+    s_reason     VARCHAR(20) NOT NULL,
+    dt_date      DATETIME NOT NULL,
+
+        PRIMARY KEY (fk_i_item_id, s_reporter)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_source VARCHAR(20) NOT NULL DEFAULT '',
+    s_reason VARCHAR(191) NOT NULL DEFAULT '',
+    s_field VARCHAR(20) NOT NULL DEFAULT '',
+    s_action VARCHAR(20) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        KEY fk_i_item_id (fk_i_item_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

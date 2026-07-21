@@ -60,6 +60,16 @@ class CAdminSettings
             case ('sitemap_regenerate'):
                 $do = new CAdminSettingsSitemap();
                 break;
+            case ('keyword_block'):
+            case ('keyword_block_add'):
+            case ('keyword_block_add_post'):
+            case ('keyword_block_edit'):
+            case ('keyword_block_edit_post'):
+            case ('keyword_block_delete'):
+            case ('keyword_block_import_post'):
+            case ('keyword_block_prefs_post'):
+                $do = new CAdminSettingsKeywordBlock();
+                break;
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();
                 break;

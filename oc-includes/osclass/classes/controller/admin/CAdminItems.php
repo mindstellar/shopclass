@@ -332,6 +332,28 @@ class CAdminItems extends AdminSecBaseModel
                             ), $numSuccess), 'admin');
                         }
                         break;
+                    case 'clear_reports_all':
+                        // 'clear_all' only resets the raw t_item_stats counters. This also
+                        // forgets the deduplicated report log, so the reports already on
+                        // file cannot immediately re-trigger the report-threshold auto-block.
+                        $id = Params::getParam('id');
+
+                        if ($id) {
+                            $numSuccess = 0;
+                            foreach ($id as $i) {
+                                if ($i) {
+                                    $this->itemManager->clearStat($i, 'all');
+                                    ItemReport::newInstance()->clear((int) $i);
+                                    $numSuccess++;
+                                }
+                            }
+                            osc_add_flash_ok_message(sprintf(_mn(
+                                '%d listing has had its reports cleared',
+                                '%d listings have had their reports cleared',
+                                $numSuccess
+                            ), $numSuccess), 'admin');
+                        }
+                        break;
                     default:
                         if (Params::getParam('bulk_actions') != '') {
                             osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
@@ -485,6 +507,24 @@ class CAdminItems extends AdminSecBaseModel
                     osc_add_flash_error_message(_m('An error has occurred'), 'admin');
                 }
 
+                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+                break;
+            case 'clear_reports':
+                // Row-level twin of the 'clear_reports_all' bulk action: resets the raw
+                // t_item_stats counters AND forgets the deduplicated report log, so
+                // reports already on file cannot immediately re-trigger the
+                // report-threshold auto-block.
+                osc_csrf_check();
+                $id = (int) Params::getParam('id');
+
+                if ($id <= 0) {
+                    return false;
+                }
+
+                $this->itemManager->clearStat($id, 'all');
+                ItemReport::newInstance()->clear($id);
+
+                osc_add_flash_ok_message(_m('Reports have been cleared for this listing'), 'admin');
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case 'clear_stat':

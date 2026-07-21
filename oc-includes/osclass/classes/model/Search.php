@@ -1050,7 +1050,7 @@ class Search extends DAO
     public function getLatestItems($numItems = 10, $options = array(), $withPicture = false)
     {
         $key         =
-            md5(osc_base_url() . (string)$numItems . json_encode($options) . (string)$withPicture);
+            md5(osc_cache_search_generation() . osc_base_url() . (string)$numItems . json_encode($options) . (string)$withPicture);
         $found       = null;
         $latestItems = osc_cache_get($key, $found);
         if ($latestItems === false) {

@@ -197,6 +197,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
+            __('Keyword blocklist'),
+            osc_admin_base_url(true) . '?page=settings&action=keyword_block',
+            'settings_keyword_block',
+            'administrator'
+        );
+        $this->add_submenu(
+            'settings',
             __('Sitemap'),
             osc_admin_base_url(true) . '?page=settings&action=sitemap',
             'settings_sitemap',

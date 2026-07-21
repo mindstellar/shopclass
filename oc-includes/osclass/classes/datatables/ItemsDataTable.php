@@ -332,8 +332,22 @@ class ItemsDataTable extends DataTable
                 $status               = $this->get_row_status();
                 $row['status-border'] = '';
                 $row['status']        = $status['text'];
-                $row['title']         =
-                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . $title . '</a>' . $actions;
+
+                // A spam-quarantined listing has no user reports behind it (that is the
+                // reported-listings screen's job) — this is its only "why" surface, so
+                // the lookup only runs for the rows that actually need it.
+                $moderationBadge = '';
+                if ($aRow['b_spam']) {
+                    $modLog = ItemModerationLog::newInstance()->latestForItem((int) $aRow['pk_i_id']);
+                    if ($modLog !== null) {
+                        $moderationBadge = ' <span class="badge bg-warning text-dark" title="'
+                            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format()))
+                            . '">' . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+                    }
+                }
+                $row['title'] =
+                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . $title . '</a>'
+                    . $moderationBadge . $actions;
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
@@ -587,6 +601,11 @@ class ItemsDataTable extends DataTable
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
+        // Distinct, deduplicated reporters (one vote per person) and the recorded
+        // "why hidden" reason — both new in the item-moderation log, both plainly
+        // distinct from the raw, un-deduplicated i_num_* columns to their right.
+        $this->addColumn('reporters', __('Unique reporters'));
+        $this->addColumn('reason', __('Why hidden'));
         $this->addColumn('spam', '<a id="order_spam" href="' . osc_esc_html($url_spam) . '">' . __('Spam') . '</a>');
         $this->addColumn(
             'bad',
@@ -624,6 +643,8 @@ class ItemsDataTable extends DataTable
                     $title .= '...';
                 }
 
+                $options[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=clear_reports&amp;id='
+                    . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Clear reports') . '</a>';
                 $options[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=clear_stat&amp;id='
                     . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;stat=all">' . __('Clear All') . '</a>';
                 if ($aRow['i_num_spam'] > 0) {
@@ -673,6 +694,8 @@ class ItemsDataTable extends DataTable
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
                 $row['title']       = '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
                 $row['user']        = osc_esc_html($aRow['s_user_name']);
+                $row['reporters']   = $this->reportersCell((int) $aRow['pk_i_id']);
+                $row['reason']      = $this->reasonCell((int) $aRow['pk_i_id']);
                 $row['spam']        = $aRow['i_num_spam'];
                 $row['bad']         = $aRow['i_num_bad_classified'];
                 $row['rep']         = $aRow['i_num_repeated'];
@@ -692,6 +715,74 @@ class ItemsDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * The "Unique reporters" cell: the deduplicated, one-vote-per-person count
+     * from t_item_report_log, with the per-reason breakdown on hover. Deliberately
+     * distinct from the raw i_num_* columns, which count every report including
+     * repeats from the same person.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function reportersCell($itemId)
+    {
+        $count = ItemReport::newInstance()->countReporters($itemId);
+        if ($count === 0) {
+            return '<span class="text-muted">' . osc_esc_html(__('None')) . '</span>';
+        }
+
+        $parts = array();
+        foreach (ItemReport::newInstance()->reasonBreakdown($itemId) as $reason => $reasonCount) {
+            $parts[] = osc_esc_html($reason) . ': ' . (int) $reasonCount;
+        }
+
+        return '<span class="badge bg-secondary" title="' . osc_esc_html(implode(', ', $parts)) . '">'
+            . (int) $count . '</span>';
+    }
+
+    /**
+     * The "Why hidden" cell: the latest t_item_moderation_log entry for this
+     * item, if any — the durable record of what quarantined or auto-blocked it.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function reasonCell($itemId)
+    {
+        $modLog = ItemModerationLog::newInstance()->latestForItem($itemId);
+        if ($modLog === null) {
+            return '';
+        }
+
+        return '<span class="badge bg-warning text-dark" title="'
+            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format())) . '">'
+            . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+    }
+
+    /**
+     * Render a short "why hidden" label from a moderation-log row —
+     * `keyword: "viagra"` for a keyword hit, `reports: 5` for a report-threshold
+     * auto-block. The caller is responsible for escaping; this returns raw text.
+     *
+     * @param array $modLog a t_item_moderation_log row
+     *
+     * @return string
+     */
+    private function moderationReasonLabel($modLog)
+    {
+        if ($modLog['s_source'] === 'keyword') {
+            return sprintf('%s: "%s"', __('keyword'), $modLog['s_reason']);
+        }
+        if ($modLog['s_source'] === 'report_threshold') {
+            // Stored as "reports:5" (osc_item_report_record()) — add the space back.
+            return str_replace(':', ': ', (string) $modLog['s_reason']);
+        }
+
+        return (string) $modLog['s_reason'];
     }
 
     /**
