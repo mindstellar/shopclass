@@ -10,6 +10,7 @@ RUN apk add --no-cache \
       coreutils \
       curl \
       git \
+      msmtp \
       zip unzip \
 # iconv, mbstring and pdo_sqlite are omitted as they are already installed
     && PHP_EXTENSIONS=" \
@@ -36,7 +37,23 @@ RUN apk add --no-cache \
       xsl \
       zip \
     " \
-    && install-php-extensions $PHP_EXTENSIONS 
+    && install-php-extensions $PHP_EXTENSIONS
+
+# Route outgoing mail to the Mailhog container so the installer's welcome
+# e-mail (and any other mail) is catchable in a browser during development.
+RUN printf '%s\n' \
+      'defaults' \
+      'auto_from on' \
+      'tls off' \
+      'syslog off' \
+      '' \
+      'account mailhog' \
+      'host mailhog' \
+      'port 1025' \
+      '' \
+      'account default : mailhog' \
+      > /etc/msmtprc
+
 # Install Composer.
 ENV PATH=$PATH:/root/composer/vendor/bin \
   COMPOSER_ALLOW_SUPERUSER=1 \

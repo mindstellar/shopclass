@@ -1,65 +1,89 @@
-# Docker Compose Configuration for Shopclass Application
-name: osclass
+# Docker Compose configuration for the Shopclass local development stack.
+#
+# Quick start:
+#   docker compose up -d --build
+#   open http://localhost:5080  and run the installer with:
+#     Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
+#
+# Override any default by exporting the matching variable (or using a .env file).
+name: shopclass
+
 services:
-  # PHP-FPM Service
+  # PHP-FPM (the application runtime)
   php-fpm:
     build:
       context: .
       dockerfile: .docker/php-fpm/Dockerfile
-    container_name: osclass-php-fpm
+    container_name: shopclass-php-fpm
     working_dir: /application
     volumes:
       - .:/application
-      - ./.docker/php-fpm/php-ini-overrides.ini:/etc/php/8.2/fpm/conf.d/99-overrides.ini
+      # Alpine PHP keeps its config here, not /etc/php/<ver>/...
+      - ./.docker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
+    depends_on:
+      mariadb:
+        condition: service_healthy
     command: php-fpm
 
-  # MySQL Database
-  mysql:
-    # Uncomment this line if you are using a M1 Mac and facing issues with MySQL image
-    # platform: linux/x86_64
-    image: mysql:8.0
-    container_name: osclass-mysql
+  # MariaDB database
+  mariadb:
+    image: mariadb:11
+    container_name: shopclass-mariadb
     volumes:
-      - mysql-data:/var/lib/mysql
+      - db-data:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=${ROOT_PASSWORD_MYSQL:-root}
-      - MYSQL_DATABASE=${OSCLASS_DATABASE_NAME:-osclass}
-      - MYSQL_USER=${OSCLASS_DATABASE_USER:-osclass}
-      - MYSQL_PASSWORD=${OSCLASS_DATABASE_PASSWORD:-osclass}
-      
-  # Memcached for Caching
+      - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MARIADB_DATABASE=${SHOPCLASS_DATABASE_NAME:-shopclass}
+      - MARIADB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}
+      - MARIADB_PASSWORD=${SHOPCLASS_DATABASE_PASSWORD:-shopclass}
+    ports:
+      # Reach the database from the host (e.g. a GUI client) at 127.0.0.1:5306.
+      - "5306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Memcached (optional object cache)
   memcached:
     image: memcached:alpine
-    container_name: osclass-memcached
+    container_name: shopclass-memcached
 
-  # Nginx Webserver
+  # Nginx web server
   webserver:
     image: nginx:alpine
-    container_name: osclass-webserver
+    container_name: shopclass-webserver
     working_dir: /application
     volumes:
       - .:/application
       - ./.docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-fpm
     ports:
       - "5080:80"
 
-  # Mailhog for Email Testing
+  # Mailhog — catches every outgoing e-mail so you can read it in a browser
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: osclass-mailhog
+    container_name: shopclass-mailhog
     ports:
       - "5025:8025"
 
-  # PHPMyAdmin for Database Management
+  # phpMyAdmin — database UI
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: osclass-phpmyadmin
+    container_name: shopclass-phpmyadmin
+    depends_on:
+      mariadb:
+        condition: service_healthy
     ports:
       - "5800:80"
     environment:
-      - PMA_HOST=mysql
+      - PMA_HOST=mariadb
       - PMA_USER=root
       - PMA_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+
 # persistent volumes
 volumes:
-  mysql-data:
+  db-data:
