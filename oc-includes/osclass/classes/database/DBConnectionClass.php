@@ -240,6 +240,11 @@ class DBConnectionClass
             $this->errorLevel = $e->getCode();
             $this->connErrorLevel = $e->getCode();
             $this->connErrorDesc = $e->getMessage();
+            // Never keep a half-initialized handle around: mysqli_init()
+            // succeeded but real_connect() failed, so getOsclassDb() must return
+            // null (as it did when a failed `new mysqli` threw) rather than an
+            // object that fatals with "mysqli object is not fully initialized".
+            $this->connId = null;
             return false;
         }
 
@@ -247,6 +252,7 @@ class DBConnectionClass
         if ($this->connId->connect_errno) {
             $this->errorConnection();
             $this->errorReport();  // Set error information
+            $this->connId = null;
             return false;
         }
         $this->setSQLMode();
