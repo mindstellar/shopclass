@@ -60,8 +60,28 @@ first-class maintenance/cleanup toolset built in.
 
 1. Download the latest package from the [**Releases**](https://github.com/mindstellar/shopclass/releases) page and unpack it into your web root (e.g. `public_html`).
 2. Open your site in a browser — `https://example.com/` — and the installer starts automatically (or go straight to `oc-includes/osclass/install.php`).
-3. Follow the installer: confirm file permissions, enter your database details, set the site name and country, and finish.
-4. Sign in at `https://example.com/oc-admin/` with the generated admin password.
+3. Follow the four steps below.
+4. Sign in at `https://example.com/oc-admin/` with the admin password shown on the final screen.
+
+### The installer, step by step
+
+**1 · Check server** — the installer confirms your PHP version, extensions and folder permissions up front, so nothing fails halfway through.
+
+<img src="docs/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
+
+**2 · Connect database** — enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
+
+<img src="docs/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
+
+**3 · Your site** — pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
+
+<img src="docs/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
+
+**4 · Done** — copy your admin password (it's also e-mailed to you) and open the admin panel.
+
+<img src="docs/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
+
+The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
 ## Local development
 
@@ -83,19 +103,39 @@ change.
 
 ### Run it with Docker
 
+A full local stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
+ships in `docker-compose.yml`:
+
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
+
+Then open **http://localhost:5080** and run the installer with these database
+details (leave the admin password blank on step 3 for a generated one):
+
+| Field | Value |
+|---|---|
+| Host | `mariadb` |
+| Database | `shopclass` |
+| User | `shopclass` |
+| Password | `shopclass` |
+
+Outgoing e-mail — including the installer's welcome message — is caught by
+**Mailhog**, so you can read it in a browser instead of it silently failing.
 
 | Service | Address |
 |---|---|
-| Web server | http://localhost:5080 |
-| phpMyAdmin | http://localhost:5800 |
-| MySQL | `localhost:5306` |
-| Mailhog | http://localhost:5025 |
+| Site | http://localhost:5080 |
+| Mailhog inbox | http://localhost:5025 |
+| phpMyAdmin | http://localhost:5800 (root / `root`) |
+| MySQL (from host) | `127.0.0.1:5306` |
 
-Inside the network, services resolve as `php-fpm:9000`, `mysql:3306`,
-`memcached:11211`, and `mailhog:1025`.
+Inside the compose network the services resolve as `php-fpm:9000`,
+`mariadb:3306`, `memcached:11211`, and `mailhog:1025`. Override the database name and
+credentials with the `SHOPCLASS_DATABASE_NAME` / `SHOPCLASS_DATABASE_USER` /
+`SHOPCLASS_DATABASE_PASSWORD` variables and the root password with
+`MYSQL_ROOT_PASSWORD` (export them, or put them in a `.env` file next to the
+compose file).
 
 ## Brand
 
