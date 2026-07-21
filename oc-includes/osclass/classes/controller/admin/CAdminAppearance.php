@@ -131,13 +131,27 @@ class CAdminAppearance extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
                 }
 
-                $res = Widget::newInstance()->update(
-                    array(
-                        's_description' => Params::getParam('description'),
-                        's_content'     => Params::getParam('content', false, false)
-                    ),
-                    array('pk_i_id' => Params::getParam('id'))
-                );
+                $type = $this->resolveWidgetType(Params::getParam('s_type'));
+
+                if ($type !== null) {
+                    $res = Widget::newInstance()->update(
+                        array(
+                            's_description' => Params::getParam('description'),
+                            's_content'     => '',
+                            's_type'        => $type['id'],
+                            's_config'      => json_encode($this->buildWidgetConfig($type))
+                        ),
+                        array('pk_i_id' => Params::getParam('id'))
+                    );
+                } else {
+                    $res = Widget::newInstance()->update(
+                        array(
+                            's_description' => Params::getParam('description'),
+                            's_content'     => Params::getParam('content', false, false)
+                        ),
+                        array('pk_i_id' => Params::getParam('id'))
+                    );
+                }
 
                 if ($res) {
                     osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
@@ -154,15 +168,31 @@ class CAdminAppearance extends AdminSecBaseModel
                 }
 
                 $location = Params::getParam('location');
-                Widget::newInstance()->insert(
-                    array(
-                        's_location'    => $location,
-                        'e_kind'        => 'html',
-                        's_description' => Params::getParam('description'),
-                        's_content'     => Params::getParam('content', false, false),
-                        'i_order'       => Widget::newInstance()->getNextOrder($location)
-                    )
-                );
+                $type     = $this->resolveWidgetType(Params::getParam('s_type'));
+
+                if ($type !== null) {
+                    Widget::newInstance()->insert(
+                        array(
+                            's_location'    => $location,
+                            'e_kind'        => 'html',
+                            's_description' => Params::getParam('description'),
+                            's_content'     => '',
+                            's_type'        => $type['id'],
+                            's_config'      => json_encode($this->buildWidgetConfig($type)),
+                            'i_order'       => Widget::newInstance()->getNextOrder($location)
+                        )
+                    );
+                } else {
+                    Widget::newInstance()->insert(
+                        array(
+                            's_location'    => $location,
+                            'e_kind'        => 'html',
+                            's_description' => Params::getParam('description'),
+                            's_content'     => Params::getParam('content', false, false),
+                            'i_order'       => Widget::newInstance()->getNextOrder($location)
+                        )
+                    );
+                }
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
                 break;
@@ -255,6 +285,125 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Resolve a posted s_type into a registered widget-type spec, enforcing the
+     * type's capability. Returns null for the legacy (no type) path so the
+     * caller falls back to stored-content behaviour.
+     *
+     * An s_type that is non-empty but not registered, or a super_admin type
+     * requested by a moderator, is rejected here with a flash error + redirect
+     * (redirectTo exits) so a typed save can never silently degrade to a
+     * mislabelled legacy row or bypass the capability gate.
+     *
+     * @param string $sType Posted s_type value.
+     *
+     * @return array|null The registered type spec, or null for the legacy path.
+     */
+    private function resolveWidgetType($sType)
+    {
+        if ($sType === '' || $sType === null) {
+            return null;
+        }
+
+        $type = \mindstellar\widgets\WidgetRegistry::instance()->get($sType);
+        if ($type === null) {
+            osc_add_flash_error_message(_m('Unknown widget type'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+        }
+
+        if ($type['capability'] === 'super_admin' && osc_is_moderator()) {
+            osc_add_flash_error_message(_m('You are not allowed to add this widget type'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
+        }
+
+        return $type;
+    }
+
+    /**
+     * Build the config array for a typed widget from the posted config[] values,
+     * keeping only the keys the type declares in 'fields' and sanitising each
+     * value per its declared field type. Unknown posted keys are dropped.
+     *
+     * @param array $type A registered widget-type spec.
+     *
+     * @return array Sanitised config keyed by field name.
+     */
+    private function buildWidgetConfig($type)
+    {
+        // Default purification (HTMLPurifier) already applied to each value.
+        $posted = Params::getParam('config');
+        if (!is_array($posted)) {
+            $posted = array();
+        }
+
+        $config = array();
+        foreach ($type['fields'] as $field) {
+            if (empty($field['name'])) {
+                continue;
+            }
+            $name      = $field['name'];
+            $fieldType = $field['type'] ?? 'text';
+            $default   = $field['default'] ?? null;
+            $hasValue  = array_key_exists($name, $posted);
+            $raw       = $hasValue ? $posted[$name] : null;
+
+            switch ($fieldType) {
+                case 'number':
+                    $config[$name] = $hasValue ? (int) $raw : (int) $default;
+                    break;
+                case 'checkbox':
+                    $config[$name] = ($hasValue && $raw !== '' && $raw !== '0') ? 1 : 0;
+                    break;
+                case 'select':
+                    $options = isset($field['options']) && is_array($field['options'])
+                        ? $field['options'] : array();
+                    $allowed = $this->selectAllowedValues($options);
+                    $value   = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
+                    $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
+                    break;
+                case 'textarea':
+                case 'text':
+                default:
+                    $config[$name] = $hasValue && is_string($raw) ? $raw : (string) $default;
+                    break;
+            }
+        }
+
+        return $config;
+    }
+
+    /**
+     * Whitelist of acceptable string values for a select field, tolerant of the
+     * common option shapes: an associative value=>label map (keys are the
+     * values), a flat list of scalar values, or a list of
+     * ['value'=>..,'label'=>..] entries.
+     *
+     * @param array $options Declared field options.
+     *
+     * @return string[] Allowed values as strings.
+     */
+    private function selectAllowedValues($options)
+    {
+        $allowed = array();
+        foreach ($options as $key => $option) {
+            if (is_array($option)) {
+                if (array_key_exists('value', $option) && is_scalar($option['value'])) {
+                    $allowed[] = (string) $option['value'];
+                }
+                continue;
+            }
+            if (!is_int($key)) {
+                // Associative map: the key is the option value.
+                $allowed[] = (string) $key;
+            } elseif (is_scalar($option)) {
+                // Flat list: the entry itself is the option value.
+                $allowed[] = (string) $option;
+            }
+        }
+
+        return $allowed;
+    }
 
 }
 

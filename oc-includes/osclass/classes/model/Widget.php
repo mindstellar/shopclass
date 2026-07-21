@@ -32,7 +32,7 @@ class Widget extends DAO
         parent::__construct();
         $this->setTableName('t_widget');
         $this->setPrimaryKey('pk_i_id');
-        $this->setFields(array('pk_i_id', 's_description', 's_location', 'e_kind', 's_content', 'i_order'));
+        $this->setFields(array('pk_i_id', 's_description', 's_location', 'e_kind', 's_content', 'i_order', 's_type', 's_config'));
     }
 
     /**

@@ -104,6 +104,7 @@ require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
 require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
 require_once LIB_PATH . 'osclass/helpers/hSpam.php';
+require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
 require_once LIB_PATH . 'osclass/compatibility.php';
 
 
