@@ -26,7 +26,7 @@ if (!defined('ABS_PATH')) {
                placeholder="Enter your E-mail">
         <label for="user_email"><?php _e('E-mail'); ?></label>
     </div>
-    <?php osc_show_recaptcha(); ?>
+    <?php osc_show_captcha(); ?>
     <?php osc_run_hook('admin_forgot_password_form'); ?>
     <button class="w-100 btn btn-lg btn-primary" type="submit" name="submit" id="submit"><?php
         echo osc_esc_html(__('Get new password')); ?></button>

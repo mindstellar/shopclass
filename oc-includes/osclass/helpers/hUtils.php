@@ -157,6 +157,155 @@ function _osc_recaptcha_get_html($siteKey, $lang)
 
 
 /**
+ * Resolves the active captcha provider for this request.
+ *
+ * reCAPTCHA and Cloudflare Turnstile sit behind one abstraction. The stored
+ * captchaProvider preference selects the leg; the result is memoised per
+ * request. Resolution rules:
+ *   - 'none'      -> 'none'
+ *   - 'turnstile' -> 'turnstile' when both Turnstile keys are set, else 'none'
+ *   - 'recaptcha' -> 'recaptcha' when the reCAPTCHA private key is set, else 'none'
+ *   - 'auto'/''   -> 'turnstile' when Turnstile is configured AND reCAPTCHA is
+ *                    not enabled; else 'recaptcha' when reCAPTCHA is enabled;
+ *                    else 'none'.
+ *
+ * Auto prefers reCAPTCHA when both are configured because core validates
+ * g-recaptcha-response natively whenever the reCAPTCHA private key is set:
+ * clearing the reCAPTCHA keys is what stands core down and flips auto to
+ * Turnstile.
+ *
+ * @return string 'recaptcha' | 'turnstile' | 'none'
+ */
+function osc_captcha_provider()
+{
+    static $provider = null;
+    if ($provider !== null) {
+        return $provider;
+    }
+
+    $recaptcha_enabled = osc_recaptcha_private_key() !== '';
+
+    switch (osc_captcha_provider_pref()) {
+        case 'none':
+            $provider = 'none';
+            break;
+        case 'turnstile':
+            $provider = osc_turnstile_configured() ? 'turnstile' : 'none';
+            break;
+        case 'recaptcha':
+            $provider = $recaptcha_enabled ? 'recaptcha' : 'none';
+            break;
+        case 'auto':
+        case '':
+        default:
+            if (osc_turnstile_configured() && !$recaptcha_enabled) {
+                $provider = 'turnstile';
+            } elseif ($recaptcha_enabled) {
+                $provider = 'recaptcha';
+            } else {
+                $provider = 'none';
+            }
+            break;
+    }
+
+    return $provider;
+}
+
+
+/**
+ * Whether a usable captcha provider is active (not 'none').
+ *
+ * @return bool
+ */
+function osc_captcha_enabled()
+{
+    return osc_captcha_provider() !== 'none';
+}
+
+
+/**
+ * Whether both Cloudflare Turnstile keys are configured.
+ *
+ * @return bool
+ */
+function osc_turnstile_configured()
+{
+    return osc_turnstile_site_key() !== '' && osc_turnstile_secret_key() !== '';
+}
+
+
+/**
+ * Builds the active provider's captcha widget markup as a string.
+ *
+ * The reCAPTCHA leg buffers the existing osc_show_recaptcha() output verbatim
+ * so rendered bytes are unchanged in reCAPTCHA mode; $context is passed through
+ * as its $section argument. The Turnstile leg emits the cf-turnstile div and,
+ * unless $deferred, the Turnstile api.js loader.
+ *
+ * @param string $context per-form label. reCAPTCHA leg: osc_show_recaptcha()
+ *                        section. Turnstile leg: data-action (omitted when empty).
+ * @param bool   $deferred true = widget markup only, no provider <script>.
+ *
+ * @return string
+ */
+function osc_captcha_widget_html($context = '', $deferred = false)
+{
+    switch (osc_captcha_provider()) {
+        case 'recaptcha':
+            ob_start();
+            osc_show_recaptcha($context);
+
+            return ob_get_clean();
+        case 'turnstile':
+            $html = '<div class="cf-turnstile" data-sitekey="' . osc_esc_html(osc_turnstile_site_key()) . '"';
+            if ($context !== '') {
+                $html .= ' data-action="' . osc_esc_html($context) . '"';
+            }
+            $html .= '></div>';
+            if (!$deferred) {
+                $html .= '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
+            }
+
+            return $html;
+        default:
+            return '';
+    }
+}
+
+
+/**
+ * Echoes the active provider's captcha widget.
+ *
+ * @param string $context per-form label (see osc_captcha_widget_html()).
+ * @param bool   $deferred true = widget markup only, no provider <script>.
+ *
+ * @return void
+ */
+function osc_show_captcha($context = '', $deferred = false)
+{
+    echo osc_captcha_widget_html($context, $deferred);
+}
+
+
+/**
+ * The active provider's client script URL.
+ *
+ * @return string Turnstile/reCAPTCHA api.js URL; '' when no provider is active.
+ */
+function osc_captcha_script_url()
+{
+    switch (osc_captcha_provider()) {
+        case 'turnstile':
+            return 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        case 'recaptcha':
+            return 'https://www.google.com/recaptcha/api.js?hl=' . substr(osc_language(), 0, 2);
+        default:
+            return '';
+    }
+}
+
+
+/**
  * Formats the date using the appropiate format.
  *
  * @param string $date

@@ -209,8 +209,8 @@ class CWebUserNonSecure extends BaseModel
             case 'contact_post':
                 $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));
                 View::newInstance()->_exportVariableToView('user', $user);
-                if ((osc_recaptcha_private_key() != '') && !osc_check_recaptcha()) {
-                    osc_add_flash_error_message(_m('The Recaptcha code is wrong'));
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
                     Session::newInstance()
                         ->_setForm('yourEmail', Params::getParam('yourEmail'));
                     Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
@@ -220,7 +220,7 @@ class CWebUserNonSecure extends BaseModel
                         ->_setForm('message_body', Params::getParam('message'));
                     $this->redirectTo(osc_user_public_profile_url());
 
-                    return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
                 $banned = osc_is_banned(Params::getParam('yourEmail'));
                 if ($banned == 1) {

@@ -46,8 +46,8 @@ class UserActions
     {
         $error       = array();
         $flash_error = '';
-        if (!$this->is_admin && osc_recaptcha_private_key() && !osc_check_recaptcha()) {
-            $flash_error .= _m('The reCAPTCHA was not entered correctly') . PHP_EOL;
+        if (!$this->is_admin && osc_captcha_enabled() && !osc_check_captcha()) {
+            $flash_error .= _m('Please complete the security check.') . PHP_EOL;
             $error[]     = 4;
         }
 
@@ -394,10 +394,10 @@ class UserActions
         $user = User::newInstance()->findByEmail(Params::getParam('s_email'));
         Session::newInstance()->_set('recover_time', time());
 
-        if ((osc_recaptcha_private_key() != '') && Session::newInstance()->_get('recover_captcha_not_set') != 1
-            && !osc_check_recaptcha()
+        if (osc_captcha_enabled() && Session::newInstance()->_get('recover_captcha_not_set') != 1
+            && !osc_check_captcha()
         ) {
-            return 2; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+            return 2; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
         }
 
         if (!$user || ($user['b_enabled'] == 0)) {

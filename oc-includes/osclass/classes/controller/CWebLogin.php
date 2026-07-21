@@ -55,6 +55,11 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
                 if (osc_validate_email($email)) {
                     $user = User::newInstance()->findByEmail($email);
                 }
@@ -241,8 +246,8 @@ class CWebLogin extends BaseModel
                         osc_add_flash_error_message(_m('We were not able to identify you given the information provided'));
                         $this->redirectTo(osc_recover_user_password_url());
                         break;
-                    case (2): // recaptcha wrong
-                        osc_add_flash_error_message(_m('The recaptcha code is wrong'));
+                    case (2): // captcha wrong
+                        osc_add_flash_error_message(_m('Please complete the security check.'));
                         $this->redirectTo(osc_recover_user_password_url());
                         break;
                 }

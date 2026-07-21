@@ -110,17 +110,40 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </form>
     </div>
     <div id="recaptcha-settings" class="separate-top">
-        <h3 class="render-title"><?php _e('reCAPTCHA'); ?></h3>
-        <p><?php printf(__('reCAPTCHA helps prevent automated abuse of your site by using a CAPTCHA to ensure that '
-                           . 'only humans perform certain actions. <a href="%s" target="_blank">Get your key</a>'),
-                                 'https://www.google.com/recaptcha/admin#whyrecaptcha'); ?></p>
+        <h3 class="render-title"><?php _e('Captcha'); ?></h3>
+        <p><?php printf(__('Protect your site from automated abuse with Google reCAPTCHA or Cloudflare Turnstile. '
+                           . '<a href="%1$s" target="_blank">Get a reCAPTCHA key</a> or '
+                           . '<a href="%2$s" target="_blank">get a Turnstile key</a>.'),
+                                 'https://www.google.com/recaptcha/admin#whyrecaptcha',
+                                 'https://dash.cloudflare.com/?to=/:account/turnstile'); ?></p>
         <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
             <input type="hidden" name="action" value="recaptcha_post"/>
             <input type="hidden" id="recaptchaVersion" name="recaptchaVersion" value="2"/>
             <fieldset class="form-horizontal">
                 <div class="form-row">
-                    <div class="form-label"><?php _e('Site key'); ?></div>
+                    <div class="form-label"><?php _e('Captcha provider'); ?></div>
+                    <div class="form-controls">
+                        <?php $captcha_provider_pref = osc_captcha_provider_pref(); ?>
+                        <select class="form-select form-select-sm" name="captchaProvider">
+                            <option value="auto" <?php echo ($captcha_provider_pref === 'auto')
+                                ? 'selected="true"' : ''; ?>><?php _e('Automatic'); ?></option>
+                            <option value="turnstile" <?php echo ($captcha_provider_pref === 'turnstile')
+                                ? 'selected="true"' : ''; ?>><?php _e('Cloudflare Turnstile'); ?></option>
+                            <option value="recaptcha" <?php echo ($captcha_provider_pref === 'recaptcha')
+                                ? 'selected="true"' : ''; ?>><?php _e('Google reCAPTCHA'); ?></option>
+                            <option value="none" <?php echo ($captcha_provider_pref === 'none')
+                                ? 'selected="true"' : ''; ?>><?php _e('None'); ?></option>
+                        </select>
+                        <div class="help-box">
+                            <?php _e('Automatic prefers reCAPTCHA whenever its site and secret keys below are set; clear '
+                                     . 'both to let Turnstile take over instead. Pick a provider to force it, or None to '
+                                     . 'turn captchas off.'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('reCAPTCHA site key'); ?></div>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="recaptchaPubKey"
                                value="<?php echo(osc_recaptcha_public_key() ? osc_esc_html(osc_recaptcha_public_key())
@@ -128,20 +151,42 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-label"><?php _e('Secret key'); ?></div>
+                    <div class="form-label"><?php _e('reCAPTCHA secret key'); ?></div>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="recaptchaPrivKey"
                                value="<?php echo(osc_recaptcha_private_key() ? osc_esc_html(osc_recaptcha_private_key())
                                    : ''); ?>"/>
                     </div>
                 </div>
-                <?php if (osc_recaptcha_public_key() != '') { ?>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Turnstile site key'); ?></div>
+                    <div class="form-controls">
+                        <input type="text" class="input-large" name="turnstileSiteKey"
+                               value="<?php echo(osc_turnstile_site_key() ? osc_esc_html(osc_turnstile_site_key())
+                                   : ''); ?>"/>
+                        <div class="help-box">
+                            <?php _e('From the Cloudflare dashboard &raquo; Turnstile.'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Turnstile secret key'); ?></div>
+                    <div class="form-controls">
+                        <input type="text" class="input-large" name="turnstileSecretKey"
+                               value="<?php echo(osc_turnstile_secret_key() ? osc_esc_html(osc_turnstile_secret_key())
+                                   : ''); ?>"/>
+                        <div class="help-box">
+                            <?php _e('From the Cloudflare dashboard &raquo; Turnstile.'); ?>
+                        </div>
+                    </div>
+                </div>
+                <?php if (osc_captcha_enabled()) { ?>
                     <div class="form-row">
                         <div class="form-label">
-                            <?php _e('If you see the reCAPTCHA form it means that you have correctly entered the public key'); ?>
+                            <?php _e('If you see a captcha widget below, the active provider is configured correctly'); ?>
                         </div>
                         <div class="form-controls">
-                            <?php osc_show_recaptcha(); ?>
+                            <?php osc_show_captcha(); ?>
                         </div>
                     </div>
                 <?php } ?>

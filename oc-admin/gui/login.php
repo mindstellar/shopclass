@@ -59,6 +59,11 @@ if (!defined('ABS_PATH')) {
            title="<?php echo osc_esc_html(__('Forgot your password?')); ?>"><?php _e('Forgot your password?'); ?></a>
     </div>
     <?php osc_run_hook('admin_login_form'); ?>
+    <?php if (osc_captcha_enabled()) { ?>
+        <div class="mb-3">
+            <?php osc_show_captcha('admin_login'); ?>
+        </div>
+    <?php } ?>
     <button class="w-100 btn btn-lg btn-primary" type="submit" name="submit"
             id="submit"><?php echo osc_esc_html
             (__('Log in')); ?></button>

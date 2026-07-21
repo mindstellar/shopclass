@@ -60,6 +60,11 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
 
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+                }
+
                 // fields are not empty
                 $admin = Admin::newInstance()->findByUsername(Params::getParam('user'));
 
@@ -146,11 +151,11 @@ class CAdminLogin extends AdminBaseModel
                     $admin = Admin::newInstance()->findByUsername(Params::getParam('email'));
                 }
                 if (isset($admin['pk_i_id'])) {
-                    if ((osc_recaptcha_private_key() != '') && !osc_check_recaptcha()) {
-                        osc_add_flash_error_message(_m('The reCAPTCHA code is wrong'), 'admin');
+                    if (osc_captcha_enabled() && !osc_check_captcha()) {
+                        osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
                         $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
 
-                        return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                        return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                     }
 
                     require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';

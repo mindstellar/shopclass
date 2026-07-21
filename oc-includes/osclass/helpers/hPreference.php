@@ -1238,6 +1238,46 @@ function osc_recaptcha_version()
 }
 
 
+/**
+ * Gets the configured captcha provider preference.
+ *
+ * Raw stored value, one of 'auto' | 'recaptcha' | 'turnstile' | 'none'. An
+ * unset preference reads as '', which is treated as 'auto' by
+ * osc_captcha_provider().
+ *
+ * @return string
+ */
+function osc_captcha_provider_pref()
+{
+    return getPreference('captchaProvider');
+}
+
+
+/**
+ * Gets the Cloudflare Turnstile site key (public, safe for markup).
+ *
+ * @return string
+ */
+function osc_turnstile_site_key()
+{
+    return getPreference('turnstileSiteKey');
+}
+
+
+/**
+ * Gets the Cloudflare Turnstile secret key.
+ *
+ * Secret: read only server-side inside the captcha verification path, never
+ * emitted to markup or JavaScript.
+ *
+ * @return string
+ */
+function osc_turnstile_secret_key()
+{
+    return getPreference('turnstileSecretKey');
+}
+
+
 //PRIVATE FUNCTION (if there was a class :P)
 /**
  * Gets preference

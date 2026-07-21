@@ -72,9 +72,19 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $recaptchaVersion = Params::getParam('recaptchaVersion');
                 $recaptchaVersion = trim($recaptchaVersion);
 
+                $captchaProvider = trim(Params::getParam('captchaProvider'));
+                if (!in_array($captchaProvider, array('auto', 'recaptcha', 'turnstile', 'none'), true)) {
+                    $captchaProvider = 'auto';
+                }
+                $turnstileSiteKey   = trim(Params::getParam('turnstileSiteKey'));
+                $turnstileSecretKey = trim(Params::getParam('turnstileSecretKey'));
+
                 $iUpdated += osc_set_preference('recaptchaPrivKey', $recaptchaPrivKey);
                 $iUpdated += osc_set_preference('recaptchaPubKey', $recaptchaPubKey);
                 $iUpdated += osc_set_preference('recaptcha_version', $recaptchaVersion);
+                $iUpdated += osc_set_preference('captchaProvider', $captchaProvider);
+                $iUpdated += osc_set_preference('turnstileSiteKey', $turnstileSiteKey);
+                $iUpdated += osc_set_preference('turnstileSecretKey', $turnstileSecretKey);
 
                 if ($recaptchaPubKey == '') {
                     osc_add_flash_info_message(_m('Your reCAPTCHA key has been cleared'), 'admin');

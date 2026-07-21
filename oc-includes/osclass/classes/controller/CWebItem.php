@@ -132,13 +132,13 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_base_url(true));
                 }
 
-                if (osc_recaptcha_items_enabled() && osc_recaptcha_private_key() != ''
-                    && !osc_check_recaptcha()
+                if (osc_recaptcha_items_enabled() && osc_captcha_enabled()
+                    && !osc_check_captcha()
                 ) {
-                    osc_add_flash_error_message(_m('The Recaptcha code is wrong'));
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
                     $this->redirectTo(osc_item_post_url());
 
-                    return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
                 if (!osc_is_web_user_logged_in()) {
@@ -265,13 +265,13 @@ class CWebItem extends BaseModel
                 if (count($item) == 1) {
                     $this->_exportVariableToView('item', $item[0]);
 
-                    if (osc_recaptcha_items_enabled() && osc_recaptcha_private_key() != ''
-                        && !osc_check_recaptcha()
+                    if (osc_recaptcha_items_enabled() && osc_captcha_enabled()
+                        && !osc_check_captcha()
                     ) {
-                        osc_add_flash_error_message(_m('The Recaptcha code is wrong'));
+                        osc_add_flash_error_message(_m('Please complete the security check.'));
                         $this->redirectTo(osc_item_edit_url($secret, $id));
 
-                        return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                        return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                     }
 
                     $success = $mItems->edit();
@@ -474,11 +474,11 @@ class CWebItem extends BaseModel
                 Session::newInstance()->_setForm('friendEmail', Params::getParam('friendEmail'));
                 Session::newInstance()->_setForm('message_body', Params::getParam('message'));
 
-                if ((osc_recaptcha_private_key() != '') && !osc_check_recaptcha()) {
-                    osc_add_flash_error_message(_m('The Recaptcha code is wrong'));
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
                     $this->redirectTo(osc_item_send_friend_url());
 
-                    return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
                 osc_run_hook('pre_item_send_friend_post', $item);
@@ -533,8 +533,8 @@ class CWebItem extends BaseModel
 
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
                 $this->_exportVariableToView('item', $item);
-                if ((osc_recaptcha_private_key() != '') && !osc_check_recaptcha()) {
-                    osc_add_flash_error_message(_m('The Recaptcha code is wrong'));
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
                     Session::newInstance()
                         ->_setForm('yourEmail', Params::getParam('yourEmail'));
                     Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
@@ -544,7 +544,7 @@ class CWebItem extends BaseModel
                         ->_setForm('message_body', Params::getParam('message'));
                     $this->redirectTo(osc_item_url());
 
-                    return false; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
                 $banned = osc_is_banned(Params::getParam('yourEmail'));
