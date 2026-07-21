@@ -331,6 +331,23 @@ CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
         INDEX idx_status_next (s_status, dt_next_run)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_resource (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_owner_type VARCHAR(20) NOT NULL,
+    i_owner_id INT UNSIGNED NOT NULL,
+    s_name VARCHAR(60) NULL,
+    s_extension VARCHAR(10) NULL,
+    s_content_type VARCHAR(40) NULL,
+    s_path VARCHAR(250) NULL,
+    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
+    dt_created DATETIME NOT NULL,
+    dt_updated DATETIME NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_owner (s_owner_type, i_owner_id),
+        INDEX idx_storage (s_storage)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_item_id INT UNSIGNED NOT NULL,

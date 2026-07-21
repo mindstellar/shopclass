@@ -959,6 +959,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
         'mindstellar\\migration\\MigrationInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
         'mindstellar\\migration\\MigrationRunner' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationRunner.php',
+        'mindstellar\\model\\Resource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Resource.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',
         'mindstellar\\storage\\ProviderPresets' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ProviderPresets.php',
         'mindstellar\\storage\\ResourceLocator' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ResourceLocator.php',

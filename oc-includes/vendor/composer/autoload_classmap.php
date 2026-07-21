@@ -824,6 +824,7 @@ return array(
     'mindstellar\\logger\\OsclassErrors' => $baseDir . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
     'mindstellar\\migration\\MigrationInterface' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
     'mindstellar\\migration\\MigrationRunner' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationRunner.php',
+    'mindstellar\\model\\Resource' => $baseDir . '/oc-includes/osclass/classes/model/Resource.php',
     'mindstellar\\storage\\LocalStorage' => $baseDir . '/oc-includes/osclass/classes/storage/LocalStorage.php',
     'mindstellar\\storage\\ProviderPresets' => $baseDir . '/oc-includes/osclass/classes/storage/ProviderPresets.php',
     'mindstellar\\storage\\ResourceLocator' => $baseDir . '/oc-includes/osclass/classes/storage/ResourceLocator.php',
