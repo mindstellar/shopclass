@@ -592,20 +592,26 @@ function oc_install()
         return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
 
-    if (file_exists(ABS_PATH . 'config.php')) {
-        if (!is_writable(ABS_PATH . 'config.php')) {
-            return array('error' => __("Can't write in config.php file. Check if the file is writable."));
-        }
-        create_config_file($dbname, $username, $password, $dbhost, $tableprefix);
-    } else {
-        if (!file_exists(ABS_PATH . 'config-sample.php')) {
-            return array(
-                'error' => __("config-sample.php doesn't exist. Check if everything is "
-                    . 'decompressed correctly.')
-            );
-        }
-        if (!is_writable(ABS_PATH)) {
-            return array('error' => __('Can\'t copy config-sample.php. Check if the root directory is writable.'));
+    // When the configuration comes from the environment there is no config.php
+    // to write or check — the database settings are managed externally.
+    $writesConfig = !(defined('OSC_CONFIG_FROM_ENV') && OSC_CONFIG_FROM_ENV);
+
+    if ($writesConfig) {
+        if (file_exists(ABS_PATH . 'config.php')) {
+            if (!is_writable(ABS_PATH . 'config.php')) {
+                return array('error' => __("Can't write in config.php file. Check if the file is writable."));
+            }
+            create_config_file($dbname, $username, $password, $dbhost, $tableprefix);
+        } else {
+            if (!file_exists(ABS_PATH . 'config-sample.php')) {
+                return array(
+                    'error' => __("config-sample.php doesn't exist. Check if everything is "
+                        . 'decompressed correctly.')
+                );
+            }
+            if (!is_writable(ABS_PATH)) {
+                return array('error' => __('Can\'t copy config-sample.php. Check if the root directory is writable.'));
+            }
         }
     }
 
@@ -732,7 +738,9 @@ function oc_install()
         Session::newInstance()->_set('install_sample_warning', 1);
     }
 
-    copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
+    if ($writesConfig) {
+        copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
+    }
 
     return false;
 }
@@ -844,19 +852,19 @@ function create_config_file($dbname, $username, $password, $dbhost, $tableprefix
  */
 
 /** MySQL database name for Shopclass */
-define('DB_NAME', '$dbname');
+define('DB_NAME', getenv('DB_NAME') ?: '$dbname');
 
 /** MySQL database username */
-define('DB_USER', '$username');
+define('DB_USER', getenv('DB_USER') ?: '$username');
 
 /** MySQL database password */
-define('DB_PASSWORD', '$password');
+define('DB_PASSWORD', getenv('DB_PASSWORD') ?: '$password');
 
-/** MySQL hostname */
-define('DB_HOST', '$dbhost');
+/** MySQL hostname (an environment variable, when set, overrides this) */
+define('DB_HOST', getenv('DB_HOST') ?: '$dbhost');
 
 /** Database Table prefix */
-define('DB_TABLE_PREFIX', '$tableprefix');
+define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: '$tableprefix');
 
 define('REL_WEB_URL', '$rel_url');
 
@@ -932,11 +940,13 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
  */
 function is_osclass_installed()
 {
-    if (!file_exists(ABS_PATH . 'config.php')) {
+    // Resolve configuration from config.php or the environment.
+    require_once LIB_PATH . 'osclass/config-loader.php';
+
+    // No database configured at all: not installed — let the installer run.
+    if (!osc_is_configured()) {
         return false;
     }
-
-    require_once ABS_PATH . 'config.php';
 
     try {
         // Establish the shared connection, then ask through the parameterized

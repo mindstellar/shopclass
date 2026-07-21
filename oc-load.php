@@ -21,19 +21,21 @@ if (!defined('ABS_PATH')) {
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
-if (!file_exists(ABS_PATH . 'config.php')) {
+// Load configuration from config.php when present, otherwise from environment
+// variables (config.php is optional — Shopclass can run entirely from env).
+require_once LIB_PATH . 'osclass/config-loader.php';
+
+if (!osc_is_configured()) {
     $title   = 'Shopclass &raquo; Error';
     $message =
-        'There doesn\'t seem to be a <code>config.php</code> file. Shopclass isn\'t installed. '
+        'Shopclass isn\'t configured yet — there is no <code>config.php</code> file and no database '
+        . 'settings were found in the environment. '
         . '<a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>';
     $message .= '<p><a class="btn btn-primary" href="' . osc_get_absolute_url()
         . 'oc-includes/osclass/install.php">'
         . 'Install</a></p>';
     osc_die($title, $message);
 }
-
-// load osclass configuration
-require_once ABS_PATH . 'config.php';
 
 // load default constants
 require_once LIB_PATH . 'osclass/default-constants.php';

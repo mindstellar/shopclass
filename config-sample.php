@@ -16,16 +16,16 @@
  */
 
 /** MySQL database name for Shopclass */
-define('DB_NAME', 'database_name');
+define('DB_NAME', getenv('DB_NAME') ?: 'database_name');
 
 /** MySQL database username */
-define('DB_USER', 'username');
+define('DB_USER', getenv('DB_USER') ?: 'username');
 
 /** MySQL database password */
-define('DB_PASSWORD', 'password');
+define('DB_PASSWORD', getenv('DB_PASSWORD') ?: 'password');
 
-/** MySQL hostname */
-define('DB_HOST', 'db_host'); // i.e localhost,
+/** MySQL hostname (an environment variable, when set, overrides the value here) */
+define('DB_HOST', getenv('DB_HOST') ?: 'db_host'); // i.e localhost,
 
 /**
  * Optional MySQL port. Only needed when your database runs on a non-default
@@ -34,7 +34,7 @@ define('DB_HOST', 'db_host'); // i.e localhost,
 // define('DB_PORT', 3306);
 
 /** Database Table prefix */
-define('DB_TABLE_PREFIX', 'oc_');
+define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: 'oc_');
 
 /** Website relative root path */
 define('REL_WEB_URL', 'rel_here');

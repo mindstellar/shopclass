@@ -39,19 +39,19 @@ $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field
 
     <div class="ins-field">
         <label for="dbhost"><?php _e('Host'); ?></label>
-        <input class="ins-input" type="text" id="dbhost" name="dbhost" value="<?php echo osc_esc_html($form_data['dbhost'] ?? 'localhost'); ?>" <?php echo $ins_field_error === 'dbhost' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
+        <input class="ins-input" type="text" id="dbhost" name="dbhost" value="<?php echo osc_esc_html($form_data['dbhost'] ?? (defined('DB_HOST') ? DB_HOST : 'localhost')); ?>" <?php echo $ins_field_error === 'dbhost' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
         <div class="ins-help"><?php _e("Usually 'localhost'. If your host gave you a different one, add a port as host:port."); ?></div>
     </div>
 
     <div class="ins-field">
         <label for="dbname"><?php _e('Database name'); ?></label>
-        <input class="ins-input" type="text" id="dbname" name="dbname" value="<?php echo osc_esc_html($form_data['dbname'] ?? 'osclass'); ?>" <?php echo $ins_field_error === 'dbname' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
+        <input class="ins-input" type="text" id="dbname" name="dbname" value="<?php echo osc_esc_html($form_data['dbname'] ?? ((defined('DB_NAME') && DB_NAME !== '') ? DB_NAME : 'osclass')); ?>" <?php echo $ins_field_error === 'dbname' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
         <div class="ins-help"><?php _e('The database Shopclass should use.'); ?></div>
     </div>
 
     <div class="ins-field">
         <label for="username"><?php _e('Username'); ?></label>
-        <input class="ins-input" type="text" id="username" name="username" value="<?php echo osc_esc_html($form_data['username'] ?? 'osclass'); ?>" <?php echo $ins_field_error === 'username' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
+        <input class="ins-input" type="text" id="username" name="username" value="<?php echo osc_esc_html($form_data['username'] ?? ((defined('DB_USER') && DB_USER !== '') ? DB_USER : 'osclass')); ?>" <?php echo $ins_field_error === 'username' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
         <div class="ins-help"><?php _e('Your MySQL username.'); ?></div>
     </div>
 
@@ -72,7 +72,7 @@ $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field
         <div class="ins-disclosure-body">
             <div class="ins-field">
                 <label for="tableprefix"><?php _e('Table prefix'); ?></label>
-                <input class="ins-input" type="text" id="tableprefix" name="tableprefix" value="<?php echo osc_esc_html($form_data['tableprefix'] ?? 'oc_'); ?>" <?php echo $ins_field_error === 'tableprefix' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
+                <input class="ins-input" type="text" id="tableprefix" name="tableprefix" value="<?php echo osc_esc_html($form_data['tableprefix'] ?? (defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : 'oc_')); ?>" <?php echo $ins_field_error === 'tableprefix' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
                 <div class="ins-help"><?php _e('Only change this if you run more than one Shopclass install in the same database.'); ?></div>
             </div>
 
