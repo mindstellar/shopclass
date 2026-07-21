@@ -43,6 +43,10 @@ RUN apk add --no-cache \
 RUN groupmod -o -g "${PGID}" www-data \
     && usermod  -o -u "${PUID}" www-data
 
+# Pass the container environment through to PHP workers so getenv() sees the
+# DB_* variables (the app can be configured entirely from the environment).
+RUN printf '[www]\nclear_env = no\n' > /usr/local/etc/php-fpm.d/zz-clear-env.conf
+
 # Route outgoing mail to the Mailhog container so the installer's welcome
 # e-mail (and any other mail) is catchable in a browser during development.
 RUN printf '%s\n' \
