@@ -280,6 +280,7 @@ return array(
     'CAdminSettingsMain' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php',
     'CAdminSettingsMedia' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php',
     'CAdminSettingsPermalinks' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php',
+    'CAdminSettingsSitemap' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php',
     'CAdminSettingsSpamnBots' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php',
     'CAdminSettingsStorage' => $baseDir . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php',
     'CAdminStats' => $baseDir . '/oc-includes/osclass/classes/controller/admin/CAdminStats.php',

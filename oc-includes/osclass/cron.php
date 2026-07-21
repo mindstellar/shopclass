@@ -96,6 +96,15 @@ if (is_array($cron)) {
         }
         osc_update_cat_stats();
 
+        // Pre-generate the XML sitemap into the object cache so bots never trigger
+        // the (potentially heavy) location scans on the request path. Regeneration
+        // is otherwise lazy-on-request; this closes that gap.
+        try {
+            Sitemap::newInstance()->warmCache();
+        } catch (Throwable $e) {
+            error_log('Sitemap cron warming failed: ' . $e->getMessage());
+        }
+
         // WARN EXPIRATION EACH DAY (UNCOMMENT TO ENABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON HOURLY
         /*if(is_numeric(osc_warn_expiration()) && osc_warn_expiration()>0) {

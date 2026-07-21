@@ -129,7 +129,14 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'auto_update', 'disabled', 'STRING')
     ,('osclass', 'title_character_length', '100', 'INTEGER')
     ,('osclass', 'description_character_length', '5000', 'INTEGER')
-    ,('osclass', 'update_core_json', '', 'STRING');
+    ,('osclass', 'update_core_json', '', 'STRING')
+    ,('sitemap', 'sitemap_number', '5000', 'INTEGER')
+    ,('sitemap', 'sitemap_cities', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_regions', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_countries', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_cat_regions', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_cat_city', '0', 'BOOLEAN')
+    ,('sitemap', 'custom_urls', '', 'STRING');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

@@ -197,6 +197,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
+            __('Sitemap'),
+            osc_admin_base_url(true) . '?page=settings&action=sitemap',
+            'settings_sitemap',
+            'administrator'
+        );
+        $this->add_submenu(
+            'settings',
             __('Currencies'),
             osc_admin_base_url(true) . '?page=settings&action=currencies',
             'settings_currencies',

@@ -415,6 +415,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'CAdminSettingsMain' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php',
         'CAdminSettingsMedia' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php',
         'CAdminSettingsPermalinks' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php',
+        'CAdminSettingsSitemap' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php',
         'CAdminSettingsSpamnBots' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php',
         'CAdminSettingsStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php',
         'CAdminStats' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/CAdminStats.php',

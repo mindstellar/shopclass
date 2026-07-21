@@ -186,6 +186,7 @@ class Rewrite
             }
 
             $this->raw_request_uri = $request_uri;
+
             $route_used            = false;
             foreach ($this->routes as $id => $route) {
                 // UNCOMMENT TO DEBUG
@@ -217,6 +218,20 @@ class Rewrite
                 }
             }
             if (!$route_used) {
+                // Core-native sitemap routes, served as a FALLBACK: a plugin that
+                // registered its own route on these paths (e.g. a third-party XML
+                // sitemap) already claimed them in the loop above and wins. Only
+                // when nothing else matched does core serve the sitemap — and it
+                // does so regardless of whether rewrite is enabled and without a
+                // theme having to register a route.
+                if ($this->matchSitemapRoute($request_uri)) {
+                    $this->location    = 'sitemap';
+                    $this->section     = 'sitemap';
+                    $this->request_uri = $request_uri;
+
+                    return;
+                }
+
                 if (Preference::newInstance()->get('rewriteEnabled')) {
                     $tmp_ar      = explode('?', $request_uri);
                     $request_uri = $tmp_ar[0];
@@ -274,6 +289,57 @@ class Rewrite
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Recognise a core sitemap URL and set the dispatch params for it.
+     *
+     * Handles sitemap.xml / sitemapindex.xml / sitemap-index.xml (the index),
+     * sitemap/{category,pages,cities,regions,countries,categories-regions,
+     * categories-cities}.xml, and sitemap/item-sitemap_s{N}.xml (paginated item
+     * sitemaps). The query string is ignored for matching.
+     *
+     * @param string $request_uri the install-relative request URI
+     *
+     * @return bool true when a sitemap route matched
+     */
+    private function matchSitemapRoute($request_uri)
+    {
+        $path = explode('?', $request_uri, 2)[0];
+        $path = ltrim($path, '/');
+
+        $fixed = array(
+            // robots.txt only reaches PHP when no static robots.txt shadows it
+            // (the admin editor writes a static file); this is the fallback.
+            'robots.txt'                     => 'robots',
+            'sitemap.xml'                    => 'index',
+            'sitemapindex.xml'               => 'index',
+            'sitemap-index.xml'              => 'index',
+            'sitemap/category.xml'           => 'category',
+            'sitemap/pages.xml'              => 'pages',
+            'sitemap/cities.xml'             => 'cities',
+            'sitemap/regions.xml'            => 'regions',
+            'sitemap/countries.xml'          => 'countries',
+            'sitemap/categories-regions.xml' => 'cat_regions',
+            'sitemap/categories-cities.xml'  => 'cat_cities',
+        );
+
+        if (isset($fixed[$path])) {
+            Params::setParam('page', 'sitemap');
+            Params::setParam('sitemap_doc', $fixed[$path]);
+
+            return true;
+        }
+
+        if (preg_match('#^sitemap/item-sitemap_s([0-9]+)\.xml$#i', $path, $m)) {
+            Params::setParam('page', 'sitemap');
+            Params::setParam('sitemap_doc', 'item');
+            Params::setParam('sitemap_page', $m[1]);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

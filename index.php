@@ -153,6 +153,9 @@ switch (Params::getParam('page')) {
             osc_run_hook(Params::getParam('route'));
         }
         break;
+    case ('sitemap'):   // core XML sitemap (index + child sitemaps)
+        Sitemap::newInstance()->serve();
+        break;
     default:            // home and static pages that are mandatory...
         $do = new CWebMain();
         $do->doModel();

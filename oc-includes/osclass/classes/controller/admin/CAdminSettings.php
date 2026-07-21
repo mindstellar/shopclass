@@ -52,6 +52,14 @@ class CAdminSettings
             case ('recaptcha_post'):
                 $do = new CAdminSettingsSpamnBots();
                 break;
+            case ('sitemap'):
+            case ('sitemap_settings_post'):
+            case ('sitemap_custom_url_add'):
+            case ('sitemap_custom_url_remove'):
+            case ('sitemap_robots_post'):
+            case ('sitemap_regenerate'):
+                $do = new CAdminSettingsSitemap();
+                break;
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();
                 break;
