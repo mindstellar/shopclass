@@ -87,6 +87,58 @@ if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
     define('WEB_PATH', $oscEnv('WEB_PATH'));
 }
 
+// Last-resort fallback for env-only deploys (no config.php): when the site URLs
+// were supplied by neither config.php nor the environment, derive them from the
+// current HTTP request so the app can still boot instead of fataling on an
+// undefined WEB_PATH. Setting WEB_PATH explicitly is still recommended for
+// production — the host used here comes from the request Host header, which a
+// client can spoof.
+if (!$oscHasConfigFile && defined('DB_NAME')
+    && (!defined('WEB_PATH') || !defined('REL_WEB_URL'))
+    && PHP_SAPI !== 'cli'
+) {
+    $oscHost = isset($_SERVER['HTTP_HOST']) ? (string)$_SERVER['HTTP_HOST'] : '';
+    // Only trust a syntactically valid host[:port]; a missing or malformed Host
+    // header (CLI, some proxies) yields no definition rather than a broken URL.
+    if ($oscHost !== '' && preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $oscHost)) {
+        $oscScheme = ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] == 1))
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'))
+            ? 'https' : 'http';
+
+        // Base URL path to the app root: strip the running script's path
+        // (relative to ABS_PATH) off the end of its request URL. Handles
+        // subdirectory installs and any entry point (root index.php, oc-admin/…).
+        $oscBasePath   = '/';
+        $oscScriptName = isset($_SERVER['SCRIPT_NAME']) ? (string)$_SERVER['SCRIPT_NAME'] : '';
+        $oscScriptFile = isset($_SERVER['SCRIPT_FILENAME'])
+            ? str_replace('\\', '/', (string)$_SERVER['SCRIPT_FILENAME']) : '';
+        $oscAppRoot    = rtrim(str_replace('\\', '/', ABS_PATH), '/');
+        if ($oscScriptName !== '' && $oscScriptFile !== '' && $oscAppRoot !== ''
+            && strpos($oscScriptFile, $oscAppRoot) === 0
+        ) {
+            $oscRelScript = ltrim(substr($oscScriptFile, strlen($oscAppRoot)), '/');
+            if ($oscRelScript !== '' && str_ends_with($oscScriptName, $oscRelScript)) {
+                $oscBasePath = substr($oscScriptName, 0, -strlen($oscRelScript));
+            } else {
+                $oscBasePath = rtrim(dirname($oscScriptName), '/\\') . '/';
+            }
+            unset($oscRelScript);
+        } elseif ($oscScriptName !== '') {
+            $oscBasePath = rtrim(dirname($oscScriptName), '/\\') . '/';
+        }
+        $oscBasePath = '/' . ltrim($oscBasePath, '/');
+        if (substr($oscBasePath, -1) !== '/') {
+            $oscBasePath .= '/';
+        }
+
+        defined('REL_WEB_URL') or define('REL_WEB_URL', $oscBasePath);
+        defined('WEB_PATH')    or define('WEB_PATH', $oscScheme . '://' . $oscHost . $oscBasePath);
+
+        unset($oscScheme, $oscBasePath, $oscScriptName, $oscScriptFile, $oscAppRoot);
+    }
+    unset($oscHost);
+}
+
 // True when the database configuration came from the environment (no config.php
 // file). The installer reads this to know it must NOT write a config.php.
 defined('OSC_CONFIG_FROM_ENV') or define('OSC_CONFIG_FROM_ENV', !$oscHasConfigFile && defined('DB_NAME'));
