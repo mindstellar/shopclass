@@ -16,7 +16,11 @@ error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR | E_PARSE);
 define('ABS_PATH', dirname(dirname(__DIR__)) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
-require_once ABS_PATH . 'config.php';
+// Resolve the database configuration the same way the app does: from config.php
+// when present, otherwise from the environment. Requiring config.php directly
+// here broke an environment-only install (no config.php / OSC_IGNORE_CONFIG_FILE)
+// — this AJAX endpoint would connect to the wrong host and fail with a 503.
+require_once LIB_PATH . 'osclass/config-loader.php';
 require_once LIB_PATH . 'vendor/autoload.php';
 
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
