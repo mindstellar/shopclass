@@ -14,8 +14,10 @@ namespace mindstellar\storage;
 /**
  * Class ResourceLocator
  *
- * Derives filesystem paths and storage keys for an item-resource row and one
- * of its variants ('', '_original', '_preview', '_thumbnail').
+ * Derives filesystem paths and storage keys for a resource row and one of its
+ * variants ('', '_original', '_preview', '_thumbnail'). Keys come purely from the
+ * row shape (s_path, pk_i_id, s_extension), so it serves both t_item_resource and
+ * t_resource rows without knowing which owner they belong to.
  *
  * @package mindstellar\storage
  */

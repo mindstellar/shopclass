@@ -129,6 +129,30 @@ class Resource
     }
 
     /**
+     * A single resource row by primary key, read fresh (uncached) so callers that
+     * need to confirm a row still exists — e.g. the storage worker checking whether
+     * a resource was deleted while an offload was in flight — do not race the cache.
+     *
+     * @param int $id
+     *
+     * @return array|null the row, or null when absent
+     */
+    public function findByPrimaryKey(int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        try {
+            $row = $this->table()->where('pk_i_id', $id)->first();
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
      * Count resources for an owner type, optionally narrowed to a single owner id.
      *
      * @param string   $ownerType
@@ -350,6 +374,25 @@ class Resource
         foreach ($byOwner as $ownerId => $resources) {
             osc_cache_set($this->ownerCacheKey($ownerType, $ownerId), $resources, OSC_CACHE_TTL);
         }
+    }
+
+    /**
+     * Drop the cached resource list for one owner. Public entry point for callers
+     * outside the model (the storage worker, the upload service) that mutate a
+     * row's files or storage backend and need findByOwner() to re-read.
+     *
+     * @param string $ownerType
+     * @param int    $ownerId
+     *
+     * @return void
+     */
+    public function invalidateOwnerCache(string $ownerType, int $ownerId): void
+    {
+        if (!self::isValidOwnerType($ownerType)) {
+            return;
+        }
+
+        $this->flushOwnerCache($ownerType, $ownerId);
     }
 
     /**

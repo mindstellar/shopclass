@@ -12,6 +12,7 @@
 namespace mindstellar\storage;
 
 use ItemResource;
+use mindstellar\model\Resource;
 use mindstellar\utility\FileSystem;
 use RuntimeException;
 use StorageQueue;
@@ -146,8 +147,8 @@ class StorageWorker
             throw new RuntimeException('Offload verification failed for resource ' . ($snapshot['pk_i_id'] ?? ''));
         }
 
-        $resource = ItemResource::newInstance()->findByPrimaryKey($snapshot['pk_i_id'] ?? 0);
-        if ($resource === false) {
+        $resource = self::resolveRow($snapshot);
+        if ($resource === null) {
             // The resource row was deleted while the offload was in flight;
             // the remote copy is now orphaned, so queue its removal instead.
             StorageQueue::newInstance()->enqueue('delete', $job['s_storage'], $snapshot);
@@ -155,7 +156,7 @@ class StorageWorker
             return;
         }
 
-        ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $job['s_storage']), $snapshot['pk_i_id']);
+        self::updateStorage($snapshot, $job['s_storage']);
 
         if (osc_get_preference('storage_keep_local', 'osclass') === 'none') {
             foreach (ResourceLocator::variants() as $variant) {
@@ -165,9 +166,7 @@ class StorageWorker
                 }
             }
 
-            if (!empty($snapshot['fk_i_item_id']) && function_exists('osc_invalidate_item_cache')) {
-                osc_invalidate_item_cache($snapshot['fk_i_item_id']);
-            }
+            self::invalidateOwnerCaches($snapshot);
         }
     }
 
@@ -201,9 +200,7 @@ class StorageWorker
             (new FileSystem())->writeToFile(ResourceLocator::localPath($snapshot, $variant), $contents);
         }
 
-        if (!empty($snapshot['pk_i_id'])) {
-            ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => 'local'), $snapshot['pk_i_id']);
-        }
+        self::updateStorage($snapshot, 'local');
 
         $deleteSnapshot          = $snapshot;
         $deleteSnapshot['local'] = false;
@@ -237,8 +234,83 @@ class StorageWorker
             return;
         }
 
-        if (!empty($snapshot['pk_i_id'])) {
-            ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $job['s_storage']), $snapshot['pk_i_id']);
+        self::updateStorage($snapshot, $job['s_storage']);
+    }
+
+    /**
+     * Resolve the resource row a snapshot points at from the right table:
+     * snapshots that carry an s_owner_type belong to t_resource (the polymorphic
+     * table), everything else is a legacy item snapshot in t_item_resource. Jobs
+     * queued before this upgrade have no owner fields, so they take the item path
+     * exactly as before.
+     *
+     * @param array $snapshot
+     *
+     * @return array|null the row, or null when it no longer exists
+     */
+    private static function resolveRow(array $snapshot): ?array
+    {
+        $pk = (int) ($snapshot['pk_i_id'] ?? 0);
+        if ($pk <= 0) {
+            return null;
+        }
+
+        if (!empty($snapshot['s_owner_type'])) {
+            return Resource::newInstance()->findByPrimaryKey($pk);
+        }
+
+        $row = ItemResource::newInstance()->findByPrimaryKey($pk);
+
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * Point a resource row at a storage adapter, dispatching to the owning model.
+     * Both model updates flush their own row/owner cache.
+     *
+     * @param array  $snapshot
+     * @param string $storageId
+     *
+     * @return void
+     */
+    private static function updateStorage(array $snapshot, string $storageId): void
+    {
+        $pk = (int) ($snapshot['pk_i_id'] ?? 0);
+        if ($pk <= 0) {
+            return;
+        }
+
+        if (!empty($snapshot['s_owner_type'])) {
+            Resource::newInstance()->updateResource($pk, array('s_storage' => $storageId));
+
+            return;
+        }
+
+        ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $storageId), $pk);
+    }
+
+    /**
+     * Invalidate the caches a resource participates in after its local copies are
+     * dropped. Owner snapshots clear the Resource::findByOwner cache; item
+     * snapshots keep the exact legacy behaviour (osc_invalidate_item_cache).
+     *
+     * @param array $snapshot
+     *
+     * @return void
+     */
+    private static function invalidateOwnerCaches(array $snapshot): void
+    {
+        if (!empty($snapshot['s_owner_type'])) {
+            Resource::newInstance()->invalidateOwnerCache(
+                (string) $snapshot['s_owner_type'],
+                (int) ($snapshot['i_owner_id'] ?? 0)
+            );
+
+            return;
+        }
+
+        if (!empty($snapshot['fk_i_item_id']) && function_exists('osc_invalidate_item_cache')) {
+            osc_invalidate_item_cache($snapshot['fk_i_item_id']);
         }
     }
 
