@@ -25,10 +25,10 @@ services:
       - .:/application
       # Alpine PHP keeps its config here, not /etc/php/<ver>/...
       - ./.docker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
-      # Configure the app from the environment (read-only), so the container
-      # never reads or writes a config.php on the host.
-      - ./.docker/config.docker.php:/application/config.php:ro
     environment:
+      # Configure entirely from the environment: ignore any config.php on the
+      # bind mount and read the database settings from these variables.
+      - OSC_IGNORE_CONFIG_FILE=1
       - DB_HOST=mariadb
       - DB_NAME=${SHOPCLASS_DATABASE_NAME:-shopclass}
       - DB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}

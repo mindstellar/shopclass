@@ -33,9 +33,22 @@ if (!defined('ABS_PATH')) {
     exit('Direct access is not allowed.');
 }
 
-$oscHasConfigFile = file_exists(ABS_PATH . 'config.php');
-if ($oscHasConfigFile) {
-    require_once ABS_PATH . 'config.php';
+// config.php location and opt-out, both driven by the environment:
+//   OSC_IGNORE_CONFIG_FILE=1   ignore any config.php and use the environment
+//                              only (handy in containers, where a config.php
+//                              from a bind mount would otherwise be read).
+//   OSC_CONFIG_FILE=/path      load configuration from an alternate path
+//                              (e.g. outside the web root).
+$oscIgnoreFile = filter_var((string)getenv('OSC_IGNORE_CONFIG_FILE'), FILTER_VALIDATE_BOOLEAN);
+$oscConfigFile = getenv('OSC_CONFIG_FILE');
+if ($oscConfigFile === false || $oscConfigFile === '') {
+    $oscConfigFile = ABS_PATH . 'config.php';
+}
+
+$oscHasConfigFile = false;
+if (!$oscIgnoreFile && is_file($oscConfigFile)) {
+    require_once $oscConfigFile;
+    $oscHasConfigFile = true;
 }
 
 /**
@@ -78,7 +91,7 @@ if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
 // file). The installer reads this to know it must NOT write a config.php.
 defined('OSC_CONFIG_FROM_ENV') or define('OSC_CONFIG_FROM_ENV', !$oscHasConfigFile && defined('DB_NAME'));
 
-unset($oscHasConfigFile, $oscEnv, $oscDbName, $oscDbPort);
+unset($oscHasConfigFile, $oscEnv, $oscDbName, $oscDbPort, $oscIgnoreFile, $oscConfigFile);
 
 if (!function_exists('osc_is_configured')) {
     /**
