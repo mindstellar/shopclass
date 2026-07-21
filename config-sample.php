@@ -27,6 +27,12 @@ define('DB_PASSWORD', 'password');
 /** MySQL hostname */
 define('DB_HOST', 'db_host'); // i.e localhost,
 
+/**
+ * Optional MySQL port. Only needed when your database runs on a non-default
+ * port; you can also append it to DB_HOST above as 'host:port'.
+ */
+// define('DB_PORT', 3306);
+
 /** Database Table prefix */
 define('DB_TABLE_PREFIX', 'oc_');
 

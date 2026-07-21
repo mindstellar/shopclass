@@ -51,6 +51,15 @@ class DBConnectionClass
      */
     private $dbHost;
     /**
+     * Database TCP port, or null to use the mysqli default. Resolved from a
+     * host:port string, an explicit constructor argument, or the DB_PORT
+     * constant.
+     *
+     * @access private
+     * @var int|null
+     */
+    private $dbPort;
+    /**
      * Database name where it's installed Shopclass
      *
      * @access private
@@ -119,13 +128,39 @@ class DBConnectionClass
     /**
      * Initialize database connection
      *
-     * @param string $server   Host name where it's located the mysql server
-     * @param string $user     MySQL user name
-     * @param string $password MySQL password
-     * @param string $database Default database to be used when performing queries
+     * @param string   $server   Host where the MySQL server lives. May include a
+     *                            port as "host:port" (what users type in the
+     *                            installer's Host field).
+     * @param string   $user     MySQL user name
+     * @param string   $password MySQL password
+     * @param string   $database Default database to be used when performing queries
+     * @param int|null $port     Explicit TCP port; overrides a host:port string.
+     *                           Falls back to the DB_PORT constant, then the
+     *                           mysqli default.
      */
-    public function __construct($server = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $database = DB_NAME)
-    {
+    public function __construct(
+        $server = DB_HOST,
+        $user = DB_USER,
+        $password = DB_PASSWORD,
+        $database = DB_NAME,
+        $port = null
+    ) {
+        // Accept a "host:port" server string (a single colon, so IPv6 literals
+        // are left untouched). An explicit $port argument wins over that, and a
+        // DB_PORT constant is the last fallback before the mysqli default.
+        // Note: with host 'localhost' mysqli uses a socket and ignores the port;
+        // use 127.0.0.1 to force TCP on a custom port.
+        if (substr_count((string)$server, ':') === 1 && preg_match('/^(.+):(\d+)$/', (string)$server, $m)) {
+            $server         = $m[1];
+            $this->dbPort   = (int)$m[2];
+        }
+        if ($port !== null && $port !== '') {
+            $this->dbPort = (int)$port;
+        }
+        if ($this->dbPort === null && defined('DB_PORT') && DB_PORT !== '') {
+            $this->dbPort = (int)DB_PORT;
+        }
+
         $this->dbHost     = $server;
         $this->dbName     = $database;
         $this->dbUser     = $user;
@@ -185,7 +220,21 @@ class DBConnectionClass
             $reportSet = true;
         }
         try {
-            $this->connId = new mysqli($this->dbHost, $this->dbUser, $this->dbPassword);
+            $this->connId = mysqli_init();
+            if (!$this->connId instanceof mysqli) {
+                return false;
+            }
+            // Bound the TCP connect so a black-holed database host cannot tie up
+            // a PHP worker indefinitely (this matters most for the installer's
+            // "Test connection" probe, which dials an arbitrary host:port).
+            $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+            $this->connId->real_connect(
+                $this->dbHost,
+                $this->dbUser,
+                $this->dbPassword,
+                '',
+                $this->dbPort !== null ? $this->dbPort : 0
+            );
         } catch (Exception $e) {
             $this->errorDesc = $e->getMessage();
             $this->errorLevel = $e->getCode();
@@ -402,10 +451,15 @@ class DBConnectionClass
      * @return DBConnectionClass
      * @since  2.3
      */
-    public static function newInstance($server = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $database = DB_NAME)
-    {
+    public static function newInstance(
+        $server = DB_HOST,
+        $user = DB_USER,
+        $password = DB_PASSWORD,
+        $database = DB_NAME,
+        $port = null
+    ) {
         if (!self::$instance instanceof self) {
-            self::$instance = new self($server, $user, $password, $database);
+            self::$instance = new self($server, $user, $password, $database, $port);
         }
 
         return self::$instance;
