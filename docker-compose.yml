@@ -2,7 +2,7 @@
 #
 # Quick start:
 #   docker compose up -d --build
-#   open http://localhost:5080  and run the installer with:
+#   open http://localhost:8000  and run the installer with:
 #     Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
 #
 # Override any default by exporting the matching variable (or using a .env file).
@@ -50,8 +50,8 @@ services:
       - MARIADB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}
       - MARIADB_PASSWORD=${SHOPCLASS_DATABASE_PASSWORD:-shopclass}
     ports:
-      # Reach the database from the host (e.g. a GUI client) at 127.0.0.1:5306.
-      - "5306:3306"
+      # Reach the database from the host (e.g. a GUI client) at 127.0.0.1:3307.
+      - "3307:3306"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -74,14 +74,14 @@ services:
     depends_on:
       - php-fpm
     ports:
-      - "5080:80"
+      - "8000:80"
 
   # Mailhog — catches every outgoing e-mail so you can read it in a browser
   mailhog:
     image: mailhog/mailhog:latest
     container_name: shopclass-mailhog
     ports:
-      - "5025:8025"
+      - "8025:8025"
 
   # phpMyAdmin — database UI
   phpmyadmin:
@@ -91,7 +91,7 @@ services:
       mariadb:
         condition: service_healthy
     ports:
-      - "5800:80"
+      - "8081:80"
     environment:
       - PMA_HOST=mariadb
       - PMA_USER=root

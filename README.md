@@ -110,7 +110,7 @@ ships in `docker-compose.yml`:
 docker compose up -d --build
 ```
 
-Then open **http://localhost:5080** and run the installer with these database
+Then open **http://localhost:8000** and run the installer with these database
 details (leave the admin password blank on step 3 for a generated one):
 
 | Field | Value |
@@ -125,10 +125,10 @@ Outgoing e-mail — including the installer's welcome message — is caught by
 
 | Service | Address |
 |---|---|
-| Site | http://localhost:5080 |
-| Mailhog inbox | http://localhost:5025 |
-| phpMyAdmin | http://localhost:5800 (root / `root`) |
-| MySQL (from host) | `127.0.0.1:5306` |
+| Site | http://localhost:8000 |
+| Mailhog inbox | http://localhost:8025 |
+| phpMyAdmin | http://localhost:8081 (root / `root`) |
+| MariaDB (from host) | `127.0.0.1:3307` |
 
 Inside the compose network the services resolve as `php-fpm:9000`,
 `mariadb:3306`, `memcached:11211`, and `mailhog:1025`. Override the database name and
