@@ -1,43 +1,47 @@
-# Custom PHP-FPM image with PHP extensions and Composer
+# Custom PHP-FPM image for the Shopclass local development stack.
 FROM php:8.3-fpm-alpine
 LABEL maintainer="navjottomer@gmail.com"
 
-# Download script to install PHP extensions and dependencies
+# Run php-fpm workers as your host user so files the app writes onto the
+# bind-mounted project (config.php, uploads, downloads, cache) are owned by you
+# rather than an in-container user. Override to match your host if it differs:
+#   docker compose build --build-arg PUID=$(id -u) --build-arg PGID=$(id -g)
+ARG PUID=1000
+ARG PGID=1000
+
+# Download the extension installer script.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions
 
+# System packages + the PHP extensions Shopclass actually uses. (openssl, json,
+# ctype, iconv and posix are already in the base image.)
 RUN apk add --no-cache \
       coreutils \
       curl \
       git \
       msmtp \
+      shadow \
       zip unzip \
-# iconv, mbstring and pdo_sqlite are omitted as they are already installed
     && PHP_EXTENSIONS=" \
-      amqp \
       bcmath \
-      bz2 \
       curl \
-      calendar \
-      event \
       exif \
       fileinfo \
       gd \
       gettext \
+      imagick \
       intl \
-      ldap \
-      mcrypt \
+      mbstring \
       memcached \
-      memcache \
       mysqli \
       opcache \
-      redis \
-      soap \
-      sockets \
-      xsl \
       zip \
     " \
     && install-php-extensions $PHP_EXTENSIONS
+
+# Align the www-data worker with the host user/group.
+RUN groupmod -o -g "${PGID}" www-data \
+    && usermod  -o -u "${PUID}" www-data
 
 # Route outgoing mail to the Mailhog container so the installer's welcome
 # e-mail (and any other mail) is catchable in a browser during development.
