@@ -116,3 +116,26 @@ if (function_exists('osc_register_widget')) {
         },
     ));
 }
+
+/*
+ * Register a demo static-page template. Guarded so dropping this folder onto an
+ * older core (one without the page-template registry) degrades to a no-op. This
+ * proves a plugin can ship a page layout the site owner picks per page: the
+ * callable render owns the whole page, reusing the theme's header/footer and the
+ * standard osc_static_page_* helpers (osc_static_page_text() already formats the
+ * stored content on output).
+ */
+if (function_exists('osc_register_page_template')) {
+    osc_register_page_template('sample_widgets.plain', array(
+        'label'       => 'Sample: Plain page (full width)',
+        'description' => 'A minimal, full-width page layout shipped by the sample-widgets plugin.',
+        'render'      => static function ($page) {
+            osc_current_web_theme_path('header.php');
+            echo '<div class="sample-plain-page" style="max-width:820px;margin:2rem auto;padding:0 1rem;">';
+            echo '<h1>' . osc_esc_html(osc_static_page_title()) . '</h1>';
+            echo osc_static_page_text();
+            echo '</div>';
+            osc_current_web_theme_path('footer.php');
+        },
+    ));
+}

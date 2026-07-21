@@ -17,7 +17,16 @@ osc_enqueue_script('tiny_mce');
 
 $page      = __get('page');
 $templates = __get('templates');
-$meta      = array();
+// Registered page templates (id => spec). Hide super_admin-gated templates from
+// moderators, mirroring the widget picker's capability check.
+$registeredTemplates = __get('registeredTemplates');
+if (!is_array($registeredTemplates)) {
+    $registeredTemplates = array();
+}
+$registeredTemplates = array_filter($registeredTemplates, static function ($spec) {
+    return !(($spec['capability'] ?? 'admin') === 'super_admin' && osc_is_moderator());
+});
+$meta = array();
 if (isset($page['s_meta'])) {
     $meta = json_decode($page['s_meta'], true);
 }
@@ -181,13 +190,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="card-body">
                                 <h3 class="label"><?php _e('Page settings'); ?></h3>
 
-                                <?php if (count($templates) > 0) { ?>
+                                <?php if (count($templates) > 0 || count($registeredTemplates) > 0) { ?>
                                     <div class="mb-3">
                                         <label for="page_template"><?php _e('Page template'); ?></label>
                                         <select id="page_template" class="form-select form-select-sm"
                                                 name="meta[template]">
                                             <option value="default" <?php echo $template_selected === 'default'
                                                 ? 'selected' : ''; ?>><?php _e('Default template'); ?></option>
+                                            <?php foreach ($registeredTemplates as $id => $spec) { ?>
+                                                <option value="<?php echo osc_esc_html($id); ?>"
+                                                    <?php echo $template_selected === $id ? 'selected' : ''; ?>>
+                                                    <?php echo osc_esc_html($spec['label']); ?>
+                                                </option>
+                                            <?php } ?>
                                             <?php foreach ($templates as $template) { ?>
                                                 <option value="<?php echo osc_esc_html($template); ?>"
                                                     <?php echo $template_selected === $template ? 'selected' : ''; ?>>
