@@ -139,11 +139,16 @@ class LocationsTmp extends DAO
     public function batchInsert($ids, $type)
     {
         if (!empty($ids)) {
+            $type   = $this->dao->escape($type);
+            $values = array();
+            foreach ($ids as $id) {
+                $values[] = '(' . (int)$id . ', ' . $type . ')';
+            }
+
             return $this->dao->query(sprintf(
-                "INSERT INTO %s (id_location, e_type) VALUES (%s, '%s')",
+                'INSERT INTO %s (id_location, e_type) VALUES %s',
                 $this->getTableName(),
-                implode(",'" . $type . "'),(", $ids),
-                $type
+                implode(',', $values)
             ));
         }
 
@@ -160,10 +165,10 @@ class LocationsTmp extends DAO
     {
         if (!empty($ids)) {
             return $this->dao->query(sprintf(
-                "DELETE FROM %s WHERE id_location IN (%s) AND e_type = '%s'",
+                'DELETE FROM %s WHERE id_location IN (%s) AND e_type = %s',
                 $this->getTableName(),
-                implode(",", $ids),
-                $type
+                implode(',', array_map('intval', $ids)),
+                $this->dao->escape($type)
             ));
         }
 

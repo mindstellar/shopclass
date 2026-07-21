@@ -135,6 +135,9 @@ class CityStats extends DAO
      */
     public function setNumItems($cityID, $numItems)
     {
+        $cityID   = (int)$cityID;
+        $numItems = (int)$numItems;
+
         return $this->dao->query('INSERT INTO ' . $this->getTableName()
             . " (fk_i_city_id, i_num_items) VALUES ($cityID, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
             . $numItems);
@@ -165,7 +168,7 @@ class CityStats extends DAO
     {
         return $this->dao->query('DELETE FROM ' . DB_TABLE_PREFIX
             . 't_city_stats WHERE fk_i_city_id IN (SELECT pk_i_id FROM ' . DB_TABLE_PREFIX
-            . 't_city WHERE fk_i_region_id = ' . $regionId . ');');
+            . 't_city WHERE fk_i_region_id = ' . (int)$regionId . ');');
     }
 
     /**
@@ -186,6 +189,12 @@ class CityStats extends DAO
         $found = null;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
+            if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
+                $zero = '>';
+            }
+            if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
+                $order = 'city_name ASC';
+            }
             $this->dao->select($this->getTableName() . '.fk_i_city_id as city_id, ' . $this->getTableName()
                 . '.i_num_items as items, ' . DB_TABLE_PREFIX . 't_city.s_name as city_name, ' . DB_TABLE_PREFIX
                 . 't_city.s_slug as city_slug');
@@ -226,7 +235,7 @@ class CityStats extends DAO
     {
         $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
             . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_city_id = ' . $cityId . ' AND ';
+        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_city_id = ' . (int)$cityId . ' AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
@@ -274,7 +283,7 @@ class CityStats extends DAO
         $this->dao->where(DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= \''
             . date('Y-m-d H:i:s') . '\' ');
         $this->dao->where(DB_TABLE_PREFIX . 't_category.b_enabled = 1');
-        $this->dao->where('fk_i_city_id IN (' . implode(',', $cities) . ')');
+        $this->dao->where('fk_i_city_id IN (' . implode(',', array_map('intval', $cities)) . ')');
         $this->dao->groupBy('fk_i_city_id');
         $rs = $this->dao->get();
         if ($rs === false) {
@@ -314,7 +323,7 @@ class CityStats extends DAO
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_city_id, i_num_items) VALUES ';
         $values = array();
         foreach ($newCalculated as $id => $num) {
-            $values[] = '(' . $id . ', ' . $num . ')';
+            $values[] = '(' . (int)$id . ', ' . (int)$num . ')';
         }
         $sql .= implode(',', $values);
         $sql .= ' ON DUPLICATE KEY UPDATE i_num_items = VALUES(i_num_items)';

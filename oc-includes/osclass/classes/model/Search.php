@@ -144,6 +144,9 @@ class Search extends DAO
                 $o_c = 'dt_pub_date';
             }
         }
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$o_c)) {
+            $o_c = $this->withPattern ? 'relevance' : 'dt_pub_date';
+        }
         if ($table == '') {
             $this->order_column = $o_c;
         } elseif ($table != '') {

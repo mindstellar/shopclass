@@ -80,9 +80,9 @@ class CountryStats extends DAO
         }
         $sql =
             sprintf(
-                'INSERT INTO %s (fk_c_country_code, i_num_items) VALUES (\'%s\', 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
+                'INSERT INTO %s (fk_c_country_code, i_num_items) VALUES (%s, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
                 $this->getTableName(),
-                $countryCode
+                $this->dao->escape($countryCode)
             );
 
         return $this->dao->query($sql);
@@ -139,8 +139,11 @@ class CountryStats extends DAO
      */
     public function setNumItems($countryCode, $numItems)
     {
+        $numItems    = (int)$numItems;
+        $countryCode = $this->dao->escape($countryCode);
+
         return $this->dao->query('INSERT INTO ' . $this->getTableName()
-            . " (fk_c_country_code, i_num_items) VALUES ('$countryCode', $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
+            . " (fk_c_country_code, i_num_items) VALUES ($countryCode, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
             . $numItems);
     }
 
@@ -176,6 +179,12 @@ class CountryStats extends DAO
      */
     public function listCountries($zero = '>', $order = 'country_name ASC')
     {
+        if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
+            $zero = '>';
+        }
+        if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
+            $order = 'country_name ASC';
+        }
         $this->dao->select($this->getTableName() . '.fk_c_country_code as country_code, ' . $this->getTableName()
             . '.i_num_items as items, ' . DB_TABLE_PREFIX . 't_country.s_name as country_name, ' . DB_TABLE_PREFIX
             . 't_country.s_slug as country_slug');
@@ -211,7 +220,7 @@ class CountryStats extends DAO
     {
         $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
                . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = \'' . $countryCode . '\' AND ';
+        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ' . $this->dao->escape($countryCode) . ' AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '

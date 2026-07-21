@@ -78,6 +78,9 @@ class BanRule extends DAO
 
         $this->dao->select('SQL_CALC_FOUND_ROWS *');
         $this->dao->from($this->getTableName());
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
+            $order_column = 'pk_i_id';
+        }
         $this->dao->orderBy($order_column, $order_direction);
         $this->dao->limit($start, $end);
         if ($name != '') {

@@ -136,6 +136,8 @@ class RegionStats extends DAO
      */
     public function setNumItems($regionID, $numItems)
     {
+        $regionID = (int)$regionID;
+        $numItems = (int)$numItems;
         $sql = 'INSERT INTO ' . $this->getTableName()
             . " (fk_i_region_id, i_num_items) VALUES ($regionID, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
             . $numItems;
@@ -181,6 +183,12 @@ class RegionStats extends DAO
         $found = null;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
+            if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
+                $zero = '>';
+            }
+            if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
+                $order = 'region_name ASC';
+            }
             $order_split = explode(' ', $order);
 
             $this->dao->from(DB_TABLE_PREFIX . 't_region , ' . $this->getTableName());
@@ -227,7 +235,7 @@ class RegionStats extends DAO
     {
         $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
             . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ' . $regionId . ' AND ';
+        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ' . (int)$regionId . ' AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
@@ -275,7 +283,7 @@ class RegionStats extends DAO
         $this->dao->where(DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= \''
             . date('Y-m-d H:i:s') . '\' ');
         $this->dao->where(DB_TABLE_PREFIX . 't_category.b_enabled = 1');
-        $this->dao->where('fk_i_region_id IN (' . implode(',', $regions) . ')');
+        $this->dao->where('fk_i_region_id IN (' . implode(',', array_map('intval', $regions)) . ')');
         $this->dao->groupBy('fk_i_region_id');
         $rs = $this->dao->get();
         if ($rs === false) {
@@ -315,7 +323,7 @@ class RegionStats extends DAO
         $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_region_id, i_num_items) VALUES ';
         $values = array();
         foreach ($newCalculated as $id => $num) {
-            $values[] = '(' . $id . ', ' . $num . ')';
+            $values[] = '(' . (int)$id . ', ' . (int)$num . ')';
         }
         $sql .= implode(',', $values);
         $sql .= ' ON DUPLICATE KEY UPDATE i_num_items = VALUES(i_num_items)';
