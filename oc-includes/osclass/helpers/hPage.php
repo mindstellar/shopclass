@@ -88,7 +88,12 @@ function osc_static_page_text($locale = '')
         $locale = osc_current_user_locale();
     }
 
-    return osc_static_page_field('s_text', $locale);
+    // Plugins/themes may pre-process the raw stored text; osc_autop then turns
+    // its line breaks into paragraphs so multi-line content does not collapse
+    // onto a single line on the published page. Mirrors WordPress's the_content.
+    $text = osc_apply_filter('static_page_text', osc_static_page_field('s_text', $locale), $locale);
+
+    return osc_autop($text);
 }
 
 

@@ -1,0 +1,84 @@
+// Static-page editor (pages/frm.php). A content-first, two-column layout: the
+// title and WYSIWYG body fill the main column; publishing and page settings sit
+// in a rail that stays in reach while you write. Colour goes through tokens so
+// both themes follow (see the Token Indirection Rule in the design system).
+
+#adminPageForm {
+  .page-view-link {
+    align-items: center;
+    color: var(--osc-ink-muted);
+    display: inline-flex;
+    font-size: .85rem;
+    margin-block-end: 1rem;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-bronze);
+      text-decoration: underline;
+    }
+  }
+
+  // The title is the page's headline — give it the weight WordPress gives it,
+  // so it reads as the thing you name first, not just another field.
+  #left-side {
+    input[id$="#s_title"] {
+      font-size: 1.25rem;
+      font-weight: 600;
+      height: auto;
+      padding-block: 10px;
+    }
+  }
+
+  // Publishing/settings rail. On wide screens it tracks the scroll so the Save
+  // button never leaves the viewport; on narrow screens it stacks under the body.
+  @media (min-width: 992px) {
+    #right-side {
+      align-self: flex-start;
+      position: sticky;
+      top: 1rem;
+    }
+  }
+
+  .card .label {
+    color: var(--osc-ink-muted);
+    margin-block-end: .75rem;
+  }
+
+  .page-publish-card {
+    .page-publish-actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+
+      .btn-submit {
+        flex: 1 1 auto;
+      }
+    }
+  }
+
+  .page-field-hint {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    margin-block: .35rem 0;
+  }
+
+  .page-footer-toggle {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    margin-block-start: .5rem;
+    padding-inline-start: 0;
+
+    .form-check-input {
+      flex: 0 0 auto;
+      margin-inline: 0;
+    }
+
+    .form-check-label {
+      color: var(--osc-ink);
+      cursor: pointer;
+    }
+  }
+}

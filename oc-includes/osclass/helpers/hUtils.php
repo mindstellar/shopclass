@@ -498,6 +498,107 @@ function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</
 
 
 /**
+ * Convert plain-text line breaks into HTML paragraphs and line breaks.
+ *
+ * A blank line starts a new paragraph; a single newline within a block becomes
+ * a line break. Existing block-level markup (<p>, <ul>, <table>, <pre>, <h2>…)
+ * is left intact and never paragraph-wrapped, so the function is safe — and
+ * stable when re-applied — on content that already contains HTML, such as the
+ * markup the WYSIWYG editor stores. This is what lets multi-line page and
+ * listing text render as real paragraphs on the public site instead of
+ * collapsing onto a single line.
+ *
+ * @param string $text        the raw stored text
+ * @param bool   $line_breaks convert single newlines to <br />
+ *
+ * @return string
+ */
+function osc_autop($text, $line_breaks = true)
+{
+    if ($text === null || trim($text) === '') {
+        return '';
+    }
+
+    // Block-level tags that stand on their own and must never be wrapped in <p>.
+    $blocks = 'table|thead|tfoot|tbody|tr|th|td|caption|col|colgroup'
+        . '|ul|ol|li|dl|dt|dd|menu'
+        . '|div|section|article|aside|header|footer|nav|figure|figcaption|main|details|summary'
+        . '|blockquote|pre|address|hr|fieldset|legend|form|noscript'
+        . '|h[1-6]|p';
+
+    // Normalise newlines and give the text a trailing break to simplify matching.
+    $text = str_replace(array("\r\n", "\r"), "\n", (string)$text);
+    $text .= "\n";
+
+    // Pull <pre> blocks out of harm's way — their whitespace is significant.
+    $stash = array();
+    if (stripos($text, '<pre') !== false) {
+        $segments = preg_split('#(<pre[^>]*>.*?</pre>)#is', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $text     = '';
+        foreach ($segments as $i => $segment) {
+            if ($i % 2 === 1) {
+                // Bare marker so restoration does not depend on surrounding
+                // newlines (which the paragraph pass strips).
+                $token         = "\x02osc-pre-" . $i . "\x03";
+                $stash[$token] = $segment;
+                $text         .= "\n\n" . $token . "\n\n";
+            } else {
+                $text .= $segment;
+            }
+        }
+    }
+
+    // Surround block tags with blank lines so each becomes its own chunk.
+    $text = preg_replace('#(<(?:' . $blocks . ')(?:\s[^>]*)?>)#i', "\n\n$1", $text);
+    $text = preg_replace('#(</(?:' . $blocks . ')>)#i', "$1\n\n", $text);
+    $text = preg_replace('#(<hr\s*/?>)#i', "\n\n$1\n\n", $text);
+
+    // Split on blank lines and wrap the loose text runs in paragraphs.
+    $chunks = preg_split('/\n[ \t]*\n/', $text);
+    $out    = '';
+    foreach ($chunks as $chunk) {
+        $trimmed = trim($chunk);
+        if ($trimmed === '') {
+            continue;
+        }
+        // Leave chunks that are already block-level markup (or a stash token) alone.
+        if (isset($stash[$trimmed])
+            || preg_match('#^</?(?:' . $blocks . ')[\s/>]#i', $trimmed)
+            || preg_match('#^<!--#', $trimmed)
+        ) {
+            $out .= $trimmed . "\n\n";
+        } else {
+            $out .= '<p>' . $trimmed . "</p>\n\n";
+        }
+    }
+    $text = $out;
+
+    // Convert the remaining single newlines inside paragraphs to <br />.
+    if ($line_breaks) {
+        // Drop newlines that merely hug a block tag — they are structural, not content.
+        $text = preg_replace('#(<(?:' . $blocks . ')(?:\s[^>]*)?>)\n+#i', '$1', $text);
+        $text = preg_replace('#\n+(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+        // A lone newline that is neither preceded nor followed by another newline.
+        // No trailing newline is kept, so a re-run finds nothing left to convert.
+        $text = preg_replace('/(?<!\n)\n(?!\n)/', '<br />', $text);
+    }
+
+    // Tidy: kill empty paragraphs and paragraphs that only fence a block element.
+    $text = preg_replace('#<p>\s*</p>#i', '', $text);
+    $text = preg_replace('#<p>\s*(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+    $text = preg_replace('#(</?(?:' . $blocks . ')(?:\s[^>]*)?>)\s*</p>#i', '$1', $text);
+    $text = preg_replace('#<br />\s*(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+
+    // Restore stashed <pre> blocks.
+    if (!empty($stash)) {
+        $text = str_replace(array_keys($stash), array_values($stash), $text);
+    }
+
+    return trim($text);
+}
+
+
+/**
  *
  */
 function osc_get_http_referer()
