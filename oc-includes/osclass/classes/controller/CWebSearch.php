@@ -629,9 +629,10 @@ class CWebSearch extends BaseModel
 
                 if (osc_count_items() > 0) {
                     while (osc_has_items()) {
+                        // Raw values: RSSFeed handles all XML/HTML escaping.
                         $itemArray = array(
                             'title'       => osc_item_title(),
-                            'link'        => htmlentities(osc_item_url(), ENT_COMPAT, 'UTF-8'),
+                            'link'        => osc_item_url(),
                             'description' => osc_item_description(),
                             'country'     => osc_item_country(),
                             'region'      => osc_item_region(),
@@ -644,16 +645,26 @@ class CWebSearch extends BaseModel
                         if (osc_count_item_resources() > 0) {
                             osc_has_item_resources();
 
+                            // Thumbnail rendered into the description (legacy behaviour).
                             $itemArray['image'] = array(
-                                'url'   => htmlentities(
-                                    osc_resource_thumbnail_url(),
-                                    ENT_COMPAT,
-                                    'UTF-8'
-                                ),
+                                'url'   => osc_resource_thumbnail_url(),
                                 'title' => osc_item_title(),
-                                'link'  => htmlentities(osc_item_url(), ENT_COMPAT, 'UTF-8')
+                                'link'  => osc_item_url()
+                            );
+
+                            // Spec-correct RSS enclosure for the first resource.
+                            // No size is stored (t_item_resource has no size column),
+                            // so length is best-effort 0.
+                            $itemArray['enclosure'] = array(
+                                'url'    => osc_resource_url(),
+                                'type'   => osc_resource_type(),
+                                'length' => 0
                             );
                         }
+
+                        // Per-item extension seam (citizen parity with the sitemap's
+                        // per-URL filters): a plugin can adjust or drop feed entries.
+                        $itemArray = osc_apply_filter('rss_feed_item', $itemArray, osc_item());
 
                         $feed->addItem($itemArray);
                     }
