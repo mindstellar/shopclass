@@ -385,9 +385,27 @@ class DBConnectionClass
      */
     private function handleDbError($title, $message)
     {
-        if (defined('OSC_INSTALLING') && OSC_INSTALLING !== 1) {
-            osc_die($title, $message);
+        // During installation the installer renders its own database errors, so
+        // return and let the caller handle the failure inline.
+        if (defined('OSC_INSTALLING')) {
+            return;
         }
+
+        // Otherwise the site is up but can't reach its database. Show a clean,
+        // useful "database unavailable" page (and log it) instead of letting a
+        // later query fatal with a raw error. The real driver error is passed
+        // as debug-only detail.
+        if (class_exists('\\mindstellar\\logger\\OsclassErrors')) {
+            $detail = $this->connErrorDesc ?: ($this->errorDesc ?: $message);
+            \mindstellar\logger\OsclassErrors::newInstance()->renderDbError((string)$detail);
+            exit(1);
+        }
+
+        if (!headers_sent()) {
+            http_response_code(503);
+        }
+        echo 'The site is temporarily unable to reach its database. Please try again shortly.';
+        exit(1);
     }
 
     /**

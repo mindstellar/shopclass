@@ -66,6 +66,9 @@ class OsclassErrors
                 $this->logFile = CONTENT_PATH . 'debug.log';
             }
         } else {
+            // Production: never leak raw PHP errors to the page — our handlers
+            // render a clean page and log the detail instead.
+            ini_set('display_errors', '0');
             error_reporting(
                 E_CORE_ERROR | E_CORE_WARNING | E_COMPILE_ERROR | E_ERROR | E_WARNING | E_PARSE
                 | E_USER_ERROR | E_USER_WARNING
@@ -80,13 +83,58 @@ class OsclassErrors
      */
     public function register(): bool
     {
+        // Always catch uncaught exceptions and fatal errors, in every mode, so a
+        // failure renders a clean page (and is logged) instead of a raw stack
+        // trace or a blank screen. Notices/warnings are only surfaced in debug.
+        set_exception_handler([$this, 'handleException']);
+        register_shutdown_function([$this, 'logFatalErrors']);
+
         if ($this->debugEnabled) {
             set_error_handler([$this, 'logErrors']);
-            set_exception_handler([$this, 'logException']);
-            register_shutdown_function([$this, 'logFatalErrors']);
         }
 
         return true;
+    }
+
+    /**
+     * Handle an uncaught exception/error: log it, then render the clean error
+     * page (with technical detail only in debug mode).
+     *
+     * @param \Throwable $e
+     */
+    public function handleException($e): void
+    {
+        error_log('Shopclass error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+
+        if ($this->logEnabled) {
+            $this->writeToFile($this->formattedError(
+                $e->getMessage(),
+                (int)$e->getCode(),
+                $e->getFile(),
+                (int)$e->getLine(),
+                $e->getTraceAsString()
+            ));
+        }
+
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $this->formattedError(
+                $e->getMessage(),
+                (int)$e->getCode(),
+                $e->getFile(),
+                (int)$e->getLine(),
+                $e->getTraceAsString()
+            ) . PHP_EOL);
+
+            return;
+        }
+
+        $this->renderErrorPage(array(
+            'type'    => get_class($e),
+            'message' => $e->getMessage(),
+            'file'    => $e->getFile(),
+            'line'    => (int)$e->getLine(),
+            'trace'   => $e->getTraceAsString(),
+        ));
     }
 
     /**
@@ -112,37 +160,148 @@ class OsclassErrors
     public function logFatalErrors(): void
     {
         $error = error_get_last();
-
-        if (!empty($error)) {
-            if ($this->logEnabled) {
-                $message = $this->formattedError($error['message'], $error['type'], $error['file'], $error['line'], var_export($error, true));
-                $this->writeToFile($message);
-            } elseif (PHP_SAPI === 'cli') {
-                printf($this->formattedError(
-                    $error['message'],
-                    $error['type'],
-                    $error['file'],
-                    $error['line'],
-                    var_export($error, true)
-                ));
-                exit(1);
-            } else {
-                $this->displayErrorPage($error);
-            }
+        if ($error === null) {
+            return;
         }
+
+        // Only true fatals warrant the error page at shutdown; a trailing
+        // notice or warning must not replace a page that rendered normally.
+        $fatalMask = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR;
+        if (($error['type'] & $fatalMask) === 0) {
+            return;
+        }
+
+        error_log('Shopclass fatal: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+
+        if ($this->logEnabled) {
+            $this->writeToFile(
+                $this->formattedError($error['message'], $error['type'], $error['file'], $error['line'], '')
+            );
+
+            return;
+        }
+
+        if (PHP_SAPI === 'cli') {
+            fwrite(
+                STDERR,
+                $this->formattedError($error['message'], $error['type'], $error['file'], $error['line'], '') . PHP_EOL
+            );
+
+            return;
+        }
+
+        $this->renderErrorPage(array(
+            'type'    => $this->errorType($error['type']),
+            'message' => $error['message'],
+            'file'    => $error['file'],
+            'line'    => $error['line'],
+            'trace'   => '',
+        ));
     }
 
     /**
-     * Display error page.
+     * Render the clean, self-contained error page. Technical detail is only
+     * passed through when debug mode is on; production sees a plain, useful
+     * message and a reference id, and the detail goes to the log.
      *
-     * @param array $error
+     * @param array $detail ['type','message','file','line','trace']
      */
-    private function displayErrorPage(array $error): void
+    private function renderErrorPage(array $detail): void
     {
-        extract($error);
-        $trace = var_export(debug_backtrace(), true);
+        // If output already began we can't produce a clean page; the detail is
+        // logged. In debug, append a short note so it isn't lost entirely.
+        if (headers_sent()) {
+            if ($this->debugEnabled) {
+                echo "\n" . htmlspecialchars(
+                    (isset($detail['type']) ? $detail['type'] : 'Error') . ': '
+                    . (isset($detail['message']) ? $detail['message'] : ''),
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+            }
 
-        include ABS_PATH . 'oc-admin/gui/error.php';
+            return;
+        }
+
+        http_response_code(500);
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+
+        $seed = (isset($detail['message']) ? $detail['message'] : '')
+            . (isset($detail['file']) ? $detail['file'] : '')
+            . (isset($detail['line']) ? $detail['line'] : '');
+        $ref  = date('ymd-His') . '-' . substr(md5($seed), 0, 6);
+
+        $oscError = array(
+            'isDebug' => $this->debugEnabled,
+            'heading' => 'Something went wrong',
+            'body'    => "This page ran into an unexpected error and couldn't finish loading. The problem has been "
+                . 'logged. Please try again in a moment — if it keeps happening, contact the site administrator with '
+                . 'the reference below.',
+            'ref'     => $ref,
+            'detail'  => $detail,
+        );
+
+        $this->includeTemplate($oscError, 'Something went wrong', 'This page could not be loaded.');
+        exit(1);
+    }
+
+    /**
+     * Render a clean "database unavailable" page. Called from the DB connection
+     * layer when the site is up but cannot reach its database — the most common
+     * real-world failure, so it gets a tailored, actionable message.
+     *
+     * @param string $detailMessage Technical detail (shown only in debug mode)
+     */
+    public function renderDbError(string $detailMessage = ''): void
+    {
+        error_log('Shopclass: database unavailable. ' . $detailMessage);
+
+        if (headers_sent()) {
+            return;
+        }
+
+        http_response_code(503);
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+
+        $oscError = array(
+            'isDebug' => $this->debugEnabled,
+            'heading' => "Can't reach the database",
+            'body'    => "Shopclass is running, but it can't connect to its database right now. This is usually a "
+                . 'temporary hosting hiccup or a wrong value in config.php. Please try again in a moment; if it '
+                . 'persists, check that the database server is up and that the credentials in config.php are correct.',
+            'ref'     => null,
+            'detail'  => ($this->debugEnabled && $detailMessage !== '')
+                ? array('type' => 'Database', 'message' => $detailMessage, 'file' => '', 'line' => '', 'trace' => '')
+                : null,
+        );
+
+        $this->includeTemplate($oscError, 'Database unavailable', 'Please try again shortly.');
+        exit(1);
+    }
+
+    /**
+     * Include the shared error template, or a bare fallback if it is missing.
+     *
+     * @param array  $oscError     Data for the template
+     * @param string $fbHeading    Fallback heading if the template is absent
+     * @param string $fbBody       Fallback body if the template is absent
+     */
+    private function includeTemplate(array $oscError, string $fbHeading, string $fbBody): void
+    {
+        $template = ABS_PATH . 'oc-includes/osclass/gui/error.php';
+        if (is_file($template)) {
+            include $template;
+
+            return;
+        }
+
+        echo '<!doctype html><meta charset="utf-8"><title>' . htmlspecialchars($fbHeading, ENT_QUOTES, 'UTF-8')
+            . '</title><h1>' . htmlspecialchars($fbHeading, ENT_QUOTES, 'UTF-8') . '</h1><p>'
+            . htmlspecialchars($fbBody, ENT_QUOTES, 'UTF-8') . '</p>';
     }
 
     /**
