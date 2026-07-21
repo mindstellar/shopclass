@@ -90,6 +90,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_widget (
     s_location VARCHAR(40) NOT NULL,
     e_kind ENUM('TEXT', 'HTML') NOT NULL,
     s_content MEDIUMTEXT NOT NULL,
+    i_order INT NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

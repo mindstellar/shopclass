@@ -153,17 +153,50 @@ class CAdminAppearance extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
                 }
 
+                $location = Params::getParam('location');
                 Widget::newInstance()->insert(
                     array(
-                        's_location'    => Params::getParam('location'),
+                        's_location'    => $location,
                         'e_kind'        => 'html',
                         's_description' => Params::getParam('description'),
-                        's_content'     => Params::getParam('content', false, false)
+                        's_content'     => Params::getParam('content', false, false),
+                        'i_order'       => Widget::newInstance()->getNextOrder($location)
                     )
                 );
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');
                 break;
+            case ('reorder_widgets_post'):
+                // JSON endpoint: flagging the request as AJAX makes the CSRF check
+                // emit a JSON error and exit on failure instead of flash+redirect.
+                if (!defined('IS_AJAX')) {
+                    define('IS_AJAX', true);
+                }
+                osc_csrf_check();
+
+                $location = Params::getParam('location');
+                $ids      = Params::getParam('ids');
+                if (!is_array($ids)) {
+                    $ids = array();
+                }
+                // Integer-validate the id list, dropping any non-numeric value.
+                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
+
+                // Defence in depth: only reorder ids that currently belong to this
+                // location, so a forged post cannot move widgets from elsewhere.
+                $validIds = array();
+                foreach (Widget::newInstance()->findByLocation($location) as $widget) {
+                    $validIds[(int) $widget['pk_i_id']] = true;
+                }
+                $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
+                    return isset($validIds[$id]);
+                }));
+
+                $ok = Widget::newInstance()->reorder($ids);
+
+                header('Content-Type: application/json');
+                echo json_encode(array('error' => $ok ? 0 : 1));
+                exit;
             /* /widget */
             case ('activate'):
                 osc_csrf_check();
