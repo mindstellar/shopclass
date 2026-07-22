@@ -170,21 +170,75 @@ class Field extends DAO
     }
 
     /**
-     * Find a field by its name
+     * The category-inheritance path for a category: the category itself followed by
+     * each ancestor up to the root, as an ordered list of ids (nearest first).
+     *
+     * Fields assigned to any category on this path apply to the given category, so
+     * a field placed on "Vehicles" is inherited by "Vehicles › Cars" without being
+     * re-assigned. The tree is shallow (usually two or three levels); the guard just
+     * stops a corrupt parent cycle from looping forever.
+     *
+     * @param int $catId
+     *
+     * @return int[] category ids from the leaf up to the root; empty when invalid.
+     */
+    public function categoryPath($catId)
+    {
+        $catId = (int)$catId;
+        if ($catId <= 0) {
+            return array();
+        }
+
+        $path    = array();
+        $current = $catId;
+        $guard   = 0;
+        while ($current > 0 && $guard < 100) {
+            $path[]  = $current;
+            $result  = $this->dao->query(sprintf(
+                'SELECT fk_i_parent_id FROM %st_category WHERE pk_i_id = %d',
+                DB_TABLE_PREFIX,
+                $current
+            ));
+            if ($result === false) {
+                break;
+            }
+            $row     = $result->row();
+            $current = isset($row['fk_i_parent_id']) ? (int)$row['fk_i_parent_id'] : 0;
+            // defensive: a parent chain that points back at a category already seen
+            // would loop; break instead of spinning to the guard.
+            if (in_array($current, $path, true)) {
+                break;
+            }
+            $guard++;
+        }
+
+        return $path;
+    }
+
+    /**
+     * Find the fields that apply to a category, honouring category inheritance: a
+     * field assigned to any ancestor of $id resolves for $id too. De-duplicated by
+     * field id and ordered by position.
      *
      * @access public
      *
-     * @param string $id
+     * @param int $id
      *
      * @return array Field information. If there's no information, return an empty array.
      * @since  unknown
      */
     public function findByCategory($id)
     {
+        $path = $this->categoryPath($id);
+        if (empty($path)) {
+            return array();
+        }
+
         $this->dao->select('mf.*');
         $this->dao->from(sprintf('%st_meta_fields mf, %st_meta_categories mc', DB_TABLE_PREFIX, DB_TABLE_PREFIX));
-        $this->dao->where('mc.fk_i_category_id', $id);
+        $this->dao->whereIn('mc.fk_i_category_id', $path);
         $this->dao->where('mf.pk_i_id = mc.fk_i_field_id');
+        $this->dao->groupBy('mf.pk_i_id');
         $this->dao->orderBy('mf.i_position', 'ASC');
 
         $result = $this->dao->get();
@@ -220,16 +274,24 @@ class Field extends DAO
         }
         $this->dao->select('f.pk_i_id');
         $this->dao->from($this->getTableName() . ' f, ' . DB_TABLE_PREFIX . 't_meta_categories c');
-        $where = array();
-        $mCat  = Category::newInstance();
+        $catIds = array();
+        $mCat   = Category::newInstance();
         foreach ($ids as $id) {
             if (is_numeric($id)) {
-                $where[] = 'c.fk_i_category_id = ' . $id;
+                $catIds[] = (int)$id;
             } else {
                 $cat = $mCat->findBySlug($id);
                 if (isset($cat['pk_i_id'])) {
-                    $where[] = 'c.fk_i_category_id = ' . $cat['pk_i_id'];
+                    $catIds[] = (int)$cat['pk_i_id'];
                 }
+            }
+        }
+        // expand each category to its inheritance path so a searchable field assigned
+        // to a parent stays searchable in its descendants.
+        $where = array();
+        foreach ($catIds as $catId) {
+            foreach ($this->categoryPath($catId) as $pathId) {
+                $where[$pathId] = 'c.fk_i_category_id = ' . $pathId;
             }
         }
         if (empty($where)) {
@@ -272,12 +334,20 @@ class Field extends DAO
             return array();
         }
 
+        // resolve fields down the category inheritance path (leaf + ancestors), so
+        // a field assigned to a parent category renders on a child category's item.
+        $path = $this->categoryPath($catId);
+        if (empty($path)) {
+            return array();
+        }
+        $inList = implode(',', array_map('intval', $path));
+
         $result =
             $this->dao->query(sprintf(
-                                  'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM (SELECT mf.* FROM %st_meta_fields mf, %st_meta_categories mc WHERE mc.fk_i_category_id = %d AND mf.pk_i_id = mc.fk_i_field_id) as query LEFT JOIN %st_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = %d group by pk_i_id  ORDER BY query.i_position ASC',
+                                  'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM (SELECT mf.* FROM %st_meta_fields mf, %st_meta_categories mc WHERE mc.fk_i_category_id IN (%s) AND mf.pk_i_id = mc.fk_i_field_id) as query LEFT JOIN %st_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = %d group by pk_i_id  ORDER BY query.i_position ASC',
                                   DB_TABLE_PREFIX,
                                   DB_TABLE_PREFIX,
-                                  $catId,
+                                  $inList,
                                   DB_TABLE_PREFIX,
                                   $itemId
                               ));
