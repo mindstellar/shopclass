@@ -234,7 +234,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"><?php _e('Number of new listings'); ?></b>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($items) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>
@@ -249,7 +249,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"><?php _e("Total number of listings' views"); ?></b>
                     <div id="placeholder_total" class="graph-placeholder" style="height:150px">
                         <?php if (count($reports) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>
@@ -264,7 +264,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"><?php _e('Number of new alerts'); ?></b>
                     <div id="placeholder_alerts" class="graph-placeholder" style="height:150px">
                         <?php if (count($alerts) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>
@@ -279,7 +279,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"><?php _e('Number of new subscribers'); ?></b>
                     <div id="placeholder_subscribers" class="graph-placeholder" style="height:150px">
                         <?php if (count($subscribers) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>

@@ -111,16 +111,16 @@ $withFilters = __get('withFilters');
                 } ?>
                 <select name="iDisplayLength" class="form-select form-select-sm"
                         onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
+                    <option value="10"><?php printf(__('%d users'), 10); ?></option>
                     <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d Listings'), 25); ?></option>
+                                       } ?> ><?php printf(__('%d users'), 25); ?></option>
                     <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d Listings'), 50); ?></option>
+                                       } ?> ><?php printf(__('%d users'), 50); ?></option>
                     <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
                         echo 'selected';
-                                        } ?> ><?php printf(__('%d Listings'), 100); ?></option>
+                                        } ?> ><?php printf(__('%d users'), 100); ?></option>
                 </select>
             </form>
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
