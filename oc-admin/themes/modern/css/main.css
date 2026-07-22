@@ -14906,8 +14906,24 @@ code {
 #plugin-hook .has-slider {
   padding-inline-start: 180px;
 }
-#plugin-hook .meta select, #plugin-hook .meta input[type=text], #plugin-hook .meta input[type=email], #plugin-hook .meta input.cf_date {
+#plugin-hook .meta select, #plugin-hook .meta input[type=text], #plugin-hook .meta input[type=email], #plugin-hook .meta input[type=tel], #plugin-hook .meta input[type=number], #plugin-hook .meta input.cf_date {
   max-width: 15rem;
+}
+#plugin-hook .meta-section {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1rem;
+  padding-block-start: 0.75rem;
+}
+#plugin-hook .meta-section:first-child {
+  border-block-start: 0;
+  margin-block-start: 0;
+  padding-block-start: 0;
+}
+#plugin-hook .meta-section-title {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-block-end: 0.5rem;
 }
 
 #multiLangTabsContent textarea {
@@ -15550,6 +15566,74 @@ code {
 .custom-field-expanded .icon-more:before {
   content: "\f229";
   font-family: "bootstrap-icons";
+}
+
+.field-groups {
+  margin-bottom: 1.75rem;
+  max-width: 62rem;
+}
+
+.field-groups-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.field-groups-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.field-groups-hint {
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  margin: 0.35rem 0 0.75rem;
+  max-width: 60ch;
+}
+
+.list-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.group_li {
+  margin-bottom: 0.5rem;
+}
+
+.group-div {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.group-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+}
+
+.group-empty {
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  padding: 0.35rem 0;
+}
+
+.cfield-group {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border-radius: 999px;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  gap: 0.25rem;
+  padding: 0.1rem 0.55rem;
 }
 
 .cf-config-block {

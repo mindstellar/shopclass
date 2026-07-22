@@ -45,7 +45,7 @@ class Field extends DAO
         parent::__construct();
         $this->setTableName('t_meta_fields');
         $this->setPrimaryKey('pk_i_id');
-        $this->setFields(array('pk_i_id', 's_name', 'e_type', 'b_required', 'b_searchable', 's_slug', 's_options', 's_meta', 'i_position'));
+        $this->setFields(array('pk_i_id', 's_name', 'e_type', 'b_required', 'b_searchable', 's_slug', 's_options', 's_meta', 'i_position', 'fk_i_group_id'));
         if (defined('OC_ADMIN') && OC_ADMIN) {
             $this->currentLocaleCode = osc_current_admin_locale();
         } else {
@@ -216,9 +216,35 @@ class Field extends DAO
     }
 
     /**
+     * The fields belonging to a group, ordered by position.
+     *
+     * @param int $groupId
+     *
+     * @return array
+     */
+    public function findByGroup($groupId)
+    {
+        $this->dao->select();
+        $this->dao->from($this->getTableName());
+        $this->dao->where('fk_i_group_id', (int)$groupId);
+        $this->dao->orderBy('i_position', 'ASC');
+        $result = $this->dao->get();
+        if ($result == false) {
+            return array();
+        }
+        $extended = array();
+        foreach ($result->result() as $field) {
+            $extended[] = $this->extendField($field);
+        }
+
+        return $extended;
+    }
+
+    /**
      * Find the fields that apply to a category, honouring category inheritance: a
-     * field assigned to any ancestor of $id resolves for $id too. De-duplicated by
-     * field id and ordered by position.
+     * field assigned to any ancestor of $id resolves for $id too — either directly
+     * (a loose field, via t_meta_categories) or through a group assigned to the
+     * category (t_meta_group_categories). De-duplicated by field id and ordered.
      *
      * @access public
      *
@@ -233,15 +259,22 @@ class Field extends DAO
         if (empty($path)) {
             return array();
         }
+        $inList = implode(',', array_map('intval', $path));
+        $p      = DB_TABLE_PREFIX;
 
-        $this->dao->select('mf.*');
-        $this->dao->from(sprintf('%st_meta_fields mf, %st_meta_categories mc', DB_TABLE_PREFIX, DB_TABLE_PREFIX));
-        $this->dao->whereIn('mc.fk_i_category_id', $path);
-        $this->dao->where('mf.pk_i_id = mc.fk_i_field_id');
-        $this->dao->groupBy('mf.pk_i_id');
-        $this->dao->orderBy('mf.i_position', 'ASC');
+        // Loose fields directly assigned, plus grouped fields whose group is assigned.
+        $sql = 'SELECT query.* FROM ('
+            . 'SELECT mf.*, 0 AS cf_group_position FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
+            . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
+            . ' AND mf.fk_i_group_id IS NULL'
+            . ' UNION '
+            . 'SELECT mf.*, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mf'
+            . ' JOIN ' . $p . 't_meta_group g ON mf.fk_i_group_id = g.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
+            . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
+            . ') AS query GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
 
-        $result = $this->dao->get();
+        $result = $this->dao->query($sql);
 
         if ($result == false) {
             return array();
@@ -272,8 +305,6 @@ class Field extends DAO
         if (!is_array($ids)) {
             $ids = array($ids);
         }
-        $this->dao->select('f.pk_i_id');
-        $this->dao->from($this->getTableName() . ' f, ' . DB_TABLE_PREFIX . 't_meta_categories c');
         $catIds = array();
         $mCat   = Category::newInstance();
         foreach ($ids as $id) {
@@ -288,21 +319,31 @@ class Field extends DAO
         }
         // expand each category to its inheritance path so a searchable field assigned
         // to a parent stays searchable in its descendants.
-        $where = array();
+        $pathIds = array();
         foreach ($catIds as $catId) {
             foreach ($this->categoryPath($catId) as $pathId) {
-                $where[$pathId] = 'c.fk_i_category_id = ' . $pathId;
+                $pathIds[$pathId] = $pathId;
             }
         }
-        if (empty($where)) {
+        if (empty($pathIds)) {
             return array();
         }
+        $inList = implode(',', array_map('intval', $pathIds));
+        $p      = DB_TABLE_PREFIX;
 
-        $this->dao->where('( ' . implode(' OR ', $where) . ' )');
-        $this->dao->where('f.pk_i_id = c.fk_i_field_id');
-        $this->dao->where('f.b_searchable', 1);
+        // Searchable loose fields directly assigned, plus searchable grouped fields
+        // whose group is assigned, across the inheritance path.
+        $sql = 'SELECT DISTINCT pk_i_id FROM ('
+            . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f, ' . $p . 't_meta_categories c'
+            . ' WHERE c.fk_i_category_id IN (' . $inList . ') AND f.pk_i_id = c.fk_i_field_id'
+            . ' AND f.b_searchable = 1 AND f.fk_i_group_id IS NULL'
+            . ' UNION '
+            . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f'
+            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = f.fk_i_group_id'
+            . ' WHERE gc.fk_i_category_id IN (' . $inList . ') AND f.b_searchable = 1'
+            . ') AS q';
 
-        $result = $this->dao->get();
+        $result = $this->dao->query($sql);
 
         if ($result == false) {
             return array();
@@ -336,21 +377,34 @@ class Field extends DAO
 
         // resolve fields down the category inheritance path (leaf + ancestors), so
         // a field assigned to a parent category renders on a child category's item.
+        // Loose fields (via t_meta_categories) and grouped fields (via a group
+        // assigned through t_meta_group_categories) are unioned; each row carries its
+        // section (cf_group_name / cf_group_position) so the form can render groups
+        // as sections while a flat theme loop still sees every field.
         $path = $this->categoryPath($catId);
         if (empty($path)) {
             return array();
         }
         $inList = implode(',', array_map('intval', $path));
+        $p      = DB_TABLE_PREFIX;
+        $itemId = (int)$itemId;
 
-        $result =
-            $this->dao->query(sprintf(
-                                  'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM (SELECT mf.* FROM %st_meta_fields mf, %st_meta_categories mc WHERE mc.fk_i_category_id IN (%s) AND mf.pk_i_id = mc.fk_i_field_id) as query LEFT JOIN %st_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = %d group by pk_i_id  ORDER BY query.i_position ASC',
-                                  DB_TABLE_PREFIX,
-                                  DB_TABLE_PREFIX,
-                                  $inList,
-                                  DB_TABLE_PREFIX,
-                                  $itemId
-                              ));
+        $sql = 'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM ('
+            . 'SELECT mf.*, NULL AS cf_group_name, 0 AS cf_group_position'
+            . ' FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
+            . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
+            . ' AND mf.fk_i_group_id IS NULL'
+            . ' UNION '
+            . 'SELECT mf.*, g.s_name AS cf_group_name, g.i_position AS cf_group_position'
+            . ' FROM ' . $p . 't_meta_fields mf'
+            . ' JOIN ' . $p . 't_meta_group g ON mf.fk_i_group_id = g.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
+            . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
+            . ') as query'
+            . ' LEFT JOIN ' . $p . 't_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = ' . $itemId
+            . ' GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
+
+        $result = $this->dao->query($sql);
 
         if ($result == false) {
             return array();

@@ -460,6 +460,16 @@ CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
   s_search VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_name VARCHAR(255) NOT NULL,
+    s_slug VARCHAR(255) NOT NULL,
+    i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+    s_meta MEDIUMTEXT NULL DEFAULT NULL,
+
+        PRIMARY KEY (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_name VARCHAR(255) NOT NULL,
@@ -470,8 +480,19 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     b_searchable TINYINT(1) NOT NULL DEFAULT 0,
     s_meta MEDIUMTEXT NULL DEFAULT NULL,
     i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+    fk_i_group_id INT UNSIGNED NULL DEFAULT NULL,
 
         PRIMARY KEY (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    fk_i_category_id INT UNSIGNED NOT NULL,
+
+        PRIMARY KEY (fk_i_group_id, fk_i_category_id),
+        INDEX idx_group_cat_category (fk_i_category_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (

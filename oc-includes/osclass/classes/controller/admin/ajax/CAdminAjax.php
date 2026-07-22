@@ -267,6 +267,8 @@ class CAdminAjax extends AdminSecBaseModel
                 // Sibling fields power the conditional-visibility "controlling field"
                 // picker (a field can be shown/required based on another's value).
                 $this->_exportVariableToView('allFields', Field::newInstance()->listAll());
+                // Groups populate the membership dropdown (Ungrouped + each group).
+                $this->_exportVariableToView('allGroups', FieldGroup::newInstance()->listAll());
                 $this->doView('fields/iframe.php');
                 break;
             case 'field_categories_post':
@@ -329,14 +331,17 @@ class CAdminAjax extends AdminSecBaseModel
                         $realTypeMeta = in_array($chosenType, \mindstellar\fields\FieldTypeRegistry::STORAGE_PRIMITIVES, true)
                             ? '' : $chosenType;
 
+                        // Group membership: 0/empty means loose (Ungrouped).
+                        $groupId = (int)Params::getParam('field_group');
                         $res = Field::newInstance()->update(
                             array(
-                                's_name'       => $aMetaNames[$currentAdminLocale],
-                                'e_type'       => $storageType,
-                                's_slug'       => $slug,
-                                'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
-                                'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
-                                's_options'    => $metaOptions,
+                                's_name'        => $aMetaNames[$currentAdminLocale],
+                                'e_type'        => $storageType,
+                                's_slug'        => $slug,
+                                'b_required'    => Params::getParam('field_required') == '1' ? 1 : 0,
+                                'b_searchable'  => Params::getParam('field_searchable') == '1' ? 1 : 0,
+                                's_options'     => $metaOptions,
+                                'fk_i_group_id' => $groupId > 0 ? $groupId : null,
                             ),
                             array('pk_i_id' => Params::getParam('id'))
                         );
@@ -446,6 +451,69 @@ class CAdminAjax extends AdminSecBaseModel
                 }
 
                 echo json_encode($result);
+                break;
+            case 'add_group':
+                osc_csrf_check();
+                $groupManager = FieldGroup::newInstance();
+                $newId        = $groupManager->insertGroup(__('New field group'));
+                if ($newId) {
+                    echo json_encode(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
+                } else {
+                    echo json_encode(array('error' => 1));
+                }
+                break;
+            case 'group_post':
+                osc_csrf_check();
+                $groupManager = FieldGroup::newInstance();
+                $groupId      = (int)Params::getParam('id');
+                $name         = trim((string)Params::getParam('group_name'));
+                $error        = 0;
+                if ($groupId <= 0 || $name === '') {
+                    $error = 1;
+                } else {
+                    $slugParam = trim((string)Params::getParam('group_slug'));
+                    $existing  = $groupManager->findByPrimaryKey($groupId);
+                    $slug      = $slugParam !== '' ? $slugParam : (isset($existing['s_slug']) ? $existing['s_slug'] : '');
+                    // regenerate a unique slug only when it is empty or being changed
+                    if ($slug === '' || (isset($existing['s_slug']) && $slug !== $existing['s_slug'])) {
+                        $slug = $groupManager->uniqueSlug($slug !== '' ? $slug : $name);
+                    }
+                    $res = $groupManager->update(
+                        array('s_name' => $name, 's_slug' => $slug),
+                        array('pk_i_id' => $groupId)
+                    );
+                    if (is_bool($res) && !$res) {
+                        $error = 1;
+                    }
+                    // rewrite the group's category assignments
+                    $groupManager->cleanCategoriesFromGroup($groupId);
+                    $aCategories = Params::getParam('categories');
+                    if (is_array($aCategories) && count($aCategories) > 0) {
+                        $groupManager->insertCategories($groupId, $aCategories);
+                    }
+                }
+                if ($error) {
+                    echo json_encode(array('error' => __('An error occurred while saving the group')));
+                } else {
+                    echo json_encode(array('ok' => __('Saved'), 'group_id' => $groupId, 'text' => $name));
+                }
+                break;
+            case 'delete_group':
+                osc_csrf_check();
+                $res = FieldGroup::newInstance()->deleteByPrimaryKey((int)Params::getParam('id'));
+                if ($res !== false) {
+                    echo json_encode(array('ok' => __('The field group has been deleted')));
+                } else {
+                    echo json_encode(array('error' => __('An error occurred while deleting')));
+                }
+                break;
+            case 'group_categories_iframe':
+                $groupId = (int)Params::getParam('id');
+                $selected = FieldGroup::newInstance()->categories($groupId);
+                $this->_exportVariableToView('selected', $selected);
+                $this->_exportVariableToView('group', FieldGroup::newInstance()->findByPrimaryKey($groupId));
+                $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                $this->doView('fields/group_iframe.php');
                 break;
             case 'enable_category':
                 osc_csrf_check();

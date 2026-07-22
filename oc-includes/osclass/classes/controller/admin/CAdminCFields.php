@@ -50,6 +50,7 @@ class CAdminCFields extends AdminSecBaseModel
                 $this->_exportVariableToView('categories', $categories);
                 $this->_exportVariableToView('default_selected', $selected);
                 $this->_exportVariableToView('fields', $this->fieldManager->listAll());
+                $this->_exportVariableToView('groups', FieldGroup::newInstance()->listAll());
                 $this->doView('fields/index.php');
                 break;
         }

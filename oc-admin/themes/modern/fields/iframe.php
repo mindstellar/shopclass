@@ -20,6 +20,11 @@ $allFields  = __get('allFields');
 if (!is_array($allFields)) {
     $allFields = array();
 }
+$allGroups  = __get('allGroups');
+if (!is_array($allGroups)) {
+    $allGroups = array();
+}
+$fieldGroupId = (int)($field['fk_i_group_id'] ?? 0);
 
 // Per-type config keys, so the editor can show only the inputs a type supports.
 $fieldTypeConfig = array();
@@ -62,6 +67,20 @@ $ruleCond   = $rules[$ruleAction] ?? array();
                         <div class="form-row">
                             <div class="form-label"><?php _e('Type'); ?></div>
                             <div class="form-controls"><?php FieldForm::type_select($field); ?></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label"><?php _e('Group'); ?></div>
+                            <div class="form-controls">
+                                <select class="form-select" name="field_group" id="field_group">
+                                    <option value="0"><?php _e('Ungrouped'); ?></option>
+                                    <?php foreach ($allGroups as $g) {
+                                        $selAttr = ($fieldGroupId === (int)$g['pk_i_id']) ? ' selected' : '';
+                                        echo '<option value="' . (int)$g['pk_i_id'] . '"' . $selAttr . '>'
+                                            . osc_esc_html($g['s_name']) . '</option>';
+                                    } ?>
+                                </select>
+                                <p class="help-inline"><?php _e('Grouped fields inherit their categories from the group and render as a section.'); ?></p>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-label"></div>
@@ -142,7 +161,7 @@ $ruleCond   = $rules[$ruleAction] ?? array();
                             </div>
                             <input type="hidden" name="cfg_rules" id="cfg_rules" value="" />
                         </div>
-                        <div class="form-row">
+                        <div class="form-row" id="field_cat_select">
                             <div><?php _e('Select the categories where you want to apply this attribute:'); ?></div>
                             <div class="separate-top">
                                 <div class="form-label">
@@ -230,6 +249,18 @@ $ruleCond   = $rules[$ruleAction] ?? array();
         }
         if (typeInput) { typeInput.addEventListener('change', syncType); }
         syncType();
+
+        // A grouped field takes its categories from the group, so hide the per-field
+        // category picker while a group is selected.
+        var groupInput = document.getElementById('field_group');
+        var catSelect = document.getElementById('field_cat_select');
+        function syncGroup() {
+            if (catSelect) {
+                catSelect.style.display = (groupInput && groupInput.value !== '0' && groupInput.value !== '') ? 'none' : '';
+            }
+        }
+        if (groupInput) { groupInput.addEventListener('change', syncGroup); }
+        syncGroup();
 
         // Conditional-logic builder: reveal the condition row when an action is set,
         // hide the value box for the "is filled" operator.

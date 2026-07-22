@@ -524,11 +524,34 @@ class FieldForm extends Form
     {
         $fields = Field::newInstance()->findByCategoryItem($catId, $itemId);
         if (count($fields) > 0) {
-            echo '<div class="meta_list card-body">';
+            // Bucket fields into sections in resolution order: grouped fields render
+            // under their group's heading, loose fields under the default (no header)
+            // section. Preserves the order the resolver returns (group position, then
+            // field position).
+            $sections = array();
             foreach ($fields as $field) {
-                echo '<div class="meta">';
-                self::meta($field);
-                echo '</div>';
+                $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
+                          && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
+                if (!isset($sections[$gname])) {
+                    $sections[$gname] = array();
+                }
+                $sections[$gname][] = $field;
+            }
+
+            echo '<div class="meta_list card-body">';
+            foreach ($sections as $gname => $sectionFields) {
+                if ($gname !== '') {
+                    echo '<div class="meta-section">';
+                    echo '<h5 class="meta-section-title">' . osc_esc_html($gname) . '</h5>';
+                }
+                foreach ($sectionFields as $field) {
+                    echo '<div class="meta">';
+                    self::meta($field);
+                    echo '</div>';
+                }
+                if ($gname !== '') {
+                    echo '</div>';
+                }
             }
             echo '</div>';
             self::conditionalLogicScript();

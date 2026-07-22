@@ -118,9 +118,29 @@
     padding-inline-start: 180px;
   }
   .meta {
-    select, input[type='text'], input[type='email'], input.cf_date {
+    select, input[type='text'], input[type='email'], input[type='tel'], input[type='number'], input.cf_date {
       max-width:15rem;
     }
+  }
+
+  // A field group renders as a titled section grouping its fields on the form.
+  .meta-section {
+    border-block-start: 1px solid var(--osc-rule);
+    margin-block-start: 1rem;
+    padding-block-start: .75rem;
+
+    &:first-child {
+      border-block-start: 0;
+      margin-block-start: 0;
+      padding-block-start: 0;
+    }
+  }
+
+  .meta-section-title {
+    color: var(--osc-ink);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-block-end: .5rem;
   }
 }
 

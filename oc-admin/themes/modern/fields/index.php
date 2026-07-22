@@ -18,6 +18,15 @@ osc_enqueue_script('sortablejs');
 $fields     = __get('fields');
 $categories = __get('categories');
 $selected   = __get('default_selected');
+$groups     = __get('groups');
+if (!is_array($groups)) {
+    $groups = array();
+}
+// group id -> name, for the "in group" badge on a field row.
+$groupNames = array();
+foreach ($groups as $g) {
+    $groupNames[(int)$g['pk_i_id']] = $g['s_name'];
+}
 
 function addHelp()
 {
@@ -127,7 +136,64 @@ function customHead()
             }
         }
 
+        // ---- Field groups ---------------------------------------------------
+        function show_group_iframe(id) {
+            var container = document.querySelector('.group_content_' + id);
+            if (!document.querySelector('.group_content_' + id + ' .custom-field-frame')) {
+                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
+                var url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id;
+                fetch(url, { credentials: 'same-origin' })
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) { if (container) { oscInjectHtml(container, html); } });
+            } else {
+                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
+            }
+            return false;
+        }
+
+        function delete_group(id) {
+            var modal = document.getElementById('deleteGroupModal');
+            modal.setAttribute('data-group-id', id);
+            modal.showModal();
+            return false;
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            var addGroupBtn = document.getElementById('add-group-button');
+            if (addGroupBtn) {
+                addGroupBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=add_group&<?php echo $csrf_token; ?>', { credentials: 'same-origin' })
+                        .then(function (r) { return r.text(); })
+                        .then(function (res) {
+                            var ret;
+                            try { ret = JSON.parse(res); } catch (err) { ret = null; }
+                            if (ret && ret.error == 0) {
+                                var li = document.createElement('li');
+                                li.id = 'group_li_' + ret.group_id;
+                                li.className = 'group_li';
+                                li.setAttribute('data-group-id', ret.group_id);
+                                li.innerHTML = `
+                                <div class="group-div">
+                                    <span class="group-name" id="group_name_${ret.group_id}"></span>
+                                    <div class="cfield-actions ms-auto">
+                                        <button type="button" class="cfield-action" onclick="show_group_iframe('${ret.group_id}'); return false;" title="<?php echo osc_esc_js(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                                        <button type="button" class="cfield-action cfield-action-danger" onclick="delete_group('${ret.group_id}'); return false;" title="<?php echo osc_esc_js(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+                                    </div>
+                                </div>
+                                <div class="edit group_content_${ret.group_id}"></div>`;
+                                li.querySelector('.group-name').textContent = ret.group_name;
+                                var empty = document.getElementById('groups-empty');
+                                if (empty) { empty.remove(); }
+                                document.getElementById('ul_groups').appendChild(li);
+                                show_group_iframe(ret.group_id);
+                            } else {
+                                setJsMessage('error', '<?php echo osc_esc_js(__('Field group could not be added')); ?>');
+                            }
+                        });
+                });
+            }
+
             document.querySelectorAll('#add-button, .add-button').forEach(function (btn) {
                 btn.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -192,6 +258,40 @@ osc_add_filter('admin_title', 'customPageTitle');
 osc_current_admin_theme_path('parts/header.php');
 ?>
     <h2 class="render-title"><?php _e('Custom fields'); ?></h2>
+
+    <!-- field groups (reusable forms) -->
+    <div class="field-groups">
+        <div class="field-groups-head">
+            <h3 class="field-groups-title"><?php _e('Field groups'); ?></h3>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="add-group-button">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add group'); ?>
+            </button>
+        </div>
+        <p class="field-groups-hint"><?php _e('A group is a reusable set of fields you attach to categories as a unit; it renders as a section on the listing form and its categories are inherited by subcategories.'); ?></p>
+        <ul id="ul_groups" class="list-groups">
+            <?php if (count($groups) === 0) { ?>
+                <li id="groups-empty" class="group-empty"><?php _e('No field groups yet. Create one, then assign fields to it from each field\'s editor.'); ?></li>
+            <?php } ?>
+            <?php foreach ($groups as $g) { ?>
+                <li id="group_li_<?php echo (int)$g['pk_i_id']; ?>" class="group_li" data-group-id="<?php echo (int)$g['pk_i_id']; ?>">
+                    <div class="group-div">
+                        <span class="group-name" id="group_name_<?php echo (int)$g['pk_i_id']; ?>"><?php echo osc_esc_html($g['s_name']); ?></span>
+                        <div class="cfield-actions ms-auto">
+                            <button type="button" class="cfield-action"
+                                    onclick="show_group_iframe('<?php echo (int)$g['pk_i_id']; ?>'); return false;"
+                                    title="<?php echo osc_esc_html(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                            <button type="button" class="cfield-action cfield-action-danger"
+                                    onclick="delete_group('<?php echo (int)$g['pk_i_id']; ?>'); return false;"
+                                    title="<?php echo osc_esc_html(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="edit group_content_<?php echo (int)$g['pk_i_id']; ?>"></div>
+                </li>
+            <?php } ?>
+        </ul>
+    </div>
+    <!-- /field groups -->
+
     <!-- custom fields -->
     <div class="custom-fields">
         <!-- list fields -->
@@ -213,6 +313,9 @@ osc_current_admin_theme_path('parts/header.php');
                             <span class="cfield-handle handle" title="<?php echo osc_esc_html(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
                             <span class="cfield-name" id="<?php echo 'quick_edit_' . $field['pk_i_id']; ?>"><?php echo osc_esc_html($field['s_name']); ?></span>
                             <span class="cfield-type"><?php echo osc_esc_html(cfields_type_label(osc_field_resolve_type($field))); ?></span>
+                            <?php if (!empty($field['fk_i_group_id']) && isset($groupNames[(int)$field['fk_i_group_id']])) { ?>
+                                <span class="cfield-group"><i class="bi bi-collection" aria-hidden="true"></i> <?php echo osc_esc_html($groupNames[(int)$field['fk_i_group_id']]); ?></span>
+                            <?php } ?>
                             <?php if (!empty($field['b_required'])) { ?>
                                 <span class="cfield-flag"><?php _e('Required'); ?></span>
                             <?php } ?>
@@ -249,7 +352,39 @@ osc_current_admin_theme_path('parts/header.php');
             <button id="deleteSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
         </div>
     </dialog>
+    <dialog id="deleteGroupModal" class="osc-dialog osc-dialog-danger" data-group-id="">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <?php echo __('Delete field group'); ?>
+            </p>
+            <p class="osc-dialog-text"><?php _e('Deleting the group keeps its fields (they become ungrouped) but removes the group and its category assignment. Continue?'); ?></p>
+        </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="deleteGroupSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
+        </div>
+    </dialog>
     <script>
+        document.getElementById("deleteGroupSubmit").onclick = function() {
+            var modal = document.getElementById("deleteGroupModal");
+            var groupId = modal.dataset.groupId;
+            modal.close();
+            fetch("<?php echo osc_admin_base_url(true); ?>?page=ajax&action=delete_group&<?php echo osc_csrf_token_url(); ?>&id=" + groupId, {
+                credentials: "same-origin"
+            }).then(function (r) { return r.json(); })
+              .then(function (jsonObj) {
+                  if (jsonObj.error) { setJsMessage("error", jsonObj.error); }
+                  if (jsonObj.ok) {
+                      setJsMessage("ok", jsonObj.ok);
+                      var li = document.getElementById('group_li_' + groupId);
+                      if (li) { li.remove(); }
+                  }
+              }).catch(function (error) {
+                  setJsMessage("error", "<?php echo osc_esc_js(__("Ajax error, try again.")); ?>");
+              });
+        };
+
         document.getElementById("deleteSubmit").onclick = function() {
             let deleteModal = document.getElementById("deleteModal");
             let fieldId = deleteModal.dataset.fieldId;
