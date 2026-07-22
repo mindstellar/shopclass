@@ -80,18 +80,15 @@ class ItemsDataTable extends DataTable
             preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
         );
 
-        $this->addColumn('status-border', '');
-        $this->addColumn('status', __('Status'));
+        // A single rich "Listing" cell carries the thumbnail, title, and all the
+        // metadata (category, location, user, price, dates) that used to be spread
+        // across separate columns; status sits on the right. The per-column $row
+        // values (user, category, location, date, expiration) are still set in
+        // fillRows() so the items_processing_row filter and any plugin reading them
+        // keep working — only what is *displayed* changed.
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
-        $this->addColumn('title', __('Title'));
-        $this->addColumn('user', __('User'));
-        $this->addColumn('category', __('Category'));
-        $this->addColumn('location', __('Location'));
-        $this->addColumn('date', '<a href="' . osc_esc_html($url_base . $arg_date) . '">' . __('Date') . '</a>');
-        $this->addColumn(
-            'expiration',
-            '<a href="' . osc_esc_html($url_base . $arg_expiration) . '">' . __('Expiration date') . '</a>'
-        );
+        $this->addColumn('title', __('Listing'));
+        $this->addColumn('status', __('Status'));
 
         $dummy = &$this;
         osc_run_hook('admin_items_table', $dummy);
@@ -345,9 +342,8 @@ class ItemsDataTable extends DataTable
                             . '">' . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
                     }
                 }
-                $row['title'] =
-                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . $title . '</a>'
-                    . $moderationBadge . $actions;
+                // Per-column values kept for the items_processing_row filter and any
+                // plugin that reads them, even though they now render inside the cell below.
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
@@ -364,12 +360,79 @@ class ItemsDataTable extends DataTable
                         osc_date_format() . ' ' . osc_time_format()
                     ) : __('Never expires');
 
+                // Compose the rich listing cell: thumbnail + title + metadata + dates + actions.
+                $itemUrl    = osc_esc_html(osc_item_url());
+                $thumbUrl   = $this->listingThumb((int) $aRow['pk_i_id']);
+                $thumbInner = $thumbUrl !== ''
+                    ? '<img src="' . osc_esc_html($thumbUrl) . '" loading="lazy" alt=""/>'
+                    : '<i class="bi bi-image" aria-hidden="true"></i>';
+
+                $price     = trim((string) osc_item_formated_price());
+                $metaParts = array();
+                if ($row['category'] !== '') {
+                    $metaParts[] = $row['category'];
+                }
+                $loc = trim((string) $row['location']);
+                if ($loc !== '') {
+                    $metaParts[] = $loc;
+                }
+                if (!empty($aRow['s_user_name'])) {
+                    $metaParts[] = osc_esc_html($aRow['s_user_name']);
+                }
+                if ($price !== '') {
+                    $metaParts[] = '<span class="listing-price">' . osc_esc_html($price) . '</span>';
+                }
+
+                $datesLine = sprintf(__('Posted %s'), $row['date'])
+                    . ' <span class="sep">&middot;</span> ' . $row['expiration'];
+
+                $row['title'] = '<div class="listing-cell">'
+                    . '<a class="listing-thumb' . ($thumbUrl === '' ? ' listing-thumb--empty' : '') . '" href="'
+                    . $itemUrl . '" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">' . $thumbInner . '</a>'
+                    . '<div class="listing-body">'
+                    . '<a class="listing-title" href="' . $itemUrl . '" target="_blank">' . $title . '</a>' . $moderationBadge
+                    . '<div class="listing-meta">' . implode(' <span class="sep">&middot;</span> ', $metaParts) . '</div>'
+                    . '<div class="listing-dates">' . $datesLine . '</div>'
+                    . $actions
+                    . '</div></div>';
+
                 $row = osc_apply_filter('items_processing_row', $row, $aRow);
 
                 $this->addRow($row);
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * Storage-aware thumbnail URL for a listing's first image, or '' if it has none.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function listingThumb($itemId)
+    {
+        $rows = osc_db_select(
+            'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
+            . DB_TABLE_PREFIX . "t_item_resource WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
+            . 'ORDER BY pk_i_id ASC LIMIT 1',
+            array((int) $itemId)
+        );
+        if (empty($rows)) {
+            return '';
+        }
+        $r = (array) $rows[0];
+
+        return (string) osc_get_resource_url(array(
+            'pk_i_id'        => $r['pk_i_id'],
+            's_path'         => $r['s_path'],
+            's_extension'    => $r['s_extension'],
+            's_storage'      => $r['s_storage'] ?? 'local',
+            's_content_type' => $r['s_content_type'] ?? '',
+            's_owner_type'   => 'item',
+            'i_owner_id'     => $itemId,
+        ), 'thumbnail');
     }
 
     /**

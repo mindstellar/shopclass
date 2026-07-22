@@ -129,6 +129,93 @@
     min-height: 30rem;
   }
 }
+// The rich "Listing" cell on Manage listings: a thumbnail beside the title, the
+// metadata (category · location · user · price) and post/expiry dates, and the
+// row-actions strip — all the information that used to be spread across columns.
+.listing-cell {
+  align-items: flex-start;
+  display: flex;
+  gap: .75rem;
+}
+
+.listing-thumb {
+  align-items: center;
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex: 0 0 auto;
+  height: 48px;
+  justify-content: center;
+  overflow: hidden;
+  width: 48px;
+
+  img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  &--empty {
+    font-size: 1.35rem;
+  }
+}
+
+// min-width:0 lets the title ellipsize instead of forcing the cell wide.
+.listing-body {
+  min-width: 0;
+}
+
+.listing-title {
+  color: var(--osc-ink-emphasis);
+  font-weight: 600;
+  text-decoration-line: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+    text-decoration-line: underline;
+  }
+}
+
+.listing-meta {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-block-start: .15rem;
+}
+
+.listing-dates {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  margin-block-start: .1rem;
+}
+
+.listing-price {
+  color: var(--osc-ink-emphasis);
+  font-weight: 600;
+}
+
+.listing-meta .sep,
+.listing-dates .sep {
+  opacity: .55;
+}
+
+// Status sits top-right of the rich row; the listing cell aligns to the top.
+.table:has(.listing-cell) {
+  td.col-title {
+    vertical-align: top;
+    width: 100%;
+  }
+
+  .col-status {
+    text-align: end;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+}
+
 // The "add another photo" affordance on the listing form. Bronze, on-brand — the
 // old green was one of the off-brand accents DESIGN calls out.
 .add-photo-btn {
