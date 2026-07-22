@@ -55,6 +55,13 @@ if (!function_exists('cfields_type_label')) {
      */
     function cfields_type_label($type)
     {
+        // Prefer the field-type registry so plugin/registry types (EMAIL, PHONE, …)
+        // display their own label rather than their storage primitive.
+        $spec = osc_field_type((string) $type);
+        if ($spec !== null) {
+            return __($spec['label']);
+        }
+
         $labels = array(
             'TEXT'          => __('Text'),
             'TEXTAREA'      => __('Text area'),
@@ -205,7 +212,7 @@ osc_current_admin_theme_path('parts/header.php');
                         <div class="cfield-div">
                             <span class="cfield-handle handle" title="<?php echo osc_esc_html(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
                             <span class="cfield-name" id="<?php echo 'quick_edit_' . $field['pk_i_id']; ?>"><?php echo osc_esc_html($field['s_name']); ?></span>
-                            <span class="cfield-type"><?php echo osc_esc_html(cfields_type_label($field['e_type'])); ?></span>
+                            <span class="cfield-type"><?php echo osc_esc_html(cfields_type_label(osc_field_resolve_type($field))); ?></span>
                             <?php if (!empty($field['b_required'])) { ?>
                                 <span class="cfield-flag"><?php _e('Required'); ?></span>
                             <?php } ?>

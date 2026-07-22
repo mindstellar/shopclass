@@ -15552,6 +15552,42 @@ code {
   font-family: "bootstrap-icons";
 }
 
+.cf-config-block {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.cf-rules-block {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+}
+
+.cf-rule-condition {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cf-rule-condition .form-select, .cf-rule-condition .widget-box-title select, .widget-box-title .cf-rule-condition select, .cf-rule-condition .form-controls select, .form-controls .cf-rule-condition select,
+.cf-rule-condition .form-control,
+.cf-rule-condition .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.form-controls .cf-rule-condition input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.cf-rule-condition .form-controls textarea,
+.form-controls .cf-rule-condition textarea,
+.cf-rule-condition input.large,
+.cf-rule-condition input.xlarge,
+.cf-rule-condition .input-text,
+.cf-rule-condition .input-password,
+.cf-rule-condition input.input-small,
+.cf-rule-condition input.input-medium,
+.cf-rule-condition input.input-large {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  width: auto;
+}
+
 .categories-app {
   --cat-indent: 1.75rem;
   max-width: 62rem;

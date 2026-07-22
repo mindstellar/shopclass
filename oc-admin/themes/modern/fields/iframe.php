@@ -16,6 +16,27 @@
 $field      = __get('field');
 $categories = __get('categories');
 $selected   = __get('selected');
+$allFields  = __get('allFields');
+if (!is_array($allFields)) {
+    $allFields = array();
+}
+
+// Per-type config keys, so the editor can show only the inputs a type supports.
+$fieldTypeConfig = array();
+foreach (osc_field_types() as $ftId => $ftSpec) {
+    $fieldTypeConfig[$ftId] = $ftSpec['config'];
+}
+
+// Existing per-field config values (merged from s_meta by extendField).
+$cfgValue = static function ($key) use ($field) {
+    return isset($field[$key]) && !is_array($field[$key]) ? $field[$key] : '';
+};
+
+// Existing conditional rule (single show_when/required_when condition supported by
+// this editor; the stored schema allows more and is preserved on the wire).
+$rules      = (isset($field['rules']) && is_array($field['rules'])) ? $field['rules'] : array();
+$ruleAction = isset($rules['required_when']) ? 'required_when' : (isset($rules['show_when']) ? 'show_when' : '');
+$ruleCond   = $rules[$ruleAction] ?? array();
 ?>
 <!-- custom field frame -->
 <div id="edit-custom-field-frame" class="card custom-field-frame">
@@ -46,6 +67,80 @@ $selected   = __get('selected');
                             <div class="form-label"></div>
                             <div class="form-controls"><label><?php FieldForm::required_checkbox($field); ?>
                                     <span><?php _e('This field is required'); ?></span></label></div>
+                        </div>
+
+                        <?php
+                        // Configuration inputs. Each row carries the config key it
+                        // sets; the JS shows only the rows the selected type supports.
+                        $cfgRows = array(
+                            'placeholder' => array('label' => __('Placeholder'), 'type' => 'text'),
+                            'help_text'   => array('label' => __('Help text'), 'type' => 'text'),
+                            'default'     => array('label' => __('Default value'), 'type' => 'text'),
+                            'min'         => array('label' => __('Minimum'), 'type' => 'number'),
+                            'max'         => array('label' => __('Maximum'), 'type' => 'number'),
+                            'step'        => array('label' => __('Step'), 'type' => 'number'),
+                            'maxlength'   => array('label' => __('Max length'), 'type' => 'number'),
+                            'rows'        => array('label' => __('Rows'), 'type' => 'number'),
+                            'pattern'     => array('label' => __('Pattern (regex)'), 'type' => 'text'),
+                        );
+                        ?>
+                        <div id="cf_config_block" class="cf-config-block">
+                            <?php foreach ($cfgRows as $cfgKey => $cfgRow) { ?>
+                                <div class="form-row cf-config-row" data-cfg-key="<?php echo osc_esc_html($cfgKey); ?>">
+                                    <div class="form-label"><?php echo osc_esc_html($cfgRow['label']); ?></div>
+                                    <div class="form-controls">
+                                        <input type="<?php echo $cfgRow['type']; ?>" class="form-control"
+                                               name="cfg_<?php echo osc_esc_html($cfgKey); ?>"
+                                               value="<?php echo osc_esc_html($cfgValue($cfgKey)); ?>"<?php
+                                               echo $cfgRow['type'] === 'number' ? ' step="any"' : ''; ?> />
+                                    </div>
+                                </div>
+                            <?php } ?>
+                        </div>
+
+                        <?php
+                        // Conditional visibility / requirement — one condition against
+                        // a sibling field. Emitted as JSON in cfg_rules on submit.
+                        ?>
+                        <div id="cf_rules_block" class="cf-rules-block">
+                            <div class="form-row">
+                                <div class="form-label"><?php _e('Conditional logic'); ?></div>
+                                <div class="form-controls">
+                                    <select class="form-select" id="cf_rule_action">
+                                        <option value=""<?php echo $ruleAction === '' ? ' selected' : ''; ?>><?php _e('Always show'); ?></option>
+                                        <option value="show_when"<?php echo $ruleAction === 'show_when' ? ' selected' : ''; ?>><?php _e('Show only when…'); ?></option>
+                                        <option value="required_when"<?php echo $ruleAction === 'required_when' ? ' selected' : ''; ?>><?php _e('Required only when…'); ?></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row" id="cf_rule_condition" style="display:none;">
+                                <div class="form-label"></div>
+                                <div class="form-controls cf-rule-condition">
+                                    <select class="form-select" id="cf_rule_field">
+                                        <option value=""><?php _e('Select a field'); ?></option>
+                                        <?php foreach ($allFields as $sibling) {
+                                            if ((int)$sibling['pk_i_id'] === (int)$field['pk_i_id']) {
+                                                continue; // a field cannot depend on itself
+                                            }
+                                            $selAttr = (isset($ruleCond['field']) && $ruleCond['field'] === $sibling['s_slug']) ? ' selected' : '';
+                                            echo '<option value="' . osc_esc_html($sibling['s_slug']) . '"' . $selAttr . '>'
+                                                . osc_esc_html($sibling['s_name']) . '</option>';
+                                        } ?>
+                                    </select>
+                                    <select class="form-select" id="cf_rule_op">
+                                        <?php
+                                        $ops = array('eq' => __('is'), 'neq' => __('is not'), 'filled' => __('is filled'), 'gt' => __('is greater than'), 'lt' => __('is less than'));
+                                        foreach ($ops as $opKey => $opLabel) {
+                                            $selAttr = (isset($ruleCond['op']) && $ruleCond['op'] === $opKey) ? ' selected' : '';
+                                            echo '<option value="' . $opKey . '"' . $selAttr . '>' . osc_esc_html($opLabel) . '</option>';
+                                        } ?>
+                                    </select>
+                                    <input type="text" class="form-control" id="cf_rule_value"
+                                           value="<?php echo osc_esc_html($ruleCond['value'] ?? ''); ?>"
+                                           placeholder="<?php echo osc_esc_html(__('Value')); ?>" />
+                                </div>
+                            </div>
+                            <input type="hidden" name="cfg_rules" id="cfg_rules" value="" />
                         </div>
                         <div class="form-row">
                             <div><?php _e('Select the categories where you want to apply this attribute:'); ?></div>
@@ -116,15 +211,55 @@ $selected   = __get('selected');
         var defaultLocale = '<?php echo osc_esc_js(osc_current_admin_locale()); ?>';
         var form = document.getElementById('nedit_field_form');
 
-        // Show the options field only for DROPDOWN/RADIO, the new-tab toggle only
-        // for URL — mirror the state on load and on every type change.
+        // Which config keys each type supports (from the field-type registry).
+        var typeConfig = <?php echo json_encode($fieldTypeConfig); ?>;
+
+        // Show the options field only for types that use options (DROPDOWN/RADIO),
+        // the new-tab toggle only for URL, and each config row only for a type that
+        // declares it — mirrored on load and on every type change.
         function syncType() {
             var v = typeInput ? typeInput.value : '';
-            if (optionsDiv) { optionsDiv.style.display = (v === 'DROPDOWN' || v === 'RADIO') ? '' : 'none'; }
+            var keys = typeConfig[v] || [];
+            var usesOptions = keys.indexOf('__none__') === -1 && (v === 'DROPDOWN' || v === 'RADIO');
+            if (optionsDiv) { optionsDiv.style.display = usesOptions ? '' : 'none'; }
             if (fieldNewtab) { fieldNewtab.style.display = (v === 'URL') ? '' : 'none'; }
+            document.querySelectorAll('.cf-config-row').forEach(function (row) {
+                var key = row.getAttribute('data-cfg-key');
+                row.style.display = (keys.indexOf(key) !== -1) ? '' : 'none';
+            });
         }
         if (typeInput) { typeInput.addEventListener('change', syncType); }
         syncType();
+
+        // Conditional-logic builder: reveal the condition row when an action is set,
+        // hide the value box for the "is filled" operator.
+        var ruleAction = document.getElementById('cf_rule_action');
+        var ruleCondition = document.getElementById('cf_rule_condition');
+        var ruleField = document.getElementById('cf_rule_field');
+        var ruleOp = document.getElementById('cf_rule_op');
+        var ruleValue = document.getElementById('cf_rule_value');
+        var rulesHidden = document.getElementById('cfg_rules');
+
+        function syncRule() {
+            var on = ruleAction && ruleAction.value !== '';
+            if (ruleCondition) { ruleCondition.style.display = on ? '' : 'none'; }
+            if (ruleValue) { ruleValue.style.display = (ruleOp && ruleOp.value === 'filled') ? 'none' : ''; }
+        }
+        function serializeRule() {
+            if (!rulesHidden) { return; }
+            if (!ruleAction || ruleAction.value === '' || !ruleField || ruleField.value === '') {
+                rulesHidden.value = '';
+                return;
+            }
+            var cond = { field: ruleField.value, op: ruleOp ? ruleOp.value : 'eq' };
+            if (cond.op !== 'filled') { cond.value = ruleValue ? ruleValue.value : ''; }
+            var obj = {};
+            obj[ruleAction.value] = cond;
+            rulesHidden.value = JSON.stringify(obj);
+        }
+        if (ruleAction) { ruleAction.addEventListener('change', syncRule); }
+        if (ruleOp) { ruleOp.addEventListener('change', syncRule); }
+        syncRule();
 
         if (form) {
             form.addEventListener('submit', function (e) {
@@ -146,6 +281,8 @@ $selected   = __get('selected');
                     setJsMessage('error', message);
                     return;
                 }
+
+                serializeRule();
 
                 fetch(form.getAttribute('action'), {
                     method: 'POST',

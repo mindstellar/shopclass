@@ -623,10 +623,41 @@ class ItemActions
      */
     private function validateMetaFields($_meta, $meta, $flash_error)
     {
+        // Map slug -> submitted value so conditional rules (stored by slug) can be
+        // re-evaluated server-side; the client engine is UX only.
+        $slugValues = array();
         foreach ($_meta as $_m) {
+            $slugValues[$_m['s_slug']] = $meta[$_m['pk_i_id']] ?? null;
+        }
+
+        foreach ($_meta as $_m) {
+            // Conditional logic: a field hidden by its show_when rule is not part of
+            // this submission — drop any value and never require it. A required_when
+            // rule overrides the field's static required flag.
+            $rules = (isset($_m['rules']) && is_array($_m['rules'])) ? $_m['rules'] : array();
+            if (isset($rules['show_when']) && !$this->evaluateFieldCondition($rules['show_when'], $slugValues)) {
+                unset($meta[$_m['pk_i_id']]);
+                continue;
+            }
             $isMetaRequired = $_m['b_required'];
+            if (isset($rules['required_when'])) {
+                $isMetaRequired = $this->evaluateFieldCondition($rules['required_when'], $slugValues) ? 1 : 0;
+            }
             $isMetaValueSet = isset($meta[$_m['pk_i_id']]);
             $metaValue      = $meta[$_m['pk_i_id']] ?? null;
+
+            // Registry-defined types (e.g. EMAIL) validate their stored value here,
+            // on top of the storage primitive's required/format checks below.
+            if ($isMetaValueSet && $metaValue !== '' && $metaValue !== null) {
+                $typeSpec = osc_field_type(osc_field_resolve_type($_m));
+                if ($typeSpec !== null && is_callable($typeSpec['validate'])) {
+                    $typeError = call_user_func($typeSpec['validate'], $metaValue, $_m);
+                    if (is_string($typeError) && $typeError !== '') {
+                        $flash_error .= $typeError . PHP_EOL;
+                    }
+                }
+            }
+
             switch ($_m['e_type']) {
                 case 'DATEINTERVAL':
                     if ($isMetaValueSet && $metaValue) {
@@ -686,6 +717,43 @@ class ItemActions
         }
 
         return array($meta, $flash_error);
+    }
+
+    /**
+     * Evaluate a single conditional-logic condition (the value stored under a rule's
+     * show_when/required_when key) against the submitted field values, keyed by the
+     * controlling field's slug. Mirrors the client engine so client and server agree.
+     *
+     * @param array $cond       {field: slug, op: eq|neq|filled|gt|lt, value?: mixed}
+     * @param array $slugValues submitted meta values keyed by field slug
+     *
+     * @return bool
+     */
+    private function evaluateFieldCondition($cond, $slugValues)
+    {
+        if (!is_array($cond) || empty($cond['field'])) {
+            return true;
+        }
+        $actual   = $slugValues[$cond['field']] ?? '';
+        if (is_array($actual)) {
+            // interval/number ranges have no single scalar; treat as filled/empty only
+            $actual = implode('', array_map('strval', $actual));
+        }
+        $expected = isset($cond['value']) ? (string)$cond['value'] : '';
+        $op       = $cond['op'] ?? 'eq';
+        switch ($op) {
+            case 'neq':
+                return (string)$actual !== $expected;
+            case 'filled':
+                return trim((string)$actual) !== '';
+            case 'gt':
+                return is_numeric($actual) && is_numeric($expected) && (float)$actual > (float)$expected;
+            case 'lt':
+                return is_numeric($actual) && is_numeric($expected) && (float)$actual < (float)$expected;
+            case 'eq':
+            default:
+                return (string)$actual === $expected;
+        }
     }
 
     /**

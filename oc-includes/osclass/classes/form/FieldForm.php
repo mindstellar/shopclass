@@ -170,8 +170,28 @@ class FieldForm extends Form
         $name                         = 'field_type';
         $attributes['id']             = $name;
         $options['selectPlaceholder'] = false;
-        $options['selectOptions']     = 'TEXT,NUMBER,TEXTAREA,DROPDOWN,RADIO,CHECKBOX,URL,DATE,DATEINTERVAL';
-        echo self::getInstance()->select($name, $field['e_type'] ?? '', $attributes, $options);
+
+        // Build the option map from the field-type registry so plugins that register
+        // their own types appear here. Falls back to the historical primitives if the
+        // registry is somehow empty.
+        $registered = osc_field_types();
+        $selectOptions = array();
+        foreach ($registered as $id => $spec) {
+            $selectOptions[$id] = __($spec['label']);
+        }
+        if (empty($selectOptions)) {
+            $selectOptions = array(
+                'TEXT' => 'TEXT', 'NUMBER' => 'NUMBER', 'TEXTAREA' => 'TEXTAREA',
+                'DROPDOWN' => 'DROPDOWN', 'RADIO' => 'RADIO', 'CHECKBOX' => 'CHECKBOX',
+                'URL' => 'URL', 'DATE' => 'DATE', 'DATEINTERVAL' => 'DATEINTERVAL',
+            );
+        }
+        $options['selectOptions'] = $selectOptions;
+
+        // The stored primitive is e_type; a plugin type persists its real id in
+        // s_meta['type'] (surfaced as $field['type'] after extendField).
+        $current = $field['type'] ?? ($field['e_type'] ?? '');
+        echo self::getInstance()->select($name, $current, $attributes, $options);
     }
 
     /**
@@ -267,6 +287,25 @@ class FieldForm extends Form
             $attributes['id'] = $id;
             $options = [];
 
+            // Resolved field type (a registry type such as EMAIL maps its identity
+            // here while e_type stays the storage primitive) and its per-field config
+            // (placeholder/help text/bounds/…), merged into $field by extendField.
+            $type = osc_field_resolve_type($field);
+            if (!empty($field['placeholder'])) {
+                $attributes['placeholder'] = $field['placeholder'];
+            }
+            if (!empty($field['help_text'])) {
+                $options['inputHelp'] = $field['help_text'];
+            }
+            // Prefill a configured default only when editing a fresh value.
+            if (!$search && ($value === '' || $value === null) && isset($field['default']) && $field['default'] !== '') {
+                $value = $field['default'];
+            }
+            // Conditional rules drive client-side show/hide; carry them on the wrapper.
+            if (!$search && !empty($field['rules']) && is_array($field['rules'])) {
+                $attributes['data-cf-rules'] = json_encode($field['rules']);
+            }
+
             switch ($field['e_type']) {
                 case 'TEXTAREA':
                     if ($search) {
@@ -280,7 +319,7 @@ class FieldForm extends Form
                             $value,
                             $field
                         );
-                        $attributes['rows'] = 10;
+                        $attributes['rows'] = (isset($field['rows']) && (int)$field['rows'] > 0) ? (int)$field['rows'] : 10;
                         $options['label']   = $label;
                         echo self::getInstance()->textarea($name, $value, $attributes, $options);
                     }
@@ -387,6 +426,11 @@ class FieldForm extends Form
                     } else {
                         $options['label'] = $label;
                         $attributes['type'] = 'number';
+                        foreach (array('min', 'max', 'step') as $numCfg) {
+                            if (isset($field[$numCfg]) && $field[$numCfg] !== '') {
+                                $attributes[$numCfg] = $field[$numCfg];
+                            }
+                        }
                         echo self::getInstance()->text($name, $value, $attributes, $options);
                     }
                     break;
@@ -395,6 +439,18 @@ class FieldForm extends Form
                         echo '<h6>' . $label . '</h6>';
                     } else {
                         $options['label'] = $label;
+                    }
+                    // Registry text-backed types render a matching native input.
+                    if ($type === 'EMAIL') {
+                        $attributes['type'] = 'email';
+                    } elseif ($type === 'PHONE') {
+                        $attributes['type'] = 'tel';
+                    }
+                    if (isset($field['maxlength']) && (int)$field['maxlength'] > 0) {
+                        $attributes['maxlength'] = (int)$field['maxlength'];
+                    }
+                    if (!empty($field['pattern'])) {
+                        $attributes['pattern'] = $field['pattern'];
                     }
                     echo self::getInstance()->text($name, $value, $attributes, $options);
                     break;
@@ -475,7 +531,105 @@ class FieldForm extends Form
                 echo '</div>';
             }
             echo '</div>';
+            self::conditionalLogicScript();
         }
+    }
+
+    /**
+     * Emit the client-side conditional-logic engine once per request. It reads the
+     * data-cf-rules JSON that meta() writes onto each rule-driven input and shows/
+     * hides (show_when) or toggles required (required_when) the field as the value
+     * of a sibling field changes. Vanilla JS, no jQuery. The server re-evaluates the
+     * same rules on save, so this is UX only and never gates data integrity.
+     */
+    public static function conditionalLogicScript()
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+        ?>
+        <script type="text/javascript">
+            (function () {
+                var nodes = document.querySelectorAll('[data-cf-rules]');
+                if (!nodes.length) { return; }
+
+                // Read a controlling field's current value by slug. Inputs carry
+                // id="meta_<slug>"; radios/checkboxes are read from the checked member.
+                function controlValue(slug) {
+                    var el = document.getElementById('meta_' + slug);
+                    if (!el) { return ''; }
+                    var name = el.getAttribute('name');
+                    if (name) {
+                        var checked = document.querySelector('[name="' + name + '"]:checked');
+                        if (checked) { return checked.value; }
+                        var anyRadio = document.querySelector('[name="' + name + '"][type="radio"]');
+                        if (anyRadio) { return ''; }
+                    }
+                    if (el.type === 'checkbox') { return el.checked ? (el.value || '1') : ''; }
+                    return el.value || '';
+                }
+
+                function test(cond) {
+                    if (!cond || !cond.field) { return true; }
+                    var actual = controlValue(cond.field);
+                    var expected = (cond.value !== undefined && cond.value !== null) ? String(cond.value) : '';
+                    switch (cond.op) {
+                        case 'neq':    return String(actual) !== expected;
+                        case 'filled': return String(actual).trim() !== '';
+                        case 'gt':     return parseFloat(actual) > parseFloat(expected);
+                        case 'lt':     return parseFloat(actual) < parseFloat(expected);
+                        case 'eq':
+                        default:       return String(actual) === expected;
+                    }
+                }
+
+                var watched = {};
+                var entries = [];
+                nodes.forEach(function (node) {
+                    var rules;
+                    try { rules = JSON.parse(node.getAttribute('data-cf-rules')); } catch (e) { return; }
+                    var wrapper = node.closest('.meta') || node.closest('.form-row') || node.parentNode;
+                    entries.push({ node: node, wrapper: wrapper, rules: rules });
+                    ['show_when', 'required_when'].forEach(function (k) {
+                        if (rules[k] && rules[k].field) { watched[rules[k].field] = true; }
+                    });
+                });
+
+                function apply() {
+                    entries.forEach(function (entry) {
+                        if (entry.rules.show_when) {
+                            var visible = test(entry.rules.show_when);
+                            if (entry.wrapper) { entry.wrapper.style.display = visible ? '' : 'none'; }
+                            if (!visible) { entry.node.removeAttribute('required'); }
+                        }
+                        if (entry.rules.required_when) {
+                            if (test(entry.rules.required_when)) {
+                                entry.node.setAttribute('required', 'required');
+                            } else {
+                                entry.node.removeAttribute('required');
+                            }
+                        }
+                    });
+                }
+
+                // Re-evaluate whenever a watched controlling field changes.
+                Object.keys(watched).forEach(function (slug) {
+                    var el = document.getElementById('meta_' + slug);
+                    if (!el) { return; }
+                    var name = el.getAttribute('name');
+                    var group = name ? document.querySelectorAll('[name="' + name + '"]') : [el];
+                    group.forEach(function (member) {
+                        member.addEventListener('change', apply);
+                        member.addEventListener('keyup', apply);
+                    });
+                });
+
+                apply();
+            })();
+        </script>
+        <?php
     }
     /**
      * Generate MultiLanguage Title Description Fields for Item

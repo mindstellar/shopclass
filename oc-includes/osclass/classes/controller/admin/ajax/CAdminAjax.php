@@ -264,6 +264,9 @@ class CAdminAjax extends AdminSecBaseModel
                 $this->_exportVariableToView('selected', $selected);
                 $this->_exportVariableToView('field', Field::newInstance()->findByPrimaryKey(Params::getParam('id')));
                 $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                // Sibling fields power the conditional-visibility "controlling field"
+                // picker (a field can be shown/required based on another's value).
+                $this->_exportVariableToView('allFields', Field::newInstance()->listAll());
                 $this->doView('fields/iframe.php');
                 break;
             case 'field_categories_post':
@@ -318,10 +321,18 @@ class CAdminAjax extends AdminSecBaseModel
                             unset($tmpValues);
                         }
 
+                        // The chosen type may be a registry type (e.g. EMAIL) that
+                        // stores as a primitive. e_type holds the storage primitive;
+                        // a non-primitive type persists its real id in s_meta['type'].
+                        $chosenType   = Params::getParam('field_type');
+                        $storageType  = osc_field_type_storage($chosenType);
+                        $realTypeMeta = in_array($chosenType, \mindstellar\fields\FieldTypeRegistry::STORAGE_PRIMITIVES, true)
+                            ? '' : $chosenType;
+
                         $res = Field::newInstance()->update(
                             array(
                                 's_name'       => $aMetaNames[$currentAdminLocale],
-                                'e_type'       => Params::getParam('field_type'),
+                                'e_type'       => $storageType,
                                 's_slug'       => $slug,
                                 'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
                                 'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
@@ -329,8 +340,11 @@ class CAdminAjax extends AdminSecBaseModel
                             ),
                             array('pk_i_id' => Params::getParam('id'))
                         );
+                        Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
+                        // Per-type config (placeholder, help text, numeric bounds, …).
+                        self::persistFieldConfig((int)Params::getParam('id'), $chosenType);
                         if (is_bool($res) && !$res) {
                             $error = 1;
                         }
@@ -835,6 +849,50 @@ class CAdminAjax extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Persist the per-type configuration (placeholder, help text, numeric bounds,
+     * conditional rules, …) for a field into its s_meta JSON. Only the config keys
+     * the chosen type declares in the registry are read from the request, so a
+     * posted key a type does not support is ignored. An empty value clears the key
+     * (updateJsonMeta unsets on '' / null), keeping s_meta compact.
+     *
+     * @param int    $fieldId
+     * @param string $typeId  the chosen (possibly non-primitive) field type id
+     *
+     * @return void
+     */
+    private static function persistFieldConfig($fieldId, $typeId)
+    {
+        $spec = osc_field_type($typeId);
+        if ($spec === null || empty($spec['config'])) {
+            return;
+        }
+        $field = Field::newInstance();
+        foreach ($spec['config'] as $key) {
+            // b_new_tab has its own dedicated checkbox handled above; skip it here.
+            if ($key === 'b_new_tab') {
+                continue;
+            }
+            $value = Params::getParam('cfg_' . $key);
+            // numeric config keys stay numeric; everything else is a trimmed string.
+            if (in_array($key, array('min', 'max', 'step', 'rows', 'maxlength'), true)) {
+                $value = ($value === '' || $value === null) ? '' : $value + 0;
+            } elseif (is_string($value)) {
+                $value = trim($value);
+            }
+            $field->updateJsonMeta($fieldId, $key, $value);
+        }
+
+        // Conditional-visibility rules, posted as a JSON string by the builder.
+        $rules = Params::getParam('cfg_rules');
+        if (is_string($rules) && $rules !== '') {
+            $decoded = json_decode($rules, true);
+            $field->updateJsonMeta($fieldId, 'rules', is_array($decoded) ? $decoded : '');
+        } else {
+            $field->updateJsonMeta($fieldId, 'rules', '');
+        }
+    }
 
     /**
      * @param $file
