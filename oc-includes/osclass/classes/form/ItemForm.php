@@ -1432,7 +1432,17 @@ class ItemForm extends Form
                         .then(function (r) { return r.text(); })
                         .then(function (html) {
                             var hook = document.getElementById('plugin-hook');
-                            if (hook) { hook.innerHTML = html; }
+                            if (!hook) { return; }
+                            hook.innerHTML = html;
+                            // innerHTML does not execute <script> tags; re-create them so
+                            // custom-field logic and plugin scripts emitted through the
+                            // item_form hook actually run (conditional/cascade fields,
+                            // datepickers, third-party field plugins).
+                            hook.querySelectorAll('script').forEach(function (old) {
+                                var s = document.createElement('script');
+                                if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
+                                old.parentNode.replaceChild(s, old);
+                            });
                         });
                 }
 
