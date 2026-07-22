@@ -137,7 +137,7 @@ function pbfRenderField($typeId, $field, $disabled)
 
     <?php if (count($pbf_types) === 0) { ?>
         <p class="page-blocks-empty">
-            <?php _e('No block types are available to you. Ask an administrator, or install a widget plugin.'); ?>
+            <?php _e('No widget types are available to you. Ask an administrator, or install a widget plugin.'); ?>
         </p>
     <?php } else { ?>
         <div class="mb-3">
@@ -145,7 +145,7 @@ function pbfRenderField($typeId, $field, $disabled)
             <input type="text" class="form-control form-control-sm" id="pbfDescription" name="description" required/>
         </div>
         <div class="mb-3">
-            <label for="pbfType"><?php _e('Block type'); ?></label>
+            <label for="pbfType"><?php _e('Widget type'); ?></label>
             <select id="pbfType" name="s_type" class="form-select form-select-sm">
                 <?php foreach ($pbf_types as $pbf_id => $pbf_spec) { ?>
                     <option value="<?php echo osc_esc_html($pbf_id); ?>">
@@ -173,7 +173,7 @@ function pbfRenderField($typeId, $field, $disabled)
         </div>
         <div class="osc-dialog-actions">
             <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button type="submit" class="btn btn-submit btn-sm" id="pbfSubmit"><?php _e('Add block'); ?></button>
+            <button type="submit" class="btn btn-submit btn-sm" id="pbfSubmit"><?php _e('Add widget'); ?></button>
         </div>
     <?php } ?>
 </form>

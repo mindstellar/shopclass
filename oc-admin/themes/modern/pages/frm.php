@@ -190,13 +190,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="card mb-3 page-blocks-card">
                                 <div class="card-body">
                                     <div class="page-blocks-head">
-                                        <h3 class="label"><?php _e('Page blocks'); ?></h3>
+                                        <h3 class="label"><?php _e('Widgets'); ?></h3>
                                         <button type="button" class="btn btn-secondary btn-sm js-page-block-add">
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add block'); ?>
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add widget'); ?>
                                         </button>
                                     </div>
                                     <p class="page-field-hint">
-                                        <?php _e('This page is built from the blocks below.'); ?>
+                                        <?php _e('The widgets below make up this page. Widgets can also appear in your'
+                                            . ' theme areas — manage those under Appearance.'); ?>
                                     </p>
                                     <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none"
                                          role="alert"></div>
@@ -231,7 +232,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                     <span class="page-block-handle" draggable="true" tabindex="0"
                                                           role="button"
                                                           aria-label="<?php echo osc_esc_html(sprintf(
-                                                              __('Reorder block %s. Drag, or focus and press the up'
+                                                              __('Reorder widget %s. Drag, or focus and press the up'
                                                               . ' or down arrow keys.'),
                                                               $b['s_description']
                                                           )); ?>">
@@ -257,7 +258,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                         <a href="<?php echo osc_esc_html($deleteUrl); ?>"
                                                            class="page-block-delete"
                                                            data-confirm="<?php echo osc_esc_html(
-                                                               __('Delete this block?')
+                                                               __('Delete this widget?')
                                                            ); ?>"><?php _e('Delete'); ?></a>
                                                     </span>
                                                 </li>
@@ -265,7 +266,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         </ul>
                                     <?php } else { ?>
                                         <p class="page-blocks-empty">
-                                            <?php _e('No blocks yet. Add your first block to build this page.'); ?>
+                                            <?php _e('No widgets yet. Add your first widget to build this page.'); ?>
                                         </p>
                                     <?php } ?>
                                 </div>
@@ -351,7 +352,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ?>
     <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide">
         <div class="osc-dialog-body">
-            <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add block'); ?></p>
+            <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add widget'); ?></p>
             <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
         </div>
     </dialog>
@@ -384,14 +385,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             }
             function openAdd() {
                 resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Add block')); ?>; }
-                if (submit) { submit.textContent = <?php echo json_encode(__('Add block')); ?>; }
+                if (title) { title.textContent = <?php echo json_encode(__('Add widget')); ?>; }
+                if (submit) { submit.textContent = <?php echo json_encode(__('Add widget')); ?>; }
                 if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
                 dialog.showModal();
             }
             function openEdit(row) {
                 resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Edit block')); ?>; }
+                if (title) { title.textContent = <?php echo json_encode(__('Edit widget')); ?>; }
                 if (submit) { submit.textContent = <?php echo json_encode(__('Save changes')); ?>; }
                 if (action) { action.value = 'edit_widget_post'; }
                 if (widId) { widId.value = row.getAttribute('data-widget-id') || ''; }
@@ -480,7 +481,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         function showError() {
             if (errorBox) {
                 errorBox.textContent = <?php echo json_encode(
-                    __('Could not save the new block order. Reloading the page.')
+                    __('Could not save the new widget order. Reloading the page.')
                 ); ?>;
                 errorBox.classList.remove('d-none');
             }
