@@ -94,10 +94,10 @@ function admin_footer_html()
             __('Thank you for using <a href="%s" target="_blank">Shopclass</a>'),
             'https://github.com/mindstellar/shopclass/'
         ); ?> -
-        <a title="<?php _e('Forums'); ?>" href="https://osclass.discourse.group"
-           target="_blank"><?php _e('Forums'); ?></a> &middot;
+        <a title="<?php _e('Forums'); ?>" href="https://github.com/mindstellar/shopclass/discussions"
+           target="_blank" rel="noopener"><?php _e('Forums'); ?></a> &middot;
         <a title="<?php _e('Report Issue'); ?>" href="https://github.com/mindstellar/shopclass/issues/"
-           target="_blank"><?php _e('Report Issue'); ?></a>
+           target="_blank" rel="noopener"><?php _e('Report Issue'); ?></a>
     </div>
     <div class="admin-footer-version">
         <strong>Shopclass <?php echo OSCLASS_VERSION; ?></strong>
