@@ -77,89 +77,171 @@ function mediaOwnerUrl($ownerType, $ownerId)
 }
 
 /**
- * Human name of the owner a media file belongs to (listing/page title, user
- * name), or '' when it can't be resolved or the file isn't attached to one.
- *
- * @param string $ownerType
- * @param int    $ownerId
- *
- * @return string
- */
-function mediaOwnerName($ownerType, $ownerId)
-{
-    $ownerId = (int) $ownerId;
-    if ($ownerId <= 0) {
-        return '';
-    }
-    $p = DB_TABLE_PREFIX;
-    switch ($ownerType) {
-        case 'item':
-            return (string) osc_db_scalar(
-                "SELECT s_title FROM {$p}t_item_description WHERE fk_i_item_id = ? AND s_title <> '' LIMIT 1",
-                array($ownerId)
-            );
-        case 'user':
-            return (string) osc_db_scalar(
-                "SELECT COALESCE(NULLIF(s_name, ''), s_email) FROM {$p}t_user WHERE pk_i_id = ?",
-                array($ownerId)
-            );
-        case 'page':
-            return (string) osc_db_scalar(
-                "SELECT s_title FROM {$p}t_pages_description WHERE fk_i_pages_id = ? AND s_title <> '' LIMIT 1",
-                array($ownerId)
-            );
-        default:
-            return '';
-    }
-}
-
-/**
- * Where a media row is used: its explicit owner (listing / user / page), or — for a
- * library upload embedded in a page's content — the first page whose text references
- * the file (matched on the resource's storage key, which is stable across variants).
- * Returns array{type,label,id,url,name} or null when the file is genuinely unattached.
+ * Search needles that identify a media file inside page content. Covers both the
+ * relative storage key ("<path><id>", e.g. .../library/0/1005) and the file's full
+ * public URL stem, so a CDN/offloaded URL with a rewritten host still matches. The
+ * stem has its extension stripped so it matches any variant (_thumbnail/_preview).
  *
  * @param array $row A normalised media library row.
  *
- * @return array|null
+ * @return string[]
  */
-function mediaResolveUsage(array $row)
+function mediaFileNeedles(array $row)
 {
-    $ownerType = (string) ($row['owner_type'] ?? '');
-    $ownerId   = (int) ($row['owner_id'] ?? 0);
-    $labels    = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
+    $needles = array();
 
-    // 1) An explicit owner link (listing photo, avatar, page-owned image).
-    if ($ownerId > 0 && isset($labels[$ownerType])) {
-        return array(
-            'type'  => $ownerType,
-            'label' => $labels[$ownerType],
-            'id'    => $ownerId,
-            'url'   => mediaOwnerUrl($ownerType, $ownerId),
-            'name'  => mediaOwnerName($ownerType, $ownerId),
-        );
+    $key = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
+    if ($key !== '' && $key !== (string) (int) $row['id']) {
+        $needles[] = $key;
     }
 
-    // 2) A library upload embedded in page content. The storage key ("<path><id>",
-    // e.g. .../library/0/1005) appears in every variant URL, so it's a reliable needle.
-    $needle = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
-    if ($needle !== '' && $needle !== (string) (int) $row['id']) {
-        $pageId = (int) osc_db_scalar(
-            'SELECT fk_i_pages_id FROM ' . DB_TABLE_PREFIX . 't_pages_description WHERE s_text LIKE ? LIMIT 1',
-            array('%' . $needle . '%')
-        );
-        if ($pageId > 0) {
-            return array(
-                'type'  => 'page',
-                'label' => __('Page'),
-                'id'    => $pageId,
-                'url'   => mediaOwnerUrl('page', $pageId),
-                'name'  => mediaOwnerName('page', $pageId),
-            );
+    $full = (string) osc_get_resource_url(array(
+        'pk_i_id'        => $row['id'],
+        's_path'         => $row['s_path'] ?? '',
+        's_extension'    => $row['s_extension'] ?? '',
+        's_storage'      => $row['s_storage'] ?? 'local',
+        's_content_type' => $row['s_content_type'] ?? '',
+        's_owner_type'   => $row['owner_type'] ?? '',
+        'i_owner_id'     => $row['owner_id'] ?? 0,
+    ));
+    if ($full !== '') {
+        $needles[] = preg_replace('/\.[a-z0-9]{1,5}(\?.*)?$/i', '', $full);
+    }
+
+    return array_values(array_unique(array_filter($needles)));
+}
+
+/**
+ * Resolve where every media row is used in a fixed number of queries (no N+1):
+ *  - explicit owners (listing/user/page) are batched into one title lookup per type;
+ *  - library uploads are matched against every page's content, which is loaded once.
+ *
+ * @param array $rows Normalised media rows.
+ *
+ * @return array<string,array|null> Keyed by "<src>:<id>": usage array or null (unattached).
+ */
+function mediaResolveUsageBatch(array $rows)
+{
+    $p       = DB_TABLE_PREFIX;
+    $labels  = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
+    $itemIds = $userIds = $pageIds = array();
+    $scan    = array();
+    $result  = array();
+
+    foreach ($rows as $row) {
+        $rid = $row['src'] . ':' . (int) $row['id'];
+        $ot  = (string) ($row['owner_type'] ?? '');
+        $oid = (int) ($row['owner_id'] ?? 0);
+        if ($oid > 0 && isset($labels[$ot])) {
+            $result[$rid] = array('type' => $ot, 'id' => $oid, 'name' => '');
+            ${$ot . 'Ids'}[$oid] = true;
+        } else {
+            $result[$rid] = null;
+            $needles = mediaFileNeedles($row);
+            if (!empty($needles)) {
+                $scan[$rid] = $needles;
+            }
         }
     }
 
-    return null;
+    // Library uploads: load every page once and match in PHP.
+    if (!empty($scan)) {
+        $pages = osc_db_select(
+            "SELECT fk_i_pages_id AS id, s_title AS title, s_text AS text FROM {$p}t_pages_description"
+        );
+        foreach ($scan as $rid => $needles) {
+            foreach ($pages as $pg) {
+                $text = (string) $pg['text'];
+                foreach ($needles as $n) {
+                    if (strpos($text, $n) !== false) {
+                        $result[$rid] = array('type' => 'page', 'id' => (int) $pg['id'], 'name' => (string) $pg['title']);
+                        break 2;
+                    }
+                }
+            }
+        }
+    }
+
+    // One title lookup per owner type for the explicit owners.
+    $itemTitles = mediaBatchTitles("{$p}t_item_description", 'fk_i_item_id', 's_title', array_keys($itemIds));
+    $userTitles = mediaBatchTitles("{$p}t_user", 'pk_i_id', "COALESCE(NULLIF(s_name, ''), s_email)", array_keys($userIds));
+    $pageTitles = mediaBatchTitles("{$p}t_pages_description", 'fk_i_pages_id', 's_title', array_keys($pageIds));
+
+    foreach ($result as $rid => $u) {
+        if ($u === null) {
+            continue;
+        }
+        $id   = (int) $u['id'];
+        $type = $u['type'];
+        $name = $u['name'];
+        if ($name === '') {
+            $name = ($type === 'item' ? ($itemTitles[$id] ?? '')
+                : ($type === 'user' ? ($userTitles[$id] ?? '') : ($pageTitles[$id] ?? '')));
+        }
+        $result[$rid] = array(
+            'type'  => $type,
+            'label' => $labels[$type],
+            'id'    => $id,
+            'url'   => mediaOwnerUrl($type, $id),
+            'name'  => $name,
+        );
+    }
+
+    return $result;
+}
+
+/**
+ * id => display value for a set of ids, in one query. Description tables carry a row
+ * per locale, so the first non-empty value per id wins.
+ *
+ * @param string $table
+ * @param string $keyCol
+ * @param string $valExpr
+ * @param int[]  $ids
+ *
+ * @return array<int,string>
+ */
+function mediaBatchTitles($table, $keyCol, $valExpr, array $ids)
+{
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if (empty($ids)) {
+        return array();
+    }
+    $rows = osc_db_select(
+        "SELECT {$keyCol} AS k, {$valExpr} AS v FROM {$table} WHERE {$keyCol} IN (" . implode(',', $ids) . ')'
+    );
+    $out = array();
+    foreach ($rows as $r) {
+        $k = (int) $r['k'];
+        if (!isset($out[$k]) && (string) $r['v'] !== '') {
+            $out[$k] = (string) $r['v'];
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * The image's pixel dimensions ("WxH") for a local file, or '' when offloaded or
+ * unreadable. Only the current page's rows are checked, so this is bounded.
+ *
+ * @param array $row
+ *
+ * @return string
+ */
+function mediaImageSize(array $row)
+{
+    $storage = (string) ($row['s_storage'] ?? 'local');
+    if ($storage !== '' && $storage !== 'local') {
+        return '';
+    }
+    $path = osc_base_path() . (string) ($row['s_path'] ?? '') . (int) $row['id'] . '.' . (string) ($row['s_extension'] ?? '');
+    if (!is_file($path)) {
+        return '';
+    }
+    $info = @getimagesize($path);
+
+    return $info !== false ? ($info[0] . '×' . $info[1]) : '';
 }
 
 $mediaType    = __get('mediaType');
@@ -200,7 +282,9 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             <i class="bi bi-images" aria-hidden="true"></i>
             <p><?php _e('No media here yet.'); ?></p>
         </div>
-    <?php } else { ?>
+    <?php } else {
+        // Resolve where every row is used up front, in a fixed number of queries.
+        $usageMap = mediaResolveUsageBatch($mediaRows); ?>
         <div id="media-table" class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -209,6 +293,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                         <th><?php _e('Name'); ?></th>
                         <th><?php _e('Used in'); ?></th>
                         <th><?php _e('Type'); ?></th>
+                        <th><?php _e('Size'); ?></th>
                         <th><?php _e('Uploaded'); ?></th>
                         <th class="text-end"><?php _e('Actions'); ?></th>
                     </tr>
@@ -228,12 +313,13 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     );
                     $thumb      = osc_get_resource_url($res, 'thumbnail');
                     $full       = osc_get_resource_url($res);
-                    $usage      = mediaResolveUsage($row);
+                    $usage      = $usageMap[$row['src'] . ':' . (int) $row['id']] ?? null;
                     $usageName  = $usage !== null
                         ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
                         : '';
                     $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not attached');
                     $typeLabel  = strtoupper((string) $row['s_extension']);
+                    $imageSize  = mediaImageSize($row);
                     $uploaded   = !empty($row['dt']) ? date('Y-m-d', strtotime((string) $row['dt'])) : '—';
                     $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
                         . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
@@ -270,6 +356,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                             <?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($typeLabel); ?></td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Size')); ?>"><?php echo $imageSize !== '' ? osc_esc_html($imageSize) : '—'; ?></td>
                         <td data-col-name="<?php echo osc_esc_html(__('Uploaded')); ?>"><?php echo osc_esc_html($uploaded); ?></td>
                         <td class="text-end media-row-actions" data-col-name="<?php echo osc_esc_html(__('Actions')); ?>">
                             <a class="media-action-view" href="<?php echo osc_esc_html($full); ?>" target="_blank"
