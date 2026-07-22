@@ -173,6 +173,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php PageForm::primary_input_hidden($page); ?>
 
                     <div id="left-side" class="col">
+                        <?php // In block mode the body comes from blocks, so the classic
+                        // editor renders title-only (the body is kept as a hidden field). ?>
+                        <?php PageForm::printMultiLangTitleDesc($page, true, !$pb_is_builder); ?>
                         <?php
                         // Page-builder canvas (state computed at the top of this file).
                         // Blocks are widget rows at page.{id}; add/edit happen inline in
@@ -193,8 +196,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         </button>
                                     </div>
                                     <p class="page-field-hint">
-                                        <?php _e('This page is built from the blocks below. The text editor content '
-                                            . 'is not shown on the page while the Page builder template is active.'); ?>
+                                        <?php _e('This page is built from the blocks below.'); ?>
                                     </p>
                                     <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none"
                                          role="alert"></div>
@@ -269,7 +271,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 </div>
                             </div>
                         <?php } ?>
-                        <?php PageForm::printMultiLangTitleDesc($page); ?>
                         <?php // Plugin fields render full-width here, as they did before the rail existed. ?>
                         <?php osc_run_hook('page_meta'); ?>
                     </div>
