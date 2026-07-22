@@ -80,15 +80,19 @@ class ItemsDataTable extends DataTable
             preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
         );
 
-        // A single rich "Listing" cell carries the thumbnail, title, and all the
-        // metadata (category, location, user, price, dates) that used to be spread
-        // across separate columns; status sits on the right. The per-column $row
-        // values (user, category, location, date, expiration) are still set in
-        // fillRows() so the items_processing_row filter and any plugin reading them
-        // keep working — only what is *displayed* changed.
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
-        $this->addColumn('title', __('Listing'));
+        $this->addColumn('status-border', '');
         $this->addColumn('status', __('Status'));
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('image', __('Image'));
+        $this->addColumn('title', __('Title'));
+        $this->addColumn('user', __('User'));
+        $this->addColumn('category', __('Category'));
+        $this->addColumn('location', __('Location'));
+        $this->addColumn('date', '<a href="' . osc_esc_html($url_base . $arg_date) . '">' . __('Date') . '</a>');
+        $this->addColumn(
+            'expiration',
+            '<a href="' . osc_esc_html($url_base . $arg_expiration) . '">' . __('Expiration date') . '</a>'
+        );
 
         $dummy = &$this;
         osc_run_hook('admin_items_table', $dummy);
@@ -342,8 +346,23 @@ class ItemsDataTable extends DataTable
                             . '">' . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
                     }
                 }
-                // Per-column values kept for the items_processing_row filter and any
-                // plugin that reads them, even though they now render inside the cell below.
+                $itemUrl    = osc_esc_html(osc_item_url());
+
+                // Dedicated image column: the listing's first photo (storage-aware) or a
+                // placeholder icon, linking through to the listing.
+                $thumbUrl     = $this->listingThumb((int) $aRow['pk_i_id']);
+                $thumbInner   = $thumbUrl !== ''
+                    ? '<img src="' . osc_esc_html($thumbUrl) . '" loading="lazy" alt=""/>'
+                    : '<i class="bi bi-image" aria-hidden="true"></i>';
+                $row['image'] = '<a class="listing-thumb' . ($thumbUrl === '' ? ' listing-thumb--empty' : '')
+                    . '" href="' . $itemUrl . '" target="_blank" rel="noopener">' . $thumbInner . '</a>';
+
+                // Title cell: the title link + row actions, with the moderation/spam
+                // keyword badge dropped to its own line below everything.
+                $row['title'] = '<a href="' . $itemUrl . '" target="_blank">' . $title . '</a>'
+                    . $actions
+                    . ($moderationBadge !== '' ? '<div class="listing-keyword">' . $moderationBadge . '</div>' : '');
+
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
@@ -359,42 +378,6 @@ class ItemsDataTable extends DataTable
                         $aRow['dt_expiration'],
                         osc_date_format() . ' ' . osc_time_format()
                     ) : __('Never expires');
-
-                // Compose the rich listing cell: thumbnail + title + metadata + dates + actions.
-                $itemUrl    = osc_esc_html(osc_item_url());
-                $thumbUrl   = $this->listingThumb((int) $aRow['pk_i_id']);
-                $thumbInner = $thumbUrl !== ''
-                    ? '<img src="' . osc_esc_html($thumbUrl) . '" loading="lazy" alt=""/>'
-                    : '<i class="bi bi-image" aria-hidden="true"></i>';
-
-                $price     = trim((string) osc_item_formated_price());
-                $metaParts = array();
-                if ($row['category'] !== '') {
-                    $metaParts[] = $row['category'];
-                }
-                $loc = trim((string) $row['location']);
-                if ($loc !== '') {
-                    $metaParts[] = $loc;
-                }
-                if (!empty($aRow['s_user_name'])) {
-                    $metaParts[] = osc_esc_html($aRow['s_user_name']);
-                }
-                if ($price !== '') {
-                    $metaParts[] = '<span class="listing-price">' . osc_esc_html($price) . '</span>';
-                }
-
-                $datesLine = sprintf(__('Posted %s'), $row['date'])
-                    . ' <span class="sep">&middot;</span> ' . $row['expiration'];
-
-                $row['title'] = '<div class="listing-cell">'
-                    . '<a class="listing-thumb' . ($thumbUrl === '' ? ' listing-thumb--empty' : '') . '" href="'
-                    . $itemUrl . '" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">' . $thumbInner . '</a>'
-                    . '<div class="listing-body">'
-                    . '<a class="listing-title" href="' . $itemUrl . '" target="_blank">' . $title . '</a>' . $moderationBadge
-                    . '<div class="listing-meta">' . implode(' <span class="sep">&middot;</span> ', $metaParts) . '</div>'
-                    . '<div class="listing-dates">' . $datesLine . '</div>'
-                    . $actions
-                    . '</div></div>';
 
                 $row = osc_apply_filter('items_processing_row', $row, $aRow);
 

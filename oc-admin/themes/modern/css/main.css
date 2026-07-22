@@ -14914,20 +14914,13 @@ code {
   min-height: 30rem;
 }
 
-.listing-cell {
-  align-items: flex-start;
-  display: flex;
-  gap: 0.75rem;
-}
-
 .listing-thumb {
   align-items: center;
   background: var(--osc-bench-sunk);
   border: 1px solid var(--osc-rule);
   border-radius: 4px;
   color: var(--osc-ink-muted);
-  display: flex;
-  flex: 0 0 auto;
+  display: inline-flex;
   height: 48px;
   justify-content: center;
   overflow: hidden;
@@ -14943,50 +14936,12 @@ code {
   font-size: 1.35rem;
 }
 
-.listing-body {
-  min-width: 0;
+.col-image {
+  width: 64px;
 }
 
-.listing-title {
-  color: var(--osc-ink-emphasis);
-  font-weight: 600;
-  text-decoration-line: none;
-}
-.listing-title:hover, .listing-title:focus-visible {
-  color: var(--osc-bronze);
-  text-decoration-line: underline;
-}
-
-.listing-meta {
-  color: var(--osc-ink-muted);
-  font-size: 0.8125rem;
-  margin-block-start: 0.15rem;
-}
-
-.listing-dates {
-  color: var(--osc-ink-muted);
-  font-size: 0.75rem;
-  margin-block-start: 0.1rem;
-}
-
-.listing-price {
-  color: var(--osc-ink-emphasis);
-  font-weight: 600;
-}
-
-.listing-meta .sep,
-.listing-dates .sep {
-  opacity: 0.55;
-}
-
-.table:has(.listing-cell) td.col-title {
-  vertical-align: top;
-  width: 100%;
-}
-.table:has(.listing-cell) .col-status {
-  text-align: end;
-  vertical-align: top;
-  white-space: nowrap;
+.listing-keyword {
+  margin-block-start: 0.35rem;
 }
 
 .add-photo-btn {
