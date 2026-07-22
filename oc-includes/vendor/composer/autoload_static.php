@@ -958,6 +958,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\form\\base\\FormBuilder' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/base/FormBuilder.php',
         'mindstellar\\form\\base\\FormInputs' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/base/FormInputs.php',
         'mindstellar\\form\\base\\InputInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/base/InputInterface.php',
+        'mindstellar\\forms\\FormService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormService.php',
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
         'mindstellar\\migration\\MigrationInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
         'mindstellar\\migration\\MigrationRunner' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationRunner.php',

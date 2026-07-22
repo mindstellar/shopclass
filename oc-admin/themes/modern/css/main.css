@@ -15672,6 +15672,197 @@ code {
   width: auto;
 }
 
+.forms-builder-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr 22rem;
+}
+@media (max-width: 900px) {
+  .forms-builder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.col-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.col-hint {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  margin: 0 0 0.75rem;
+}
+
+.builder-empty {
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  list-style: none;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.form-card {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+}
+
+.form-card-head {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.form-card-title {
+  color: var(--osc-ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.form-card-actions {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.form-fieldlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+.form-empty {
+  border: 1px dashed var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem;
+  text-align: center;
+}
+
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.field-chip {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease), background-color var(--osc-duration-fast) var(--osc-ease);
+}
+.field-chip:hover {
+  border-color: var(--osc-rule-strong);
+}
+.field-chip.is-editing {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+}
+.field-chip.is-placed .chip-name {
+  color: var(--osc-ink-muted);
+}
+
+.chip-ghost {
+  opacity: 0.4;
+}
+
+.chip-grip {
+  color: var(--osc-ink-muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.chip-grip:active {
+  cursor: grabbing;
+}
+
+.chip-name {
+  color: var(--osc-ink);
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-type {
+  background-color: var(--osc-bench-sunk);
+  border-radius: 999px;
+  color: var(--osc-ink-muted);
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.05rem 0.45rem;
+}
+
+.chip-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.1rem;
+}
+
+.chip-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  width: 1.75rem;
+}
+.chip-btn:hover, .chip-btn:focus-visible {
+  background-color: var(--osc-chrome-hover);
+  color: var(--osc-bronze);
+}
+.chip-btn.chip-danger:hover, .chip-btn.chip-danger:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+.palette-list .chip-remove {
+  display: none;
+}
+
+.form-fieldlist .chip-remove:hover,
+.form-fieldlist .chip-remove:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
 .categories-app {
   --cat-indent: 1.75rem;
   max-width: 62rem;

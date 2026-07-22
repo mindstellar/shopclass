@@ -138,6 +138,8 @@ class Field extends DAO
     {
         $this->dao->delete(sprintf('%st_item_meta', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
         $this->dao->delete(sprintf('%st_meta_categories', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
+        // remove form memberships too, or the t_meta_group_fields FK blocks the delete.
+        $this->dao->delete(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
 
         return $this->dao->delete($this->getTableName(), array('pk_i_id' => $id));
     }

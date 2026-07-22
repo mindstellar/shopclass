@@ -49,8 +49,20 @@ class CAdminCFields extends AdminSecBaseModel
                 }
                 $this->_exportVariableToView('categories', $categories);
                 $this->_exportVariableToView('default_selected', $selected);
-                $this->_exportVariableToView('fields', $this->fieldManager->listAll());
-                $this->_exportVariableToView('groups', FieldGroup::newInstance()->listAll());
+
+                // Field palette (all definitions) + forms with their ordered field ids,
+                // for the two-pane drag-and-drop builder.
+                $allFields = $this->fieldManager->listAll();
+                $service   = new \mindstellar\forms\FormService();
+                $forms     = FieldGroup::newInstance()->listAll();
+                foreach ($forms as &$form) {
+                    $form['field_ids'] = $service->formFieldIds((int)$form['pk_i_id']);
+                }
+                unset($form);
+
+                $this->_exportVariableToView('fields', $allFields);
+                $this->_exportVariableToView('groups', $forms);
+                $this->_exportVariableToView('placed_field_ids', $service->placedFieldIds());
                 $this->doView('fields/index.php');
                 break;
         }

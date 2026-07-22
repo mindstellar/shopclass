@@ -53,6 +53,11 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
     }
     $cascadeText = implode("\n", $lines);
 }
+
+// Builder mode: opened from the two-pane forms builder. Membership (which forms)
+// and category placement are managed by drag-drop and on the form, so the field
+// editor hides its Group dropdown and category tree and saves the definition only.
+$builderMode = Params::getParam('builder') == '1';
 ?>
 <!-- custom field frame -->
 <div id="edit-custom-field-frame" class="card custom-field-frame">
@@ -60,6 +65,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
         <form id="nedit_field_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="ajax" />
             <input type="hidden" name="action" value="field_categories_post" />
+            <?php if ($builderMode) { ?><input type="hidden" name="builder" value="1" /><?php } ?>
             <?php FieldForm::primary_input_hidden($field); ?>
             <h3 class="card-header"><?php _e('Edit custom field'); ?></h3>
             <fieldset>
@@ -79,6 +85,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
                             <div class="form-label"><?php _e('Type'); ?></div>
                             <div class="form-controls"><?php FieldForm::type_select($field); ?></div>
                         </div>
+                        <?php if (!$builderMode) { ?>
                         <div class="form-row">
                             <div class="form-label"><?php _e('Group'); ?></div>
                             <div class="form-controls">
@@ -93,6 +100,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
                                 <p class="help-inline"><?php _e('Grouped fields inherit their categories from the group and render as a section.'); ?></p>
                             </div>
                         </div>
+                        <?php } ?>
                         <div class="form-row">
                             <div class="form-label"></div>
                             <div class="form-controls"><label><?php FieldForm::required_checkbox($field); ?>
@@ -204,6 +212,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
                                 </div>
                             </div>
                         </div>
+                        <?php if (!$builderMode) { ?>
                         <div class="form-row" id="field_cat_select">
                             <div><?php _e('Select the categories where you want to apply this attribute:'); ?></div>
                             <div class="separate-top">
@@ -219,6 +228,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
                                 </div>
                             </div>
                         </div>
+                        <?php } ?>
 
                         <div id="advanced_fields_iframe" class="custom-field-shrink">
                             <span class="icon-more"></span><?php _e('Advanced options'); ?>
@@ -382,11 +392,27 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
                     var ret;
                     try { ret = JSON.parse(data); } catch (err) { ret = (new Function('return (' + data + ')'))(); }
                     if (ret && ret.ok) {
+                        // Legacy list label (if present)…
                         var label = document.getElementById('quick_edit_' + ret.field_id);
                         if (label) { label.textContent = ret.text; }
+                        // …and every builder chip for this field (name + type badge).
+                        document.querySelectorAll('.field-chip[data-field-id="' + ret.field_id + '"]').forEach(function (chip) {
+                            var n = chip.querySelector('.chip-name');
+                            if (n) { n.textContent = ret.text; }
+                            if (ret.type_label) {
+                                var t = chip.querySelector('.chip-type');
+                                if (t) { t.textContent = ret.type_label; }
+                            }
+                        });
                         setJsMessage('ok', ret.ok);
                         var cl = document.querySelector('.content_list_<?php echo (int)$field['pk_i_id']; ?>');
                         if (cl) { cl.innerHTML = ''; }
+                        // In the builder, close the editor slot after a save.
+                        var slot = document.getElementById('field-editor-slot');
+                        if (slot && slot.contains(document.getElementById('nedit_field_form'))) {
+                            slot.innerHTML = '';
+                            document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
+                        }
                     } else {
                         setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
                     }

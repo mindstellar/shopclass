@@ -274,14 +274,20 @@ class CAdminAjax extends AdminSecBaseModel
             case 'field_categories_post':
                 osc_csrf_check();
                 $error = 0;
+                // Builder mode edits the field DEFINITION only; form membership and
+                // category placement are managed by drag-drop / on the form, so those
+                // controls are absent from the post and must not be cleared here.
+                $builderMode = Params::getParam('builder') == '1';
                 $field = Field::newInstance()->findByName(Params::getParam('s_name'));
 
                 if (!isset($field['pk_i_id'])
                     || (isset($field['pk_i_id'])
                         && $field['pk_i_id'] == Params::getParam('id'))
                 ) {
-                    // remove categories from a field
-                    Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                    // remove categories from a field (definition-only saves keep them)
+                    if (!$builderMode) {
+                        Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                    }
                     // no error... continue updating fields
                     if ($error == 0) {
                         $slug     = Params::getParam('field_slug') != '' ? Params::getParam('field_slug')
@@ -331,23 +337,26 @@ class CAdminAjax extends AdminSecBaseModel
                         $realTypeMeta = in_array($chosenType, \mindstellar\fields\FieldTypeRegistry::STORAGE_PRIMITIVES, true)
                             ? '' : $chosenType;
 
-                        // Group membership: 0/empty means loose (Ungrouped).
-                        $groupId = (int)Params::getParam('field_group');
-                        $res = Field::newInstance()->update(
-                            array(
-                                's_name'        => $aMetaNames[$currentAdminLocale],
-                                'e_type'        => $storageType,
-                                's_slug'        => $slug,
-                                'b_required'    => Params::getParam('field_required') == '1' ? 1 : 0,
-                                'b_searchable'  => Params::getParam('field_searchable') == '1' ? 1 : 0,
-                                's_options'     => $metaOptions,
-                                'fk_i_group_id' => $groupId > 0 ? $groupId : null,
-                            ),
-                            array('pk_i_id' => Params::getParam('id'))
+                        // Definition fields always saved. Group membership is only
+                        // touched by the legacy single-group editor (not builder mode).
+                        $updateData = array(
+                            's_name'       => $aMetaNames[$currentAdminLocale],
+                            'e_type'       => $storageType,
+                            's_slug'       => $slug,
+                            'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
+                            'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
+                            's_options'    => $metaOptions,
                         );
-                        // The link table t_meta_group_fields is the source of truth for
-                        // form membership now; keep it in sync with this single-group editor.
-                        FieldGroup::newInstance()->setFieldSingleGroup((int)Params::getParam('id'), $groupId);
+                        if (!$builderMode) {
+                            $groupId = (int)Params::getParam('field_group');
+                            $updateData['fk_i_group_id'] = $groupId > 0 ? $groupId : null;
+                        }
+                        $res = Field::newInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
+                        // Keep the link table (source of truth) in sync with the
+                        // single-group editor; the builder manages links via drag-drop.
+                        if (!$builderMode) {
+                            FieldGroup::newInstance()->setFieldSingleGroup((int)Params::getParam('id'), $groupId);
+                        }
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
@@ -357,8 +366,9 @@ class CAdminAjax extends AdminSecBaseModel
                             $error = 1;
                         }
                     }
-                    // no error... continue inserting categories-field
-                    if ($error == 0) {
+                    // no error... continue inserting categories-field (skipped in
+                    // builder mode, which does not manage per-field categories)
+                    if ($error == 0 && !$builderMode) {
                         $aCategories = Params::getParam('categories');
                         if (is_array($aCategories) && count($aCategories) > 0) {
                             $res = Field::newInstance()->insertCategories(Params::getParam('id'), $aCategories);
@@ -379,10 +389,12 @@ class CAdminAjax extends AdminSecBaseModel
                 if ($error) {
                     $result = array('error' => $message);
                 } else {
+                    $typeSpec = osc_field_type($chosenType);
                     $result = array(
-                        'ok'       => __('Saved'),
-                        'text'     => $aMetaNames[$currentAdminLocale],
-                        'field_id' => Params::getParam('id')
+                        'ok'         => __('Saved'),
+                        'text'       => $aMetaNames[$currentAdminLocale],
+                        'field_id'   => Params::getParam('id'),
+                        'type_label' => $typeSpec !== null ? __($typeSpec['label']) : $chosenType,
                     );
                 }
 
@@ -508,6 +520,23 @@ class CAdminAjax extends AdminSecBaseModel
                     echo json_encode(array('ok' => __('The field group has been deleted')));
                 } else {
                     echo json_encode(array('error' => __('An error occurred while deleting')));
+                }
+                break;
+            case 'form_set_fields':
+                // The builder posts a form's whole ordered field list after each drag;
+                // FormService reconciles the link table (add/remove/reorder in one go).
+                osc_csrf_check();
+                $formId = (int)Params::getParam('form_id');
+                $ids    = json_decode((string)Params::getParam('fields'), true);
+                if ($formId <= 0 || !is_array($ids)) {
+                    echo json_encode(array('error' => __('Invalid request')));
+                    break;
+                }
+                $service = new \mindstellar\forms\FormService();
+                if ($service->setFormFields($formId, $ids)) {
+                    echo json_encode(array('ok' => __('Saved')));
+                } else {
+                    echo json_encode(array('error' => __('An error occurred while saving the form')));
                 }
                 break;
             case 'group_categories_iframe':

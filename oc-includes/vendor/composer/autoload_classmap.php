@@ -823,6 +823,7 @@ return array(
     'mindstellar\\form\\base\\FormBuilder' => $baseDir . '/oc-includes/osclass/classes/form/base/FormBuilder.php',
     'mindstellar\\form\\base\\FormInputs' => $baseDir . '/oc-includes/osclass/classes/form/base/FormInputs.php',
     'mindstellar\\form\\base\\InputInterface' => $baseDir . '/oc-includes/osclass/classes/form/base/InputInterface.php',
+    'mindstellar\\forms\\FormService' => $baseDir . '/oc-includes/osclass/classes/forms/FormService.php',
     'mindstellar\\logger\\OsclassErrors' => $baseDir . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
     'mindstellar\\migration\\MigrationInterface' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
     'mindstellar\\migration\\MigrationRunner' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationRunner.php',

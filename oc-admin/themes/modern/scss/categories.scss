@@ -273,6 +273,220 @@
 
 
 // =============================================================================
+// Custom forms builder (fields/index.php) — two panes: forms on the left,
+// a draggable field palette on the right. Drag a field chip into any form; the
+// same field can live in several forms. Workshop Bench: white surfaces, bronze
+// only for the active/edited chip, hairline structure, no jQuery (SortableJS).
+// =============================================================================
+.forms-builder-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr 22rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-head {
+  align-items: center;
+  display: flex;
+  gap: .75rem;
+  justify-content: space-between;
+  margin-bottom: .5rem;
+}
+
+.col-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.col-hint {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0 0 .75rem;
+}
+
+.builder-empty {
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  list-style: none;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+// ---- Forms (left) -----------------------------------------------------------
+.form-card {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  margin-bottom: 1rem;
+  padding: .75rem;
+}
+
+.form-card-head {
+  align-items: center;
+  display: flex;
+  gap: .5rem;
+  justify-content: space-between;
+  margin-bottom: .5rem;
+}
+
+.form-card-title {
+  color: var(--osc-ink);
+  font-size: .9375rem;
+  font-weight: 600;
+}
+
+.form-card-actions {
+  display: inline-flex;
+  gap: .15rem;
+}
+
+.form-fieldlist {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+// The drop hint shown when a form has no fields.
+.form-empty {
+  border: 1px dashed var(--osc-rule);
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-top: .4rem;
+  padding: .6rem;
+  text-align: center;
+}
+
+// ---- Field palette (right) --------------------------------------------------
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// ---- A field chip (shared by palette + form lists) --------------------------
+.field-chip {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  gap: .5rem;
+  padding: .4rem .55rem;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease),
+              background-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    border-color: var(--osc-rule-strong);
+  }
+
+  &.is-editing {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+  }
+
+  // A palette chip whose field is already placed in a form.
+  &.is-placed .chip-name {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.chip-ghost {
+  opacity: .4;
+}
+
+.chip-grip {
+  color: var(--osc-ink-muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.chip-name {
+  color: var(--osc-ink);
+  flex: 1 1 auto;
+  font-size: .875rem;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-type {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius-pill;
+  color: var(--osc-ink-muted);
+  flex: 0 0 auto;
+  font-size: .75rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+}
+
+.chip-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: .1rem;
+}
+
+.chip-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  width: 1.75rem;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+
+  &.chip-danger:hover,
+  &.chip-danger:focus-visible {
+    background-color: var(--osc-danger-tint);
+    color: var(--osc-danger);
+  }
+}
+
+// The remove (✕) control exists in every chip but is meaningful only inside a
+// form, so it is hidden in the palette — a palette chip cloned into a form then
+// reveals it for free.
+.palette-list .chip-remove {
+  display: none;
+}
+
+.form-fieldlist .chip-remove:hover,
+.form-fieldlist .chip-remove:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+
+// =============================================================================
 // Categories manager (categories/index.php, categories/iframe.php)
 // -----------------------------------------------------------------------------
 // A category tree the owner reorders by drag, edits in a slide-over drawer,
