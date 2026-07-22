@@ -147,7 +147,8 @@
   // phones, mirroring the datatables pattern: drop the header row, make the first
   // cell the card title, and prefix every other cell with its column name.
   #upload-plugins,
-  #email-templates {
+  #email-templates,
+  #media-table {
     thead {
       display: none;
     }
