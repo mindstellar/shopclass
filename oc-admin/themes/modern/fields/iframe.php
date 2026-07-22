@@ -390,7 +390,13 @@ $builderMode = Params::getParam('builder') == '1';
                     return r.text();
                 }).then(function (data) {
                     var ret;
-                    try { ret = JSON.parse(data); } catch (err) { ret = (new Function('return (' + data + ')'))(); }
+                    // Hard JSON parse — never eval the response body. A non-JSON body
+                    // means the save endpoint errored (e.g. a PHP warning corrupted it);
+                    // surface that instead of executing whatever came back.
+                    try { ret = JSON.parse(data); } catch (err) {
+                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                        return;
+                    }
                     if (ret && ret.ok) {
                         // Legacy list label (if present)…
                         var label = document.getElementById('quick_edit_' + ret.field_id);
