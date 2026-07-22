@@ -148,7 +148,7 @@ function customHead()
             var message1 = document.createElement('div');
             message1.className = 'step';
             message1.innerHTML = '<h3><?php _e('No Upgrade Available'); ?></h3>' +
-                '<p><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></p>'
+                '<div class="callout-success"><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></div>'
             steps.innerHTML = '';
             steps.appendChild(message1);
             steps_div.style.display = 'block';

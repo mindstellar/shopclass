@@ -72,10 +72,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-controls">
                                 <input type="text" class="input-large" name="bck_dir"
                                        value="<?php echo osc_esc_html(osc_base_path()); ?>"/>
+                                <div class="callout-warning">
+                                    <?php _e("If you don't specify a backup folder, the backup files will be "
+                                             . "created in the root of your Shopclass installation."); ?>
+                                </div>
                                 <div class="help-box">
-                                    <?php _e("<strong>WARNING</strong>: If you don't specify a backup folder, "
-                                             . "the backup files will be created in the root of your Shopclass installation."); ?>
-                                    <br/>
                                     <?php _e('This is the folder in which your backups will be created. We recommend that you choose a non-public path.'); ?>
                                 </div>
                             </div>
