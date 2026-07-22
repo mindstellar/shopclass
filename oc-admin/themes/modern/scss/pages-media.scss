@@ -244,3 +244,28 @@
     gap: .5rem;
   }
 }
+
+// Media preview modal: the full image shown in a native <dialog> (see media/index.php),
+// centred on a recessed surface and bounded to the viewport.
+.media-preview-figure {
+  align-items: center;
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  margin-block: .5rem;
+  max-height: 70vh;
+  overflow: hidden;
+
+  img {
+    display: block;
+    max-height: 70vh;
+    max-width: 100%;
+    object-fit: contain;
+  }
+}
+
+#media-preview-usage:empty {
+  display: none;
+}

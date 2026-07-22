@@ -105,12 +105,61 @@ function mediaOwnerName($ownerType, $ownerId)
             );
         case 'page':
             return (string) osc_db_scalar(
-                "SELECT s_title FROM {$p}t_page_description WHERE fk_i_page_id = ? AND s_title <> '' LIMIT 1",
+                "SELECT s_title FROM {$p}t_pages_description WHERE fk_i_pages_id = ? AND s_title <> '' LIMIT 1",
                 array($ownerId)
             );
         default:
             return '';
     }
+}
+
+/**
+ * Where a media row is used: its explicit owner (listing / user / page), or — for a
+ * library upload embedded in a page's content — the first page whose text references
+ * the file (matched on the resource's storage key, which is stable across variants).
+ * Returns array{type,label,id,url,name} or null when the file is genuinely unattached.
+ *
+ * @param array $row A normalised media library row.
+ *
+ * @return array|null
+ */
+function mediaResolveUsage(array $row)
+{
+    $ownerType = (string) ($row['owner_type'] ?? '');
+    $ownerId   = (int) ($row['owner_id'] ?? 0);
+    $labels    = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
+
+    // 1) An explicit owner link (listing photo, avatar, page-owned image).
+    if ($ownerId > 0 && isset($labels[$ownerType])) {
+        return array(
+            'type'  => $ownerType,
+            'label' => $labels[$ownerType],
+            'id'    => $ownerId,
+            'url'   => mediaOwnerUrl($ownerType, $ownerId),
+            'name'  => mediaOwnerName($ownerType, $ownerId),
+        );
+    }
+
+    // 2) A library upload embedded in page content. The storage key ("<path><id>",
+    // e.g. .../library/0/1005) appears in every variant URL, so it's a reliable needle.
+    $needle = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
+    if ($needle !== '' && $needle !== (string) (int) $row['id']) {
+        $pageId = (int) osc_db_scalar(
+            'SELECT fk_i_pages_id FROM ' . DB_TABLE_PREFIX . 't_pages_description WHERE s_text LIKE ? LIMIT 1',
+            array('%' . $needle . '%')
+        );
+        if ($pageId > 0) {
+            return array(
+                'type'  => 'page',
+                'label' => __('Page'),
+                'id'    => $pageId,
+                'url'   => mediaOwnerUrl('page', $pageId),
+                'name'  => mediaOwnerName('page', $pageId),
+            );
+        }
+    }
+
+    return null;
 }
 
 $mediaType    = __get('mediaType');
@@ -179,10 +228,11 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     );
                     $thumb      = osc_get_resource_url($res, 'thumbnail');
                     $full       = osc_get_resource_url($res);
-                    $ownerType  = (string) $row['owner_type'];
-                    $ownerLabel = $ownerLabels[$ownerType] ?? ucfirst($ownerType);
-                    $ownerUrl   = mediaOwnerUrl($ownerType, (int) $row['owner_id']);
-                    $ownerName  = mediaOwnerName($ownerType, (int) $row['owner_id']);
+                    $usage      = mediaResolveUsage($row);
+                    $usageName  = $usage !== null
+                        ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
+                        : '';
+                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not attached');
                     $typeLabel  = strtoupper((string) $row['s_extension']);
                     $uploaded   = !empty($row['dt']) ? date('Y-m-d', strtotime((string) $row['dt'])) : '—';
                     $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
@@ -190,7 +240,12 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     ?>
                     <tr>
                         <td class="media-col-preview" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
-                            <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener">
+                            <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
+                               data-media-preview
+                               data-full="<?php echo osc_esc_html($full); ?>"
+                               data-name="<?php echo osc_esc_html((string) $row['s_name']); ?>"
+                               data-usage="<?php echo osc_esc_html($usageText); ?>"
+                               title="<?php echo osc_esc_html(__('Preview')); ?>">
                                 <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
                                      alt="<?php echo osc_esc_html((string) $row['s_name']); ?>"/>
                             </a>
@@ -199,15 +254,17 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                             <?php echo osc_esc_html((string) $row['s_name']); ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Used in')); ?>">
-                            <span class="media-owner-tag media-owner-<?php echo osc_esc_html($ownerType); ?>">
-                                <?php echo osc_esc_html($ownerLabel); ?>
-                            </span>
-                            <?php if ($ownerUrl !== '') { ?>
-                                <a class="media-owner-link" href="<?php echo osc_esc_html($ownerUrl); ?>">
-                                    <?php echo $ownerName !== ''
-                                        ? osc_esc_html($ownerName)
-                                        : '#' . (int) $row['owner_id']; ?>
-                                </a>
+                            <?php if ($usage !== null) { ?>
+                                <span class="media-owner-tag media-owner-<?php echo osc_esc_html($usage['type']); ?>">
+                                    <?php echo osc_esc_html($usage['label']); ?>
+                                </span>
+                                <?php if ($usage['url'] !== '') { ?>
+                                    <a class="media-owner-link" href="<?php echo osc_esc_html($usage['url']); ?>">
+                                        <?php echo osc_esc_html($usageName); ?>
+                                    </a>
+                                <?php } else { ?>
+                                    <?php echo osc_esc_html($usageName); ?>
+                                <?php } ?>
                             <?php } else { ?>
                                 <span class="media-owner-unattached"><?php _e('Not attached'); ?></span>
                             <?php } ?>
@@ -252,7 +309,44 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         <?php } ?>
     <?php } ?>
 </div>
+<dialog id="media-preview" class="osc-dialog osc-dialog-wide media-preview-dialog">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title" id="media-preview-name"></p>
+        <div class="media-preview-figure">
+            <img id="media-preview-img" src="" alt=""/>
+        </div>
+        <p class="osc-dialog-text" id="media-preview-usage"></p>
+    </div>
+    <div class="osc-dialog-actions">
+        <a id="media-preview-open" class="btn btn-secondary btn-sm" href="#" target="_blank" rel="noopener">
+            <?php _e('View original'); ?>
+        </a>
+        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
+    </div>
+</dialog>
 <script>
+    // Preview modal: clicking a thumbnail opens the full image in a dialog
+    // instead of navigating away. The href stays as a no-JS fallback.
+    (function () {
+        var dialog = document.getElementById('media-preview');
+        if (!dialog || typeof dialog.showModal !== 'function') { return; }
+        var img   = document.getElementById('media-preview-img');
+        var name  = document.getElementById('media-preview-name');
+        var usage = document.getElementById('media-preview-usage');
+        var open  = document.getElementById('media-preview-open');
+        document.querySelectorAll('[data-media-preview]').forEach(function (trigger) {
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                img.src = trigger.getAttribute('data-full') || '';
+                img.alt = trigger.getAttribute('data-name') || '';
+                name.textContent = trigger.getAttribute('data-name') || '';
+                usage.textContent = trigger.getAttribute('data-usage') || '';
+                open.href = trigger.getAttribute('data-full') || '#';
+                dialog.showModal();
+            });
+        });
+    })();
+
     document.querySelectorAll('.media-delete').forEach(function (link) {
         link.addEventListener('click', function (e) {
             if (!window.confirm(link.getAttribute('data-confirm') || 'Delete?')) {

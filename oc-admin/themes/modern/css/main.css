@@ -15377,6 +15377,28 @@ code {
   gap: 0.5rem;
 }
 
+.media-preview-figure {
+  align-items: center;
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  margin-block: 0.5rem;
+  max-height: 70vh;
+  overflow: hidden;
+}
+.media-preview-figure img {
+  display: block;
+  max-height: 70vh;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+#media-preview-usage:empty {
+  display: none;
+}
+
 .list-fields ul {
   margin: 0;
   padding: 0;
