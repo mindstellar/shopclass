@@ -336,29 +336,42 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
-<script type="text/javascript">
-    tinyMCE.init({
-        selector: "textarea:not(.widget-code-editor)",
-        promotion: false,
-        width: "500px",
-        height: "340px",
-        theme_advanced_buttons3: "",
-        theme_advanced_toolbar_align: "left",
-        theme_advanced_toolbar_location: "top",
-        plugins: [
-            "advlist autolink lists link charmap preview anchor",
-            "searchreplace visualblocks code fullscreen",
-            "insertdatetime table paste"
-        ],
-        entity_encoding: "raw",
-        theme_advanced_buttons1_add: "forecolorpicker,fontsizeselect",
-        theme_advanced_disable: "styleselect",
-        extended_valid_elements: "script[type|src|charset|defer]",
-        relative_urls: false,
-        remove_script_host: false,
-        convert_urls: false
+<script>
+    // TinyMCE 7 for the legacy widget-content editor. Deferred and guarded so it
+    // never runs before tinymce.min.js has loaded (the old inline tinyMCE.init
+    // threw "tinyMCE is not defined"), scoped to non-code textareas, with paste
+    // cleanup. extended_valid_elements keeps <script> for super_admin legacy
+    // widgets that embed one.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        tinymce.init({
+            selector: 'textarea:not(.widget-code-editor)',
+            promotion: false,
+            branding: false,
+            menubar: false,
+            height: 340,
+            relative_urls: false,
+            remove_script_host: false,
+            convert_urls: false,
+            entity_encoding: 'raw',
+            extended_valid_elements: 'script[type|src|charset|defer]',
+            plugins: 'advlist anchor autolink charmap code fullscreen image insertdatetime'
+                + ' link lists media preview searchreplace table visualblocks',
+            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist'
+                + ' | link image media table | alignleft aligncenter alignright'
+                + ' | removeformat | visualblocks code fullscreen preview',
+            smart_paste: true,
+            paste_as_text: false,
+            paste_merge_formats: true,
+            paste_data_images: false,
+            paste_remove_styles_if_webkit: true,
+            paste_webkit_styles: 'none',
+            content_style: 'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,'
+                + 'Helvetica Neue,Arial,sans-serif;font-size:16px;line-height:1.55;color:#14181f}'
+        });
     });
-
 </script>
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
