@@ -965,6 +965,11 @@ class CAdminAjax extends AdminSecBaseModel
         // by a parent field's value. cfg_cascade_map is a line-per-parent-value block
         // ("Toyota: Corolla, Camry"); parse it into a { parentValue: [opts] } map.
         $cascadeParent = trim((string)Params::getParam('cfg_cascade_parent'));
+        // cascade_parent is a field slug; reject anything that is not slug-shaped so a
+        // crafted value cannot ride through into rendered markup.
+        if ($cascadeParent !== '' && !preg_match('/^[a-z0-9_-]+$/', $cascadeParent)) {
+            $cascadeParent = '';
+        }
         $cascadeText   = (string)Params::getParam('cfg_cascade_map');
         if ($cascadeParent !== '' && trim($cascadeText) !== '') {
             $map = array();

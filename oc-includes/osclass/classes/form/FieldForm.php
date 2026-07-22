@@ -290,12 +290,15 @@ class FieldForm extends Form
             // Resolved field type (a registry type such as EMAIL maps its identity
             // here while e_type stays the storage primitive) and its per-field config
             // (placeholder/help text/bounds/…), merged into $field by extendField.
+            // Config values are admin-entered and stored raw in s_meta; the form input
+            // helper does not escape attribute or help-text values, and meta() renders
+            // on the PUBLIC item and search forms, so escape here to avoid stored XSS.
             $type = osc_field_resolve_type($field);
             if (!empty($field['placeholder'])) {
-                $attributes['placeholder'] = $field['placeholder'];
+                $attributes['placeholder'] = osc_esc_html($field['placeholder']);
             }
             if (!empty($field['help_text'])) {
-                $options['inputHelp'] = $field['help_text'];
+                $options['inputHelp'] = osc_esc_html($field['help_text']);
             }
             // Prefill a configured default only when editing a fresh value.
             if (!$search && ($value === '' || $value === null) && isset($field['default']) && $field['default'] !== '') {
@@ -316,7 +319,7 @@ class FieldForm extends Form
             $cascadeUnion = null;
             if (!$search && !empty($field['cascade_map']) && is_array($field['cascade_map'])
                 && !empty($field['cascade_parent'])) {
-                $attributes['data-cascade-parent'] = $field['cascade_parent'];
+                $attributes['data-cascade-parent'] = osc_esc_html($field['cascade_parent']);
                 $attributes['data-cascade-map']    = osc_esc_html(json_encode($field['cascade_map']));
                 $union = array();
                 foreach ($field['cascade_map'] as $opts) {
@@ -471,7 +474,7 @@ class FieldForm extends Form
                         $attributes['maxlength'] = (int)$field['maxlength'];
                     }
                     if (!empty($field['pattern'])) {
-                        $attributes['pattern'] = $field['pattern'];
+                        $attributes['pattern'] = osc_esc_html($field['pattern']);
                     }
                     echo self::getInstance()->text($name, $value, $attributes, $options);
                     break;

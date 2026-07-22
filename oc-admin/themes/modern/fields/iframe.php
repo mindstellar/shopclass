@@ -283,7 +283,7 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
         function syncType() {
             var v = typeInput ? typeInput.value : '';
             var keys = typeConfig[v] || [];
-            var usesOptions = keys.indexOf('__none__') === -1 && (v === 'DROPDOWN' || v === 'RADIO');
+            var usesOptions = (v === 'DROPDOWN' || v === 'RADIO');
             if (optionsDiv) { optionsDiv.style.display = usesOptions ? '' : 'none'; }
             if (fieldNewtab) { fieldNewtab.style.display = (v === 'URL') ? '' : 'none'; }
             if (cascadeBlock) { cascadeBlock.style.display = usesOptions ? '' : 'none'; }

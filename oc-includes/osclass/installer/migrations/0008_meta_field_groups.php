@@ -47,11 +47,15 @@ return new class implements MigrationInterface {
         }
 
         $groupCat = DB_TABLE_PREFIX . 't_meta_group_categories';
+        // Foreign keys mirror t_meta_categories and struct.sql so a fresh install and
+        // an upgraded install converge on the same schema (schema-drift check).
         $sql = 'CREATE TABLE IF NOT EXISTS ' . $groupCat . ' ('
             . ' fk_i_group_id INT UNSIGNED NOT NULL,'
             . ' fk_i_category_id INT UNSIGNED NOT NULL,'
             . ' PRIMARY KEY (fk_i_group_id, fk_i_category_id),'
-            . ' INDEX idx_group_cat_category (fk_i_category_id)'
+            . ' INDEX idx_group_cat_category (fk_i_category_id),'
+            . ' FOREIGN KEY (fk_i_group_id) REFERENCES ' . $group . ' (pk_i_id),'
+            . ' FOREIGN KEY (fk_i_category_id) REFERENCES ' . DB_TABLE_PREFIX . 't_category (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
         if ($comm->query($sql) === false) {
             throw new RuntimeException('field groups migration: failed to create t_meta_group_categories');
