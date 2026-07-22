@@ -96,13 +96,22 @@ osc_add_filter('admin_title', 'customPageTitle');
 // is dropped, semantic tags are kept, and images are not inlined as data URIs.
 function customHead()
 {
+    // Editor image uploads go to the resource pipeline as page-owned resources.
+    // Only offered once the page is saved (an upload needs an owner id).
+    $page      = __get('page');
+    $pageId    = isset($page['pk_i_id']) ? (int)$page['pk_i_id'] : 0;
+    $uploadUrl = $pageId > 0
+        ? osc_admin_base_url(true) . '?page=ajax&action=resource_upload&owner_type=page&owner_id='
+            . $pageId . '&' . osc_csrf_token_url()
+        : '';
     ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof tinymce === 'undefined') {
                 return;
             }
-            tinymce.init({
+            var uploadUrl = <?php echo json_encode($uploadUrl); ?>;
+            var cfg = {
                 selector: 'textarea[name$="#s_text"]',
                 promotion: false,
                 branding: false,
@@ -128,7 +137,41 @@ function customHead()
                 // "sheet of paper" in both themes rather than a half-dark panel.
                 content_style: 'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,'
                     + 'Helvetica Neue,Arial,sans-serif;font-size:16px;line-height:1.55;color:#14181f}'
-            });
+            };
+            if (uploadUrl) {
+                // Drag/drop and paste auto-upload; the image dialog gets an Upload
+                // tab via the file picker. Both hit the same resource endpoint.
+                cfg.automatic_uploads = true;
+                cfg.images_upload_credentials = true;
+                cfg.images_upload_url = uploadUrl;
+                cfg.file_picker_types = 'image';
+                cfg.file_picker_callback = function (cb, value, meta) {
+                    if (meta.filetype !== 'image') {
+                        return;
+                    }
+                    var input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.addEventListener('change', function () {
+                        var file = input.files && input.files[0];
+                        if (!file) {
+                            return;
+                        }
+                        var data = new FormData();
+                        data.append('file', file);
+                        fetch(uploadUrl, { method: 'POST', credentials: 'same-origin', body: data })
+                            .then(function (r) { return r.json(); })
+                            .then(function (j) {
+                                if (j && j.location) {
+                                    cb(j.location, { title: file.name, alt: file.name });
+                                }
+                            })
+                            .catch(function () {});
+                    });
+                    input.click();
+                };
+            }
+            tinymce.init(cfg);
         });
     </script>
     <?php

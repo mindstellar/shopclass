@@ -28,7 +28,7 @@ class CAdminAjax extends AdminSecBaseModel
         parent::__construct();
         $this->ajax = true;
         if ($this->isModerator()
-            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state'))
+            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload'))
         ) {
             $this->action = 'error_permissions';
         }
@@ -72,6 +72,45 @@ class CAdminAjax extends AdminSecBaseModel
                     'format'        => Params::getParam('format'),
                     'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
                 ));
+                break;
+            case 'resource_upload': // editor image upload -> the resource pipeline
+                osc_csrf_check();
+                header('Content-Type: application/json');
+
+                $ownerType = Params::getParam('owner_type');
+                $ownerId   = (int) Params::getParam('owner_id');
+
+                // Only page images go through this endpoint for now, and the page
+                // must exist. Keeping the owner type whitelisted here stops the
+                // generic endpoint from writing resources for arbitrary owners.
+                if ($ownerType !== \mindstellar\model\Resource::OWNER_PAGE
+                    || !osc_resource_owner_exists($ownerType, $ownerId)
+                ) {
+                    http_response_code(403);
+                    echo json_encode(array('error' => __('Upload target not allowed')));
+                    break;
+                }
+
+                if (!isset($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+                    http_response_code(400);
+                    echo json_encode(array('error' => __('No file was received')));
+                    break;
+                }
+
+                // ResourceUploader validates the file is a real image and rewrites
+                // it into managed variants (storage-aware: local or S3), so nothing
+                // untrusted is stored as-is.
+                $row = (new \mindstellar\storage\ResourceUploader())
+                    ->upload($ownerType, $ownerId, $_FILES['file']['tmp_name']);
+
+                if ($row === false) {
+                    http_response_code(415);
+                    echo json_encode(array('error' => __('The file is not a valid image')));
+                    break;
+                }
+
+                // TinyMCE expects { location: url }.
+                echo json_encode(array('location' => osc_get_resource_url($row)));
                 break;
             case 'save_admin_theme': // persist this admin's light/dark choice
                 osc_csrf_check();
