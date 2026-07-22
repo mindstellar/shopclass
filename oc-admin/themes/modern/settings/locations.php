@@ -29,7 +29,7 @@ osc_add_hook('admin_page_header', 'customPageHeader');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Settings'); ?>
+    <h1><?php _e('Listings'); ?>
         <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a id="b_import" class="ms-1 text-success float-end" href="#" title="<?php _e('Import new'); ?>"><i
                     class="bi bi-plus-circle-fill"></i></a>

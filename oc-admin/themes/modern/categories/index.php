@@ -36,7 +36,7 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Settings'); ?>
+    <h1><?php _e('Listings'); ?>
         <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box"
            data-bs-toggle="collapse"></a>
     </h1>

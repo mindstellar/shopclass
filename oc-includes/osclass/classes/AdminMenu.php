@@ -61,9 +61,30 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
+            __('Categories'),
+            osc_admin_base_url(true) . '?page=categories',
+            'settings_categories',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
             __('Custom fields'),
             osc_admin_base_url(true) . '?page=cfields',
             'items_cfields',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
+            __('Locations'),
+            osc_admin_base_url(true) . '?page=settings&action=locations',
+            'settings_locations',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
+            __('Currencies'),
+            osc_admin_base_url(true) . '?page=settings&action=currencies',
+            'settings_currencies',
             'administrator'
         );
         $this->add_submenu(
@@ -146,6 +167,20 @@ class AdminMenu
             'stats_comments',
             'moderator'
         );
+        $this->add_submenu(
+            'stats',
+            __('Renew location stats'),
+            osc_admin_base_url(true) . '?page=tools&action=locations',
+            'tools_location',
+            'administrator'
+        );
+        $this->add_submenu(
+            'stats',
+            __('Renew category stats'),
+            osc_admin_base_url(true) . '?page=tools&action=category',
+            'tools_category',
+            'administrator'
+        );
 
         $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
         $this->add_submenu(
@@ -157,13 +192,6 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
-            __('Categories'),
-            osc_admin_base_url(true) . '?page=categories',
-            'settings_categories',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
             __('Comments'),
             osc_admin_base_url(true) . '?page=settings&action=comments',
             'settings_comments',
@@ -171,16 +199,16 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
-            __('Locations'),
-            osc_admin_base_url(true) . '?page=settings&action=locations',
-            'settings_locations',
+            __('Email templates'),
+            osc_admin_base_url(true) . '?page=emails',
+            'settings_emails_manage',
             'administrator'
         );
         $this->add_submenu(
             'settings',
-            __('Email templates'),
-            osc_admin_base_url(true) . '?page=emails',
-            'settings_emails_manage',
+            __('Mail server'),
+            osc_admin_base_url(true) . '?page=settings&action=mailserver',
+            'settings_mailserver',
             'administrator'
         );
         $this->add_submenu(
@@ -216,20 +244,6 @@ class AdminMenu
             __('Sitemap'),
             osc_admin_base_url(true) . '?page=settings&action=sitemap',
             'settings_sitemap',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Currencies'),
-            osc_admin_base_url(true) . '?page=settings&action=currencies',
-            'settings_currencies',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Mail server'),
-            osc_admin_base_url(true) . '?page=settings&action=mailserver',
-            'settings_mailserver',
             'administrator'
         );
         $this->add_submenu(
@@ -328,20 +342,6 @@ class AdminMenu
             __('Maintenance mode'),
             osc_admin_base_url(true) . '?page=tools&action=maintenance',
             'tools_maintenance',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Renew location stats'),
-            osc_admin_base_url(true) . '?page=tools&action=locations',
-            'tools_location',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Renew category stats'),
-            osc_admin_base_url(true) . '?page=tools&action=category',
-            'tools_category',
             'administrator'
         );
         $this->add_submenu(
