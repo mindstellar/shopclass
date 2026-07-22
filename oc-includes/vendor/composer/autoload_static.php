@@ -426,6 +426,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'CWebAjax' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebAjax.php',
         'CWebContact' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebContact.php',
         'CWebCustom' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebCustom.php',
+        'CWebForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebForm.php',
         'CWebItem' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebItem.php',
         'CWebLanguage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebLanguage.php',
         'CWebLogin' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebLogin.php',

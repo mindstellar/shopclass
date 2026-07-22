@@ -56,14 +56,17 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0)
     echo '<input type="hidden" name="osc_form_context" value="'
         . osc_esc_html($contextType . ':' . (int)$contextId) . '" />';
 
+    // Honeypot: a field kept off-screen and empty for humans; a bot that fills it
+    // marks the submission as spam server-side.
+    echo '<div class="osc-form-hp" aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;">';
+    echo '<label>' . osc_esc_html(__('Leave this field empty'))
+        . '<input type="text" name="osc_hp" tabindex="-1" autocomplete="off" value="" /></label>';
+    echo '</div>';
+
     FieldForm::renderFieldList($fields, 'meta_list osc-form-fields');
 
-    // Phase 2 is render-only; the submit is disabled until the submission route
-    // (Phase 3) exists. The whole form still proves placement + logic + cascades.
     echo '<div class="osc-form-actions">';
-    echo '<button type="submit" class="btn btn-primary" disabled '
-        . 'title="' . osc_esc_html(__('Submissions are enabled after setup')) . '">'
-        . osc_esc_html(__('Submit')) . '</button>';
+    echo '<button type="submit" class="btn btn-primary">' . osc_esc_html(__('Submit')) . '</button>';
     echo '</div>';
     echo '</form>';
 }

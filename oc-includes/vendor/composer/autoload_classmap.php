@@ -291,6 +291,7 @@ return array(
     'CWebAjax' => $baseDir . '/oc-includes/osclass/classes/controller/CWebAjax.php',
     'CWebContact' => $baseDir . '/oc-includes/osclass/classes/controller/CWebContact.php',
     'CWebCustom' => $baseDir . '/oc-includes/osclass/classes/controller/CWebCustom.php',
+    'CWebForm' => $baseDir . '/oc-includes/osclass/classes/controller/CWebForm.php',
     'CWebItem' => $baseDir . '/oc-includes/osclass/classes/controller/CWebItem.php',
     'CWebLanguage' => $baseDir . '/oc-includes/osclass/classes/controller/CWebLanguage.php',
     'CWebLogin' => $baseDir . '/oc-includes/osclass/classes/controller/CWebLogin.php',

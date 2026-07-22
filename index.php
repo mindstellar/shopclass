@@ -144,6 +144,10 @@ switch (Params::getParam('page')) {
         $do = new CWebContact();
         $do->doModel();
         break;
+    case ('form'):      // custom form submission (core.form widget)
+        $do = new CWebForm();
+        $do->doModel();
+        break;
     case ('custom'):   //custom
         $do = new CWebCustom();
         $do->doModel();
