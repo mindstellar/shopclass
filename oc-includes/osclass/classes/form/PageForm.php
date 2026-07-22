@@ -136,7 +136,7 @@ class PageForm extends Form
      * @param null $locales
      * @param null $page
      */
-    public static function printMultiLangTitleDesc($page = null, $with_tab = true, $with_description = true)
+    public static function printMultiLangTitleDesc($page = null, $with_tab = true)
     {
         if ($with_tab) {
             self::printMultiLangTab();
@@ -151,14 +151,7 @@ class PageForm extends Form
             }
             echo '<div class="tab-pane fade ' . $active . '" id="' . $locale['pk_c_code'] . '" role="tabpanel">';
             self::printPageTitleInput($locale, $page);
-            if ($with_description) {
-                self::printPageDescriptionInput($locale, $page);
-            } else {
-                // The page builder composes the body from blocks, so no editor is
-                // shown; the stored text is kept in a hidden field so it survives a
-                // save and returns if the page is switched back to a classic template.
-                self::printPageDescriptionHidden($locale, $page);
-            }
+            self::printPageDescriptionInput($locale, $page);
             echo '</div>';
         }
         echo '</div>';
@@ -251,38 +244,16 @@ class PageForm extends Form
             'sanitize' => null,
         ];
         try {
+            // Wrapper so a consumer can show/hide the whole editor (label + control
+            // + any TinyMCE UI) as a unit — the page builder toggles it off when a
+            // page is composed from widgets instead.
+            echo '<div class="multilang-description">';
             echo (new self())->textarea($name, $value, $attributes, $options);
+            echo '</div>';
         } catch (Exception $e) {
             if (OSC_DEBUG) {
                 trigger_error($e->getTraceAsString());
             }
         }
-    }
-
-    /**
-     * Emit the page body as a hidden field rather than an editor, preserving the
-     * stored value. Used in page-builder mode, where the body is composed from
-     * blocks and the text editor is hidden. Keeps the field posting so the save
-     * path finds it and the value round-trips.
-     *
-     * @param                                   $locale
-     * @param array                             $page
-     */
-    private static function printPageDescriptionHidden($locale, array $page = null)
-    {
-        $description = '';
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
-        if (isset($page['locale'][$locale['pk_c_code']])) {
-            $description = $page['locale'][$locale['pk_c_code']]['s_text'];
-        }
-        if (isset($aFieldsDescription[$locale['pk_c_code']]['s_text'])
-            && $aFieldsDescription[$locale['pk_c_code']]['s_text']
-        ) {
-            $description = $aFieldsDescription[$locale['pk_c_code']]['s_text'];
-        }
-
-        $name = $locale['pk_c_code'] . '#s_text';
-        echo '<input type="hidden" name="' . osc_esc_html($name) . '" value="'
-            . osc_esc_html((string)$description) . '"/>';
     }
 }

@@ -14923,7 +14923,7 @@ code {
   color: var(--osc-ink-muted);
   display: inline-flex;
   font-size: 0.85rem;
-  margin-block-end: 1rem;
+  margin-block-start: 0.5rem;
   text-decoration: none;
 }
 #adminPageForm .page-view-link:hover, #adminPageForm .page-view-link:focus-visible {
@@ -14935,6 +14935,12 @@ code {
   font-weight: 600;
   height: auto;
   padding-block: 10px;
+}
+#adminPageForm #left-side.page-mode-builder .multilang-description {
+  display: none;
+}
+#adminPageForm #left-side.page-mode-classic .js-page-widgets, #adminPageForm #left-side.page-mode-classic .js-page-widgets-hint {
+  display: none;
 }
 @media (min-width: 992px) {
   #adminPageForm #right-side {

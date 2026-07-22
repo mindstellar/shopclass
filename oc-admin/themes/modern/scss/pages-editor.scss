@@ -4,12 +4,13 @@
 // both themes follow (see the Token Indirection Rule in the design system).
 
 #adminPageForm {
+  // "View page on site" — a quiet link under the slug in the settings rail.
   .page-view-link {
     align-items: center;
     color: var(--osc-ink-muted);
     display: inline-flex;
     font-size: .85rem;
-    margin-block-end: 1rem;
+    margin-block-start: .5rem;
     text-decoration: none;
 
     &:hover,
@@ -27,6 +28,18 @@
       font-weight: 600;
       height: auto;
       padding-block: 10px;
+    }
+
+    // The page template select drives which of these is shown; the mode class is
+    // set on load (no flash) and flipped live by the template select. In builder
+    // mode the text editor is hidden and the widget canvas takes its place.
+    &.page-mode-builder .multilang-description {
+      display: none;
+    }
+
+    &.page-mode-classic .js-page-widgets,
+    &.page-mode-classic .js-page-widgets-hint {
+      display: none;
     }
   }
 

@@ -155,13 +155,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="row">
         <div class="col">
             <h2 class="render-title"><?php echo osc_esc_html(customFrmText('title')); ?></h2>
-            <?php if (customFrmText('edit')) { ?>
-                <a class="page-view-link"
-                   href="<?php echo osc_esc_html(osc_base_url(true) . '?page=page&id=' . $page['pk_i_id']); ?>"
-                   target="_blank" rel="noopener">
-                    <?php _e('View page on site'); ?><i class="bi bi-arrow-up-right-square ms-1" aria-hidden="true"></i>
-                </a>
-            <?php } ?>
         </div>
     </div>
     <div class="row">
@@ -172,22 +165,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input type="hidden" name="action" value="<?php echo customFrmText('action_frm'); ?>"/>
                     <?php PageForm::primary_input_hidden($page); ?>
 
-                    <div id="left-side" class="col">
-                        <?php // In block mode the body comes from blocks, so the classic
-                        // editor renders title-only (the body is kept as a hidden field). ?>
-                        <?php PageForm::printMultiLangTitleDesc($page, true, !$pb_is_builder); ?>
+                    <?php // The mode class sets the initial view; the template select toggles
+                    // it live (see the mode script + .page-mode-* CSS). The title always
+                    // shows; the text editor and the widget canvas swap. ?>
+                    <div id="left-side" class="col page-mode-<?php echo $pb_is_builder ? 'builder' : 'classic'; ?>">
+                        <?php PageForm::printMultiLangTitleDesc($page); ?>
                         <?php
-                        // Page-builder canvas (state computed at the top of this file).
-                        // Blocks are widget rows at page.{id}; add/edit happen inline in
-                        // the block dialog below, delete via the appearance action
-                        // threaded with page_builder_id so it returns here.
+                        // Functional widget canvas — rendered only for a page already saved
+                        // with a builder template, so its page.{id} widgets are real and an
+                        // Add widget lands on a builder page. Add/edit happen inline in the
+                        // dialog below; delete goes through the appearance action, threaded
+                        // with page_builder_id so it returns here.
                         if ($pb_is_builder) {
                             $blockLocation = $pb_location;
                             $pageId        = $pb_page_id;
                             $blocks        = Widget::newInstance()->findByLocation($blockLocation);
                             $widgetTypes   = osc_widget_types();
                             ?>
-                            <div class="card mb-3 page-blocks-card">
+                            <div class="card mb-3 page-blocks-card js-page-widgets">
                                 <div class="card-body">
                                     <div class="page-blocks-head">
                                         <h3 class="label"><?php _e('Widgets'); ?></h3>
@@ -271,6 +266,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <?php } ?>
                                 </div>
                             </div>
+                        <?php } else { ?>
+                            <?php // Placeholder shown when the template select is switched to a
+                            // builder template but the page is not yet saved as one. ?>
+                            <div class="card mb-3 page-blocks-card js-page-widgets-hint">
+                                <div class="card-body">
+                                    <div class="page-blocks-head">
+                                        <h3 class="label"><?php _e('Widgets'); ?></h3>
+                                    </div>
+                                    <p class="page-field-hint">
+                                        <?php _e('Save this page with the Page builder template to compose it from'
+                                            . ' widgets instead of the text editor.'); ?>
+                                    </p>
+                                </div>
+                            </div>
                         <?php } ?>
                         <?php // Plugin fields render full-width here, as they did before the rail existed. ?>
                         <?php osc_run_hook('page_meta'); ?>
@@ -327,6 +336,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <?php PageForm::internal_name_input_text($page); ?>
                                     <p class="page-field-hint"><?php _e('Used to quickly identify this page'); ?></p>
                                     <span class="help"></span>
+                                    <?php if (customFrmText('edit')) { ?>
+                                        <a class="page-view-link"
+                                           href="<?php echo osc_esc_html(osc_base_url(true) . '?page=page&id='
+                                               . $page['pk_i_id']); ?>" target="_blank" rel="noopener">
+                                            <i class="bi bi-arrow-up-right-square me-1" aria-hidden="true"></i>
+                                            <?php _e('View page on site'); ?>
+                                        </a>
+                                    <?php } ?>
                                 </div>
 
                                 <div class="form-check form-switch page-footer-toggle">
@@ -345,6 +362,32 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
+<script>
+    // Live-switch the editor to match the chosen page template: a builder template
+    // shows the widget canvas, anything else shows the text editor. Server-set
+    // .page-mode-* avoids a flash; this only maintains it on change.
+    (function () {
+        var select = document.getElementById('page_template');
+        var main   = document.getElementById('left-side');
+        if (!select || !main) { return; }
+        var builderIds = <?php
+            $pb_builder_ids = array();
+        foreach ($registeredTemplates as $rid => $rspec) {
+            if (!empty($rspec['builder'])) {
+                $pb_builder_ids[] = $rid;
+            }
+        }
+            echo json_encode($pb_builder_ids);
+        ?>;
+        function sync() {
+            var builder = builderIds.indexOf(select.value) !== -1;
+            main.classList.toggle('page-mode-builder', builder);
+            main.classList.toggle('page-mode-classic', !builder);
+        }
+        select.addEventListener('change', sync);
+        sync();
+    })();
+</script>
 <?php if ($pb_is_builder) {
     // The block dialog lives outside the page form (it carries its own form).
     $pbf_location        = $pb_location;
