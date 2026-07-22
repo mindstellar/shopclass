@@ -81,6 +81,24 @@
   .media-owner-item { background: var(--osc-success-tint); color: var(--osc-success); }
   .media-owner-user { background: var(--osc-info-tint); color: var(--osc-info); }
   .media-owner-page { background: var(--osc-bronze-tint); color: var(--osc-bronze); }
+  .media-owner-library { background: var(--osc-warning-tint); color: var(--osc-warning-deep); }
+
+  .media-library-head {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .media-upload-btn {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    gap: .35rem;
+    margin: 0;
+
+    &.is-busy { opacity: .6; pointer-events: none; }
+  }
 
   .media-owner-link {
     color: var(--osc-ink-muted);
@@ -142,5 +160,68 @@
 
   @media (prefers-reduced-motion: reduce) {
     .media-delete { transition: none; }
+  }
+}
+
+
+// Media picker (parts/media-picker.php) — a dialog to browse/upload and choose an
+// image. Reused by the page editor's WYSIWYG image dialog.
+.media-picker {
+  &.osc-dialog-wide { max-width: 720px; width: 92vw; }
+
+  .media-picker-head {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-block-end: 1rem;
+
+    .osc-dialog-title { margin: 0; }
+  }
+
+  .media-picker-upload {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    gap: .35rem;
+    margin: 0;
+  }
+
+  .media-picker-status {
+    color: var(--osc-ink-muted);
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  .media-picker-grid {
+    display: grid;
+    gap: .6rem;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+
+  .media-picker-item {
+    aspect-ratio: 1 / 1;
+    background: var(--osc-bench-sunk);
+    border: 1px solid var(--osc-rule);
+    border-radius: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+    transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+
+    img { height: 100%; object-fit: cover; width: 100%; }
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--osc-bronze);
+      box-shadow: 0 0 0 2px var(--osc-bronze);
+      outline: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .media-picker-item { transition: none; }
   }
 }

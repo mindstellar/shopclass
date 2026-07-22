@@ -90,7 +90,16 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 <div id="media-library" class="col-xl-10">
     <div class="row">
         <div class="col">
-            <h2 class="render-title"><?php _e('Media library'); ?></h2>
+            <div class="media-library-head">
+                <h2 class="render-title"><?php _e('Media library'); ?></h2>
+                <label class="btn btn-submit btn-sm media-upload-btn">
+                    <i class="bi bi-upload" aria-hidden="true"></i> <?php _e('Upload'); ?>
+                    <input type="file" accept="image/*" hidden id="media-upload-input"
+                           data-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+                               . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
+                               . osc_csrf_token_url()); ?>"/>
+                </label>
+            </div>
             <div class="media-filters">
                 <?php foreach ($mediaFilters as $filter) {
                     $active = ($filter['type'] === $mediaType) ? ' active' : ''; ?>
@@ -181,5 +190,28 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             }
         });
     });
+
+    // Upload straight to the library, then reload to show it under the Library filter.
+    var mediaUpload = document.getElementById('media-upload-input');
+    if (mediaUpload) {
+        mediaUpload.addEventListener('change', function () {
+            var file = mediaUpload.files && mediaUpload.files[0];
+            if (!file) { return; }
+            var data = new FormData();
+            data.append('file', file);
+            var btn = document.querySelector('.media-upload-btn');
+            if (btn) { btn.classList.add('is-busy'); }
+            fetch(mediaUpload.getAttribute('data-url'), {
+                method: 'POST', credentials: 'same-origin', body: data
+            }).then(function (r) { return r.json(); }).then(function (j) {
+                if (j && j.location) {
+                    window.location.href = '<?php echo osc_esc_js(osc_admin_base_url(true)
+                        . '?page=media&type=library'); ?>';
+                } else if (btn) {
+                    btn.classList.remove('is-busy');
+                }
+            }).catch(function () { if (btn) { btn.classList.remove('is-busy'); } });
+        });
+    }
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

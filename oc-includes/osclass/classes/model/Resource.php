@@ -40,6 +40,13 @@ class Resource
     /** Owner type: a static page (t_pages). */
     public const OWNER_PAGE = 'page';
 
+    /**
+     * Owner type: none. Media uploaded straight to the library, not attached to
+     * any listing, user or page (i_owner_id is 0). Intentionally ownerless, so it
+     * is not subject to the orphan sweep — that only resolves item/user/page.
+     */
+    public const OWNER_LIBRARY = 'library';
+
     /** Unprefixed table name. */
     private const TABLE = 't_resource';
 

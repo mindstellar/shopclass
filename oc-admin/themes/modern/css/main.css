@@ -15188,6 +15188,27 @@ code {
   background: var(--osc-bronze-tint);
   color: var(--osc-bronze);
 }
+#media-library .media-owner-library {
+  background: var(--osc-warning-tint);
+  color: var(--osc-warning-deep);
+}
+#media-library .media-library-head {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+#media-library .media-upload-btn {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.35rem;
+  margin: 0;
+}
+#media-library .media-upload-btn.is-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
 #media-library .media-owner-link {
   color: var(--osc-ink-muted);
   font-size: 0.8125rem;
@@ -15244,6 +15265,65 @@ code {
 }
 @media (prefers-reduced-motion: reduce) {
   #media-library .media-delete {
+    transition: none;
+  }
+}
+
+.media-picker.osc-dialog-wide {
+  max-width: 720px;
+  width: 92vw;
+}
+.media-picker .media-picker-head {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-block-end: 1rem;
+}
+.media-picker .media-picker-head .osc-dialog-title {
+  margin: 0;
+}
+.media-picker .media-picker-upload {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.35rem;
+  margin: 0;
+}
+.media-picker .media-picker-status {
+  color: var(--osc-ink-muted);
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.media-picker .media-picker-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.media-picker .media-picker-item {
+  aspect-ratio: 1/1;
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+.media-picker .media-picker-item img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.media-picker .media-picker-item:hover, .media-picker .media-picker-item:focus-visible {
+  border-color: var(--osc-bronze);
+  box-shadow: 0 0 0 2px var(--osc-bronze);
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .media-picker .media-picker-item {
     transition: none;
   }
 }

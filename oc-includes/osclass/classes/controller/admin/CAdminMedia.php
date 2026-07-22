@@ -47,7 +47,7 @@ class CAdminMedia extends AdminSecBaseModel
                 $type    = $this->resolveType(Params::getParam('type'));
                 $perPage = 24;
                 $iPage   = max(1, (int) Params::getParam('iPage'));
-                $data    = $this->getLibraryData($type, $iPage, $perPage);
+                $data    = osc_media_library_query($type, $iPage, $perPage);
 
                 // Snap a too-high page back to the last one with results.
                 $maxPage = max(1, (int) ceil($data['total'] / $perPage));
@@ -88,29 +88,9 @@ class CAdminMedia extends AdminSecBaseModel
     private function resolveType($type)
     {
         $type  = (string) $type;
-        $valid = array_merge(array('all', 'item'), $this->getResourceOwnerTypes());
+        $valid = array_merge(array("all", "item"), osc_media_owner_types());
 
         return in_array($type, $valid, true) ? $type : 'all';
-    }
-
-    /**
-     * The distinct, well-formed owner types currently stored in t_resource.
-     *
-     * @return string[]
-     */
-    private function getResourceOwnerTypes()
-    {
-        $rows = osc_db_select(
-            'SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type'
-        );
-        $out = array();
-        foreach ($rows as $row) {
-            if (\mindstellar\model\Resource::isValidOwnerType((string) $row['s_owner_type'])) {
-                $out[] = (string) $row['s_owner_type'];
-            }
-        }
-
-        return $out;
     }
 
     /**
@@ -126,7 +106,7 @@ class CAdminMedia extends AdminSecBaseModel
             array('type' => 'item', 'label' => __('Listings')),
         );
         $labels = array('user' => __('Users'), 'page' => __('Pages'));
-        foreach ($this->getResourceOwnerTypes() as $ownerType) {
+        foreach (osc_media_owner_types() as $ownerType) {
             $filters[] = array(
                 'type'  => $ownerType,
                 'label' => $labels[$ownerType] ?? ucfirst($ownerType),
@@ -134,45 +114,6 @@ class CAdminMedia extends AdminSecBaseModel
         }
 
         return $filters;
-    }
-
-    /**
-     * A page of normalised media rows plus the total for the filter. Item images
-     * (t_item_resource) and every other resource (t_resource) are projected onto
-     * one shape so the library shows them side by side. t_item_resource is left
-     * as the source of truth for listing images — this only unifies the view.
-     *
-     * @return array{rows:array<int,array>,total:int}
-     */
-    private function getLibraryData($type, $iPage, $perPage)
-    {
-        $itemT  = DB_TABLE_PREFIX . 't_item_resource';
-        $resT   = DB_TABLE_PREFIX . 't_resource';
-        $offset = ($iPage - 1) * $perPage;
-
-        $itemSel = "SELECT 'item' AS src, pk_i_id AS id, fk_i_item_id AS owner_id, 'item' AS owner_type,"
-            . " s_name, s_extension, s_content_type, s_path, s_storage, NULL AS dt FROM $itemT";
-        $resSel  = "SELECT 'resource' AS src, pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,"
-            . " s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt FROM $resT";
-
-        $params = array();
-        if ($type === 'item') {
-            $base = $itemSel;
-        } elseif ($type === 'all') {
-            $base = "($itemSel) UNION ALL ($resSel)";
-        } else {
-            $base     = $resSel . ' WHERE s_owner_type = ?';
-            $params[] = $type;
-        }
-
-        $total = (int) osc_db_scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
-        $rows  = osc_db_select(
-            "SELECT * FROM ($base) AS m ORDER BY (dt IS NULL), dt DESC, id DESC"
-            . ' LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset,
-            $params
-        );
-
-        return array('rows' => $rows, 'total' => $total);
     }
 
     /**

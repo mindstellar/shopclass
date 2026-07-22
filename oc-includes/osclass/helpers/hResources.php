@@ -189,3 +189,108 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
 
     return is_array($owner) && !empty($owner);
 }
+
+
+/*
+ * -------------------------------------------------------------------------
+ * Unified media library (read layer over both resource tables)
+ * -------------------------------------------------------------------------
+ * The admin Media page and the editor's media picker both browse every uploaded
+ * image: listing photos (t_item_resource) plus everything in the polymorphic
+ * t_resource (avatars, page images, unattached library uploads, plugin types).
+ * These helpers project both tables onto one shape so callers don't repeat the
+ * union. t_item_resource stays the source of truth for listing images — this is
+ * a view layer only.
+ */
+
+/**
+ * Distinct, well-formed owner types currently present in t_resource.
+ *
+ * @return string[]
+ */
+function osc_media_owner_types(): array
+{
+    $rows = osc_db_select(
+        'SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type'
+    );
+    $out = array();
+    foreach ($rows as $row) {
+        if (Resource::isValidOwnerType((string) $row['s_owner_type'])) {
+            $out[] = (string) $row['s_owner_type'];
+        }
+    }
+
+    return $out;
+}
+
+
+/**
+ * A page of normalised media rows plus the total for a filter. $type is 'all',
+ * 'item' (listing photos), or a t_resource owner type ('user', 'page',
+ * 'library', a plugin type). Each row carries: src ('item'|'resource'), id,
+ * owner_id, owner_type, s_name, s_extension, s_content_type, s_path, s_storage.
+ *
+ * @param string $type
+ * @param int    $iPage    1-based page number
+ * @param int    $perPage
+ *
+ * @return array{rows:array<int,array>,total:int}
+ */
+function osc_media_library_query(string $type, int $iPage, int $perPage): array
+{
+    $itemT  = DB_TABLE_PREFIX . 't_item_resource';
+    $resT   = DB_TABLE_PREFIX . 't_resource';
+    $offset = max(0, ($iPage - 1) * $perPage);
+
+    $itemSel = "SELECT 'item' AS src, pk_i_id AS id, fk_i_item_id AS owner_id, 'item' AS owner_type,"
+        . " s_name, s_extension, s_content_type, s_path, s_storage, NULL AS dt FROM $itemT";
+    $resSel  = "SELECT 'resource' AS src, pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,"
+        . " s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt FROM $resT";
+
+    $params = array();
+    if ($type === 'item') {
+        $base = $itemSel;
+    } elseif ($type === 'all') {
+        $base = "($itemSel) UNION ALL ($resSel)";
+    } else {
+        $base     = $resSel . ' WHERE s_owner_type = ?';
+        $params[] = $type;
+    }
+
+    $total = (int) osc_db_scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
+    $rows  = osc_db_select(
+        "SELECT * FROM ($base) AS m ORDER BY (dt IS NULL), dt DESC, id DESC"
+        . ' LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset,
+        $params
+    );
+
+    return array('rows' => $rows, 'total' => $total);
+}
+
+
+/**
+ * The thumbnail and full URLs for a normalised media row (see
+ * osc_media_library_query). Uses the storage-aware osc_get_resource_url so
+ * offloaded files resolve correctly.
+ *
+ * @param array $row
+ *
+ * @return array{thumb:string,full:string}
+ */
+function osc_media_row_urls(array $row): array
+{
+    $res = array(
+        'pk_i_id'        => $row['id'] ?? '',
+        's_path'         => $row['s_path'] ?? '',
+        's_extension'    => $row['s_extension'] ?? '',
+        's_storage'      => $row['s_storage'] ?? 'local',
+        's_content_type' => $row['s_content_type'] ?? '',
+        's_owner_type'   => $row['owner_type'] ?? '',
+        'i_owner_id'     => $row['owner_id'] ?? 0,
+    );
+
+    return array(
+        'thumb' => osc_get_resource_url($res, 'thumbnail'),
+        'full'  => osc_get_resource_url($res),
+    );
+}

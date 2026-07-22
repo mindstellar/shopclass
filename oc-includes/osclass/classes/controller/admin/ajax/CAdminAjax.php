@@ -28,7 +28,7 @@ class CAdminAjax extends AdminSecBaseModel
         parent::__construct();
         $this->ajax = true;
         if ($this->isModerator()
-            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload'))
+            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list'))
         ) {
             $this->action = 'error_permissions';
         }
@@ -73,6 +73,40 @@ class CAdminAjax extends AdminSecBaseModel
                     'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
                 ));
                 break;
+            case 'media_list': // JSON media for the editor's media picker (read-only)
+                header('Content-Type: application/json');
+                $type = Params::getParam('type');
+                if ($type === '' || $type === null) {
+                    $type = 'all';
+                }
+                if (!in_array($type, array_merge(array('all', 'item'), osc_media_owner_types()), true)) {
+                    $type = 'all';
+                }
+                $iPage   = max(1, (int) Params::getParam('iPage'));
+                $perPage = 30;
+                $data    = osc_media_library_query($type, $iPage, $perPage);
+
+                $items = array();
+                foreach ($data['rows'] as $row) {
+                    $urls    = osc_media_row_urls($row);
+                    $items[] = array(
+                        'id'         => (int) $row['id'],
+                        'src'        => $row['src'],
+                        'owner_type' => $row['owner_type'],
+                        'owner_id'   => (int) $row['owner_id'],
+                        'name'       => (string) $row['s_name'],
+                        'thumb'      => $urls['thumb'],
+                        'url'        => $urls['full'],
+                    );
+                }
+                echo json_encode(array(
+                    'items'   => $items,
+                    'total'   => (int) $data['total'],
+                    'page'    => $iPage,
+                    'perPage' => $perPage,
+                    'more'    => ($iPage * $perPage) < (int) $data['total'],
+                ));
+                break;
             case 'resource_upload': // editor image upload -> the resource pipeline
                 osc_csrf_check();
                 header('Content-Type: application/json');
@@ -80,10 +114,12 @@ class CAdminAjax extends AdminSecBaseModel
                 $ownerType = Params::getParam('owner_type');
                 $ownerId   = (int) Params::getParam('owner_id');
 
-                // Only page images go through this endpoint for now, and the page
-                // must exist. Keeping the owner type whitelisted here stops the
-                // generic endpoint from writing resources for arbitrary owners.
-                if ($ownerType !== \mindstellar\model\Resource::OWNER_PAGE
+                // Two targets are allowed: a page image (must exist) and an
+                // unattached library upload (ownerless). Whitelisting the owner
+                // type here stops the generic endpoint writing for arbitrary owners.
+                if ($ownerType === \mindstellar\model\Resource::OWNER_LIBRARY) {
+                    $ownerId = 0;
+                } elseif ($ownerType !== \mindstellar\model\Resource::OWNER_PAGE
                     || !osc_resource_owner_exists($ownerType, $ownerId)
                 ) {
                     http_response_code(403);
