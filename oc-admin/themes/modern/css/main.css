@@ -15863,6 +15863,106 @@ code {
   color: var(--osc-danger);
 }
 
+.submission-forms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.submission-pill {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 999px;
+  color: var(--osc-ink);
+  display: inline-flex;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  padding: 0.3rem 0.75rem;
+  text-decoration: none;
+}
+.submission-pill:hover {
+  border-color: var(--osc-rule-strong);
+}
+.submission-pill.is-active {
+  background-color: var(--osc-bronze);
+  border-color: var(--osc-bronze);
+  color: #fff;
+}
+
+.submission-pill-count {
+  background-color: var(--osc-bench-sunk);
+  border-radius: 999px;
+  color: var(--osc-ink-muted);
+  font-size: 0.75rem;
+  padding: 0 0.4rem;
+}
+.submission-pill.is-active .submission-pill-count {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.submission-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.submission-status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.submission-tab {
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  padding: 0.3rem 0.6rem;
+  text-decoration: none;
+}
+.submission-tab span {
+  color: var(--osc-ink-muted);
+  font-weight: 600;
+}
+.submission-tab:hover {
+  background-color: var(--osc-chrome-hover);
+  color: var(--osc-ink);
+}
+.submission-tab.is-active {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink);
+}
+
+.submission-table .submission-values {
+  margin: 0;
+}
+.submission-table .submission-values dt {
+  color: var(--osc-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.submission-table .submission-values dd {
+  color: var(--osc-ink);
+  margin: 0 0 0.5rem;
+  word-break: break-word;
+}
+.submission-table .submission-status {
+  max-width: 9rem;
+}
+
+.submission-origin {
+  color: var(--osc-ink-muted);
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+
 .categories-app {
   --cat-indent: 1.75rem;
   max-width: 62rem;

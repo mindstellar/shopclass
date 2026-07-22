@@ -68,9 +68,16 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Custom fields'),
+            __('Custom forms'),
             osc_admin_base_url(true) . '?page=cfields',
             'items_cfields',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
+            __('Form submissions'),
+            osc_admin_base_url(true) . '?page=cfields&action=submissions',
+            'items_form_submissions',
             'administrator'
         );
         $this->add_submenu(

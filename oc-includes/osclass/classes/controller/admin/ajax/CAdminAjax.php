@@ -541,6 +541,22 @@ class CAdminAjax extends AdminSecBaseModel
                     echo json_encode(array('error' => __('An error occurred while saving the form')));
                 }
                 break;
+            case 'form_submission_status':
+                osc_csrf_check();
+                $ok = \mindstellar\model\FormSubmission::newInstance()
+                    ->setStatus((int)Params::getParam('id'), (string)Params::getParam('status'));
+                echo json_encode($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
+                break;
+            case 'form_submission_delete':
+                osc_csrf_check();
+                $ok = \mindstellar\model\FormSubmission::newInstance()->delete((int)Params::getParam('id'));
+                echo json_encode($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
+                break;
+            case 'form_submissions_purge':
+                osc_csrf_check();
+                $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm((int)Params::getParam('form_id'));
+                echo json_encode($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
+                break;
             case 'group_categories_iframe':
                 $groupId = (int)Params::getParam('id');
                 $selected = FieldGroup::newInstance()->categories($groupId);

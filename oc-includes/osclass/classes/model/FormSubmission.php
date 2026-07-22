@@ -151,14 +151,14 @@ class FormSubmission
      */
     public function statusCounts(int $formId): array
     {
-        $rows = $this->table()
-            ->select('s_status', 'COUNT(*) AS n')
-            ->where('fk_i_group_id', $formId)
-            ->groupBy('s_status')
-            ->get();
+        // One count per status (the QueryBuilder select allowlist rejects a raw
+        // COUNT(*) aggregate); only non-zero statuses are returned.
         $out = array();
-        foreach ($rows as $r) {
-            $out[(string) $r['s_status']] = (int) $r['n'];
+        foreach (self::STATUSES as $status) {
+            $n = $this->table()->where('fk_i_group_id', $formId)->where('s_status', $status)->count();
+            if ($n > 0) {
+                $out[$status] = $n;
+            }
         }
 
         return $out;

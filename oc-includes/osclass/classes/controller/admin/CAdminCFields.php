@@ -38,6 +38,9 @@ class CAdminCFields extends AdminSecBaseModel
 
         //specific things for this class
         switch ($this->action) {
+            case 'submissions':
+                $this->submissionsView();
+                break;
             default:
                 $categories = Category::newInstance()->toTreeAll();
                 $selected   = array();
@@ -69,6 +72,63 @@ class CAdminCFields extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Form submissions browser: pick a form, filter by status, view entries.
+     */
+    private function submissionsView()
+    {
+        $submissionModel = \mindstellar\model\FormSubmission::newInstance();
+        $forms           = FieldGroup::newInstance()->listAll();
+
+        // Which form to show — the requested one, else the first with entries, else
+        // the first form.
+        $formId = (int)Params::getParam('form_id');
+        if ($formId <= 0) {
+            foreach ($forms as $f) {
+                if ($submissionModel->countByForm((int)$f['pk_i_id']) > 0) {
+                    $formId = (int)$f['pk_i_id'];
+                    break;
+                }
+            }
+            if ($formId <= 0 && !empty($forms)) {
+                $formId = (int)$forms[0]['pk_i_id'];
+            }
+        }
+
+        $status = Params::getParam('status');
+        if (!\mindstellar\model\FormSubmission::isValidStatus($status)) {
+            $status = null;
+        }
+
+        $submissions = array();
+        $statusCounts = array();
+        $formFields   = array();
+        if ($formId > 0) {
+            $submissions  = $submissionModel->listByForm($formId, $status, 200, 0);
+            $statusCounts = $submissionModel->statusCounts($formId);
+            $formFields   = Field::newInstance()->findByGroup($formId);
+            // attach each submission's values
+            foreach ($submissions as &$s) {
+                $s['values'] = $submissionModel->valuesFor((int)$s['pk_i_id']);
+            }
+            unset($s);
+        }
+
+        // per-form total counts for the form switcher
+        foreach ($forms as &$f) {
+            $f['submission_count'] = $submissionModel->countByForm((int)$f['pk_i_id']);
+        }
+        unset($f);
+
+        $this->_exportVariableToView('forms', $forms);
+        $this->_exportVariableToView('current_form_id', $formId);
+        $this->_exportVariableToView('current_status', $status);
+        $this->_exportVariableToView('status_counts', $statusCounts);
+        $this->_exportVariableToView('form_fields', $formFields);
+        $this->_exportVariableToView('submissions', $submissions);
+        $this->doView('fields/submissions.php');
+    }
 
 }
 
