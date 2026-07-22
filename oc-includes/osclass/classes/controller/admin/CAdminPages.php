@@ -211,6 +211,10 @@ class CAdminPages extends AdminSecBaseModel
                             Widget::newInstance()->delete(
                                 array('s_location' => 'page.' . (int)$_id)
                             );
+                            // Remove page-owned images (editor uploads) — files and
+                            // rows — so they don't wait for the daily orphan sweep.
+                            (new \mindstellar\storage\ResourceUploader())
+                                ->deleteByOwner(\mindstellar\model\Resource::OWNER_PAGE, (int)$_id);
                     }
                 }
 
