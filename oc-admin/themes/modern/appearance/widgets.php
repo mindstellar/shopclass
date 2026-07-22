@@ -95,8 +95,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                                 class="bi bi-chevron-down" aria-hidden="true"></i></button>
                                                 </span>
                                             </td>
-                                            <td><?php echo __('Widget') . ' ' . $w['pk_i_id']; ?></td>
-                                            <td><?php printf(__('Description: %s'), osc_esc_html($w['s_description'])); ?></td>
+                                            <td><?php echo $w['s_description'] !== ''
+                                                    ? osc_esc_html($w['s_description'])
+                                                    : sprintf(__('Widget %d'), (int) $w['pk_i_id']); ?></td>
+                                            <td class="text-muted"><?php echo '#' . (int) $w['pk_i_id']; ?></td>
                                             <td><?php printf(
                                                     '<a href="%1$s?page=appearance&amp;action=edit_widget&amp;id=%2$s&amp;location=%3$s">'
                                                     . __('Edit') . '</a>', osc_admin_base_url(true), $w['pk_i_id'],

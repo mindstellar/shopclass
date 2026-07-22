@@ -68,6 +68,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                         <div class="widget-box-content p-0">
                             <div id="l_countries" class="list-group list-group-flush">
+                                <?php if (empty($aCountries)) { ?>
+                                    <div class="list-group-item text-muted">
+                                        <?php _e('No countries installed yet. Use "Add new" above to add one.'); ?>
+                                    </div>
+                                <?php } ?>
                                 <?php foreach ($aCountries as $country) { ?>
                                     <div class="list-group-item" id="country-<?php echo osc_esc_html($country['pk_c_code']); ?>"
                                          data-id="<?php echo osc_esc_html($country['pk_c_code']); ?>" data-s-name="<?php echo osc_esc_html($country['s_name']); ?>"

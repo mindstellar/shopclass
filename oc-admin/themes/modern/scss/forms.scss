@@ -6,6 +6,13 @@
 
 .form-label-checkbox {
   padding-top: 5px;
+
+  // Keep the checkbox and its label on one line and drop the help text to its
+  // own line below. As an inline-block the help span shared the checkbox's line
+  // box and fragmented the sentence around the control when it wrapped.
+  .help-box {
+    display: block;
+  }
 }
 
 .form-row {

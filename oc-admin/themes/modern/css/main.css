@@ -14188,6 +14188,9 @@ td.children-cat {
 .form-label-checkbox {
   padding-top: 5px;
 }
+.form-label-checkbox .help-box {
+  display: block;
+}
 
 .form-row {
   font-size: 1rem;

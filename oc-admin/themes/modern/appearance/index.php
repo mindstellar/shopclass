@@ -93,10 +93,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
                     $bThemesToUpdate = is_array($aThemesToUpdate);
                     $csrf_token      = osc_csrf_token_url();
+                    $hasOtherThemes  = false;
                     foreach ($themes as $theme) {
                         if ($theme === osc_theme()) {
                             continue;
                         }
+                        $hasOtherThemes = true;
                         $info = WebThemes::newInstance()->loadThemeInfo($theme);
                         ?>
                         <div class="col">
@@ -138,6 +140,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    <?php } ?>
+                    <?php if (!$hasOtherThemes) { ?>
+                        <div class="col-12">
+                            <p class="text-muted mb-0"><?php _e('No other themes are installed. Upload a theme to change your site\'s look.'); ?></p>
                         </div>
                     <?php } ?>
                 </div>
