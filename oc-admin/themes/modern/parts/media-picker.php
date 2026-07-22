@@ -128,4 +128,49 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
 
         return { open: open };
     })();
+
+    // Widget "image" config fields: a hidden input + preview, chosen via the media
+    // picker. Delegated so it works for fields shown later (e.g. the block dialog).
+    (function () {
+        'use strict';
+        function sync(field) {
+            if (!field) { return; }
+            var input   = field.querySelector('.widget-image-input');
+            var preview = field.querySelector('.widget-image-preview');
+            var img     = preview ? preview.querySelector('img') : null;
+            var clear   = field.querySelector('.widget-image-clear');
+            var url     = input ? input.value : '';
+            if (img) { img.src = url; }
+            if (preview) { preview.hidden = !url; }
+            if (clear) { clear.hidden = !url; }
+        }
+
+        // Called by the block dialog's edit-populate after it sets a hidden value.
+        window.oscSyncWidgetImage = function (input) {
+            sync(input && input.closest ? input.closest('.widget-image-field') : null);
+        };
+
+        document.addEventListener('click', function (e) {
+            var choose = e.target.closest ? e.target.closest('.widget-image-choose') : null;
+            if (choose) {
+                e.preventDefault();
+                var field = choose.closest('.widget-image-field');
+                var input = field && field.querySelector('.widget-image-input');
+                if (input && window.oscMediaPicker) {
+                    window.oscMediaPicker.open(function (url) {
+                        input.value = url;
+                        sync(field);
+                    });
+                }
+                return;
+            }
+            var clear = e.target.closest ? e.target.closest('.widget-image-clear') : null;
+            if (clear) {
+                e.preventDefault();
+                var f = clear.closest('.widget-image-field');
+                var inp = f && f.querySelector('.widget-image-input');
+                if (inp) { inp.value = ''; sync(f); }
+            }
+        });
+    })();
 </script>

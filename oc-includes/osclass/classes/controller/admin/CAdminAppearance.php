@@ -394,6 +394,16 @@ class CAdminAppearance extends AdminSecBaseModel
                     $value   = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
                     $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
                     break;
+                case 'image':
+                    // A media URL from the picker. Read the unpurified value (so a
+                    // query string on an offloaded URL survives) but store only an
+                    // http(s) URL — anything else, incl. javascript: dressed up as a
+                    // URL, is dropped. The value only ever lands in an <img src>.
+                    $hasRaw   = array_key_exists($name, $postedRaw);
+                    $imageUrl = $hasRaw && is_string($postedRaw[$name]) ? trim($postedRaw[$name]) : (string) $default;
+                    $config[$name] = ($imageUrl !== '' && filter_var($imageUrl, FILTER_VALIDATE_URL)
+                        && preg_match('#^https?://#i', $imageUrl)) ? $imageUrl : '';
+                    break;
                 case 'code':
                     // Raw HTML/JS, stored unfiltered — but ONLY for a
                     // super_admin-gated type. For any other type a 'code' field

@@ -176,6 +176,28 @@ function renderWidgetConfigField($typeId, $field, $value, $disabled)
                               <?php echo $disabledAttr; ?>><?php echo osc_esc_html((string) $value); ?></textarea>
                     <?php
                     break;
+                case 'image':
+                    // A media URL chosen via the picker: a hidden input holds the
+                    // value, with a preview and choose/remove controls (wired by
+                    // parts/media-picker.php). The widget's render outputs the <img>.
+                    $imageVal = (string) $value; ?>
+                    <div class="widget-image-field">
+                        <input type="hidden" id="<?php echo osc_esc_html($fieldId); ?>"
+                               name="<?php echo osc_esc_html($inputName); ?>" class="widget-image-input"
+                               value="<?php echo osc_esc_html($imageVal); ?>" <?php echo $disabledAttr; ?>/>
+                        <div class="widget-image-preview"<?php echo $imageVal !== '' ? '' : ' hidden'; ?>>
+                            <img src="<?php echo osc_esc_html($imageVal); ?>" alt=""/>
+                        </div>
+                        <div class="widget-image-actions">
+                            <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
+                                <?php _e('Choose image'); ?>
+                            </button>
+                            <button type="button" class="btn btn-link btn-sm widget-image-clear"
+                                <?php echo $imageVal !== '' ? '' : 'hidden'; ?>><?php _e('Remove'); ?></button>
+                        </div>
+                    </div>
+                    <?php
+                    break;
                 default: ?>
                     <input type="text" id="<?php echo osc_esc_html($fieldId); ?>" class="input-large"
                            name="<?php echo osc_esc_html($inputName); ?>"
@@ -443,4 +465,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         });
     });
 </script>
+<?php osc_current_admin_theme_path('parts/media-picker.php'); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

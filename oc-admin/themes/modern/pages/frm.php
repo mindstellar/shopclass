@@ -475,6 +475,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         el.checked = (val && val !== '0' && val !== 0);
                     } else {
                         el.value = (val === null || val === undefined) ? '' : val;
+                        if (el.classList.contains('widget-image-input') && window.oscSyncWidgetImage) {
+                            window.oscSyncWidgetImage(el);
+                        }
                     }
                 });
                 dialog.showModal();

@@ -108,6 +108,36 @@ osc_register_widget('core.rich_text', array(
 ));
 
 /*
+ * Core "Image" widget — an image block, chosen from the media library and
+ * optionally linked. Registered unconditionally so the page builder can place
+ * images out of the box. The 'image' and 'link' values are stored as validated
+ * http(s) URLs (see buildWidgetConfig); alt text is purified. Safe for any admin.
+ */
+osc_register_widget('core.image', array(
+    'label'       => 'Image',
+    'description' => 'An image from your media library, optionally linking somewhere.',
+    'fields'      => array(
+        array('name' => 'image', 'label' => 'Image', 'type' => 'image'),
+        array('name' => 'alt', 'label' => 'Alt text', 'type' => 'text'),
+        array('name' => 'link', 'label' => 'Link URL (optional)', 'type' => 'text'),
+    ),
+    'render'      => static function ($config) {
+        $src = (string) ($config['image'] ?? '');
+        if ($src === '') {
+            return;
+        }
+        $img  = '<img src="' . osc_esc_html($src) . '" alt="' . osc_esc_html((string) ($config['alt'] ?? ''))
+            . '" style="max-width:100%;height:auto"/>';
+        $link = (string) ($config['link'] ?? '');
+        if ($link !== '' && preg_match('#^https?://#i', $link)) {
+            echo '<a href="' . osc_esc_html($link) . '">' . $img . '</a>';
+        } else {
+            echo $img;
+        }
+    },
+));
+
+/*
  * Core "Custom Code" widget type — the sanctioned raw HTML/JavaScript escape
  * hatch. Registered unconditionally so the type always exists; who may author
  * it is enforced per-user by its 'super_admin' capability (the type picker and

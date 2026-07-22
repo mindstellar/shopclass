@@ -119,6 +119,23 @@ function pbfRenderField($typeId, $field, $disabled)
                 <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control" rows="6"
                           name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>></textarea>
                 <?php break;
+            case 'image': ?>
+                <?php // Add-mode renders empty; the edit populate (pages/frm.php) fills
+                      // the hidden input and syncs the preview. Wired by media-picker.php. ?>
+                <div class="widget-image-field">
+                    <input type="hidden" id="<?php echo osc_esc_html($id); ?>" class="widget-image-input"
+                           name="<?php echo osc_esc_html($inputName); ?>" value="" <?php echo $dis; ?>/>
+                    <div class="widget-image-preview" hidden><img src="" alt=""/></div>
+                    <div class="widget-image-actions">
+                        <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
+                            <?php _e('Choose image'); ?>
+                        </button>
+                        <button type="button" class="btn btn-link btn-sm widget-image-clear" hidden>
+                            <?php _e('Remove'); ?>
+                        </button>
+                    </div>
+                </div>
+                <?php break;
             default: ?>
                 <input type="text" id="<?php echo osc_esc_html($id); ?>" class="form-control form-control-sm"
                        name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>/>

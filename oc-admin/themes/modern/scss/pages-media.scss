@@ -225,3 +225,24 @@
     .media-picker-item { transition: none; }
   }
 }
+
+
+// Widget "image" config field — preview + choose/remove, chosen via the picker.
+.widget-image-field {
+  .widget-image-preview {
+    border: 1px solid var(--osc-rule);
+    border-radius: 6px;
+    display: inline-block;
+    margin-block-end: .5rem;
+    max-width: 220px;
+    overflow: hidden;
+
+    img { display: block; height: auto; max-width: 100%; }
+  }
+
+  .widget-image-actions {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+  }
+}
