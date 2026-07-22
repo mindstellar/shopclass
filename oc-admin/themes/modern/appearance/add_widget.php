@@ -60,46 +60,6 @@ if ($currentTypeId !== '' && !empty($widget['s_config'])) {
 }
 
 /**
- * Normalise a select field's declared options into a flat list of
- * ['value' => string, 'label' => string] pairs. Tolerates an associative
- * value=>label map, a flat list of scalars, or a list of
- * ['value'=>.., 'label'=>..] entries.
- *
- * @param array $options
- *
- * @return array
- */
-function widgetConfigSelectOptions($options)
-{
-    $result = array();
-    if (!is_array($options)) {
-        return $result;
-    }
-    foreach ($options as $key => $option) {
-        if (is_array($option)) {
-            if (array_key_exists('value', $option) && is_scalar($option['value'])) {
-                $value           = (string) $option['value'];
-                $label           = isset($option['label']) && is_scalar($option['label'])
-                    ? (string) $option['label'] : $value;
-                $result[] = array('value' => $value, 'label' => $label);
-            }
-            continue;
-        }
-        if (!is_int($key)) {
-            $result[] = array(
-                'value' => (string) $key,
-                'label' => is_scalar($option) ? (string) $option : (string) $key
-            );
-        } elseif (is_scalar($option)) {
-            $result[] = array('value' => (string) $option, 'label' => (string) $option);
-        }
-    }
-
-    return $result;
-}
-
-
-/**
  * DOM id for a config field's control. Every registered type's field group is
  * rendered server-side (and toggled client-side), so the id is namespaced by
  * type id to stay unique across groups.

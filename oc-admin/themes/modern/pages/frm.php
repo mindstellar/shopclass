@@ -33,6 +33,15 @@ if (isset($page['s_meta'])) {
 
 $template_selected = (isset($meta['template']) && $meta['template'] != '') ? $meta['template'] : 'default';
 
+// Page-builder state. A page whose saved template is a builder template composes
+// its body from widget blocks stored at page.{id}; the canvas needs a saved id
+// for the location, so it appears only when editing an existing page.
+$pb_saved_template = isset($meta['template']) ? (string)$meta['template'] : '';
+$pb_saved_spec     = ($pb_saved_template !== '') ? osc_page_template($pb_saved_template) : null;
+$pb_page_id        = isset($page['pk_i_id']) ? (int)$page['pk_i_id'] : 0;
+$pb_is_builder     = ($pb_saved_spec !== null && !empty($pb_saved_spec['builder']) && $pb_page_id > 0);
+$pb_location       = $pb_is_builder ? ('page.' . $pb_page_id) : '';
+
 /**
  * @param string $return
  *
@@ -165,30 +174,23 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
                     <div id="left-side" class="col">
                         <?php
-                        // Page-builder canvas. A page whose saved template is a builder
-                        // template composes its body from widget blocks stored at the
-                        // page's own location (page.{id}). Blocks reuse the appearance
-                        // widget form/CRUD, threaded with page_builder_id so add/edit/
-                        // delete return here. The canvas needs a saved id for the
-                        // location, so it appears only when editing an existing page.
-                        $savedTemplate = isset($meta['template']) ? (string)$meta['template'] : '';
-                        $savedSpec     = ($savedTemplate !== '') ? osc_page_template($savedTemplate) : null;
-                        $pageId        = isset($page['pk_i_id']) ? (int)$page['pk_i_id'] : 0;
-                        if ($savedSpec !== null && !empty($savedSpec['builder']) && $pageId > 0) {
-                            $blockLocation = 'page.' . $pageId;
+                        // Page-builder canvas (state computed at the top of this file).
+                        // Blocks are widget rows at page.{id}; add/edit happen inline in
+                        // the block dialog below, delete via the appearance action
+                        // threaded with page_builder_id so it returns here.
+                        if ($pb_is_builder) {
+                            $blockLocation = $pb_location;
+                            $pageId        = $pb_page_id;
                             $blocks        = Widget::newInstance()->findByLocation($blockLocation);
                             $widgetTypes   = osc_widget_types();
-                            $addBlockUrl   = osc_admin_base_url(true) . '?page=appearance&action=add_widget'
-                                . '&location=' . rawurlencode($blockLocation) . '&page_builder_id=' . $pageId;
                             ?>
                             <div class="card mb-3 page-blocks-card">
                                 <div class="card-body">
                                     <div class="page-blocks-head">
                                         <h3 class="label"><?php _e('Page blocks'); ?></h3>
-                                        <a href="<?php echo osc_esc_html($addBlockUrl); ?>"
-                                           class="btn btn-secondary btn-sm">
+                                        <button type="button" class="btn btn-secondary btn-sm js-page-block-add">
                                             <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add block'); ?>
-                                        </a>
+                                        </button>
                                     </div>
                                     <p class="page-field-hint">
                                         <?php _e('This page is built from the blocks below. The text editor content '
@@ -201,9 +203,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                             data-location="<?php echo osc_esc_html($blockLocation); ?>">
                                             <?php foreach ($blocks as $b) {
                                                 $wid       = (int)$b['pk_i_id'];
-                                                $typeLabel = (!empty($b['s_type']) && isset($widgetTypes[$b['s_type']]))
+                                                $isTyped   = !empty($b['s_type']) && isset($widgetTypes[$b['s_type']]);
+                                                $typeLabel = $isTyped
                                                     ? $widgetTypes[$b['s_type']]['label']
                                                     : __('Custom HTML');
+                                                // The inline dialog can edit a block only if the user may author its
+                                                // type (registered, and not a super_admin type for a moderator).
+                                                // Everything else falls back to the appearance widget editor, which
+                                                // enforces the same gate server-side.
+                                                $inlineEdit = $isTyped
+                                                    && !(($widgetTypes[$b['s_type']]['capability'] ?? 'admin') === 'super_admin'
+                                                        && osc_is_moderator());
                                                 $editUrl   = osc_admin_base_url(true) . '?page=appearance'
                                                     . '&action=edit_widget&id=' . $wid
                                                     . '&location=' . rawurlencode($blockLocation)
@@ -212,7 +222,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                     . '&action=delete_widget&id=' . $wid
                                                     . '&page_builder_id=' . $pageId . '&' . osc_csrf_token_url();
                                                 ?>
-                                                <li class="page-block-row" data-widget-id="<?php echo $wid; ?>">
+                                                <li class="page-block-row" data-widget-id="<?php echo $wid; ?>"
+                                                    data-type="<?php echo osc_esc_html((string)($b['s_type'] ?? '')); ?>"
+                                                    data-description="<?php echo osc_esc_html($b['s_description']); ?>"
+                                                    data-config="<?php echo osc_esc_html((string)($b['s_config'] ?? '')); ?>">
                                                     <span class="page-block-handle" draggable="true" tabindex="0"
                                                           role="button"
                                                           aria-label="<?php echo osc_esc_html(sprintf(
@@ -231,9 +244,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                         </span>
                                                     </span>
                                                     <span class="page-block-actions">
-                                                        <a href="<?php echo osc_esc_html($editUrl); ?>">
-                                                            <?php _e('Edit'); ?>
-                                                        </a>
+                                                        <?php if ($inlineEdit) { ?>
+                                                            <button type="button" class="btn btn-link btn-sm p-0
+                                                                    js-page-block-edit"><?php _e('Edit'); ?></button>
+                                                        <?php } else { ?>
+                                                            <a href="<?php echo osc_esc_html($editUrl); ?>">
+                                                                <?php _e('Edit'); ?>
+                                                            </a>
+                                                        <?php } ?>
                                                         <a href="<?php echo osc_esc_html($deleteUrl); ?>"
                                                            class="page-block-delete"
                                                            data-confirm="<?php echo osc_esc_html(
@@ -325,6 +343,89 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
+<?php if ($pb_is_builder) {
+    // The block dialog lives outside the page form (it carries its own form).
+    $pbf_location        = $pb_location;
+    $pbf_page_builder_id = $pb_page_id;
+    ?>
+    <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add block'); ?></p>
+            <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
+        </div>
+    </dialog>
+    <script>
+        // Add / Edit block: the dialog holds one add-mode form; Edit repurposes it
+        // for a specific block, populating type + config from the row's data-* .
+        (function () {
+            'use strict';
+            var dialog = document.getElementById('pageBlockDialog');
+            var form   = document.getElementById('pageBlockForm');
+            if (!dialog || !form) { return; }
+            var title  = document.getElementById('pageBlockDialogTitle');
+            var action = document.getElementById('pbfAction');
+            var widId  = document.getElementById('pbfWidgetId');
+            var desc   = document.getElementById('pbfDescription');
+            var type   = document.getElementById('pbfType');
+            var submit = document.getElementById('pbfSubmit');
+
+            function fieldId(typeId, name) {
+                return 'pbf-' + (typeId + '-' + name).replace(/[^a-zA-Z0-9_-]/g, '-');
+            }
+            function resetForm() {
+                if (action) { action.value = 'add_widget_post'; }
+                if (widId) { widId.value = ''; }
+                if (desc) { desc.value = ''; }
+                form.querySelectorAll('#pbfFields input, #pbfFields select, #pbfFields textarea')
+                    .forEach(function (c) {
+                        if (c.type === 'checkbox') { c.checked = false; } else { c.value = ''; }
+                    });
+            }
+            function openAdd() {
+                resetForm();
+                if (title) { title.textContent = <?php echo json_encode(__('Add block')); ?>; }
+                if (submit) { submit.textContent = <?php echo json_encode(__('Add block')); ?>; }
+                if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
+                dialog.showModal();
+            }
+            function openEdit(row) {
+                resetForm();
+                if (title) { title.textContent = <?php echo json_encode(__('Edit block')); ?>; }
+                if (submit) { submit.textContent = <?php echo json_encode(__('Save changes')); ?>; }
+                if (action) { action.value = 'edit_widget_post'; }
+                if (widId) { widId.value = row.getAttribute('data-widget-id') || ''; }
+                if (desc) { desc.value = row.getAttribute('data-description') || ''; }
+                var typeId = row.getAttribute('data-type') || '';
+                if (type) {
+                    type.value = typeId;
+                    if (window.pageBlockFormApplyType) { window.pageBlockFormApplyType(typeId); }
+                }
+                var config = {};
+                try { config = JSON.parse(row.getAttribute('data-config') || '{}') || {}; } catch (e) {}
+                Object.keys(config).forEach(function (key) {
+                    var el = document.getElementById(fieldId(typeId, key));
+                    if (!el) { return; }
+                    var val = config[key];
+                    if (el.type === 'checkbox') {
+                        el.checked = (val && val !== '0' && val !== 0);
+                    } else {
+                        el.value = (val === null || val === undefined) ? '' : val;
+                    }
+                });
+                dialog.showModal();
+            }
+
+            var addBtn = document.querySelector('.js-page-block-add');
+            if (addBtn) { addBtn.addEventListener('click', openAdd); }
+            document.querySelectorAll('.js-page-block-edit').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var row = btn.closest('.page-block-row');
+                    if (row) { openEdit(row); }
+                });
+            });
+        })();
+    </script>
+<?php } ?>
 <script>
     // Page-builder blocks: confirm deletes and persist drag/keyboard reordering to
     // the shared reorder endpoint (scoped by the list's data-location). Mirrors the
