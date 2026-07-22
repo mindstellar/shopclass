@@ -82,6 +82,32 @@ function osc_render_widget($widgetRow)
 
 
 /*
+ * Core "Rich text" widget — the default, safe text block, registered first so it
+ * is the picker's default choice. Registered unconditionally so the page builder
+ * always has a usable block type without any plugin. Its single field is a
+ * textarea whose value is HTML-purified on save (the default per-field path, not
+ * the raw 'code' path), so it is safe for any admin — including moderators — to
+ * author. Render runs the stored text through osc_autop so blank lines become
+ * paragraphs and single newlines become line breaks, exactly as a static page's
+ * own text renders. This is the block that lets classic pages and builder pages
+ * share one formatting path.
+ */
+osc_register_widget('core.rich_text', array(
+    'label'       => 'Rich text',
+    'description' => 'A block of formatted text. Blank lines become paragraphs on the page.',
+    'fields'      => array(
+        array(
+            'name'  => 'text',
+            'label' => 'Text',
+            'type'  => 'textarea',
+        ),
+    ),
+    'render'      => static function ($config) {
+        echo osc_autop($config['text'] ?? '');
+    },
+));
+
+/*
  * Core "Custom Code" widget type — the sanctioned raw HTML/JavaScript escape
  * hatch. Registered unconditionally so the type always exists; who may author
  * it is enforced per-user by its 'super_admin' capability (the type picker and
