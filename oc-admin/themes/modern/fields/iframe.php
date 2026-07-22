@@ -42,6 +42,17 @@ $cfgValue = static function ($key) use ($field) {
 $rules      = (isset($field['rules']) && is_array($field['rules'])) ? $field['rules'] : array();
 $ruleAction = isset($rules['required_when']) ? 'required_when' : (isset($rules['show_when']) ? 'show_when' : '');
 $ruleCond   = $rules[$ruleAction] ?? array();
+
+// Existing cascading-options config, rebuilt into the "ParentValue: a, b, c" text.
+$cascadeParent = (isset($field['cascade_parent']) && !is_array($field['cascade_parent'])) ? $field['cascade_parent'] : '';
+$cascadeText   = '';
+if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
+    $lines = array();
+    foreach ($field['cascade_map'] as $parentValue => $opts) {
+        $lines[] = $parentValue . ': ' . implode(', ', (array)$opts);
+    }
+    $cascadeText = implode("\n", $lines);
+}
 ?>
 <!-- custom field frame -->
 <div id="edit-custom-field-frame" class="card custom-field-frame">
@@ -161,6 +172,38 @@ $ruleCond   = $rules[$ruleAction] ?? array();
                             </div>
                             <input type="hidden" name="cfg_rules" id="cfg_rules" value="" />
                         </div>
+
+                        <?php
+                        // Cascading options — only meaningful for choice fields; the JS
+                        // shows this block for DROPDOWN/RADIO only.
+                        ?>
+                        <div id="cf_cascade_block" class="cf-rules-block" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-label"><?php _e('Cascading options'); ?></div>
+                                <div class="form-controls">
+                                    <select class="form-select" name="cfg_cascade_parent" id="cfg_cascade_parent">
+                                        <option value=""><?php _e('Not cascading'); ?></option>
+                                        <?php foreach ($allFields as $sibling) {
+                                            if ((int)$sibling['pk_i_id'] === (int)$field['pk_i_id']) {
+                                                continue;
+                                            }
+                                            $selAttr = ($cascadeParent === $sibling['s_slug']) ? ' selected' : '';
+                                            echo '<option value="' . osc_esc_html($sibling['s_slug']) . '"' . $selAttr . '>'
+                                                . osc_esc_html($sibling['s_name']) . '</option>';
+                                        } ?>
+                                    </select>
+                                    <p class="help-inline"><?php _e('Filter this field\'s options by the value of a parent field.'); ?></p>
+                                </div>
+                            </div>
+                            <div class="form-row" id="cf_cascade_map_row" style="display:none;">
+                                <div class="form-label"><?php _e('Option map'); ?></div>
+                                <div class="form-controls">
+                                    <textarea class="form-control" name="cfg_cascade_map" id="cfg_cascade_map" rows="5"
+                                              placeholder="Toyota: Corolla, Camry, RAV4&#10;Honda: Civic, Accord"><?php echo osc_esc_html($cascadeText); ?></textarea>
+                                    <p class="help-inline"><?php _e('One line per parent value: "ParentValue: option1, option2".'); ?></p>
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-row" id="field_cat_select">
                             <div><?php _e('Select the categories where you want to apply this attribute:'); ?></div>
                             <div class="separate-top">
@@ -236,12 +279,14 @@ $ruleCond   = $rules[$ruleAction] ?? array();
         // Show the options field only for types that use options (DROPDOWN/RADIO),
         // the new-tab toggle only for URL, and each config row only for a type that
         // declares it — mirrored on load and on every type change.
+        var cascadeBlock = document.getElementById('cf_cascade_block');
         function syncType() {
             var v = typeInput ? typeInput.value : '';
             var keys = typeConfig[v] || [];
             var usesOptions = keys.indexOf('__none__') === -1 && (v === 'DROPDOWN' || v === 'RADIO');
             if (optionsDiv) { optionsDiv.style.display = usesOptions ? '' : 'none'; }
             if (fieldNewtab) { fieldNewtab.style.display = (v === 'URL') ? '' : 'none'; }
+            if (cascadeBlock) { cascadeBlock.style.display = usesOptions ? '' : 'none'; }
             document.querySelectorAll('.cf-config-row').forEach(function (row) {
                 var key = row.getAttribute('data-cfg-key');
                 row.style.display = (keys.indexOf(key) !== -1) ? '' : 'none';
@@ -249,6 +294,17 @@ $ruleCond   = $rules[$ruleAction] ?? array();
         }
         if (typeInput) { typeInput.addEventListener('change', syncType); }
         syncType();
+
+        // Show the cascade option-map textarea only once a parent field is picked.
+        var cascadeParentSel = document.getElementById('cfg_cascade_parent');
+        var cascadeMapRow = document.getElementById('cf_cascade_map_row');
+        function syncCascade() {
+            if (cascadeMapRow) {
+                cascadeMapRow.style.display = (cascadeParentSel && cascadeParentSel.value !== '') ? '' : 'none';
+            }
+        }
+        if (cascadeParentSel) { cascadeParentSel.addEventListener('change', syncCascade); }
+        syncCascade();
 
         // A grouped field takes its categories from the group, so hide the per-field
         // category picker while a group is selected.

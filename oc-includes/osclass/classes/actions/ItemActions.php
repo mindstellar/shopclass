@@ -686,8 +686,25 @@ class ItemActions
                 case 'RADIO':
                 case 'DROPDOWN':
                     if ($isMetaValueSet && $metaValue) {
-                        // check value exist in options csv
-                        if (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
+                        // Cascading option fields validate against the option set for
+                        // the parent's submitted value (falling back to the union), not
+                        // the flat s_options list (which is empty for a cascade child).
+                        if (!empty($_m['cascade_map']) && is_array($_m['cascade_map'])) {
+                            $parentSlug  = $_m['cascade_parent'] ?? '';
+                            $parentValue = $slugValues[$parentSlug] ?? '';
+                            if (isset($_m['cascade_map'][$parentValue])) {
+                                $allowed = $_m['cascade_map'][$parentValue];
+                            } else {
+                                $allowed = array();
+                                foreach ($_m['cascade_map'] as $opts) {
+                                    $allowed = array_merge($allowed, (array)$opts);
+                                }
+                            }
+                            if (!in_array($metaValue, $allowed, false)) {
+                                $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
+                            }
+                        } elseif (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
+                            // check value exist in options csv
                             $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
                         }
                     } elseif ($isMetaRequired) {

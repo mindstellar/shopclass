@@ -301,9 +301,30 @@ class FieldForm extends Form
             if (!$search && ($value === '' || $value === null) && isset($field['default']) && $field['default'] !== '') {
                 $value = $field['default'];
             }
-            // Conditional rules drive client-side show/hide; carry them on the wrapper.
+            // Conditional rules drive client-side show/hide; carry them on the input.
+            // The form input helper does not escape attribute values, and the JSON
+            // contains double quotes, so pre-escape it to keep the attribute valid
+            // (getAttribute decodes the entities back to parseable JSON).
             if (!$search && !empty($field['rules']) && is_array($field['rules'])) {
-                $attributes['data-cf-rules'] = json_encode($field['rules']);
+                $attributes['data-cf-rules'] = osc_esc_html(json_encode($field['rules']));
+            }
+
+            // Cascading options (small-set): a dropdown whose options are narrowed to
+            // the parent field's value. Carry the parent slug and the parentValue ->
+            // options map on the select; the select renders the union of all options
+            // (so a stored value stays selectable) and JS narrows it on the client.
+            $cascadeUnion = null;
+            if (!$search && !empty($field['cascade_map']) && is_array($field['cascade_map'])
+                && !empty($field['cascade_parent'])) {
+                $attributes['data-cascade-parent'] = $field['cascade_parent'];
+                $attributes['data-cascade-map']    = osc_esc_html(json_encode($field['cascade_map']));
+                $union = array();
+                foreach ($field['cascade_map'] as $opts) {
+                    foreach ((array)$opts as $opt) {
+                        $union[$opt] = $opt;
+                    }
+                }
+                $cascadeUnion = implode(',', array_keys($union));
             }
 
             switch ($field['e_type']) {
@@ -331,8 +352,8 @@ class FieldForm extends Form
                         $options['label'] = $label;
                     }
 
-                    if (isset($field['s_options'])) {
-                        $options['selectOptions']     = $field['s_options'];
+                    if (isset($field['s_options']) || $cascadeUnion !== null) {
+                        $options['selectOptions']     = $cascadeUnion !== null ? $cascadeUnion : $field['s_options'];
                         $options['selectPlaceholder'] = __('Select', 'osclass');
                         echo self::getInstance()->select($name, $value, $attributes, $options);
                     }
@@ -575,6 +596,46 @@ class FieldForm extends Form
         ?>
         <script type="text/javascript">
             (function () {
+                // ---- Cascading option dropdowns (Make -> Model) -----------------
+                document.querySelectorAll('select[data-cascade-parent]').forEach(function (child) {
+                    var parentSlug = child.getAttribute('data-cascade-parent');
+                    var parent = document.getElementById('meta_' + parentSlug);
+                    var map;
+                    try { map = JSON.parse(child.getAttribute('data-cascade-map')); } catch (e) { return; }
+                    if (!parent) { return; }
+
+                    var placeholder = child.querySelector('option[value=""]');
+                    var placeholderHtml = placeholder ? placeholder.outerHTML : '';
+
+                    function parentValue() {
+                        var name = parent.getAttribute('name');
+                        var checked = name ? document.querySelector('[name="' + name + '"]:checked') : null;
+                        return checked ? checked.value : (parent.value || '');
+                    }
+
+                    function repopulate() {
+                        var current = child.value;
+                        var opts = map[parentValue()] || [];
+                        child.innerHTML = placeholderHtml;
+                        var keep = '';
+                        opts.forEach(function (o) {
+                            var opt = document.createElement('option');
+                            opt.value = o;
+                            opt.textContent = o;
+                            if (o === current) { opt.selected = true; keep = o; }
+                            child.appendChild(opt);
+                        });
+                        // if the previous value is no longer valid, fall back to the placeholder
+                        if (!keep && placeholder) { child.value = ''; }
+                    }
+
+                    var pName = parent.getAttribute('name');
+                    var group = pName ? document.querySelectorAll('[name="' + pName + '"]') : [parent];
+                    group.forEach(function (m) { m.addEventListener('change', repopulate); });
+                    repopulate();
+                });
+
+                // ---- Conditional visibility / requirement -----------------------
                 var nodes = document.querySelectorAll('[data-cf-rules]');
                 if (!nodes.length) { return; }
 

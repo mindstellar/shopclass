@@ -960,6 +960,37 @@ class CAdminAjax extends AdminSecBaseModel
         } else {
             $field->updateJsonMeta($fieldId, 'rules', '');
         }
+
+        // Cascading options (small-set): a dropdown/radio whose options are filtered
+        // by a parent field's value. cfg_cascade_map is a line-per-parent-value block
+        // ("Toyota: Corolla, Camry"); parse it into a { parentValue: [opts] } map.
+        $cascadeParent = trim((string)Params::getParam('cfg_cascade_parent'));
+        $cascadeText   = (string)Params::getParam('cfg_cascade_map');
+        if ($cascadeParent !== '' && trim($cascadeText) !== '') {
+            $map = array();
+            foreach (preg_split('/\r\n|\r|\n/', $cascadeText) as $line) {
+                $line = trim($line);
+                if ($line === '' || strpos($line, ':') === false) {
+                    continue;
+                }
+                list($key, $vals) = explode(':', $line, 2);
+                $key  = trim($key);
+                $opts = array_values(array_filter(
+                    array_map('trim', explode(',', $vals)),
+                    static function ($v) {
+                        return $v !== '';
+                    }
+                ));
+                if ($key !== '' && $opts) {
+                    $map[$key] = $opts;
+                }
+            }
+            $field->updateJsonMeta($fieldId, 'cascade_parent', $map ? $cascadeParent : '');
+            $field->updateJsonMeta($fieldId, 'cascade_map', $map ?: '');
+        } else {
+            $field->updateJsonMeta($fieldId, 'cascade_parent', '');
+            $field->updateJsonMeta($fieldId, 'cascade_map', '');
+        }
     }
 
     /**
