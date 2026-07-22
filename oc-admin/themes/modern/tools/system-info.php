@@ -148,7 +148,7 @@ function customPageHeader()
 {
     ?>
     <h1>
-        <?php _e('System Info'); ?>
+        <?php _e('Tools'); ?>
         <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
@@ -173,6 +173,7 @@ $phpInfoUrl   = osc_admin_base_url(true) . '?' . http_build_query(array('page' =
 $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
 $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
 ?>
+    <h2 class="render-title"><?php _e('System info'); ?></h2>
     <div id="system-info">
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">

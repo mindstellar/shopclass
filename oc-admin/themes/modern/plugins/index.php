@@ -27,7 +27,7 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Manage Plugins'); ?>
+    <h1><?php _e('Plugins'); ?>
         <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=plugins&amp;action=add"
@@ -59,6 +59,7 @@ $aData          = __get('aPlugins');
 $tab_index = 2;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
+<h2 class="render-title"><?php _e('Manage plugins'); ?></h2>
 
 <?php if (Params::getParam('error') != '') { ?>
     <!-- flash message -->

@@ -35,7 +35,7 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Custom fields'); ?>
+    <h1><?php _e('Listings'); ?>
         <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
         <a href="#" class="ms-1 float-end" id="add-button"
@@ -184,6 +184,7 @@ osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
+    <h2 class="render-title"><?php _e('Custom fields'); ?></h2>
     <!-- custom fields -->
     <div class="custom-fields">
         <!-- list fields -->
