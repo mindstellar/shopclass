@@ -15048,6 +15048,66 @@ code {
   cursor: pointer;
 }
 
+.whatsnew .whatsnew-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.whatsnew .whatsnew-item {
+  align-items: flex-start;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: 0.6rem;
+  padding-block: 0.6rem;
+}
+.whatsnew .whatsnew-item:last-child {
+  border-block-end: 0;
+}
+.whatsnew .whatsnew-tag {
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-block-start: 0.1rem;
+  padding: 0.15rem 0.55rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.whatsnew .whatsnew-tag-new {
+  background: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+}
+.whatsnew .whatsnew-tag-security {
+  background: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+.whatsnew .whatsnew-tag-breaking {
+  background: var(--osc-warning-tint);
+  color: var(--osc-warning-deep);
+}
+.whatsnew .whatsnew-tag-fixed,
+.whatsnew .whatsnew-tag-changed,
+.whatsnew .whatsnew-tag-performance {
+  background: var(--osc-bench-sunk);
+  color: var(--osc-ink-muted);
+}
+.whatsnew .whatsnew-text {
+  -webkit-box-orient: vertical;
+  color: var(--osc-ink);
+  display: -webkit-box;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.whatsnew .whatsnew-more {
+  color: var(--osc-ink-muted);
+  font-size: 0.85rem;
+  margin-block: 0.75rem 0;
+}
+
 .list-fields ul {
   margin: 0;
   padding: 0;

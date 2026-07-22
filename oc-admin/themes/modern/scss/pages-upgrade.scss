@@ -1,0 +1,75 @@
+// "What's new" highlights on the upgrade screen — the newest release's changelog
+// entries, tagged by category. Colour goes through tokens so both themes follow.
+
+.whatsnew {
+  .whatsnew-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .whatsnew-item {
+    align-items: flex-start;
+    border-block-end: 1px solid var(--osc-rule);
+    display: flex;
+    gap: .6rem;
+    padding-block: .6rem;
+
+    &:last-child {
+      border-block-end: 0;
+    }
+  }
+
+  .whatsnew-tag {
+    border-radius: 999px;
+    flex: 0 0 auto;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    margin-block-start: .1rem;
+    padding: .15rem .55rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  // Features and the notes that carry the most weight get the loudest tokens.
+  .whatsnew-tag-new {
+    background: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  .whatsnew-tag-security {
+    background: var(--osc-danger-tint);
+    color: var(--osc-danger);
+  }
+
+  .whatsnew-tag-breaking {
+    background: var(--osc-warning-tint);
+    color: var(--osc-warning-deep);
+  }
+
+  .whatsnew-tag-fixed,
+  .whatsnew-tag-changed,
+  .whatsnew-tag-performance {
+    background: var(--osc-bench-sunk);
+    color: var(--osc-ink-muted);
+  }
+
+  // Keep each entry to two lines so a long changelog paragraph stays scannable.
+  .whatsnew-text {
+    -webkit-box-orient: vertical;
+    color: var(--osc-ink);
+    display: -webkit-box;
+    font-size: .9rem;
+    line-height: 1.5;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .whatsnew-more {
+    color: var(--osc-ink-muted);
+    font-size: .85rem;
+    margin-block: .75rem 0;
+  }
+}

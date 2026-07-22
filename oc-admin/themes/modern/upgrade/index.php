@@ -70,6 +70,46 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
+/**
+ * Parse the newest release section of CHANGELOG.md into typed entries, ordered so
+ * features and notable changes surface first. Returns an empty array when the
+ * changelog is missing or unreadable.
+ *
+ * @return array<int,array{cat:string,text:string}>
+ */
+function upgradeReleaseHighlights()
+{
+    $file = ABS_PATH . 'CHANGELOG.md';
+    if (!is_readable($file)) {
+        return array();
+    }
+
+    $entries = array();
+    $inFirst = false;
+    foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) {
+        if (strpos($line, '## ') === 0) {
+            if ($inFirst) {
+                break; // reached the previous release
+            }
+            $inFirst = true; // newest release heading
+            continue;
+        }
+        if ($inFirst && preg_match('/^\*\s*([A-Za-z]+):\s*(.+)$/', $line, $m)) {
+            $entries[] = array('cat' => $m[1], 'text' => trim(str_replace('`', '', $m[2])));
+        }
+    }
+
+    // Surface features and breaking/security notes before routine fixes; PHP 8's
+    // stable sort keeps each category in its authored changelog order.
+    $priority = array('New' => 0, 'Breaking' => 1, 'Security' => 2, 'Changed' => 3, 'Performance' => 4, 'Fixed' => 5);
+    usort($entries, static function ($a, $b) use ($priority) {
+        return ($priority[$a['cat']] ?? 9) <=> ($priority[$b['cat']] ?? 9);
+    });
+
+    return $entries;
+}
+
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 
 <div id="backup-settings">
@@ -88,4 +128,33 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
+<?php
+$whatsNew = upgradeReleaseHighlights();
+if (!empty($whatsNew)) {
+    $shown     = array_slice($whatsNew, 0, 12);
+    $remaining = count($whatsNew) - count($shown);
+    ?>
+    <div class="whatsnew card mb-3">
+        <div class="card-body">
+            <h2 class="render-title"><?php _e("What's new"); ?></h2>
+            <ul class="whatsnew-list">
+                <?php foreach ($shown as $entry) {
+                    $slug = strtolower(preg_replace('/[^a-z]/i', '', $entry['cat'])); ?>
+                    <li class="whatsnew-item">
+                        <span class="whatsnew-tag whatsnew-tag-<?php echo osc_esc_html($slug); ?>">
+                            <?php echo osc_esc_html($entry['cat']); ?>
+                        </span>
+                        <span class="whatsnew-text"><?php echo osc_esc_html($entry['text']); ?></span>
+                    </li>
+                <?php } ?>
+            </ul>
+            <?php if ($remaining > 0) { ?>
+                <p class="whatsnew-more">
+                    <?php printf(_n('and %d more change in this release',
+                        'and %d more changes in this release', $remaining), $remaining); ?>
+                </p>
+            <?php } ?>
+        </div>
+    </div>
+<?php } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
