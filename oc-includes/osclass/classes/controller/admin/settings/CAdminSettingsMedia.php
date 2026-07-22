@@ -53,6 +53,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 $keepOriginalImage      = Params::getParam('keep_original_image');
                 $forceAspectImage       = Params::getParam('force_aspect_image');
                 $forceJPEG              = Params::getParam('force_jpeg');
+                $jpegQuality            = (int) Params::getParam('jpeg_quality');
                 $use_imagick            = Params::getParam('use_imagick');
                 $type_watermark         = Params::getParam('watermark_type');
                 $watermark_color        = Params::getParam('watermark_text_color');
@@ -160,6 +161,11 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 $iUpdated += osc_set_preference('keep_original_image', $keepOriginalImage);
                 $iUpdated += osc_set_preference('force_aspect_image', $forceAspectImage);
                 $iUpdated += osc_set_preference('force_jpeg', $forceJPEG);
+                // Clamp to the valid libgd/imagick range; fall back to the 82 default.
+                if ($jpegQuality < 1 || $jpegQuality > 100) {
+                    $jpegQuality = 82;
+                }
+                $iUpdated += osc_set_preference('jpeg_quality', $jpegQuality);
                 $iUpdated += osc_set_preference('use_imagick', $use_imagick);
 
                 if ($error != '') {

@@ -258,7 +258,13 @@ class ImageProcessing
             $ext = 'jpeg';
         }
 
-        $jpeg_quality    = max(1, min(100, (int)Plugins::applyFilter('image_jpeg_quality', 82)));
+        // Default comes from the admin Media settings (jpeg_quality preference), 82 if unset;
+        // the image_jpeg_quality filter can still override it for a specific resize.
+        $qualityPref     = (int)osc_get_preference('jpeg_quality');
+        if ($qualityPref < 1 || $qualityPref > 100) {
+            $qualityPref = 82;
+        }
+        $jpeg_quality    = max(1, min(100, (int)Plugins::applyFilter('image_jpeg_quality', $qualityPref)));
         $png_compression = max(0, min(9, (int)Plugins::applyFilter('image_png_compression', 6)));
 
         if ($this->use_imagick) {

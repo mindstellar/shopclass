@@ -14197,6 +14197,12 @@ td.children-cat {
   line-height: 1.5;
 }
 
+.form-intro {
+  color: var(--osc-ink-muted);
+  margin-block: 0 1rem;
+  max-width: 68ch;
+}
+
 .form-actions {
   background: var(--osc-bench-warm);
   border-radius: 4px;

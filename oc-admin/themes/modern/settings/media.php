@@ -160,10 +160,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <fieldset>
                 <div class="form-horizontal">
                     <h2 class="render-title"><?php _e('Image sizes'); ?></h2>
+                    <p class="form-intro"><?php _e('The sizes listed below determine the maximum dimensions in pixels to use when uploading a image.'
+                                . ' Format: <b>Width</b> x <b>Height</b>.'); ?>
+                    </p>
                     <div class="form-row">
-                        <p><?php _e('The sizes listed below determine the maximum dimensions in pixels to use when uploading a image.'
-                                    . ' Format: <b>Width</b> x <b>Height</b>.'); ?>
-                        </p>
                         <div class="form-label"><?php _e('Thumbnail size'); ?></div>
                         <div class="form-controls"><input type="text" class="input-medium" name="dimThumbnail"
                                                           value="<?php echo osc_esc_html(osc_thumbnail_dimensions()); ?>"/>
@@ -203,6 +203,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <span class="help-box"><?php _e('Uploaded images will be saved in JPG/JPEG format, '
                                                                 . 'it saves space but images will not have transparent background.'); ?></span>
                             </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label"><?php _e('JPEG quality'); ?></div>
+                        <div class="form-controls">
+                            <?php $jpegQuality = (int) osc_get_preference('jpeg_quality');
+                            if ($jpegQuality < 1 || $jpegQuality > 100) {
+                                $jpegQuality = 82;
+                            } ?>
+                            <input type="number" min="1" max="100" class="input-small" name="jpeg_quality"
+                                   style="width:6rem" value="<?php echo $jpegQuality; ?>"/>
+                            <span class="help-box"><?php _e('Compression quality for saved JPEGs, from 1 (smallest file) to '
+                                                            . '100 (best quality). 82 is a good balance.'); ?></span>
                         </div>
                     </div>
                     <div class="form-row">

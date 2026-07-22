@@ -20,6 +20,15 @@
   line-height: 1.5;
 }
 
+// An intro/explainer paragraph that sits above a group of form rows. Kept OUT of
+// .form-row so it doesn't become a flex sibling of a label + control (which lays the
+// two out on one line).
+.form-intro {
+  color: var(--osc-ink-muted);
+  margin-block: 0 1rem;
+  max-width: 68ch;
+}
+
 .form-actions {
   background: var(--osc-bench-warm);
   border-radius: 4px;
