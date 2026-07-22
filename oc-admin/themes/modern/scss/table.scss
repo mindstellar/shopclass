@@ -225,9 +225,9 @@
 
   // The external-link cue is a hint, not a control: every title in the column opens in a
   // new tab, so an icon on every resting row differentiates nothing and just adds noise to
-  // the densest view. It stays out of the calm resting state and surfaces on row hover or
-  // when the title link takes focus — so the keyboard path gets the cue too and this does
-  // not repeat the hover-only trap the row actions above were deliberately moved off.
+  // the densest view. It stays out of the calm resting state and surfaces only when the
+  // title link itself is hovered or takes focus — tied to the link, not the whole row, so
+  // it cues the specific thing you are about to open and the keyboard path gets it too.
   .icon-new-window {
     color: var(--osc-ink-muted);
     margin-inline-start: 5px;
@@ -240,7 +240,7 @@
     }
   }
 
-  > tbody > tr:hover .icon-new-window,
+  > tbody a:hover .icon-new-window,
   > tbody a:focus-visible .icon-new-window {
     opacity: 1;
   }

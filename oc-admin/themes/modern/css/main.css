@@ -13709,7 +13709,7 @@ div.widget-box-content-no-wrapp li a {
   content: "\f144";
   font-family: "bootstrap-icons";
 }
-.table > tbody > tr:hover .icon-new-window,
+.table > tbody a:hover .icon-new-window,
 .table > tbody a:focus-visible .icon-new-window {
   opacity: 1;
 }
