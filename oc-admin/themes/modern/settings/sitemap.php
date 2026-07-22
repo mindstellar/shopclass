@@ -230,7 +230,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <form name="sitemap_regenerate_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
             <input type="hidden" name="action" value="sitemap_regenerate"/>
-            <input type="submit" value="<?php echo osc_esc_html(__('Regenerate / clear cache')); ?>" class="btn btn-dim"/>
+            <input type="submit" value="<?php echo osc_esc_html(__('Regenerate / clear cache')); ?>" class="btn btn-submit"/>
         </form>
     </div>
 </div>

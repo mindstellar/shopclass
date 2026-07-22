@@ -14780,8 +14780,7 @@ code {
   padding: 8px;
   white-space: pre;
   white-space: pre-wrap;
-  word-break: break-all;
-  word-wrap: break-word;
+  overflow-wrap: anywhere;
   border-radius: 4px;
 }
 

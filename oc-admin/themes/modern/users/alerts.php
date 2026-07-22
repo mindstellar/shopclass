@@ -81,7 +81,7 @@ $rows    = $aData['aRows'];
             <div id="bulk-actions">
                 <div class="input-group input-group-sm">
                     <select name="alert_action" id="bulk_actions" class="form-select select-box-extra">
-                        <option value=""><?php _e('Bulk Actions'); ?></option>
+                        <option value=""><?php _e('Bulk actions'); ?></option>
                         <option value="activate"
                                 data-dialog-content="<?php printf(__('Are you sure you want to %s the selected alerts?'),
                                                                   strtolower(__('Activate'))); ?>"><?php _e('Activate'); ?></option>
