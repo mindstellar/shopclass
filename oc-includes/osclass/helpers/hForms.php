@@ -42,7 +42,7 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0)
     if (empty($form)) {
         return;
     }
-    $fields = Field::newInstance()->findByGroup($formId);
+    $fields = osc_form_fields($formId, $contextType, $contextId);
     if (empty($fields)) {
         return;
     }
@@ -97,6 +97,61 @@ function osc_form_widget_options()
 
 
 /**
+ * A form's fields for a placement context — its stored fields (Field::findByGroup)
+ * after the `form_fields` filter, so plugins may add/remove/reorder per context.
+ * Used by BOTH the render (osc_render_form) and the submit route (CWebForm), so
+ * what is rendered and what is validated/stored can never diverge.
+ *
+ * A plugin adding a field must supply a real t_meta_fields row (its value is stored
+ * under fk_i_field_id, which has a FK to t_meta_fields); removal/reorder are free.
+ *
+ * @param int    $formId
+ * @param string $contextType
+ * @param int    $contextId
+ *
+ * @return array
+ */
+function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
+{
+    $fields = Field::newInstance()->findByGroup((int)$formId);
+    $form   = FieldGroup::newInstance()->findByPrimaryKey((int)$formId);
+    $fields = osc_apply_filter('form_fields', $fields, $form, $contextType, $contextId);
+
+    return is_array($fields) ? $fields : array();
+}
+
+
+/**
+ * Register a form placement-context type so its submissions read sensibly in the
+ * admin. Thin wrapper over FormContextRegistry::register().
+ *
+ * @param string $type
+ * @param array  $spec
+ *
+ * @return void
+ */
+function osc_register_form_context($type, $spec)
+{
+    \mindstellar\forms\FormContextRegistry::instance()->register($type, $spec);
+}
+
+
+/**
+ * Describe a submission's placement context for the admin: ['label' => string,
+ * 'url' => ?string]. Never throws.
+ *
+ * @param string $type
+ * @param int    $id
+ *
+ * @return array
+ */
+function osc_form_context_display($type, $id)
+{
+    return \mindstellar\forms\FormContextRegistry::instance()->describe((string)$type, (int)$id);
+}
+
+
+/**
  * Derive a placement context (type, id) from the t_widget row a form is rendered
  * in. A page-builder block lives at location "page.<id>"; anything else is keyed
  * by the widget row id. Phase 3 stamps this pair onto each submission.
@@ -144,4 +199,36 @@ osc_register_widget('core.form', array(
         list($contextType, $contextId) = osc_form_context_from_widget($widgetRow);
         osc_render_form($formId, $contextType, $contextId);
     },
+));
+
+
+/*
+ * Core placement contexts. 'page' resolves to the static page's title + public
+ * URL so a page-placed form's submissions link back to where they came from;
+ * 'widget' is the generic fallback for a form dropped in a plain widget area.
+ * Plugins register their own contexts via osc_register_form_context().
+ */
+osc_register_form_context('page', array(
+    'label'   => 'Page',
+    'resolve' => static function ($id) {
+        $id     = (int)$id;
+        $locale = osc_current_user_locale();
+        $page   = Page::newInstance()->findByPrimaryKey($id, $locale);
+        $title  = '';
+        if (!empty($page['locale'][$locale]['s_title'])) {
+            $title = $page['locale'][$locale]['s_title'];
+        } elseif (!empty($page['locale'])) {
+            $first = reset($page['locale']);
+            $title = $first['s_title'] ?? '';
+        }
+        if ($title === '') {
+            $title = 'Page #' . $id;
+        }
+
+        return array('label' => $title, 'url' => osc_base_url(true) . '?page=page&id=' . $id);
+    },
+));
+
+osc_register_form_context('widget', array(
+    'label' => 'Widget',
 ));

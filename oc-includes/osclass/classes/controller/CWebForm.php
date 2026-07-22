@@ -74,7 +74,9 @@ class CWebForm extends BaseModel
             return;
         }
 
-        $fields = Field::newInstance()->findByGroup($formId);
+        // Same field set the render used (findByGroup + the form_fields filter), so
+        // a plugin's per-context add/remove can't create a validate/render mismatch.
+        $fields = osc_form_fields($formId, $contextType, $contextId);
         if (empty($fields)) {
             osc_add_flash_error_message(_m('That form has no fields.'));
             $this->redirectTo($return);
@@ -85,6 +87,10 @@ class CWebForm extends BaseModel
         $meta   = Params::getParam('meta');
         $meta   = is_array($meta) ? $meta : array();
         $result = FieldValidator::process($fields, $meta);
+
+        // Plugins may amend the validation errors (add or clear their own).
+        $errors = osc_apply_filter('form_validation_errors', $result['errors'], $form, $result['values'], $contextType, $contextId);
+        $result['errors'] = is_array($errors) ? $errors : $result['errors'];
 
         // Let a plugin veto or flag (e.g. spam). A non-empty string return is treated
         // as a rejection message.
@@ -139,7 +145,7 @@ class CWebForm extends BaseModel
         }
         $type = substr($raw, 0, $pos);
         $id   = (int) substr($raw, $pos + 1);
-        if (!preg_match('/^[a-z0-9_-]{1,20}$/', $type)) {
+        if (!preg_match('/^[a-z0-9_.-]{1,20}$/', $type)) {
             $type = 'widget';
         }
 

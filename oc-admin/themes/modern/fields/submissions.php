@@ -153,8 +153,15 @@ osc_current_admin_theme_path('parts/header.php');
                                 <td data-col-name="<?php echo osc_esc_html(__('Received')); ?>">
                                     <?php echo osc_esc_html(osc_format_date($s['dt_created'])); ?>
                                     <div class="submission-origin">
-                                        <?php echo osc_esc_html($s['s_context_type'] . ' #' . (int)$s['i_context_id']); ?>
-                                        <?php if (!empty($s['s_ip'])) {
+                                        <?php
+                                        $ctx = osc_form_context_display($s['s_context_type'], (int)$s['i_context_id']);
+                                        if (!empty($ctx['url'])) {
+                                            echo '<a href="' . osc_esc_html($ctx['url']) . '" target="_blank" rel="noopener">'
+                                                . osc_esc_html($ctx['label']) . '</a>';
+                                        } else {
+                                            echo osc_esc_html($ctx['label']);
+                                        }
+                                        if (!empty($s['s_ip'])) {
                                             echo ' · ' . osc_esc_html($s['s_ip']);
                                         } ?>
                                     </div>

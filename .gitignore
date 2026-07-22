@@ -28,6 +28,7 @@ oc-content/plugins/*
 !oc-content/plugins/index.php
 !oc-content/plugins/google_maps/
 !oc-content/plugins/sample-widgets/
+!oc-content/plugins/sample-forms/
 
 # languages
 oc-content/languages/*
