@@ -41,7 +41,7 @@ function customFrmText()
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Admins'); ?></h1>
+    <h1><?php _e('Users'); ?></h1>
     <?php
 }
 
