@@ -75,6 +75,20 @@ class AdminMenu
         );
 
         $this->add_menu(__('Media'), osc_admin_base_url(true) . '?page=media', 'media', 'moderator', 'bi bi-images');
+        $this->add_submenu(
+            'media',
+            __('Library'),
+            osc_admin_base_url(true) . '?page=media',
+            'media_library',
+            'moderator'
+        );
+        $this->add_submenu(
+            'media',
+            __('Settings'),
+            osc_admin_base_url(true) . '?page=settings&action=media',
+            'media_settings',
+            'administrator'
+        );
 
         $this->add_menu(__('Appearance'), osc_admin_base_url(true) . '?page=appearance', 'appearance', 'administrator',
                         'bi bi-palette');
@@ -216,13 +230,6 @@ class AdminMenu
             __('Mail server'),
             osc_admin_base_url(true) . '?page=settings&action=mailserver',
             'settings_mailserver',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Media'),
-            osc_admin_base_url(true) . '?page=settings&action=media',
-            'settings_media',
             'administrator'
         );
         $this->add_submenu(
