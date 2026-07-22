@@ -16,8 +16,8 @@
 function addHelp()
 {
     echo '<p>'
-         . __('Manage the images that users have uploaded along with their listings. '
-              . 'You can delete them without deleting the whole listing if the image is inappropriate or doesn’t match the listing.')
+         . __('Every image uploaded across your site — listing photos, user avatars and page images — in one '
+              . 'place. Filter by type, and delete a file without removing the listing, user or page it belongs to.')
          . '</p>';
 }
 
@@ -26,9 +26,9 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Manage Media'); ?>
+    <h1><?php _e('Media'); ?>
         <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=media'; ?>"
-           class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
+           class="ms-1 float-end" title="<?php echo osc_esc_html(__('Settings')); ?>"><i class="bi bi-gear-fill"></i></a>
         <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
@@ -50,133 +50,136 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
-$aData     = View::newInstance()->_get('aData');
-$aRawRows  = View::newInstance()->_get('aRawRows');
-$sort      = Params::getParam('sort');
-$direction = Params::getParam('direction');
+osc_add_filter('render-wrapper', static function () {
+    return 'row-offset';
+});
 
-$columns = $aData['aColumns'];
-$rows    = $aData['aRows'];
-?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="relative">
-        <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="media"/>
-            <input type="hidden" name="action" value="bulk_actions"/>
-            <div id="bulk-actions">
-                <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions(
-                        'bulk_actions',
-                        'bulk_actions',
-                        __get('bulk_options'),
-                        'select-box-extra'
-                    ); ?>
-                    <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-                </div>
-            </div>
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <?php
-                    $create_table_head = static function ($direction, $sort, $class, $value) {
-                        if (($direction !== 'desc')) {
-                            $direction = 'asc';
-                        }
-                        if ($sort === $class) {
-                            echo '<th class="col-' . $class . ' ' . 'sorting_' . $direction . '">' . $value . '</th>';
-                        } else {
-                            echo '<th class="col-' . $class . ' ' . '">' . $value . '</th>';
-                        }
-                    };
-                    foreach ($columns as $k => $v) {
-                        $create_table_head($direction, $sort, $k, $v);
-                    } ?>
-                </tr>
-                </thead>
-                <tbody>
-                <?php if (count($rows) > 0) { ?>
-                    <?php foreach ($rows as $key => $row) { ?>
-                        <tr>
-                            <?php foreach ($row as $k => $v) { ?>
-                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php echo $v; ?></td>
-                            <?php } ?>
-                        </tr>
-                    <?php } ?>
-                <?php } else { ?>
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            <p><?php _e('No data available in table'); ?></p>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </form>
-    </div>
-<?php
-function showingResults()
+/**
+ * Admin URL of the owner a media file belongs to, or '' when it has none.
+ *
+ * @param string $ownerType
+ * @param int    $ownerId
+ *
+ * @return string
+ */
+function mediaOwnerUrl($ownerType, $ownerId)
 {
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
-            (Params::getParam('iPage') - 1)
-            * $aData['iDisplayLength'] + 1,
-            ((Params::getParam('iPage') - 1) * $aData['iDisplayLength']) + count($aData['aRows']),
-            $aData['iTotalDisplayRecords'],
-            $aData['iTotalRecords']
-        ) . '</span></li></ul>';
+    switch ($ownerType) {
+        case 'item':
+            return osc_admin_base_url(true) . '?page=items&action=edit&id=' . (int) $ownerId;
+        case 'user':
+            return osc_admin_base_url(true) . '?page=users&action=edit&id=' . (int) $ownerId;
+        case 'page':
+            return osc_admin_base_url(true) . '?page=pages&action=edit&id=' . (int) $ownerId;
+        default:
+            return '';
+    }
 }
 
+$mediaType    = __get('mediaType');
+$mediaFilters = __get('mediaFilters');
+$mediaRows    = __get('mediaRows');
+$mediaTotal   = (int) __get('mediaTotal');
+$mediaPerPage = (int) __get('mediaPerPage');
+$mediaPage    = (int) __get('mediaPage');
+$mediaMaxPage = max(1, (int) ceil($mediaTotal / max(1, $mediaPerPage)));
 
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+$ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
 ?>
-    <dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="media"/>
-            <input type="hidden" name="action" value="delete"/>
-            <input type="hidden" name="id[]" value=""/>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <?php _e('Delete media'); ?>
-                </p>
-                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this media file?'); ?></p>
+<?php osc_current_admin_theme_path('parts/header.php'); ?>
+<div id="media-library" class="col-xl-10">
+    <div class="row">
+        <div class="col">
+            <h2 class="render-title"><?php _e('Media library'); ?></h2>
+            <div class="media-filters">
+                <?php foreach ($mediaFilters as $filter) {
+                    $active = ($filter['type'] === $mediaType) ? ' active' : ''; ?>
+                    <a class="media-filter<?php echo $active; ?>"
+                       href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=media&type='
+                           . urlencode($filter['type'])); ?>">
+                        <?php echo osc_esc_html($filter['label']); ?>
+                    </a>
+                <?php } ?>
             </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
-            </div>
-        </form>
-    </dialog>
-    <dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-            <p class="osc-dialog-text"></p>
         </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
+    </div>
+
+    <?php if (count($mediaRows) === 0) { ?>
+        <div class="media-empty">
+            <i class="bi bi-images" aria-hidden="true"></i>
+            <p><?php _e('No media here yet.'); ?></p>
         </div>
-    </dialog>
-    <script>
-        function delete_dialog(id) {
-            var deleteModal = document.getElementById("deleteModal");
-            var input = deleteModal.querySelector("input[name='id[]'], input[name='id']");
-            if (input) { input.value = id; }
-            deleteModal.showModal();
-            return false;
-        }
-    </script>
-    <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
+    <?php } else { ?>
+        <div class="media-grid">
+            <?php foreach ($mediaRows as $row) {
+                // Normalise to the shape osc_get_resource_url() reads (it applies the
+                // storage-aware URL filters, so offloaded files resolve correctly).
+                $res = array(
+                    'pk_i_id'        => $row['id'],
+                    's_path'         => $row['s_path'],
+                    's_extension'    => $row['s_extension'],
+                    's_storage'      => $row['s_storage'],
+                    's_content_type' => $row['s_content_type'],
+                    's_owner_type'   => $row['owner_type'],
+                    'i_owner_id'     => $row['owner_id'],
+                );
+                $thumb      = osc_get_resource_url($res, 'thumbnail');
+                $full       = osc_get_resource_url($res);
+                $ownerType  = (string) $row['owner_type'];
+                $ownerLabel = $ownerLabels[$ownerType] ?? ucfirst($ownerType);
+                $ownerUrl   = mediaOwnerUrl($ownerType, (int) $row['owner_id']);
+                $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
+                    . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
+                ?>
+                <div class="media-card">
+                    <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener">
+                        <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
+                             alt="<?php echo osc_esc_html((string) $row['s_name']); ?>"/>
+                    </a>
+                    <div class="media-meta">
+                        <span class="media-owner-tag media-owner-<?php echo osc_esc_html($ownerType); ?>">
+                            <?php echo osc_esc_html($ownerLabel); ?>
+                        </span>
+                        <?php if ($ownerUrl !== '') { ?>
+                            <a class="media-owner-link"
+                               href="<?php echo osc_esc_html($ownerUrl); ?>">#<?php echo (int) $row['owner_id']; ?></a>
+                        <?php } ?>
+                    </div>
+                    <a class="media-delete" href="<?php echo osc_esc_html($deleteUrl); ?>"
+                       data-confirm="<?php echo osc_esc_html(
+                           __('Delete this media file? The listing, user or page it belongs to is not affected.')
+                       ); ?>" aria-label="<?php echo osc_esc_html(__('Delete')); ?>">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                    </a>
+                </div>
+            <?php } ?>
+        </div>
+
+        <?php if ($mediaMaxPage > 1) {
+            $pageBase = osc_admin_base_url(true) . '?page=media&type=' . urlencode($mediaType) . '&iPage='; ?>
+            <nav class="media-pagination" aria-label="<?php echo osc_esc_html(__('Pagination')); ?>">
+                <?php if ($mediaPage > 1) { ?>
+                    <a class="btn btn-secondary btn-sm"
+                       href="<?php echo osc_esc_html($pageBase . ($mediaPage - 1)); ?>"><?php _e('Previous'); ?></a>
+                <?php } ?>
+                <span class="media-page-count">
+                    <?php printf(__('Page %1$d of %2$d'), $mediaPage, $mediaMaxPage); ?>
+                </span>
+                <?php if ($mediaPage < $mediaMaxPage) { ?>
+                    <a class="btn btn-secondary btn-sm"
+                       href="<?php echo osc_esc_html($pageBase . ($mediaPage + 1)); ?>"><?php _e('Next'); ?></a>
+                <?php } ?>
+            </nav>
+        <?php } ?>
+    <?php } ?>
+</div>
+<script>
+    document.querySelectorAll('.media-delete').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            if (!window.confirm(link.getAttribute('data-confirm') || 'Delete?')) {
+                e.preventDefault();
             }
         });
-    </script>
+    });
+</script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

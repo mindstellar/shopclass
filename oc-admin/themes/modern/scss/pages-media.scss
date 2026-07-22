@@ -1,0 +1,146 @@
+// Media library (media/index.php) — a filterable grid of every uploaded image
+// across listings, users and pages. Colour goes through tokens so both themes
+// follow (see the Token Indirection Rule in the design system).
+
+#media-library {
+  // Filter pills: All / Listings / Users / Pages (+ plugin owner types).
+  .media-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-block: .25rem 1.25rem;
+  }
+
+  .media-filter {
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 999px;
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    font-weight: 500;
+    padding: .3rem .9rem;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--osc-chrome-hover);
+      color: var(--osc-ink);
+    }
+
+    &.active {
+      background: var(--osc-bronze);
+      border-color: var(--osc-bronze);
+      color: var(--osc-bench);
+    }
+  }
+
+  .media-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .media-card {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .media-thumb {
+    aspect-ratio: 1 / 1;
+    background: var(--osc-bench-sunk);
+    display: block;
+
+    img {
+      height: 100%;
+      object-fit: cover;
+      width: 100%;
+    }
+  }
+
+  .media-meta {
+    align-items: center;
+    display: flex;
+    gap: .4rem;
+    padding: .5rem .6rem;
+  }
+
+  .media-owner-tag {
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: .1rem .5rem;
+    text-transform: uppercase;
+    // Distinct tint per owner type; unknown (plugin) types fall back to neutral.
+    background: var(--osc-bench-sunk);
+    color: var(--osc-ink-muted);
+  }
+
+  .media-owner-item { background: var(--osc-success-tint); color: var(--osc-success); }
+  .media-owner-user { background: var(--osc-info-tint); color: var(--osc-info); }
+  .media-owner-page { background: var(--osc-bronze-tint); color: var(--osc-bronze); }
+
+  .media-owner-link {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    text-decoration: none;
+
+    &:hover { color: var(--osc-bronze); text-decoration: underline; }
+  }
+
+  // Delete affordance — reveals on hover/focus so the grid stays calm at rest.
+  .media-delete {
+    align-items: center;
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 4px;
+    color: var(--osc-danger);
+    display: inline-flex;
+    inset-block-start: .4rem;
+    inset-inline-end: .4rem;
+    justify-content: center;
+    height: 1.9rem;
+    opacity: 0;
+    position: absolute;
+    transition: opacity 150ms ease-out;
+    width: 1.9rem;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--osc-danger);
+      color: var(--osc-bench);
+    }
+  }
+
+  .media-card:hover .media-delete,
+  .media-delete:focus-visible {
+    opacity: 1;
+  }
+
+  .media-empty {
+    color: var(--osc-ink-muted);
+    padding: 3rem 1rem;
+    text-align: center;
+
+    i { display: block; font-size: 2.5rem; margin-block-end: .5rem; }
+  }
+
+  .media-pagination {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-block-start: 1.5rem;
+  }
+
+  .media-page-count {
+    color: var(--osc-ink-muted);
+    font-size: .85rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .media-delete { transition: none; }
+  }
+}

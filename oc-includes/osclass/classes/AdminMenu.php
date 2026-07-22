@@ -54,13 +54,6 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Manage media'),
-            osc_admin_base_url(true) . '?page=media',
-            'items_media',
-            'moderator'
-        );
-        $this->add_submenu(
-            'items',
             __('Comments'),
             osc_admin_base_url(true) . '?page=comments',
             'items_comments',
@@ -80,6 +73,8 @@ class AdminMenu
             'items_settings',
             'administrator'
         );
+
+        $this->add_menu(__('Media'), osc_admin_base_url(true) . '?page=media', 'media', 'moderator', 'bi bi-images');
 
         $this->add_menu(__('Appearance'), osc_admin_base_url(true) . '?page=appearance', 'appearance', 'administrator',
                         'bi bi-palette');
