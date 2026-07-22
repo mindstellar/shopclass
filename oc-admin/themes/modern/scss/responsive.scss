@@ -143,8 +143,14 @@
       padding: 1rem 1rem;
     }
   }
+  // Simple content tables (no bulk-actions column) collapse to labelled cards on
+  // phones, mirroring the datatables pattern: drop the header row, make the first
+  // cell the card title, and prefix every other cell with its column name.
   #upload-plugins,
   #email-templates {
+    thead {
+      display: none;
+    }
     td {
       display: block;
       &:empty {
@@ -153,9 +159,11 @@
       &:first-child {
         font-weight: 600;
       }
-    }
-    th ~ th {
-      display: none;
+      &:not(:first-child)[data-col-name]::before {
+        content: attr(data-col-name) ": ";
+        padding-inline-end: 0.5rem;
+        font-weight: 500;
+      }
     }
   }
   #datatablesForm {

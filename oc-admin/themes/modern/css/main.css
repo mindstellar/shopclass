@@ -16745,6 +16745,10 @@ form h3, form .h3 {
   .form-vertical .form-actions {
     padding: 1rem 1rem;
   }
+  #upload-plugins thead,
+  #email-templates thead {
+    display: none;
+  }
   #upload-plugins td,
   #email-templates td {
     display: block;
@@ -16757,9 +16761,11 @@ form h3, form .h3 {
   #email-templates td:first-child {
     font-weight: 600;
   }
-  #upload-plugins th ~ th,
-  #email-templates th ~ th {
-    display: none;
+  #upload-plugins td:not(:first-child)[data-col-name]::before,
+  #email-templates td:not(:first-child)[data-col-name]::before {
+    content: attr(data-col-name) ": ";
+    padding-inline-end: 0.5rem;
+    font-weight: 500;
   }
   #datatablesForm .table .col-status {
     display: block;

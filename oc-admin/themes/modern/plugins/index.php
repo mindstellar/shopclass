@@ -103,9 +103,9 @@ $tab_index = 2;
                     : '<div class="actions"><ul><li>' . implode('</li><li>', $options) . '</li></ul></div>';
                 ?>
                 <tr class="plugin-<?php echo $sStatus; ?> status-<?php echo $sStatus; ?>">
-                    <td><?php echo $array[0] . $actions; ?></td>
-                    <td class="col-status"><?php echo $array['status']; ?></td>
-                    <td><?php echo $array[1]; ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>"><?php echo $array[0] . $actions; ?></td>
+                    <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php echo $array['status']; ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(__('Description')); ?>"><?php echo $array[1]; ?></td>
                 </tr>
             <?php } ?>
         <?php } else { ?>
