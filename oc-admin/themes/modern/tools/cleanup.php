@@ -60,7 +60,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_csrf_token_form(); ?>
         <div class="widget-box">
             <div class="widget-box-content">
-                <table class="table">
+                <div class="table-responsive">
+                <table class="table" style="min-width:34rem">
                     <thead>
                     <tr>
                         <th><?php _e('Enabled'); ?></th>
@@ -102,6 +103,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php } ?>
                     </tbody>
                 </table>
+                </div>
 
                 <div class="form-row mt-3" style="max-width:20rem">
                     <label for="batch_limit"><?php _e('Maximum items removed per run'); ?></label>

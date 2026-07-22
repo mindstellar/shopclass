@@ -133,10 +133,10 @@ function customHead()
             } ?>
 
             // Create and draw the visualization.
-            new google.visualization.PieChart(document.getElementById('by_country')).draw(data_country, {
+            new google.visualization.PieChart(document.getElementById('by_country')).draw(data_country, oscPieOpts({
                 title: null,
                 height: 200
-            });
+            }));
 
             var data_region = new google.visualization.DataTable();
             data_region.addColumn('string', '<?php _e('Region'); ?>');
@@ -149,10 +149,10 @@ function customHead()
             } ?>
 
             // Create and draw the visualization.
-            new google.visualization.PieChart(document.getElementById('by_region')).draw(data_region, {
+            new google.visualization.PieChart(document.getElementById('by_region')).draw(data_region, oscPieOpts({
                 title: null,
                 height: 200
-            });
+            }));
         }
     </script>
     <?php }

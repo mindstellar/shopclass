@@ -113,13 +113,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="form-controls">
                             <?php AdminForm::password_text($admin); ?>
                         </div>
-                        <?php if ($aux['admin_edit']) { ?>
+                    </div>
+                    <?php if ($aux['admin_edit']) { ?>
+                        <div class="form-row">
+                            <div class="form-label"><?php _e('Confirm new password'); ?></div>
                             <div class="form-controls">
                                 <?php AdminForm::check_password_text($admin); ?>
                                 <p class="help-inline"><em><?php _e('Type your new password again'); ?></em></p>
                             </div>
-                        <?php } ?>
-                    </div>
+                        </div>
+                    <?php } ?>
 
                     <hr/>
                     <div class="form-row">

@@ -160,8 +160,16 @@
   }
   #datatablesForm {
     .table {
+      // Moderation status is core information — on phones show it as a labelled
+      // card row ("Status: …") instead of hiding it.
       .col-status {
-        display: none;
+        display: block;
+        border-inline-start: 0;
+        &::before {
+          content: attr(data-col-name) ": ";
+          padding-inline-end: 0.5rem;
+          font-weight: 500;
+        }
       }
     }
   }

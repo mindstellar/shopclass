@@ -16762,7 +16762,13 @@ form h3, form .h3 {
     display: none;
   }
   #datatablesForm .table .col-status {
-    display: none;
+    display: block;
+    border-inline-start: 0;
+  }
+  #datatablesForm .table .col-status::before {
+    content: attr(data-col-name) ": ";
+    padding-inline-end: 0.5rem;
+    font-weight: 500;
   }
 }
 [data-bs-theme=dark] {

@@ -286,38 +286,46 @@ osc_current_admin_theme_path('parts/header.php');
             return serialized
         }
 
-        var orderRoot = document.querySelector('.sortable');
-        var oldOrder = orderArray(orderRoot);
-
-        var sortable = new Sortable(document.querySelector('.sortable'), {
-            sort: true,
-            handle: '.handle',
-            ghostClass: 'drag-ghost',
-            animation: 150,
-            fallbackOnBody: true,
-            swapThreshold: 0.10,
-            onEnd: function () {
-                var newOrder = orderArray(orderRoot);
-                if (oldOrder !== newOrder) {
-                    var body = new URLSearchParams();
-                    body.set('list', JSON.stringify(newOrder));
-                    fetch("<?php echo osc_admin_base_url(true) . '?page=ajax&action=fields_order&' . osc_csrf_token_url(); ?>", {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: body
-                    }).then(function (r) {
-                        return r.text();
-                    }).then(function (res) {
-                        var ret = JSON.parse(res);
-                        if (ret.error) { setJsMessage('error', ret.error); }
-                        if (ret.ok) { setJsMessage('ok', ret.ok); }
-                    }).catch(function () {
-                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
-                    });
-                    oldOrder = newOrder;
-                }
+        // The SortableJS library is enqueued to the footer, which loads *after* this
+        // inline block. Defer init to DOMContentLoaded so the library is defined, and
+        // guard on it so a load failure degrades gracefully instead of throwing.
+        document.addEventListener('DOMContentLoaded', function () {
+            var orderRoot = document.querySelector('.sortable');
+            if (typeof Sortable === 'undefined' || !orderRoot) {
+                return;
             }
+            var oldOrder = orderArray(orderRoot);
+
+            new Sortable(orderRoot, {
+                sort: true,
+                handle: '.handle',
+                ghostClass: 'drag-ghost',
+                animation: 150,
+                fallbackOnBody: true,
+                swapThreshold: 0.10,
+                onEnd: function () {
+                    var newOrder = orderArray(orderRoot);
+                    if (oldOrder !== newOrder) {
+                        var body = new URLSearchParams();
+                        body.set('list', JSON.stringify(newOrder));
+                        fetch("<?php echo osc_admin_base_url(true) . '?page=ajax&action=fields_order&' . osc_csrf_token_url(); ?>", {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: body
+                        }).then(function (r) {
+                            return r.text();
+                        }).then(function (res) {
+                            var ret = JSON.parse(res);
+                            if (ret.error) { setJsMessage('error', ret.error); }
+                            if (ret.ok) { setJsMessage('ok', ret.ok); }
+                        }).catch(function () {
+                            setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                        });
+                        oldOrder = newOrder;
+                    }
+                }
+            });
         });
     </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
