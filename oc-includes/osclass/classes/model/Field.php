@@ -421,8 +421,16 @@ class Field extends DAO
     }
 
     /**
-     * Find a field by item id with matching item category
+     * The meta fields an item has a stored value for (its detail-page values).
+     *
+     * Resolves purely from the values in t_item_meta: any field the item filled in
+     * is returned, regardless of how it was assigned (loose, grouped, or inherited
+     * from a parent category). The old t_meta_categories join required the field to
+     * be assigned to the item's exact category, which hid the value of an inherited
+     * or grouped field — the value was stored but never shown.
+     *
      * @param $itemId
+     *
      * @return array
      */
     public function findByItem($itemId)
@@ -431,12 +439,9 @@ class Field extends DAO
             return array();
         }
         $this->dao->select('mf.pk_i_id as pk_i_id, im.s_value as s_value, mf.s_name as s_name, mf.e_type as e_type, im.s_multi as s_multi, mf.s_slug as s_slug, mf.s_meta as s_meta');
-        $this->dao->from(sprintf('%st_item i', DB_TABLE_PREFIX));
-        $this->dao->join(sprintf('%st_item_meta im', DB_TABLE_PREFIX), 'i.pk_i_id = im.fk_i_item_id', 'LEFT');
-        $this->dao->join(sprintf('%st_meta_fields mf', DB_TABLE_PREFIX), 'mf.pk_i_id = im.fk_i_field_id', 'LEFT');
-        $this->dao->join(sprintf('%st_meta_categories mc', DB_TABLE_PREFIX), 'i.fk_i_category_id = mc.fk_i_category_id', 'LEFT');
-        $this->dao->where('mf.pk_i_id = mc.fk_i_field_id');
-        $this->dao->where('im.fk_i_item_id = ' . $itemId);
+        $this->dao->from(sprintf('%st_item_meta im', DB_TABLE_PREFIX));
+        $this->dao->join(sprintf('%st_meta_fields mf', DB_TABLE_PREFIX), 'mf.pk_i_id = im.fk_i_field_id', 'INNER');
+        $this->dao->where('im.fk_i_item_id = ' . (int)$itemId);
         $this->dao->orderBy('mf.i_position', 'ASC');
 
         $result = $this->dao->get();
