@@ -146,8 +146,10 @@ class FieldGroup extends DAO
     }
 
     /**
-     * Delete a group: unlink its category assignments and detach its member fields
-     * (set fk_i_group_id NULL so they survive as loose fields), then remove the row.
+     * Delete a form: unlink its category assignments and its field-membership links
+     * (a field with no remaining links becomes loose again), then remove the row.
+     * The legacy fk_i_group_id column is cleared too so the deprecated column can't
+     * point at a deleted form during the rollback window.
      *
      * @param int $id
      *
@@ -156,6 +158,7 @@ class FieldGroup extends DAO
     public function deleteByPrimaryKey($id)
     {
         $this->dao->delete(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX), array('fk_i_group_id' => $id));
+        $this->dao->delete(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX), array('fk_i_group_id' => $id));
         $this->dao->update(
             sprintf('%st_meta_fields', DB_TABLE_PREFIX),
             array('fk_i_group_id' => null),
@@ -163,6 +166,35 @@ class FieldGroup extends DAO
         );
 
         return $this->dao->delete($this->getTableName(), array('pk_i_id' => $id));
+    }
+
+    /**
+     * Set a field's membership to a single form via the link table (t_meta_group_fields),
+     * appending it at the end of that form. Used by the legacy single-group field editor
+     * during the transition to the multi-form builder; the builder manages links directly.
+     * $groupId of 0 removes the field from every form (making it loose again).
+     *
+     * @param int $fieldId
+     * @param int $groupId
+     *
+     * @return void
+     */
+    public function setFieldSingleGroup($fieldId, $groupId)
+    {
+        $link = DB_TABLE_PREFIX . 't_meta_group_fields';
+        $this->dao->delete($link, array('fk_i_field_id' => (int)$fieldId));
+        if ((int)$groupId > 0) {
+            $result = $this->dao->query(
+                'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
+                . ' WHERE fk_i_group_id = ' . (int)$groupId
+            );
+            $pos = $result ? (int)$result->row()['pos'] : 0;
+            $this->dao->insert($link, array(
+                'fk_i_group_id' => (int)$groupId,
+                'fk_i_field_id' => (int)$fieldId,
+                'i_position'    => $pos,
+            ));
+        }
     }
 
     /**

@@ -495,6 +495,17 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group_fields (
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    fk_i_field_id INT UNSIGNED NOT NULL,
+    i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (fk_i_group_id, fk_i_field_id),
+        INDEX idx_group_fields_field (fk_i_field_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
     fk_i_category_id INT UNSIGNED NOT NULL,
     fk_i_field_id INT UNSIGNED NOT NULL,

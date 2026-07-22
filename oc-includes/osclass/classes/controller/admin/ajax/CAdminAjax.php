@@ -345,6 +345,9 @@ class CAdminAjax extends AdminSecBaseModel
                             ),
                             array('pk_i_id' => Params::getParam('id'))
                         );
+                        // The link table t_meta_group_fields is the source of truth for
+                        // form membership now; keep it in sync with this single-group editor.
+                        FieldGroup::newInstance()->setFieldSingleGroup((int)Params::getParam('id'), $groupId);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);

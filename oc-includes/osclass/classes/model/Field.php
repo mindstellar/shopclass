@@ -224,11 +224,15 @@ class Field extends DAO
      */
     public function findByGroup($groupId)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_group_id', (int)$groupId);
-        $this->dao->orderBy('i_position', 'ASC');
-        $result = $this->dao->get();
+        // Membership + per-form order come from the link table (t_meta_group_fields),
+        // which replaced the single fk_i_group_id column so a field can live in many
+        // forms at different positions.
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT mf.* FROM ' . $p . 't_meta_fields mf'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
+            . ' WHERE gf.fk_i_group_id = ' . (int)$groupId
+            . ' ORDER BY gf.i_position ASC';
+        $result = $this->dao->query($sql);
         if ($result == false) {
             return array();
         }
@@ -262,14 +266,17 @@ class Field extends DAO
         $inList = implode(',', array_map('intval', $path));
         $p      = DB_TABLE_PREFIX;
 
-        // Loose fields directly assigned, plus grouped fields whose group is assigned.
+        // Loose fields directly assigned (and in NO form), plus grouped fields whose
+        // form is assigned to the category — form membership now comes from the link
+        // table t_meta_group_fields (a field can be in several forms).
         $sql = 'SELECT query.* FROM ('
             . 'SELECT mf.*, 0 AS cf_group_position FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
             . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
-            . ' AND mf.fk_i_group_id IS NULL'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
             . ' UNION '
             . 'SELECT mf.*, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mf'
-            . ' JOIN ' . $p . 't_meta_group g ON mf.fk_i_group_id = g.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
             . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
             . ') AS query GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
@@ -331,15 +338,18 @@ class Field extends DAO
         $inList = implode(',', array_map('intval', $pathIds));
         $p      = DB_TABLE_PREFIX;
 
-        // Searchable loose fields directly assigned, plus searchable grouped fields
-        // whose group is assigned, across the inheritance path.
+        // Searchable loose fields directly assigned (and in no form), plus searchable
+        // fields whose form is assigned, across the inheritance path — form membership
+        // via the link table t_meta_group_fields.
         $sql = 'SELECT DISTINCT pk_i_id FROM ('
             . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f, ' . $p . 't_meta_categories c'
             . ' WHERE c.fk_i_category_id IN (' . $inList . ') AND f.pk_i_id = c.fk_i_field_id'
-            . ' AND f.b_searchable = 1 AND f.fk_i_group_id IS NULL'
+            . ' AND f.b_searchable = 1'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = f.pk_i_id)'
             . ' UNION '
             . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f'
-            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = f.fk_i_group_id'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = f.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = gf.fk_i_group_id'
             . ' WHERE gc.fk_i_category_id IN (' . $inList . ') AND f.b_searchable = 1'
             . ') AS q';
 
@@ -389,20 +399,24 @@ class Field extends DAO
         $p      = DB_TABLE_PREFIX;
         $itemId = (int)$itemId;
 
+        // Loose fields carry their global position; grouped fields carry their
+        // per-form position from the link table (cf_field_position), so ordering and
+        // sectioning survive a field living in several forms.
         $sql = 'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM ('
-            . 'SELECT mf.*, NULL AS cf_group_name, 0 AS cf_group_position'
+            . 'SELECT mf.*, NULL AS cf_group_name, 0 AS cf_group_position, mf.i_position AS cf_field_position'
             . ' FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
             . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
-            . ' AND mf.fk_i_group_id IS NULL'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
             . ' UNION '
-            . 'SELECT mf.*, g.s_name AS cf_group_name, g.i_position AS cf_group_position'
+            . 'SELECT mf.*, g.s_name AS cf_group_name, g.i_position AS cf_group_position, gf.i_position AS cf_field_position'
             . ' FROM ' . $p . 't_meta_fields mf'
-            . ' JOIN ' . $p . 't_meta_group g ON mf.fk_i_group_id = g.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
             . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
             . ') as query'
             . ' LEFT JOIN ' . $p . 't_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = ' . $itemId
-            . ' GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
+            . ' ORDER BY query.cf_group_position ASC, query.cf_field_position ASC';
 
         $result = $this->dao->query($sql);
 
@@ -410,10 +424,19 @@ class Field extends DAO
             return array();
         }
 
-        $fields = $result->result();
-        // extend fields
+        // Render-time dedup (FORMS.md §9.3): a field reused across several forms/
+        // categories reaches the context multiple times; keep the FIRST occurrence
+        // (lowest group then field position) so the item form never emits two
+        // meta[id] inputs. This also collapses a field's multiple t_item_meta rows
+        // (e.g. DATEINTERVAL from/to), matching the old GROUP BY pk_i_id behaviour.
         $extendedFields = array();
-        foreach ($fields as $field) {
+        $seen           = array();
+        foreach ($result->result() as $field) {
+            $id = $field['pk_i_id'];
+            if (isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
             $extendedFields[] = $this->extendField($field);
         }
 
