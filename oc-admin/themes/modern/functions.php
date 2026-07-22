@@ -243,4 +243,121 @@ function widgetConfigSelectOptions($options)
     return $result;
 }
 
+/**
+ * DOM id for a widget config control, namespaced by type so ids stay unique
+ * across the (hidden) per-type field groups. Shared by the appearance widget form
+ * and the page-builder block dialog.
+ *
+ * @param string $typeId
+ * @param string $fieldName
+ *
+ * @return string
+ */
+function widgetConfigFieldId($typeId, $fieldName)
+{
+    return 'widget-cfg-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', $typeId . '-' . $fieldName);
+}
+
+/**
+ * Render one widget config field as a Bootstrap control named config[<name>].
+ * The single source both the appearance widget editor and the page-builder block
+ * dialog use, so a field looks and behaves the same in both. $disabled is true
+ * for a field whose type is not the currently selected one, so it does not post
+ * until the type is switched client-side. Supported types:
+ * text, number, textarea, select, checkbox, code, image. Field types map to what
+ * CAdminAppearance::buildWidgetConfig() accepts.
+ *
+ * @param string $typeId
+ * @param array  $field
+ * @param mixed  $value    current value (empty in add-mode; the dialog populates
+ *                         edits client-side)
+ * @param bool   $disabled
+ *
+ * @return void
+ */
+function osc_widget_config_field($typeId, $field, $value, $disabled)
+{
+    $name = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
+    if ($name === '') {
+        return;
+    }
+    $label     = isset($field['label']) && is_string($field['label']) ? $field['label'] : $name;
+    $fieldType = isset($field['type']) && is_string($field['type']) ? $field['type'] : 'text';
+    $id        = widgetConfigFieldId($typeId, $name);
+    $inputName = 'config[' . $name . ']';
+    $dis       = $disabled ? 'disabled="disabled"' : '';
+    $val       = (string) $value;
+    ?>
+    <div class="mb-3">
+        <?php if ($fieldType !== 'checkbox') { ?>
+            <label for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
+        <?php } ?>
+        <?php switch ($fieldType) {
+            case 'checkbox': ?>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="<?php echo osc_esc_html($id); ?>"
+                           name="<?php echo osc_esc_html($inputName); ?>" value="1"
+                           <?php echo (!empty($val) && $val !== '0') ? 'checked="checked"' : ''; ?>
+                           <?php echo $dis; ?>/>
+                    <label class="form-check-label"
+                           for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
+                </div>
+                <?php break;
+            case 'select': ?>
+                <select id="<?php echo osc_esc_html($id); ?>" class="form-select form-select-sm"
+                        name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>>
+                    <?php foreach (widgetConfigSelectOptions($field['options'] ?? array()) as $opt) { ?>
+                        <option value="<?php echo osc_esc_html($opt['value']); ?>"
+                            <?php echo ($val === $opt['value']) ? 'selected="selected"' : ''; ?>>
+                            <?php echo osc_esc_html($opt['label']); ?>
+                        </option>
+                    <?php } ?>
+                </select>
+                <?php break;
+            case 'number': ?>
+                <input type="number" id="<?php echo osc_esc_html($id); ?>" class="form-control form-control-sm"
+                       name="<?php echo osc_esc_html($inputName); ?>"
+                       value="<?php echo osc_esc_html($val); ?>" <?php echo $dis; ?>/>
+                <?php break;
+            case 'code': ?>
+                <?php // Raw HTML/JS: a plain monospace textarea, never TinyMCE. The
+                      // widget-code-editor class keeps the appearance TinyMCE init away. ?>
+                <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control widget-code-editor"
+                          style="font-family:monospace" rows="8" spellcheck="false" autocomplete="off"
+                          name="<?php echo osc_esc_html($inputName); ?>"
+                          <?php echo $dis; ?>><?php echo osc_esc_html($val); ?></textarea>
+                <?php break;
+            case 'textarea': ?>
+                <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control" rows="5"
+                          name="<?php echo osc_esc_html($inputName); ?>"
+                          <?php echo $dis; ?>><?php echo osc_esc_html($val); ?></textarea>
+                <?php break;
+            case 'image': ?>
+                <?php // A media URL chosen via the picker (parts/media-picker.php). ?>
+                <div class="widget-image-field">
+                    <input type="hidden" id="<?php echo osc_esc_html($id); ?>" class="widget-image-input"
+                           name="<?php echo osc_esc_html($inputName); ?>"
+                           value="<?php echo osc_esc_html($val); ?>" <?php echo $dis; ?>/>
+                    <div class="widget-image-preview"<?php echo $val !== '' ? '' : ' hidden'; ?>>
+                        <img src="<?php echo osc_esc_html($val); ?>" alt=""/>
+                    </div>
+                    <div class="widget-image-actions">
+                        <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
+                            <?php _e('Choose image'); ?>
+                        </button>
+                        <button type="button" class="btn btn-link btn-sm widget-image-clear"
+                            <?php echo $val !== '' ? '' : 'hidden'; ?>><?php _e('Remove'); ?></button>
+                    </div>
+                </div>
+                <?php break;
+            default: ?>
+                <input type="text" id="<?php echo osc_esc_html($id); ?>" class="form-control form-control-sm"
+                       name="<?php echo osc_esc_html($inputName); ?>"
+                       value="<?php echo osc_esc_html($val); ?>" <?php echo $dis; ?>/>
+                <?php break;
+        } ?>
+    </div>
+    <?php
+}
+
 /* end of file */

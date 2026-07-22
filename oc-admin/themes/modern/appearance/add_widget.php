@@ -59,21 +59,6 @@ if ($currentTypeId !== '' && !empty($widget['s_config'])) {
     }
 }
 
-/**
- * DOM id for a config field's control. Every registered type's field group is
- * rendered server-side (and toggled client-side), so the id is namespaced by
- * type id to stay unique across groups.
- *
- * @param string $typeId
- * @param string $fieldName
- *
- * @return string
- */
-function widgetConfigFieldId($typeId, $fieldName)
-{
-    return 'widget-cfg-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', $typeId . '-' . $fieldName);
-}
-
 
 /**
  * The value a config field should show: the widget's saved config when this
@@ -97,118 +82,6 @@ function widgetConfigFieldValue($field, $typeId, $currentTypeId, $currentWidgetC
     return $default;
 }
 
-
-/**
- * Render one config field as a Bootstrap form control named config[<name>].
- * $disabled is true for fields belonging to a type that isn't the currently
- * selected one, so they don't post until the type is switched client-side.
- *
- * @param string $typeId
- * @param array  $field
- * @param mixed  $value
- * @param bool   $disabled
- *
- * @return void
- */
-function renderWidgetConfigField($typeId, $field, $value, $disabled)
-{
-    $name = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
-    if ($name === '') {
-        return;
-    }
-    $label      = isset($field['label']) && is_string($field['label']) ? $field['label'] : $name;
-    $fieldType  = isset($field['type']) && is_string($field['type']) ? $field['type'] : 'text';
-    $fieldId    = widgetConfigFieldId($typeId, $name);
-    $inputName  = 'config[' . $name . ']';
-    $disabledAttr = $disabled ? 'disabled="disabled"' : '';
-    ?>
-    <div class="input-line">
-        <?php if ($fieldType !== 'checkbox') { ?>
-            <label for="<?php echo osc_esc_html($fieldId); ?>"><?php echo osc_esc_html($label); ?></label>
-        <?php } ?>
-        <div class="input">
-            <?php switch ($fieldType) {
-                case 'checkbox': ?>
-                    <div class="form-label-checkbox">
-                        <input type="checkbox" id="<?php echo osc_esc_html($fieldId); ?>"
-                               name="<?php echo osc_esc_html($inputName); ?>" value="1"
-                               <?php echo (!empty($value) && $value !== '0') ? 'checked="checked"' : ''; ?>
-                               <?php echo $disabledAttr; ?> />
-                        <label for="<?php echo osc_esc_html($fieldId); ?>"><?php echo osc_esc_html($label); ?></label>
-                    </div>
-                    <?php
-                    break;
-                case 'select': ?>
-                    <select id="<?php echo osc_esc_html($fieldId); ?>" class="form-select form-select-sm"
-                            name="<?php echo osc_esc_html($inputName); ?>" <?php echo $disabledAttr; ?>>
-                        <?php foreach (widgetConfigSelectOptions($field['options'] ?? array()) as $option) { ?>
-                            <option value="<?php echo osc_esc_html($option['value']); ?>"
-                                <?php echo ((string) $value === $option['value']) ? 'selected="selected"' : ''; ?>>
-                                <?php echo osc_esc_html($option['label']); ?>
-                            </option>
-                        <?php } ?>
-                    </select>
-                    <?php
-                    break;
-                case 'number': ?>
-                    <input type="number" id="<?php echo osc_esc_html($fieldId); ?>" class="input-medium"
-                           name="<?php echo osc_esc_html($inputName); ?>"
-                           value="<?php echo osc_esc_html((string) $value); ?>" <?php echo $disabledAttr; ?>/>
-                    <?php
-                    break;
-                case 'textarea': ?>
-                    <textarea id="<?php echo osc_esc_html($fieldId); ?>" class="form-control"
-                              name="<?php echo osc_esc_html($inputName); ?>" rows="4"
-                              <?php echo $disabledAttr; ?>><?php echo osc_esc_html((string) $value); ?></textarea>
-                    <?php
-                    break;
-                case 'code': ?>
-                    <?php // Raw HTML/JS editor: a plain monospace textarea, never
-                          // TinyMCE (it mangles script markup). The widget-code-editor
-                          // class keeps the global TinyMCE init from attaching. The
-                          // value is osc_esc_html()'d so stored code round-trips into
-                          // the field for editing without executing in this admin page. ?>
-                    <textarea id="<?php echo osc_esc_html($fieldId); ?>"
-                              class="form-control widget-code-editor"
-                              style="font-family: monospace;"
-                              name="<?php echo osc_esc_html($inputName); ?>" rows="10"
-                              spellcheck="false" autocomplete="off"
-                              <?php echo $disabledAttr; ?>><?php echo osc_esc_html((string) $value); ?></textarea>
-                    <?php
-                    break;
-                case 'image':
-                    // A media URL chosen via the picker: a hidden input holds the
-                    // value, with a preview and choose/remove controls (wired by
-                    // parts/media-picker.php). The widget's render outputs the <img>.
-                    $imageVal = (string) $value; ?>
-                    <div class="widget-image-field">
-                        <input type="hidden" id="<?php echo osc_esc_html($fieldId); ?>"
-                               name="<?php echo osc_esc_html($inputName); ?>" class="widget-image-input"
-                               value="<?php echo osc_esc_html($imageVal); ?>" <?php echo $disabledAttr; ?>/>
-                        <div class="widget-image-preview"<?php echo $imageVal !== '' ? '' : ' hidden'; ?>>
-                            <img src="<?php echo osc_esc_html($imageVal); ?>" alt=""/>
-                        </div>
-                        <div class="widget-image-actions">
-                            <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
-                                <?php _e('Choose image'); ?>
-                            </button>
-                            <button type="button" class="btn btn-link btn-sm widget-image-clear"
-                                <?php echo $imageVal !== '' ? '' : 'hidden'; ?>><?php _e('Remove'); ?></button>
-                        </div>
-                    </div>
-                    <?php
-                    break;
-                default: ?>
-                    <input type="text" id="<?php echo osc_esc_html($fieldId); ?>" class="input-large"
-                           name="<?php echo osc_esc_html($inputName); ?>"
-                           value="<?php echo osc_esc_html((string) $value); ?>" <?php echo $disabledAttr; ?>/>
-                    <?php
-                    break;
-            } ?>
-        </div>
-    </div>
-    <?php
-}
 
 
 // Type id => description, used by the client-side toggle to show a help line
@@ -294,35 +167,32 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                            value="<?php echo (int)Params::getParam('page_builder_id'); ?>"/>
                 <?php } ?>
                 <fieldset>
-                    <div class="input-line">
-                        <label><?php _e('Description (for internal purposes only)'); ?></label>
-                        <div class="input">
-                            <input type="text" class="large" name="description" value="<?php if ($edit) {
-                                echo osc_esc_html($widget['s_description']);
-                                                                                       } ?>"/>
-                        </div>
+                    <div class="mb-3">
+                        <label for="widget_description"><?php _e('Description (for internal purposes only)'); ?></label>
+                        <input type="text" class="form-control form-control-sm" id="widget_description"
+                               name="description" value="<?php if ($edit) {
+                                   echo osc_esc_html($widget['s_description']);
+                                                         } ?>"/>
                     </div>
-                    <div class="input-line">
+                    <div class="mb-3">
                         <label for="widget_type_select"><?php _e('Widget type'); ?></label>
-                        <div class="input">
-                            <select id="widget_type_select" name="s_type" class="form-select form-select-sm">
-                                <option value="" <?php echo ($currentTypeId === '') ? 'selected="selected"' : ''; ?>>
-                                    <?php echo osc_esc_html(__('Custom HTML (legacy)')); ?>
+                        <select id="widget_type_select" name="s_type" class="form-select form-select-sm">
+                            <option value="" <?php echo ($currentTypeId === '') ? 'selected="selected"' : ''; ?>>
+                                <?php echo osc_esc_html(__('Custom HTML (legacy)')); ?>
+                            </option>
+                            <?php foreach ($widgetTypes as $typeId => $typeSpec) { ?>
+                                <option value="<?php echo osc_esc_html($typeId); ?>"
+                                    <?php echo ($currentTypeId === $typeId) ? 'selected="selected"' : ''; ?>>
+                                    <?php echo osc_esc_html($typeSpec['label']); ?>
                                 </option>
-                                <?php foreach ($widgetTypes as $typeId => $typeSpec) { ?>
-                                    <option value="<?php echo osc_esc_html($typeId); ?>"
-                                        <?php echo ($currentTypeId === $typeId) ? 'selected="selected"' : ''; ?>>
-                                        <?php echo osc_esc_html($typeSpec['label']); ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
-                        </div>
-                        <div class="help-box" id="widget_type_description"></div>
+                            <?php } ?>
+                        </select>
+                        <p class="help-box" id="widget_type_description"></p>
                     </div>
                     <div class="alert alert-danger" role="alert" id="widget_type_danger" hidden></div>
-                    <div class="input-description-wide" id="widget-legacy-content"
+                    <div class="mb-3" id="widget-legacy-content"
                         <?php echo ($currentTypeId !== '') ? 'hidden' : ''; ?>>
-                        <label><?php _e('HTML Code for the Widget'); ?></label>
+                        <label for="body"><?php _e('HTML Code for the Widget'); ?></label>
                         <textarea name="content" id="body"><?php if ($edit) {
                                 echo osc_esc_html($widget['s_content']);
                                                            } ?></textarea>
@@ -345,7 +215,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         $currentTypeId,
                                         $currentWidgetConfig
                                     );
-                                    renderWidgetConfigField($typeId, $field, $fieldValue, !$isActive);
+                                    osc_widget_config_field($typeId, $field, $fieldValue, !$isActive);
                                 } ?>
                             </div>
                         <?php } ?>

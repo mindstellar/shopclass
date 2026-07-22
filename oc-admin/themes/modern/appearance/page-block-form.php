@@ -46,104 +46,6 @@ foreach ($pbf_types as $pbf_id => $pbf_spec) {
     break;
 }
 
-/**
- * DOM id for a page-block config control, namespaced by type so ids stay unique
- * across the (hidden) per-type field groups.
- *
- * @param string $typeId
- * @param string $fieldName
- *
- * @return string
- */
-function pbfFieldId($typeId, $fieldName)
-{
-    return 'pbf-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', $typeId . '-' . $fieldName);
-}
-
-/**
- * Render one declared config field as a control named config[<name>]. Controls
- * for a type that is not the active one are disabled so they do not post until
- * the type is selected. Field types mirror what buildWidgetConfig accepts.
- *
- * @param string $typeId
- * @param array  $field
- * @param bool   $disabled
- *
- * @return void
- */
-function pbfRenderField($typeId, $field, $disabled)
-{
-    $name = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
-    if ($name === '') {
-        return;
-    }
-    $label     = isset($field['label']) && is_string($field['label']) ? $field['label'] : $name;
-    $fieldType = isset($field['type']) && is_string($field['type']) ? $field['type'] : 'text';
-    $id        = pbfFieldId($typeId, $name);
-    $inputName = 'config[' . $name . ']';
-    $dis       = $disabled ? 'disabled="disabled"' : '';
-    ?>
-    <div class="mb-3">
-        <?php if ($fieldType !== 'checkbox') { ?>
-            <label for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
-        <?php } ?>
-        <?php switch ($fieldType) {
-            case 'checkbox': ?>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="<?php echo osc_esc_html($id); ?>"
-                           name="<?php echo osc_esc_html($inputName); ?>" value="1" <?php echo $dis; ?>/>
-                    <label class="form-check-label"
-                           for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
-                </div>
-                <?php break;
-            case 'select': ?>
-                <select id="<?php echo osc_esc_html($id); ?>" class="form-select form-select-sm"
-                        name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>>
-                    <?php foreach (widgetConfigSelectOptions($field['options'] ?? array()) as $opt) { ?>
-                        <option value="<?php echo osc_esc_html($opt['value']); ?>">
-                            <?php echo osc_esc_html($opt['label']); ?>
-                        </option>
-                    <?php } ?>
-                </select>
-                <?php break;
-            case 'number': ?>
-                <input type="number" id="<?php echo osc_esc_html($id); ?>" class="form-control form-control-sm"
-                       name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>/>
-                <?php break;
-            case 'code': ?>
-                <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control widget-code-editor"
-                          style="font-family:monospace" rows="8" spellcheck="false" autocomplete="off"
-                          name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>></textarea>
-                <?php break;
-            case 'textarea': ?>
-                <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control" rows="6"
-                          name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>></textarea>
-                <?php break;
-            case 'image': ?>
-                <?php // Add-mode renders empty; the edit populate (pages/frm.php) fills
-                      // the hidden input and syncs the preview. Wired by media-picker.php. ?>
-                <div class="widget-image-field">
-                    <input type="hidden" id="<?php echo osc_esc_html($id); ?>" class="widget-image-input"
-                           name="<?php echo osc_esc_html($inputName); ?>" value="" <?php echo $dis; ?>/>
-                    <div class="widget-image-preview" hidden><img src="" alt=""/></div>
-                    <div class="widget-image-actions">
-                        <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
-                            <?php _e('Choose image'); ?>
-                        </button>
-                        <button type="button" class="btn btn-link btn-sm widget-image-clear" hidden>
-                            <?php _e('Remove'); ?>
-                        </button>
-                    </div>
-                </div>
-                <?php break;
-            default: ?>
-                <input type="text" id="<?php echo osc_esc_html($id); ?>" class="form-control form-control-sm"
-                       name="<?php echo osc_esc_html($inputName); ?>" <?php echo $dis; ?>/>
-                <?php break;
-        } ?>
-    </div>
-    <?php
-}
 ?>
 <form name="page_block_form" id="pageBlockForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
     <input type="hidden" name="page" value="appearance"/>
@@ -183,7 +85,7 @@ function pbfRenderField($typeId, $field, $disabled)
                 <div class="pbf-type-group" data-type-id="<?php echo osc_esc_html($pbf_id); ?>"
                     <?php echo $pbf_active ? '' : 'hidden'; ?>>
                     <?php foreach ($pbf_fields as $pbf_field) {
-                        pbfRenderField($pbf_id, $pbf_field, !$pbf_active);
+                        osc_widget_config_field($pbf_id, $pbf_field, "", !$pbf_active);
                     } ?>
                 </div>
             <?php } ?>

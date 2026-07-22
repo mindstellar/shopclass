@@ -435,7 +435,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             var submit = document.getElementById('pbfSubmit');
 
             function fieldId(typeId, name) {
-                return 'pbf-' + (typeId + '-' + name).replace(/[^a-zA-Z0-9_-]/g, '-');
+                // Matches widgetConfigFieldId() (the shared field renderer).
+                return 'widget-cfg-' + (typeId + '-' + name).replace(/[^a-zA-Z0-9_-]/g, '-');
             }
             function resetForm() {
                 if (action) { action.value = 'add_widget_post'; }
