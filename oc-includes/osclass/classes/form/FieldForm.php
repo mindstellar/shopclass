@@ -547,39 +547,57 @@ class FieldForm extends Form
     public static function meta_fields_input($catId = null, $itemId = null)
     {
         $fields = Field::newInstance()->findByCategoryItem($catId, $itemId);
-        if (count($fields) > 0) {
-            // Bucket fields into sections in resolution order: grouped fields render
-            // under their group's heading, loose fields under the default (no header)
-            // section. Preserves the order the resolver returns (group position, then
-            // field position).
-            $sections = array();
-            foreach ($fields as $field) {
-                $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
-                          && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
-                if (!isset($sections[$gname])) {
-                    $sections[$gname] = array();
-                }
-                $sections[$gname][] = $field;
-            }
+        self::renderFieldList($fields, 'meta_list card-body');
+    }
 
-            echo '<div class="meta_list card-body">';
-            foreach ($sections as $gname => $sectionFields) {
-                if ($gname !== '') {
-                    echo '<div class="meta-section">';
-                    echo '<h5 class="meta-section-title">' . osc_esc_html($gname) . '</h5>';
-                }
-                foreach ($sectionFields as $field) {
-                    echo '<div class="meta">';
-                    self::meta($field);
-                    echo '</div>';
-                }
-                if ($gname !== '') {
-                    echo '</div>';
-                }
-            }
-            echo '</div>';
-            self::conditionalLogicScript();
+    /**
+     * Render a list of resolved field rows as inputs, bucketed into sections. Shared
+     * by the item form (meta_fields_input) and by standalone forms placed anywhere
+     * (osc_render_form) so a field looks and behaves identically in both contexts.
+     *
+     * A field row carrying a non-empty cf_group_name renders under that section
+     * heading; rows without one render flat. Emits the conditional-logic engine once.
+     *
+     * @param array  $fields       resolved + extended field rows (each may carry
+     *                             cf_group_name / s_value)
+     * @param string $wrapperClass class for the outer container
+     *
+     * @return void
+     */
+    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list')
+    {
+        if (count($fields) === 0) {
+            return;
         }
+        // Bucket into sections in resolution order: grouped fields under their
+        // section heading, loose fields under the default (no header) section.
+        $sections = array();
+        foreach ($fields as $field) {
+            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
+                      && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
+            if (!isset($sections[$gname])) {
+                $sections[$gname] = array();
+            }
+            $sections[$gname][] = $field;
+        }
+
+        echo '<div class="' . osc_esc_html($wrapperClass) . '">';
+        foreach ($sections as $gname => $sectionFields) {
+            if ($gname !== '') {
+                echo '<div class="meta-section">';
+                echo '<h5 class="meta-section-title">' . osc_esc_html($gname) . '</h5>';
+            }
+            foreach ($sectionFields as $field) {
+                echo '<div class="meta">';
+                self::meta($field);
+                echo '</div>';
+            }
+            if ($gname !== '') {
+                echo '</div>';
+            }
+        }
+        echo '</div>';
+        self::conditionalLogicScript();
     }
 
     /**

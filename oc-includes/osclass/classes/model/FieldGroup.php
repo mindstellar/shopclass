@@ -169,6 +169,37 @@ class FieldGroup extends DAO
     }
 
     /**
+     * Set or clear a key in a form's s_meta JSON (layout flags such as 'placeable').
+     * An empty/null value removes the key, keeping s_meta compact. Mirrors
+     * Field::updateJsonMeta.
+     *
+     * @param int    $id
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return bool
+     */
+    public function setMeta($id, $key, $value)
+    {
+        $row  = $this->findByPrimaryKey($id);
+        $meta = (isset($row['s_meta']) && $row['s_meta'] !== '') ? json_decode($row['s_meta'], true) : array();
+        if (!is_array($meta)) {
+            $meta = array();
+        }
+        if ($value === '' || $value === null) {
+            unset($meta[$key]);
+        } else {
+            $meta[$key] = $value;
+        }
+
+        return $this->dao->update(
+            $this->getTableName(),
+            array('s_meta' => empty($meta) ? null : json_encode($meta)),
+            array('pk_i_id' => (int)$id)
+        );
+    }
+
+    /**
      * Set a field's membership to a single form via the link table (t_meta_group_fields),
      * appending it at the end of that form. Used by the legacy single-group field editor
      * during the transition to the multi-form builder; the builder manages links directly.

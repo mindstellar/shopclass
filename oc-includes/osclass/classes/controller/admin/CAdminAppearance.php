@@ -440,7 +440,15 @@ class CAdminAppearance extends AdminSecBaseModel
      */
     private function selectAllowedValues($options)
     {
+        // A widget type may supply select options as a callable (dynamic list, e.g.
+        // the core.form picker); resolve it before validating the posted value.
+        if (is_callable($options)) {
+            $options = call_user_func($options);
+        }
         $allowed = array();
+        if (!is_array($options)) {
+            return $allowed;
+        }
         foreach ($options as $key => $option) {
             if (is_array($option)) {
                 if (array_key_exists('value', $option) && is_scalar($option['value'])) {

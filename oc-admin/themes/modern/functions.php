@@ -216,6 +216,11 @@ function check_plugins_admin_footer()
  */
 function widgetConfigSelectOptions($options)
 {
+    // Options may be a callable so a widget type can offer a dynamic list (e.g. the
+    // core.form picker of placeable forms) resolved when the config form renders.
+    if (is_callable($options)) {
+        $options = call_user_func($options);
+    }
     $result = array();
     if (!is_array($options)) {
         return $result;

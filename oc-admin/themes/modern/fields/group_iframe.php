@@ -19,6 +19,8 @@ if (!is_array($selected)) {
 $groupId   = (int)($group['pk_i_id'] ?? 0);
 $groupName = $group['s_name'] ?? '';
 $groupSlug = $group['s_slug'] ?? '';
+$groupMeta = (isset($group['s_meta']) && $group['s_meta'] !== '') ? json_decode($group['s_meta'], true) : array();
+$isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
 ?>
 <!-- field group frame -->
 <div id="edit-field-group-frame" class="card custom-field-frame">
@@ -43,6 +45,13 @@ $groupSlug = $group['s_slug'] ?? '';
                             <input type="text" class="form-control" name="group_slug"
                                    value="<?php echo osc_esc_html($groupSlug); ?>" />
                             <p class="help-inline"><?php _e('Only alphanumeric characters are allowed [a-z0-9_-]'); ?></p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label"></div>
+                        <div class="form-controls">
+                            <label><input type="checkbox" name="group_placeable" value="1"<?php echo $isPlaceable ? ' checked' : ''; ?> />
+                                <span><?php _e('Available as a block (place this form on pages and layouts)'); ?></span></label>
                         </div>
                     </div>
                     <div class="form-row">

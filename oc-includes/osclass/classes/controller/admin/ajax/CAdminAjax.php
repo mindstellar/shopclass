@@ -506,6 +506,8 @@ class CAdminAjax extends AdminSecBaseModel
                     if (is_array($aCategories) && count($aCategories) > 0) {
                         $groupManager->insertCategories($groupId, $aCategories);
                     }
+                    // "Available as a block" flag → s_meta.placeable (core.form picker)
+                    $groupManager->setMeta($groupId, 'placeable', Params::getParam('group_placeable') == '1' ? 1 : '');
                 }
                 if ($error) {
                     echo json_encode(array('error' => __('An error occurred while saving the group')));
