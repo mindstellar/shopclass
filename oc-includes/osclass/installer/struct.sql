@@ -506,6 +506,34 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_group_fields (
         FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    s_context_type VARCHAR(20) NOT NULL,
+    i_context_id INT UNSIGNED NOT NULL DEFAULT 0,
+    fk_i_user_id INT UNSIGNED NULL DEFAULT NULL,
+    s_ip VARCHAR(45) NULL DEFAULT NULL,
+    s_status VARCHAR(20) NOT NULL DEFAULT 'new',
+    dt_created DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_form (fk_i_group_id, dt_created),
+        INDEX idx_context (s_context_type, i_context_id),
+        INDEX idx_status (s_status)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (
+    fk_i_submission_id INT UNSIGNED NOT NULL,
+    fk_i_field_id INT UNSIGNED NOT NULL,
+    s_value TEXT NULL,
+    s_multi VARCHAR(20) NOT NULL DEFAULT '',
+
+        PRIMARY KEY (fk_i_submission_id, fk_i_field_id, s_multi),
+        INDEX idx_field (fk_i_field_id),
+        FOREIGN KEY (fk_i_submission_id) REFERENCES /*TABLE_PREFIX*/t_form_submission (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
     fk_i_category_id INT UNSIGNED NOT NULL,
     fk_i_field_id INT UNSIGNED NOT NULL,
