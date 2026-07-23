@@ -525,4 +525,26 @@ if (!function_exists('seed_widget')) {
     }
 }
 
+if (!function_exists('seed_cron')) {
+    /**
+     * t_cron has no primary key, so the same e_type can legitimately appear more
+     * than once; this helper does not deduplicate.
+     *
+     * @return int Always 0 — the table has no AUTO_INCREMENT column
+     */
+    function seed_cron(
+        mysqli $admin,
+        string $type = 'HOURLY',
+        string $lastExec = '2026-01-01 00:00:00',
+        string $nextExec = '2026-01-01 01:00:00'
+    ): int {
+        return seed_exec(
+            $admin,
+            'INSERT INTO ' . DB_TABLE_PREFIX . 't_cron (e_type, d_last_exec, d_next_exec) VALUES (?, ?, ?)',
+            'sss',
+            array($type, $lastExec, $nextExec)
+        );
+    }
+}
+
 /* file end: ./tests/lib/scratchdb.php */
