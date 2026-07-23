@@ -78,19 +78,19 @@ class OSCLocale extends DAO
      */
     public function listAllCodes()
     {
-        $this->dao->select('pk_c_code');
-        $this->dao->from($this->getTableName());
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select('pk_c_code')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $aResults = $result->result();
-        $aCodes   = array();
+        $rows   = osc_db_stringify_rows($rows);
+        $aCodes = array();
 
-        foreach ($aResults as $result) {
-            $aCodes[] = $result['pk_c_code'];
+        foreach ($rows as $row) {
+            $aCodes[] = $row['pk_c_code'];
         }
 
         return $aCodes;
@@ -110,31 +110,28 @@ class OSCLocale extends DAO
      */
     public function listAllEnabled($isBo = false, $indexedByPk = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        if ($isBo) {
-            $this->dao->where('b_enabled_bo', 1);
-        } else {
-            $this->dao->where('b_enabled', 1);
-        }
-        $this->dao->orderBy('s_name', 'ASC');
-        $result = $this->dao->get();
+        $query = osc_db_table($this->getTableName())
+            ->select(...$this->getFields())
+            ->where($isBo ? 'b_enabled_bo' : 'b_enabled', 1)
+            ->orderBy('s_name', 'ASC');
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $aResults = $result->result();
+        $rows = osc_db_stringify_rows($rows);
 
         if ($indexedByPk) {
             $aTmp = array();
-            for ($i = 0, $iMax = count($aResults); $i < $iMax; $i++) {
-                $aTmp[(string)$aResults[$i][$this->getPrimaryKey()]] = $aResults[$i];
+            foreach ($rows as $row) {
+                $aTmp[(string)$row[$this->getPrimaryKey()]] = $row;
             }
-            $aResults = $aTmp;
+            $rows = $aTmp;
         }
 
-        return $aResults;
+        return $rows;
     }
 
     /**
@@ -149,16 +146,16 @@ class OSCLocale extends DAO
      */
     public function findByCode($code)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_c_code', $code);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('pk_c_code', $code)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -175,14 +172,39 @@ class OSCLocale extends DAO
     {
         osc_run_hook('delete_locale', $locale);
 
-        $array_where = array('fk_c_locale_code' => $locale);
-        $this->dao->delete(DB_TABLE_PREFIX . 't_category_description', $array_where);
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_description', $array_where);
-        $this->dao->delete(DB_TABLE_PREFIX . 't_keywords', $array_where);
-        $this->dao->delete(DB_TABLE_PREFIX . 't_user_description', $array_where);
-        $this->dao->delete(DB_TABLE_PREFIX . 't_pages_description', $array_where);
+        if ($locale === null) {
+            // A null value used to build a bare comparison with no
+            // right-hand side, a SQL error every delete below absorbed into
+            // a false return. A real code that simply matches no rows
+            // succeeds and reports 0, so the two outcomes are not
+            // interchangeable and null keeps its own explicit branch.
+            return false;
+        }
 
-        return $this->dao->delete($this->getTableName(), array('pk_c_code' => $locale));
+        // Each cascading delete's own outcome was discarded here even
+        // before this conversion, so a failure on any one of them must not
+        // stop the rest from running.
+        foreach (
+            array(
+                DB_TABLE_PREFIX . 't_category_description',
+                DB_TABLE_PREFIX . 't_item_description',
+                DB_TABLE_PREFIX . 't_keywords',
+                DB_TABLE_PREFIX . 't_user_description',
+                DB_TABLE_PREFIX . 't_pages_description',
+            ) as $table
+        ) {
+            try {
+                osc_db_table($table)->where('fk_c_locale_code', $locale)->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                // Discarded, as above.
+            }
+        }
+
+        try {
+            return osc_db_table($this->getTableName())->where('pk_c_code', $locale)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
     /**
      * Insert or update location info in database
