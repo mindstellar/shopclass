@@ -69,7 +69,8 @@ class RegionStats extends DAO
      *
      * @param int $regionId Region id
      *
-     * @return bool|\DBRecordsetClass number of affected rows, id error occurred return false
+     * @return bool True once the counter is written, false when the id is
+     *              rejected or the write fails
      * @since  2.4
      */
     public function increaseNumItems($regionId)
@@ -77,14 +78,30 @@ class RegionStats extends DAO
         if (!is_numeric($regionId)) {
             return false;
         }
+
+        // Legacy built this SQL with sprintf('%d', $regionId), truncating to an
+        // integer before the query ever reached the database. A bound parameter
+        // has to reproduce that truncation explicitly: MySQL's foreign-key check
+        // on a prepared value does not coerce a fractional numeric string the way
+        // a plain integer literal does, so an uncast bind of e.g. "5.7" fails
+        // where the legacy, already-truncated SQL text succeeded.
+        $regionId = (int)$regionId;
+
+        // The only caller value is the bound placeholder; the table name is the
+        // one this model set on itself in the constructor.
         $sql =
             sprintf(
-                'INSERT INTO %s (fk_i_region_id, i_num_items) VALUES (%d, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
-                $this->getTableName(),
-                $regionId
+                'INSERT INTO %s (fk_i_region_id, i_num_items) VALUES (?, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
+                $this->getTableName()
             );
 
-        return $this->dao->query($sql);
+        try {
+            osc_db_execute($sql, array($regionId));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -94,7 +111,8 @@ class RegionStats extends DAO
      *
      * @param int $regionId Region id
      *
-     * @return int number of affected rows, id error occurred return false
+     * @return bool|int Number of affected rows, or false when there is no
+     *                  counter row for that region
      * @since  2.4
      */
     public function decreaseNumItems($regionId)
@@ -102,21 +120,28 @@ class RegionStats extends DAO
         if (!is_numeric($regionId)) {
             return false;
         }
-        $this->dao->select('i_num_items');
-        $this->dao->from($this->getTableName());
-        $this->dao->where($this->getPrimaryKey(), $regionId);
-        $result     = $this->dao->get();
-        if ($result instanceof DBRecordsetClass) {
-            $regionStat = $result->row();
+
+        try {
+            $regionStat = osc_db_table($this->getTableName())
+                ->select('i_num_items')
+                ->where($this->getPrimaryKey(), $regionId)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
+            $regionStat = null;
         }
 
         if (isset($regionStat['i_num_items'])) {
-            $this->dao->from($this->getTableName());
-            $this->dao->set('i_num_items', 'i_num_items - 1', false);
-            $this->dao->where('i_num_items > 0');
-            $this->dao->where('fk_i_region_id', $regionId);
+            // The counter is assigned from itself, which no builder update can
+            // express; the region id is the single bound value and the table
+            // name is the model's own.
+            $sql = 'UPDATE ' . $this->getTableName()
+                . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_region_id = ?';
 
-            return $this->dao->update();
+            try {
+                return osc_db_execute($sql, array($regionId));
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
         }
 
         return false;
@@ -130,7 +155,7 @@ class RegionStats extends DAO
      * @param int $regionID
      * @param int $numItems
      *
-     * @return bool|\DBRecordsetClass
+     * @return bool True once the counter is written, false when the write fails
      * @since  2.4
      *
      */
@@ -138,11 +163,20 @@ class RegionStats extends DAO
     {
         $regionID = (int)$regionID;
         $numItems = (int)$numItems;
-        $sql = 'INSERT INTO ' . $this->getTableName()
-            . " (fk_i_region_id, i_num_items) VALUES ($regionID, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
-            . $numItems;
 
-        return $this->dao->query($sql);
+        // Both caller values are bound; the count is bound twice rather than
+        // read back with VALUES(), which MySQL 8.0.20 deprecates and whose
+        // replacement syntax MariaDB does not accept.
+        $sql = 'INSERT INTO ' . $this->getTableName()
+            . ' (fk_i_region_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
+
+        try {
+            osc_db_execute($sql, array($regionID, $numItems, $numItems));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -191,31 +225,49 @@ class RegionStats extends DAO
             }
             $order_split = explode(' ', $order);
 
-            $this->dao->from(DB_TABLE_PREFIX . 't_region , ' . $this->getTableName());
-            $this->dao->where($this->getTableName() . '.fk_i_region_id = ' . DB_TABLE_PREFIX . 't_region.pk_i_id');
+            $statsTable  = $this->getTableName();
+            $regionTable = DB_TABLE_PREFIX . 't_region';
 
+            // The projection depends on the sort column, and an order over any
+            // other column selects nothing at all — which is how the legacy
+            // builder fell through to SELECT *.
             if ($order_split[0] === 'region_name') {
-                $this->dao->select('STRAIGHT_JOIN ' . $this->getTableName() . '.fk_i_region_id as region_id, '
-                    . $this->getTableName() . '.i_num_items as items, ' . DB_TABLE_PREFIX
-                    . 't_region.s_name as region_name, ' . DB_TABLE_PREFIX . 't_region.s_slug as region_slug');
+                $columns = 'STRAIGHT_JOIN ' . $statsTable . '.fk_i_region_id as region_id, '
+                    . $statsTable . '.i_num_items as items, ' . $regionTable . '.s_name as region_name, '
+                    . $regionTable . '.s_slug as region_slug';
             } elseif ($order_split[0] === 'items') {
-                $this->dao->select($this->getTableName() . '.fk_i_region_id as region_id, ' . $this->getTableName()
-                    . '.i_num_items as items, ' . DB_TABLE_PREFIX . 't_region.s_name as region_name');
+                $columns = $statsTable . '.fk_i_region_id as region_id, ' . $statsTable
+                    . '.i_num_items as items, ' . $regionTable . '.s_name as region_name';
+            } else {
+                $columns = '*';
             }
 
-            $this->dao->where('i_num_items ' . $zero . ' 0');
+            // Column aliases and a cross join put this beyond the builder's
+            // identifier allowlist. The country code is the one caller value and
+            // it is bound: $zero is one of the seven operators the in_array()
+            // above accepts, $order matched the identifier-plus-direction
+            // pattern above, and both table names are fixed (the model's own and
+            // t_region).
+            $params = array();
+            $sql    = 'SELECT ' . $columns
+                . ' FROM ' . $regionTable . ' CROSS JOIN ' . $statsTable
+                . ' WHERE ' . $statsTable . '.fk_i_region_id = ' . $regionTable . '.pk_i_id'
+                . ' AND i_num_items ' . $zero . ' 0';
+
             if ($country !== '%%%%') {
-                $this->dao->where(DB_TABLE_PREFIX . 't_region.fk_c_country_code = '
-                    . $this->dao->escape($country));
+                $sql     .= ' AND ' . $regionTable . '.fk_c_country_code = ?';
+                $params[] = $country;
             }
-            $this->dao->orderBy($order);
 
-            $rs = $this->dao->get();
+            $sql .= ' ORDER BY ' . $order;
 
-            if ($rs === false) {
+            try {
+                $rows = osc_db_select($sql, $params);
+            } catch (\mindstellar\database\DbException $e) {
                 return array();
             }
-            $return = $rs->result();
+
+            $return = osc_db_stringify_rows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -229,30 +281,36 @@ class RegionStats extends DAO
      *
      * @param $regionId
      *
-     * @return int total items
+     * @return int|string Item count as a string, or int 0 when the query fails
      */
     public function calculateNumItems($regionId)
     {
+        // Three fixed core tables and an aggregate, so the builder cannot carry
+        // it; the region id and the expiry cut-off are the only caller values and
+        // both are bound. The id keeps the (int) cast legacy already applied, and
+        // the cut-off stays on PHP's clock, as it has always been, rather than
+        // moving to the server's NOW().
         $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
             . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ' . (int)$regionId . ' AND ';
+        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ? AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
             . DB_TABLE_PREFIX . 't_item.b_spam = 0 AND ';
-        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= \''
-            . date('Y-m-d H:i:s') . '\' ) AND ';
+        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
+            . 't_item.dt_expiration >= ? ) AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
 
-        $return = $this->dao->query($sql);
-        if ($return === false) {
+        try {
+            $row = osc_db_select_one($sql, array((int)$regionId, date('Y-m-d H:i:s')));
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        if ($return->numRows() > 0) {
-            $aux = $return->result();
+        if ($row !== null) {
+            $row = osc_db_stringify_row($row);
 
-            return $aux[0]['total'];
+            return $row['total'];
         }
 
         return 0;
@@ -272,28 +330,41 @@ class RegionStats extends DAO
             return array();
         }
         $return = array();
-        
-        $this->dao->select('fk_i_region_id, count(*) as i_num_items');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->join(DB_TABLE_PREFIX . 't_item', DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id');
-        $this->dao->join(DB_TABLE_PREFIX . 't_category', DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_active = 1');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_enabled = 1');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_spam = 0');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= \''
-            . date('Y-m-d H:i:s') . '\' ');
-        $this->dao->where(DB_TABLE_PREFIX . 't_category.b_enabled = 1');
-        $this->dao->where('fk_i_region_id IN (' . implode(',', array_map('intval', $regions)) . ')');
-        $this->dao->groupBy('fk_i_region_id');
-        $rs = $this->dao->get();
-        if ($rs === false) {
+        $ids    = array_map('intval', $regions);
+
+        // Two joins and an aggregate put this beyond the builder. Every caller
+        // value is bound: the expiry cut-off and the region ids, the latter
+        // keeping the intval() legacy already applied to them. Every table and
+        // column name is a compile-time literal.
+        //
+        // The premium/expiry test is deliberately left UNPARENTHESISED, exactly
+        // as the legacy clause was. `||` binds looser than AND, so it splits the
+        // whole WHERE in two and the region filter constrains only one half.
+        // That is load-bearing for what this query returns today; changing it is
+        // a behaviour fix, not part of a conversion.
+        $sql = 'SELECT fk_i_region_id, count(*) as i_num_items'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item_location'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_item ON ' . DB_TABLE_PREFIX . 't_item.pk_i_id = '
+            . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_category ON ' . DB_TABLE_PREFIX . 't_category.pk_i_id = '
+            . DB_TABLE_PREFIX . 't_item.fk_i_category_id'
+            . ' WHERE ' . DB_TABLE_PREFIX . 't_item.b_active = 1'
+            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1'
+            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_spam = 0'
+            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
+            . 't_item.dt_expiration >= ? '
+            . ' AND ' . DB_TABLE_PREFIX . 't_category.b_enabled = 1'
+            . ' AND fk_i_region_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
+            . ' GROUP BY fk_i_region_id';
+
+        try {
+            $rows = osc_db_select($sql, array_merge(array(date('Y-m-d H:i:s')), $ids));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        if ($rs->numRows() > 0) {
-            $aux = $rs->result();
-            foreach ($aux as $a) {
-                $return[$a['fk_i_region_id']] = $a['i_num_items'];
-            }
+
+        foreach (osc_db_stringify_rows($rows) as $a) {
+            $return[$a['fk_i_region_id']] = $a['i_num_items'];
         }
         // fill missing values with 0
         foreach ($regions as $c) {
@@ -310,7 +381,8 @@ class RegionStats extends DAO
      *
      * @param array $regions array of region ids
      *
-     * @return boolean| \DBRecordsetClass
+     * @return bool True once every counter is written, false when there is
+     *              nothing to write or the upsert fails
      */
     public function updateAllStats(array $regions)
     {
@@ -319,15 +391,33 @@ class RegionStats extends DAO
         if (empty($newCalculated)) {
             return false;
         }
-        //INSERT or Update on duplicate key update use dao
-        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_region_id, i_num_items) VALUES ';
-        $values = array();
+
+        // A multi-row upsert: one placeholder pair per region, every id and count
+        // bound and still carrying the (int) cast legacy applied to them, and the
+        // table name the model's own. VALUES(i_num_items) is kept because it is
+        // the only assignment form that reads back a per-ROW value, which a bound
+        // parameter in the update clause cannot express; MySQL deprecates it but
+        // both it and MariaDB still accept it, and the alias syntax that replaces
+        // it is MySQL-only.
+        $tuples = array();
+        $params = array();
         foreach ($newCalculated as $id => $num) {
-            $values[] = '(' . (int)$id . ', ' . (int)$num . ')';
+            $tuples[] = '(?, ?)';
+            $params[] = (int)$id;
+            $params[] = (int)$num;
         }
-        $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE i_num_items = VALUES(i_num_items)';
-        return $this->dao->query($sql);
+
+        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_region_id, i_num_items) VALUES '
+            . implode(',', $tuples)
+            . ' ON DUPLICATE KEY UPDATE i_num_items = VALUES(i_num_items)';
+
+        try {
+            osc_db_execute($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 }
 
