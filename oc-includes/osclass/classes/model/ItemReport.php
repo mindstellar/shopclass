@@ -83,17 +83,25 @@ class ItemReport extends DAO
 
         $userId = osc_is_web_user_logged_in() ? (int)osc_logged_user_id() : null;
 
-        $this->dao->query(sprintf(
-            'INSERT IGNORE INTO %st_item_report_log'
-            . ' (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)'
-            . ' VALUES (%d, %s, %s, %s, %s, NOW())',
-            DB_TABLE_PREFIX,
-            $itemId,
-            $this->dao->escape($this->reporterKey()),
-            ($userId === null) ? 'NULL' : $userId,
-            $this->dao->escape(substr((string)Params::getServerParam('REMOTE_ADDR'), 0, 64)),
-            $this->dao->escape(substr((string)$reason, 0, 20))
-        ));
+        // A bound null for fk_i_user_id inserts SQL NULL, exactly as the legacy
+        // 'NULL' literal did; NOW() stays literal so MySQL, not PHP, is the clock.
+        // The write's result was never read, so a failed query stays absorbed.
+        try {
+            osc_db_execute(
+                'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_item_report_log'
+                . ' (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)'
+                . ' VALUES (?, ?, ?, ?, ?, NOW())',
+                array(
+                    $itemId,
+                    $this->reporterKey(),
+                    $userId,
+                    substr((string)Params::getServerParam('REMOTE_ADDR'), 0, 64),
+                    substr((string)$reason, 0, 20),
+                )
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // legacy dao->query() returned false here and the value was discarded
+        }
     }
 
     /**
@@ -103,18 +111,16 @@ class ItemReport extends DAO
      */
     public function countReporters($itemId)
     {
-        $this->dao->select('COUNT(*) AS c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_report_log');
-        $this->dao->where('fk_i_item_id', (int)$itemId);
-
-        $result = $this->dao->get();
-        if ($result === false) {
+        try {
+            $count = osc_db_scalar(
+                'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
+                array((int)$itemId)
+            );
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $row = $result->row();
-
-        return empty($row['c']) ? 0 : (int)$row['c'];
+        return empty($count) ? 0 : (int)$count;
     }
 
     /**
@@ -126,18 +132,18 @@ class ItemReport extends DAO
      */
     public function reasonBreakdown($itemId)
     {
-        $this->dao->select('s_reason, COUNT(*) AS c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_report_log');
-        $this->dao->where('fk_i_item_id', (int)$itemId);
-        $this->dao->groupBy('s_reason');
-
-        $result = $this->dao->get();
-        if ($result === false) {
+        try {
+            $rows = osc_db_select(
+                'SELECT s_reason, COUNT(*) AS c FROM ' . DB_TABLE_PREFIX . 't_item_report_log'
+                . ' WHERE fk_i_item_id = ? GROUP BY s_reason',
+                array((int)$itemId)
+            );
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $breakdown = array();
-        foreach ($result->result() as $row) {
+        foreach ($rows as $row) {
             $breakdown[(string)$row['s_reason']] = (int)$row['c'];
         }
 
@@ -153,10 +159,14 @@ class ItemReport extends DAO
      */
     public function clear($itemId)
     {
-        $this->dao->query(sprintf(
-            'DELETE FROM %st_item_report_log WHERE fk_i_item_id = %d',
-            DB_TABLE_PREFIX,
-            (int)$itemId
-        ));
+        // The delete result was never read, so a failed query stays absorbed.
+        try {
+            osc_db_execute(
+                'DELETE FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
+                array((int)$itemId)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // legacy dao->query() returned false here and the value was discarded
+        }
     }
 }
