@@ -75,6 +75,36 @@ class Widget extends DAO
     }
 
     /**
+     * Every location that currently holds at least one widget.
+     *
+     * Used by the admin to spot widgets stranded in a section the active theme no
+     * longer declares — a theme switch does not delete them, it just leaves them
+     * with nowhere to render.
+     *
+     * @return string[]
+     */
+    public function distinctLocations()
+    {
+        $this->dao->select('s_location');
+        $this->dao->from($this->getTableName());
+        $this->dao->groupBy('s_location');
+        $result = $this->dao->get();
+
+        if ($result == false) {
+            return array();
+        }
+
+        $locations = array();
+        foreach ($result->result() as $row) {
+            if (isset($row['s_location']) && $row['s_location'] !== '') {
+                $locations[] = (string)$row['s_location'];
+            }
+        }
+
+        return $locations;
+    }
+
+    /**
      * Persist a new ordering for a set of widgets, assigning each id its position
      * in $orderedIds as i_order. Runs inside a single transaction: on any failure
      * the whole reorder is rolled back and false is returned.

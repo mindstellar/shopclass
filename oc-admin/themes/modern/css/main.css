@@ -13045,23 +13045,71 @@ div.widget-box-content-no-wrapp li a {
   padding: 0 15px;
 }
 
-.widget-row.is-editing > td {
-  background-color: var(--osc-bronze-tint);
+.widgets-builder-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+}
+@media (max-width: 900px) {
+  .widgets-builder-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.widget-editor-row > td {
-  background-color: var(--osc-bench);
-  padding: 1rem;
-}
-
-.widget-editor-row #widgets-page,
-.widget-editor-row .widgets,
-.widget-editor-row #item-form {
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
   margin: 0;
+  min-height: 2.5rem;
   padding: 0;
 }
-.widget-editor-row .form-actions {
-  margin-block-start: 1rem;
+
+.widget-section.is-unavailable {
+  background-color: var(--osc-bench-sunk);
+  border-style: dashed;
+}
+.widget-section.is-unavailable .form-card-title {
+  color: var(--osc-ink-muted);
+}
+
+.widget-section.is-collapsed .widget-list,
+.widget-section.is-collapsed .form-empty,
+.widget-section.is-collapsed .widget-reorder-error {
+  display: none;
+}
+.widget-section.is-collapsed .form-card-toggle .bi {
+  transform: rotate(-90deg);
+}
+
+.palette-group + .palette-group {
+  margin-top: 1.25rem;
+}
+
+.palette-group-title {
+  color: var(--osc-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+}
+
+.widget-type .chip-name {
+  white-space: normal;
+}
+.widget-type .chip-grip {
+  cursor: grab;
+}
+
+.palette-type-desc {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0 0.55rem 0.5rem 2rem;
 }
 
 .dashboard-sidebar {

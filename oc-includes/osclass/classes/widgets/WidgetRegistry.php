@@ -52,6 +52,8 @@ final class WidgetRegistry
      * $spec keys:
      *   'label'       => string    Shown in the admin picker. Required.
      *   'description' => string    Optional one-line description.
+     *   'group'       => string    Optional source grouping for the admin palette.
+     *                              Defaults to the id's namespace ('core.x' -> 'Core').
      *   'render'      => callable  callable(array $config, array $widgetRow): void|string.
      *                              Required. May echo directly or return a string.
      *   'fields'      => array     Optional declarative config schema. Each entry:
@@ -101,9 +103,19 @@ final class WidgetRegistry
             $capability = 'admin';
         }
 
+        // Source grouping for the admin's widget palette. Ids are namespaced
+        // ('core.rich_text', 'myplugin.foo'), so the namespace is the natural
+        // source when a type does not name a group itself.
+        $group = isset($spec['group']) && is_string($spec['group']) && $spec['group'] !== ''
+            ? $spec['group']
+            : (strpos($id, '.') !== false
+                ? ucfirst(str_replace(array('_', '-'), ' ', substr($id, 0, strpos($id, '.'))))
+                : 'General');
+
         $this->types[$id] = [
             'id'          => $id,
             'label'       => $spec['label'],
+            'group'       => $group,
             'description' => isset($spec['description']) && is_string($spec['description']) ? $spec['description'] : '',
             'render'      => $spec['render'],
             'fields'      => $fields,

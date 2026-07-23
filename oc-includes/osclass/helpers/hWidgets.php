@@ -147,6 +147,8 @@ osc_register_widget('core.image', array(
  * the stored code verbatim onto the public page.
  */
 osc_register_widget('core.custom_code', array(
+    // Its own group so the palette can sort the raw-markup escape hatch last.
+    'group'       => 'Legacy',
     'capability'  => 'super_admin',
     'label'       => 'Custom Code (HTML / JavaScript)',
     'description' => 'Runs unfiltered HTML and JavaScript on your public pages. '

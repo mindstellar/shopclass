@@ -196,6 +196,88 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
                 $this->redirectTo($this->widgetReturnUrl());
                 break;
+            case ('widget_create_post'):
+                // Dropping a type from the palette creates a widget of that type in
+                // that section. JSON, so the builder can insert the row without a
+                // page load; the caller opens its editor straight away because a
+                // fresh widget has no configuration yet.
+                if (!defined('IS_AJAX')) {
+                    define('IS_AJAX', true);
+                }
+                osc_csrf_check();
+
+                $location = Params::getParam('location');
+                $type     = $this->resolveWidgetType(Params::getParam('s_type'));
+                $label    = $type !== null ? $type['label'] : __('Custom HTML');
+
+                $row = array(
+                    's_location'    => $location,
+                    'e_kind'        => 'html',
+                    's_description' => $label,
+                    's_content'     => '',
+                    'i_order'       => Widget::newInstance()->getNextOrder($location)
+                );
+                if ($type !== null) {
+                    $row['s_type']   = $type['id'];
+                    $row['s_config'] = json_encode($this->buildWidgetConfig($type));
+                }
+                $newId = Widget::newInstance()->insert($row);
+
+                header('Content-Type: application/json');
+                echo json_encode($newId
+                    ? array(
+                        'error'       => 0,
+                        'id'          => (int)$newId,
+                        'description' => $label,
+                        'type_label'  => $type !== null ? $type['label'] : __('Custom HTML'),
+                        'location'    => $location
+                    )
+                    : array('error' => 1));
+                exit;
+            case ('widget_move_post'):
+                // Reorder, and move between sections. reorder_widgets_post refuses ids
+                // that do not already belong to the location — correct for a pure
+                // reorder, but it is exactly what has to change for a cross-section
+                // drag, so the move is its own endpoint with its own validation.
+                if (!defined('IS_AJAX')) {
+                    define('IS_AJAX', true);
+                }
+                osc_csrf_check();
+
+                $location = Params::getParam('location');
+                $moved    = (int)Params::getParam('id');
+                $ids      = Params::getParam('ids');
+                if (!is_array($ids)) {
+                    $ids = array();
+                }
+                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
+
+                // The section must be one the active theme actually declares, so a
+                // forged post cannot invent a location.
+                $info       = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+                $locations  = isset($info['locations']) && is_array($info['locations']) ? $info['locations'] : array();
+                $widgetRow  = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
+                $ok         = false;
+
+                if ($widgetRow !== null && in_array($location, $locations, true)) {
+                    Widget::newInstance()->update(
+                        array('s_location' => $location),
+                        array('pk_i_id' => $moved)
+                    );
+                    // Only ids that live in the target section after the move.
+                    $validIds = array();
+                    foreach (Widget::newInstance()->findByLocation($location) as $widget) {
+                        $validIds[(int)$widget['pk_i_id']] = true;
+                    }
+                    $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
+                        return isset($validIds[$id]);
+                    }));
+                    $ok = Widget::newInstance()->reorder($ids);
+                }
+
+                header('Content-Type: application/json');
+                echo json_encode(array('error' => $ok ? 0 : 1));
+                exit;
             case ('reorder_widgets_post'):
                 // JSON endpoint: flagging the request as AJAX makes the CSRF check
                 // emit a JSON error and exit on failure instead of flash+redirect.

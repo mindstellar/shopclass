@@ -113,28 +113,91 @@ div.widget-box-content-no-wrapp li a {
 .dash-widget-form {
   padding: 0 15px;
 }
-// ---- Inline widget editor ---------------------------------------------------
-// The editor opens in the row of the widget it belongs to, the same way a field
-// or form editor opens in the Forms builder, instead of navigating to its own
-// screen. The row it belongs to is tinted while its editor is open.
-.widget-row.is-editing > td {
-  background-color: var(--osc-bronze-tint);
+
+
+// =============================================================================
+// Widget builder (appearance/widgets.php)
+// -----------------------------------------------------------------------------
+// The same two-pane shape as the custom-forms builder, and deliberately the same
+// vocabulary: .form-card sections, .field-chip rows, the shared chip controls.
+// Sections carry the content here (their editors expand inline in a row), while
+// the palette is a short fixed list of types — so the widths are the inverse of
+// the forms screen: sections wide, palette narrow.
+// =============================================================================
+.widgets-builder-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-.widget-editor-row > td {
-  background-color: var(--osc-bench);
-  padding: 1rem;
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: 0;
 }
 
-.widget-editor-row {
-  #widgets-page,
-  .widgets,
-  #item-form {
-    margin: 0;
-    padding: 0;
+// A section the active theme no longer declares. Its widgets still exist and can
+// be moved out, but nothing it holds reaches the site — so it recedes and says so
+// rather than looking like a working section.
+.widget-section.is-unavailable {
+  background-color: var(--osc-bench-sunk);
+  border-style: dashed;
+
+  .form-card-title {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.widget-section.is-collapsed {
+  .widget-list,
+  .form-empty,
+  .widget-reorder-error {
+    display: none;
   }
 
-  .form-actions {
-    margin-block-start: 1rem;
+  .form-card-toggle .bi {
+    transform: rotate(-90deg);
   }
+}
+
+// ---- Palette of available types --------------------------------------------
+.palette-group + .palette-group {
+  margin-top: 1.25rem;
+}
+
+.palette-group-title {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  margin: 0 0 .4rem;
+  text-transform: uppercase;
+}
+
+.widget-type {
+  .chip-name {
+    white-space: normal;
+  }
+
+  // Dragging a type is the primary gesture, so the whole row reads as grabbable.
+  .chip-grip {
+    cursor: grab;
+  }
+}
+
+.palette-type-desc {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0 .55rem .5rem 2rem;
 }
