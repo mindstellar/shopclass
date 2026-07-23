@@ -14851,13 +14851,31 @@ code {
 #display-filters {
   padding: 40px 0 0;
 }
-
-#display-filters .form-label {
-  width: 70px;
+#display-filters .form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
 }
-
+#display-filters .form-label {
+  flex: none;
+  margin-bottom: 0.25rem;
+  padding-block-start: 0;
+  text-align: start;
+  width: auto;
+}
 #display-filters .form-controls {
-  margin-inline-start: 80px;
+  margin-inline-start: 0;
+  min-width: 0;
+}
+#display-filters .form-controls .form-control, #display-filters .form-controls textarea, #display-filters .form-controls input.large,
+#display-filters .form-controls input.xlarge,
+#display-filters .form-controls .input-text,
+#display-filters .form-controls .input-password, #display-filters .form-controls input.input-small, #display-filters .form-controls input.input-medium, #display-filters .form-controls input.input-large,
+#display-filters .form-controls .form-select,
+#display-filters .form-controls input:not([type=checkbox]):not([type=radio]),
+#display-filters .form-controls select {
+  max-width: none;
+  width: 100%;
 }
 
 #item-form label {

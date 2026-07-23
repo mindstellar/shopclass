@@ -19,16 +19,39 @@
   margin: 0;
 }
 
+// The filters dialog was still on the legacy horizontal geometry: a 70px label
+// well with the control beside it, which left every input and select a stub —
+// "Choose…" truncated to "Choo…". The rows stack instead, label above a control
+// that fills its column, which is the shape the rest of the admin's forms use.
 #display-filters {
   padding: 40px 0 0;
-}
 
-#display-filters .form-label {
-  width: 70px;
-}
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
 
-#display-filters .form-controls {
-  margin-inline-start: 80px;
+  .form-label {
+    flex: none;
+    margin-bottom: .25rem;
+    padding-block-start: 0;
+    text-align: start;
+    width: auto;
+  }
+
+  .form-controls {
+    margin-inline-start: 0;
+    min-width: 0;
+
+    .form-control,
+    .form-select,
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+      max-width: none;
+      width: 100%;
+    }
+  }
 }
 
 #item-form label {
