@@ -206,6 +206,10 @@ osc_current_admin_theme_path('parts/header.php');
             </table>
         </div>
 
+        <?php if ($activeDriver === 'memcached' || $activeDriver === 'memcache') { ?>
+            <p class="col-hint"><?php _e('Keys are namespaced to this install, so several sites can share one memcached server safely. Clearing, however, flushes the whole server — including any other site using it.'); ?></p>
+        <?php } ?>
+
         <?php if (!$persistent) { ?>
             <p class="col-hint"><?php printf(
                 __('To cache between requests, install one of the extensions above and set %s in your config file.'),

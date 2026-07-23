@@ -61,7 +61,7 @@ class Object_Cache_apc implements iObject_Cache
      */
     public function __construct()
     {
-        $this->site_prefix = '';
+        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
     }
 
     /**
@@ -77,7 +77,7 @@ class Object_Cache_apc implements iObject_Cache
      */
     public function add($key, $data, $expire = 0)
     {
-        $id = $key;
+        $id = $this->_key($key);
 
         if (is_object($data)) {
             $data = clone $data;
@@ -110,7 +110,7 @@ class Object_Cache_apc implements iObject_Cache
     public function delete($key)
     {
 
-        $result = apc_delete($key);
+        $result = apc_delete($this->_key($key));
         if (false !== $result) {
             unset($this->cache[$key]);
         }
@@ -157,7 +157,7 @@ class Object_Cache_apc implements iObject_Cache
             ++$this->cache_hits;
             $return = $value;
         } else {
-            $value = apc_fetch($key, $found);
+            $value = apc_fetch($this->_key($key), $found);
 
             if (is_object($value) && 'ArrayObject' === get_class($value)) {
                 $value = $value->getArrayCopy();
@@ -205,7 +205,7 @@ class Object_Cache_apc implements iObject_Cache
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
 
-        return apc_store($key, $store_data, $expire);
+        return apc_store($this->_key($key), $store_data, $expire);
     }
 
     /**
@@ -268,6 +268,25 @@ padding: 1em;'><h2>APC stats</h2>";
             'evictions'    => isset($info['expunges']) ? (int)$info['expunges'] : null,
             'server'       => null,
         );
+    }
+
+
+    /**
+     * Namespace every key with a value unique to this install.
+     *
+     * APCu and memcached are shared stores: several installs can sit behind one
+     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
+     * but was set to '' and never read, so two installs collided on identical keys
+     * and could serve each other's cached values. Derived from WEB_PATH, so it is
+     * stable across requests and different for each install.
+     *
+     * @param int|string $key
+     *
+     * @return string
+     */
+    private function _key($key)
+    {
+        return $this->site_prefix . $key;
     }
 
     public static function is_supported()

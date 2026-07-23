@@ -72,7 +72,7 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function __construct()
     {
-        $this->site_prefix = '';
+        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
         $cache_server      = array();
         global $_cache_config;
         if (!isset($_cache_config) || !is_array($_cache_config)) {
@@ -113,7 +113,7 @@ class Object_Cache_memcached implements iObject_Cache
         }
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
-        $result = $this->memcached->add($key, $data, $expire);
+        $result = $this->memcached->add($this->_key($key), $data, $expire);
         if (false !== $result) {
             $this->cache[$key] = $data;
         }
@@ -130,7 +130,7 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function delete($key)
     {
-        $result = $this->memcached->delete($key);
+        $result = $this->memcached->delete($this->_key($key));
         unset($this->cache[$key]);
 
         return $result;
@@ -165,7 +165,7 @@ class Object_Cache_memcached implements iObject_Cache
             return is_object($this->cache[$key]) ? clone $this->cache[$key] : $this->cache[$key];
         }
 
-        $value = $this->memcached->get($key);
+        $value = $this->memcached->get($this->_key($key));
         if ($this->memcached->getResultCode() === Memcached::RES_NOTFOUND) {
             $found = false;
             ++$this->cache_misses;
@@ -199,7 +199,7 @@ class Object_Cache_memcached implements iObject_Cache
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
 
-        return $this->memcached->set($key, $data, $expire);
+        return $this->memcached->set($this->_key($key), $data, $expire);
     }
 
     /**
@@ -269,6 +269,25 @@ padding: 1em;'><h2>Memcached stats</h2>";
             'evictions'    => isset($stats['evictions']) ? (int)$stats['evictions'] : null,
             'server'       => $server,
         );
+    }
+
+
+    /**
+     * Namespace every key with a value unique to this install.
+     *
+     * APCu and memcached are shared stores: several installs can sit behind one
+     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
+     * but was set to '' and never read, so two installs collided on identical keys
+     * and could serve each other's cached values. Derived from WEB_PATH, so it is
+     * stable across requests and different for each install.
+     *
+     * @param int|string $key
+     *
+     * @return string
+     */
+    private function _key($key)
+    {
+        return $this->site_prefix . $key;
     }
 
     public static function is_supported()
