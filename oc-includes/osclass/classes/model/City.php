@@ -72,25 +72,34 @@ class City extends DAO
      */
     public function ajax($query, $regionId = null)
     {
-        $this->dao->select('a.pk_i_id as id, a.s_name as label, a.s_name as value, aux.s_name as region');
-        $this->dao->from($this->getTableName() . ' as a');
-        $this->dao->join(Region::newInstance()->getTableName() . ' as aux', 'aux.pk_i_id = a.fk_i_region_id', 'LEFT');
-        $this->dao->like('a.s_name', $query, 'after');
+        // Table names are fixed internal identifiers set in each model's own
+        // constructor, never user input, so they are safe to concatenate.
+        $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region'
+            . ' FROM ' . $this->getTableName() . ' AS a'
+            . ' LEFT JOIN ' . Region::newInstance()->getTableName() . ' AS aux'
+            . ' ON aux.pk_i_id = a.fk_i_region_id'
+            . ' WHERE a.s_name LIKE ?';
+        // Matches dao->like()'s escaping: '%'/'_' in the payload are escaped
+        // before the wildcard is appended, so a literal '%' typed by a caller
+        // stays literal instead of being read back as a SQL wildcard.
+        $params = array(str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $query) . '%');
+
         if ($regionId != null) {
             if (is_numeric($regionId)) {
-                $this->dao->where('a.fk_i_region_id', $regionId);
+                $sql .= ' AND a.fk_i_region_id = ?';
             } else {
-                $this->dao->where('aux.s_name', $regionId);
+                $sql .= ' AND aux.s_name = ?';
             }
+            $params[] = $regionId;
         }
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -122,18 +131,17 @@ class City extends DAO
      */
     public function findByRegion($regionId)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_region_id', $regionId);
-        $this->dao->orderBy('s_name', 'ASC');
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('fk_i_region_id', $regionId)
+                ->orderBy('s_name', 'ASC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -150,21 +158,25 @@ class City extends DAO
      */
     public function findByName($cityName, $regionId = null)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $cityName);
-        $this->dao->limit(1);
+        $query = osc_db_table($this->getTableName())
+            ->select(...$this->getFields())
+            ->where('s_name', $cityName);
+
         if ($regionId != null) {
-            $this->dao->where('fk_i_region_id', $regionId);
+            $query = $query->where('fk_i_region_id', $regionId);
         }
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = $query->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -176,16 +188,16 @@ class City extends DAO
      */
     public function listAll()
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->orderBy('s_name', 'ASC');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->orderBy('s_name', 'ASC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -229,16 +241,19 @@ class City extends DAO
      */
     public function findBySlug($slug)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', $slug);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('s_slug', $slug)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -250,16 +265,15 @@ class City extends DAO
      */
     public function listByEmptySlug()
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', '');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('s_slug', '')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 }
 
