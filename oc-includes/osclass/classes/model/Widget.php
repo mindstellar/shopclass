@@ -85,17 +85,15 @@ class Widget extends DAO
      */
     public function distinctLocations()
     {
-        $this->dao->select('s_location');
-        $this->dao->from($this->getTableName());
-        $this->dao->groupBy('s_location');
-        $result = $this->dao->get();
-
-        if ($result == false) {
-            return array();
-        }
+        // New code uses the query builder rather than the legacy DAO this model is
+        // otherwise written against.
+        $rows = osc_db_table($this->getTableName())
+            ->select('s_location')
+            ->groupBy('s_location')
+            ->get();
 
         $locations = array();
-        foreach ($result->result() as $row) {
+        foreach ($rows as $row) {
             if (isset($row['s_location']) && $row['s_location'] !== '') {
                 $locations[] = (string)$row['s_location'];
             }

@@ -224,13 +224,15 @@ class CAdminAppearance extends AdminSecBaseModel
                     $row['s_type']   = $type['id'];
                     $row['s_config'] = json_encode($this->buildWidgetConfig($type));
                 }
-                // insert() reports success, not the new key — the id has to come from
-                // the connection. Returning its boolean here handed the builder id "1",
-                // so a dragged-in widget adopted another widget's row: the editor that
-                // opened belonged to widget 1, and saving it would have overwritten it.
-                $mWidget = Widget::newInstance();
-                $ok      = $mWidget->insert($row);
-                $newId   = $ok ? (int)$mWidget->dao->insertedId() : 0;
+                // New code goes through the query builder, which returns the new
+                // AUTO_INCREMENT id directly. (The legacy DAO's insert() reports only
+                // success, and returning that handed the builder id "1" — a dragged-in
+                // widget then adopted widget 1's row and could overwrite it.)
+                try {
+                    $newId = osc_db_table(DB_TABLE_PREFIX . 't_widget')->insert($row);
+                } catch (Throwable $e) {
+                    $newId = 0;
+                }
 
                 header('Content-Type: application/json');
                 echo json_encode($newId > 0
@@ -269,10 +271,9 @@ class CAdminAppearance extends AdminSecBaseModel
                 $ok         = false;
 
                 if ($widgetRow !== null && in_array($location, $locations, true)) {
-                    Widget::newInstance()->update(
-                        array('s_location' => $location),
-                        array('pk_i_id' => $moved)
-                    );
+                    osc_db_table(DB_TABLE_PREFIX . 't_widget')
+                        ->where('pk_i_id', $moved)
+                        ->update(array('s_location' => $location));
                     // Only ids that live in the target section after the move.
                     $validIds = array();
                     foreach (Widget::newInstance()->findByLocation($location) as $widget) {
