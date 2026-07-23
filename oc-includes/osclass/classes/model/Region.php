@@ -79,17 +79,16 @@ class Region extends DAO
      */
     public function findByCountry($countryId)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_c_country_code', $countryId);
-        $this->dao->orderBy('s_name', 'ASC');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('fk_c_country_code', $countryId)
+                ->orderBy('s_name', 'ASC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -105,20 +104,22 @@ class Region extends DAO
      */
     public function findByName($name, $country = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $name);
+        $query = osc_db_table($this->getTableName())->where('s_name', $name);
         if ($country != null) {
-            $this->dao->where('fk_c_country_code', $country);
+            $query = $query->where('fk_c_country_code', $country);
         }
-        $this->dao->limit(1);
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $row = $query->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -136,28 +137,42 @@ class Region extends DAO
     public function ajax($query, $country = null)
     {
         $country = trim($country);
-        $this->dao->select('a.pk_i_id as id, a.s_name as label, a.s_name as value');
-        $this->dao->from($this->getTableName() . ' as a');
-        $this->dao->like('a.s_name', $query, 'after');
+        // Reproduces DBCommandClass::like()'s own escaping (escapeStr($v, true)):
+        // a caller-typed '%' or '_' must stay literal, never a SQL wildcard.
+        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+
+        $sql    = 'SELECT a.pk_i_id as id, a.s_name as label, a.s_name as value FROM '
+            . $this->getTableName() . ' as a';
+        $params = array();
+
         if ($country != null) {
             if (strlen($country) == 2) {
-                $this->dao->where('a.fk_c_country_code', strtolower($country));
+                $sql .= ' WHERE a.fk_c_country_code = ? AND a.s_name LIKE ?';
+                $params[] = strtolower($country);
+                $params[] = $pattern;
             } else {
-                $this->dao->join(
-                    Country::newInstance()->getTableName() . ' as aux',
-                    'aux.pk_c_code = a.fk_c_country_code',
-                    'LEFT'
-                );
-                $this->dao->where('aux.s_name', $country);
+                // Country::getTableName() is a fixed configuration value (the
+                // table prefix constant), never caller input.
+                $sql .= ' LEFT JOIN ' . Country::newInstance()->getTableName() . ' as aux'
+                    . ' ON aux.pk_c_code = a.fk_c_country_code'
+                    . ' WHERE aux.s_name = ? AND a.s_name LIKE ?';
+                $params[] = $country;
+                $params[] = $pattern;
             }
+        } else {
+            $sql .= ' WHERE a.s_name LIKE ?';
+            $params[] = $pattern;
         }
-        $this->dao->limit(5);
-        $result = $this->dao->get();
-        if ($result == false) {
+
+        $sql .= ' LIMIT 5';
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
 
@@ -202,16 +217,17 @@ class Region extends DAO
      */
     public function findBySlug($slug)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', $slug);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -223,16 +239,13 @@ class Region extends DAO
      */
     public function listByEmptySlug()
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', '');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())->where('s_slug', '')->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 }
 
