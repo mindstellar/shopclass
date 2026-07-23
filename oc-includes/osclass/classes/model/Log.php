@@ -89,7 +89,13 @@ class Log extends DAO
             'fk_i_who_id' => $whoId
         );
 
-        return $this->dao->insert($this->getTableName(), $array_set);
+        try {
+            osc_db_table($this->getTableName())->insert($array_set);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 }
 
