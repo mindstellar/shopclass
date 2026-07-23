@@ -65,16 +65,20 @@ class LocationsTmp extends DAO
      */
     public function getLocations($max)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->limit($max);
-        $rs = $this->dao->get();
-
-        if ($rs === false) {
+        try {
+            $builder = osc_db_table($this->getTableName());
+            // Legacy limit() gated the clause on is_numeric(): a non-numeric
+            // $max dropped it entirely and returned every row, rather than
+            // clamping to zero. Preserve that gate.
+            if (is_numeric($max)) {
+                $builder = $builder->limit((int)$max);
+            }
+            $rows = $builder->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $rs->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -84,11 +88,20 @@ class LocationsTmp extends DAO
     public function populateCities()
     : bool
     {
-        // INSERT IGNORE ...SELECT pk_i_id column from t_city table to t_locations_tmp table
+        // INSERT IGNORE ...SELECT pk_i_id column from t_city table into the
+        // staging table. Both table names are model-owned (never runtime input)
+        // and the one literal value, the e_type, is bound.
         $cityTableName = City::newInstance()->getTableName();
-        $rs = $this->dao->query(sprintf("INSERT IGNORE INTO %s (id_location, e_type) SELECT pk_i_id, 'CITY' FROM %s", $this->getTableName(), $cityTableName));
+        $sql = 'INSERT IGNORE INTO ' . $this->getTableName()
+            . ' (id_location, e_type) SELECT pk_i_id, ? FROM ' . $cityTableName;
 
-        return !($rs === false);
+        try {
+            osc_db_execute($sql, array('CITY'));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -98,11 +111,19 @@ class LocationsTmp extends DAO
     public function populateRegions()
     : bool
     {
-        // INSERT IGNORE ...SELECT pk_i_id column from t_region table to t_locations_tmp table
+        // INSERT IGNORE ...SELECT pk_i_id column from t_region table into the
+        // staging table. Both table names are model-owned; the e_type is bound.
         $regionTableName = Region::newInstance()->getTableName();
-        $rs = $this->dao->query(sprintf("INSERT IGNORE INTO %s (id_location, e_type) SELECT pk_i_id, 'REGION' FROM %s", $this->getTableName(), $regionTableName));
+        $sql = 'INSERT IGNORE INTO ' . $this->getTableName()
+            . ' (id_location, e_type) SELECT pk_i_id, ? FROM ' . $regionTableName;
 
-        return !($rs === false);
+        try {
+            osc_db_execute($sql, array('REGION'));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -112,11 +133,19 @@ class LocationsTmp extends DAO
     public function populateCountries()
     : bool
     {
-        // INSERT IGNORE ...SELECT pk_c_code column from t_country table to t_locations_tmp table
+        // INSERT IGNORE ...SELECT pk_c_code column from t_country table into the
+        // staging table. Both table names are model-owned; the e_type is bound.
         $countryTableName = Country::newInstance()->getTableName();
-        $rs = $this->dao->query(sprintf("INSERT IGNORE INTO %s (id_location, e_type) SELECT pk_c_code, 'COUNTRY' FROM %s", $this->getTableName(), $countryTableName));
+        $sql = 'INSERT IGNORE INTO ' . $this->getTableName()
+            . ' (id_location, e_type) SELECT pk_c_code, ? FROM ' . $countryTableName;
 
-        return !($rs === false);
+        try {
+            osc_db_execute($sql, array('COUNTRY'));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -127,7 +156,27 @@ class LocationsTmp extends DAO
      */
     public function delete($where)
     {
-        return $this->dao->delete($this->getTableName(), $where);
+        // Legacy dao->delete() refuses to run without a where and returned false
+        // for one; reproduce that guard before the builder (which also refuses).
+        if (!is_array($where) || empty($where)) {
+            return false;
+        }
+
+        try {
+            $builder = osc_db_table($this->getTableName());
+            // Each key is a caller-supplied column name; the builder's where()
+            // validates it against its identifier allowlist, and each value is
+            // bound. A numeric-looking id (a country code such as '0') therefore
+            // compares as a string rather than coercing the VARCHAR column the
+            // way legacy escape()'s unquoted-numeric passthrough did.
+            foreach ($where as $column => $value) {
+                $builder = $builder->where($column, $value);
+            }
+
+            return $builder->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -139,17 +188,26 @@ class LocationsTmp extends DAO
     public function batchInsert($ids, $type)
     {
         if (!empty($ids)) {
-            $type   = $this->dao->escape($type);
-            $values = array();
+            // One (?, ?) tuple per id: the id keeps the (int) truncation legacy
+            // applied, and the e_type is bound. The table name is model-owned.
+            $tuples = array();
+            $params = array();
             foreach ($ids as $id) {
-                $values[] = '(' . (int)$id . ', ' . $type . ')';
+                $tuples[] = '(?, ?)';
+                $params[] = (int)$id;
+                $params[] = $type;
             }
 
-            return $this->dao->query(sprintf(
-                'INSERT INTO %s (id_location, e_type) VALUES %s',
-                $this->getTableName(),
-                implode(',', $values)
-            ));
+            $sql = 'INSERT INTO ' . $this->getTableName()
+                . ' (id_location, e_type) VALUES ' . implode(',', $tuples);
+
+            try {
+                osc_db_execute($sql, $params);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+
+            return true;
         }
 
         return false;
@@ -164,12 +222,25 @@ class LocationsTmp extends DAO
     public function batchDelete($ids, $type)
     {
         if (!empty($ids)) {
-            return $this->dao->query(sprintf(
-                'DELETE FROM %s WHERE id_location IN (%s) AND e_type = %s',
-                $this->getTableName(),
-                implode(',', array_map('intval', $ids)),
-                $this->dao->escape($type)
-            ));
+            // The !empty() guard keeps an empty id set off the IN () path, so
+            // the whereIn empty-array divergence cannot arise. Each id keeps the
+            // intval() legacy applied and is bound; the e_type is bound too, and
+            // the table name is model-owned.
+            $ids    = array_map('intval', $ids);
+            $params = $ids;
+            $params[] = $type;
+
+            $sql = 'DELETE FROM ' . $this->getTableName()
+                . ' WHERE id_location IN (' . implode(',', array_fill(0, count($ids), '?')) . ')'
+                . ' AND e_type = ?';
+
+            try {
+                osc_db_execute($sql, $params);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+
+            return true;
         }
 
         return false;
