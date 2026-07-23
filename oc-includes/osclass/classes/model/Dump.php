@@ -44,18 +44,38 @@ class Dump extends DAO
     }
 
     /**
+     * A runtime table name is an identifier, not a value, so it can never be a
+     * bound parameter. Every name this model receives originates from SHOW TABLES
+     * on the connection's own database (see osc_dbdump()), but the public methods
+     * could also be reached with a caller-supplied name, so each name is validated
+     * against the same strict allowlist the query builder enforces before it is
+     * interpolated (and always backtick-quoted).
+     *
+     * @param string $table
+     *
+     * @return bool
+     */
+    private function isValidTableName($table)
+    {
+        return is_string($table) && preg_match('/^[A-Za-z0-9_]+$/', $table) === 1;
+    }
+
+    /**
      * Return all tables from database
      *
      * @return array
      */
     public function showTables()
     {
-        $res = $this->dao->query('SHOW TABLES;');
-        if ($res) {
-            return $res->result();
+        // SHOW TABLES is not a SELECT/INSERT/UPDATE/DELETE and carries no values,
+        // so it runs as raw SQL through the parameterized layer with no bindings.
+        try {
+            $rows = osc_db_select('SHOW TABLES');
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
         }
 
-        return array();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -74,13 +94,17 @@ class Dump extends DAO
 
         $_str = '/* Table structure for table `' . $table . "` */\n";
 
-        $sql = 'show create table `' . $table . '`;';
-
-        $result = $this->dao->query($sql);
-        if ($result) {
-            $result = $result->result();
-        } else {
-            $result = array();
+        // SHOW CREATE TABLE takes an identifier, not a value; $table is validated
+        // (isValidTableName) and backtick-quoted before it reaches SQL. An invalid
+        // identifier is treated exactly like a query that returned nothing, which
+        // is the legacy failed-query branch (header written, true returned).
+        $result = array();
+        if ($this->isValidTableName($table)) {
+            try {
+                $result = osc_db_select('SHOW CREATE TABLE `' . $table . '`');
+            } catch (\mindstellar\database\DbException $e) {
+                $result = array();
+            }
         }
 
         foreach ($result as $_line) {
@@ -106,20 +130,40 @@ class Dump extends DAO
             return false;
         }
 
-        $this->dao->select();
-        $this->dao->from($table);
-        $res    = $this->dao->get();
+        // SELECT * FROM <ident> discovers the table at runtime; $table is validated
+        // and backtick-quoted before it reaches SQL (previously it was interpolated
+        // raw and unvalidated). The read stays on the metadata-bearing driver path
+        // because the per-column quoting below is driven by the mysqli RESULT-SET
+        // FIELD TYPES (fetch_fields()->type), which the parameterized Connection
+        // layer does not expose. An unusable identifier or a failed query yields no
+        // rows, matching the legacy failed-query branch (just the trailing newline,
+        // true returned).
         $result = array();
-        if ($res) {
-            $result = $res->result();
+        $num_rows   = 0;
+        $num_fields = 0;
+        $fields     = array();
+
+        if ($this->isValidTableName($table)) {
+            $conn = DBConnectionClass::newInstance()->getOsclassDb();
+            $res  = false;
+            if ($conn instanceof mysqli) {
+                try {
+                    $res = $conn->query('SELECT * FROM `' . $table . '`');
+                } catch (Exception $e) {
+                    $res = false;
+                }
+            }
+            if ($res instanceof mysqli_result) {
+                $result     = $res->fetch_all(MYSQLI_ASSOC);
+                $num_rows   = $res->num_rows;
+                $num_fields = $res->field_count;
+                $fields     = $res->fetch_fields();
+                $res->free();
+            }
         }
 
         $_str = '';
-        if ($res) {
-            $num_rows   = $res->numRows();
-            $num_fields = $res->numFields();
-            $fields     = $res->resultId->fetch_fields();
-
+        if ($num_fields > 0) {
             if ($num_rows > 0) {
                 $_str .= '/* dumping data for table `' . $table . '` */';
                 $_str .= "\n";
@@ -127,7 +171,7 @@ class Dump extends DAO
                 $field_type = array();
                 $i          = 0;
 
-                while ($meta = $res->resultId->fetch_field()) {
+                foreach ($fields as $meta) {
                     $field_type[] = $meta->type;
                 }
 
@@ -263,10 +307,39 @@ class Dump extends DAO
         if (in_array($type, $aNumeric, true)) {
             $_str .= $value;
         } elseif (in_array($type, $aDates, true)) {
-            $_str .= $this->dao->escape($value);
+            $_str .= $this->quoteValue($value);
         } elseif (in_array($type, $aString, true)) {
-            $_str .= $this->dao->escape($value);
+            $_str .= $this->quoteValue($value);
         }
+    }
+
+    /**
+     * Quote a row value for the generated backup SQL. This produces FILE TEXT for
+     * a dump the site owner re-imports, not a live query, so there is no value to
+     * bind; it reproduces the legacy escape() rules verbatim (an is_numeric() value
+     * is emitted bare unless it is longer than one character and starts with '0',
+     * otherwise the value is real_escape_string()'d and single-quoted) so the
+     * produced bytes are unchanged. The value being quoted originates from the
+     * database being dumped, never from request input.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    private function quoteValue($value)
+    {
+        if (is_numeric($value)) {
+            if (strlen((string)$value) > 1 && strpos((string)$value, '0') === 0) {
+                return "'" . $value . "'";
+            }
+
+            return $value;
+        }
+
+        $conn = DBConnectionClass::newInstance()->getOsclassDb();
+        $escaped = $conn instanceof mysqli ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
+
+        return "'" . $escaped . "'";
     }
 
     /**
