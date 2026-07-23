@@ -163,46 +163,66 @@ class Category extends DAO
     public function listWhere()
     {
 
-        $argv = func_get_args();
-        $sql  = null;
+        $argv   = func_get_args();
+        $where  = null;
+        $params = array();
         switch (func_num_args()) {
             case 0:
                 return array();
-                break;
             case 1:
-                $sql = $argv[0];
+                // Single-argument form: a raw WHERE fragment the CALLER owns,
+                // exactly as this "comodin" contract documents ("param needs to
+                // be escaped, inside function will not be escaped"). No value is
+                // interpolated by this method; internal callers pass literals.
+                $where = $argv[0];
                 break;
             default:
                 $args   = func_get_args();
                 $format = array_shift($args);
-                foreach ($args as $k => $v) {
-                    $args[$k] = $this->dao->escape($v);
-                }
-                $sql = vsprintf($format, $args);
+                // Each printf conversion in the format becomes a bound '?'
+                // placeholder, so the caller's values are bound rather than
+                // concatenated. %d keeps its integer-truncation semantics by
+                // casting the value it binds.
+                $i     = 0;
+                $where = preg_replace_callback('/%[ds]/', static function ($m) use (&$i, &$args) {
+                    if ($m[0] === '%d' && array_key_exists($i, $args)) {
+                        $args[$i] = (int)$args[$i];
+                    }
+                    $i++;
+
+                    return '?';
+                }, $format);
+                $params = array_values($args);
                 break;
         }
 
-        // Category with Description and category stats
-        $this->dao->select('a.*, b.*, c.i_num_items');
-        $this->dao->from($this->getTableName() . ' as a');
-        $this->dao->join(
-            DB_TABLE_PREFIX . 't_category_description as b', '(a.pk_i_id = b.fk_i_category_id )', 'LEFT'
-        );
-        $this->dao->join(DB_TABLE_PREFIX . 't_category_stats  as c ', 'a.pk_i_id = c.fk_i_category_id', 'LEFT');
-        if ($sql != null) {
-            $this->dao->where($sql);
+        // Category joined to its descriptions and its stats. Every identifier is
+        // a compile-time literal or the table-prefix constant; the only caller
+        // values are the bound placeholders built above.
+        $prefix = $this->getTablePrefix();
+        $sql    = 'SELECT a.*, b.*, c.i_num_items'
+            . ' FROM ' . $this->getTableName() . ' as a'
+            . ' LEFT JOIN ' . $prefix . 't_category_description as b ON (a.pk_i_id = b.fk_i_category_id )'
+            . ' LEFT JOIN ' . $prefix . 't_category_stats as c ON a.pk_i_id = c.fk_i_category_id';
+        if ($where !== null) {
+            $sql .= ' WHERE ' . $where;
         }
-        $this->dao->orderBy('i_position', 'ASC');
-        $rs = $this->dao->get();
+        $sql .= ' ORDER BY i_position ASC';
 
-        if ($rs === false) {
+        try {
+            $allResults = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        if ($rs->numRows() === 0) {
+
+        if ($allResults === array()) {
             return array();
         }
 
-        $allResults = $rs->result();
+        // The prepared path (%d/%s callers) returns native ints; the unprepared
+        // path (literal callers) returns strings. Normalise to the legacy
+        // all-strings row shape before the per-locale merge.
+        $allResults       = osc_db_stringify_rows($allResults);
         $mergedCategories = [];
         foreach ($allResults as $cat) {
             // merge all the array with the same pk_i_id
@@ -460,17 +480,16 @@ class Category extends DAO
                 $category = $category[0];
             }
 
-            $this->dao->select();
-            $this->dao->from($this->getTablePrefix() . 't_category_description');
-            $this->dao->where('fk_i_category_id', $category['pk_i_id']);
-            $this->dao->orderBy('fk_c_locale_code');
-            $result = $this->dao->get();
-
-            if ($result == false) {
+            try {
+                $sub_rows = osc_db_table($this->getTablePrefix() . 't_category_description')
+                    ->where('fk_i_category_id', $category['pk_i_id'])
+                    ->orderBy('fk_c_locale_code')
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
 
-            $sub_rows = $result->result();
+            $sub_rows = osc_db_stringify_rows($sub_rows);
             $row      = array();
             foreach ($sub_rows as $sub_row) {
                 if (isset($sub_row['fk_c_locale_code'])) {
@@ -523,15 +542,34 @@ class Category extends DAO
 
         osc_run_hook('delete_category', (int)($pk));
 
-        $this->dao->delete(sprintf('%st_plugin_category', DB_TABLE_PREFIX), array('fk_i_category_id' => (int)($pk)));
-        $this->dao->delete(
-            sprintf('%st_category_description', DB_TABLE_PREFIX),
-            array('fk_i_category_id' => (int)($pk))
-        );
-        $this->dao->delete(sprintf('%st_category_stats', DB_TABLE_PREFIX), array('fk_i_category_id' => (int)($pk)));
-        $this->dao->delete(sprintf('%st_meta_categories', DB_TABLE_PREFIX), array('fk_i_category_id' => (int)($pk)));
+        $pkInt  = (int)($pk);
+        $prefix = DB_TABLE_PREFIX;
 
-        return $this->dao->delete(sprintf('%st_category', DB_TABLE_PREFIX), array('pk_i_id' => (int)($pk)));
+        // The first four deletes have always had their result discarded, and the
+        // query layer reported failure without raising, so one failing never
+        // stopped the rest from running. Each keeps its own swallowed catch: a
+        // single shared try would abort the cascade at the first failure and
+        // leave orphaned rows behind.
+        foreach (
+            array(
+                $prefix . 't_plugin_category',
+                $prefix . 't_category_description',
+                $prefix . 't_category_stats',
+                $prefix . 't_meta_categories',
+            ) as $table
+        ) {
+            try {
+                osc_db_table($table)->where('fk_i_category_id', $pkInt)->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                // Discarded, as before.
+            }
+        }
+
+        try {
+            return osc_db_table($prefix . 't_category')->where('pk_i_id', $pkInt)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -569,23 +607,39 @@ class Category extends DAO
         $return             = true;
         $affectedRows       = 0;
         //UPDATE for category
-        $res = $this->dao->update($this->getTableName(), $fields, array('pk_i_id' => $pk));
+        try {
+            $res = osc_db_table($this->getTableName())->where('pk_i_id', $pk)->update($fields);
+        } catch (\mindstellar\database\DbException $e) {
+            $res = false;
+        }
         if ($res >= 0) {
-            // update dt_expiration (table t_item) using category.i_expiration_days
+            // update dt_expiration (table t_item) using category.i_expiration_days.
+            // Both branches discarded their result before this conversion, so a
+            // failure is swallowed rather than raised, keeping the rest running.
             if ($fields['i_expiration_days'] > 0) {
-                $update_dt_expiration = sprintf('update %st_item as a
-                        left join %st_category  as b on b.pk_i_id = a.fk_i_category_id
-                        set a.dt_expiration = date_add(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)
-                        where a.fk_i_category_id = %d ', DB_TABLE_PREFIX, DB_TABLE_PREFIX, $pk);
-
-                $this->dao->query($update_dt_expiration);
+                try {
+                    osc_db_execute(
+                        'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
+                        . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_category as b ON b.pk_i_id = a.fk_i_category_id'
+                        . ' SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)'
+                        . ' WHERE a.fk_i_category_id = ?',
+                        array((int)$pk)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    // Discarded, as before.
+                }
                 // update dt_expiration (table t_item) using the max date value
             } elseif ($fields['i_expiration_days'] == 0) {
-                $update_dt_expiration = sprintf("update %st_item as a
-                        set a.dt_expiration = '9999-12-31 23:59:59'
-                        where a.fk_i_category_id = %d", DB_TABLE_PREFIX, (int)$pk);
-
-                $this->dao->query($update_dt_expiration);
+                try {
+                    osc_db_execute(
+                        'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
+                        . " SET a.dt_expiration = '9999-12-31 23:59:59'"
+                        . ' WHERE a.fk_i_category_id = ?',
+                        array((int)$pk)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    // Discarded, as before.
+                }
             }
 
             $affectedRows = $res;
@@ -619,20 +673,27 @@ class Category extends DAO
                     'fk_c_locale_code' => $fieldsDescription['fk_c_locale_code']
                 );
 
-                $rs = $this->dao->update(DB_TABLE_PREFIX . 't_category_description', $fieldsDescription, $array_where);
+                try {
+                    $rs = osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+                        ->where('fk_i_category_id', $array_where['fk_i_category_id'])
+                        ->where('fk_c_locale_code', $array_where['fk_c_locale_code'])
+                        ->update($fieldsDescription);
+                } catch (\mindstellar\database\DbException $e) {
+                    $rs = false;
+                }
                 if ($rs == 0) {
-                    $this->dao->select();
-                    $this->dao->from($this->tableName . ' as a');
-                    $this->dao->join(
-                        sprintf('%st_category_description as b', DB_TABLE_PREFIX),
-                        'a.pk_i_id = b.fk_i_category_id',
-                        'INNER'
+                    // Aliased INNER JOIN the builder's allowlist cannot express;
+                    // both identifiers are compile-time literals and the two
+                    // values are bound. Assumed to succeed, exactly as the legacy
+                    // body did when it called result() on the handle unguarded.
+                    $exists = osc_db_select(
+                        'SELECT a.pk_i_id FROM ' . $this->tableName . ' as a'
+                        . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_category_description as b'
+                        . ' ON a.pk_i_id = b.fk_i_category_id'
+                        . ' WHERE a.pk_i_id = ? AND b.fk_c_locale_code = ?',
+                        array($pk, $k)
                     );
-                    $this->dao->where('a.pk_i_id', $pk);
-                    $this->dao->where('b.fk_c_locale_code', $k);
-                    $result = $this->dao->get();
-                    $rows   = $result->result();
-                    if ($result->numRows == 0) {
+                    if (count($exists) == 0) {
                         $res_insert = $this->insertDescription($fieldsDescription);
                         ++$affectedRows;
                     }
@@ -700,7 +761,13 @@ class Category extends DAO
     public function insertDescription($fields_description)
     {
         if (!empty($fields_description['s_name'])) {
-            return $this->dao->insert(DB_TABLE_PREFIX . 't_category_description', $fields_description);
+            try {
+                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+
+            return true;
         }
     }
 
@@ -717,8 +784,9 @@ class Category extends DAO
      */
     public function insert($fields, $aFieldsDescription = null)
     {
-        $this->dao->insert($this->getTableName(), $fields);
-        $category_id = $this->dao->insertedId();
+        // Assumed to succeed, as the legacy body did (it read insertedId()
+        // straight after with no error check); a genuine failure propagates.
+        $category_id = osc_db_table($this->getTableName())->insert($fields);
         foreach ($aFieldsDescription as $k => $fieldsDescription) {
             $fieldsDescription['fk_i_category_id'] = $category_id;
             $fieldsDescription['fk_c_locale_code'] = $k;
@@ -737,7 +805,13 @@ class Category extends DAO
                 $slug_unique++;
             }
             $fieldsDescription['s_slug'] = $slug;
-            $this->dao->insert(DB_TABLE_PREFIX . 't_category_description', $fieldsDescription);
+            // The result was discarded here before this conversion, so a
+            // per-locale failure is swallowed rather than aborting the rest.
+            try {
+                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fieldsDescription);
+            } catch (\mindstellar\database\DbException $e) {
+                // Discarded, as before.
+            }
         }
 
         return $category_id;
@@ -849,16 +923,18 @@ class Category extends DAO
         if (array_key_exists($categoryID, $this->categories)) {
             $category = $this->categories[$categoryID];
         } else {
-            $this->dao->select('s_name');
-            $this->dao->from($this->getTablePrefix() . 't_category_description');
-            $this->dao->where('fk_i_category_id', $categoryID);
-            $result = $this->dao->get();
-
-            if ($result == false) {
+            try {
+                $row = osc_db_table($this->getTablePrefix() . 't_category_description')
+                    ->select('s_name')
+                    ->where('fk_i_category_id', $categoryID)
+                    ->first();
+            } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
 
-            $category = $result->row();
+            // Legacy row() returned an empty array for zero rows, not false; the
+            // isset() below then falls through to the "Non-Existent" default.
+            $category = ($row === null) ? array() : osc_db_stringify_row($row);
         }
 
         if (isset($category['s_name'])) {
@@ -884,16 +960,20 @@ class Category extends DAO
             return false;
         }
 
-        $this->dao->select('s_name, fk_i_category_id as pk_i_id');
-        $this->dao->from($this->getTablePrefix() . 't_category_description');
-        $this->dao->where('fk_c_locale_code', $locale);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        // Aliased projection the builder's allowlist cannot express; the only
+        // value is bound. Prepared-path native ints are normalised back to the
+        // legacy all-strings row shape.
+        try {
+            $rows = osc_db_select(
+                'SELECT s_name, fk_i_category_id as pk_i_id FROM '
+                . $this->getTablePrefix() . 't_category_description WHERE fk_c_locale_code = ?',
+                array($locale)
+            );
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -909,7 +989,11 @@ class Category extends DAO
      */
     public function updateOrder($pk_i_id, $order)
     {
-        return $this->dao->update($this->tableName, array('i_position' => $order), array('pk_i_id' => $pk_i_id));
+        try {
+            return osc_db_table($this->tableName)->where('pk_i_id', $pk_i_id)->update(array('i_position' => $order));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -928,23 +1012,25 @@ class Category extends DAO
     {
         $itemManager = Item::newInstance();
 
-        $this->dao->select('pk_i_id');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item');
-        $this->dao->where(sprintf('fk_i_category_id = %d', $pk_i_id));
-        $result = $this->dao->get();
-        if ($result === false) {
+        try {
+            $items = osc_db_table(DB_TABLE_PREFIX . 't_item')
+                ->select('pk_i_id')
+                ->where('fk_i_category_id', (int)$pk_i_id)
+                ->get();
+            $items = osc_db_stringify_rows($items);
+        } catch (\mindstellar\database\DbException $e) {
             $items = array();
-        } else {
-            $items = $result->result();
         }
         foreach ($items as $item) {
             $itemManager->updateExpirationDate($item['pk_i_id'], $expiration);
         }
-        $result = $this->dao->update(
-            $this->tableName,
-            array('i_expiration_days' => $expiration),
-            array('pk_i_id' => $pk_i_id)
-        );
+        try {
+            $result = osc_db_table($this->tableName)
+                ->where('pk_i_id', $pk_i_id)
+                ->update(array('i_expiration_days' => $expiration));
+        } catch (\mindstellar\database\DbException $e) {
+            $result = false;
+        }
         if ($updateSubcategories) {
             $subcategories = $this->findSubcategories($pk_i_id);
             foreach ($subcategories as $c) {
@@ -969,8 +1055,13 @@ class Category extends DAO
      */
     public function updatePriceEnabled($pk_i_id, $enabled, $updateSubcategories = false)
     {
-        $result =
-            $this->dao->update($this->tableName, array('b_price_enabled' => $enabled), array('pk_i_id' => $pk_i_id));
+        try {
+            $result = osc_db_table($this->tableName)
+                ->where('pk_i_id', $pk_i_id)
+                ->update(array('b_price_enabled' => $enabled));
+        } catch (\mindstellar\database\DbException $e) {
+            $result = false;
+        }
         if ($updateSubcategories) {
             $subcategories = $this->findSubcategories($pk_i_id);
             foreach ($subcategories as $c) {
@@ -995,11 +1086,14 @@ class Category extends DAO
      */
     public function updateName($pk_i_id, $locale, $name)
     {
-        return $this->dao->update(
-            DB_TABLE_PREFIX . 't_category_description',
-            array('s_name' => $name),
-            array('fk_i_category_id' => $pk_i_id, 'fk_c_locale_code' => $locale)
-        );
+        try {
+            return osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+                ->where('fk_i_category_id', $pk_i_id)
+                ->where('fk_c_locale_code', $locale)
+                ->update(array('s_name' => $name));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
