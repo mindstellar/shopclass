@@ -75,7 +75,7 @@ if (!function_exists('submission_value_display')) {
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Listings'); ?></h1>
+    <h1><?php _e('Forms'); ?></h1>
     <?php
 }
 

@@ -68,20 +68,6 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Custom forms'),
-            osc_admin_base_url(true) . '?page=cfields',
-            'items_cfields',
-            'administrator'
-        );
-        $this->add_submenu(
-            'items',
-            __('Form submissions'),
-            osc_admin_base_url(true) . '?page=cfields&action=submissions',
-            'items_form_submissions',
-            'administrator'
-        );
-        $this->add_submenu(
-            'items',
             __('Locations'),
             osc_admin_base_url(true) . '?page=settings&action=locations',
             'settings_locations',
@@ -99,6 +85,25 @@ class AdminMenu
             __('Settings'),
             osc_admin_base_url(true) . '?page=items&action=settings',
             'items_settings',
+            'administrator'
+        );
+
+        // Forms: the field/form builder and the entries its placeable forms collect.
+        // Its own section rather than a listings sub-item — a form is no longer only a
+        // listing's custom-field section, it can also be a standalone placeable form.
+        $this->add_menu(__('Forms'), osc_admin_base_url(true) . '?page=cfields', 'forms', 'administrator', 'bi bi-ui-checks-grid');
+        $this->add_submenu(
+            'forms',
+            __('Custom forms'),
+            osc_admin_base_url(true) . '?page=cfields',
+            'items_cfields',
+            'administrator'
+        );
+        $this->add_submenu(
+            'forms',
+            __('Form submissions'),
+            osc_admin_base_url(true) . '?page=cfields&action=submissions',
+            'items_form_submissions',
             'administrator'
         );
 
