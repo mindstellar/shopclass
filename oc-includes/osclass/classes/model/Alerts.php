@@ -72,19 +72,20 @@ class Alerts extends DAO
      */
     public function findByUser($userId, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_user_id', $userId);
+        $query = osc_db_table($this->getTableName())
+            ->where('fk_i_user_id', $userId);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            // Value-less compile-time literal, so it is a whereRaw with no bound value.
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -102,19 +103,24 @@ class Alerts extends DAO
      */
     public function findByEmail($email, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_email', $email);
+        // s_email is VARCHAR and $email is bound as-is: a numeric-looking value
+        // (e.g. '0') compares as a string, NOT as a number. Legacy escape()
+        // returned a single-character numeric bare, so where('s_email', '0')
+        // compiled `s_email = 0` and coerced every non-numeric email to 0,
+        // matching them all. That coercion is deliberately not reproduced.
+        $query = osc_db_table($this->getTableName())
+            ->where('s_email', $email);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -132,22 +138,22 @@ class Alerts extends DAO
      */
     public function findByType($type, $active = false, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('e_type', $type);
+        $query = osc_db_table($this->getTableName())
+            ->where('e_type', $type);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
         if ($active) {
-            $this->dao->where('b_active', 1);
+            $query = $query->where('b_active', 1);
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -165,23 +171,23 @@ class Alerts extends DAO
      */
     public function findByTypeGroup($type, $active = false, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('e_type', $type);
+        $query = osc_db_table($this->getTableName())
+            ->where('e_type', $type);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
         if ($active) {
-            $this->dao->where('b_active', 1);
+            $query = $query->where('b_active', 1);
         }
-        $this->dao->groupBy('s_search');
-        $result = $this->dao->get();
+        $query = $query->groupBy('s_search');
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -201,20 +207,20 @@ class Alerts extends DAO
      */
     public function findBySearchAndUser($search, $user, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_user_id', $user);
-        $this->dao->where('s_search', $search);
+        $query = osc_db_table($this->getTableName())
+            ->where('fk_i_user_id', $user)
+            ->where('s_search', $search);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -234,20 +240,20 @@ class Alerts extends DAO
      */
     public function findBySearchAndType($search, $type, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('e_type', $type);
-        $this->dao->where('s_search', $search);
+        $query = osc_db_table($this->getTableName())
+            ->where('e_type', $type)
+            ->where('s_search', $search);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     // a.s_email, a.fk_i_user_id @TODO
@@ -268,24 +274,23 @@ class Alerts extends DAO
      */
     public function findUsersBySearchAndType($search, $type, $active = false, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('e_type', $type);
-        $this->dao->where('s_search', $search);
+        $query = osc_db_table($this->getTableName())
+            ->where('e_type', $type)
+            ->where('s_search', $search);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
         if ($active) {
-            $this->dao->where('b_active', 1);
+            $query = $query->where('b_active', 1);
         }
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -303,23 +308,20 @@ class Alerts extends DAO
      */
     public function findByUserByType($userId, $type, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'e_type'       => $type,
-            'fk_i_user_id' => $userId
-        );
-        $this->dao->where($conditions);
+        $query = osc_db_table($this->getTableName())
+            ->where('e_type', $type)
+            ->where('fk_i_user_id', $userId);
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -337,23 +339,24 @@ class Alerts extends DAO
      */
     public function findByEmailByType($email, $type, $unsub = false)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'e_type'  => $type,
-            's_email' => $email
-        );
+        // Legacy appended the unsub clause BEFORE the e_type/s_email conditions;
+        // the order is preserved but every clause is AND-joined, so it is
+        // result-identical either way.
+        $query = osc_db_table($this->getTableName());
         if (!$unsub) {
-            $this->dao->where('dt_unsub_date IS NULL');
+            $query = $query->whereRaw('dt_unsub_date IS NULL');
         }
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
+        $query = $query
+            ->where('e_type', $type)
+            ->where('s_email', $email);
 
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -372,37 +375,31 @@ class Alerts extends DAO
      */
     public function createAlert($userid, $email, $alert, $secret, $type = 'DAILY')
     {
-        $results = 0;
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_search', $alert);
-
-        $this->dao->where('dt_unsub_date IS NULL');
+        $query = osc_db_table($this->getTableName())
+            ->where('s_search', $alert)
+            ->whereRaw('dt_unsub_date IS NULL');
 
         if ($userid == 0 || $userid == null) {
-            $this->dao->where('fk_i_user_id', 0);
-            $this->dao->where('s_email', $email);
+            $query = $query
+                ->where('fk_i_user_id', 0)
+                ->where('s_email', $email);
         } else {
-            $this->dao->where('fk_i_user_id', $userid);
+            $query = $query->where('fk_i_user_id', $userid);
         }
-        $results = $this->dao->get();
 
-        if ($results->numRows() == 0) {
-            $this->dao->insert($this->getTableName(), array(
-                'fk_i_user_id' => $userid
-                ,
-                's_email'      => $email
-                ,
-                's_search'     => $alert
-                ,
-                'e_type'       => $type
-                ,
-                's_secret'     => $secret
-                ,
-                'dt_date'      => date('Y-m-d H:i:s')
+        // No false-branch in the legacy body (it dereferenced get()'s result
+        // directly), so a genuine query failure is left to propagate rather than
+        // absorbed. The stored blob ($alert) is written verbatim; dt_date keeps
+        // the legacy PHP clock (date()), which was never a MySQL NOW() sentinel.
+        if (count($query->get()) === 0) {
+            return osc_db_table($this->getTableName())->insert(array(
+                'fk_i_user_id' => $userid,
+                's_email'      => $email,
+                's_search'     => $alert,
+                'e_type'       => $type,
+                's_secret'     => $secret,
+                'dt_date'      => date('Y-m-d H:i:s'),
             ));
-
-            return $this->dao->insertedId();
         }
 
         return false;
@@ -420,7 +417,13 @@ class Alerts extends DAO
      */
     public function activate($id)
     {
-        return $this->dao->update($this->getTableName(), array('b_active' => 1), array('pk_i_id' => $id));
+        try {
+            return osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->update(array('b_active' => 1));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -435,7 +438,13 @@ class Alerts extends DAO
      */
     public function deactivate($id)
     {
-        return $this->dao->update($this->getTableName(), array('b_active' => 0), array('pk_i_id' => $id));
+        try {
+            return osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->update(array('b_active' => 0));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -450,11 +459,15 @@ class Alerts extends DAO
      */
     public function unsub($id)
     {
-        return $this->dao->update(
-            $this->getTableName(),
-            array('dt_unsub_date' => date('Y-m-d H:i:s')),
-            array('pk_i_id' => $id)
-        );
+        // dt_unsub_date keeps the legacy PHP clock (date()); it was never a MySQL
+        // NOW() sentinel here.
+        try {
+            return osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->update(array('dt_unsub_date' => date('Y-m-d H:i:s')));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
 
@@ -480,33 +493,73 @@ class Alerts extends DAO
         $alerts['total_results'] = 0;
         $alerts['alerts']        = array();
 
-        $this->dao->select('SQL_CALC_FOUND_ROWS *');
-        $this->dao->from($this->getTableName());
         if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
             $order_column = 'dt_date';
         }
-        $this->dao->orderBy($order_column, $order_direction);
-        $this->dao->limit($start, $end);
-        if ($name != '') {
-            $this->dao->like('s_email', $name);
-        }
-        $rs = $this->dao->get();
 
-        if (!$rs) {
+        // $order_column is validated against the allowlist above. $order_direction
+        // reproduces DBCommandClass::orderBy()'s own handling, quirks included:
+        // 'random' becomes RAND(), a recognised-but-not-ASC/DESC direction
+        // collapses to ASC, and an empty or '0' direction is appended
+        // unvalidated (a '0' direction is therefore a genuine SQL syntax error,
+        // not a no-op).
+        $direction = (string)$order_direction;
+        if (strtolower($direction) === 'random') {
+            $orderSql = $order_column . ' RAND()';
+        } elseif (trim($direction) !== '' && trim($direction) !== '0') {
+            $orderSql = $order_column
+                . (in_array(strtoupper(trim($direction)), array('ASC', 'DESC'), true) ? ' ' . $direction : ' ASC');
+        } else {
+            $orderSql = $order_column . $direction;
+        }
+
+        // SQL_CALC_FOUND_ROWS + FOUND_ROWS() cannot be expressed through the query
+        // builder, so this stays hand-written SQL with every value bound.
+        $params = array();
+        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        if ($name != '') {
+            // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
+            // payload before the wildcard boundaries are added, so a literal
+            // wildcard character typed by the caller stays literal.
+            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $sql     .= ' WHERE s_email LIKE ?';
+            $params[] = '%' . $escaped . '%';
+        }
+        $sql .= ' ORDER BY ' . $orderSql;
+
+        // Mirrors DBCommandClass::limit($start, $end): MySQL's two-argument LIMIT
+        // reads the first number as the OFFSET and the second as the COUNT -- the
+        // opposite of what the parameter names suggest. The clause is omitted when
+        // $start is not numeric, and the count half only when $end is numeric > 0.
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int)$start;
+            if ($end != '' && is_numeric($end) && (int)$end > 0) {
+                $sql .= ', ' . (int)$end;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return $alerts;
         }
 
-        $alerts['alerts'] = $rs->result();
+        $alerts['alerts'] = osc_db_stringify_rows($rows);
 
-        $rsRows = $this->dao->query('SELECT FOUND_ROWS() as total');
-        $data   = $rsRows->row();
-        if ($data['total']) {
+        // FOUND_ROWS() must run immediately after the SQL_CALC_FOUND_ROWS select
+        // above, on the same connection, with nothing in between -- it reports on
+        // whichever query last carried that hint. Both this and the COUNT(*) below
+        // run with no params, which shares the singleton connection and (like the
+        // legacy dao->query() path) returns plain strings.
+        $data = osc_db_select_one('SELECT FOUND_ROWS() as total');
+        if ($data !== null && $data['total']) {
             $alerts['total_results'] = $data['total'];
         }
 
-        $rsTotal = $this->dao->query('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        $data    = $rsTotal->row();
-        if ($data['total']) {
+        // Unconditional: this always counts the WHOLE table, ignoring the s_email
+        // filter above -- that is what the legacy query did too.
+        $data = osc_db_select_one('SELECT COUNT(*) as total FROM ' . $this->getTableName());
+        if ($data !== null && $data['total']) {
             $alerts['rows'] = $data['total'];
         }
 
