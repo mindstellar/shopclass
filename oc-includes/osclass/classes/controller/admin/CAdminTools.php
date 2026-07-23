@@ -95,6 +95,18 @@ class CAdminTools extends AdminSecBaseModel
             case 'version':
                 $this->doView('tools/version.php');
                 break;
+            case ('cache'):
+                $this->doView('tools/cache.php');
+                break;
+            case ('cache_clear'):
+                osc_csrf_check();
+                if (osc_cache_flush()) {
+                    osc_add_flash_ok_message(_m('The cache has been cleared'), 'admin');
+                } else {
+                    osc_add_flash_error_message(_m('The cache could not be cleared'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cache');
+                break;
             case ('backup'):
             case ('backup_post'):
                 $this->doView('tools/backup.php');

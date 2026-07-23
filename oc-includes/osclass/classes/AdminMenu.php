@@ -351,6 +351,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
+            __('Cache'),
+            osc_admin_base_url(true) . '?page=tools&action=cache',
+            'tools_cache',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
             __('Maintenance mode'),
             osc_admin_base_url(true) . '?page=tools&action=maintenance',
             'tools_maintenance',
