@@ -46,6 +46,15 @@ class KeywordBlock extends DAO
     /**
      * Paginated list for the admin datatable.
      *
+     * The main listing can't go through the query builder: SQL_CALC_FOUND_ROWS
+     * isn't a column identifier the builder's allowlist will pass, so the whole
+     * SELECT is hand-written with every value bound and every identifier either
+     * a literal or validated a few lines above. $start/$end are kept in the
+     * exact "LIMIT $start, $end" text legacy produced (MySQL reads that
+     * two-argument form as OFFSET=$start, ROW_COUNT=$end) rather than
+     * reinterpreted through the builder's LIMIT/OFFSET, so a non-numeric $start
+     * still disables the clause entirely, same as before.
+     *
      * @param int    $start
      * @param int    $end
      * @param string $order_column
@@ -61,34 +70,70 @@ class KeywordBlock extends DAO
         $result['total_results'] = 0;
         $result['keywords']      = array();
 
-        $this->dao->select('SQL_CALC_FOUND_ROWS *');
-        $this->dao->from($this->getTableName());
         if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
             $order_column = 'pk_i_id';
         }
-        $this->dao->orderBy($order_column, $order_direction);
-        $this->dao->limit($start, $end);
-        if ($keyword != '') {
-            $this->dao->like('s_keyword', $keyword);
-        }
-        $rs = $this->dao->get();
 
-        if ($rs === false) {
+        // Mirrors DBCommandClass::orderBy(): 'random' becomes RAND(), anything
+        // else is checked against ASC/DESC (case-insensitive) before being
+        // placed in the SQL text; only $order_column above and this literal
+        // ASC/DESC/RAND() ever reach the query as raw SQL, never $order_direction
+        // itself unless it already matched the allowlist.
+        $direction = (string)$order_direction;
+        if (strtolower($direction) === 'random') {
+            $orderSql = $order_column . ' RAND()';
+        } elseif (trim($direction) !== '' && trim($direction) !== '0') {
+            $orderSql = $order_column
+                . (in_array(strtoupper(trim($direction)), array('ASC', 'DESC'), true) ? ' ' . $direction : ' ASC');
+        } else {
+            // The legacy branch tested trim($direction) for truthiness, so the
+            // string '0' fell through unvalidated and was concatenated straight
+            // onto the column, producing an invalid identifier and a failed
+            // query. Reproduced rather than corrected: callers read the empty
+            // result that failure produces.
+            $orderSql = $order_column . $direction;
+        }
+
+        $table  = $this->getTableName();
+        $params = array();
+        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $table;
+        if ($keyword != '') {
+            // Same wildcard escaping DBCommandClass::escapeStr($v, true) applied
+            // before the legacy LIKE: a literal % or _ typed by an admin stays
+            // literal rather than acting as a SQL wildcard.
+            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $keyword) . '%';
+            $sql     .= ' WHERE s_keyword LIKE ?';
+            $params[] = $pattern;
+        }
+        $sql .= ' ORDER BY ' . $orderSql;
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int)$start;
+            if ($end != '' && is_numeric($end) && (int)$end > 0) {
+                $sql .= ', ' . (int)$end;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return $result;
         }
 
-        $result['keywords'] = $rs->result();
+        $result['keywords'] = osc_db_stringify_rows($rows);
 
-        $rsRows = $this->dao->query('SELECT FOUND_ROWS() as total');
-        $data   = $rsRows->row();
-        if ($data['total']) {
-            $result['total_results'] = $data['total'];
+        // FOUND_ROWS() reads off the SQL_CALC_FOUND_ROWS query just run above; it
+        // needs no value of its own and must execute on the same connection with
+        // nothing in between, which holds here since Connection shares the
+        // singleton mysqli handle $this->dao also uses.
+        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
+        if ($total) {
+            $result['total_results'] = $total;
         }
 
-        $rsTotal = $this->dao->query('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        $data    = $rsTotal->row();
-        if ($data['total']) {
-            $result['rows'] = $data['total'];
+        // $table is fixed in the constructor, never runtime input.
+        $rowsTotal = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table);
+        if ($rowsTotal) {
+            $result['rows'] = $rowsTotal;
         }
 
         return $result;
@@ -99,16 +144,10 @@ class KeywordBlock extends DAO
      */
     public function countKeywords()
     {
-        $this->dao->select('COUNT(*) as i_total');
-        $this->dao->from($this->getTableName());
-
-        $result = $this->dao->get();
-        if ($result === false || $result->numRows() === 0) {
+        try {
+            return osc_db_table($this->getTableName())->count();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        $row = $result->row();
-
-        return (int)$row['i_total'];
     }
 }
