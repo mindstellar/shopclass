@@ -58,6 +58,9 @@ if (isset($field['cascade_map']) && is_array($field['cascade_map'])) {
 // and category placement are managed by drag-drop and on the form, so the field
 // editor hides its Group dropdown and category tree and saves the definition only.
 $builderMode = Params::getParam('builder') == '1';
+
+// A field definition is shared: editing it changes every form that placed it.
+$formCount = (int)__get('form_count');
 ?>
 <!-- custom field frame -->
 <div id="edit-custom-field-frame" class="card custom-field-frame">
@@ -70,10 +73,23 @@ $builderMode = Params::getParam('builder') == '1';
             <h3 class="card-header"><?php _e('Edit custom field'); ?></h3>
             <fieldset>
                 <div class="card-body">
+                    <?php if ($formCount > 1) { ?>
+                        <p class="cf-editor-note" role="note">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <?php printf(
+                                _n(
+                                    'This field is used in %d form. Changes here apply to that form.',
+                                    'This field is used in %d forms. Changes here apply to all of them.',
+                                    $formCount
+                                ),
+                                $formCount
+                            ); ?>
+                        </p>
+                    <?php } ?>
                     <div class="form-row">
                         <?php FieldForm::multiLangTitle($field); ?>
                     </div>
-                    <div class="col-md-6">
+                    <div class="cf-editor-body">
                         <div class="form-row" id="div_field_options">
                             <div class="form-label"><?php _e('Options'); ?></div>
                             <div class="form-controls">

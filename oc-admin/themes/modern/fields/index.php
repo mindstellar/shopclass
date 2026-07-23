@@ -18,6 +18,7 @@ osc_enqueue_script('sortablejs');
 $fields    = __get('fields');
 $forms     = __get('groups');
 $placedIds = __get('placed_field_ids');
+$catNames  = __get('category_names');
 if (!is_array($fields)) {
     $fields = array();
 }
@@ -26,6 +27,9 @@ if (!is_array($forms)) {
 }
 if (!is_array($placedIds)) {
     $placedIds = array();
+}
+if (!is_array($catNames)) {
+    $catNames = array();
 }
 $placedIds = array_map('intval', $placedIds);
 
@@ -103,6 +107,41 @@ if (!function_exists('cfields_render_chip')) {
     }
 }
 
+if (!function_exists('cfields_form_cat_summary')) {
+    /**
+     * The "Applies to: …" line under a form's title. A form with no categories is
+     * shown as unattached — it renders on no listing until it is given at least one.
+     *
+     * @param array $categoryIds
+     * @param array $catNames id => localised name
+     *
+     * @return string
+     */
+    function cfields_form_cat_summary($categoryIds, $catNames)
+    {
+        $names = array();
+        foreach ((array)$categoryIds as $cid) {
+            if (isset($catNames[(int)$cid])) {
+                $names[] = $catNames[(int)$cid];
+            }
+        }
+        if (empty($names)) {
+            return '<span class="form-card-cats is-unattached"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '
+                . osc_esc_html(__('Not attached to a category — it won\'t appear on listings yet'))
+                . '</span>';
+        }
+        $shown = array_slice($names, 0, 3);
+        $extra = count($names) - count($shown);
+        $label = '<span class="cats-label">' . osc_esc_html(__('Applies to')) . ':</span> '
+            . osc_esc_html(implode(', ', $shown));
+        if ($extra > 0) {
+            $label .= ' <span class="cats-more">+' . $extra . '</span>';
+        }
+
+        return '<span class="form-card-cats">' . $label . '</span>';
+    }
+}
+
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 function customHead()
@@ -177,14 +216,94 @@ function customHead()
         // ---- The builder ----------------------------------------------------
         var BASE = '<?php echo osc_admin_base_url(true); ?>';
         var CSRF = '<?php echo $csrf_token; ?>';
+        var CF_CAT_NAMES = <?php echo json_encode((object)$catNames); ?>;
+        var CF_TXT = {
+            saving:     '<?php echo osc_esc_js(__('Saving…')); ?>',
+            saved:      '<?php echo osc_esc_js(__('Saved')); ?>',
+            inForms:    '<?php echo osc_esc_js(__('In %d forms')); ?>',
+            inFormsTip: '<?php echo osc_esc_js(__('Editing this field changes it in every form that uses it.')); ?>',
+            applies:    '<?php echo osc_esc_js(__('Applies to')); ?>',
+            unattached: '<?php echo osc_esc_js(__('Not attached to a category — it won\'t appear on listings yet')); ?>'
+        };
+
+        function cfEsc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // A brief per-form "Saving… / Saved" note, so a silent autosave reads as done.
+        function setCardStatus(el, state) {
+            if (!el) { return; }
+            if (el._t) { clearTimeout(el._t); el._t = null; }
+            el.classList.remove('is-saving', 'is-saved');
+            if (state === 'saving') {
+                el.textContent = CF_TXT.saving;
+                el.classList.add('is-saving');
+            } else if (state === 'saved') {
+                el.textContent = CF_TXT.saved;
+                el.classList.add('is-saved');
+                el._t = setTimeout(function () { el.classList.remove('is-saved'); el.textContent = ''; }, 2500);
+            } else {
+                el.textContent = '';
+            }
+        }
+
+        // Mark each palette chip with the number of forms it is placed in, so the
+        // shared nature of a field definition is visible before it is edited.
+        function refreshSharedBadges() {
+            var lists = document.querySelectorAll('.form-fieldlist');
+            document.querySelectorAll('#palette-list > .field-chip').forEach(function (chip) {
+                var id = chip.getAttribute('data-field-id');
+                var n = 0;
+                lists.forEach(function (list) {
+                    if (list.querySelector(':scope > .field-chip[data-field-id="' + id + '"]')) { n++; }
+                });
+                var badge = chip.querySelector('.chip-shared');
+                if (n >= 2) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'chip-shared';
+                        badge.title = CF_TXT.inFormsTip;
+                        chip.insertBefore(badge, chip.querySelector('.chip-type'));
+                    }
+                    badge.textContent = CF_TXT.inForms.replace('%d', n);
+                } else if (badge) {
+                    badge.remove();
+                }
+            });
+        }
+
+        // Rewrite a form card's "Applies to: …" line after its categories are saved.
+        window.cfSetCardCats = function (formId, catIds) {
+            var card = document.querySelector('.form-card[data-form-id="' + formId + '"]');
+            var el = card ? card.querySelector('.form-card-cats') : null;
+            if (!el) { return; }
+            var names = catIds.map(function (id) { return CF_CAT_NAMES[id]; }).filter(Boolean);
+            if (!names.length) {
+                el.className = 'form-card-cats is-unattached';
+                el.innerHTML = '<i class="bi bi-exclamation-circle" aria-hidden="true"></i> ' + cfEsc(CF_TXT.unattached);
+                return;
+            }
+            el.className = 'form-card-cats';
+            var shown = names.slice(0, 3);
+            var extra = names.length - shown.length;
+            var html = '<span class="cats-label">' + cfEsc(CF_TXT.applies) + ':</span> ' + shown.map(cfEsc).join(', ');
+            if (extra > 0) { html += ' <span class="cats-more">+' + extra + '</span>'; }
+            el.innerHTML = html;
+        };
 
         // Persist a form's whole ordered field list (add/remove/reorder in one call).
         var saveTimers = {};
         function saveForm(listEl) {
             if (!listEl) { return; }
             var formId = listEl.getAttribute('data-form-id');
+            var card = listEl.closest('.form-card');
+            var status = card ? card.querySelector('.form-card-status') : null;
             var ids = Array.prototype.map.call(listEl.querySelectorAll(':scope > .field-chip'),
                 function (li) { return li.getAttribute('data-field-id'); });
+            // Membership just changed in the DOM — reflect it on the palette at once.
+            refreshSharedBadges();
+            setCardStatus(status, 'saving');
             clearTimeout(saveTimers[formId]);
             saveTimers[formId] = setTimeout(function () {
                 var body = new URLSearchParams();
@@ -194,8 +313,12 @@ function customHead()
                     method: 'POST', credentials: 'same-origin',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: body
                 }).then(function (r) { return r.json(); }).then(function (ret) {
-                    if (ret.error) { setJsMessage('error', ret.error); }
-                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>'); });
+                    if (ret.error) { setJsMessage('error', ret.error); setCardStatus(status, ''); }
+                    else { setCardStatus(status, 'saved'); }
+                }).catch(function () {
+                    setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                    setCardStatus(status, '');
+                });
                 refreshEmptyStates();
             }, 250);
         }
@@ -224,8 +347,12 @@ function customHead()
             card.setAttribute('data-form-id', id);
             card.innerHTML = ''
                 + '<div class="form-card-head">'
-                + '  <span class="form-card-title" id="group_name_' + id + '"></span>'
+                + '  <div class="form-card-heading">'
+                + '    <span class="form-card-title" id="group_name_' + id + '"></span>'
+                + '    <span class="form-card-cats is-unattached"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> ' + cfEsc(CF_TXT.unattached) + '</span>'
+                + '  </div>'
                 + '  <span class="form-card-actions">'
+                + '    <span class="form-card-status" role="status" aria-live="polite"></span>'
                 + '    <button type="button" class="chip-btn" onclick="show_group_iframe(\'' + id + '\'); return false;" title="<?php echo osc_esc_js(__('Categories & name')); ?>"><i class="bi bi-gear-fill"></i></button>'
                 + '    <button type="button" class="chip-btn chip-danger" onclick="delete_group(\'' + id + '\'); return false;" title="<?php echo osc_esc_js(__('Delete form')); ?>"><i class="bi bi-trash-fill"></i></button>'
                 + '  </span>'
@@ -250,6 +377,7 @@ function customHead()
             }
             document.querySelectorAll('.form-fieldlist').forEach(initFormSortable);
             refreshEmptyStates();
+            refreshSharedBadges();
 
             // ✕ removes a chip from its form
             document.addEventListener('click', function (e) {
@@ -346,8 +474,12 @@ osc_current_admin_theme_path('parts/header.php');
                         $fid = (int)$form['pk_i_id']; ?>
                         <div class="form-card" data-form-id="<?php echo $fid; ?>">
                             <div class="form-card-head">
-                                <span class="form-card-title" id="group_name_<?php echo $fid; ?>"><?php echo osc_esc_html($form['s_name']); ?></span>
+                                <div class="form-card-heading">
+                                    <span class="form-card-title" id="group_name_<?php echo $fid; ?>"><?php echo osc_esc_html($form['s_name']); ?></span>
+                                    <?php echo cfields_form_cat_summary($form['category_ids'] ?? array(), $catNames); ?>
+                                </div>
                                 <span class="form-card-actions">
+                                    <span class="form-card-status" role="status" aria-live="polite"></span>
                                     <button type="button" class="chip-btn" onclick="show_group_iframe('<?php echo $fid; ?>'); return false;"
                                             title="<?php echo osc_esc_html(__('Categories & name')); ?>"><i class="bi bi-gear-fill" aria-hidden="true"></i></button>
                                     <button type="button" class="chip-btn chip-danger" onclick="delete_group('<?php echo $fid; ?>'); return false;"
@@ -426,6 +558,7 @@ osc_current_admin_theme_path('parts/header.php');
                             el.remove();
                             if (list) { /* server already removed links via delete */ }
                         });
+                        if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
                     }
                 }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
         };
@@ -440,6 +573,7 @@ osc_current_admin_theme_path('parts/header.php');
                         setJsMessage('ok', o.ok);
                         var card = document.querySelector('.form-card[data-form-id="' + groupId + '"]');
                         if (card) { card.remove(); }
+                        if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
                     }
                 }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
         };

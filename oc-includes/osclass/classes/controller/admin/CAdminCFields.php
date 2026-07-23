@@ -57,14 +57,33 @@ class CAdminCFields extends AdminSecBaseModel
                 // for the two-pane drag-and-drop builder.
                 $allFields = $this->fieldManager->listAll();
                 $service   = new \mindstellar\forms\FormService();
-                $forms     = FieldGroup::newInstance()->listAll();
+                $groupModel = FieldGroup::newInstance();
+                $forms     = $groupModel->listAll();
                 foreach ($forms as &$form) {
-                    $form['field_ids'] = $service->formFieldIds((int)$form['pk_i_id']);
+                    $form['field_ids']    = $service->formFieldIds((int)$form['pk_i_id']);
+                    // The categories a form applies to. A form with none renders on no
+                    // listing at all (findByCategory inner-joins the link table), so the
+                    // builder surfaces this as a visible "not attached yet" warning.
+                    $form['category_ids'] = $groupModel->categories((int)$form['pk_i_id']);
                 }
                 unset($form);
 
+                // Flat id => localised name map, so the builder can label each form's
+                // categories at load and after an inline save without another lookup.
+                $categoryNames = array();
+                $flatten = static function ($nodes) use (&$flatten, &$categoryNames) {
+                    foreach ((array)$nodes as $node) {
+                        $categoryNames[(int)$node['pk_i_id']] = $node['s_name'];
+                        if (!empty($node['categories'])) {
+                            $flatten($node['categories']);
+                        }
+                    }
+                };
+                $flatten($categories);
+
                 $this->_exportVariableToView('fields', $allFields);
                 $this->_exportVariableToView('groups', $forms);
+                $this->_exportVariableToView('category_names', $categoryNames);
                 $this->_exportVariableToView('placed_field_ids', $service->placedFieldIds());
                 $this->doView('fields/index.php');
                 break;

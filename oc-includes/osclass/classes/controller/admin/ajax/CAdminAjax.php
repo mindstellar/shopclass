@@ -269,6 +269,12 @@ class CAdminAjax extends AdminSecBaseModel
                 $this->_exportVariableToView('allFields', Field::newInstance()->listAll());
                 // Groups populate the membership dropdown (Ungrouped + each group).
                 $this->_exportVariableToView('allGroups', FieldGroup::newInstance()->listAll());
+                // How many forms this field is placed in — the editor warns when a save
+                // will change the field in more than one form.
+                $this->_exportVariableToView(
+                    'form_count',
+                    (new \mindstellar\forms\FormService())->formCountForField((int)Params::getParam('id'))
+                );
                 $this->doView('fields/iframe.php');
                 break;
             case 'field_categories_post':

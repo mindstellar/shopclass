@@ -109,6 +109,14 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                     setJsMessage('ok', ret.ok);
                     var label = document.getElementById('group_name_' + ret.group_id);
                     if (label) { label.textContent = ret.text; }
+                    // Refresh the card's "Applies to: …" line from the categories just saved.
+                    if (typeof window.cfSetCardCats === 'function') {
+                        var ids = Array.prototype.map.call(
+                            document.querySelectorAll('#group_cat_tree input[name="categories[]"]:checked'),
+                            function (cb) { return parseInt(cb.value, 10); }
+                        );
+                        window.cfSetCardCats(ret.group_id, ids);
+                    }
                     var frame = document.getElementById('edit-field-group-frame');
                     if (frame) { frame.remove(); }
                 } else {

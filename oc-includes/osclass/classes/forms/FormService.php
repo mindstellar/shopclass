@@ -113,4 +113,23 @@ final class FormService
 
         return array_map(static fn ($r) => (int) $r['fk_i_field_id'], $rows);
     }
+
+    /**
+     * How many forms a field belongs to. Used to warn, when editing a field, that
+     * the change is shared: a field definition is edited once and takes effect in
+     * every form that placed it.
+     *
+     * @param int $fieldId
+     *
+     * @return int
+     */
+    public function formCountForField(int $fieldId): int
+    {
+        $rows = osc_db_table($this->linkTable)
+            ->select('fk_i_group_id')
+            ->where('fk_i_field_id', $fieldId)
+            ->get();
+
+        return is_array($rows) ? count($rows) : 0;
+    }
 }

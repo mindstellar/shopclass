@@ -295,12 +295,20 @@
   gap: .75rem;
   justify-content: space-between;
   margin-bottom: .5rem;
+
+  // Keep the action button on one line; the narrow palette rail was letting
+  // "New field" shrink and wrap to three lines.
+  .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .col-title {
   font-size: 1.0625rem;
   font-weight: 600;
   margin: 0;
+  min-width: 0;
 }
 
 .col-hint {
@@ -329,11 +337,18 @@
 }
 
 .form-card-head {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: .5rem;
   justify-content: space-between;
   margin-bottom: .5rem;
+}
+
+.form-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
 }
 
 .form-card-title {
@@ -342,9 +357,56 @@
   font-weight: 600;
 }
 
+// "Applies to: For sale, Vehicles +1" — the categories a form renders on. A form
+// with none is flagged, because it then appears on no listing at all.
+.form-card-cats {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  line-height: 1.35;
+
+  .cats-label {
+    font-weight: 500;
+  }
+
+  .cats-more {
+    color: var(--osc-ink-muted);
+    font-weight: 500;
+  }
+
+  &.is-unattached {
+    color: var(--osc-warning-deep);
+
+    .bi {
+      margin-inline-end: .15rem;
+    }
+  }
+}
+
 .form-card-actions {
+  align-items: center;
   display: inline-flex;
+  flex: 0 0 auto;
   gap: .15rem;
+}
+
+// Transient autosave feedback next to a form's actions.
+.form-card-status {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  transition: opacity var(--osc-duration-fast) var(--osc-ease);
+  white-space: nowrap;
+
+  &:empty {
+    display: none;
+  }
+
+  &.is-saved {
+    color: var(--osc-success);
+
+    &::before {
+      content: "\2713\00a0"; // ✓
+    }
+  }
 }
 
 .form-fieldlist {
@@ -441,6 +503,19 @@
   padding: .05rem .45rem;
 }
 
+// "In N forms" — shown on a palette chip whose field is placed in more than one
+// form, so its shared nature is visible before it is edited.
+.chip-shared {
+  background-color: var(--osc-bronze-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+  white-space: nowrap;
+}
+
 .chip-actions {
   display: inline-flex;
   flex: 0 0 auto;
@@ -483,6 +558,116 @@
 .form-fieldlist .chip-remove:focus-visible {
   background-color: var(--osc-danger-tint);
   color: var(--osc-danger);
+}
+
+// ---- The inline editors (field + form) --------------------------------------
+// Both editors reuse the legacy .form-horizontal geometry — a 150px right-aligned
+// label well beside its control. That needs width the palette rail (~22rem) does
+// not have, so the field editor opened there was crushed into an unusable strip.
+// Inside the builder the rows stack instead: label above a full-width control.
+// This lets the field editor sit in the rail without cramping and makes the two
+// editors read as one component.
+.forms-builder .custom-field-frame {
+  margin-top: .75rem;
+
+  .card-header {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  // A calm heads-up that this field definition is shared across several forms.
+  .cf-editor-note {
+    align-items: baseline;
+    background-color: var(--osc-info-tint);
+    border-radius: $border-radius;
+    color: var(--osc-info);
+    display: flex;
+    font-size: .8125rem;
+    gap: .4rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+    padding: .5rem .65rem;
+
+    .bi {
+      flex: 0 0 auto;
+    }
+  }
+
+  // Neutralise the leftover half-width column wrapper in the field editor so the
+  // controls take the full width of whichever pane the editor opens in.
+  .cf-editor-body {
+    max-width: none;
+    width: 100%;
+  }
+
+  // Stack every row: label first, then its control.
+  .form-row {
+    align-items: stretch;
+    column-gap: 0;
+    flex-direction: column;
+    margin-bottom: .85rem;
+  }
+
+  .form-label {
+    flex: none;
+    margin-bottom: .25rem;
+    padding-block-start: 0;
+    text-align: start;
+
+    // An empty label well (the checkbox rows carry one) would otherwise leave a
+    // stray gap above the control.
+    &:empty {
+      display: none;
+    }
+  }
+
+  .form-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+    select,
+    textarea {
+      max-width: 100%;
+      width: 100%;
+    }
+
+    // Checkbox rows (required / searchable / block) read as one line: box, label.
+    > label {
+      align-items: center;
+      display: inline-flex;
+      gap: .4rem;
+
+      input[type="checkbox"] {
+        flex: 0 0 auto;
+        margin: 0;
+      }
+    }
+  }
+
+  // Footer actions: left-aligned and side by side, without the 170px indent the
+  // horizontal form added (which stacked the buttons in the narrow rail).
+  .card-footer.form-actions,
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: flex-start;
+    padding-inline-start: 16px;
+  }
+
+  // Category tree (form editor): separate the checkbox from its label.
+  ul[id^="cat"],
+  #group_cat_tree,
+  #cat_tree {
+    input[type="checkbox"] {
+      margin-inline-end: .35rem;
+    }
+  }
+
+  .separate-top {
+    margin-block-start: 1rem;
+  }
 }
 
 
