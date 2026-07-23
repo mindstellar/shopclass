@@ -84,16 +84,15 @@ class ItemComment extends DAO
      */
     public function findByItemIDAll($id)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_item_id', $id);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('fk_i_item_id', $id)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -111,7 +110,6 @@ class ItemComment extends DAO
      */
     public function findByItemID($id, $page = null, $commentsPerPage = null)
     {
-        $result = array();
         if ($page == null) {
             $page = osc_item_comments_page();
         }
@@ -123,26 +121,26 @@ class ItemComment extends DAO
             $commentsPerPage = osc_comments_per_page();
         }
 
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'fk_i_item_id' => $id,
-            'b_active'     => 1,
-            'b_enabled'    => 1
-        );
-        $this->dao->where($conditions);
+        $query = osc_db_table($this->getTableName())
+            ->where('fk_i_item_id', $id)
+            ->where('b_active', 1)
+            ->where('b_enabled', 1);
 
         if ($page !== 'all' && $commentsPerPage > 0) {
-            $this->dao->limit($page * $commentsPerPage, $commentsPerPage);
+            // Legacy dao->limit($page * $commentsPerPage, $commentsPerPage) compiles to
+            // "LIMIT offset, count" here (unlike the confusingly-named KeywordBlock pair,
+            // these argument names already match the SQL meaning): offset = page * perPage,
+            // count = perPage.
+            $query = $query->limit((int)$commentsPerPage)->offset((int)($page * $commentsPerPage));
         }
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -174,28 +172,31 @@ class ItemComment extends DAO
      */
     public function totalComments($id)
     {
-        $this->dao->select('count(pk_i_id) as total');
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'fk_i_item_id' => $id,
-            'b_active'     => 1,
-            'b_enabled'    => 1
-        );
-        $this->dao->where($conditions);
-        $this->dao->groupBy('fk_i_item_id');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        if ($id === null) {
+            // Legacy _where() omits the right-hand side for a null value, producing a
+            // malformed WHERE clause that fails the query; the failure branch below
+            // returns false, which a bound null (a valid, zero-row match under GROUP BY)
+            // does not. The two are not interchangeable, so null keeps its own branch.
             return false;
         }
 
-        if ($result->numRows() === 0) {
-            return 0;
-        } else {
-            $total = $result->row();
+        // COUNT(pk_i_id) AS total is an aggregate expression the query builder's
+        // identifier allowlist rejects, so this stays hand-written SQL with every
+        // value bound; the column list, WHERE and GROUP BY match _getSelect() exactly.
+        $sql = 'SELECT COUNT(pk_i_id) AS total FROM ' . $this->getTableName()
+            . ' WHERE fk_i_item_id = ? AND b_active = ? AND b_enabled = ? GROUP BY fk_i_item_id';
 
-            return $total['total'];
+        try {
+            $row = osc_db_select_one($sql, array($id, 1, 1));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
         }
+
+        if ($row === null) {
+            return 0;
+        }
+
+        return (string)$row['total'];
     }
 
     /**
@@ -210,21 +211,17 @@ class ItemComment extends DAO
      */
     public function findByAuthorID($id)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'fk_i_user_id' => $id,
-            'b_active'     => 1,
-            'b_enabled'    => 1
-        );
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('fk_i_user_id', $id)
+                ->where('b_active', 1)
+                ->where('b_enabled', 1)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -239,28 +236,31 @@ class ItemComment extends DAO
      */
     public function getAllComments($itemId = null)
     {
-        $this->dao->select('c.*');
-        $this->dao->from($this->getTableName() . ' c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item i');
+        // The query builder has no notion of a table alias, and this method's own
+        // column list (c.*) plus the implicit two-table join legacy built via a second
+        // from() can't be expressed through its identifier allowlist, so this is
+        // hand-written SQL: same columns, same CROSS JOIN _getSelect() produces for two
+        // FROM entries, same ordering.
+        $itemTable = DB_TABLE_PREFIX . 't_item';
+        $sql       = 'SELECT c.* FROM ' . $this->getTableName() . ' c CROSS JOIN ' . $itemTable . ' i WHERE ';
 
-        $conditions = array();
-        $conditions = array(
-            'i.pk_i_id'      => $itemId,
-            'c.fk_i_item_id' => $itemId
-        );
         if (null === $itemId) {
-            $conditions = 'c.fk_i_item_id = i.pk_i_id';
+            // No caller value here: a compile-time-only join condition, not user input.
+            $sql   .= 'c.fk_i_item_id = i.pk_i_id';
+            $params = array();
+        } else {
+            $sql   .= 'i.pk_i_id = ? AND c.fk_i_item_id = ?';
+            $params = array($itemId, $itemId);
         }
+        $sql .= ' ORDER BY c.dt_pub_date DESC';
 
-        $this->dao->where($conditions);
-        $this->dao->orderBy('c.dt_pub_date', 'DESC');
-        $aux = $this->dao->get();
-        if ($aux == false) {
+        try {
+            $comments = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $comments = $aux->result();
 
-        return $this->extendData($comments);
+        return $this->extendData(osc_db_stringify_rows($comments));
     }
 
     /**
@@ -279,15 +279,14 @@ class ItemComment extends DAO
 
         $results = array();
         foreach ($items as $item) {
-            $this->dao->select();
-            $this->dao->from(DB_TABLE_PREFIX . 't_item_description');
-            $this->dao->where('fk_i_item_id', $item['fk_i_item_id']);
-            $aux = $this->dao->get();
-            if ($aux == false) {
+            try {
+                $descriptions = osc_db_table(DB_TABLE_PREFIX . 't_item_description')
+                    ->where('fk_i_item_id', $item['fk_i_item_id'])
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
                 $descriptions = array();
-            } else {
-                $descriptions = $aux->result();
             }
+            $descriptions = osc_db_stringify_rows($descriptions);
 
             $item['locale'] = array();
             foreach ($descriptions as $desc) {
@@ -325,21 +324,29 @@ class ItemComment extends DAO
             return false;
         }
 
-        $lang = osc_current_user_locale();
+        // The select list re-aliases c.s_title as comment_title and also selects the
+        // unaliased d.s_title, which collides in the associative result with c.*'s own
+        // s_title (the later column in the list wins) — a hand-written query is the
+        // only way to reproduce that column ordering, so this stays raw SQL rather than
+        // going through the builder, which cannot express an aliased select list.
+        $table            = $this->getTableName();
+        $itemTable        = DB_TABLE_PREFIX . 't_item';
+        $descriptionTable = DB_TABLE_PREFIX . 't_item_description';
 
-        $this->dao->select('c.*,c.s_title as comment_title, d.s_title');
-        $this->dao->from($this->getTableName() . ' c');
-        $this->dao->join(DB_TABLE_PREFIX . 't_item i', 'i.pk_i_id = c.fk_i_item_id');
-        $this->dao->join(DB_TABLE_PREFIX . 't_item_description d', 'd.fk_i_item_id = c.fk_i_item_id');
-        $this->dao->orderBy('c.pk_i_id', 'DESC');
-        $this->dao->limit(0, $num);
+        $sql = 'SELECT c.*,c.s_title as comment_title, d.s_title'
+            . ' FROM ' . $table . ' c'
+            . ' JOIN ' . $itemTable . ' i ON i.pk_i_id = c.fk_i_item_id'
+            . ' JOIN ' . $descriptionTable . ' d ON d.fk_i_item_id = c.fk_i_item_id'
+            . ' ORDER BY c.pk_i_id DESC'
+            . ' LIMIT ' . (int)$num;
 
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -366,35 +373,55 @@ class ItemComment extends DAO
         $order = 'DESC',
         $all = true
     ) {
-        $this->dao->select('c.*');
-        $this->dao->from($this->getTableName() . ' c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item i');
+        $itemTable = DB_TABLE_PREFIX . 't_item';
+        $sql       = 'SELECT c.* FROM ' . $this->getTableName() . ' c CROSS JOIN ' . $itemTable . ' i WHERE ';
 
-        $conditions = array();
-        $conditions = array(
-            'i.pk_i_id'      => $itemId,
-            'c.fk_i_item_id' => $itemId
-        );
         if (null === $itemId) {
-            $conditions = 'c.fk_i_item_id = i.pk_i_id';
+            $sql    .= 'c.fk_i_item_id = i.pk_i_id';
+            $params  = array();
+        } else {
+            $sql    .= 'i.pk_i_id = ? AND c.fk_i_item_id = ?';
+            $params  = array($itemId, $itemId);
         }
-
-        $this->dao->where($conditions);
 
         if (!$all) {
-            $auxCond = '( c.b_enabled = 0 OR c.b_active = 0 OR c.b_spam = 1 )';
-            $this->dao->where($auxCond);
+            // A fixed literal, not caller input.
+            $sql .= ' AND ( c.b_enabled = 0 OR c.b_active = 0 OR c.b_spam = 1 )';
         }
 
-        $this->dao->orderBy($order_by, $order);
-        $this->dao->limit($start, $limit);
+        // $order_by/$order reach here exactly as the caller supplied them.
+        // DBCommandClass::orderBy() concatenates $order_by raw with no identifier
+        // allowlist of its own (only $order gets narrowed to ASC/DESC/RAND()), so this
+        // reproduces that behaviour rather than adding validation this method never
+        // had: every current caller passes the fixed literal 'c.dt_pub_date'.
+        $direction = (string)$order;
+        if (strtolower($direction) === 'random') {
+            $orderSql = $order_by . ' RAND()';
+        } elseif (trim($direction) !== '' && trim($direction) !== '0') {
+            $orderSql = $order_by
+                . (in_array(strtoupper(trim($direction)), array('ASC', 'DESC'), true) ? ' ' . $direction : ' ASC');
+        } else {
+            // trim($direction) is falsy for '' AND for the single string '0', so a
+            // literal "0" direction falls through unvalidated and is concatenated onto
+            // the column, producing an invalid identifier and a failed query.
+            $orderSql = $order_by . $direction;
+        }
+        $sql .= ' ORDER BY ' . $orderSql;
 
-        $aux = $this->dao->get();
-        if ($aux == false) {
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int)$start;
+            if (is_numeric($limit) && (int)$limit > 0) {
+                $sql .= ', ' . (int)$limit;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $aux->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -406,27 +433,28 @@ class ItemComment extends DAO
      */
     public function count($itemId = null)
     {
-        $this->dao->select('COUNT(*) AS numrows');
-        $this->dao->from($this->getTableName() . ' c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item i');
+        $itemTable = DB_TABLE_PREFIX . 't_item';
+        $sql       = 'SELECT COUNT(*) AS numrows FROM ' . $this->getTableName() . ' c CROSS JOIN ' . $itemTable
+            . ' i WHERE ';
 
-        $conditions = array();
-        $conditions = array(
-            'i.pk_i_id'      => $itemId,
-            'c.fk_i_item_id' => $itemId
-        );
         if (null === $itemId) {
-            $conditions = 'c.fk_i_item_id = i.pk_i_id';
+            $sql   .= 'c.fk_i_item_id = i.pk_i_id';
+            $params = array();
+        } else {
+            $sql   .= 'i.pk_i_id = ? AND c.fk_i_item_id = ?';
+            $params = array($itemId, $itemId);
         }
 
-        $this->dao->where($conditions);
-        $aux = $this->dao->get();
-        if ($aux == false) {
+        try {
+            $row = osc_db_select_one($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $row = $aux->row();
 
-        return $row['numrows'];
+        // COUNT(*) with no GROUP BY always returns exactly one row, so this branch is
+        // unreachable through this method's own signature; kept for parity with the
+        // legacy row() call on an empty result set.
+        return $row === null ? null : (string)$row['numrows'];
     }
 
     /**
@@ -436,27 +464,47 @@ class ItemComment extends DAO
      */
     public function countAll($aConditions = null)
     {
-        $this->dao->select('count(*) as total');
-        $this->dao->from($this->getTableName() . ' c');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item i');
+        $itemTable = DB_TABLE_PREFIX . 't_item';
+        $sql       = 'SELECT COUNT(*) AS total FROM ' . $this->getTableName() . ' c CROSS JOIN ' . $itemTable
+            . ' i WHERE c.fk_i_item_id = i.pk_i_id';
+        $params = array();
 
-        $this->dao->where('c.fk_i_item_id = i.pk_i_id');
         if (null !== $aConditions) {
-            $this->dao->where($aConditions);
+            if (is_array($aConditions)) {
+                foreach ($aConditions as $k => $v) {
+                    if ($v === null) {
+                        // Same malformed-clause outcome as totalComments(null): the
+                        // failure branch below returns false, which a bound null does
+                        // not reproduce.
+                        return false;
+                    }
+                    $k = (string)$k;
+                    if (!preg_match('/(\s|<|>|!|=|is null|is not null)/i', $k)) {
+                        $k .= ' =';
+                    }
+                    $sql     .= ' AND ' . $k . ' ?';
+                    $params[] = $v;
+                }
+            } else {
+                // Every caller in this codebase passes a fixed literal condition
+                // fragment (functions.php, CAdminMain.php, CommentsDataTable.php); legacy
+                // passed it straight into the WHERE clause unvalidated and this
+                // reproduces that exactly rather than adding validation it never had.
+                $sql .= ' AND ' . $aConditions;
+            }
         }
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        try {
+            $row = osc_db_select_one($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() === 0) {
+        if ($row === null) {
             return 0;
-        } else {
-            $total = $result->row();
-
-            return $total['total'];
         }
+
+        return (string)$row['total'];
     }
 }
 /* file end: ./oc-includes/osclass/model/ItemComment.php */
