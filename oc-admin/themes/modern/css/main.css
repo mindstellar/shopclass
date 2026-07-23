@@ -16215,6 +16215,19 @@ code {
   padding: 0.5rem 0.55rem;
 }
 
+.submission-preview {
+  color: var(--osc-ink);
+  display: block;
+  max-width: 44ch;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.submission-preview:hover, .submission-preview:focus-visible {
+  color: var(--osc-bronze);
+}
+
 .submission-values {
   margin: 0;
 }

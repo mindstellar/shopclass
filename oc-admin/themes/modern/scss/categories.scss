@@ -842,6 +842,23 @@
 // list inside the Submission cell, because one submission is several field values
 // and a table cell has no other way to carry a label with each one.
 // =============================================================================
+// The row shows one line of the submission and opens the rest in a dialog, so a
+// form with twenty fields makes the row no taller than a form with two.
+.submission-preview {
+  color: var(--osc-ink);
+  display: block;
+  max-width: 44ch;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+  }
+}
+
 .submission-values {
   margin: 0;
 
