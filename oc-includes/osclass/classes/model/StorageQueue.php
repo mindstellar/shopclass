@@ -110,28 +110,49 @@ class StorageQueue extends DAO
         $stale = date('Y-m-d H:i:s', time() - 15 * 60);
         $token = uniqid('w', true);
 
-        $this->dao->query(
-            'UPDATE ' . $table . " SET s_status = 'pending', s_worker = NULL"
-            . " WHERE s_status = 'running' AND dt_locked < " . $this->dao->escape($stale)
-        );
+        // Recover stale locks. The result is discarded and the failure swallowed
+        // on its own, so a hiccup here never aborts the claim below — the legacy
+        // query() returned false without throwing and the sequence ran on.
+        try {
+            osc_db_execute(
+                'UPDATE ' . $table . " SET s_status = 'pending', s_worker = NULL"
+                . " WHERE s_status = 'running' AND dt_locked < ?",
+                array($stale)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // absorbed, as the legacy false return was
+        }
 
-        $this->dao->query(
-            'UPDATE ' . $table . " SET s_status = 'running', s_worker = " . $this->dao->escape($token)
-            . ', dt_locked = ' . $this->dao->escape($now)
-            . " WHERE s_status = 'pending' AND dt_next_run <= " . $this->dao->escape($now)
-            . ' ORDER BY pk_i_id LIMIT ' . max(1, $batch)
-        );
+        // Claim up to max(1, $batch) pending, due rows under a fresh token, oldest
+        // id first. ORDER BY and LIMIT on an UPDATE are not expressible through the
+        // builder, so this is hand-written: the table name is a fixed model
+        // constant, every value is a bound '?', and the limit is an int.
+        try {
+            osc_db_execute(
+                'UPDATE ' . $table . " SET s_status = 'running', s_worker = ?, dt_locked = ?"
+                . " WHERE s_status = 'pending' AND dt_next_run <= ?"
+                . ' ORDER BY pk_i_id LIMIT ' . (int) max(1, $batch),
+                array($token, $now, $now)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // absorbed
+        }
 
-        $result = $this->dao->query(
-            'SELECT * FROM ' . $table . ' WHERE s_worker = ' . $this->dao->escape($token)
-            . " AND s_status = 'running' ORDER BY pk_i_id"
-        );
-
-        if ($result === false || $result->numRows() === 0) {
+        try {
+            $rows = osc_db_select(
+                'SELECT * FROM ' . $table . ' WHERE s_worker = ?'
+                . " AND s_status = 'running' ORDER BY pk_i_id",
+                array($token)
+            );
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        if ($rows === array()) {
+            return array();
+        }
+
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -182,18 +203,11 @@ class StorageQueue extends DAO
      */
     public function countByStatus(string $status): int
     {
-        $this->dao->select('COUNT(*) AS count');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_status', $status);
-        $result = $this->dao->get();
-
-        if ($result === false || $result->numRows() === 0) {
+        try {
+            return osc_db_table($this->getTableName())->where('s_status', $status)->count();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        $row = $result->row();
-
-        return (int) $row['count'];
     }
 
     /**
@@ -203,17 +217,22 @@ class StorageQueue extends DAO
      */
     public function deadLetters(int $limit = 50): array
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_status', 'error');
-        $this->dao->orderBy('pk_i_id', 'DESC');
-        $result = $this->dao->get('', $limit);
-
-        if ($result === false || $result->numRows() === 0) {
+        if ($limit <= 0) {
             return array();
         }
 
-        return $result->result();
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('s_status', 'error')
+                ->orderBy('pk_i_id', 'DESC')
+                ->limit($limit)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        return osc_db_stringify_rows($rows);
     }
 }
 
