@@ -59,16 +59,15 @@ class Cron extends DAO
      */
     public function getCronByType($type)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('e_type', $type);
-        $result = $this->dao->get();
+        $row = osc_db_table($this->getTableName())
+            ->where('e_type', $type)
+            ->first();
 
-        if ($result->numRows == 0) {
+        if ($row === null) {
             return false;
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 }
 
