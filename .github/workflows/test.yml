@@ -21,5 +21,42 @@ jobs:
           extensions: mbstring, intl, pdo_sqlite, pdo_mysql
       - name: Test Syntax
         run: find -L . ! -name 'HTMLPurifierExtras.autoload-legacy.php' ! -name 'HTMLPurifier.autoload-legacy.php' -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l
-          
-  
+
+  # Characterization tests for the DAO base layer and the models built on it.
+  # These pin observable behaviour against a live database so that rewriting a
+  # model's query layer is provably behaviour-preserving.
+  model-contracts:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DRIFT_DB_HOST: 127.0.0.1
+      DRIFT_DB_PORT: 3306
+      DRIFT_DB_USER: root
+      DRIFT_DB_PASS: root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+      # oc-includes/vendor/ is committed (releases are cut with git archive and
+      # run no build step), so the autoloader is present straight from checkout.
+      - name: Typed-row parity
+        run: php tests/db-typed-rows.php
+      - name: DAO contract
+        run: php tests/dao-contract.php
+      - name: Model contracts
+        run: php tests/run-models.php
