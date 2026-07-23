@@ -82,17 +82,17 @@ class ItemModerationLog extends DAO
      */
     public function findByItem($itemId)
     {
-        $this->dao->select('*');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_item_id', (int)$itemId);
-        $this->dao->orderBy('dt_date', 'DESC');
-
-        $result = $this->dao->get();
-        if ($result === false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('fk_i_item_id', (int)$itemId)
+                ->orderBy('dt_date', 'DESC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
