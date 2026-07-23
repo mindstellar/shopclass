@@ -170,6 +170,9 @@ function customHead()
             if (!drawer) { return; }
             drawerReturnFocus = document.activeElement;
             drawer.hidden = false;
+            // Give the grid a third column on wide screens; the overlay path ignores it.
+            var grid = document.querySelector('.forms-builder-grid');
+            if (grid) { grid.classList.add('is-editing'); }
             // next frame so the slide-in transition runs
             requestAnimationFrame(function () { drawer.classList.add('is-open'); });
             document.body.classList.add('cf-drawer-lock');
@@ -185,6 +188,8 @@ function customHead()
             if (!drawer || drawer.hidden) { return; }
             drawer.classList.remove('is-open');
             document.body.classList.remove('cf-drawer-lock');
+            var grid = document.querySelector('.forms-builder-grid');
+            if (grid) { grid.classList.remove('is-editing'); }
             document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
             var body = document.getElementById('cf-drawer-body');
             var hide = function () { drawer.hidden = true; if (body) { body.innerHTML = ''; } };
@@ -309,6 +314,27 @@ function customHead()
                 } else if (badge) {
                     badge.remove();
                 }
+            });
+        }
+
+        // ---- Collapse / expand a form card (persisted per form) --------------
+        var CF_COLLAPSE_KEY = 'cf_collapsed_forms';
+        function getCollapsedSet() {
+            try { return new Set(JSON.parse(localStorage.getItem(CF_COLLAPSE_KEY) || '[]')); }
+            catch (e) { return new Set(); }
+        }
+        function saveCollapsedSet(set) {
+            try { localStorage.setItem(CF_COLLAPSE_KEY, JSON.stringify(Array.from(set))); } catch (e) {}
+        }
+        function setCardCollapsed(card, collapsed) {
+            card.classList.toggle('is-collapsed', collapsed);
+            var btn = card.querySelector('.form-card-toggle');
+            if (btn) { btn.setAttribute('aria-expanded', String(!collapsed)); }
+        }
+        function applyCollapsedState() {
+            var set = getCollapsedSet();
+            document.querySelectorAll('.form-card').forEach(function (card) {
+                setCardCollapsed(card, set.has(card.getAttribute('data-form-id')));
             });
         }
 
@@ -450,6 +476,7 @@ function customHead()
             card.setAttribute('data-form-id', id);
             card.innerHTML = ''
                 + '<div class="form-card-head">'
+                + '  <button type="button" class="form-card-toggle" aria-expanded="true" aria-label="<?php echo osc_esc_js(__('Collapse or expand this form')); ?>"><i class="bi bi-chevron-down"></i></button>'
                 + '  <div class="form-card-heading">'
                 + '    <span class="form-card-title" id="group_name_' + id + '"></span>'
                 + '    <span class="form-card-cats is-unattached"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> ' + cfEsc(CF_TXT.unattached) + '</span>'
@@ -484,6 +511,21 @@ function customHead()
             document.querySelectorAll('.form-fieldlist').forEach(initFormSortable);
             refreshEmptyStates();
             refreshSharedBadges();
+            applyCollapsedState();
+
+            // Collapse / expand a form via its caret (state persists across reloads).
+            document.addEventListener('click', function (e) {
+                var tg = e.target.closest('.form-card-toggle');
+                if (!tg) { return; }
+                var card = tg.closest('.form-card');
+                if (!card) { return; }
+                var id = card.getAttribute('data-form-id');
+                var collapsed = !card.classList.contains('is-collapsed');
+                setCardCollapsed(card, collapsed);
+                var set = getCollapsedSet();
+                if (collapsed) { set.add(id); } else { set.delete(id); }
+                saveCollapsedSet(set);
+            });
 
             // ✕ removes a chip from its form
             document.addEventListener('click', function (e) {
@@ -606,6 +648,8 @@ osc_current_admin_theme_path('parts/header.php');
                         $fid = (int)$form['pk_i_id']; ?>
                         <div class="form-card" data-form-id="<?php echo $fid; ?>">
                             <div class="form-card-head">
+                                <button type="button" class="form-card-toggle" aria-expanded="true"
+                                        aria-label="<?php echo osc_esc_html(__('Collapse or expand this form')); ?>"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
                                 <div class="form-card-heading">
                                     <span class="form-card-title" id="group_name_<?php echo $fid; ?>"><?php echo osc_esc_html($form['s_name']); ?></span>
                                     <?php echo cfields_form_cat_summary($form['category_ids'] ?? array(), $catNames); ?>
@@ -656,20 +700,21 @@ osc_current_admin_theme_path('parts/header.php');
                 </ul>
             </div>
 
-        </div>
-    </div>
+            <!-- Shared editor. On wide screens it docks inline as a third column
+                 (both editors open here); on narrow screens it overlays as a drawer. -->
+            <div id="cf-drawer" class="cf-drawer" hidden>
+                <div class="cf-drawer-scrim" data-cf-drawer-close></div>
+                <aside class="cf-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cf-drawer-title">
+                    <header class="cf-drawer-head">
+                        <h3 id="cf-drawer-title" class="cf-drawer-title"></h3>
+                        <button type="button" class="chip-btn" data-cf-drawer-close
+                                aria-label="<?php echo osc_esc_html(__('Close')); ?>"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                    </header>
+                    <div id="cf-drawer-body" class="cf-drawer-body edit"></div>
+                </aside>
+            </div>
 
-    <!-- Shared editor drawer: both the field editor and the form editor open here. -->
-    <div id="cf-drawer" class="cf-drawer" hidden>
-        <div class="cf-drawer-scrim" data-cf-drawer-close></div>
-        <aside class="cf-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cf-drawer-title">
-            <header class="cf-drawer-head">
-                <h3 id="cf-drawer-title" class="cf-drawer-title"></h3>
-                <button type="button" class="chip-btn" data-cf-drawer-close
-                        aria-label="<?php echo osc_esc_html(__('Close')); ?>"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-            </header>
-            <div id="cf-drawer-body" class="cf-drawer-body edit"></div>
-        </aside>
+        </div>
     </div>
 
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">

@@ -15737,9 +15737,41 @@ code {
 
 .form-card-heading {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
+}
+
+.form-card-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.75rem;
+  justify-content: center;
+  margin-inline-start: -0.25rem;
+  width: 1.75rem;
+}
+.form-card-toggle .bi {
+  transition: transform var(--osc-duration-fast) var(--osc-ease);
+}
+.form-card-toggle:hover, .form-card-toggle:focus-visible {
+  background-color: var(--osc-chrome-hover);
+  color: var(--osc-ink);
+}
+
+.form-card.is-collapsed .form-card-toggle .bi {
+  transform: rotate(-90deg);
+}
+.form-card.is-collapsed .form-fieldlist,
+.form-card.is-collapsed .form-empty,
+.form-card.is-collapsed .form-card-add {
+  display: none;
 }
 
 .form-card-title {
@@ -16088,10 +16120,37 @@ code {
   padding: 1rem 0;
 }
 
-body.cf-drawer-lock {
-  overflow: hidden;
+@media (max-width: 79.99rem) {
+  body.cf-drawer-lock {
+    overflow: hidden;
+  }
 }
-
+@media (min-width: 80rem) {
+  .cf-drawer {
+    align-self: stretch;
+    position: static;
+    z-index: auto;
+  }
+  .cf-drawer-scrim {
+    display: none;
+  }
+  .cf-drawer-panel {
+    border: 1px solid var(--osc-rule);
+    border-radius: 6px;
+    box-shadow: none;
+    inset: auto;
+    max-height: calc(100vh - 2rem);
+    max-width: none;
+    position: sticky;
+    top: 1rem;
+    transform: none;
+    transition: none;
+    width: auto;
+  }
+  .forms-builder-grid.is-editing {
+    grid-template-columns: 26rem minmax(0, 1fr) 24rem;
+  }
+}
 .form-card-add {
   margin-top: 0.6rem;
   position: relative;

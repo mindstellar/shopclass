@@ -349,9 +349,48 @@
 
 .form-card-heading {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: .1rem;
   min-width: 0;
+}
+
+// Caret that collapses a form down to its header (title + categories).
+.form-card-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.75rem;
+  justify-content: center;
+  margin-inline-start: -.25rem;
+  width: 1.75rem;
+
+  .bi {
+    transition: transform var(--osc-duration-fast) var(--osc-ease);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+}
+
+.form-card.is-collapsed {
+  .form-card-toggle .bi {
+    transform: rotate(-90deg);
+  }
+
+  .form-fieldlist,
+  .form-empty,
+  .form-card-add {
+    display: none;
+  }
 }
 
 .form-card-title {
@@ -766,9 +805,45 @@
   padding: 1rem 0;
 }
 
-// Keep the page from scrolling behind an open drawer.
-body.cf-drawer-lock {
-  overflow: hidden;
+// Keep the page from scrolling behind an open drawer — only while it overlays
+// (small screens). When it docks inline the page must scroll normally.
+@media (max-width: 79.99rem) {
+  body.cf-drawer-lock {
+    overflow: hidden;
+  }
+}
+
+// Wide screens: the editor stops overlaying and docks as a third column, using
+// the room the layout already has instead of covering it. Forms yields some
+// width while editing; the Fields library keeps the flexible middle.
+@media (min-width: 80rem) {
+  .cf-drawer {
+    align-self: stretch;
+    position: static;
+    z-index: auto;
+  }
+
+  .cf-drawer-scrim {
+    display: none;
+  }
+
+  .cf-drawer-panel {
+    border: 1px solid var(--osc-rule);
+    border-radius: $border-radius-lg;
+    box-shadow: none;
+    inset: auto;
+    max-height: calc(100vh - 2rem);
+    max-width: none;
+    position: sticky;
+    top: 1rem;
+    transform: none;
+    transition: none;
+    width: auto;
+  }
+
+  .forms-builder-grid.is-editing {
+    grid-template-columns: 26rem minmax(0, 1fr) 24rem;
+  }
 }
 
 // ---- "Add field" menu (the no-drag path) ------------------------------------
