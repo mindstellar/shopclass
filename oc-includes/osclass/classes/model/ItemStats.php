@@ -79,12 +79,9 @@ class ItemStats extends DAO
      *
      * @return bool
      * @since  unknown
-     * @todo   OJO query('update ....') cambiar a ->update()
      */
     public function increase($column, $itemId)
     {
-
-        //('INSERT INTO %s (fk_i_item_id, dt_date, %3$s) VALUES (%d, \'%4$s\',1) ON DUPLICATE KEY UPDATE %3$s = %3$s + 1', $this->getTableName(), $id, $column, date('Y-m-d H:i:s'));
         $increaseColumns = array(
             'i_num_views',
             'i_num_spam',
@@ -104,10 +101,18 @@ class ItemStats extends DAO
             return false;
         }
 
-        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ') VALUES (' . $itemId
-            . ', \'' . date('Y-m-d H:i:s') . '\',1) ON DUPLICATE KEY UPDATE  ' . $column . ' = ' . $column . ' + 1 ';
+        // $column is validated against the fixed allowlist above.
+        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_item_id, dt_date, ' . $column . ')
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1';
 
-        return $this->dao->query($sql);
+        try {
+            osc_db_execute($sql, array($itemId, date('Y-m-d H:i:s')));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -140,17 +145,28 @@ class ItemStats extends DAO
      */
     public function getViews($itemId)
     {
-        $this->dao->select('SUM(i_num_views) AS i_num_views');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_item_id', $itemId);
-        $result = $this->dao->get();
-        if (!$result) {
+        if ($itemId === null) {
+            // Legacy where('fk_i_item_id', null) only appends a value when it
+            // is non-null, so it emits a bare "fk_i_item_id =" with no
+            // right-hand side -- a SQL syntax error whose failure the caller
+            // absorbed into 0. A bound null parameter is valid SQL that
+            // matches zero rows and yields SUM = NULL instead, so it has to be
+            // guarded explicitly rather than left to the placeholder.
             return 0;
         }
 
-        $res = $result->result();
+        try {
+            $row = osc_db_select_one(
+                'SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName() . ' WHERE fk_i_item_id = ?',
+                array($itemId)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
 
-        return $res[0]['i_num_views'];
+        $row = osc_db_stringify_row($row);
+
+        return $row['i_num_views'];
     }
 
     /**
@@ -162,16 +178,15 @@ class ItemStats extends DAO
      */
     public function getAllViews()
     {
-        $this->dao->select('SUM(i_num_views) AS i_num_views');
-        $this->dao->from($this->getTableName());
-        $result = $this->dao->get();
-        if (!$result) {
+        try {
+            $row = osc_db_select_one('SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName());
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $res = $result->result();
+        $row = osc_db_stringify_row($row);
 
-        return $res[0]['i_num_views'];
+        return $row['i_num_views'];
     }
 }
 
