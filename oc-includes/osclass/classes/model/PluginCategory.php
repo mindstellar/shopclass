@@ -60,17 +60,16 @@ class PluginCategory extends DAO
      */
     public function findByCategoryId($categoryId)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_category_id', $categoryId);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('fk_i_category_id', $categoryId)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -85,18 +84,17 @@ class PluginCategory extends DAO
      */
     public function listSelected($plugin)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_plugin_name', $plugin);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('s_plugin_name', $plugin)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $list = array();
-        foreach ($result->result() as $sel) {
+        foreach (osc_db_stringify_rows($rows) as $sel) {
             $list[] = $sel['fk_i_category_id'];
         }
 
@@ -116,24 +114,16 @@ class PluginCategory extends DAO
      */
     public function isThisCategory($pluginName, $categoryId)
     {
-        $this->dao->select('COUNT(*) AS numrows');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_category_id', $categoryId);
-        $this->dao->where('s_plugin_name', $pluginName);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $count = osc_db_table($this->getTableName())
+                ->where('fk_i_category_id', $categoryId)
+                ->where('s_plugin_name', $pluginName)
+                ->count();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 0) {
-            return false;
-        }
-
-        $row = $result->row();
-
-        return !($row['numrows'] == 0);
+        return $count > 0;
     }
 }
 
