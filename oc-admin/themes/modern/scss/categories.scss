@@ -285,7 +285,7 @@
   // Fields is the working library and carries the most content, so it gets the
   // width. A form is a simple grouping (a name, its categories, an ordered list),
   // so it sits in the narrow column.
-  grid-template-columns: 24rem minmax(0, 1fr);
+  grid-template-columns: 35rem minmax(0, 1fr);
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
