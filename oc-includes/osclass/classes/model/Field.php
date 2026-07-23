@@ -82,19 +82,16 @@ class Field extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $id);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $field = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($field === null) {
             return array();
         }
 
-        $field = $result->row();
-
-        return $this->extendField($field);
+        return $this->extendField(osc_db_stringify_row($field));
     }
 
     /**
@@ -136,12 +133,47 @@ class Field extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        $this->dao->delete(sprintf('%st_item_meta', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
-        $this->dao->delete(sprintf('%st_meta_categories', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
+        // The first three statements have always thrown their return value away,
+        // and the legacy layer reported a failure without raising, so a failure
+        // on one never stopped the rest from running. Each therefore keeps its
+        // own swallowed catch: one shared try would abort the cascade at the
+        // first failure and leave orphaned rows behind.
+        try {
+            osc_db_table(sprintf('%st_item_meta', DB_TABLE_PREFIX))
+                ->where('fk_i_field_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
+        try {
+            osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
+                ->where('fk_i_field_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
         // remove form memberships too, or the t_meta_group_fields FK blocks the delete.
-        $this->dao->delete(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
+        try {
+            osc_db_table(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX))
+                ->where('fk_i_field_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
 
-        return $this->dao->delete($this->getTableName(), array('pk_i_id' => $id));
+        // A null id used to build a comparison with no right-hand side, so the
+        // delete failed and the method reported false. A bound null is valid SQL
+        // that matches nothing and would report 0 instead — callers tell the two
+        // apart, so the failure value is reproduced explicitly.
+        if ($id === null) {
+            return false;
+        }
+
+        try {
+            return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -153,18 +185,17 @@ class Field extends DAO
      */
     public function listAll()
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->orderBy('i_position', 'ASC');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $fields = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->orderBy('i_position', 'ASC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $fields         = $result->result();
         $extendedFields = array();
-        foreach ($fields as $field) {
+        foreach (osc_db_stringify_rows($fields) as $field) {
             $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
         }
 
@@ -196,15 +227,16 @@ class Field extends DAO
         $guard   = 0;
         while ($current > 0 && $guard < 100) {
             $path[]  = $current;
-            $result  = $this->dao->query(sprintf(
-                'SELECT fk_i_parent_id FROM %st_category WHERE pk_i_id = %d',
-                DB_TABLE_PREFIX,
-                $current
-            ));
-            if ($result === false) {
+            // $current is (int)-cast and bound; the table name is the
+            // DB_TABLE_PREFIX constant plus a literal suffix.
+            try {
+                $row = osc_db_select_one(
+                    'SELECT fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category WHERE pk_i_id = ?',
+                    array($current)
+                );
+            } catch (\mindstellar\database\DbException $e) {
                 break;
             }
-            $row     = $result->row();
             $current = isset($row['fk_i_parent_id']) ? (int)$row['fk_i_parent_id'] : 0;
             // defensive: a parent chain that points back at a category already seen
             // would loop; break instead of spinning to the guard.
@@ -230,16 +262,20 @@ class Field extends DAO
         // which replaced the single fk_i_group_id column so a field can live in many
         // forms at different positions.
         $p   = DB_TABLE_PREFIX;
+        // Aliased join the builder's identifier allowlist cannot express; every
+        // identifier is a compile-time literal or the DB_TABLE_PREFIX constant,
+        // and the only value is the group id, bound.
         $sql = 'SELECT mf.* FROM ' . $p . 't_meta_fields mf'
             . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
-            . ' WHERE gf.fk_i_group_id = ' . (int)$groupId
+            . ' WHERE gf.fk_i_group_id = ?'
             . ' ORDER BY gf.i_position ASC';
-        $result = $this->dao->query($sql);
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql, array((int)$groupId));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
         $extended = array();
-        foreach ($result->result() as $field) {
+        foreach (osc_db_stringify_rows($rows) as $field) {
             $extended[] = $this->extendField($field);
         }
 
@@ -265,33 +301,36 @@ class Field extends DAO
         if (empty($path)) {
             return array();
         }
-        $inList = implode(',', array_map('intval', $path));
-        $p      = DB_TABLE_PREFIX;
+        // Every id in $path is an (int) produced by categoryPath(); each IN list
+        // is generated placeholders bound to those ids. The two arms each carry
+        // the whole path, so it is bound twice. Every identifier is a literal or
+        // the DB_TABLE_PREFIX constant.
+        $placeholders = implode(', ', array_fill(0, count($path), '?'));
+        $p            = DB_TABLE_PREFIX;
 
         // Loose fields directly assigned (and in NO form), plus grouped fields whose
         // form is assigned to the category — form membership now comes from the link
         // table t_meta_group_fields (a field can be in several forms).
         $sql = 'SELECT query.* FROM ('
             . 'SELECT mf.*, 0 AS cf_group_position FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
+            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mf.pk_i_id = mc.fk_i_field_id'
             . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
             . ' UNION '
             . 'SELECT mf.*, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mf'
             . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
+            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
             . ') AS query GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
 
-        $result = $this->dao->query($sql);
-
-        if ($result == false) {
+        try {
+            $fields = osc_db_select($sql, array_merge($path, $path));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $fields         = $result->result();
         $extendedFields = [];
-        foreach ($fields as $field) {
+        foreach (osc_db_stringify_rows($fields) as $field) {
             $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
         }
 
@@ -337,32 +376,36 @@ class Field extends DAO
         if (empty($pathIds)) {
             return array();
         }
-        $inList = implode(',', array_map('intval', $pathIds));
-        $p      = DB_TABLE_PREFIX;
+        // Path ids come from categoryPath() as (int)s; each IN list is generated
+        // placeholders bound to them, once per arm. Identifiers are all literals
+        // or the DB_TABLE_PREFIX constant.
+        $pathValues   = array_values($pathIds);
+        $placeholders = implode(', ', array_fill(0, count($pathValues), '?'));
+        $p            = DB_TABLE_PREFIX;
 
         // Searchable loose fields directly assigned (and in no form), plus searchable
         // fields whose form is assigned, across the inheritance path — form membership
         // via the link table t_meta_group_fields.
         $sql = 'SELECT DISTINCT pk_i_id FROM ('
             . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f, ' . $p . 't_meta_categories c'
-            . ' WHERE c.fk_i_category_id IN (' . $inList . ') AND f.pk_i_id = c.fk_i_field_id'
+            . ' WHERE c.fk_i_category_id IN (' . $placeholders . ') AND f.pk_i_id = c.fk_i_field_id'
             . ' AND f.b_searchable = 1'
             . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = f.pk_i_id)'
             . ' UNION '
             . 'SELECT f.pk_i_id FROM ' . $p . 't_meta_fields f'
             . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = f.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = gf.fk_i_group_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $inList . ') AND f.b_searchable = 1'
+            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ') AND f.b_searchable = 1'
             . ') AS q';
 
-        $result = $this->dao->query($sql);
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql, array_merge($pathValues, $pathValues));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $tmp = array();
-        foreach ($result->result() as $t) {
+        foreach (osc_db_stringify_rows($rows) as $t) {
             $tmp[] = $t['pk_i_id'];
         }
 
@@ -397,9 +440,15 @@ class Field extends DAO
         if (empty($path)) {
             return array();
         }
-        $inList = implode(',', array_map('intval', $path));
         $p      = DB_TABLE_PREFIX;
         $itemId = (int)$itemId;
+
+        // Path ids (each an (int) from categoryPath) fill the two IN lists via
+        // generated placeholders; the item id — already (int)-cast above — is the
+        // final bound value on the LEFT JOIN. Params are in textual order: the
+        // first arm's IN, the second arm's IN, then the join's item id. Every
+        // identifier is a literal or the DB_TABLE_PREFIX constant.
+        $placeholders = implode(', ', array_fill(0, count($path), '?'));
 
         // Loose fields carry their global position; grouped fields carry their
         // per-form position from the link table (cf_field_position), so ordering and
@@ -407,7 +456,7 @@ class Field extends DAO
         $sql = 'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM ('
             . 'SELECT mf.*, NULL AS cf_group_name, 0 AS cf_group_position, mf.i_position AS cf_field_position'
             . ' FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $inList . ') AND mf.pk_i_id = mc.fk_i_field_id'
+            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mf.pk_i_id = mc.fk_i_field_id'
             . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
             . ' UNION '
             . 'SELECT mf.*, g.s_name AS cf_group_name, g.i_position AS cf_group_position, gf.i_position AS cf_field_position'
@@ -415,14 +464,14 @@ class Field extends DAO
             . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $inList . ')'
+            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
             . ') as query'
-            . ' LEFT JOIN ' . $p . 't_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = ' . $itemId
+            . ' LEFT JOIN ' . $p . 't_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = ?'
             . ' ORDER BY query.cf_group_position ASC, query.cf_field_position ASC';
 
-        $result = $this->dao->query($sql);
-
-        if ($result == false) {
+        try {
+            $result = osc_db_select($sql, array_merge($path, $path, array($itemId)));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
@@ -433,7 +482,7 @@ class Field extends DAO
         // (e.g. DATEINTERVAL from/to), matching the old GROUP BY pk_i_id behaviour.
         $extendedFields = array();
         $seen           = array();
-        foreach ($result->result() as $field) {
+        foreach (osc_db_stringify_rows($result) as $field) {
             $id = $field['pk_i_id'];
             if (isset($seen[$id])) {
                 continue;
@@ -463,22 +512,27 @@ class Field extends DAO
         if (!is_numeric($itemId)) {
             return array();
         }
-        $this->dao->select('mf.pk_i_id as pk_i_id, im.s_value as s_value, mf.s_name as s_name, mf.e_type as e_type, im.s_multi as s_multi, mf.s_slug as s_slug, mf.s_meta as s_meta');
-        $this->dao->from(sprintf('%st_item_meta im', DB_TABLE_PREFIX));
-        $this->dao->join(sprintf('%st_meta_fields mf', DB_TABLE_PREFIX), 'mf.pk_i_id = im.fk_i_field_id', 'INNER');
-        $this->dao->where('im.fk_i_item_id = ' . (int)$itemId);
-        $this->dao->orderBy('mf.i_position', 'ASC');
+        // Column aliases and an aliased join the builder cannot express, so the
+        // query stays hand-written; every identifier is a literal or the
+        // DB_TABLE_PREFIX constant and the only value — the item id, (int)-cast —
+        // is bound.
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT mf.pk_i_id as pk_i_id, im.s_value as s_value, mf.s_name as s_name,'
+            . ' mf.e_type as e_type, im.s_multi as s_multi, mf.s_slug as s_slug, mf.s_meta as s_meta'
+            . ' FROM ' . $p . 't_item_meta im'
+            . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
+            . ' WHERE im.fk_i_item_id = ?'
+            . ' ORDER BY mf.i_position ASC';
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $fields = osc_db_select($sql, array((int)$itemId));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $fields = $result->result();
         // extend fields
         $extendedFields = array();
-        foreach ($fields as $field) {
+        foreach (osc_db_stringify_rows($fields) as $field) {
             $extendedFields[] = $this->extendField($field);
         }
 
@@ -497,19 +551,16 @@ class Field extends DAO
      */
     public function findByName($name)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $name);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $field = osc_db_table($this->getTableName())->where('s_name', $name)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($field === null) {
             return array();
         }
 
-        $field = $result->row();
-
-        return $this->extendField($field);
+        return $this->extendField(osc_db_stringify_row($field));
     }
 
     /**
@@ -526,20 +577,17 @@ class Field extends DAO
         if (!is_numeric($item_id) || !is_numeric($field_id)) {
             return array();
         }
-        $this->dao->select();
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_meta');
-        $this->dao->where('fk_i_field_id', $field_id);
-        $this->dao->where('fk_i_item_id', $item_id);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $aAux = osc_db_table(DB_TABLE_PREFIX . 't_item_meta')
+                ->where('fk_i_field_id', $field_id)
+                ->where('fk_i_item_id', $item_id)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $aAux      = $result->result();
         $aInterval = array();
-        foreach ($aAux as $k => $v) {
+        foreach (osc_db_stringify_rows($aAux) as $v) {
             $aInterval[$v['s_multi']] = $v['s_value'];
         }
 
@@ -558,19 +606,19 @@ class Field extends DAO
      */
     public function categories($id)
     {
-        $this->dao->select('fk_i_category_id');
-        $this->dao->from(sprintf('%st_meta_categories', DB_TABLE_PREFIX));
-        $this->dao->where('fk_i_field_id', $id);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $categories = osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
+                ->select('fk_i_category_id')
+                ->where('fk_i_field_id', $id)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $categories = $result->result();
-        $cats       = array();
-        foreach ($categories as $k => $v) {
+        // Unlike the FieldGroup sibling this returns the raw string ids the legacy
+        // result path produced, so the rows are stringified rather than cast.
+        $cats = array();
+        foreach (osc_db_stringify_rows($categories) as $v) {
             $cats[] = $v['fk_i_category_id'];
         }
 
@@ -608,21 +656,29 @@ class Field extends DAO
             $slug_k++;
             $slug = $slug_tmp . '_' . $slug_k;
         }
-        $this->dao->insert($this->getTableName(), array(
+        // The field insert had no failure branch (its return was discarded); it
+        // stays assumed-success and a DbException would propagate. The new id is
+        // taken from the write for the category links below, and — because it is
+        // the last statement when no categories are given — it also stays readable
+        // through $model->dao->insertedId() on the shared handle, which an
+        // external caller (CAdminAjax) reads straight after this returns.
+        $id = osc_db_table($this->getTableName())->insert(array(
             's_name'     => $name,
             'e_type'     => $type,
             'b_required' => $required,
             's_slug'     => $slug,
             's_options'  => $options
         ));
-        $id     = $this->dao->insertedId();
         $return = true;
-        foreach ($categories as $c) {
-            $result = $this->dao->insert(
-                sprintf('%st_meta_categories', DB_TABLE_PREFIX),
-                array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
-            );
-            if (!$result) {
+        foreach ((array)$categories as $c) {
+            // A rejected link (duplicate, unknown category) was folded into the
+            // return value while the rest were still written, so the catch stays
+            // inside the loop.
+            try {
+                osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
+                    array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
+                );
+            } catch (\mindstellar\database\DbException $e) {
                 $return = false;
             }
         }
@@ -642,18 +698,16 @@ class Field extends DAO
      */
     public function findBySlug($slug)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', $slug);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $field = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $field = $result->row();
+        if ($field === null) {
+            return array();
+        }
 
-        return $this->extendField($field);
+        return $this->extendField(osc_db_stringify_row($field));
     }
 
     /**
@@ -669,14 +723,20 @@ class Field extends DAO
      */
     public function insertCategories($id, $categories = null)
     {
+        // An empty array is loosely equal to null, so `!= null` is false for it
+        // too: an empty (or null) list returns false without writing anything —
+        // unlike the FieldGroup sibling, which returns true for an empty array.
         if ($categories != null) {
             $return = true;
             foreach ($categories as $c) {
-                $result = $this->dao->insert(
-                    sprintf('%st_meta_categories', DB_TABLE_PREFIX),
-                    array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
-                );
-                if (!$result) {
+                // A rejected row (duplicate, unknown category) was folded into the
+                // return value while the rest were still written, so the catch
+                // stays inside the loop.
+                try {
+                    osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))->insert(
+                        array('fk_i_category_id' => $c, 'fk_i_field_id' => $id)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
                     $return = false;
                 }
             }
@@ -699,7 +759,20 @@ class Field extends DAO
      */
     public function cleanCategoriesFromField($id)
     {
-        return $this->dao->delete(sprintf('%st_meta_categories', DB_TABLE_PREFIX), array('fk_i_field_id' => $id));
+        // A null id used to fail the query and report false, where a bound null
+        // matches nothing and would report 0. Callers distinguish the two, so the
+        // failure value is reproduced explicitly.
+        if ($id === null) {
+            return false;
+        }
+
+        try {
+            return osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
+                ->where('fk_i_field_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -716,18 +789,34 @@ class Field extends DAO
      */
     public function replace($itemId, $field, $value)
     {
+        $table = sprintf('%st_item_meta', DB_TABLE_PREFIX);
         if (is_array($value)) {
             foreach ($value as $key => $v) {
-                $this->dao->replace(
-                    sprintf('%st_item_meta', DB_TABLE_PREFIX),
-                    array('fk_i_item_id' => $itemId, 'fk_i_field_id' => $field, 's_multi' => $key, 's_value' => $v)
-                );
+                // Each per-key write has always had its return discarded, so a
+                // failing one has never stopped the rest; the catch stays inside
+                // the loop and the method still falls through to null.
+                try {
+                    osc_db_execute(
+                        'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_multi, s_value) VALUES (?, ?, ?, ?)',
+                        array($itemId, $field, $key, $v)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    // discarded, as before
+                }
             }
         } else {
-            return $this->dao->replace(
-                sprintf('%st_item_meta', DB_TABLE_PREFIX),
-                array('fk_i_item_id' => $itemId, 'fk_i_field_id' => $field, 's_value' => $value)
-            );
+            // The legacy write returned bool true on success (a REPLACE is a write
+            // query), not the affected-row count, so the boolean is preserved.
+            try {
+                osc_db_execute(
+                    'REPLACE INTO ' . $table . ' (fk_i_item_id, fk_i_field_id, s_value) VALUES (?, ?, ?)',
+                    array($itemId, $field, $value)
+                );
+
+                return true;
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
         }
     }
 
@@ -742,17 +831,24 @@ class Field extends DAO
      */
     public function updateJsonMeta($metaId, $fieldName, $fieldValue)
     {
-        $this->dao->select('s_meta');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $metaId);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        // A null id made the read where-clause malformed, so the legacy read
+        // failed and the method returned false. A bound null reads cleanly (zero
+        // rows) and the method would fall through to the update and return 0
+        // instead, which callers distinguish — so the failure value is kept.
+        if ($metaId === null) {
             return false;
         }
 
-        $meta = $result->row();
-        $meta = json_decode($meta['s_meta'], true);
+        try {
+            $row = osc_db_table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        // Zero rows behaves as the legacy empty row() did: json_decode of the
+        // absent s_meta yields null, the key edit then rebuilds it, and the update
+        // matches nothing and reports 0.
+        $meta = json_decode((string)($row['s_meta'] ?? ''), true);
         // if $fieldValue is '', null
         if ($fieldValue === '' || $fieldValue === null) {
             unset($meta[$fieldName]);
@@ -761,7 +857,11 @@ class Field extends DAO
         }
         $meta = json_encode($meta);
 
-        return $this->dao->update($this->getTableName(), array('s_meta' => $meta), array('pk_i_id' => $metaId));
+        try {
+            return osc_db_table($this->getTableName())->where('pk_i_id', $metaId)->update(array('s_meta' => $meta));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -786,15 +886,12 @@ class Field extends DAO
             if ($metaId === null) {
                 return false;
             }
-            $this->dao->select('s_meta');
-            $this->dao->from($this->getTableName());
-            $this->dao->where('pk_i_id', $metaId);
-            $result = $this->dao->get();
-            if ($result == false) {
+            try {
+                $row = osc_db_table($this->getTableName())->select('s_meta')->where('pk_i_id', $metaId)->first();
+            } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
-            $meta = $result->row();
-            $meta = json_decode($meta['s_meta'], true);
+            $meta = json_decode((string)($row['s_meta'] ?? ''), true);
 
             return $meta[$fieldName] ?? false;
         }
