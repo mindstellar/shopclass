@@ -76,34 +76,75 @@ class BanRule extends DAO
         $rules['total_results'] = 0;
         $rules['rules']         = array();
 
-        $this->dao->select('SQL_CALC_FOUND_ROWS *');
-        $this->dao->from($this->getTableName());
         if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
             $order_column = 'pk_i_id';
         }
-        $this->dao->orderBy($order_column, $order_direction);
-        $this->dao->limit($start, $end);
-        if ($name != '') {
-            $this->dao->like('s_name', $name);
-        }
-        $rs = $this->dao->get();
 
-        if ($rs == false) {
+        // $order_column is validated against the allowlist above. $order_direction
+        // reproduces DBCommandClass::orderBy()'s own handling, quirks included:
+        // 'random' becomes RAND(), a recognised-but-not-ASC/DESC direction
+        // collapses to ASC, and an empty or '0' direction is appended
+        // unvalidated, exactly as the legacy builder does (a '0' direction is
+        // therefore a genuine SQL syntax error, not a no-op).
+        $direction = (string)$order_direction;
+        if (strtolower($direction) === 'random') {
+            $orderSql = $order_column . ' RAND()';
+        } elseif (trim($direction) !== '' && trim($direction) !== '0') {
+            $orderSql = $order_column
+                . (in_array(strtoupper(trim($direction)), array('ASC', 'DESC'), true) ? ' ' . $direction : ' ASC');
+        } else {
+            $orderSql = $order_column . $direction;
+        }
+
+        $params = array();
+        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        if ($name != '') {
+            // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
+            // payload before the wildcard boundaries are added, so a literal
+            // wildcard character typed by the caller stays literal.
+            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $sql     .= ' WHERE s_name LIKE ?';
+            $params[] = '%' . $escaped . '%';
+        }
+        $sql .= ' ORDER BY ' . $orderSql;
+
+        // Mirrors DBCommandClass::limit($start, $end): the clause is omitted
+        // entirely when $start is not numeric, and the row-count half is
+        // appended only when $end is both numeric and greater than zero.
+        // MySQL's own two-argument LIMIT reads the first number as the OFFSET
+        // and the second as the COUNT -- the opposite of what the parameter
+        // names here suggest.
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int)$start;
+            if ($end != '' && is_numeric($end) && (int)$end > 0) {
+                $sql .= ', ' . (int)$end;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return $rules;
         }
 
-        $rules['rules'] = $rs->result();
+        $rules['rules'] = osc_db_stringify_rows($rows);
 
-        $rsRows = $this->dao->query('SELECT FOUND_ROWS() as total');
-        $data   = $rsRows->row();
-        if ($data['total']) {
-            $rules['total_results'] = $data['total'];
+        // FOUND_ROWS() must run immediately after the SQL_CALC_FOUND_ROWS select
+        // above, on the same connection, with nothing else in between -- it
+        // reports on whichever query last ran with that hint. Both this and the
+        // COUNT(*) below run through osc_db_select_one() with no params, which
+        // shares the singleton connection the main select just used and (like
+        // the legacy dao->query() path) returns plain strings.
+        $total = osc_db_select_one('SELECT FOUND_ROWS() as total');
+        if ($total !== null && $total['total']) {
+            $rules['total_results'] = $total['total'];
         }
 
-        $rsTotal = $this->dao->query('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        $data    = $rsTotal->row();
-        if ($data['total']) {
-            $rules['rows'] = $data['total'];
+        // Unconditional: this always counts the WHOLE table, ignoring the
+        // s_name filter above -- that is what the legacy query did too.
+        $rowsTotal = osc_db_select_one('SELECT COUNT(*) as total FROM ' . $this->getTableName());
+        if ($rowsTotal !== null && $rowsTotal['total']) {
+            $rules['rows'] = $rowsTotal['total'];
         }
 
         return $rules;
@@ -117,17 +158,9 @@ class BanRule extends DAO
      */
     public function countRules()
     {
-        $this->dao->select('COUNT(*) as i_total');
-        $this->dao->from($this->getTableName());
-
-        $result = $this->dao->get();
-
-        if ($result == false || $result->numRows() == 0) {
-            return 0;
-        }
-
-        $row = $result->row();
-
-        return $row['i_total'];
+        // COUNT(*) always returns exactly one row, so the legacy numRows() == 0
+        // branch was unreachable; only the query-failure branch matters, and
+        // this table/query can't realistically produce one.
+        return (string)osc_db_scalar('SELECT COUNT(*) as i_total FROM ' . $this->getTableName());
     }
 }
