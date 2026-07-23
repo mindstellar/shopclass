@@ -29,7 +29,16 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        tinyMCE.init({
+        // This runs from the admin_header hook, i.e. before the enqueued tinymce
+        // bundle has executed — calling tinyMCE.init() here threw "tinyMCE is not
+        // defined" and the page silently fell back to bare textareas. Wait for DOM
+        // ready (by which point the library has loaded) and guard, the same way the
+        // page editor does.
+        document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        tinymce.init({
             selector: "textarea",
             promotion: false,
             width: "100%",
@@ -45,6 +54,7 @@ function customHead()
             relative_urls: false,
             remove_script_host: false,
             convert_urls: false
+        });
         });
 
 
