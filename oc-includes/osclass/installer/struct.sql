@@ -650,5 +650,5 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
     dt_date DATETIME NOT NULL,
 
         PRIMARY KEY (pk_i_id),
-        KEY fk_i_item_id (fk_i_item_id)
+        INDEX fk_i_item_id (fk_i_item_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
