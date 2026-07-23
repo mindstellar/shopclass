@@ -56,6 +56,8 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
+      - name: Secret-comparison regression
+        run: php tests/security-secret-coercion.php
       - name: DAO contract
         run: php tests/dao-contract.php
       - name: Model contracts

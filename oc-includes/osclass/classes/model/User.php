@@ -274,21 +274,23 @@ class User extends DAO
      */
     public function findByIdSecret($id, $secret, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'  => $id,
-            's_secret' => $secret
-        );
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        // The secret must be compared as a string. Passed through the legacy
+        // escape(), a value such as "0" reached MySQL unquoted, which turned this
+        // into a numeric comparison against a VARCHAR column -- and any secret
+        // beginning with a letter evaluates to 0, so the cookie value "0" matched
+        // almost every account.
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_secret', (string)$secret)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($row) === 1) {
+            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
         }
 
         return array();
@@ -313,22 +315,23 @@ class User extends DAO
             return null;
         }
         $date = date('Y-m-d H:i:s', time() - (24 * 3600));
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'     => $id,
-            's_pass_code' => $secret
-        );
-        $this->dao->where($conditions);
-        $this->dao->where("s_pass_date >= '$date'");
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        // Same string comparison as findByIdSecret: the reset code is a VARCHAR,
+        // and comparing it numerically let "0" match any code beginning with a
+        // letter. The cut-off date is bound rather than interpolated.
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_pass_code', (string)$secret)
+                ->where('s_pass_date', '>=', $date)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($row) === 1) {
+            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
         }
 
         return array();
