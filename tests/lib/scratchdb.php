@@ -101,6 +101,23 @@ if (!function_exists('scratchdb_bootstrap')) {
         // standalone script has to require them explicitly.
         require_once ABS_PATH . 'oc-includes/osclass/helpers/hDatabase.php';
 
+        // Anything reaching Params::getServerParam()/getParam() lands in purify(),
+        // which builds an HTMLPurifier whose constructor wants a cache directory
+        // from osc_uploads_path(). hDefines.php declares that helper WITHOUT a
+        // function_exists guard, so this stand-in belongs here and nowhere else:
+        // a second definition in a test file would fatal the moment any test
+        // loads the real helper file. A test that needs genuine hDefines.php
+        // behaviour must require it instead of relying on this.
+        if (!defined('UPLOADS_PATH')) {
+            define('UPLOADS_PATH', sys_get_temp_dir() . '/');
+        }
+        if (!function_exists('osc_uploads_path')) {
+            function osc_uploads_path()
+            {
+                return UPLOADS_PATH;
+            }
+        }
+
         mysqli_report(MYSQLI_REPORT_OFF); // admin errors are handled by hand
         $admin = new mysqli($host, $user, $pass, '', $port);
         if ($admin->connect_errno) {
