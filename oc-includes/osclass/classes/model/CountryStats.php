@@ -69,7 +69,8 @@ class CountryStats extends DAO
      *
      * @param int $countryCode Country code
      *
-     * @return bool|\DBRecordsetClass number of affected rows, id error occurred return false
+     * @return bool True once the counter is written, false when the code is
+     *              rejected or the write fails
      * @since  2.4
      */
     public function increaseNumItems($countryCode)
@@ -78,14 +79,22 @@ class CountryStats extends DAO
         if ($lenght > 2 || $lenght == '') {
             return false;
         }
+
+        // The only caller value is the bound placeholder; the table name is the
+        // one this model set on itself in the constructor.
         $sql =
             sprintf(
-                'INSERT INTO %s (fk_c_country_code, i_num_items) VALUES (%s, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
-                $this->getTableName(),
-                $this->dao->escape($countryCode)
+                'INSERT INTO %s (fk_c_country_code, i_num_items) VALUES (?, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
+                $this->getTableName()
             );
 
-        return $this->dao->query($sql);
+        try {
+            osc_db_execute($sql, array($countryCode));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -95,7 +104,8 @@ class CountryStats extends DAO
      *
      * @param $countryCode
      *
-     * @return int number of affected rows, id error occurred return false
+     * @return bool|int Number of affected rows, or false when there is no
+     *                  counter row for that country
      * @since  2.4
      *
      */
@@ -105,21 +115,28 @@ class CountryStats extends DAO
         if ($length > 2 || !$length) {
             return false;
         }
-        $this->dao->select('i_num_items');
-        $this->dao->from($this->getTableName());
-        $this->dao->where($this->getPrimaryKey(), $countryCode);
-        $result      = $this->dao->get();
-        if ($result instanceof DBRecordsetClass) {
-            $countryStat = $result->row();
+
+        try {
+            $countryStat = osc_db_table($this->getTableName())
+                ->select('i_num_items')
+                ->where($this->getPrimaryKey(), $countryCode)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
+            $countryStat = null;
         }
 
         if (isset($countryStat['i_num_items'])) {
-            $this->dao->from($this->getTableName());
-            $this->dao->set('i_num_items', 'i_num_items - 1', false);
-            $this->dao->where('i_num_items > 0');
-            $this->dao->where('fk_c_country_code', $countryCode);
+            // The counter is assigned from itself, which no builder update can
+            // express; the country code is the single bound value and the table
+            // name is the model's own.
+            $sql = 'UPDATE ' . $this->getTableName()
+                . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_c_country_code = ?';
 
-            return $this->dao->update();
+            try {
+                return osc_db_execute($sql, array($countryCode));
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
         }
 
         return false;
@@ -133,18 +150,27 @@ class CountryStats extends DAO
      * @param string $countryCode
      * @param int    $numItems
      *
-     * @return bool|\DBRecordsetClass
+     * @return bool True once the counter is written, false when the write fails
      * @since  2.4
      *
      */
     public function setNumItems($countryCode, $numItems)
     {
-        $numItems    = (int)$numItems;
-        $countryCode = $this->dao->escape($countryCode);
+        $numItems = (int)$numItems;
 
-        return $this->dao->query('INSERT INTO ' . $this->getTableName()
-            . " (fk_c_country_code, i_num_items) VALUES ($countryCode, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
-            . $numItems);
+        // Both caller values are bound; the count is bound twice rather than
+        // read back with VALUES(), which MySQL 8.0.20 deprecates and whose
+        // replacement syntax MariaDB does not accept.
+        $sql = 'INSERT INTO ' . $this->getTableName()
+            . ' (fk_c_country_code, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
+
+        try {
+            osc_db_execute($sql, array($countryCode, $numItems, $numItems));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -185,24 +211,28 @@ class CountryStats extends DAO
         if (!preg_match('/^[A-Za-z0-9_.]+ (ASC|DESC)$/i', (string)$order)) {
             $order = 'country_name ASC';
         }
-        $this->dao->select($this->getTableName() . '.fk_c_country_code as country_code, ' . $this->getTableName()
+
+        // Column aliases and a join put this beyond the builder's identifier
+        // allowlist. It carries no caller values at all: $zero is one of the
+        // seven operators the in_array() above accepts, $order matched the
+        // identifier-plus-direction pattern above, and both table names are
+        // fixed (the model's own and t_country).
+        $sql = 'SELECT ' . $this->getTableName() . '.fk_c_country_code as country_code, ' . $this->getTableName()
             . '.i_num_items as items, ' . DB_TABLE_PREFIX . 't_country.s_name as country_name, ' . DB_TABLE_PREFIX
-            . 't_country.s_slug as country_slug');
-        $this->dao->from($this->getTableName());
-        $this->dao->join(
-            DB_TABLE_PREFIX . 't_country',
-            $this->getTableName() . '.fk_c_country_code = ' . DB_TABLE_PREFIX . 't_country.pk_c_code'
-        );
-        $this->dao->where('i_num_items ' . $zero . ' 0');
-        $this->dao->orderBy($order);
+            . 't_country.s_slug as country_slug'
+            . ' FROM ' . $this->getTableName()
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_country ON ' . $this->getTableName()
+            . '.fk_c_country_code = ' . DB_TABLE_PREFIX . 't_country.pk_c_code'
+            . ' WHERE i_num_items ' . $zero . ' 0'
+            . ' ORDER BY ' . $order;
 
-        $rs = $this->dao->get();
-
-        if ($rs === false) {
+        try {
+            $rows = osc_db_select($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $rs->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -212,36 +242,41 @@ class CountryStats extends DAO
      *
      * @param string $countryCode
      *
-     * @return int total items
+     * @return int|string Item count as a string, or int 0 when the query fails
      * @since  2.4
      *
      */
     public function calculateNumItems($countryCode)
     {
+        // Three fixed core tables and an aggregate, so the builder cannot carry
+        // it; the country code and the expiry cut-off are the only caller
+        // values and both are bound. The cut-off stays on PHP's clock, as it
+        // has always been, rather than moving to the server's NOW().
         $sql = 'SELECT count(*) as total FROM ' . DB_TABLE_PREFIX . 't_item_location, ' . DB_TABLE_PREFIX . 't_item, '
                . DB_TABLE_PREFIX . 't_category ';
-        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ' . $this->dao->escape($countryCode) . ' AND ';
+        $sql .= 'WHERE ' . DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ? AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX . 't_item_location.fk_i_item_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX . 't_item.fk_i_category_id AND ';
         $sql .= DB_TABLE_PREFIX . 't_item.b_active = 1 AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1 AND '
                 . DB_TABLE_PREFIX . 't_item.b_spam = 0 AND ';
-        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= \''
-                . date('Y-m-d H:i:s') . '\' ) AND ';
+        $sql .= '(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX . 't_item.dt_expiration >= ? ) AND ';
         $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
 
-        $return = $this->dao->query($sql);
-        if ($return === false) {
+        try {
+            $row = osc_db_select_one($sql, array($countryCode, date('Y-m-d H:i:s')));
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        if ($return->numRows() > 0) {
-            $aux = $return->result();
+        if ($row !== null) {
+            $row = osc_db_stringify_row($row);
 
-            return $aux[0]['total'];
+            return $row['total'];
         }
+
         return 0;
     }
-    
+
 }
 
 /* file end: ./oc-includes/osclass/model/CountryStats.php */
