@@ -13045,6 +13045,25 @@ div.widget-box-content-no-wrapp li a {
   padding: 0 15px;
 }
 
+.widget-row.is-editing > td {
+  background-color: var(--osc-bronze-tint);
+}
+
+.widget-editor-row > td {
+  background-color: var(--osc-bench);
+  padding: 1rem;
+}
+
+.widget-editor-row #widgets-page,
+.widget-editor-row .widgets,
+.widget-editor-row #item-form {
+  margin: 0;
+  padding: 0;
+}
+.widget-editor-row .form-actions {
+  margin-block-start: 1rem;
+}
+
 .dashboard-sidebar {
   max-width: 15rem;
   background-color: var(--osc-chrome);
@@ -15027,6 +15046,16 @@ code {
 }
 .add-photo-btn > i {
   margin: 0;
+}
+
+#listing-toolbar .input-group > .form-select, #listing-toolbar .widget-box-title .input-group > select, .widget-box-title #listing-toolbar .input-group > select, #listing-toolbar .form-controls .input-group > select, .form-controls #listing-toolbar .input-group > select,
+.table-toolbar .input-group > .form-select,
+.table-toolbar .widget-box-title .input-group > select,
+.widget-box-title .table-toolbar .input-group > select,
+.table-toolbar .form-controls .input-group > select,
+.form-controls .table-toolbar .input-group > select {
+  flex: 0 0 auto;
+  width: fit-content;
 }
 
 #adminPageForm .page-view-link {

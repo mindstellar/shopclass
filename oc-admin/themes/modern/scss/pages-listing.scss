@@ -222,3 +222,14 @@
     margin: 0;
   }
 }
+
+// A filter <select> in a listing toolbar sizes to its longest option instead of
+// the input-group's equal-width default, so a form or status name is never
+// clipped mid-word.
+#listing-toolbar,
+.table-toolbar {
+  .input-group > .form-select {
+    flex: 0 0 auto;
+    width: fit-content;
+  }
+}

@@ -113,3 +113,28 @@ div.widget-box-content-no-wrapp li a {
 .dash-widget-form {
   padding: 0 15px;
 }
+// ---- Inline widget editor ---------------------------------------------------
+// The editor opens in the row of the widget it belongs to, the same way a field
+// or form editor opens in the Forms builder, instead of navigating to its own
+// screen. The row it belongs to is tinted while its editor is open.
+.widget-row.is-editing > td {
+  background-color: var(--osc-bronze-tint);
+}
+
+.widget-editor-row > td {
+  background-color: var(--osc-bench);
+  padding: 1rem;
+}
+
+.widget-editor-row {
+  #widgets-page,
+  .widgets,
+  #item-form {
+    margin: 0;
+    padding: 0;
+  }
+
+  .form-actions {
+    margin-block-start: 1rem;
+  }
+}

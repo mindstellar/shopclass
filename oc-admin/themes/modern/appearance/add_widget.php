@@ -13,7 +13,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_enqueue_script('tiny_mce');
+// Inline mode: the widgets screen loads this same view into a widget's row so the
+// editor opens where the control is. Only the page chrome is skipped — the form
+// below stays the single source for both the full page and the inline editor.
+$inline = Params::getParam('inline') === '1';
+if (!$inline) {
+    osc_enqueue_script('tiny_mce');
+}
 
 $info   = __get('info');
 $widget = __get('widget');
@@ -103,7 +109,9 @@ foreach ($widgetTypes as $typeId => $typeSpec) {
         && is_string($typeSpec['description'])) ? $typeSpec['description'] : '';
 }
 
-osc_add_hook('admin_page_header', 'customPageHeader');
+if (!$inline) {
+    osc_add_hook('admin_page_header', 'customPageHeader');
+}
 function customPageHeader()
 {
     if (Params::getParam('action') === 'edit_widget') {
@@ -128,7 +136,9 @@ function customPageTitle($string)
 }
 
 
-osc_add_filter('admin_title', 'customPageTitle');
+if (!$inline) {
+    osc_add_filter('admin_title', 'customPageTitle');
+}
 function customHead()
 {
     $info   = __get('info');
@@ -146,8 +156,10 @@ function customHead()
 <?php }
 
 
-osc_add_hook('admin_header', 'customHead', 10);
-osc_current_admin_theme_path('parts/header.php'); ?>
+if (!$inline) {
+    osc_add_hook('admin_header', 'customHead', 10);
+    osc_current_admin_theme_path('parts/header.php');
+} ?>
 <div id="widgets-page">
     <div class="widgets">
         <div id="item-form">
@@ -229,12 +241,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
 </div>
 <script>
+    // This view is also loaded inline into the widgets screen, i.e. injected after
+    // DOMContentLoaded has already fired — a plain listener would never run and the
+    // editor and type switcher would sit dead. Run now when the document is ready.
+    function oscWidgetReady(fn) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn);
+        } else {
+            fn();
+        }
+    }
     // TinyMCE 7 for the legacy widget-content editor. Deferred and guarded so it
     // never runs before tinymce.min.js has loaded (the old inline tinyMCE.init
     // threw "tinyMCE is not defined"), scoped to non-code textareas, with paste
     // cleanup. extended_valid_elements keeps <script> for super_admin legacy
     // widgets that embed one.
-    document.addEventListener('DOMContentLoaded', function () {
+    oscWidgetReady(function () {
         if (typeof tinymce === 'undefined') {
             return;
         }
@@ -266,7 +288,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     });
 </script>
 <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
+    oscWidgetReady(function () {
         var typeSelect   = document.getElementById('widget_type_select');
         var descBox      = document.getElementById('widget_type_description');
         var dangerBox    = document.getElementById('widget_type_danger');
@@ -319,7 +341,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     });
 </script>
 <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
+    oscWidgetReady(function () {
         oscValidateForm(document.querySelector('form[name=widget_form]'), {
             rules: { description: { required: true } },
             messages: {
@@ -335,5 +357,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         });
     });
 </script>
-<?php osc_current_admin_theme_path('parts/media-picker.php'); ?>
-<?php osc_current_admin_theme_path('parts/footer.php'); ?>
+<?php if (!$inline) {
+    // Inline mode: the widgets screen already carries the picker and the footer.
+    osc_current_admin_theme_path('parts/media-picker.php');
+    osc_current_admin_theme_path('parts/footer.php');
+} ?>

@@ -14,6 +14,10 @@
  */
 
 
+// The widget editor now opens inline in this page, so the editor's dependencies
+// have to be present here rather than only on the standalone add/edit screen.
+osc_enqueue_script('tiny_mce');
+
 $info = __get('info');
 
 function addHelp()
@@ -64,14 +68,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="widget-box">
                         <div class="widget-box-title">
                             <h3><?php printf(__('Section: %s'), $location); ?>
-                                <a id="add_widget_<?php echo $location; ?>"
-                                   href="<?php echo osc_admin_base_url(true); ?>?page=appearance&amp;action=add_widget&amp;location=<?php echo $location; ?>"
-                                   class="btn btn-secondary btn-sm float-end"><?php _e('Add HTML widget'); ?></a></h3>
+                                <button type="button" id="add_widget_<?php echo $location; ?>"
+                                        class="btn btn-secondary btn-sm float-end js-widget-add"
+                                        data-location="<?php echo osc_esc_html($location); ?>"><?php _e('Add widget'); ?></button></h3>
                         </div>
                         <div class="widget-box-content">
+                            <p class="col-hint"><?php printf(
+                                __('Widgets placed here render in the theme\'s %s section, in this order.'),
+                                '<strong>' . osc_esc_html($location) . '</strong>'
+                            ); ?></p>
                             <?php $widgets = Widget::newInstance()->findByLocation($location); ?>
-                            <?php if (count($widgets) > 0) {
-                                $countEvent = 1; ?>
+                            <?php if (count($widgets) === 0) { ?>
+                                <div class="builder-empty js-widget-empty"><?php
+                                    _e('No widgets in this section yet.'); ?></div>
+                            <?php }
+                            $countEvent = 1; ?>
                                 <div class="widget-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
                                 <table class="table" cellpadding="0" cellspacing="0">
                                     <tbody class="js-widget-sortable" data-location="<?php echo osc_esc_html($location); ?>">
@@ -99,10 +110,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                     ? osc_esc_html($w['s_description'])
                                                     : sprintf(__('Widget %d'), (int) $w['pk_i_id']); ?></td>
                                             <td class="text-muted"><?php echo '#' . (int) $w['pk_i_id']; ?></td>
-                                            <td><?php printf(
-                                                    '<a href="%1$s?page=appearance&amp;action=edit_widget&amp;id=%2$s&amp;location=%3$s">'
-                                                    . __('Edit') . '</a>', osc_admin_base_url(true), $w['pk_i_id'],
-                                                    $location); ?>
+                                            <td><a href="<?php echo osc_admin_base_url(true)
+                                                    . '?page=appearance&amp;action=edit_widget&amp;id=' . (int)$w['pk_i_id']
+                                                    . '&amp;location=' . osc_esc_html($location); ?>"
+                                                   class="js-widget-edit"
+                                                   data-widget-id="<?php echo (int)$w['pk_i_id']; ?>"
+                                                   data-location="<?php echo osc_esc_html($location); ?>"><?php _e('Edit'); ?></a>
                                                 <a href="<?php printf('%s?page=appearance&amp;action=delete_widget&amp;id=%d"',
                                                                       osc_admin_base_url(true), $w['pk_i_id']); ?>"
                                                    onclick="return delete_dialog('<?php echo $w['pk_i_id']; ?>');"><?php _e('Delete'); ?></a>
@@ -114,7 +127,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     ?>
                                     </tbody>
                                 </table>
-                            <?php } ?>
                         </div>
                     </div>
                 </div>
@@ -343,7 +355,90 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         });
     })();
 </script>
+<script type="text/javascript">
+(function () {
+    var ADMIN = '<?php echo osc_admin_base_url(true); ?>';
+
+    function closeWidgetEditor() {
+        document.querySelectorAll('.widget-editor-row').forEach(function (row) { row.remove(); });
+        document.querySelectorAll('.widget-row.is-editing').forEach(function (r) { r.classList.remove('is-editing'); });
+    }
+    window.closeWidgetEditor = closeWidgetEditor;
+
+    // Reordering moves rows by previous/nextElementSibling, so an open editor row
+    // sitting between two widgets would be swapped instead of the widget. Close it
+    // before any reorder gesture — capture phase, so this runs before the handlers
+    // that do the moving.
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.widget-move-up, .widget-move-down')) { closeWidgetEditor(); }
+    }, true);
+    document.addEventListener('dragstart', function (e) {
+        if (e.target.closest('.widget-drag-handle')) { closeWidgetEditor(); }
+    }, true);
+
+    function openEditor(url, afterRow, tbody, colspan) {
+        closeWidgetEditor();
+        var row = document.createElement('tr');
+        row.className = 'widget-editor-row';
+        row.innerHTML = '<td colspan="' + colspan + '"><p class="cf-editor-loading">'
+            + '<?php echo osc_esc_js(__('Loading…')); ?>' + '</p></td>';
+        if (afterRow) {
+            afterRow.classList.add('is-editing');
+            afterRow.parentNode.insertBefore(row, afterRow.nextSibling);
+        } else {
+            tbody.appendChild(row);
+        }
+        var cell = row.firstElementChild;
+        fetch(url, { credentials: 'same-origin' })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                cell.innerHTML = html;
+                // innerHTML does not execute scripts; re-add them so the editor wires up.
+                cell.querySelectorAll('script').forEach(function (old) {
+                    var sc = document.createElement('script');
+                    if (old.src) { sc.src = old.src; } else { sc.textContent = old.textContent; }
+                    old.parentNode.replaceChild(sc, old);
+                });
+                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                var first = cell.querySelector('input:not([type=hidden]), select, textarea');
+                if (first) { first.focus({ preventScroll: true }); }
+            });
+    }
+
+    function colspanOf(tbody) {
+        var head = tbody.closest('table').querySelector('tr');
+        return head ? head.children.length : 4;
+    }
+
+    document.addEventListener('click', function (e) {
+        var edit = e.target.closest('.js-widget-edit');
+        if (edit) {
+            e.preventDefault();
+            var tr = edit.closest('tr');
+            openEditor(
+                ADMIN + '?page=appearance&action=edit_widget&inline=1&id=' + encodeURIComponent(edit.dataset.widgetId)
+                    + '&location=' + encodeURIComponent(edit.dataset.location),
+                tr, tr.parentNode, colspanOf(tr.parentNode)
+            );
+            return;
+        }
+        var add = e.target.closest('.js-widget-add');
+        if (add) {
+            e.preventDefault();
+            var box = add.closest('.widget-box');
+            var tbody = box.querySelector('.js-widget-sortable');
+            var empty = box.querySelector('.js-widget-empty');
+            if (empty) { empty.hidden = true; }
+            openEditor(
+                ADMIN + '?page=appearance&action=add_widget&inline=1&location=' + encodeURIComponent(add.dataset.location),
+                null, tbody, colspanOf(tbody)
+            );
+        }
+    });
+})();
+</script>
 <div class="row">
     <div class="col-12">
         <div class="row-wrapper">
+            <?php osc_current_admin_theme_path('parts/media-picker.php'); ?>
             <?php osc_current_admin_theme_path('parts/footer.php'); ?>
