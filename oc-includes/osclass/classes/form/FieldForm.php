@@ -300,9 +300,22 @@ class FieldForm extends Form
             // need something else (date, number range) override it.
             // Not on the search form: a native email/url input would refuse to submit
             // a partial term, which is exactly what searching by one needs to allow.
-            $typeSpec = osc_field_type($type);
-            if (!$search && !empty($typeSpec['input_type'])) {
-                $attributes['type'] = $typeSpec['input_type'];
+            $typeSpec   = osc_field_type($type);
+            $nativeType = $search ? '' : (string)($typeSpec['input_type'] ?? '');
+            // url and email are the two the browser refuses to submit when it judges
+            // the value malformed. A row saved before this existed can hold something
+            // it rejects — a URL with no scheme is the common one, and the URL type
+            // has no server-side validator — and blocking the whole listing's save
+            // until that one field is corrected would be a regression on live data.
+            // Such a value stays on a plain text input; valid ones get the native type.
+            if ($nativeType !== '' && is_string($value) && $value !== '') {
+                $strict = array('url' => FILTER_VALIDATE_URL, 'email' => FILTER_VALIDATE_EMAIL);
+                if (isset($strict[$nativeType]) && !filter_var($value, $strict[$nativeType])) {
+                    $nativeType = '';
+                }
+            }
+            if ($nativeType !== '') {
+                $attributes['type'] = $nativeType;
             }
 
             // The framework classes the control ships with. These render on public
