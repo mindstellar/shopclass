@@ -70,27 +70,20 @@ class Page extends DAO
      */
     public function findByOrder($order, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $array_where = array(
-            'i_order'     => $order,
-            'b_indelible' => 0
-        );
-        $this->dao->where($array_where);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('i_order', $order)
+                ->where('b_indelible', 0)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return array();
         }
 
-        $row    = $result->row();
-        $result = $this->extendDescription($row, $locale);
-
-        return $result;
+        return $this->extendDescription(osc_db_stringify_row($row), $locale);
     }
 
     /**
@@ -106,17 +99,17 @@ class Page extends DAO
      */
     public function extendDescription($aPage, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getDescriptionTableName());
-        $this->dao->where('fk_i_pages_id', $aPage['pk_i_id']);
+        $query = osc_db_table($this->getDescriptionTableName())
+            ->where('fk_i_pages_id', $aPage['pk_i_id']);
         if (null !== $locale) {
-            $this->dao->where('fk_c_locale_code', $locale);
+            $query = $query->where('fk_c_locale_code', $locale);
         }
-        $results = $this->dao->get();
-        if ($results === false) {
+
+        try {
+            $aDescriptions = osc_db_stringify_rows($query->get());
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $aDescriptions = $results->result();
 
         if (count($aDescriptions) == 0) {
             return array();
@@ -170,23 +163,19 @@ class Page extends DAO
      */
     public function findByInternalName($intName, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_internal_name', $intName);
-        $result = $this->dao->get();
-
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('s_internal_name', $intName)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return array();
         }
 
-        $row = $result->row();
-
-        return $this->extendDescription($row, $locale);
+        return $this->extendDescription(osc_db_stringify_row($row), $locale);
     }
 
     /**
@@ -207,9 +196,17 @@ class Page extends DAO
 
         $this->reOrderPages($order);
 
-        $this->dao->delete($this->getDescriptionTableName(), array('fk_i_pages_id' => $id));
+        try {
+            osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // Discarded before this conversion too; the page delete below still runs.
+        }
 
-        return $this->dao->delete($this->tableName, array('pk_i_id' => $id));
+        try {
+            return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -225,30 +222,27 @@ class Page extends DAO
      */
     public function findByPrimaryKey($id, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $id);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return array();
         }
 
-        $row = $result->row();
+        $row = osc_db_stringify_row($row);
 
         // page_description
-        $this->dao->select();
-        $this->dao->from($this->getDescriptionTableName());
-        $this->dao->where('fk_i_pages_id', $id);
+        $query = osc_db_table($this->getDescriptionTableName())
+            ->where('fk_i_pages_id', $id);
         if (null !== $locale) {
-            $this->dao->where('fk_c_locale_code', $locale);
+            $query = $query->where('fk_c_locale_code', $locale);
         }
-        $result = $this->dao->get();
-        $aRows  = $result->result();
+        $aRows = osc_db_stringify_rows($query->get());
 
         $row['locale'] = array();
         foreach ($aRows as $r) {
@@ -276,11 +270,14 @@ class Page extends DAO
         foreach ($aPages as $page) {
             if ($page['i_order'] > $order) {
                 $new_order = $page['i_order'] - 1;
-                $arows     += $this->dao->update(
-                    $this->tableName,
-                    array('i_order' => $new_order),
-                    array('pk_i_id' => $page['pk_i_id'])
-                );
+                try {
+                    $arows += osc_db_table($this->tableName)
+                        ->where('pk_i_id', $page['pk_i_id'])
+                        ->update(array('i_order' => $new_order));
+                } catch (\mindstellar\database\DbException $e) {
+                    // Each row's outcome was already only summed, never checked,
+                    // so one failing row must not stop the rest reordering.
+                }
             }
         }
 
@@ -305,22 +302,34 @@ class Page extends DAO
      */
     public function listAll($indelible = null, $b_link = null, $locale = null, $start = null, $limit = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
+        $query = osc_db_table($this->getTableName());
         if (null !== $indelible) {
-            $this->dao->where('b_indelible', $indelible);
+            $query = $query->where('b_indelible', $indelible);
         }
         if ($b_link != null) {
-            $this->dao->where('b_link', $b_link);
+            $query = $query->where('b_link', $b_link);
         }
-        $this->dao->orderBy('i_order', 'ASC');
+        $query = $query->orderBy('i_order', 'ASC');
         if (null !== $limit) {
-            $this->dao->limit($limit, $start);
+            // The legacy call emitted "LIMIT $limit, $start", and MySQL reads the
+            // two-argument form as offset first and row count second -- so $limit
+            // is the offset here and $start the number of rows, the reverse of
+            // what the parameter names suggest. A zero offset collapses it to the
+            // single-argument form. Preserved exactly; the admin pages table is
+            // the only caller and reads these positions as they are.
+            $query = $query->limit((int)$start);
+            if ((int)$limit > 0) {
+                $query = $query->offset((int)$limit);
+            }
         }
-        $result = $this->dao->get();
-        if ($result) {
-            $aPages = $result->result();
 
+        try {
+            $aPages = osc_db_stringify_rows($query->get());
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        {
             if (count($aPages) == 0) {
                 return array();
             }
@@ -352,20 +361,18 @@ class Page extends DAO
      */
     public function count($indelible = null)
     {
-        $this->dao->select('count(*) as total');
-        $this->dao->from($this->getTableName());
+        $query = osc_db_table($this->getTableName());
         if (null !== $indelible) {
-            $this->dao->where('b_indelible', $indelible);
+            $query = $query->where('b_indelible', $indelible);
         }
 
-        $result = $this->dao->get();
-        if ($result) {
-            $aPages = $result->result();
-
-            return $aPages[0]['total'];
+        try {
+            // Cast back to a string: the aggregate reached callers as one before,
+            // and the prepared path would hand them a native int.
+            return (string)$query->count();
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
         }
-
-        return 0;
     }
 
     /**
@@ -381,12 +388,7 @@ class Page extends DAO
      */
     public function insert($aFields, $aFieldsDescription = null)
     {
-        $this->dao->select('MAX(i_order) as o');
-        $this->dao->from($this->tableName);
-        $results  = $this->dao->get();
-        $lastPage = $results->row();
-
-        $order = $lastPage['o'];
+        $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . $this->tableName);
         if (null === $order) {
             $order = -1;
         }
@@ -399,26 +401,21 @@ class Page extends DAO
             $aFields['b_link'] = 0;
         }
 
-        $this->dao->insert($this->tableName, array(
-            's_internal_name' => $aFields['s_internal_name']
-            ,
-            'b_indelible'     => $aFields['b_indelible']
-            ,
-            'dt_pub_date'     => date('Y-m-d H:i:s')
-            ,
-            'dt_mod_date'     => date('Y-m-d H:i:s')
-            ,
-            'i_order'         => $order + 1
-            ,
-            's_meta'          => @$aFields['s_meta']
-            ,
-            'b_link'          => $aFields['b_link']
-        ));
-
-
-        $id = $this->dao->insertedId();
-
-        if ($this->dao->affectedRows() == 0) {
+        // The id and the success check used to be read off the connection after
+        // the write. The builder hands back the new id directly, and a write that
+        // does not raise has inserted its row, which is what the affected-row
+        // check was standing in for.
+        try {
+            $id = osc_db_table($this->tableName)->insert(array(
+                's_internal_name' => $aFields['s_internal_name'],
+                'b_indelible'     => $aFields['b_indelible'],
+                'dt_pub_date'     => date('Y-m-d H:i:s'),
+                'dt_mod_date'     => date('Y-m-d H:i:s'),
+                'i_order'         => $order + 1,
+                's_meta'          => $aFields['s_meta'] ?? null,
+                'b_link'          => $aFields['b_link']
+            ));
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
@@ -448,17 +445,18 @@ class Page extends DAO
     private function insertDescription($id, $locale, $title, $text)
     {
 
-        $this->dao->insert($this->getDescriptionTableName(), array(
-            'fk_i_pages_id'    => $id
-            ,
-            'fk_c_locale_code' => $locale
-            ,
-            's_title'          => $title
-            ,
-            's_text'           => $text
-        ));
+        try {
+            osc_db_table($this->getDescriptionTableName())->insert(array(
+                'fk_i_pages_id'    => $id,
+                'fk_c_locale_code' => $locale,
+                's_title'          => $title,
+                's_text'           => $text
+            ));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
 
-        return !($this->dao->affectedRows() == 0);
+        return true;
     }
 
     /**
@@ -474,23 +472,21 @@ class Page extends DAO
      */
     public function findPrevPage($order)
     {
-        $this->dao->select();
-        $this->dao->from($this->tableName);
-        $this->dao->where('b_indelible', 0);
-        $this->dao->where('i_order < ' . (int)$order);
-        $this->dao->orderBy('i_order', 'DESC');
-        $this->dao->limit(1);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->tableName)
+                ->where('b_indelible', 0)
+                ->where('i_order', '<', (int)$order)
+                ->orderBy('i_order', 'DESC')
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return array();
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -506,23 +502,21 @@ class Page extends DAO
      */
     public function findNextPage($order)
     {
-        $this->dao->select();
-        $this->dao->from($this->tableName);
-        $this->dao->where('b_indelible', 0);
-        $this->dao->where('i_order > ' . (int)$order);
-        $this->dao->orderBy('i_order', 'ASC');
-        $this->dao->limit(1);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->tableName)
+                ->where('b_indelible', 0)
+                ->where('i_order', '>', (int)$order)
+                ->orderBy('i_order', 'ASC')
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return array();
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -547,19 +541,14 @@ class Page extends DAO
             return $this->insertDescription($id, $locale, $title, $text);
         }
 
-        return $this->dao->update(
-            $this->getDescriptionTableName(),
-            array(
-                's_title' => $title
-                ,
-                's_text'  => $text
-            ),
-            array(
-                'fk_c_locale_code' => $locale
-                ,
-                'fk_i_pages_id'    => $id
-            )
-        );
+        try {
+            return osc_db_table($this->getDescriptionTableName())
+                ->where('fk_c_locale_code', $locale)
+                ->where('fk_i_pages_id', $id)
+                ->update(array('s_title' => $title, 's_text' => $text));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -574,16 +563,12 @@ class Page extends DAO
      */
     public function existDescription($conditions)
     {
-        $this->dao->select('COUNT(*) as total');
-        $this->dao->from($this->getDescriptionTableName());
+        $query = osc_db_table($this->getDescriptionTableName());
         foreach ($conditions as $key => $value) {
-            $this->dao->where($key, $value);
+            $query = $query->where($key, $value);
         }
 
-        $result = $this->dao->get();
-        $count  = $result->row();
-
-        return $count['total'] > 0;
+        return $query->count() > 0;
     }
 
     /**
@@ -603,9 +588,13 @@ class Page extends DAO
             's_internal_name' => $intName,
             'dt_mod_date'     => date('Y-m-d H:i:s')
         );
-        $where  = array('pk_i_id' => $id);
-
-        return $this->dao->update($this->tableName, $fields, $where);
+        try {
+            return osc_db_table($this->tableName)
+                ->where('pk_i_id', $id)
+                ->update($fields);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -625,9 +614,13 @@ class Page extends DAO
             'b_link'      => $bLink,
             'dt_mod_date' => date('Y-m-d H:i:s')
         );
-        $where  = array('pk_i_id' => $id);
-
-        return $this->dao->update($this->tableName, $fields, $where);
+        try {
+            return osc_db_table($this->tableName)
+                ->where('pk_i_id', $id)
+                ->update($fields);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -647,9 +640,13 @@ class Page extends DAO
             's_meta'      => $meta,
             'dt_mod_date' => date('Y-m-d H:i:s')
         );
-        $where  = array('pk_i_id' => $id);
-
-        return $this->dao->update($this->tableName, $fields, $where);
+        try {
+            return osc_db_table($this->tableName)
+                ->where('pk_i_id', $id)
+                ->update($fields);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -682,13 +679,10 @@ class Page extends DAO
      */
     public function internalNameExists($id, $internalName)
     {
-        $this->dao->select();
-        $this->dao->from($this->tableName);
-        $this->dao->where('s_internal_name', $internalName);
-        $this->dao->where('pk_i_id <> ' . (int)$id);
-        $result = $this->dao->get();
-
-        return $result->numRows() > 0;
+        return osc_db_table($this->tableName)
+            ->where('s_internal_name', $internalName)
+            ->where('pk_i_id', '<>', (int)$id)
+            ->count() > 0;
     }
 
     /**
