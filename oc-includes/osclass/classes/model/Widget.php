@@ -58,20 +58,20 @@ class Widget extends DAO
      */
     public function findByLocation($location)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_location', $location);
-        // i_order ascending, then primary key ascending as a tiebreak so legacy
-        // rows (all i_order = 0) keep their current relative order.
-        $this->dao->orderBy('i_order', 'ASC');
-        $this->dao->orderBy($this->getPrimaryKey(), 'ASC');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('s_location', $location)
+                // i_order ascending, then primary key ascending as a tiebreak so
+                // legacy rows (all i_order = 0) keep their current relative order.
+                ->orderBy('i_order', 'ASC')
+                ->orderBy($this->getPrimaryKey(), 'ASC')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -160,16 +160,16 @@ class Widget extends DAO
      */
     public function findByDescription($description)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_description', $description);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('s_description', $description)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 }
 
