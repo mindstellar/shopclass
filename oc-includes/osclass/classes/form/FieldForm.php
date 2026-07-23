@@ -294,6 +294,34 @@ class FieldForm extends Form
             // helper does not escape attribute or help-text values, and meta() renders
             // on the PUBLIC item and search forms, so escape here to avoid stored XSS.
             $type = osc_field_resolve_type($field);
+            // Native input type declared by the field type (email, url, number, tel,
+            // …). The browser then validates the value and offers the matching mobile
+            // keyboard, and a theme styles a plain native input. Branches below that
+            // need something else (date, number range) override it.
+            // Not on the search form: a native email/url input would refuse to submit
+            // a partial term, which is exactly what searching by one needs to allow.
+            $typeSpec = osc_field_type($type);
+            if (!$search && !empty($typeSpec['input_type'])) {
+                $attributes['type'] = $typeSpec['input_type'];
+            }
+
+            // The framework classes the control ships with. These render on public
+            // theme markup, so a theme that would rather style bare native elements
+            // can filter them to '' or to its own names. Radio and checkbox carry no
+            // class today and are left alone. Default is unchanged, so existing
+            // themes see exactly what they saw before.
+            $defaultInputClass = null;
+            if ($field['e_type'] === 'DROPDOWN') {
+                $defaultInputClass = self::getInstance()->selectClass;
+            } elseif ($field['e_type'] !== 'RADIO' && $field['e_type'] !== 'CHECKBOX') {
+                $defaultInputClass = self::getInstance()->textClass;
+            }
+            $fieldInputClass = $defaultInputClass === null
+                ? null
+                : osc_apply_filter('custom_field_input_class', $defaultInputClass, $field, $type, $search);
+            if ($fieldInputClass !== null && $fieldInputClass !== $defaultInputClass) {
+                $attributes['class'] = $fieldInputClass;
+            }
             if (!empty($field['placeholder'])) {
                 $attributes['placeholder'] = osc_esc_html($field['placeholder']);
             }
@@ -388,7 +416,7 @@ class FieldForm extends Form
                     }
                     // add cf_date class to the input field; the visible control is a
                     // native date input, the hidden field carries the unix timestamp.
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date ' . $id;
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date ' . $id);
                     $attributes['type']  = 'date';
                     echo self::getInstance()->hidden($name, $value, ['id' => $id]);
                     unset($attributes['id']);
@@ -410,7 +438,7 @@ class FieldForm extends Form
                     // add cf_date_interval class to the input field; native date
                     // inputs, hidden fields carry the unix timestamps.
                     $attributes['type']  = 'date';
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date_interval ' . $id . '_from';
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_from');
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
                     echo '<div class="input-group input-group-sm">';
                     echo '<span class="input-group-text">' . ucfirst(__('from')) . ' </span>';
@@ -418,7 +446,7 @@ class FieldForm extends Form
                     echo self::getInstance()->text('datepicker-placeholder-from', '', $attributes);
 
                     echo '<span class="input-group-text">' . ucfirst(__('to')) . ' </span>';
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date_interval ' . $id . '_to';
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_to');
                     echo self::getInstance()->hidden($name . '[to]', $value['to'], ['id' => $id . '_to']);
                     unset($attributes['id']);
                     echo self::getInstance()->text('datepicker-placeholder-to', '', $attributes);
@@ -463,12 +491,6 @@ class FieldForm extends Form
                         echo '<h6>' . $label . '</h6>';
                     } else {
                         $options['label'] = $label;
-                    }
-                    // Registry text-backed types render a matching native input.
-                    if ($type === 'EMAIL') {
-                        $attributes['type'] = 'email';
-                    } elseif ($type === 'PHONE') {
-                        $attributes['type'] = 'tel';
                     }
                     if (isset($field['maxlength']) && (int)$field['maxlength'] > 0) {
                         $attributes['maxlength'] = (int)$field['maxlength'];

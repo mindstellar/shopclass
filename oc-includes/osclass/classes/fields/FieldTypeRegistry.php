@@ -83,6 +83,11 @@ final class FieldTypeRegistry
      *                            list (DROPDOWN/RADIO/MULTISELECT). Default false.
      *   'config'     => string[] Optional s_meta config keys the builder exposes for
      *                            this type (e.g. ['placeholder','help_text','min']).
+     *   'input_type' => string   Optional native HTML input type the field renders as
+     *                            ('email', 'url', 'number', 'tel', …). The browser
+     *                            then validates the value and offers the matching
+     *                            mobile keyboard; themes style the element as usual.
+     *                            Omit for types that are not a plain <input>.
      *   'render'     => callable Optional callable(array $field): void that emits
      *                            the input. When absent the storage primitive's
      *                            native rendering is used.
@@ -130,6 +135,7 @@ final class FieldTypeRegistry
             'icon'        => isset($spec['icon']) && is_string($spec['icon']) ? $spec['icon'] : '',
             'has_options' => !empty($spec['has_options']),
             'config'      => isset($spec['config']) && is_array($spec['config']) ? array_values($spec['config']) : array(),
+            'input_type'  => isset($spec['input_type']) && is_string($spec['input_type']) ? $spec['input_type'] : '',
             'render'      => $spec['render'] ?? null,
             'sanitize'    => $spec['sanitize'] ?? null,
             'validate'    => $spec['validate'] ?? null,

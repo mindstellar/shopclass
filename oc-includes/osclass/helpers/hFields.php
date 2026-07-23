@@ -116,10 +116,11 @@ osc_register_field_type('TEXT', array(
 ));
 
 osc_register_field_type('NUMBER', array(
-    'label'  => 'Number',
-    'group'  => 'Basic',
-    'icon'   => 'hash',
-    'config' => array('placeholder', 'help_text', 'default', 'min', 'max', 'step'),
+    'label'      => 'Number',
+    'group'      => 'Basic',
+    'icon'       => 'hash',
+    'input_type' => 'number',
+    'config'     => array('placeholder', 'help_text', 'default', 'min', 'max', 'step'),
 ));
 
 osc_register_field_type('TEXTAREA', array(
@@ -153,10 +154,11 @@ osc_register_field_type('CHECKBOX', array(
 ));
 
 osc_register_field_type('URL', array(
-    'label'  => 'URL',
-    'group'  => 'Basic',
-    'icon'   => 'link-45deg',
-    'config' => array('placeholder', 'help_text', 'b_new_tab'),
+    'label'      => 'URL',
+    'group'      => 'Basic',
+    'icon'       => 'link-45deg',
+    'input_type' => 'url',
+    'config'     => array('placeholder', 'help_text', 'b_new_tab'),
 ));
 
 osc_register_field_type('DATE', array(
@@ -176,9 +178,10 @@ osc_register_field_type('DATEINTERVAL', array(
 osc_register_field_type('EMAIL', array(
     'label'    => 'Email',
     'group'    => 'Basic',
-    'icon'     => 'envelope',
-    'storage'  => 'TEXT',
-    'config'   => array('placeholder', 'help_text'),
+    'icon'       => 'envelope',
+    'storage'    => 'TEXT',
+    'input_type' => 'email',
+    'config'     => array('placeholder', 'help_text'),
     'validate' => static function ($value, $field) {
         if ($value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
             return sprintf(__('%s is invalid.'), $field['s_name']);
@@ -191,9 +194,10 @@ osc_register_field_type('EMAIL', array(
 osc_register_field_type('PHONE', array(
     'label'   => 'Phone',
     'group'   => 'Basic',
-    'icon'    => 'telephone',
-    'storage' => 'TEXT',
-    'config'  => array('placeholder', 'help_text'),
+    'icon'       => 'telephone',
+    'storage'    => 'TEXT',
+    'input_type' => 'tel',
+    'config'     => array('placeholder', 'help_text'),
 ));
 
 
