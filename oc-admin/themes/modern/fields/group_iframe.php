@@ -72,7 +72,7 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                 </div>
                 <div class="card-footer form-actions">
                     <input type="submit" id="group_save" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit" />
-                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="document.getElementById('edit-field-group-frame').remove();" />
+                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="if(window.cfCloseDrawer){window.cfCloseDrawer();}else{document.getElementById('edit-field-group-frame').remove();}return false;" />
                 </div>
             </fieldset>
         </form>
@@ -117,8 +117,8 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                         );
                         window.cfSetCardCats(ret.group_id, ids);
                     }
-                    var frame = document.getElementById('edit-field-group-frame');
-                    if (frame) { frame.remove(); }
+                    if (window.cfCloseDrawer) { window.cfCloseDrawer(); }
+                    else { var frame = document.getElementById('edit-field-group-frame'); if (frame) { frame.remove(); } }
                 } else {
                     setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
                 }

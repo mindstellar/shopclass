@@ -253,7 +253,7 @@ $formCount = (int)__get('form_count');
                             <div class="form-row" id="div_field_options">
                                 <div class="form-label"><?php _e('Identifier name'); ?></div>
                                 <div class="form-controls">
-                                    <input type="text" class="form-control" name="field_slug" value="<?php echo $field['s_slug']; ?>" />
+                                    <input type="text" class="form-control" name="field_slug" value="<?php echo osc_esc_html($field['s_slug']); ?>" />
                                     <p class="help-inline"><?php _e('Only alphanumeric characters are allowed [a-z0-9_-]'); ?></p>
                                 </div>
                             </div>
@@ -276,7 +276,7 @@ $formCount = (int)__get('form_count');
                 </div>
                 <div class="card-footer form-actions">
                     <input type="submit" id="cfield_save" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit" />
-                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="document.getElementById('edit-custom-field-frame').remove();" />
+                    <input type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>" class="btn btn-dim" onclick="if(window.cfCloseDrawer){window.cfCloseDrawer();}else{document.getElementById('edit-custom-field-frame').remove();}return false;" />
                 </div>
             </fieldset>
         </form>
@@ -429,12 +429,8 @@ $formCount = (int)__get('form_count');
                         setJsMessage('ok', ret.ok);
                         var cl = document.querySelector('.content_list_<?php echo (int)$field['pk_i_id']; ?>');
                         if (cl) { cl.innerHTML = ''; }
-                        // In the builder, close the editor slot after a save.
-                        var slot = document.getElementById('field-editor-slot');
-                        if (slot && slot.contains(document.getElementById('nedit_field_form'))) {
-                            slot.innerHTML = '';
-                            document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
-                        }
+                        // Close the drawer once the definition is saved.
+                        if (window.cfCloseDrawer) { window.cfCloseDrawer(); }
                     } else {
                         setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
                     }

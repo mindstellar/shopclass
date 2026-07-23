@@ -15676,7 +15676,7 @@ code {
   align-items: start;
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: 1fr 22rem;
+  grid-template-columns: 24rem minmax(0, 1fr);
 }
 @media (max-width: 900px) {
   .forms-builder-grid {
@@ -15923,14 +15923,14 @@ code {
   color: var(--osc-danger);
 }
 
-.forms-builder .custom-field-frame {
-  margin-top: 0.75rem;
+.cf-drawer .custom-field-frame {
+  border: 0;
+  margin: 0;
 }
-.forms-builder .custom-field-frame .card-header, .forms-builder .custom-field-frame .widget-box-title {
-  font-size: 1rem;
-  font-weight: 600;
+.cf-drawer .custom-field-frame .card-header, .cf-drawer .custom-field-frame .widget-box-title {
+  display: none;
 }
-.forms-builder .custom-field-frame .cf-editor-note {
+.cf-drawer .custom-field-frame .cf-editor-note {
   align-items: baseline;
   background-color: var(--osc-info-tint);
   border-radius: 4px;
@@ -15942,62 +15942,206 @@ code {
   margin-bottom: 1rem;
   padding: 0.5rem 0.65rem;
 }
-.forms-builder .custom-field-frame .cf-editor-note .bi {
+.cf-drawer .custom-field-frame .cf-editor-note .bi {
   flex: 0 0 auto;
 }
-.forms-builder .custom-field-frame .cf-editor-body {
+.cf-drawer .custom-field-frame .cf-editor-body {
   max-width: none;
   width: 100%;
 }
-.forms-builder .custom-field-frame .form-row {
+.cf-drawer .custom-field-frame .form-row {
   align-items: stretch;
   column-gap: 0;
   flex-direction: column;
   margin-bottom: 0.85rem;
 }
-.forms-builder .custom-field-frame .form-label {
+.cf-drawer .custom-field-frame .form-label {
   flex: none;
   margin-bottom: 0.25rem;
   padding-block-start: 0;
   text-align: start;
 }
-.forms-builder .custom-field-frame .form-label:empty {
+.cf-drawer .custom-field-frame .form-label:empty {
   display: none;
 }
-.forms-builder .custom-field-frame .form-controls {
+.cf-drawer .custom-field-frame .form-controls {
   flex: 1 1 auto;
   min-width: 0;
 }
-.forms-builder .custom-field-frame .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
-.forms-builder .custom-field-frame .form-controls select,
-.forms-builder .custom-field-frame .form-controls textarea {
+.cf-drawer .custom-field-frame .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.cf-drawer .custom-field-frame .form-controls select,
+.cf-drawer .custom-field-frame .form-controls textarea {
   max-width: 100%;
   width: 100%;
 }
-.forms-builder .custom-field-frame .form-controls > label {
+.cf-drawer .custom-field-frame .form-controls > label {
   align-items: center;
   display: inline-flex;
   gap: 0.4rem;
 }
-.forms-builder .custom-field-frame .form-controls > label input[type=checkbox] {
+.cf-drawer .custom-field-frame .form-controls > label input[type=checkbox] {
   flex: 0 0 auto;
   margin: 0;
 }
-.forms-builder .custom-field-frame .card-footer.form-actions,
-.forms-builder .custom-field-frame .form-actions {
+.cf-drawer .custom-field-frame .card-footer.form-actions,
+.cf-drawer .custom-field-frame .form-actions {
+  background: var(--osc-bench);
+  border-top: 1px solid var(--osc-rule);
+  bottom: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-start;
-  padding-inline-start: 16px;
+  margin: 1rem -1rem -1rem;
+  padding: 0.85rem 1rem;
+  position: sticky;
 }
-.forms-builder .custom-field-frame ul[id^=cat] input[type=checkbox],
-.forms-builder .custom-field-frame #group_cat_tree input[type=checkbox],
-.forms-builder .custom-field-frame #cat_tree input[type=checkbox] {
+.cf-drawer .custom-field-frame ul[id^=cat] input[type=checkbox],
+.cf-drawer .custom-field-frame #group_cat_tree input[type=checkbox],
+.cf-drawer .custom-field-frame #cat_tree input[type=checkbox] {
   margin-inline-end: 0.35rem;
 }
-.forms-builder .custom-field-frame .separate-top {
+.cf-drawer .custom-field-frame .separate-top {
   margin-block-start: 1rem;
+}
+
+.cf-drawer {
+  inset: 0;
+  position: fixed;
+  z-index: 1055;
+}
+
+.cf-drawer[hidden] {
+  display: none;
+}
+
+.cf-drawer-scrim {
+  background: rgba(9, 14, 20, 0.38);
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transition: opacity var(--osc-duration-base) var(--osc-ease);
+}
+
+.cf-drawer-panel {
+  background: var(--osc-bench);
+  border-inline-start: 1px solid var(--osc-rule);
+  bottom: 0;
+  box-shadow: -12px 0 32px rgba(9, 14, 20, 0.16);
+  display: flex;
+  flex-direction: column;
+  inset-block: 0;
+  inset-inline-end: 0;
+  max-width: 100vw;
+  position: absolute;
+  transform: translateX(100%);
+  transition: transform var(--osc-duration-base) var(--osc-ease);
+  width: 27rem;
+}
+
+[dir=rtl] .cf-drawer-panel {
+  transform: translateX(-100%);
+}
+
+.cf-drawer.is-open .cf-drawer-scrim {
+  opacity: 1;
+}
+.cf-drawer.is-open .cf-drawer-panel {
+  transform: translateX(0);
+}
+
+@media (max-width: 34rem) {
+  .cf-drawer-panel {
+    width: 100vw;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-drawer-scrim,
+  .cf-drawer-panel {
+    transition: none;
+  }
+}
+.cf-drawer-head {
+  align-items: center;
+  border-bottom: 1px solid var(--osc-rule);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+}
+
+.cf-drawer-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cf-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.cf-drawer-loading {
+  color: var(--osc-ink-muted);
+  padding: 1rem 0;
+}
+
+body.cf-drawer-lock {
+  overflow: hidden;
+}
+
+.form-card-add {
+  margin-top: 0.6rem;
+  position: relative;
+}
+
+.cf-add-menu {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(9, 14, 20, 0.14);
+  margin-top: 0.35rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.cf-add-menu[hidden] {
+  display: none;
+}
+
+.cf-add-item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.4rem 0.55rem;
+  text-align: start;
+  width: 100%;
+}
+.cf-add-item:hover, .cf-add-item:focus-visible {
+  background-color: var(--osc-chrome-hover);
+}
+.cf-add-item .cf-add-name {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cf-add-empty {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.55rem;
 }
 
 .submission-forms {

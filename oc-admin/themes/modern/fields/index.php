@@ -159,35 +159,73 @@ function customHead()
             });
         }
 
-        // Load the field-definition editor into the palette-side slot. builder=1 tells
-        // the editor to hide the group/category controls (membership + categories are
-        // set by drag-drop and on the form) and to save the definition only.
-        function edit_field(id) {
-            var slot = document.getElementById('field-editor-slot');
-            if (!slot) { return false; }
+        // ---- The editor drawer ----------------------------------------------
+        // Both editors (a field definition, a form's name+categories) open in one
+        // right-side drawer at a comfortable width, instead of being crushed into
+        // the palette rail or shoved inline between form cards.
+        var drawerReturnFocus = null;
+
+        function openDrawer() {
+            var drawer = document.getElementById('cf-drawer');
+            if (!drawer) { return; }
+            drawerReturnFocus = document.activeElement;
+            drawer.hidden = false;
+            // next frame so the slide-in transition runs
+            requestAnimationFrame(function () { drawer.classList.add('is-open'); });
+            document.body.classList.add('cf-drawer-lock');
+            // focus the first field once the fetched editor has wired itself up
+            setTimeout(function () {
+                var first = drawer.querySelector('input:not([type=hidden]), select, textarea, button');
+                if (first) { first.focus(); }
+            }, 60);
+        }
+
+        window.cfCloseDrawer = function () {
+            var drawer = document.getElementById('cf-drawer');
+            if (!drawer || drawer.hidden) { return; }
+            drawer.classList.remove('is-open');
+            document.body.classList.remove('cf-drawer-lock');
             document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
-            var chip = document.querySelector('#palette-list .field-chip[data-field-id="' + id + '"]');
-            if (chip) { chip.classList.add('is-editing'); }
-            var url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&builder=1&<?php echo $csrf_token; ?>&id=' + id;
+            var body = document.getElementById('cf-drawer-body');
+            var hide = function () { drawer.hidden = true; if (body) { body.innerHTML = ''; } };
+            // clear after the slide-out; guard with a timeout in case transitionend misfires
+            var done = false;
+            drawer.addEventListener('transitionend', function te() { if (done) { return; } done = true; drawer.removeEventListener('transitionend', te); hide(); });
+            setTimeout(function () { if (!done) { done = true; hide(); } }, 260);
+            if (drawerReturnFocus && drawerReturnFocus.focus) { drawerReturnFocus.focus(); }
+            drawerReturnFocus = null;
+        };
+
+        function loadDrawer(url, title) {
+            var body = document.getElementById('cf-drawer-body');
+            var titleEl = document.getElementById('cf-drawer-title');
+            if (!body) { return; }
+            if (titleEl) { titleEl.textContent = title || ''; }
+            body.innerHTML = '<p class="cf-drawer-loading">' + '<?php echo osc_esc_js(__('Loading…')); ?>' + '</p>';
+            openDrawer();
             fetch(url, { credentials: 'same-origin' })
                 .then(function (r) { return r.text(); })
-                .then(function (html) { oscInjectHtml(slot, html); slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+                .then(function (html) { oscInjectHtml(body, html); });
+        }
+
+        // Field-definition editor. builder=1 hides the group/category controls
+        // (membership + categories are set on the form) and saves the definition only.
+        function edit_field(id) {
+            document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
+            document.querySelectorAll('#palette-list .field-chip[data-field-id="' + id + '"]').forEach(function (chip) { chip.classList.add('is-editing'); });
+            loadDrawer(
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&builder=1&<?php echo $csrf_token; ?>&id=' + id,
+                '<?php echo osc_esc_js(__('Edit field')); ?>'
+            );
             return false;
         }
 
-        // Load a form's settings editor (name + category assignment) inline in its card.
+        // Form editor (name + category assignment).
         function show_group_iframe(id) {
-            var container = document.querySelector('.group_content_' + id);
-            if (!container) { return false; }
-            if (!container.querySelector('.custom-field-frame')) {
-                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
-                var url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id;
-                fetch(url, { credentials: 'same-origin' })
-                    .then(function (r) { return r.text(); })
-                    .then(function (html) { oscInjectHtml(container, html); });
-            } else {
-                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
-            }
+            loadDrawer(
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id,
+                '<?php echo osc_esc_js(__('Edit form')); ?>'
+            );
             return false;
         }
 
@@ -223,7 +261,8 @@ function customHead()
             inForms:    '<?php echo osc_esc_js(__('In %d forms')); ?>',
             inFormsTip: '<?php echo osc_esc_js(__('Editing this field changes it in every form that uses it.')); ?>',
             applies:    '<?php echo osc_esc_js(__('Applies to')); ?>',
-            unattached: '<?php echo osc_esc_js(__('Not attached to a category — it won\'t appear on listings yet')); ?>'
+            unattached: '<?php echo osc_esc_js(__('Not attached to a category — it won\'t appear on listings yet')); ?>',
+            allAdded:   '<?php echo osc_esc_js(__('Every field is already in this form.')); ?>'
         };
 
         function cfEsc(s) {
@@ -271,6 +310,70 @@ function customHead()
                     badge.remove();
                 }
             });
+        }
+
+        // ---- Add a field without dragging (keyboard / touch path) ------------
+        function closeAddMenu(except) {
+            document.querySelectorAll('.form-card-add').forEach(function (wrap) {
+                if (wrap === except) { return; }
+                var menu = wrap.querySelector('.cf-add-menu');
+                var btn = wrap.querySelector('.form-add-field');
+                if (menu) { menu.hidden = true; }
+                if (btn) { btn.setAttribute('aria-expanded', 'false'); }
+            });
+        }
+
+        // Append a field's chip to a form (mirrors a drag from the palette).
+        function addFieldToForm(card, id) {
+            var src = document.querySelector('#palette-list > .field-chip[data-field-id="' + id + '"]');
+            var list = card ? card.querySelector('.form-fieldlist') : null;
+            if (!src || !list) { return; }
+            var clone = src.cloneNode(true);
+            clone.classList.remove('is-editing', 'is-placed');
+            var badge = clone.querySelector('.chip-shared');
+            if (badge) { badge.remove(); }
+            list.appendChild(clone);
+            saveForm(list);
+        }
+
+        // Build the menu of fields not already in this form.
+        function openAddMenu(wrap) {
+            var card = wrap.closest('.form-card');
+            var list = card.querySelector('.form-fieldlist');
+            var menu = wrap.querySelector('.cf-add-menu');
+            var btn = wrap.querySelector('.form-add-field');
+            var present = {};
+            list.querySelectorAll(':scope > .field-chip').forEach(function (c) { present[c.getAttribute('data-field-id')] = true; });
+            menu.innerHTML = '';
+            var any = false;
+            document.querySelectorAll('#palette-list > .field-chip').forEach(function (src) {
+                var id = src.getAttribute('data-field-id');
+                if (present[id]) { return; }
+                any = true;
+                var item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'cf-add-item';
+                item.setAttribute('role', 'menuitem');
+                item.setAttribute('data-field-id', id);
+                var nameEl = src.querySelector('.chip-name');
+                var typeEl = src.querySelector('.chip-type');
+                item.innerHTML = '<span class="cf-add-name"></span>' + (typeEl ? '<span class="chip-type"></span>' : '');
+                item.querySelector('.cf-add-name').textContent = nameEl ? nameEl.textContent : '';
+                if (typeEl) { item.querySelector('.chip-type').textContent = typeEl.textContent; }
+                item.addEventListener('click', function () { addFieldToForm(card, id); closeAddMenu(); btn.focus(); });
+                menu.appendChild(item);
+            });
+            if (!any) {
+                var empty = document.createElement('div');
+                empty.className = 'cf-add-empty';
+                empty.textContent = CF_TXT.allAdded;
+                menu.appendChild(empty);
+            }
+            closeAddMenu(wrap);
+            menu.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+            var first = menu.querySelector('.cf-add-item');
+            if (first) { first.focus(); }
         }
 
         // Rewrite a form card's "Applies to: …" line after its categories are saved.
@@ -358,8 +461,11 @@ function customHead()
                 + '  </span>'
                 + '</div>'
                 + '<ul class="form-fieldlist" data-form-id="' + id + '"></ul>'
-                + '<div class="form-empty"><?php echo osc_esc_js(__('Drag fields here')); ?></div>'
-                + '<div class="edit group_content_' + id + '"></div>';
+                + '<div class="form-empty"><?php echo osc_esc_js(__('Drag a field here, or use “Add field”.')); ?></div>'
+                + '<div class="form-card-add">'
+                + '  <button type="button" class="btn btn-outline-primary btn-sm form-add-field" aria-haspopup="true" aria-expanded="false"><i class="bi bi-plus-lg"></i> <?php echo osc_esc_js(__('Add field')); ?></button>'
+                + '  <div class="cf-add-menu" role="menu" hidden></div>'
+                + '</div>';
             card.querySelector('.form-card-title').textContent = name;
             document.getElementById('forms-list').appendChild(card);
             initFormSortable(card.querySelector('.form-fieldlist'));
@@ -386,6 +492,31 @@ function customHead()
                 var chip = btn.closest('.field-chip');
                 var list = chip ? chip.closest('.form-fieldlist') : null;
                 if (chip && list) { chip.remove(); saveForm(list); }
+            });
+
+            // Drawer: close on the ✕, the scrim, or Escape.
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-cf-drawer-close]')) { e.preventDefault(); window.cfCloseDrawer(); }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    var drawer = document.getElementById('cf-drawer');
+                    if (drawer && !drawer.hidden) { window.cfCloseDrawer(); return; }
+                    closeAddMenu();
+                }
+            });
+
+            // Add-field menu: toggle on the button, close on any outside click.
+            document.addEventListener('click', function (e) {
+                var addBtn = e.target.closest('.form-add-field');
+                if (addBtn) {
+                    e.preventDefault();
+                    var wrap = addBtn.closest('.form-card-add');
+                    var menu = wrap.querySelector('.cf-add-menu');
+                    if (menu.hidden) { openAddMenu(wrap); } else { closeAddMenu(); }
+                    return;
+                }
+                if (!e.target.closest('.cf-add-menu')) { closeAddMenu(); }
             });
 
             // + New form
@@ -464,6 +595,7 @@ osc_current_admin_theme_path('parts/header.php');
                         <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New form'); ?>
                     </button>
                 </div>
+                <p class="col-hint"><?php _e('A form is a set of fields shown together on the listing form, for the categories you choose.'); ?></p>
                 <div id="forms-list">
                     <?php if (count($forms) === 0) { ?>
                         <div id="forms-empty" class="builder-empty">
@@ -493,8 +625,13 @@ osc_current_admin_theme_path('parts/header.php');
                                     }
                                 } ?>
                             </ul>
-                            <div class="form-empty"><?php _e('Drag fields here'); ?></div>
-                            <div class="edit group_content_<?php echo $fid; ?>"></div>
+                            <div class="form-empty"><?php _e('Drag a field here, or use “Add field”.'); ?></div>
+                            <div class="form-card-add">
+                                <button type="button" class="btn btn-outline-primary btn-sm form-add-field" aria-haspopup="true" aria-expanded="false">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add field'); ?>
+                                </button>
+                                <div class="cf-add-menu" role="menu" hidden></div>
+                            </div>
                         </div>
                     <?php } ?>
                 </div>
@@ -508,7 +645,7 @@ osc_current_admin_theme_path('parts/header.php');
                         <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New field'); ?>
                     </button>
                 </div>
-                <p class="col-hint"><?php _e('Drag a field into any form on the left. The same field can be used in several forms.'); ?></p>
+                <p class="col-hint"><?php _e('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
                 <ul id="palette-list" class="palette-list">
                     <?php if (count($fields) === 0) { ?>
                         <li id="palette-empty" class="builder-empty"><?php _e('No fields yet. Create one to get started.'); ?></li>
@@ -517,10 +654,22 @@ osc_current_admin_theme_path('parts/header.php');
                         cfields_render_chip($field, in_array((int)$field['pk_i_id'], $placedIds, true));
                     } ?>
                 </ul>
-                <div class="edit" id="field-editor-slot"></div>
             </div>
 
         </div>
+    </div>
+
+    <!-- Shared editor drawer: both the field editor and the form editor open here. -->
+    <div id="cf-drawer" class="cf-drawer" hidden>
+        <div class="cf-drawer-scrim" data-cf-drawer-close></div>
+        <aside class="cf-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cf-drawer-title">
+            <header class="cf-drawer-head">
+                <h3 id="cf-drawer-title" class="cf-drawer-title"></h3>
+                <button type="button" class="chip-btn" data-cf-drawer-close
+                        aria-label="<?php echo osc_esc_html(__('Close')); ?>"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </header>
+            <div id="cf-drawer-body" class="cf-drawer-body edit"></div>
+        </aside>
     </div>
 
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
