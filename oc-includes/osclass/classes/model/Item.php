@@ -92,21 +92,24 @@ class Item extends DAO
      */
     public function mostViewed($limit = 10)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l, ' . DB_TABLE_PREFIX
-                         . 't_item_stats s');
-        $this->dao->where('l.fk_i_item_id = i.pk_i_id AND s.fk_i_item_id = i.pk_i_id');
-        $this->dao->groupBy('s.fk_i_item_id');
-        $this->dao->orderBy('i_num_views', 'DESC');
-        $this->dao->limit($limit);
+        // Three-table comodin join with a GROUP BY the builder cannot express, so
+        // this stays hand-written SQL. There are no caller values: the join
+        // conditions and column names are compile-time literals and $limit is
+        // (int)-cast into a bound LIMIT placeholder.
+        $sql = 'SELECT * FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l, '
+            . DB_TABLE_PREFIX . 't_item_stats s'
+            . ' WHERE l.fk_i_item_id = i.pk_i_id AND s.fk_i_item_id = i.pk_i_id'
+            . ' GROUP BY s.fk_i_item_id'
+            . ' ORDER BY i_num_views DESC'
+            . ' LIMIT ?';
 
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $items = osc_db_select($sql, array((int)$limit));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $items = $result->result();
 
-        return $this->extendData($items);
+        return $this->extendData(osc_db_stringify_rows($items));
     }
 
     /**
@@ -128,27 +131,33 @@ class Item extends DAO
             $items = $this->extendItemDescription($items, $prefLocale);
             $items = $this->extendCategoryName($items, $prefLocale);
             $itemIds = array_column($items, 'pk_i_id');
-            // First get stats and locations data
-            $this->dao->select(
-                'SUM(s.i_num_views) as i_num_views, ' .
-                'SUM(s.i_num_spam) as i_num_spam, ' .
-                'SUM(s.i_num_bad_classified) as i_num_bad_classified, ' .
-                'SUM(s.i_num_repeated) as i_num_repeated, ' .
-                'SUM(s.i_num_offensive) as i_num_offensive, ' .
-                'SUM(s.i_num_expired) as i_num_expired, ' .
-                'SUM(s.i_num_premium_views) as i_num_premium_views, ' .
-                'l.*'
-            );
-            $this->dao->from(DB_TABLE_PREFIX . 't_item_stats s');
-            $this->dao->join(DB_TABLE_PREFIX . 't_item_location l', 's.fk_i_item_id = l.fk_i_item_id');
-            $this->dao->whereIn('s.fk_i_item_id', $itemIds);
-            $this->dao->groupBy('s.fk_i_item_id');
+            // First get stats and locations data. The SUM(...) aggregates and the
+            // l.* alias are outside the query builder's identifier allowlist, so
+            // this is hand-written SQL: same seven aggregates, same INNER JOIN and
+            // GROUP BY. The only values are the item ids, bound as an IN (?, ...)
+            // list.
+            if (!empty($itemIds)) {
+                $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
+                $sql = 'SELECT SUM(s.i_num_views) as i_num_views,'
+                    . ' SUM(s.i_num_spam) as i_num_spam,'
+                    . ' SUM(s.i_num_bad_classified) as i_num_bad_classified,'
+                    . ' SUM(s.i_num_repeated) as i_num_repeated,'
+                    . ' SUM(s.i_num_offensive) as i_num_offensive,'
+                    . ' SUM(s.i_num_expired) as i_num_expired,'
+                    . ' SUM(s.i_num_premium_views) as i_num_premium_views,'
+                    . ' l.*'
+                    . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats s'
+                    . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
+                    . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')'
+                    . ' GROUP BY s.fk_i_item_id';
 
-            $result = $this->dao->get();
-            if (!$result) {
-                $itemStatsLocations = array();
+                try {
+                    $itemStatsLocations = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
+                } catch (\mindstellar\database\DbException $e) {
+                    $itemStatsLocations = array();
+                }
             } else {
-                $itemStatsLocations = $result->result();
+                $itemStatsLocations = array();
             }
 
             foreach ($items as $k => $aItem) {
@@ -183,16 +192,20 @@ class Item extends DAO
      */
     public function listAllWithCategories()
     {
-        $this->dao->select('i.*, cd.s_name AS s_category_name ');
-        $this->dao->from($this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_category c, ' . DB_TABLE_PREFIX
-                         . 't_category_description cd');
-        $this->dao->where('c.pk_i_id = i.fk_i_category_id AND cd.fk_i_category_id = i.fk_i_category_id');
-        $result = $this->dao->get();
-        if ($result == false) {
+        // Aliased multi-table join and the cd.s_name AS alias are outside the
+        // builder's allowlist, so this is hand-written SQL with no bound values.
+        $sql = 'SELECT i.*, cd.s_name AS s_category_name'
+            . ' FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_category c, '
+            . DB_TABLE_PREFIX . 't_category_description cd'
+            . ' WHERE c.pk_i_id = i.fk_i_category_id AND cd.fk_i_category_id = i.fk_i_category_id';
+
+        try {
+            $rows = osc_db_select($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -249,33 +262,53 @@ class Item extends DAO
      */
     public function listWhere(...$args)
     {
-        $sql = null;
-        switch (func_num_args()) {
+        $where  = null;
+        $params = array();
+        switch (count($args)) {
             case 0:
                 return array();
             case 1:
-                $sql = $args[0];
+                // Single-argument form: a raw WHERE fragment the CALLER owns (its
+                // docblock says the param is not escaped inside). It may embed
+                // ORDER BY / LIMIT — listLatest() does exactly that. Internal
+                // callers pass literals; no value is interpolated by this method.
+                $where = $args[0];
                 break;
             default:
                 $format = array_shift($args);
-                foreach ($args as $k => $v) {
-                    $args[$k] = $this->dao->escape($v);
-                }
-                $sql = vsprintf($format, $args);
+                // Each printf conversion in the format becomes a bound '?'
+                // placeholder, so the caller's values are bound rather than
+                // escaped-and-concatenated. %d keeps its integer semantics by
+                // casting the value it binds; %s binds the value verbatim as a
+                // string (dropping the legacy numeric coercion, amendment T).
+                $i     = 0;
+                $where = preg_replace_callback('/%[ds]/', static function ($m) use (&$i, &$args) {
+                    if ($m[0] === '%d' && array_key_exists($i, $args)) {
+                        $args[$i] = (int)$args[$i];
+                    }
+                    $i++;
+
+                    return '?';
+                }, $format);
+                $params = array_values($args);
                 break;
         }
 
-        $this->dao->select('l.*, i.*');
-        $this->dao->from($this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l');
-        $this->dao->where('l.fk_i_item_id = i.pk_i_id');
-        $this->dao->where($sql);
-        $result = $this->dao->get();
-        if ($result == false) {
+        // Item joined to its location. Every identifier is a compile-time literal
+        // or the table-prefix constant; the only caller values are the bound
+        // placeholders built above (or, for the raw single-arg form, the caller's
+        // own trusted fragment).
+        $sql = 'SELECT l.*, i.*'
+            . ' FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l'
+            . ' WHERE l.fk_i_item_id = i.pk_i_id AND ' . $where;
+
+        try {
+            $items = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $items = $result->result();
 
-        return $this->extendData($items);
+        return $this->extendData(osc_db_stringify_rows($items));
     }
 
     /**
@@ -324,35 +357,70 @@ class Item extends DAO
      */
     public function totalItems($categoryId = null, $options = null)
     {
-        $this->dao->select('count(*) as total');
-        $this->dao->from($this->getTableName() . ' i');
+        $conditions = array();
+        $params     = array();
+        $join       = '';
         if (null !== $categoryId) {
-            $this->dao->join(DB_TABLE_PREFIX . 't_category c', 'c.pk_i_id = i.fk_i_category_id');
-            $this->dao->where('i.fk_i_category_id', $categoryId);
+            $join = ' INNER JOIN ' . DB_TABLE_PREFIX . 't_category c ON c.pk_i_id = i.fk_i_category_id';
+            $this->pushWhere($conditions, $params, 'i.fk_i_category_id = ?', 'AND', array($categoryId));
         }
 
-        $this->addWhereByOptions($options);
+        $this->addWhereByOptions($options, $conditions, $params);
 
-        $result = $this->dao->get();
-        if ($result == false) {
+        $sql = 'SELECT count(*) as total FROM ' . $this->getTableName() . ' i' . $join;
+        if ($conditions !== array()) {
+            $sql .= ' WHERE ' . implode(' ', $conditions);
+        }
+
+        try {
+            $total = osc_db_scalar($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-        $total_ads = $result->row();
 
-        return $total_ads['total'];
+        // COUNT(*) always yields one row; cast the (possibly native-int) scalar to
+        // the string the legacy row value was.
+        return (string)$total;
     }
 
     /**
-     * Add where condition by options
+     * Append one WHERE fragment (with its AND/OR connector) and its bound values
+     * to the running condition/param lists. The first fragment carries no
+     * connector, mirroring how the legacy DBCommandClass emitted its aWhere array.
+     * $sql is a compile-time SQL fragment whose only values are '?' placeholders.
+     *
+     * @param string[] $conditions
+     * @param array    $params
+     * @param string   $sql
+     * @param string   $bool 'AND' or 'OR'
+     * @param array    $vals values for the placeholders in $sql, in order
+     */
+    private function pushWhere(array &$conditions, array &$params, string $sql, string $bool = 'AND', array $vals = array()): void
+    {
+        $conditions[] = ($conditions === array() ? '' : $bool . ' ') . $sql;
+        foreach ($vals as $v) {
+            $params[] = $v;
+        }
+    }
+
+    /**
+     * Add where conditions by options
      * $options  ['ACTIVE|INACTIVE|ENABLED|DISABLED|SPAM|NOTSPAM|EXPIRED|NOTEXPIRED|PREMIUM|TODAY']
+     *
+     * Appends bound WHERE fragments to $conditions/$params. The date comparisons
+     * keep PHP's date() as the clock source (never SQL NOW()); the value is bound.
+     * NOTEXPIRED keeps its OR connector so the mixed AND/OR structure the legacy
+     * orWhere() produced is preserved verbatim.
      *
      * @access  private
      *
-     * @param string | array $options could be a string with | separator or an array with the options
+     * @param string|array $options could be a string with | separator or an array with the options
+     * @param string[]     $conditions
+     * @param array        $params
      *
      * @since   4.0.0
      */
-    private function addWhereByOptions($options)
+    private function addWhereByOptions($options, array &$conditions, array &$params)
     {
         if (!is_array($options)) {
             $options = explode('|', $options);
@@ -360,36 +428,36 @@ class Item extends DAO
         foreach ($options as $option) {
             switch ($option) {
                 case 'ACTIVE':
-                    $this->dao->where('i.b_active', 1);
+                    $this->pushWhere($conditions, $params, 'i.b_active = ?', 'AND', array(1));
                     break;
                 case 'INACTIVE':
-                    $this->dao->where('i.b_active', 0);
+                    $this->pushWhere($conditions, $params, 'i.b_active = ?', 'AND', array(0));
                     break;
                 case 'ENABLED':
-                    $this->dao->where('i.b_enabled', 1);
+                    $this->pushWhere($conditions, $params, 'i.b_enabled = ?', 'AND', array(1));
                     break;
                 case 'DISABLED':
-                    $this->dao->where('i.b_enabled', 0);
+                    $this->pushWhere($conditions, $params, 'i.b_enabled = ?', 'AND', array(0));
                     break;
                 case 'SPAM':
-                    $this->dao->where('i.b_spam', 1);
+                    $this->pushWhere($conditions, $params, 'i.b_spam = ?', 'AND', array(1));
                     break;
                 case 'NOTSPAM':
-                    $this->dao->where('i.b_spam', 0);
+                    $this->pushWhere($conditions, $params, 'i.b_spam = ?', 'AND', array(0));
                     break;
                 case 'EXPIRED':
-                    $this->dao->where('i.b_premium', 0);
-                    $this->dao->where('( i.dt_expiration < \'' . date('Y-m-d H:i:s') . '\' )');
+                    $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'AND', array(0));
+                    $this->pushWhere($conditions, $params, '( i.dt_expiration < ? )', 'AND', array(date('Y-m-d H:i:s')));
                     break;
                 case 'NOTEXPIRED':
-                    $this->dao->orWhere('i.b_premium', 1);
-                    $this->dao->where('( i.dt_expiration >= \'' . date('Y-m-d H:i:s') . '\' )');
+                    $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'OR', array(1));
+                    $this->pushWhere($conditions, $params, '( i.dt_expiration >= ? )', 'AND', array(date('Y-m-d H:i:s')));
                     break;
                 case 'PREMIUM':
-                    $this->dao->where('i.b_premium', 1);
+                    $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'AND', array(1));
                     break;
                 case 'TODAY':
-                    $this->dao->where('DATEDIFF(\'' . date('Y-m-d H:i:s') . '\', i.dt_pub_date) < 1');
+                    $this->pushWhere($conditions, $params, 'DATEDIFF(?, i.dt_pub_date) < 1', 'AND', array(date('Y-m-d H:i:s')));
                     break;
                 default:
             }
@@ -408,28 +476,26 @@ class Item extends DAO
      */
     public function numItems($category, $enabled = true, $active = true)
     {
-        $this->dao->select('COUNT(*) AS total');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_category_id', (int)$category['pk_i_id']);
-        $this->dao->where('b_enabled', $enabled);
-        $this->dao->where('b_active', $active);
-        $this->dao->where('b_spam', 0);
+        $conditions = array();
+        $params     = array();
+        $this->pushWhere($conditions, $params, 'fk_i_category_id = ?', 'AND', array((int)$category['pk_i_id']));
+        $this->pushWhere($conditions, $params, 'b_enabled = ?', 'AND', array($enabled));
+        $this->pushWhere($conditions, $params, 'b_active = ?', 'AND', array($active));
+        $this->pushWhere($conditions, $params, 'b_spam = ?', 'AND', array(0));
+        // The premium test is unparenthesised against the AND chain and uses || —
+        // preserved verbatim (the same latent-clause shape as RegionStats). The
+        // date keeps PHP's clock and is bound.
+        $this->pushWhere($conditions, $params, '( b_premium = 1 || dt_expiration >= ? )', 'AND', array(date('Y-m-d H:i:s')));
 
-        $this->dao->where('( b_premium = 1 || dt_expiration >= \'' . date('Y-m-d H:i:s') . '\' )');
+        $sql = 'SELECT COUNT(*) AS total FROM ' . $this->getTableName() . ' WHERE ' . implode(' ', $conditions);
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $total = osc_db_scalar($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        if ($result->numRows() == 0) {
-            return 0;
-        }
-
-        $row = $result->row();
-
-        return $row['total'];
+        return (string)$total;
     }
 
     /**
@@ -464,7 +530,13 @@ class Item extends DAO
             's_description'    => $description
         );
 
-        return $this->dao->insert(DB_TABLE_PREFIX . 't_item_description', $array_set);
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_item_description')->insert($array_set);
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -503,45 +575,63 @@ class Item extends DAO
      */
     public function findItemByTypes($conditions = null, $itemType = false, $count = false, $limit = 0, $offset = null)
     {
-        $this->dao->from($this->getTableName() . ' i');
+        // $conditions is RAW SQL the CALLER owns: a string or an array of strings
+        // (a raw-fragment public API, like User::countUsers). Internal callers
+        // build safe fragments — 'fk_i_user_id = ' . (int)$userId — and the
+        // (int)/escaped values they use keep it injection-safe. Each element is a
+        // trusted fragment with no bound value of its own.
+        $conds  = array();
+        $params = array();
         if ($conditions !== null) {
             if (is_array($conditions)) {
                 foreach ($conditions as $condition) {
-                    $this->dao->where($condition);
+                    $this->pushWhere($conds, $params, $condition, 'AND');
                 }
             } else {
-                $this->dao->where($conditions);
+                $this->pushWhere($conds, $params, $conditions, 'AND');
             }
         }
 
-        $this->addWhereByType($itemType);
+        $this->addWhereByType($itemType, $conds, $params);
+
+        $where = $conds === array() ? '' : ' WHERE ' . implode(' ', $conds);
 
         if ($count === true) {
-            $this->dao->select('count(pk_i_id) as total');
-            $result = $this->dao->get();
-            if ($result === false) {
+            $sql = 'SELECT count(pk_i_id) as total FROM ' . $this->getTableName() . ' i' . $where;
+            try {
+                $total = osc_db_scalar($sql, $params);
+            } catch (\mindstellar\database\DbException $e) {
                 return 0;
             }
-            $items = $result->row();
 
-            return $items['total'];
+            return (string)$total;
         }
 
-        $this->dao->orderBy('dt_pub_date', 'DESC');
+        $sql = 'SELECT i.* FROM ' . $this->getTableName() . ' i' . $where . ' ORDER BY dt_pub_date DESC';
 
+        // Legacy paging: limit($limit, $offset) compiled "LIMIT $limit, $offset"
+        // (offset $limit, count $offset), emitting the second value only when it
+        // is > 0, and dropping the whole clause when the first is non-numeric.
+        // limit($limit) alone compiled "LIMIT $limit". Reproduced by emitted SQL,
+        // never by argument name.
         if ($offset !== null) {
-            $this->dao->limit($limit, $offset);
+            if (is_numeric($limit)) {
+                $sql .= ' LIMIT ' . (int)$limit;
+                if (is_numeric($offset) && (int)$offset > 0) {
+                    $sql .= ', ' . (int)$offset;
+                }
+            }
         } elseif ($limit > 0) {
-            $this->dao->limit($limit);
+            $sql .= ' LIMIT ' . (int)$limit;
         }
 
-        $result = $this->dao->get();
-        if ($result === false) {
+        try {
+            $items = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-        $items = $result->result();
 
-        return $this->extendData($items);
+        return $this->extendData(osc_db_stringify_rows($items));
     }
 
     /**
@@ -549,38 +639,38 @@ class Item extends DAO
      *
      * @param $itemType
      */
-    private function addWhereByType($itemType)
+    private function addWhereByType($itemType, array &$conditions, array &$params)
     {
         switch ($itemType) {
             case 'blocked':
-                $this->addWhereByOptions(['DISABLED']);
+                $this->addWhereByOptions(['DISABLED'], $conditions, $params);
 
                 return;
             case 'active':
-                $this->addWhereByOptions(['ACTIVE', 'ENABLED', 'NOTEXPIRED']);
+                $this->addWhereByOptions(['ACTIVE', 'ENABLED', 'NOTEXPIRED'], $conditions, $params);
 
                 return;
             case 'nospam':
-                $this->addWhereByOptions(['ACTIVE', 'NOSPAM', 'NOTEXPIRED']);
+                $this->addWhereByOptions(['ACTIVE', 'NOSPAM', 'NOTEXPIRED'], $conditions, $params);
 
                 return;
             case 'expired':
-                $this->addWhereByOptions(['EXPIRED']);
+                $this->addWhereByOptions(['EXPIRED'], $conditions, $params);
 
                 return;
             case 'pending':
             case 'pending_validate':
-                $this->addWhereByOptions(['INACTIVE']);
+                $this->addWhereByOptions(['INACTIVE'], $conditions, $params);
 
                 return;
             case 'premium':
-                $this->addWhereByOptions(['PREMIUM']);
+                $this->addWhereByOptions(['PREMIUM'], $conditions, $params);
 
                 return;
             case 'all':
                 return;
             default:
-                $this->addWhereByOptions(['ENABLED', 'ACTIVE', 'NOTEXPIRED', 'NOTSPAM']);
+                $this->addWhereByOptions(['ENABLED', 'ACTIVE', 'NOTEXPIRED', 'NOTSPAM'], $conditions, $params);
         }
     }
 
@@ -723,7 +813,12 @@ class Item extends DAO
      */
     public function countItemTypesByEmail($email, $itemType = false, $cond = '')
     {
-        $where_email = "s_contact_email = " . $this->dao->escape((string)$email);
+        // findItemByTypes() takes raw WHERE fragments with no bound-value channel,
+        // so the email is escaped into the fragment through the shared connection
+        // handle and ALWAYS quoted — injection-safe, and dropping the legacy
+        // numeric coercion (amendment T) since it no longer returns a bare number.
+        $handle      = DBConnectionClass::newInstance()->getOsclassDb();
+        $where_email = "s_contact_email = '" . $handle->real_escape_string((string)$email) . "'";
         if ($cond) {
             $conditions = array($where_email, $cond);
         } else {
@@ -775,10 +870,14 @@ class Item extends DAO
             default:
                 break;
         }
-        $array_conditions = array('fk_i_item_id' => $id);
-
         if (isset($array_set)) {
-            return $this->dao->update(DB_TABLE_PREFIX . 't_item_stats', $array_set, $array_conditions);
+            try {
+                return osc_db_table(DB_TABLE_PREFIX . 't_item_stats')
+                    ->where('fk_i_item_id', $id)
+                    ->update($array_set);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
         }
     }
 
@@ -797,14 +896,18 @@ class Item extends DAO
      */
     public function updateLocaleForce($id, $locale, $title, $text)
     {
-        $array_replace = array(
-            's_title'          => $title,
-            's_description'    => $text,
-            'fk_c_locale_code' => $locale,
-            'fk_i_item_id'     => $id
-        );
+        // REPLACE INTO has no query-builder equivalent, so it is hand-written with
+        // every value bound. Column order matches the legacy replace() set.
+        $sql = 'REPLACE INTO ' . DB_TABLE_PREFIX . 't_item_description'
+            . ' (s_title, s_description, fk_c_locale_code, fk_i_item_id) VALUES (?, ?, ?, ?)';
 
-        return $this->dao->replace(DB_TABLE_PREFIX . 't_item_description', $array_replace);
+        try {
+            osc_db_execute($sql, array($title, $text, $locale, $id));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -823,45 +926,57 @@ class Item extends DAO
             return false;
         }
 
-        $this->dao->select('dt_expiration');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $id);
-        $result = $this->dao->get();
+        try {
+            $item = osc_db_select_one('SELECT dt_expiration FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?', array($id));
+        } catch (\mindstellar\database\DbException $e) {
+            $item = null;
+        }
 
-        if ($result !== false) {
-            $item        = $result->row();
+        // Legacy entered this block whenever the read did not error, even for a
+        // zero-row (missing id) result — in which case the UPDATE below matched
+        // nothing and the method fell through to false. A missing id here yields a
+        // null row and converges on the same false, so it is guarded up front.
+        if ($item !== null) {
+            $item        = osc_db_stringify_row($item);
             $expired_old = osc_isExpired($item['dt_expiration']);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
-                    $dt_expiration     = sprintf(
-                        'DATE_ADD(%s.dt_pub_date, INTERVAL %d DAY)',
-                        $this->getTableName(),
-                        $expiration_time
-                    );
-                    // A raw SQL expression: it must reach the column unquoted.
-                    $escape_expiration = false;
+                    // A DATE_ADD(...) expression must reach the column UNquoted:
+                    // the table name is a fixed identifier and the interval days
+                    // are (int)-cast, so the expression is written inline. The
+                    // pk_i_id filter is bound.
+                    $sql    = 'UPDATE ' . $this->getTableName()
+                        . ' SET dt_expiration = DATE_ADD(' . $this->getTableName() . '.dt_pub_date, INTERVAL '
+                        . (int)$expiration_time . ' DAY) WHERE pk_i_id = ?';
+                    $params = array($id);
                 } else {
-                    $dt_expiration     = '9999-12-31 23:59:59';
-                    $escape_expiration = true;
+                    $sql    = 'UPDATE ' . $this->getTableName() . ' SET dt_expiration = ? WHERE pk_i_id = ?';
+                    $params = array('9999-12-31 23:59:59', $id);
                 }
             } else {
-                $dt_expiration     = $expiration_time;
-                $escape_expiration = true;
+                $sql    = 'UPDATE ' . $this->getTableName() . ' SET dt_expiration = ? WHERE pk_i_id = ?';
+                $params = array($expiration_time, $id);
             }
-            // Build the write through the DAO's own set()/where() so both clauses render
-            // correctly. A DATE_ADD(...) expression stays unescaped; a literal datetime is
-            // escaped (and thereby quoted) like any other value.
-            $this->dao->set('dt_expiration', $dt_expiration, $escape_expiration);
-            $this->dao->where('pk_i_id', $id);
-            $result = $this->dao->update($this->getTableName());
+
+            try {
+                $result = osc_db_execute($sql, $params);
+            } catch (\mindstellar\database\DbException $e) {
+                $result = 0;
+            }
+
             if ($result && $result > 0) {
-                $this->dao->select('i.dt_expiration, i.fk_i_user_id, i.fk_i_category_id, l.fk_c_country_code');
-                $this->dao->select('l.fk_i_region_id, l.fk_i_city_id');
-                $this->dao->from($this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l');
-                $this->dao->where('i.pk_i_id = l.fk_i_item_id');
-                $this->dao->where('i.pk_i_id', $id);
-                $result = $this->dao->get();
-                $_item  = $result->row();
+                try {
+                    $_item = osc_db_select_one(
+                        'SELECT i.dt_expiration, i.fk_i_user_id, i.fk_i_category_id, l.fk_c_country_code,'
+                        . ' l.fk_i_region_id, l.fk_i_city_id'
+                        . ' FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l'
+                        . ' WHERE i.pk_i_id = l.fk_i_item_id AND i.pk_i_id = ?',
+                        array($id)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    $_item = null;
+                }
+                $_item = $_item === null ? null : osc_db_stringify_row($_item);
 
                 if (!$do_stats) {
                     return $_item['dt_expiration'];
@@ -909,10 +1024,18 @@ class Item extends DAO
         if (empty($aIds)) {
             return false;
         }
-        $sql = sprintf('UPDATE %st_item SET b_enabled = %d WHERE ', DB_TABLE_PREFIX, $enable);
-        $sql .= sprintf('%st_item.fk_i_category_id IN (%s)', DB_TABLE_PREFIX, implode(',', $aIds));
+        // $aIds are already (int)-cast with an empty guard, so the IN list is a
+        // safe literal; $enable binds through a placeholder ((int)-cast to keep the
+        // legacy %d truncation).
+        $sql = 'UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_enabled = ? WHERE '
+            . DB_TABLE_PREFIX . 't_item.fk_i_category_id IN (' . implode(',', $aIds) . ')';
 
-        $result = $this->dao->query($sql);
+        try {
+            osc_db_execute($sql, array((int)$enable));
+            $result = true;
+        } catch (\mindstellar\database\DbException $e) {
+            $result = false;
+        }
 
         // The model fires no lifecycle event for this bulk change, so search indexes,
         // caches and audit listeners would never see it (core only fires item hooks
@@ -934,42 +1057,43 @@ class Item extends DAO
      */
     public function countByMarkas($type)
     {
-        $this->dao->select('count(*) as total');
-        $this->dao->from($this->getTableName() . ' i');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_stats s');
+        if (null === $type) {
+            return 0;
+        }
 
-        $this->dao->where('i.pk_i_id = s.fk_i_item_id');
         // i_num_spam, i_num_repeated, i_num_bad_classified, i_num_offensive, i_num_expired
-        if (null !== $type) {
-            switch ($type) {
-                case 'spam':
-                    $this->dao->where('s.i_num_spam > 0 AND i.b_spam = 0');
-                    break;
-                case 'repeated':
-                    $this->dao->where('s.i_num_repeated > 0');
-                    break;
-                case 'bad_classified':
-                    $this->dao->where('s.i_num_bad_classified > 0');
-                    break;
-                case 'offensive':
-                    $this->dao->where('s.i_num_offensive > 0');
-                    break;
-                case 'expired':
-                    $this->dao->where('s.i_num_expired > 0');
-                    break;
-                default:
-            }
-        } else {
+        $extra = '';
+        switch ($type) {
+            case 'spam':
+                $extra = ' AND s.i_num_spam > 0 AND i.b_spam = 0';
+                break;
+            case 'repeated':
+                $extra = ' AND s.i_num_repeated > 0';
+                break;
+            case 'bad_classified':
+                $extra = ' AND s.i_num_bad_classified > 0';
+                break;
+            case 'offensive':
+                $extra = ' AND s.i_num_offensive > 0';
+                break;
+            case 'expired':
+                $extra = ' AND s.i_num_expired > 0';
+                break;
+            default:
+        }
+
+        // Aliased two-table comodin join; the stat comparisons are fixed literals
+        // with no bound value. Hand-written to preserve the exact projection.
+        $sql = 'SELECT count(*) as total FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_stats s'
+            . ' WHERE i.pk_i_id = s.fk_i_item_id' . $extra;
+
+        try {
+            $total = osc_db_scalar($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $result = $this->dao->get();
-        if ($result === false) {
-            return 0;
-        }
-        $total_ads = $result->row();
-
-        return $total_ads['total'];
+        return (string)$total;
     }
 
     /**
@@ -1021,11 +1145,14 @@ class Item extends DAO
      */
     public function deleteByCityArea($cityAreaId)
     {
-        $this->dao->select('fk_i_item_id');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->where('fk_i_city_area_id', $cityAreaId);
-        $result = $this->dao->get();
-        $items  = $result->result();
+        // Legacy had no error branch here (a failed read fataled on ->result()),
+        // so a DbException is left to propagate rather than absorbed.
+        $items = osc_db_stringify_rows(
+            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+                ->select('fk_i_item_id')
+                ->where('fk_i_city_area_id', $cityAreaId)
+                ->get()
+        );
 
         return $this->deleteItemsFiringHooks($items);
     }
@@ -1066,12 +1193,18 @@ class Item extends DAO
         }
         ItemActions::deleteResourcesFromHD($id, $isAdmin);
 
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_description', "fk_i_item_id = $id");
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_comment', "fk_i_item_id = $id");
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_resource', "fk_i_item_id = $id");
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_location', "fk_i_item_id = $id");
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_stats', "fk_i_item_id = $id");
-        $this->dao->delete(DB_TABLE_PREFIX . 't_item_meta', "fk_i_item_id = $id");
+        // Each dependent-table delete had its result discarded, and legacy
+        // dao->delete() returned false on failure without throwing — so every one
+        // ran regardless of any other failing. The builder throws, so each keeps
+        // its own swallowed catch; only the final parent delete decides the return
+        // (amendment K).
+        foreach (array('t_item_description', 't_item_comment', 't_item_resource', 't_item_location', 't_item_stats', 't_item_meta') as $depTable) {
+            try {
+                osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                // ignore: a failed dependent delete never aborted the cascade
+            }
+        }
 
         Plugins::runHook('delete_item', $id);
 
@@ -1125,26 +1258,18 @@ class Item extends DAO
         if (!is_numeric($id) || $id === null) {
             return array();
         }
-        $this->dao->select('i.*');
-        $this->dao->from($this->getTableName() . ' i');
-        $this->dao->where('i.pk_i_id', $id);
-        $result = $this->dao->get();
-
-        if ($result === false) {
+        // Aliased i.* projection; hand-written with the id bound.
+        try {
+            $rows = osc_db_select('SELECT i.* FROM ' . $this->getTableName() . ' i WHERE i.pk_i_id = ?', array($id));
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() === 0) {
+        if ($rows === array()) {
             return array();
         }
 
-        $item = $result->row();
-
-        if (null !== $item) {
-            return $this->extendDataSingle($item);
-        }
-
-        return array();
+        return $this->extendDataSingle(osc_db_stringify_row($rows[0]));
     }
 
     /**
@@ -1177,11 +1302,12 @@ class Item extends DAO
      */
     public function deleteByCity($cityId)
     {
-        $this->dao->select('fk_i_item_id');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->where('fk_i_city_id', $cityId);
-        $result = $this->dao->get();
-        $items  = $result->result();
+        $items = osc_db_stringify_rows(
+            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+                ->select('fk_i_item_id')
+                ->where('fk_i_city_id', $cityId)
+                ->get()
+        );
 
         return $this->deleteItemsFiringHooks($items);
     }
@@ -1199,11 +1325,12 @@ class Item extends DAO
      */
     public function deleteByRegion($regionId)
     {
-        $this->dao->select('fk_i_item_id');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->where('fk_i_region_id', $regionId);
-        $result = $this->dao->get();
-        $items  = $result->result();
+        $items = osc_db_stringify_rows(
+            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+                ->select('fk_i_item_id')
+                ->where('fk_i_region_id', $regionId)
+                ->get()
+        );
 
         return $this->deleteItemsFiringHooks($items);
     }
@@ -1221,11 +1348,12 @@ class Item extends DAO
      */
     public function deleteByCountry($countryId)
     {
-        $this->dao->select('fk_i_item_id');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->where('fk_c_country_code', $countryId);
-        $result = $this->dao->get();
-        $items  = $result->result();
+        $items = osc_db_stringify_rows(
+            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+                ->select('fk_i_item_id')
+                ->where('fk_c_country_code', $countryId)
+                ->get()
+        );
 
         return $this->deleteItemsFiringHooks($items);
     }
@@ -1250,18 +1378,28 @@ class Item extends DAO
         $categoryIds = array_column($items, 'fk_i_category_id');
         $categoryIds = array_unique($categoryIds);
 
-        $this->dao->select('fk_i_category_id, fk_c_locale_code, s_name');
-        $this->dao->from(DB_TABLE_PREFIX . 't_category_description');
+        // Hand-written so the optional category-id IN() and the s_name != ''
+        // filter stay in the legacy order; every value is bound.
+        $conditions = array();
+        $params     = array();
         if (count($categoryIds) > 0) {
-            $this->dao->whereIn('fk_i_category_id', $categoryIds);
+            $placeholders = implode(', ', array_fill(0, count($categoryIds), '?'));
+            $conditions[] = 'fk_i_category_id IN (' . $placeholders . ')';
+            foreach ($categoryIds as $cid) {
+                $params[] = $cid;
+            }
         }
-        $this->dao->where('s_name!=', '');
+        $conditions[] = 's_name != ?';
+        $params[]     = '';
 
-        $result = $this->dao->get();
-        if ($result === false) {
+        $sql = 'SELECT fk_i_category_id, fk_c_locale_code, s_name FROM ' . DB_TABLE_PREFIX . 't_category_description'
+            . ' WHERE ' . implode(' AND ', $conditions);
+
+        try {
+            $categories = osc_db_stringify_rows(osc_db_select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
             return $items;
         }
-        $categories = $result->result();
         $aCategories = array();
         foreach ($categories as $c) {
             // if category name is not empty
@@ -1315,14 +1453,17 @@ class Item extends DAO
             }
             $itemIds = array_column($items, 'pk_i_id');
 
-            $this->dao->select('fk_i_item_id, fk_c_locale_code, s_title, s_description');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item_description');
-            $this->dao->whereIn('fk_i_item_id', $itemIds);
-            $result = $this->dao->get();
-            if ($result === false) {
+            // One fan-out over every listed item's descriptions, bound as IN (?, ...).
+            $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
+            $sql = 'SELECT fk_i_item_id, fk_c_locale_code, s_title, s_description'
+                . ' FROM ' . DB_TABLE_PREFIX . 't_item_description'
+                . ' WHERE fk_i_item_id IN (' . $placeholders . ')';
+
+            try {
+                $descriptions = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
+            } catch (\mindstellar\database\DbException $e) {
                 return $items;
             }
-            $descriptions = $result->result();
             $aDescriptions = array();
             foreach ($descriptions as $d) {
                 if ($d['s_title']!='') {
