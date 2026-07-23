@@ -224,10 +224,16 @@ class CAdminAppearance extends AdminSecBaseModel
                     $row['s_type']   = $type['id'];
                     $row['s_config'] = json_encode($this->buildWidgetConfig($type));
                 }
-                $newId = Widget::newInstance()->insert($row);
+                // insert() reports success, not the new key — the id has to come from
+                // the connection. Returning its boolean here handed the builder id "1",
+                // so a dragged-in widget adopted another widget's row: the editor that
+                // opened belonged to widget 1, and saving it would have overwritten it.
+                $mWidget = Widget::newInstance();
+                $ok      = $mWidget->insert($row);
+                $newId   = $ok ? (int)$mWidget->dao->insertedId() : 0;
 
                 header('Content-Type: application/json');
-                echo json_encode($newId
+                echo json_encode($newId > 0
                     ? array(
                         'error'       => 0,
                         'id'          => (int)$newId,
