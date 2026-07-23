@@ -836,116 +836,32 @@
 
 // =============================================================================
 // Form submissions (fields/submissions.php)
+// -----------------------------------------------------------------------------
+// The page is a standard admin listing: #listing-toolbar, table.table, the shared
+// .osc-status badge and in-flow row .actions. The only thing it adds is the value
+// list inside the Submission cell, because one submission is several field values
+// and a table cell has no other way to carry a label with each one.
 // =============================================================================
-.submission-forms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-  margin-bottom: 1rem;
-}
+.submission-values {
+  margin: 0;
 
-.submission-pill {
-  align-items: center;
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: $border-radius-pill;
-  color: var(--osc-ink);
-  display: inline-flex;
-  gap: .4rem;
-  font-size: .875rem;
-  padding: .3rem .75rem;
-  text-decoration: none;
-
-  &:hover {
-    border-color: var(--osc-rule-strong);
-  }
-
-  &.is-active {
-    background-color: var(--osc-bronze);
-    border-color: var(--osc-bronze);
-    color: #fff;
-  }
-}
-
-.submission-pill-count {
-  background-color: var(--osc-bench-sunk);
-  border-radius: $border-radius-pill;
-  color: var(--osc-ink-muted);
-  font-size: .75rem;
-  padding: 0 .4rem;
-
-  .submission-pill.is-active & {
-    background-color: rgba(255, 255, 255, .25);
-    color: #fff;
-  }
-}
-
-.submission-toolbar {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .75rem;
-  justify-content: space-between;
-  margin-bottom: .75rem;
-}
-
-.submission-status-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .25rem;
-}
-
-.submission-tab {
-  border-radius: $border-radius;
-  color: var(--osc-ink-muted);
-  font-size: .8125rem;
-  padding: .3rem .6rem;
-  text-decoration: none;
-
-  span {
+  dt {
     color: var(--osc-ink-muted);
-    font-weight: 600;
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .02em;
+    text-transform: uppercase;
   }
 
-  &:hover {
-    background-color: var(--osc-chrome-hover);
+  dd {
     color: var(--osc-ink);
+    margin: 0 0 .5rem;
+    word-break: break-word;
   }
 
-  &.is-active {
-    background-color: var(--osc-bench-sunk);
-    color: var(--osc-ink);
+  dd:last-child {
+    margin-bottom: 0;
   }
-}
-
-.submission-table {
-  .submission-values {
-    margin: 0;
-
-    dt {
-      color: var(--osc-ink-muted);
-      font-size: .75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: .02em;
-    }
-
-    dd {
-      color: var(--osc-ink);
-      margin: 0 0 .5rem;
-      word-break: break-word;
-    }
-  }
-
-  .submission-status {
-    max-width: 9rem;
-  }
-}
-
-.submission-origin {
-  color: var(--osc-ink-muted);
-  font-size: .75rem;
-  margin-top: .2rem;
 }
 
 

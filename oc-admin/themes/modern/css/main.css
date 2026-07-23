@@ -13820,6 +13820,45 @@ div.widget-box-content-no-wrapp li a {
   font-weight: 500;
 }
 
+.status-new .osc-status {
+  background-color: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+}
+.status-new .osc-status::before {
+  content: "\f287";
+}
+.status-new > .col-status:not(:has(.osc-status)) {
+  --bs-table-bg-state: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+  font-weight: 500;
+}
+
+.status-read .osc-status {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+}
+.status-read .osc-status::before {
+  content: "\f28a";
+}
+.status-read > .col-status:not(:has(.osc-status)) {
+  --bs-table-bg-state: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+  font-weight: 500;
+}
+
+.status-archived .osc-status {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+}
+.status-archived .osc-status::before {
+  content: "\f2e6";
+}
+.status-archived > .col-status:not(:has(.osc-status)) {
+  --bs-table-bg-state: var(--osc-bench-sunk);
+  color: var(--osc-ink-emphasis);
+  font-weight: 500;
+}
+
 .status-disabled .osc-status {
   background-color: var(--osc-bench-sunk);
   color: var(--osc-ink-emphasis);
@@ -16158,104 +16197,23 @@ code {
   padding: 0.5rem 0.55rem;
 }
 
-.submission-forms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.submission-pill {
-  align-items: center;
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: 999px;
-  color: var(--osc-ink);
-  display: inline-flex;
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  padding: 0.3rem 0.75rem;
-  text-decoration: none;
-}
-.submission-pill:hover {
-  border-color: var(--osc-rule-strong);
-}
-.submission-pill.is-active {
-  background-color: var(--osc-bronze);
-  border-color: var(--osc-bronze);
-  color: #fff;
-}
-
-.submission-pill-count {
-  background-color: var(--osc-bench-sunk);
-  border-radius: 999px;
-  color: var(--osc-ink-muted);
-  font-size: 0.75rem;
-  padding: 0 0.4rem;
-}
-.submission-pill.is-active .submission-pill-count {
-  background-color: rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-
-.submission-toolbar {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-
-.submission-status-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.submission-tab {
-  border-radius: 4px;
-  color: var(--osc-ink-muted);
-  font-size: 0.8125rem;
-  padding: 0.3rem 0.6rem;
-  text-decoration: none;
-}
-.submission-tab span {
-  color: var(--osc-ink-muted);
-  font-weight: 600;
-}
-.submission-tab:hover {
-  background-color: var(--osc-chrome-hover);
-  color: var(--osc-ink);
-}
-.submission-tab.is-active {
-  background-color: var(--osc-bench-sunk);
-  color: var(--osc-ink);
-}
-
-.submission-table .submission-values {
+.submission-values {
   margin: 0;
 }
-.submission-table .submission-values dt {
+.submission-values dt {
   color: var(--osc-ink-muted);
   font-size: 0.75rem;
   font-weight: 500;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
-.submission-table .submission-values dd {
+.submission-values dd {
   color: var(--osc-ink);
   margin: 0 0 0.5rem;
   word-break: break-word;
 }
-.submission-table .submission-status {
-  max-width: 9rem;
-}
-
-.submission-origin {
-  color: var(--osc-ink-muted);
-  font-size: 0.75rem;
-  margin-top: 0.2rem;
+.submission-values dd:last-child {
+  margin-bottom: 0;
 }
 
 .categories-app {
