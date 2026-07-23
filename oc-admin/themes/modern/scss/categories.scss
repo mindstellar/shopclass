@@ -541,15 +541,33 @@
   opacity: .4;
 }
 
+// A button, so a field can be reordered from the keyboard as well as dragged.
 .chip-grip {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
   color: var(--osc-ink-muted);
   cursor: grab;
   display: inline-flex;
   flex: 0 0 auto;
+  justify-content: center;
+  padding: 0;
 
   &:active {
     cursor: grabbing;
   }
+
+  // Only meaningful where it is a tab stop (inside a form).
+  &:focus-visible {
+    color: var(--osc-bronze);
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+}
+
+.form-fieldlist .chip-grip:hover {
+  color: var(--osc-ink);
 }
 
 .chip-name {

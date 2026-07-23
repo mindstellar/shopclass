@@ -96,7 +96,11 @@ if (!function_exists('cfields_render_chip')) {
         echo '<li class="field-chip' . ($placed ? ' is-placed' : '') . '" data-field-id="' . (int)$field['pk_i_id']
             . '" data-type="' . osc_esc_html($type) . '">';
         echo '<div class="field-chip-row">';
-        echo '<span class="chip-grip" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>';
+        // A real button so the row can be reordered from the keyboard (arrow keys)
+        // as well as dragged. Only tabbable inside a form — see refreshGripTabIndex.
+        echo '<button type="button" class="chip-grip" tabindex="-1" title="'
+            . osc_esc_html(__('Drag to reorder, or focus and use the arrow keys')) . '" aria-label="'
+            . osc_esc_html(__('Reorder field: use the arrow keys')) . '"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>';
         echo '<span class="chip-name">' . osc_esc_html($field['s_name']) . '</span>';
         echo '<span class="chip-type">' . osc_esc_html(cfields_type_label($type)) . '</span>';
         echo '<span class="chip-actions">';
@@ -264,8 +268,22 @@ function customHead()
             inFormsTip: '<?php echo osc_esc_js(__('Editing this field changes it in every form that uses it.')); ?>',
             applies:    '<?php echo osc_esc_js(__('Applies to')); ?>',
             unattached: '<?php echo osc_esc_js(__('Not attached to a category — it won\'t appear on listings yet')); ?>',
-            allAdded:   '<?php echo osc_esc_js(__('Every field is already in this form.')); ?>'
+            allAdded:   '<?php echo osc_esc_js(__('Every field is already in this form.')); ?>',
+            moved:      '<?php echo osc_esc_js(__('Moved to position %1$d of %2$d.')); ?>'
         };
+
+        function cfAnnounce(msg) {
+            var live = document.getElementById('cf-live');
+            if (live) { live.textContent = msg; }
+        }
+
+        // The grip is only a reorder control inside a form, so only those are tab
+        // stops; a palette grip is drag-only and stays out of the tab order.
+        function refreshGripTabIndex() {
+            document.querySelectorAll('.field-chip .chip-grip').forEach(function (g) {
+                g.tabIndex = g.closest('.form-fieldlist') ? 0 : -1;
+            });
+        }
 
         function cfEsc(s) {
             return String(s == null ? '' : s)
@@ -430,6 +448,7 @@ function customHead()
                 function (li) { return li.getAttribute('data-field-id'); });
             // Membership just changed in the DOM — reflect it on the palette at once.
             refreshSharedBadges();
+            refreshGripTabIndex();
             setCardStatus(status, 'saving');
             clearTimeout(saveTimers[formId]);
             saveTimers[formId] = setTimeout(function () {
@@ -510,7 +529,40 @@ function customHead()
             document.querySelectorAll('.form-fieldlist').forEach(initFormSortable);
             refreshEmptyStates();
             refreshSharedBadges();
+            refreshGripTabIndex();
             applyCollapsedState();
+
+            // Keyboard reordering: focus a field's grip inside a form and use the
+            // arrow keys (Home/End jump to the ends). Mirrors what dragging does,
+            // and saves through the same path.
+            document.addEventListener('keydown', function (e) {
+                var grip = e.target.closest('.chip-grip');
+                if (!grip) { return; }
+                var chip = grip.closest('.field-chip');
+                var list = chip ? chip.closest('.form-fieldlist') : null;
+                if (!list) { return; }
+                var moved = false;
+                if (e.key === 'ArrowUp') {
+                    var prev = chip.previousElementSibling;
+                    if (prev) { list.insertBefore(chip, prev); moved = true; }
+                } else if (e.key === 'ArrowDown') {
+                    var next = chip.nextElementSibling;
+                    if (next) { list.insertBefore(next, chip); moved = true; }
+                } else if (e.key === 'Home') {
+                    if (chip !== list.firstElementChild) { list.insertBefore(chip, list.firstElementChild); moved = true; }
+                } else if (e.key === 'End') {
+                    if (chip !== list.lastElementChild) { list.appendChild(chip); moved = true; }
+                } else {
+                    return;
+                }
+                e.preventDefault();
+                if (!moved) { return; }
+                grip.focus();
+                var chips = list.querySelectorAll(':scope > .field-chip');
+                var pos = Array.prototype.indexOf.call(chips, chip) + 1;
+                cfAnnounce(CF_TXT.moved.replace('%1$d', pos).replace('%2$d', chips.length));
+                saveForm(list);
+            });
 
             // Collapse / expand a form via its caret (state persists across reloads).
             document.addEventListener('click', function (e) {
@@ -590,7 +642,7 @@ function customHead()
                                 li.setAttribute('data-type', 'TEXT');
                                 li.innerHTML = ''
                                     + '<div class="field-chip-row">'
-                                    + '  <span class="chip-grip" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>'
+                                    + '  <button type="button" class="chip-grip" tabindex="-1" title="<?php echo osc_esc_js(__('Drag to reorder, or focus and use the arrow keys')); ?>" aria-label="<?php echo osc_esc_js(__('Reorder field: use the arrow keys')); ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>'
                                     + '  <span class="chip-name"></span>'
                                     + '  <span class="chip-type"><?php echo osc_esc_js(__('Text')); ?></span>'
                                     + '  <span class="chip-actions">'
@@ -703,6 +755,9 @@ osc_current_admin_theme_path('parts/header.php');
 
         </div>
     </div>
+
+    <!-- Announces keyboard reordering to assistive tech. -->
+    <div id="cf-live" class="visually-hidden" role="status" aria-live="polite"></div>
 
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
         <div class="osc-dialog-body">
