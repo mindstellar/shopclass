@@ -638,7 +638,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
     dt_date      DATETIME NOT NULL,
 
         PRIMARY KEY (fk_i_item_id, s_reporter)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
