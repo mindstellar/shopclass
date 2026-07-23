@@ -58,21 +58,37 @@ class UserEmailTmp extends DAO
      */
     public function insertOrUpdate($userEmailTmp)
     {
+        $now = date('Y-m-d H:i:s');
 
-        $status = $this->dao->insert($this->getTableName(), array(
-            'fk_i_user_id' => $userEmailTmp['fk_i_user_id'],
-            's_new_email'  => $userEmailTmp['s_new_email'],
-            'dt_date'      => date('Y-m-d H:i:s')
-        ));
-        if (!$status) {
-            return $this->dao->update(
-                $this->getTableName(),
-                array('s_new_email' => $userEmailTmp['s_new_email'], 'dt_date' => date('Y-m-d H:i:s')),
-                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-            );
+        // One statement instead of an insert that is expected to fail followed by
+        // an update. The assignments are spelled out rather than using VALUES(),
+        // which MySQL 8 deprecates and whose replacement syntax MariaDB rejects.
+        $sql = 'INSERT INTO ' . $this->getTableName() . ' (fk_i_user_id, s_new_email, dt_date)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE s_new_email = ?, dt_date = ?';
+
+        try {
+            $affected = osc_db_execute($sql, array(
+                $userEmailTmp['fk_i_user_id'],
+                $userEmailTmp['s_new_email'],
+                $now,
+                $userEmailTmp['s_new_email'],
+                $now
+            ));
+        } catch (\mindstellar\database\DbException $e) {
+            // An unknown user id trips the foreign key. That used to fail the
+            // insert and then match no rows on the update, reporting 0.
+            return 0;
         }
 
-        return false;
+        // MySQL reports 1 for a fresh insert, 2 when it overwrote an existing row
+        // and 0 when that row already held these values. Callers have always been
+        // told false for a new row, and the affected-row count otherwise.
+        if ($affected === 1) {
+            return false;
+        }
+
+        return $affected === 2 ? 1 : 0;
     }
 }
 
