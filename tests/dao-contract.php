@@ -74,6 +74,10 @@ define('DB_PASSWORD', $pass);
 define('DB_NAME', $scratch);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
+// Composer's autoloader covers classes only. Models whose bodies have moved to
+// the parameterized query layer call the osc_db_* helpers, which oc-load.php
+// would normally have loaded, so a standalone script has to require them itself.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hDatabase.php';
 
 use mindstellar\database\Connection;
 

@@ -71,20 +71,23 @@ class Currency extends DAO
             return self::$_currencies[$value];
         }
 
-        $this->dao->select($this->fields);
-        $this->dao->from($this->getTableName());
-        $this->dao->where($this->getPrimaryKey(), $value);
-        $result = $this->dao->get();
-
-        if ($result === false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where($this->getPrimaryKey(), $value)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() !== 1) {
+        // Anything other than exactly one row is treated as not found, and a
+        // miss is deliberately left out of the map so a currency added later in
+        // the same request is still picked up.
+        if (count($rows) !== 1) {
             return false;
         }
 
-        self::$_currencies[$value] = $result->row();
+        self::$_currencies[$value] = osc_db_stringify_row($rows[0]);
 
         return self::$_currencies[$value];
     }
