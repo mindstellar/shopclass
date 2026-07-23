@@ -62,16 +62,15 @@ class Country extends DAO
      */
     public function findByCode($code)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_c_code', $code);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_c_code', $code)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        return $row === null ? array() : osc_db_stringify_row($row);
     }
 
     /**
@@ -86,15 +85,15 @@ class Country extends DAO
      */
     public function findByName($name)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $name);
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('s_name', $name)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        return $row === null ? array() : osc_db_stringify_row($row);
     }
 
     /**
@@ -106,12 +105,15 @@ class Country extends DAO
      */
     public function listAll()
     {
-        $result = $this->dao->query(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
-        if ($result == false) {
+        try {
+            // The table name comes from getTableName(), fixed in the constructor
+            // — never runtime input — so the query needs no placeholder for it.
+            $rows = osc_db_select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -155,12 +157,15 @@ class Country extends DAO
      */
     public function listNames()
     {
-        $result = $this->dao->query(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
-        if ($result == false) {
+        try {
+            // The table name comes from getTableName(), fixed in the constructor
+            // — never runtime input — so the query needs no placeholder for it.
+            $rows = osc_db_select(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return array_column($result->result(), 's_name');
+        return array_column(osc_db_stringify_rows($rows), 's_name');
     }
 
     /**
@@ -175,16 +180,28 @@ class Country extends DAO
      */
     public function ajax($query)
     {
-        $this->dao->select('pk_c_code as id, s_name as label, s_name as value');
-        $this->dao->from($this->getTableName());
-        $this->dao->like('s_name', $query, 'after');
-        $this->dao->limit(5);
-        $result = $this->dao->get();
-        if ($result == false) {
+        // Column aliases are outside the query builder's identifier allowlist,
+        // so this stays hand-written SQL. dao->like() routed the payload
+        // through escapeStr($v, true), which escapes LIKE metacharacters
+        // before adding the wildcard, so a literal '%'/'_' typed by a caller
+        // is preserved here the same way.
+        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string) $query) . '%';
+
+        try {
+            // The table name comes from getTableName(), fixed in the constructor
+            // — never runtime input — so the query needs no placeholder for it.
+            $rows = osc_db_select(
+                sprintf(
+                    'SELECT pk_c_code as id, s_name as label, s_name as value FROM %s WHERE s_name LIKE ? LIMIT 5',
+                    $this->getTableName()
+                ),
+                array($pattern)
+            );
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -199,16 +216,15 @@ class Country extends DAO
      */
     public function findBySlug($slug)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', $slug);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('s_slug', $slug)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        return $row === null ? array() : osc_db_stringify_row($row);
     }
 
     /**
@@ -220,16 +236,15 @@ class Country extends DAO
      */
     public function listByEmptySlug()
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', '');
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('s_slug', '')
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 }
 
