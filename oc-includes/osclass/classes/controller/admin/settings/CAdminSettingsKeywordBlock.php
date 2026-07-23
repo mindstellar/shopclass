@@ -247,7 +247,11 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
             $msgOk = _m('Keyword saved correctly');
         }
 
-        if ($ok) {
+        // update() returns the affected-row count and false only on a query error,
+        // so re-saving a keyword unchanged affects 0 rows — nothing to do, not a
+        // failure. Testing truthiness reported "An error has occurred" for a save
+        // that was perfectly fine.
+        if ($ok !== false) {
             osc_add_flash_ok_message($msgOk, 'admin');
         } else {
             osc_add_flash_error_message(_m('An error has occurred'), 'admin');
