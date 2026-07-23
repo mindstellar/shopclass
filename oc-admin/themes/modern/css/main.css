@@ -15676,7 +15676,7 @@ code {
   align-items: start;
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: 24rem minmax(0, 1fr);
+  grid-template-columns: 35rem minmax(0, 1fr);
 }
 @media (max-width: 900px) {
   .forms-builder-grid {
