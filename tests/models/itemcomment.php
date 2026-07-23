@@ -280,11 +280,13 @@ $qLarge = harness_query_count(static function () use ($model, $itemLarge) {
     $model->getAllComments($itemLarge);
 });
 
-pin('2 comments cost 1 (main select) + 2 (extendData) = 3 statements', 3, $qSmall);
-pin('8 comments cost 1 (main select) + 8 (extendData) = 9 statements', 9, $qLarge);
+/* Was 1 main select + one description query per comment. extendData now batches
+ * that into a single lookup, so the cost is 2 whatever the comment count. */
+pin('2 comments cost 1 main select + 1 batched description lookup', 2, $qSmall);
+pin('8 comments cost the same 2 statements', 2, $qLarge);
 check(
-    'the per-comment cost grows linearly with the comment count (the N+1 this unit does NOT fix)',
-    ($qLarge - $qSmall) === 6,
+    'the cost no longer grows with the comment count',
+    $qSmall === $qLarge,
     "small=$qSmall large=$qLarge"
 );
 

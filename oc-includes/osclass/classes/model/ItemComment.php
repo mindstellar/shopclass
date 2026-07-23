@@ -277,21 +277,41 @@ class ItemComment extends DAO
     {
         $prefLocale = osc_current_user_locale();
 
+        if (count($items) === 0) {
+            return array();
+        }
+
+        // One lookup for the whole batch instead of one per comment. Comments on
+        // a single item all asked for the same rows, so the repeat was pure
+        // waste. A failure now empties every comment's locale block rather than
+        // just one, which matches what actually happened before: the queries were
+        // identical in shape, so anything breaking one broke all of them.
+        $itemIds = array();
+        foreach ($items as $item) {
+            $itemIds[$item['fk_i_item_id']] = true;
+        }
+
+        try {
+            $descriptions = osc_db_stringify_rows(
+                osc_db_table(DB_TABLE_PREFIX . 't_item_description')
+                    ->whereIn('fk_i_item_id', array_keys($itemIds))
+                    ->get()
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            $descriptions = array();
+        }
+
+        // Grouped in the order the rows arrive, so the locale picked by current()
+        // below when there is no match for the preferred one is the same one a
+        // per-comment query would have put first.
+        $byItem = array();
+        foreach ($descriptions as $desc) {
+            $byItem[$desc['fk_i_item_id']][$desc['fk_c_locale_code']] = $desc;
+        }
+
         $results = array();
         foreach ($items as $item) {
-            try {
-                $descriptions = osc_db_table(DB_TABLE_PREFIX . 't_item_description')
-                    ->where('fk_i_item_id', $item['fk_i_item_id'])
-                    ->get();
-            } catch (\mindstellar\database\DbException $e) {
-                $descriptions = array();
-            }
-            $descriptions = osc_db_stringify_rows($descriptions);
-
-            $item['locale'] = array();
-            foreach ($descriptions as $desc) {
-                $item['locale'][$desc['fk_c_locale_code']] = $desc;
-            }
+            $item['locale'] = $byItem[$item['fk_i_item_id']] ?? array();
             if (isset($item['locale'][$prefLocale])) {
                 $item['s_title']       = $item['locale'][$prefLocale]['s_title'];
                 $item['s_description'] = $item['locale'][$prefLocale]['s_description'];
