@@ -76,13 +76,29 @@ class CategoryStats extends DAO
         if (!is_numeric($categoryId)) {
             return false;
         }
-        $sql    =
-            sprintf(
-                'INSERT INTO %s (fk_i_category_id, i_num_items) VALUES (%d, 1) ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1',
-                $this->getTableName(),
-                $categoryId
-            );
-        $return = $this->dao->query($sql);
+
+        // Legacy built this SQL with sprintf('%d', $categoryId), truncating to
+        // an integer before the query ever reached the database. A bound
+        // parameter has to reproduce that same truncation explicitly: MySQL's
+        // foreign-key check on a prepared value does not coerce a fractional
+        // numeric string the way a plain integer literal does, so an uncast
+        // bind of e.g. "5.7" fails where the legacy, already-truncated SQL
+        // text succeeds.
+        $categoryId = (int)$categoryId;
+
+        $sql = 'INSERT INTO ' . $this->getTableName()
+            . ' (fk_i_category_id, i_num_items) VALUES (?, 1)
+               ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
+
+        try {
+            osc_db_execute($sql, array($categoryId));
+            $return = true;
+        } catch (\mindstellar\database\DbException $e) {
+            $return = false;
+        }
+
+        // Runs unconditionally, exactly as legacy did: the && below only
+        // short-circuits the recursive add, not this lookup.
         $result = Category::newInstance()->findByPrimaryKey($categoryId);
         if (($return !== false) && $result['fk_i_parent_id'] != null) {
             $parent_res = $this->increaseNumItems($result['fk_i_parent_id']);
@@ -110,30 +126,49 @@ class CategoryStats extends DAO
      */
     public function decreaseNumItems($categoryId)
     {
-        $this->dao->select('i_num_items');
-        $this->dao->from($this->getTableName());
-        $this->dao->where($this->getPrimaryKey(), $categoryId);
-        $result = $this->dao->get();
-        if ($result == false) {
+        if ($categoryId === null) {
+            // Legacy where('fk_i_category_id', null) only appends a value when
+            // it is non-null, so it emits a bare "fk_i_category_id =" with no
+            // right-hand side -- a SQL syntax error that fails the SELECT and
+            // returns bool false after exactly one query, before ever reaching
+            // a write. A bound null is valid SQL matching zero rows, so a
+            // naive conversion would fall through to the insert branch and
+            // fail there instead (NULL into a NOT NULL column) -- reaching
+            // the same false, but at the cost of a second, wasted query.
+            // Guarded explicitly so the cost matches, not just the return
+            // value.
             return false;
         }
-        $categoryStat = $result->row();
+
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->select('i_num_items')
+                ->where($this->getPrimaryKey(), $categoryId)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        $categoryStat = $row !== null ? osc_db_stringify_row($row) : array();
         $return       = 0;
 
         if (isset($categoryStat['i_num_items'])) {
-            $this->dao->from($this->getTableName());
-            $this->dao->set('i_num_items', 'i_num_items - 1', false);
-            $this->dao->where('i_num_items > 0');
-            $this->dao->where('fk_i_category_id', $categoryId);
-
-            $return = $this->dao->update();
+            try {
+                $return = osc_db_execute(
+                    'UPDATE ' . $this->getTableName()
+                    . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
+                    array($categoryId)
+                );
+            } catch (\mindstellar\database\DbException $e) {
+                $return = false;
+            }
         } else {
-            $array_set = array(
-                'fk_i_category_id' => $categoryId,
-                'i_num_items'      => 0
-            );
-            $res       = $this->dao->insert($this->getTableName(), $array_set);
-            if ($res === false) {
+            try {
+                osc_db_table($this->getTableName())->insert(array(
+                    'fk_i_category_id' => $categoryId,
+                    'i_num_items'      => 0,
+                ));
+            } catch (\mindstellar\database\DbException $e) {
                 $return = false;
             }
         }
@@ -164,9 +199,16 @@ class CategoryStats extends DAO
         $categoryID = (int)$categoryID;
         $numItems   = (int)$numItems;
 
-        return $this->dao->query('INSERT INTO ' . $this->getTableName()
-            . " (fk_i_category_id, i_num_items) VALUES ($categoryID, $numItems) ON DUPLICATE KEY UPDATE i_num_items = "
-            . $numItems);
+        $sql = 'INSERT INTO ' . $this->getTableName()
+            . ' (fk_i_category_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
+
+        try {
+            osc_db_execute($sql, array($categoryID, $numItems, $numItems));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -196,18 +238,22 @@ class CategoryStats extends DAO
      */
     public function countItemsFromCategory($categoryId)
     {
-        $this->dao->select('i_num_items');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_category_id', $categoryId);
-        $result = $this->dao->get();
-        if ($result instanceof DBRecordsetClass) {
-            $data = $result->row();
-        }
-        if ($data == null) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->select('i_num_items')
+                ->where('fk_i_category_id', $categoryId)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        return $data['i_num_items'];
+        if ($row === null) {
+            return 0;
+        }
+
+        $row = osc_db_stringify_row($row);
+
+        return $row['i_num_items'];
     }
 
     /**
