@@ -126,6 +126,63 @@ class Page extends DAO
     }
 
     /**
+     * Attach description rows to a whole list of pages using one query.
+     *
+     * extendDescription() does the same job for a single page; calling it in a
+     * loop cost one query per page, which the footer pays on every public page
+     * render. The per-page rules are reproduced exactly: a page with no
+     * description row at all is dropped, and a page whose rows are all blank is
+     * kept with an empty locale block.
+     *
+     * @param array  $aPages
+     * @param string $locale
+     *
+     * @return array
+     */
+    private function extendDescriptions($aPages, $locale = null)
+    {
+        if (count($aPages) === 0) {
+            return array();
+        }
+
+        $query = osc_db_table($this->getDescriptionTableName())
+            ->whereIn('fk_i_pages_id', array_column($aPages, 'pk_i_id'));
+        if (null !== $locale) {
+            $query = $query->where('fk_c_locale_code', $locale);
+        }
+
+        try {
+            $aDescriptions = osc_db_stringify_rows($query->get());
+        } catch (\mindstellar\database\DbException $e) {
+            // A failed lookup dropped every page before, because each page's own
+            // description query returned nothing usable.
+            return array();
+        }
+
+        $byPage = array();
+        foreach ($aDescriptions as $description) {
+            $byPage[$description['fk_i_pages_id']][] = $description;
+        }
+
+        $resultPages = array();
+        foreach ($aPages as $aPage) {
+            if (!isset($byPage[$aPage['pk_i_id']])) {
+                continue;
+            }
+
+            $aPage['locale'] = array();
+            foreach ($byPage[$aPage['pk_i_id']] as $description) {
+                if (!empty($description['s_title']) || !empty($description['s_text'])) {
+                    $aPage['locale'][$description['fk_c_locale_code']] = $description;
+                }
+            }
+            $resultPages[] = $aPage;
+        }
+
+        return $resultPages;
+    }
+
+    /**
      * @return string
      */
     public function getDescriptionTableName()
@@ -334,16 +391,7 @@ class Page extends DAO
                 return array();
             }
 
-            $resultPages = array();
-            foreach ($aPages as $aPage) {
-                $data = $this->extendDescription($aPage, $locale);
-                if (count($data) > 0) {
-                    $resultPages[] = $data;
-                }
-                unset($data);
-            }
-
-            return $resultPages;
+            return $this->extendDescriptions($aPages, $locale);
         }
 
         return array();

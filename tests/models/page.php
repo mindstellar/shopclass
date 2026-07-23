@@ -167,12 +167,24 @@ $costFive = harness_query_count(static function () use ($model) {
     $model->listAll();
 });
 
-pin('two pages cost one listing query plus one per page', 3, $costTwo);
-pin('five pages cost one listing query plus one per page', 6, $costFive);
+/* Was one listing query plus one per page. Now a listing query and a single
+ * batched description lookup, whatever the page count. */
+pin('two pages cost two queries', 2, $costTwo);
+pin('five pages cost two queries', 2, $costFive);
 check(
-    'the cost grows exactly one query per page — this is the fix baseline',
-    ($costFive - $costTwo) === 3,
+    'the cost no longer grows with the number of pages',
+    $costTwo === $costFive,
     "n=2 -> $costTwo, n=5 -> $costFive"
+);
+harness_assert_no_n_plus_1(
+    'listAll is flat across page counts',
+    static function (int $n) use ($model, $resetPages, $seedPages) {
+        $resetPages();
+        $seedPages($n);
+        $model->listAll();
+    },
+    2,
+    8
 );
 
 /* ----------------------------------------------------------------------------
