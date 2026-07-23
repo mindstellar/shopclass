@@ -267,6 +267,52 @@ padding: 1em;'><h2>Memcache stats</h2>";
      *
      * Check to see if Memcache is available on this system, bail if it isn't.
      */
+    /**
+     * Normalised cache statistics for the admin's cache screen.
+     *
+     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * interface, and adding a required method would fatal them. Callers probe with
+     * method_exists() instead. The legacy stats() is left alone — it echoes debug
+     * markup and anything already calling it keeps working.
+     *
+     * @return array|null Null when the driver has nothing to report.
+     */
+    public function statsData()
+    {
+        if (!is_object($this->memcached) || !method_exists($this->memcached, 'getStats')) {
+            return null;
+        }
+        $all = @$this->memcached->getStats();
+        if (!is_array($all) || $all === array()) {
+            return null;
+        }
+        // getStats() is keyed by "host:port"; report the first server that answered
+        // and name it, so a multi-server setup does not silently show only one.
+        $server = null;
+        $stats  = null;
+        foreach ($all as $name => $row) {
+            if (is_array($row) && isset($row['uptime'])) {
+                $server = $name;
+                $stats  = $row;
+                break;
+            }
+        }
+        if ($stats === null) {
+            return null;
+        }
+
+        return array(
+            'entries'      => isset($stats['curr_items']) ? (int)$stats['curr_items'] : null,
+            'hits'         => isset($stats['get_hits']) ? (int)$stats['get_hits'] : null,
+            'misses'       => isset($stats['get_misses']) ? (int)$stats['get_misses'] : null,
+            'memory_used'  => isset($stats['bytes']) ? (int)$stats['bytes'] : null,
+            'memory_total' => isset($stats['limit_maxbytes']) ? (int)$stats['limit_maxbytes'] : null,
+            'uptime'       => isset($stats['uptime']) ? (int)$stats['uptime'] : null,
+            'evictions'    => isset($stats['evictions']) ? (int)$stats['evictions'] : null,
+            'server'       => $server,
+        );
+    }
+
     public static function is_supported()
     {
         if (!class_exists('Memcache')) {

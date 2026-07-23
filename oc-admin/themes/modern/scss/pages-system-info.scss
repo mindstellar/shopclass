@@ -330,3 +330,42 @@
     white-space: normal;
   }
 }
+
+// ---- Cache statistics (tools/cache.php) -------------------------------------
+// A row of readings from the active driver. Not the SaaS stat-tile treatment —
+// these are meter readings on the bench, so they stay small, flat and hairline
+// separated, in the same key as a table header and its value.
+.cache-stats {
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.cache-stat {
+  background-color: var(--osc-bench);
+  display: flex;
+  flex: 1 1 8rem;
+  flex-direction: column;
+  gap: .15rem;
+  outline: 1px solid var(--osc-rule);
+  padding: .7rem .9rem;
+}
+
+.cache-stat-label {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.cache-stat-value {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}

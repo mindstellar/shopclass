@@ -58,6 +58,25 @@ function osc_cache_flush()
 
 
 /**
+ * Normalised statistics for the active cache driver, or null when it has none.
+ *
+ * Probed rather than declared on iObject_Cache, because third-party drivers
+ * implement that interface and a new required method would fatal them.
+ *
+ * @return array|null
+ */
+function osc_cache_stats()
+{
+    $cache = Object_Cache_Factory::newInstance();
+    if (!method_exists($cache, 'statsData')) {
+        return null;
+    }
+
+    return $cache->statsData();
+}
+
+
+/**
  * Initialize Cache factory instance using singleton
  */
 function osc_cache_init()

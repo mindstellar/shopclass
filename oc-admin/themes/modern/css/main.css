@@ -17275,6 +17275,41 @@ form h3, form .h3 {
     white-space: normal;
   }
 }
+.cache-stats {
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.cache-stat {
+  background-color: var(--osc-bench);
+  display: flex;
+  flex: 1 1 8rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  outline: 1px solid var(--osc-rule);
+  padding: 0.7rem 0.9rem;
+}
+
+.cache-stat-label {
+  color: var(--osc-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cache-stat-value {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .ui-osc-tabs {
   border: 0;
   padding: 0;

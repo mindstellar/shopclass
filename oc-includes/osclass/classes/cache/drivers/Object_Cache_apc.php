@@ -232,6 +232,44 @@ padding: 1em;'><h2>APC stats</h2>";
      *
      * Check to see if APC is available on this system, bail if it isn't.
      */
+    /**
+     * Normalised cache statistics for the admin's cache screen.
+     *
+     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * interface, and adding a required method would fatal them. Callers probe with
+     * method_exists() instead. The legacy stats() is left alone — it echoes debug
+     * markup and anything already calling it keeps working.
+     *
+     * @return array|null Null when the driver has nothing to report.
+     */
+    public function statsData()
+    {
+        if (!function_exists('apc_cache_info')) {
+            return null;
+        }
+        $info = @apc_cache_info('user', true);
+        $sma  = function_exists('apc_sma_info') ? @apc_sma_info(true) : array();
+        if (!is_array($info)) {
+            return null;
+        }
+        $free  = isset($sma['avail_mem']) ? (int)$sma['avail_mem'] : null;
+        $total = null;
+        if (isset($sma['num_seg'], $sma['seg_size'])) {
+            $total = (int)$sma['num_seg'] * (int)$sma['seg_size'];
+        }
+
+        return array(
+            'entries'      => isset($info['num_entries']) ? (int)$info['num_entries'] : null,
+            'hits'         => isset($info['num_hits']) ? (int)$info['num_hits'] : null,
+            'misses'       => isset($info['num_misses']) ? (int)$info['num_misses'] : null,
+            'memory_used'  => ($total !== null && $free !== null) ? ($total - $free) : null,
+            'memory_total' => $total,
+            'uptime'       => isset($info['start_time']) ? (time() - (int)$info['start_time']) : null,
+            'evictions'    => isset($info['expunges']) ? (int)$info['expunges'] : null,
+            'server'       => null,
+        );
+    }
+
     public static function is_supported()
     {
         if (!extension_loaded('apc') or ini_get('apc.enabled') != '1') {

@@ -209,6 +209,23 @@ padding: 1em;'><h2>Default(dummy) stats</h2>";
      *
      * Check to see if APC is available on this system, bail if it isn't.
      */
+    /**
+     * Normalised cache statistics for the admin's cache screen.
+     *
+     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * interface, and adding a required method would fatal them. Callers probe with
+     * method_exists() instead. The legacy stats() is left alone — it echoes debug
+     * markup and anything already calling it keeps working.
+     *
+     * @return array|null Null when the driver has nothing to report.
+     */
+    public function statsData()
+    {
+        // An in-request array: it is discarded when the request ends, so there is
+        // no accumulated state worth showing.
+        return null;
+    }
+
     public static function is_supported()
     {
         return true;

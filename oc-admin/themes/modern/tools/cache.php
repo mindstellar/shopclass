@@ -101,6 +101,66 @@ osc_current_admin_theme_path('parts/header.php');
             '<strong>' . osc_esc_html($active['label']) . '</strong>'
         ); ?></p>
 
+        <?php
+        $stats = osc_cache_stats();
+        if (is_array($stats)) {
+            $hits   = $stats['hits'];
+            $misses = $stats['misses'];
+            $total  = (int)$hits + (int)$misses;
+            $rate   = ($hits !== null && $misses !== null && $total > 0)
+                ? round(($hits / $total) * 100, 1) . '%'
+                : null;
+            $fmtBytes = static function ($b) {
+                if ($b === null) {
+                    return null;
+                }
+                $units = array('B', 'KB', 'MB', 'GB');
+                $i     = 0;
+                $b     = (float)$b;
+                while ($b >= 1024 && $i < count($units) - 1) {
+                    $b /= 1024;
+                    $i++;
+                }
+
+                return round($b, $i === 0 ? 0 : 1) . ' ' . $units[$i];
+            };
+            $fmtUptime = static function ($s) {
+                if ($s === null) {
+                    return null;
+                }
+                $d = (int)floor($s / 86400);
+                $h = (int)floor(($s % 86400) / 3600);
+                $m = (int)floor(($s % 3600) / 60);
+
+                return $d > 0 ? sprintf('%dd %dh', $d, $h) : ($h > 0 ? sprintf('%dh %dm', $h, $m) : sprintf('%dm', $m));
+            };
+            $memory = $fmtBytes($stats['memory_used']);
+            if ($memory !== null && $stats['memory_total'] !== null) {
+                $memory .= ' / ' . $fmtBytes($stats['memory_total']);
+            }
+            $cells = array(
+                __('Entries')   => $stats['entries'] !== null ? number_format((int)$stats['entries']) : null,
+                __('Hit rate')  => $rate,
+                __('Hits')      => $hits !== null ? number_format((int)$hits) : null,
+                __('Misses')    => $misses !== null ? number_format((int)$misses) : null,
+                __('Memory')    => $memory,
+                __('Evictions') => $stats['evictions'] !== null ? number_format((int)$stats['evictions']) : null,
+                __('Uptime')    => $fmtUptime($stats['uptime']),
+                __('Server')    => $stats['server'],
+            );
+            $cells = array_filter($cells, static function ($v) {
+                return $v !== null && $v !== '';
+            }); ?>
+            <div class="cache-stats">
+                <?php foreach ($cells as $label => $value) { ?>
+                    <div class="cache-stat">
+                        <span class="cache-stat-label"><?php echo osc_esc_html($label); ?></span>
+                        <span class="cache-stat-value"><?php echo osc_esc_html($value); ?></span>
+                    </div>
+                <?php } ?>
+            </div>
+        <?php } ?>
+
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
