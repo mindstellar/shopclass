@@ -47,23 +47,29 @@ class Admin extends DAO
         $this->setTableName('t_admin');
         $this->setPrimaryKey('pk_i_id');
 
-        $return = $this->dao->query('SHOW COLUMNS FROM ' . $this->getTableName() . ' where Field = "b_moderator" ');
-        if ($return instanceof DBRecordsetClass) {
-            if ($return->numRows() > 0) {
-                $this->setFields(array(
-                    'pk_i_id',
-                    's_name',
-                    's_username',
-                    's_password',
-                    's_email',
-                    's_secret',
-                    'b_moderator'
-                ));
-            } else {
-                $this->setFields(array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret'));
-            }
-        } else {
+        // SHOW COLUMNS cannot go through the query builder (it is not a
+        // SELECT/INSERT/UPDATE/DELETE statement). $this->getTableName() is fixed
+        // by setTableName() immediately above and is never runtime input.
+        try {
+            $columns = osc_db_select(
+                'SHOW COLUMNS FROM ' . $this->getTableName() . ' where Field = "b_moderator" '
+            );
+        } catch (\mindstellar\database\DbException $e) {
             throw new mysqli_sql_exception($this->dao->errorDesc);
+        }
+
+        if (count($columns) > 0) {
+            $this->setFields(array(
+                'pk_i_id',
+                's_name',
+                's_username',
+                's_password',
+                's_email',
+                's_secret',
+                'b_moderator'
+            ));
+        } else {
+            $this->setFields(array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret'));
         }
     }
 
@@ -112,16 +118,17 @@ class Admin extends DAO
      */
     public function findByEmail($email)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_email', $email);
-        $result = $this->dao->get();
-
-        if ($result->numRows == 0) {
+        try {
+            $row = osc_db_table($this->getTableName())->where('s_email', $email)->first();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->row();
+        if ($row === null) {
+            return false;
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -161,16 +168,17 @@ class Admin extends DAO
      */
     public function findByUsername($username)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_username', $username);
-        $result = $this->dao->get();
-
-        if ($result->numRows == 0) {
+        try {
+            $row = osc_db_table($this->getTableName())->where('s_username', $username)->first();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->row();
+        if ($row === null) {
+            return false;
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -188,20 +196,20 @@ class Admin extends DAO
      */
     public function findByIdSecret($id, $secret)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'  => $id,
-            's_secret' => $secret
-        );
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
-
-        if ($result->numRows == 0) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_secret', $secret)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->row();
+        if ($row === null) {
+            return false;
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -219,20 +227,20 @@ class Admin extends DAO
      */
     public function findByIdPassword($id, $password)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'    => $id,
-            's_password' => $password
-        );
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
-
-        if ($result->numRows == 0) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_password', $password)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->row();
+        if ($row === null) {
+            return false;
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -247,10 +255,23 @@ class Admin extends DAO
      */
     public function deleteBatch($id)
     {
-        $this->dao->from($this->getTableName());
-        $this->dao->whereIn('pk_i_id', $id);
+        $ids = is_array($id) ? array_values($id) : array($id);
 
-        return $this->dao->delete();
+        // An empty id list is the write-side sibling of the null-where
+        // correction: the legacy dao->whereIn() would emit "pk_i_id IN ()", a
+        // SQL syntax error, and dao->delete() absorbs that into bool false.
+        // QueryBuilder::whereIn() emits a valid (harmless) `1 = 0` for an empty
+        // array instead, which would return int 0 here -- a different value,
+        // not just a different type. Reproduce the legacy false explicitly.
+        if ($ids === array()) {
+            return false;
+        }
+
+        try {
+            return osc_db_table($this->getTableName())->whereIn('pk_i_id', $ids)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 }
 
