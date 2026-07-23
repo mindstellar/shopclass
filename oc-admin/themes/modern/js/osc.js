@@ -210,3 +210,14 @@ window.addEventListener('load', function () {
         });
     });
 });
+// TinyMCE draws its toolbar from a UI skin and its editing surface from a separate
+// content skin inside an iframe. Neither inherits the admin's dark mode, so an
+// editor sat as a bright white panel in a dark admin. Pick the matching pair at
+// init time; the theme is read from the same data-bs-theme the rest of the admin
+// uses. (Switching theme after an editor is up needs a re-init, so it follows on
+// the next page load rather than live.)
+window.oscTinymceTheme = function () {
+    var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    return { skin: dark ? 'oxide-dark' : 'oxide', content_css: dark ? 'dark' : 'default' };
+};

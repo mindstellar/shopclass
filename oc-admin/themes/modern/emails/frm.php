@@ -41,6 +41,8 @@ function customHead()
         tinymce.init({
             selector: "textarea",
             promotion: false,
+            skin: window.oscTinymceTheme ? window.oscTinymceTheme().skin : 'oxide',
+            content_css: window.oscTinymceTheme ? window.oscTinymceTheme().content_css : 'default',
             width: "100%",
             height: "440px",
             language: 'en',

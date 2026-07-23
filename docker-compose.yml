@@ -33,6 +33,7 @@ services:
       - DB_NAME=${SHOPCLASS_DATABASE_NAME:-shopclass}
       - DB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}
       - DB_PASSWORD=${SHOPCLASS_DATABASE_PASSWORD:-shopclass}
+      - OSC_CACHE=memcached
     depends_on:
       mariadb:
         condition: service_healthy

@@ -148,6 +148,7 @@ function customHead()
                     cb(url, { title: '' });
                 });
             };
+            if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
             tinymce.init(cfg);
         });
     </script>

@@ -425,6 +425,14 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
     }
 
     // ---- Drag and drop ------------------------------------------------------
+    // sortablejs is enqueued into the footer, so it does not exist yet while this
+    // script is parsed — initialising here directly silently did nothing.
+    function ready(fn) {
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn); }
+        else { fn(); }
+    }
+
+    ready(function initDragAndDrop() {
     if (typeof Sortable !== 'undefined') {
         // The palette is a clone source of TYPES; dropping one creates a widget.
         document.querySelectorAll('.js-widget-palette').forEach(function (pal) {
@@ -467,6 +475,7 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
             });
         });
     }
+    });
 
     // ---- Clicks --------------------------------------------------------------
     document.addEventListener('click', function (e) {

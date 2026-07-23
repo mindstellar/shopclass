@@ -153,7 +153,10 @@ class CAdminAppearance extends AdminSecBaseModel
                     );
                 }
 
-                if ($res) {
+                // update() returns affectedRows(), and false only on a query error.
+                // Saving a widget without changing any value affects 0 rows, which is
+                // success with nothing to do — not a failure.
+                if ($res !== false) {
                     osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
                 } else {
                     osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
@@ -470,9 +473,13 @@ class CAdminAppearance extends AdminSecBaseModel
                     $config[$name] = ($hasValue && $raw !== '' && $raw !== '0') ? 1 : 0;
                     break;
                 case 'select':
-                    $options = isset($field['options']) && is_array($field['options'])
-                        ? $field['options'] : array();
-                    $allowed = $this->selectAllowedValues($options);
+                    // Pass the spec through untouched: options may be a callable for a
+                    // dynamic list (core.form's picker is 'osc_form_widget_options').
+                    // Guarding with is_array() here stripped the callable before
+                    // selectAllowedValues() could resolve it, so nothing validated and
+                    // every posted value fell back to the default — the chosen form was
+                    // silently discarded on save.
+                    $allowed = $this->selectAllowedValues($field['options'] ?? array());
                     $value   = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
                     $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
                     break;

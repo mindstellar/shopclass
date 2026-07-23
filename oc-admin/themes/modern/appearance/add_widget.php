@@ -263,6 +263,8 @@ if (!$inline) {
         tinymce.init({
             selector: 'textarea:not(.widget-code-editor)',
             promotion: false,
+            skin: window.oscTinymceTheme ? window.oscTinymceTheme().skin : 'oxide',
+            content_css: window.oscTinymceTheme ? window.oscTinymceTheme().content_css : 'default',
             branding: false,
             menubar: false,
             height: 340,

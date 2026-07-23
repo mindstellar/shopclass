@@ -38,9 +38,9 @@ const TARGETS = [
   { dest: `${ASSETS}/bootstrap-icons`, flatten: false, cwd: 'bootstrap-icons/font', src: ['**/*'] },
 
   { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['license.txt', 'tinymce.min.js'] },
-  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/content/default/**/*.min.*', 'themes/silver/**/*.min.*'] },
+  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/ui/oxide-dark/**/*.min.*', 'skins/content/default/**/*.min.*', 'skins/content/dark/**/*.min.*', 'themes/silver/**/*.min.*'] },
   { dest: `${ASSETS}/tinymce/models/dom`, flatten: false, cwd: 'tinymce/models/dom', src: ['**/*.min.js'] },
-  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'ui/oxide/skin.min.css'] },
+  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'content/dark/content.min.css', 'ui/oxide/skin.min.css', 'ui/oxide-dark/skin.min.css'] },
   { dest: `${ASSETS}/tinymce/plugins`, flatten: false, cwd: 'tinymce/plugins', src: ['{advlist,anchor,autolink,charmap,code,fullscreen,image,imagetools,insertdatetime,link,lists,media,paste,preview,searchreplace,table,visualblocks}/*.min.js'] },
 
   { dest: `${ASSETS}/osclass-legacy`, flatten: false, cwd: 'osclass-legacy-assets/src', src: ['**/*'] },
