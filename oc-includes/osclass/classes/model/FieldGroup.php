@@ -51,15 +51,16 @@ class FieldGroup extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $id);
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($row === null) {
             return array();
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -69,15 +70,16 @@ class FieldGroup extends DAO
      */
     public function findBySlug($slug)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_slug', $slug);
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($row === null) {
             return array();
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -87,15 +89,13 @@ class FieldGroup extends DAO
      */
     public function listAll()
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->orderBy('i_position', 'ASC');
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())->orderBy('i_position', 'ASC')->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -110,16 +110,17 @@ class FieldGroup extends DAO
     public function insertGroup($name, $slug = '', $position = 0)
     {
         $slug = $this->uniqueSlug($slug !== '' ? $slug : $name);
-        $ok   = $this->dao->insert($this->getTableName(), array(
-            's_name'     => $name,
-            's_slug'     => $slug,
-            'i_position' => (int)$position,
-        ));
-        if (!$ok) {
+        try {
+            $id = osc_db_table($this->getTableName())->insert(array(
+                's_name'     => $name,
+                's_slug'     => $slug,
+                'i_position' => (int)$position,
+            ));
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $this->dao->insertedId();
+        return $id;
     }
 
     /**
@@ -157,15 +158,46 @@ class FieldGroup extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        $this->dao->delete(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX), array('fk_i_group_id' => $id));
-        $this->dao->delete(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX), array('fk_i_group_id' => $id));
-        $this->dao->update(
-            sprintf('%st_meta_fields', DB_TABLE_PREFIX),
-            array('fk_i_group_id' => null),
-            array('fk_i_group_id' => $id)
-        );
+        // The first three statements have always had their return value thrown
+        // away, and the query layer they used reported failure without raising,
+        // so a failure on one of them never stopped the rest from running. Each
+        // therefore keeps its own swallowed catch: one shared try would abort the
+        // cascade at the first failure and leave orphaned links behind.
+        try {
+            osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+                ->where('fk_i_group_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
+        try {
+            osc_db_table(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX))
+                ->where('fk_i_group_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
+        try {
+            osc_db_table(sprintf('%st_meta_fields', DB_TABLE_PREFIX))
+                ->where('fk_i_group_id', $id)
+                ->update(array('fk_i_group_id' => null));
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
 
-        return $this->dao->delete($this->getTableName(), array('pk_i_id' => $id));
+        // A null id used to build a comparison with no right-hand side, so the
+        // delete failed and the method reported false. A bound null is valid SQL
+        // that simply matches nothing and would report 0 instead — callers tell
+        // those two apart, so the failure value is reproduced explicitly.
+        if ($id === null) {
+            return false;
+        }
+
+        try {
+            return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -192,11 +224,13 @@ class FieldGroup extends DAO
             $meta[$key] = $value;
         }
 
-        return $this->dao->update(
-            $this->getTableName(),
-            array('s_meta' => empty($meta) ? null : json_encode($meta)),
-            array('pk_i_id' => (int)$id)
-        );
+        try {
+            return osc_db_table($this->getTableName())
+                ->where('pk_i_id', (int)$id)
+                ->update(array('s_meta' => empty($meta) ? null : json_encode($meta)));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -213,18 +247,36 @@ class FieldGroup extends DAO
     public function setFieldSingleGroup($fieldId, $groupId)
     {
         $link = DB_TABLE_PREFIX . 't_meta_group_fields';
-        $this->dao->delete($link, array('fk_i_field_id' => (int)$fieldId));
+        // Both statements have always discarded their result: the unlink is not
+        // conditional on the insert succeeding, and an insert the foreign key
+        // rejects has always left the field detached without raising. Each keeps
+        // its own swallowed catch so that stays true.
+        try {
+            osc_db_table($link)->where('fk_i_field_id', (int)$fieldId)->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            // discarded, as before
+        }
         if ((int)$groupId > 0) {
-            $result = $this->dao->query(
-                'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
-                . ' WHERE fk_i_group_id = ' . (int)$groupId
-            );
-            $pos = $result ? (int)$result->row()['pos'] : 0;
-            $this->dao->insert($link, array(
-                'fk_i_group_id' => (int)$groupId,
-                'fk_i_field_id' => (int)$fieldId,
-                'i_position'    => $pos,
-            ));
+            try {
+                // $link is built from the DB_TABLE_PREFIX constant and a literal
+                // suffix; the only caller-supplied value is bound.
+                $pos = (int)osc_db_scalar(
+                    'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
+                    . ' WHERE fk_i_group_id = ?',
+                    array((int)$groupId)
+                );
+            } catch (\mindstellar\database\DbException $e) {
+                $pos = 0;
+            }
+            try {
+                osc_db_table($link)->insert(array(
+                    'fk_i_group_id' => (int)$groupId,
+                    'fk_i_field_id' => (int)$fieldId,
+                    'i_position'    => $pos,
+                ));
+            } catch (\mindstellar\database\DbException $e) {
+                // discarded, as before
+            }
         }
     }
 
@@ -237,15 +289,18 @@ class FieldGroup extends DAO
      */
     public function categories($id)
     {
-        $this->dao->select('fk_i_category_id');
-        $this->dao->from(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX));
-        $this->dao->where('fk_i_group_id', $id);
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $rows = osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+                ->select('fk_i_category_id')
+                ->where('fk_i_group_id', $id)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
+        // No stringify pass here: this method has always returned native ints,
+        // unlike every other read on this model.
         $cats = array();
-        foreach ($result->result() as $row) {
+        foreach ($rows as $row) {
             $cats[] = (int)$row['fk_i_category_id'];
         }
 
@@ -267,11 +322,14 @@ class FieldGroup extends DAO
         }
         $return = true;
         foreach ($categories as $c) {
-            $ok = $this->dao->insert(
-                sprintf('%st_meta_group_categories', DB_TABLE_PREFIX),
-                array('fk_i_group_id' => $id, 'fk_i_category_id' => (int)$c)
-            );
-            if (!$ok) {
+            // A rejected row (duplicate assignment, unknown category) has always
+            // been folded into the return value while the remaining ids were
+            // still written, so the catch stays inside the loop.
+            try {
+                osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))->insert(
+                    array('fk_i_group_id' => $id, 'fk_i_category_id' => (int)$c)
+                );
+            } catch (\mindstellar\database\DbException $e) {
                 $return = false;
             }
         }
@@ -288,10 +346,19 @@ class FieldGroup extends DAO
      */
     public function cleanCategoriesFromGroup($id)
     {
-        return $this->dao->delete(
-            sprintf('%st_meta_group_categories', DB_TABLE_PREFIX),
-            array('fk_i_group_id' => $id)
-        );
+        // Same divergence as deleteByPrimaryKey: a null id used to fail the query
+        // and report false, where a bound null matches nothing and would report 0.
+        if ($id === null) {
+            return false;
+        }
+
+        try {
+            return osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+                ->where('fk_i_group_id', $id)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -310,19 +377,28 @@ class FieldGroup extends DAO
             return array();
         }
 
-        $this->dao->select('g.*');
-        $this->dao->from(sprintf('%st_meta_group g, %st_meta_group_categories gc', DB_TABLE_PREFIX, DB_TABLE_PREFIX));
-        $this->dao->whereIn('gc.fk_i_category_id', $path);
-        $this->dao->where('g.pk_i_id = gc.fk_i_group_id');
-        $this->dao->groupBy('g.pk_i_id');
-        $this->dao->orderBy('g.i_position', 'ASC');
-        $result = $this->dao->get();
-        if ($result == false) {
+        // Aliased cross join: the builder's identifier allowlist cannot express
+        // `g`/`gc` or the column-to-column join condition, so the query stays
+        // hand-written. Every identifier below is a compile-time literal or the
+        // DB_TABLE_PREFIX constant; the only values are the ancestry ids, one
+        // bound placeholder each.
+        $prefix       = DB_TABLE_PREFIX;
+        $placeholders = implode(', ', array_fill(0, count($path), '?'));
+        $sql          = 'SELECT g.* FROM ' . $prefix . 't_meta_group g'
+            . ' CROSS JOIN ' . $prefix . 't_meta_group_categories gc'
+            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
+            . ' AND g.pk_i_id = gc.fk_i_group_id'
+            . ' GROUP BY g.pk_i_id'
+            . ' ORDER BY g.i_position ASC';
+
+        try {
+            $rows = osc_db_select($sql, $path);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $groups = array();
-        foreach ($result->result() as $group) {
+        foreach (osc_db_stringify_rows($rows) as $group) {
             $fields = Field::newInstance()->findByGroup($group['pk_i_id']);
             if (empty($fields)) {
                 continue;
