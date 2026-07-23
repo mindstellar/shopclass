@@ -15676,7 +15676,7 @@ code {
   align-items: start;
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: 35rem minmax(0, 1fr);
+  grid-template-columns: 24rem minmax(0, 1fr);
 }
 @media (max-width: 900px) {
   .forms-builder-grid {
@@ -15707,6 +15707,7 @@ code {
   color: var(--osc-ink-muted);
   font-size: 0.8125rem;
   margin: 0 0 0.75rem;
+  min-height: 2.4em;
 }
 
 .builder-empty {
@@ -15852,24 +15853,43 @@ code {
 }
 
 .field-chip {
-  align-items: center;
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: 4px;
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
   transition: border-color var(--osc-duration-fast) var(--osc-ease), background-color var(--osc-duration-fast) var(--osc-ease);
 }
 .field-chip:hover {
   border-color: var(--osc-rule-strong);
 }
 .field-chip.is-editing {
-  background-color: var(--osc-bronze-tint);
   border-color: var(--osc-bronze);
+  overflow: hidden;
+}
+.field-chip.is-editing > .field-chip-row {
+  background-color: var(--osc-bronze-tint);
 }
 .field-chip.is-placed .chip-name {
   color: var(--osc-ink-muted);
+}
+
+.field-chip-row {
+  align-items: center;
+  border-radius: inherit;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.field-chip-editor {
+  background-color: var(--osc-bench);
+  border-top: 1px solid var(--osc-rule);
+  padding: 0.85rem 1rem 1rem;
+}
+.field-chip-editor[hidden] {
+  display: none;
+}
+.field-chip-editor .custom-field-frame {
+  max-width: 42rem;
 }
 
 .chip-ghost {
@@ -15955,14 +15975,18 @@ code {
   color: var(--osc-danger);
 }
 
-.cf-drawer .custom-field-frame {
+.field-chip-editor .custom-field-frame,
+.form-card-editor .custom-field-frame {
   border: 0;
   margin: 0;
 }
-.cf-drawer .custom-field-frame .card-header, .cf-drawer .custom-field-frame .widget-box-title {
+.field-chip-editor .custom-field-frame .card-header, .field-chip-editor .custom-field-frame .widget-box-title,
+.form-card-editor .custom-field-frame .card-header,
+.form-card-editor .custom-field-frame .widget-box-title {
   display: none;
 }
-.cf-drawer .custom-field-frame .cf-editor-note {
+.field-chip-editor .custom-field-frame .cf-editor-note,
+.form-card-editor .custom-field-frame .cf-editor-note {
   align-items: baseline;
   background-color: var(--osc-info-tint);
   border-radius: 4px;
@@ -15974,183 +15998,99 @@ code {
   margin-bottom: 1rem;
   padding: 0.5rem 0.65rem;
 }
-.cf-drawer .custom-field-frame .cf-editor-note .bi {
+.field-chip-editor .custom-field-frame .cf-editor-note .bi,
+.form-card-editor .custom-field-frame .cf-editor-note .bi {
   flex: 0 0 auto;
 }
-.cf-drawer .custom-field-frame .cf-editor-body {
+.field-chip-editor .custom-field-frame .cf-editor-body,
+.form-card-editor .custom-field-frame .cf-editor-body {
   max-width: none;
   width: 100%;
 }
-.cf-drawer .custom-field-frame .form-row {
+.field-chip-editor .custom-field-frame .form-row,
+.form-card-editor .custom-field-frame .form-row {
   align-items: stretch;
   column-gap: 0;
   flex-direction: column;
   margin-bottom: 0.85rem;
 }
-.cf-drawer .custom-field-frame .form-label {
+.field-chip-editor .custom-field-frame .form-label,
+.form-card-editor .custom-field-frame .form-label {
   flex: none;
   margin-bottom: 0.25rem;
   padding-block-start: 0;
   text-align: start;
 }
-.cf-drawer .custom-field-frame .form-label:empty {
+.field-chip-editor .custom-field-frame .form-label:empty,
+.form-card-editor .custom-field-frame .form-label:empty {
   display: none;
 }
-.cf-drawer .custom-field-frame .form-controls {
+.field-chip-editor .custom-field-frame .form-controls,
+.form-card-editor .custom-field-frame .form-controls {
   flex: 1 1 auto;
   min-width: 0;
 }
-.cf-drawer .custom-field-frame .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
-.cf-drawer .custom-field-frame .form-controls select,
-.cf-drawer .custom-field-frame .form-controls textarea {
+.field-chip-editor .custom-field-frame .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.field-chip-editor .custom-field-frame .form-controls select,
+.field-chip-editor .custom-field-frame .form-controls textarea,
+.form-card-editor .custom-field-frame .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.form-card-editor .custom-field-frame .form-controls select,
+.form-card-editor .custom-field-frame .form-controls textarea {
   max-width: 100%;
   width: 100%;
 }
-.cf-drawer .custom-field-frame .form-controls > label {
+.field-chip-editor .custom-field-frame .form-controls > label,
+.form-card-editor .custom-field-frame .form-controls > label {
   align-items: center;
   display: inline-flex;
   gap: 0.4rem;
 }
-.cf-drawer .custom-field-frame .form-controls > label input[type=checkbox] {
+.field-chip-editor .custom-field-frame .form-controls > label input[type=checkbox],
+.form-card-editor .custom-field-frame .form-controls > label input[type=checkbox] {
   flex: 0 0 auto;
   margin: 0;
 }
-.cf-drawer .custom-field-frame .card-footer.form-actions,
-.cf-drawer .custom-field-frame .form-actions {
-  background: var(--osc-bench);
-  border-top: 1px solid var(--osc-rule);
-  bottom: 0;
+.field-chip-editor .custom-field-frame .card-footer.form-actions,
+.field-chip-editor .custom-field-frame .form-actions,
+.form-card-editor .custom-field-frame .card-footer.form-actions,
+.form-card-editor .custom-field-frame .form-actions {
+  background: transparent;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-start;
-  margin: 1rem -1rem -1rem;
-  padding: 0.85rem 1rem;
-  position: sticky;
+  margin-block-start: 1rem;
+  padding: 0;
 }
-.cf-drawer .custom-field-frame ul[id^=cat] input[type=checkbox],
-.cf-drawer .custom-field-frame #group_cat_tree input[type=checkbox],
-.cf-drawer .custom-field-frame #cat_tree input[type=checkbox] {
+.field-chip-editor .custom-field-frame ul[id^=cat] input[type=checkbox],
+.field-chip-editor .custom-field-frame #group_cat_tree input[type=checkbox],
+.field-chip-editor .custom-field-frame #cat_tree input[type=checkbox],
+.form-card-editor .custom-field-frame ul[id^=cat] input[type=checkbox],
+.form-card-editor .custom-field-frame #group_cat_tree input[type=checkbox],
+.form-card-editor .custom-field-frame #cat_tree input[type=checkbox] {
   margin-inline-end: 0.35rem;
 }
-.cf-drawer .custom-field-frame .separate-top {
+.field-chip-editor .custom-field-frame .separate-top,
+.form-card-editor .custom-field-frame .separate-top {
   margin-block-start: 1rem;
 }
 
-.cf-drawer {
-  inset: 0;
-  position: fixed;
-  z-index: 1055;
+.cf-editor-loading {
+  color: var(--osc-ink-muted);
+  padding: 0.5rem 0;
 }
 
-.cf-drawer[hidden] {
+.form-card-editor:empty {
   display: none;
 }
-
-.cf-drawer-scrim {
-  background: rgba(9, 14, 20, 0.38);
-  inset: 0;
-  opacity: 0;
-  position: absolute;
-  transition: opacity var(--osc-duration-base) var(--osc-ease);
+.form-card-editor {
+  margin-top: 0.85rem;
 }
 
-.cf-drawer-panel {
-  background: var(--osc-bench);
-  border-inline-start: 1px solid var(--osc-rule);
-  bottom: 0;
-  box-shadow: -12px 0 32px rgba(9, 14, 20, 0.16);
-  display: flex;
-  flex-direction: column;
-  inset-block: 0;
-  inset-inline-end: 0;
-  max-width: 100vw;
-  position: absolute;
-  transform: translateX(100%);
-  transition: transform var(--osc-duration-base) var(--osc-ease);
-  width: 27rem;
+.form-card.is-editing {
+  border-color: var(--osc-bronze);
 }
 
-[dir=rtl] .cf-drawer-panel {
-  transform: translateX(-100%);
-}
-
-.cf-drawer.is-open .cf-drawer-scrim {
-  opacity: 1;
-}
-.cf-drawer.is-open .cf-drawer-panel {
-  transform: translateX(0);
-}
-
-@media (max-width: 34rem) {
-  .cf-drawer-panel {
-    width: 100vw;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cf-drawer-scrim,
-  .cf-drawer-panel {
-    transition: none;
-  }
-}
-.cf-drawer-head {
-  align-items: center;
-  border-bottom: 1px solid var(--osc-rule);
-  display: flex;
-  flex: 0 0 auto;
-  gap: 0.5rem;
-  justify-content: space-between;
-  padding: 0.85rem 1rem;
-}
-
-.cf-drawer-title {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.cf-drawer-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.cf-drawer-loading {
-  color: var(--osc-ink-muted);
-  padding: 1rem 0;
-}
-
-@media (max-width: 79.99rem) {
-  body.cf-drawer-lock {
-    overflow: hidden;
-  }
-}
-@media (min-width: 80rem) {
-  .cf-drawer {
-    align-self: stretch;
-    position: static;
-    z-index: auto;
-  }
-  .cf-drawer-scrim {
-    display: none;
-  }
-  .cf-drawer-panel {
-    border: 1px solid var(--osc-rule);
-    border-radius: 6px;
-    box-shadow: none;
-    inset: auto;
-    max-height: calc(100vh - 2rem);
-    max-width: none;
-    position: sticky;
-    top: 1rem;
-    transform: none;
-    transition: none;
-    width: auto;
-  }
-  .forms-builder-grid.is-editing {
-    grid-template-columns: 26rem minmax(0, 1fr) 24rem;
-  }
-}
 .form-card-add {
   margin-top: 0.6rem;
   position: relative;

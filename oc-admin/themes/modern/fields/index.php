@@ -95,6 +95,7 @@ if (!function_exists('cfields_render_chip')) {
         $type = osc_field_resolve_type($field);
         echo '<li class="field-chip' . ($placed ? ' is-placed' : '') . '" data-field-id="' . (int)$field['pk_i_id']
             . '" data-type="' . osc_esc_html($type) . '">';
+        echo '<div class="field-chip-row">';
         echo '<span class="chip-grip" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>';
         echo '<span class="chip-name">' . osc_esc_html($field['s_name']) . '</span>';
         echo '<span class="chip-type">' . osc_esc_html(cfields_type_label($type)) . '</span>';
@@ -103,6 +104,10 @@ if (!function_exists('cfields_render_chip')) {
             . '); return false;" title="' . osc_esc_html(__('Edit field')) . '"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>';
         echo '<button type="button" class="chip-btn chip-remove" title="' . osc_esc_html(__('Remove from form'))
             . '"><i class="bi bi-x-lg" aria-hidden="true"></i></button>';
+        echo '</span>';
+        echo '</div>';
+        // Where this field's editor expands inline (palette chips only in practice).
+        echo '<div class="field-chip-editor edit" hidden></div>';
         echo '</li>';
     }
 }
@@ -159,77 +164,69 @@ function customHead()
             });
         }
 
-        // ---- The editor drawer ----------------------------------------------
-        // Both editors (a field definition, a form's name+categories) open in one
-        // right-side drawer at a comfortable width, instead of being crushed into
-        // the palette rail or shoved inline between form cards.
-        var drawerReturnFocus = null;
+        // ---- Inline editors -------------------------------------------------
+        // Editing happens where the control is: a field's editor expands inside its
+        // row in the Fields library; a form's editor expands inside its card. One
+        // editor is open at a time.
+        var LOADING = '<p class="cf-editor-loading"><?php echo osc_esc_js(__('Loading…')); ?></p>';
 
-        function openDrawer() {
-            var drawer = document.getElementById('cf-drawer');
-            if (!drawer) { return; }
-            drawerReturnFocus = document.activeElement;
-            drawer.hidden = false;
-            // Give the grid a third column on wide screens; the overlay path ignores it.
-            var grid = document.querySelector('.forms-builder-grid');
-            if (grid) { grid.classList.add('is-editing'); }
-            // next frame so the slide-in transition runs
-            requestAnimationFrame(function () { drawer.classList.add('is-open'); });
-            document.body.classList.add('cf-drawer-lock');
-            // focus the first field once the fetched editor has wired itself up
-            setTimeout(function () {
-                var first = drawer.querySelector('input:not([type=hidden]), select, textarea, button');
-                if (first) { first.focus(); }
-            }, 60);
-        }
-
+        // Collapse whichever editor is open. Kept as window.cfCloseDrawer because the
+        // injected editors call that name on save/cancel.
         window.cfCloseDrawer = function () {
-            var drawer = document.getElementById('cf-drawer');
-            if (!drawer || drawer.hidden) { return; }
-            drawer.classList.remove('is-open');
-            document.body.classList.remove('cf-drawer-lock');
-            var grid = document.querySelector('.forms-builder-grid');
-            if (grid) { grid.classList.remove('is-editing'); }
-            document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
-            var body = document.getElementById('cf-drawer-body');
-            var hide = function () { drawer.hidden = true; if (body) { body.innerHTML = ''; } };
-            // clear after the slide-out; guard with a timeout in case transitionend misfires
-            var done = false;
-            drawer.addEventListener('transitionend', function te() { if (done) { return; } done = true; drawer.removeEventListener('transitionend', te); hide(); });
-            setTimeout(function () { if (!done) { done = true; hide(); } }, 260);
-            if (drawerReturnFocus && drawerReturnFocus.focus) { drawerReturnFocus.focus(); }
-            drawerReturnFocus = null;
+            document.querySelectorAll('.field-chip.is-editing').forEach(function (chip) {
+                chip.classList.remove('is-editing');
+                var slot = chip.querySelector('.field-chip-editor');
+                if (slot) { slot.hidden = true; slot.innerHTML = ''; }
+            });
+            document.querySelectorAll('.form-card.is-editing').forEach(function (card) {
+                card.classList.remove('is-editing');
+                var slot = card.querySelector('.form-card-editor');
+                if (slot) { slot.innerHTML = ''; }
+            });
         };
 
-        function loadDrawer(url, title) {
-            var body = document.getElementById('cf-drawer-body');
-            var titleEl = document.getElementById('cf-drawer-title');
-            if (!body) { return; }
-            if (titleEl) { titleEl.textContent = title || ''; }
-            body.innerHTML = '<p class="cf-drawer-loading">' + '<?php echo osc_esc_js(__('Loading…')); ?>' + '</p>';
-            openDrawer();
+        function injectAndFocus(slot, url) {
+            slot.innerHTML = LOADING;
             fetch(url, { credentials: 'same-origin' })
                 .then(function (r) { return r.text(); })
-                .then(function (html) { oscInjectHtml(body, html); });
+                .then(function (html) {
+                    oscInjectHtml(slot, html);
+                    slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    var first = slot.querySelector('input:not([type=hidden]), select, textarea');
+                    if (first) { first.focus({ preventScroll: true }); }
+                });
         }
 
-        // Field-definition editor. builder=1 hides the group/category controls
-        // (membership + categories are set on the form) and saves the definition only.
+        // Field-definition editor. Always expands the field's row in the Fields
+        // library (which has the room); a click from a form chip routes here and
+        // scrolls the library row into view. builder=1 saves the definition only.
         function edit_field(id) {
-            document.querySelectorAll('.field-chip.is-editing').forEach(function (el) { el.classList.remove('is-editing'); });
-            document.querySelectorAll('#palette-list .field-chip[data-field-id="' + id + '"]').forEach(function (chip) { chip.classList.add('is-editing'); });
-            loadDrawer(
-                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&builder=1&<?php echo $csrf_token; ?>&id=' + id,
-                '<?php echo osc_esc_js(__('Edit field')); ?>'
+            var chip = document.querySelector('#palette-list > .field-chip[data-field-id="' + id + '"]');
+            if (!chip) { return false; }
+            var already = chip.classList.contains('is-editing');
+            window.cfCloseDrawer();
+            if (already) { return false; }
+            chip.classList.add('is-editing');
+            var slot = chip.querySelector('.field-chip-editor');
+            slot.hidden = false;
+            injectAndFocus(
+                slot,
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&builder=1&<?php echo $csrf_token; ?>&id=' + id
             );
             return false;
         }
 
-        // Form editor (name + category assignment).
+        // Form editor (name + category assignment), expanded inside the form card.
         function show_group_iframe(id) {
-            loadDrawer(
-                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id,
-                '<?php echo osc_esc_js(__('Edit form')); ?>'
+            var card = document.querySelector('.form-card[data-form-id="' + id + '"]');
+            if (!card) { return false; }
+            var already = card.classList.contains('is-editing');
+            window.cfCloseDrawer();
+            if (already) { return false; }
+            card.classList.add('is-editing');
+            injectAndFocus(
+                card.querySelector('.form-card-editor'),
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id
             );
             return false;
         }
@@ -302,13 +299,14 @@ function customHead()
                 lists.forEach(function (list) {
                     if (list.querySelector(':scope > .field-chip[data-field-id="' + id + '"]')) { n++; }
                 });
-                var badge = chip.querySelector('.chip-shared');
+                var row = chip.querySelector('.field-chip-row') || chip;
+                var badge = row.querySelector('.chip-shared');
                 if (n >= 2) {
                     if (!badge) {
                         badge = document.createElement('span');
                         badge.className = 'chip-shared';
                         badge.title = CF_TXT.inFormsTip;
-                        chip.insertBefore(badge, chip.querySelector('.chip-type'));
+                        row.insertBefore(badge, row.querySelector('.chip-type'));
                     }
                     badge.textContent = CF_TXT.inForms.replace('%d', n);
                 } else if (badge) {
@@ -492,7 +490,8 @@ function customHead()
                 + '<div class="form-card-add">'
                 + '  <button type="button" class="btn btn-outline-primary btn-sm form-add-field" aria-haspopup="true" aria-expanded="false"><i class="bi bi-plus-lg"></i> <?php echo osc_esc_js(__('Add field')); ?></button>'
                 + '  <div class="cf-add-menu" role="menu" hidden></div>'
-                + '</div>';
+                + '</div>'
+                + '<div class="form-card-editor edit"></div>';
             card.querySelector('.form-card-title').textContent = name;
             document.getElementById('forms-list').appendChild(card);
             initFormSortable(card.querySelector('.form-fieldlist'));
@@ -536,14 +535,12 @@ function customHead()
                 if (chip && list) { chip.remove(); saveForm(list); }
             });
 
-            // Drawer: close on the ✕, the scrim, or Escape.
-            document.addEventListener('click', function (e) {
-                if (e.target.closest('[data-cf-drawer-close]')) { e.preventDefault(); window.cfCloseDrawer(); }
-            });
+            // Escape closes the open inline editor, else the add-field menu.
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' || e.key === 'Esc') {
-                    var drawer = document.getElementById('cf-drawer');
-                    if (drawer && !drawer.hidden) { window.cfCloseDrawer(); return; }
+                    if (document.querySelector('.field-chip.is-editing, .form-card.is-editing')) {
+                        window.cfCloseDrawer(); return;
+                    }
                     closeAddMenu();
                 }
             });
@@ -592,13 +589,16 @@ function customHead()
                                 li.setAttribute('data-field-id', ret.field_id);
                                 li.setAttribute('data-type', 'TEXT');
                                 li.innerHTML = ''
-                                    + '<span class="chip-grip" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>'
-                                    + '<span class="chip-name"></span>'
-                                    + '<span class="chip-type"><?php echo osc_esc_js(__('Text')); ?></span>'
-                                    + '<span class="chip-actions">'
-                                    + '  <button type="button" class="chip-btn chip-edit" onclick="edit_field(' + ret.field_id + '); return false;" title="<?php echo osc_esc_js(__('Edit field')); ?>"><i class="bi bi-pencil-fill"></i></button>'
-                                    + '  <button type="button" class="chip-btn chip-remove" title="<?php echo osc_esc_js(__('Remove from form')); ?>"><i class="bi bi-x-lg"></i></button>'
-                                    + '</span>';
+                                    + '<div class="field-chip-row">'
+                                    + '  <span class="chip-grip" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>'
+                                    + '  <span class="chip-name"></span>'
+                                    + '  <span class="chip-type"><?php echo osc_esc_js(__('Text')); ?></span>'
+                                    + '  <span class="chip-actions">'
+                                    + '    <button type="button" class="chip-btn chip-edit" onclick="edit_field(' + ret.field_id + '); return false;" title="<?php echo osc_esc_js(__('Edit field')); ?>"><i class="bi bi-pencil-fill"></i></button>'
+                                    + '    <button type="button" class="chip-btn chip-remove" title="<?php echo osc_esc_js(__('Remove from form')); ?>"><i class="bi bi-x-lg"></i></button>'
+                                    + '  </span>'
+                                    + '</div>'
+                                    + '<div class="field-chip-editor edit" hidden></div>';
                                 li.querySelector('.chip-name').textContent = ret.field_name;
                                 var pEmpty = document.getElementById('palette-empty');
                                 if (pEmpty) { pEmpty.remove(); }
@@ -676,6 +676,7 @@ osc_current_admin_theme_path('parts/header.php');
                                 </button>
                                 <div class="cf-add-menu" role="menu" hidden></div>
                             </div>
+                            <div class="form-card-editor edit"></div>
                         </div>
                     <?php } ?>
                 </div>
@@ -698,20 +699,6 @@ osc_current_admin_theme_path('parts/header.php');
                         cfields_render_chip($field, in_array((int)$field['pk_i_id'], $placedIds, true));
                     } ?>
                 </ul>
-            </div>
-
-            <!-- Shared editor. On wide screens it docks inline as a third column
-                 (both editors open here); on narrow screens it overlays as a drawer. -->
-            <div id="cf-drawer" class="cf-drawer" hidden>
-                <div class="cf-drawer-scrim" data-cf-drawer-close></div>
-                <aside class="cf-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cf-drawer-title">
-                    <header class="cf-drawer-head">
-                        <h3 id="cf-drawer-title" class="cf-drawer-title"></h3>
-                        <button type="button" class="chip-btn" data-cf-drawer-close
-                                aria-label="<?php echo osc_esc_html(__('Close')); ?>"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-                    </header>
-                    <div id="cf-drawer-body" class="cf-drawer-body edit"></div>
-                </aside>
             </div>
 
         </div>

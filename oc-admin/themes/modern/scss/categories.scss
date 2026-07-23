@@ -282,10 +282,10 @@
   align-items: start;
   display: grid;
   gap: 1.25rem;
-  // Fields is the working library and carries the most content, so it gets the
-  // width. A form is a simple grouping (a name, its categories, an ordered list),
-  // so it sits in the narrow column.
-  grid-template-columns: 35rem minmax(0, 1fr);
+  // Fields is the working library and carries the most content (its editors
+  // expand inline here), so it gets the width. A form is a simple grouping — a
+  // name, its categories, an ordered list — so it sits in the narrow column.
+  grid-template-columns: 24rem minmax(0, 1fr);
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -318,6 +318,9 @@
   color: var(--osc-ink-muted);
   font-size: .8125rem;
   margin: 0 0 .75rem;
+  // Reserve two lines so the Forms and Fields lists start at the same height and
+  // the two columns line up.
+  min-height: 2.4em;
 }
 
 .builder-empty {
@@ -484,13 +487,9 @@
 
 // ---- A field chip (shared by palette + form lists) --------------------------
 .field-chip {
-  align-items: center;
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius;
-  display: flex;
-  gap: .5rem;
-  padding: .4rem .55rem;
   transition: border-color var(--osc-duration-fast) var(--osc-ease),
               background-color var(--osc-duration-fast) var(--osc-ease);
 
@@ -498,14 +497,43 @@
     border-color: var(--osc-rule-strong);
   }
 
+  // The field's editor is open, expanded inside this row.
   &.is-editing {
-    background-color: var(--osc-bronze-tint);
     border-color: var(--osc-bronze);
+    overflow: hidden;
+
+    > .field-chip-row {
+      background-color: var(--osc-bronze-tint);
+    }
   }
 
   // A palette chip whose field is already placed in a form.
   &.is-placed .chip-name {
     color: var(--osc-ink-muted);
+  }
+}
+
+// The summary row: grip | name | badges | type | actions. Sits above the editor.
+.field-chip-row {
+  align-items: center;
+  border-radius: inherit;
+  display: flex;
+  gap: .5rem;
+  padding: .4rem .55rem;
+}
+
+// The editor expands here, in the field's own row, where the edit control is.
+.field-chip-editor {
+  background-color: var(--osc-bench);
+  border-top: 1px solid var(--osc-rule);
+  padding: .85rem 1rem 1rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .custom-field-frame {
+    max-width: 42rem;
   }
 }
 
@@ -602,15 +630,16 @@
   color: var(--osc-danger);
 }
 
-// ---- The editor drawer contents (field + form) ------------------------------
+// ---- Inline editor contents (field + form) ----------------------------------
 // Both editors reuse the legacy .form-horizontal geometry — a 150px right-aligned
-// label well beside its control. In the drawer the rows stack instead: label above
-// a full-width control, so the two editors read as one clean vertical form.
-.cf-drawer .custom-field-frame {
+// label well beside its control. Inline the rows stack instead: label above a
+// full-width control, so the two editors read as one clean vertical form.
+.field-chip-editor .custom-field-frame,
+.form-card-editor .custom-field-frame {
   border: 0;
   margin: 0;
 
-  // The drawer supplies its own title bar, so the card's header is redundant.
+  // The chip / card already says which field or form this is.
   .card-header {
     display: none;
   }
@@ -685,20 +714,16 @@
     }
   }
 
-  // Footer actions pinned to the bottom of the drawer, so Save/Cancel stay in
-  // reach however long the form scrolls. Left-aligned, side by side.
+  // Footer actions: left-aligned, side by side, flush with the editor's padding.
   .card-footer.form-actions,
   .form-actions {
-    background: var(--osc-bench);
-    border-top: 1px solid var(--osc-rule);
-    bottom: 0;
+    background: transparent;
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
     justify-content: flex-start;
-    margin: 1rem -1rem -1rem;
-    padding: .85rem 1rem;
-    position: sticky;
+    margin-block-start: 1rem;
+    padding: 0;
   }
 
   // Category tree (form editor): separate the checkbox from its label.
@@ -715,135 +740,23 @@
   }
 }
 
-// ---- The drawer shell -------------------------------------------------------
-.cf-drawer {
-  inset: 0;
-  position: fixed;
-  z-index: $zindex-modal;
-}
-
-.cf-drawer[hidden] {
-  display: none;
-}
-
-.cf-drawer-scrim {
-  background: rgba(9, 14, 20, .38);
-  inset: 0;
-  opacity: 0;
-  position: absolute;
-  transition: opacity var(--osc-duration-base) var(--osc-ease);
-}
-
-.cf-drawer-panel {
-  background: var(--osc-bench);
-  border-inline-start: 1px solid var(--osc-rule);
-  bottom: 0;
-  box-shadow: -12px 0 32px rgba(9, 14, 20, .16);
-  display: flex;
-  flex-direction: column;
-  inset-block: 0;
-  inset-inline-end: 0;
-  max-width: 100vw;
-  position: absolute;
-  transform: translateX(100%);
-  transition: transform var(--osc-duration-base) var(--osc-ease);
-  width: 27rem;
-}
-
-// RTL: the panel enters from the inline-start edge.
-[dir="rtl"] .cf-drawer-panel {
-  transform: translateX(-100%);
-}
-
-.cf-drawer.is-open {
-  .cf-drawer-scrim {
-    opacity: 1;
-  }
-
-  .cf-drawer-panel {
-    transform: translateX(0);
-  }
-}
-
-@media (max-width: 34rem) {
-  .cf-drawer-panel {
-    width: 100vw;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cf-drawer-scrim,
-  .cf-drawer-panel {
-    transition: none;
-  }
-}
-
-.cf-drawer-head {
-  align-items: center;
-  border-bottom: 1px solid var(--osc-rule);
-  display: flex;
-  flex: 0 0 auto;
-  gap: .5rem;
-  justify-content: space-between;
-  padding: .85rem 1rem;
-}
-
-.cf-drawer-title {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.cf-drawer-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.cf-drawer-loading {
+// A field/form editor is loading inline.
+.cf-editor-loading {
   color: var(--osc-ink-muted);
-  padding: 1rem 0;
+  padding: .5rem 0;
 }
 
-// Keep the page from scrolling behind an open drawer — only while it overlays
-// (small screens). When it docks inline the page must scroll normally.
-@media (max-width: 79.99rem) {
-  body.cf-drawer-lock {
-    overflow: hidden;
-  }
-}
-
-// Wide screens: the editor stops overlaying and docks as a third column, using
-// the room the layout already has instead of covering it. Forms yields some
-// width while editing; the Fields library keeps the flexible middle.
-@media (min-width: 80rem) {
-  .cf-drawer {
-    align-self: stretch;
-    position: static;
-    z-index: auto;
-  }
-
-  .cf-drawer-scrim {
+// The form editor expands inside its card, below the field list.
+.form-card-editor {
+  &:empty {
     display: none;
   }
 
-  .cf-drawer-panel {
-    border: 1px solid var(--osc-rule);
-    border-radius: $border-radius-lg;
-    box-shadow: none;
-    inset: auto;
-    max-height: calc(100vh - 2rem);
-    max-width: none;
-    position: sticky;
-    top: 1rem;
-    transform: none;
-    transition: none;
-    width: auto;
-  }
+  margin-top: .85rem;
+}
 
-  .forms-builder-grid.is-editing {
-    grid-template-columns: 26rem minmax(0, 1fr) 24rem;
-  }
+.form-card.is-editing {
+  border-color: var(--osc-bronze);
 }
 
 // ---- "Add field" menu (the no-drag path) ------------------------------------
