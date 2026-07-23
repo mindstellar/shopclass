@@ -68,17 +68,20 @@ class ItemResource extends DAO
      */
     public function getAllResources()
     {
-        $this->dao->select('r.*, c.dt_pub_date');
-        $this->dao->from($this->getTableName() . ' r');
-        $this->dao->join($this->getTableItemName() . ' c', 'c.pk_i_id = r.fk_i_item_id');
+        // The query builder has no notion of a table alias, and neither `r.*` nor the
+        // aliased join can be expressed through its identifier allowlist, so this is
+        // hand-written SQL with the same columns, the same join and no values to bind.
+        $sql = 'SELECT r.*, c.dt_pub_date'
+            . ' FROM ' . $this->getTableName() . ' r'
+            . ' INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.fk_i_item_id';
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -111,17 +114,16 @@ class ItemResource extends DAO
         $found = null;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
-            $this->dao->select();
-            $this->dao->from($this->getTableName());
-            $this->dao->where('fk_i_item_id', (int)$itemId);
-
-            $result = $this->dao->get();
-
-            if ($result == false) {
+            try {
+                $rows = osc_db_table($this->getTableName())
+                    ->where('fk_i_item_id', (int)$itemId)
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
+                // A failed read is not memoized, so the next call retries.
                 return array();
             }
 
-            $return = $result->result();
+            $return = osc_db_stringify_rows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -151,11 +153,17 @@ class ItemResource extends DAO
             return;
         }
 
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->whereIn('fk_i_item_id', $itemIds);
-        $result = $this->dao->get();
-        $rows   = ($result === false) ? array() : $result->result();
+        try {
+            $rows = osc_db_stringify_rows(
+                osc_db_table($this->getTableName())
+                    ->whereIn('fk_i_item_id', $itemIds)
+                    ->get()
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // A failed read still seeds every id with an empty list, so the memo
+            // reports "no resources" rather than retrying. Long-standing behaviour.
+            $rows = array();
+        }
 
         $byItem = array_fill_keys($itemIds, array());
         foreach ($rows as $row) {
@@ -180,22 +188,20 @@ class ItemResource extends DAO
      */
     public function getResource($itemId)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_item_id', $itemId);
-        $this->dao->limit(1);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('fk_i_item_id', $itemId)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows == 0) {
+        if ($row === null) {
             return array();
         }
 
-        return $result->row();
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -225,24 +231,25 @@ class ItemResource extends DAO
      */
     public function existResource($resourceId, $code)
     {
-        $this->dao->select('COUNT(*) AS numrows');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('pk_i_id', $resourceId);
-        $this->dao->where('s_name', $code);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        if ($resourceId === null || $code === null) {
+            // A null left the comparison without a right-hand side, so the query
+            // failed and the caller got the INT zero rather than the string a
+            // genuine no-match returns. Both are falsy; the type is still visible.
             return 0;
         }
 
-        if ($result->numRows() != 1) {
+        try {
+            $count = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $resourceId)
+                ->where('s_name', $code)
+                ->count();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $row = $result->row();
-
-        return $row['numrows'];
+        // An aggregate with no GROUP BY always yields exactly one row, so the
+        // "not exactly one row" branch this method used to have was unreachable.
+        return (string)$count;
     }
 
     /**
@@ -257,25 +264,19 @@ class ItemResource extends DAO
      */
     public function countResources($itemId = null)
     {
-        $this->dao->select('COUNT(*) AS numrows');
-        $this->dao->from($this->getTableName());
-        if (null !== $itemId && is_numeric($itemId)) {
-            $this->dao->where('fk_i_item_id', $itemId);
-        }
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $query = osc_db_table($this->getTableName());
+            if (null !== $itemId && is_numeric($itemId)) {
+                $query = $query->where('fk_i_item_id', $itemId);
+            }
+            $count = $query->count();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        if ($result->numRows() != 1) {
-            return 0;
-        }
-
-        $row = $result->row();
-
-        return $row['numrows'];
+        // As in existResource(), the aggregate always returns one row, so the
+        // "not exactly one row" branch was unreachable.
+        return (string)$count;
     }
 
     /**
@@ -312,22 +313,40 @@ class ItemResource extends DAO
             return array();
         }
 
-        $this->dao->select('r.*, c.dt_pub_date');
-        $this->dao->from($this->getTableName() . ' r');
-        $this->dao->join($this->getTableItemName() . ' c', 'c.pk_i_id = r.fk_i_item_id');
-        if (null !== $itemId && is_numeric($itemId)) {
-            $this->dao->where('r.fk_i_item_id', $itemId);
-        }
-        $this->dao->orderBy($order, $type);
-        $this->dao->limit($start);
-        $this->dao->offset($length);
-        $result = $this->dao->get();
+        // Aliases, `r.*` and the aliased join are all outside the query builder's
+        // identifier allowlist, so this stays hand-written SQL. Every value is a
+        // placeholder; $order is one of the five literals checked above and $type is
+        // DESC or ASC, checked above as well.
+        $sql = 'SELECT r.*, c.dt_pub_date'
+            . ' FROM ' . $this->getTableName() . ' r'
+            . ' INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.fk_i_item_id';
 
-        if ($result == false) {
+        $params = array();
+        if (null !== $itemId && is_numeric($itemId)) {
+            $sql     .= ' WHERE r.fk_i_item_id = ?';
+            $params[] = $itemId;
+        }
+
+        $sql .= ' ORDER BY ' . $order . ' ' . strtoupper($type);
+
+        // Legacy compiled "LIMIT <start>, <length>", i.e. $start is the OFFSET, with
+        // two gates worth keeping: a non-numeric $start dropped the clause entirely
+        // and returned every row, and a $length of zero or less dropped the offset,
+        // turning $start into the row count.
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int)$start;
+            if (is_numeric($length) && (int)$length > 0) {
+                $sql .= ', ' . (int)$length;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -343,19 +362,25 @@ class ItemResource extends DAO
      */
     public function getResourceIdsBatch(int $offset, int $limit): array
     {
-        $this->dao->select('pk_i_id');
-        $this->dao->from($this->getTableName());
-        $this->dao->orderBy('pk_i_id', 'ASC');
-        $this->dao->limit($offset);
-        $this->dao->offset($limit);
-
-        $result = $this->dao->get();
-
-        if ($result === false) {
+        if ($offset < 0) {
+            // Legacy emitted "LIMIT -n", an invalid clause whose failure landed here.
             return array();
         }
 
-        return array_map('intval', array_column($result->result(), 'pk_i_id'));
+        try {
+            $query = osc_db_table($this->getTableName())
+                ->select('pk_i_id')
+                ->orderBy('pk_i_id', 'ASC');
+            // Legacy compiled "LIMIT <offset>, <limit>": the first argument is the
+            // OFFSET, and a $limit of zero or less dropped the offset, turning
+            // $offset into the row count instead.
+            $query = $limit > 0 ? $query->limit($limit)->offset($offset) : $query->limit($offset);
+            $rows  = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        return array_map('intval', array_column($rows, 'pk_i_id'));
     }
 
     /**
@@ -373,20 +398,25 @@ class ItemResource extends DAO
      */
     public function getResourcesBatchByStorage(string $storage, int $offset, int $limit): array
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_storage', $storage);
-        $this->dao->orderBy('pk_i_id', 'ASC');
-        $this->dao->limit($offset);
-        $this->dao->offset($limit);
-
-        $result = $this->dao->get();
-
-        if ($result === false) {
+        if ($offset < 0) {
+            // Legacy emitted "LIMIT -n", an invalid clause whose failure landed here.
             return array();
         }
 
-        return $result->result();
+        try {
+            $query = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('s_storage', $storage)
+                ->orderBy('pk_i_id', 'ASC');
+            // Same legacy paging shape as getResourceIdsBatch(): $offset is the
+            // offset, and a $limit of zero or less turns it into the row count.
+            $query = $limit > 0 ? $query->limit($limit)->offset($offset) : $query->limit($offset);
+            $rows  = $query->get();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -398,9 +428,21 @@ class ItemResource extends DAO
      */
     public function deleteResourcesIds($ids)
     {
-        $this->dao->whereIn('pk_i_id', $ids);
+        $values = is_array($ids) ? $ids : array($ids);
+        if ($values === array()) {
+            // Legacy compiled "IN ()" here, an invalid clause, and the failed delete
+            // returned false — which callers can tell apart from a clean run that
+            // matched nothing.
+            return false;
+        }
 
-        return $this->dao->delete($this->getTableName());
+        try {
+            return osc_db_table($this->getTableName())
+                ->whereIn('pk_i_id', $values)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
