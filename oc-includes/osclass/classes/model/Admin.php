@@ -55,7 +55,7 @@ class Admin extends DAO
                 'SHOW COLUMNS FROM ' . $this->getTableName() . ' where Field = "b_moderator" '
             );
         } catch (\mindstellar\database\DbException $e) {
-            throw new mysqli_sql_exception($this->dao->errorDesc);
+            throw new mysqli_sql_exception($e->getMessage(), (int)$e->getCode(), $e);
         }
 
         if (count($columns) > 0) {
@@ -257,12 +257,10 @@ class Admin extends DAO
     {
         $ids = is_array($id) ? array_values($id) : array($id);
 
-        // An empty id list is the write-side sibling of the null-where
-        // correction: the legacy dao->whereIn() would emit "pk_i_id IN ()", a
-        // SQL syntax error, and dao->delete() absorbs that into bool false.
-        // QueryBuilder::whereIn() emits a valid (harmless) `1 = 0` for an empty
-        // array instead, which would return int 0 here -- a different value,
-        // not just a different type. Reproduce the legacy false explicitly.
+        // Deleting with an empty id list reports false, not 0. QueryBuilder's
+        // whereIn() turns an empty array into a harmless `1 = 0` and would run a
+        // no-op delete returning int 0; callers test this result loosely, so
+        // return the false they expect rather than a value that differs in kind.
         if ($ids === array()) {
             return false;
         }
