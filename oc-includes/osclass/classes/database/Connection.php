@@ -371,7 +371,7 @@ class Connection
         try {
             $result = $fn();
             if ($result === false) {
-                throw new DbException('Database query failed');
+                throw new DbException('Database query failed', (int) $this->conn->errno);
             }
 
             return $result;
@@ -380,7 +380,11 @@ class Connection
             if ($e instanceof DbException) {
                 throw $e;
             }
-            throw new DbException('Database query failed');
+            // The message stays generic so no SQL or schema detail reaches an end
+            // user, but the driver's error number is carried through: it is only a
+            // category, and callers such as the installer map it to their own
+            // wording ("cannot reach the server", "access denied", ...).
+            throw new DbException('Database query failed', (int) $e->getCode());
         }
     }
 }

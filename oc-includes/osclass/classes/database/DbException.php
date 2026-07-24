@@ -20,6 +20,12 @@ use RuntimeException;
  * only a generic message; the real SQL/mysqli detail is logged server-side so it
  * never reaches an end user through display_errors.
  *
+ * The exception code is the driver's error number where the failure came from
+ * the driver, and 0 otherwise. A number leaks nothing on its own, and callers
+ * that need to tell failures apart -- the installer distinguishes "cannot reach
+ * the server" from "access denied" from "unknown database" -- map it to their
+ * own wording rather than showing anything from the database.
+ *
  * @package mindstellar\database
  */
 class DbException extends RuntimeException
