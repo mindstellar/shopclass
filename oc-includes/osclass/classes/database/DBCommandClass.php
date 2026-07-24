@@ -257,6 +257,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function join($table, $cond, $type = '')
     {
@@ -468,6 +471,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function orWhereIn($key = null, $values = null)
     {
@@ -484,6 +490,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function whereNotIn($key = null, $values = null)
     {
@@ -500,6 +509,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function orWhereNotIn($key = null, $values = null)
     {
@@ -577,6 +589,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function notLike($field, $match = '', $side = 'both')
     {
@@ -595,6 +610,9 @@ class DBCommandClass
      * @return \DBCommandClass
      * @since  2.3
      *
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function orLike($field, $match = '', $side = 'both')
     {
@@ -612,6 +630,9 @@ class DBCommandClass
      *
      * @return DBCommandClass
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function orNotLike($field, $match = '', $side = 'both')
     {
@@ -651,6 +672,9 @@ class DBCommandClass
      * @param string $value
      *
      * @return void
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function having($key, $value = '')
     {
@@ -688,6 +712,9 @@ class DBCommandClass
      * @param string $value
      *
      * @return void
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function orHaving($key, $value = '')
     {
@@ -926,6 +953,9 @@ class DBCommandClass
      *
      * @return bool
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function isSelectType($sql)
     {
@@ -940,6 +970,9 @@ class DBCommandClass
      * @param $sql
      *
      * @return bool
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function query_debug($sql)
     {
@@ -1344,6 +1377,9 @@ class DBCommandClass
      * @access private
      * @return string
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function _getSelect()
     {
@@ -1951,6 +1987,9 @@ class DBCommandClass
      * @access public
      * @return string
      * @since  2.3
+     * @deprecated 5.3 Unused by core. Retained only because the object is reachable
+     *             from plugins as $model->dao; prefer mindstellar\database\Connection
+     *             or QueryBuilder in new code.
      */
     public function lastQuery()
     {
