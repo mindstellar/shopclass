@@ -14,13 +14,13 @@
  * Written against the legacy implementation and required to pass UNCHANGED once
  * the method bodies move to the parameterized query layer.
  *
- * Two things here are pinned as observed rather than as documented:
+ * One behaviour is pinned carefully because it is easy to get backwards:
  *
- *  - listAll()'s $start and $limit arguments are semantically swapped. The
- *    legacy call passes them to the query layer in an order that makes $start
- *    the row count and $limit the offset. Every pin below uses fixtures where
- *    the two differ, so the swap is recorded rather than hidden by symmetric
- *    values.
+ *  - listAll()'s $start is the offset and $limit the row count, matching the
+ *    parameter names and PagesDataTable, which passes (page-1)*length as $start
+ *    and length as $limit. Every paging pin below uses an offset different from
+ *    the row count, so a swap would fail loudly. (An earlier version inverted
+ *    these, so the admin list asked for LIMIT 0 on page one and showed nothing.)
  *  - insert() reads the connection's affected-row count after its own write to
  *    decide success. That side channel is read only inside this model; no
  *    caller reaches it, which is what makes the write convertible at all.
@@ -94,7 +94,7 @@ pin('description table name is unchanged', $dtbl, $model->getDescriptionTableNam
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 
 /* ----------------------------------------------------------------------------
- * listAll — filters, ordering and the swapped paging arguments.
+ * listAll — filters, ordering and paging.
  * ------------------------------------------------------------------------- */
 harness_section('Page::listAll — ordering and filters');
 
@@ -124,24 +124,25 @@ $admin->query("UPDATE $table SET b_link = 0 WHERE s_internal_name = 'p3'");
 $linked = $model->listAll(null, 1);
 check('filtering on b_link = 1 excludes the unlinked page', !in_array('p3', array_column($linked, 's_internal_name'), true));
 
-harness_section('Page::listAll — paging arguments are swapped');
+harness_section('Page::listAll — paging: $start is the offset, $limit the row count');
 
-/* Every case below uses a row count different from the offset, so the mapping
- * cannot be read two ways. $start behaves as the ROW COUNT and $limit as the
- * OFFSET, the reverse of what the parameter names say. Preserved, not corrected:
- * the admin pages table is the only caller and would change behaviour. */
+/* Every case uses a row count different from the offset, so the mapping cannot
+ * be read two ways. $start is the offset and $limit the number of rows, matching
+ * the parameter names and the caller (PagesDataTable passes (page-1)*length as
+ * $start and length as $limit). */
 $paged = static function ($start, $limit) use ($model) {
     return array_column($model->listAll(null, null, null, $start, $limit), 's_internal_name');
 };
 
-pin('listAll(start=1, limit=3) takes 1 row from offset 3', array('p4'), $paged(1, 3));
-pin('listAll(start=3, limit=1) takes 3 rows from offset 1', array('p2', 'p3', 'p4'), $paged(3, 1));
-pin('listAll(start=2, limit=1) takes 2 rows from offset 1', array('p2', 'p3'), $paged(2, 1));
-pin('listAll(start=4, limit=2) takes 4 rows from offset 2', array('p3', 'p4', 'p5', 'p6'), $paged(4, 2));
+pin('listAll(start=1, limit=3) takes 3 rows from offset 1', array('p2', 'p3', 'p4'), $paged(1, 3));
+pin('listAll(start=3, limit=1) takes 1 row from offset 3', array('p4'), $paged(3, 1));
+pin('listAll(start=2, limit=1) takes 1 row from offset 2', array('p3'), $paged(2, 1));
+pin('listAll(start=4, limit=2) takes 2 rows from offset 4', array('p5', 'p6'), $paged(4, 2));
 
-/* A zero offset collapses the clause to its single-argument form, which is why
- * the first page of the admin table looks correct despite the swap. */
-pin('listAll(start=2, limit=0) falls back to a plain row count', array('p1', 'p2'), $paged(2, 0));
+/* The first admin page passes start = 0, so no OFFSET is emitted and the page is
+ * the first $limit rows — which is what the inverted version got wrong. */
+pin('listAll(start=0, limit=2) is the first two rows', array('p1', 'p2'), $paged(0, 2));
+pin('listAll(start=2, limit=0) requests zero rows', array(), $paged(2, 0));
 pin('a null limit disables paging entirely', 6, count($model->listAll(null, null, null, 3, null)));
 
 harness_section('Page::listAll — empty and locale-filtered');

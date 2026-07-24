@@ -368,15 +368,14 @@ class Page extends DAO
         }
         $query = $query->orderBy('i_order', 'ASC');
         if (null !== $limit) {
-            // The legacy call emitted "LIMIT $limit, $start", and MySQL reads the
-            // two-argument form as offset first and row count second -- so $limit
-            // is the offset here and $start the number of rows, the reverse of
-            // what the parameter names suggest. A zero offset collapses it to the
-            // single-argument form. Preserved exactly; the admin pages table is
-            // the only caller and reads these positions as they are.
-            $query = $query->limit((int)$start);
-            if ((int)$limit > 0) {
-                $query = $query->offset((int)$limit);
+            // $start is the offset and $limit the row count, matching the
+            // parameter names and the caller: PagesDataTable computes
+            // $start = (page - 1) * length and passes length as $limit. The
+            // legacy call inverted these, so page one asked for LIMIT 0 and the
+            // admin list returned nothing.
+            $query = $query->limit((int)$limit);
+            if ((int)$start > 0) {
+                $query = $query->offset((int)$start);
             }
         }
 
