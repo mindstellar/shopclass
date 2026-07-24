@@ -20,14 +20,12 @@
  * driver-level failure (pinned below via a NOT NULL violation), with no
  * partial row left behind on failure.
  *
- * The REMOTE_ADDR fallback does not behave the way its own "// CRON." comment
- * suggests. Params reads server values from a snapshot Params::init() takes
- * once, not live off $_SERVER, so setting $_SERVER['REMOTE_ADDR'] inside
- * insertLog() has no effect on the very next read of the same key a few lines
- * later. The fallback DOES mutate $_SERVER for whatever runs after it in the
- * same request, but the s_ip column THIS call writes still comes from the
- * stale snapshot and lands as an empty string. Both halves are pinned below
- * because that is what actually happens on a live install.
+ * On the cron path (no REMOTE_ADDR), insertLog() records the loopback address in
+ * s_ip and also exposes it on $_SERVER for anything later in the request. It
+ * reads the value into a local and stores that directly, rather than re-reading
+ * the Params snapshot — which is taken once by Params::init(), not live off
+ * $_SERVER, and so used to leave s_ip empty on every cron-path row. Both halves
+ * are pinned below.
  *
  * Params::getServerParam() runs every value through purify(), which builds an
  * HTMLPurifier instance the first time REMOTE_ADDR is actually present in the
@@ -161,11 +159,11 @@ Params::init();
 $truncateLog();
 $log->insertLog('items', 'edit', 1, 'x', 'admin', 1);
 pin(
-    's_ip stays empty: Params re-reads its own stale snapshot, not the $_SERVER the fallback just mutated',
-    '',
+    's_ip records the loopback address on the cron path',
+    '127.0.0.1',
     $logRows()[0]['s_ip'] ?? null
 );
-pin('the fallback still mutates the live superglobal for whatever runs next in the request', '127.0.0.1', $_SERVER['REMOTE_ADDR']);
+pin('the fallback still exposes it on the live superglobal for whatever runs next', '127.0.0.1', $_SERVER['REMOTE_ADDR']);
 
 /* ----------------------------------------------------------------------------
  * Query cost — a single insert is one statement, and stays one.

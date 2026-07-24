@@ -73,9 +73,15 @@ class Log extends DAO
      */
     public function insertLog($section, $action, $id, $data, $who, $whoId)
     {
-        if (!Params::getServerParam('REMOTE_ADDR')) {
-            // CRON.
-            $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $ip = Params::getServerParam('REMOTE_ADDR');
+        if (!$ip) {
+            // No request address (e.g. a cron run): record the loopback address,
+            // and expose it on $_SERVER for anything later in the same request.
+            // The row now stores this value directly rather than re-reading the
+            // Params snapshot, which was taken before the assignment and so left
+            // s_ip empty on every cron-path log.
+            $ip                     = '127.0.0.1';
+            $_SERVER['REMOTE_ADDR'] = $ip;
         }
 
         $array_set = array(
@@ -84,7 +90,7 @@ class Log extends DAO
             's_action'    => $action,
             'fk_i_id'     => $id,
             's_data'      => $data,
-            's_ip'        => Params::getServerParam('REMOTE_ADDR'),
+            's_ip'        => $ip,
             's_who'       => $who,
             'fk_i_who_id' => $whoId
         );
