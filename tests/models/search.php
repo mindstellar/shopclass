@@ -146,6 +146,20 @@ $bike1 = $mkItem('Mountain Bike', $catBikes, 800.0, 0, $regionB, $cityB, 'Beta',
 $bike2 = $mkItem('Racing Bike', $catBikes, 2500.0, 1, $regionB, $cityB, 'Beta', 'Bville');
 $car3 = $mkItem('Green Coupe', $catCars, 9000.0, 0, $regionB, $cityB, 'Beta', 'Bville');
 
+/*
+ * addCategory() resolves through the Category singleton's in-memory tree, which
+ * is built once per process. Under the suite runner an earlier model file has
+ * already built it against a different fixture, so reset the singleton and flush
+ * the request cache here — standalone this is a harmless no-op, but it lets the
+ * category-filtered pins below see this file's own categories.
+ */
+if (class_exists('Object_Cache_Factory')) {
+    Object_Cache_Factory::newInstance()->flush();
+}
+$searchCategoryReset = new ReflectionProperty('Category', 'instance');
+$searchCategoryReset->setAccessible(true);
+$searchCategoryReset->setValue(null, null);
+
 /** Collect the pk_i_id column from a doSearch result. */
 $ids = static function (array $rows): array {
     return array_map('intval', array_column($rows, 'pk_i_id'));

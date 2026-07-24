@@ -58,9 +58,21 @@ if (!function_exists('osc_cache_get')) {
 
         return true;
     }
+}
+
+/*
+ * Flush whichever cache is live. Standalone the array stand-in above is used;
+ * under the suite runner an earlier file has already loaded the real hCache, so
+ * the guard above is skipped and the real object cache is in play — flush that
+ * too. Defined outside the guard so it always exists.
+ */
+if (!function_exists('osc_test_cache_flush')) {
     function osc_test_cache_flush()
     {
         $GLOBALS['__user_test_cache'] = array();
+        if (class_exists('Object_Cache_Factory')) {
+            Object_Cache_Factory::newInstance()->flush();
+        }
     }
 }
 
