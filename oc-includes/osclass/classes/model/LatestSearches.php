@@ -102,9 +102,12 @@ class LatestSearches extends DAO
             $time = time() - (7 * 24 * 3600);
         }
 
-        // where('d_date', ...) is an EXACT equality, not a range -- kept as-is.
+        // Searches on or after $time (which defaults to seven days ago), which is
+        // what the method name and its $time parameter describe. An exact equality
+        // here matched only rows written in the same second as the cutoff, so it
+        // returned nothing for any realistic input.
         $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
-            . $this->getTableName() . ' WHERE d_date = ? GROUP BY s_search ORDER BY d_date DESC';
+            . $this->getTableName() . ' WHERE d_date >= ? GROUP BY s_search ORDER BY d_date DESC';
         $params = array(date('Y-m-d H:i:s', $time));
 
         // Same is_numeric() gate as getSearches() above.

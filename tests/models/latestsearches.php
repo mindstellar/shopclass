@@ -19,10 +19,10 @@
  * builder's identifier allowlist would reject, so the conversion keeps hand
  * written SQL rather than a builder chain.
  *
- * getSearchesByDate()'s name and docblock ("given since time") both suggest a
- * range comparison, but the body does `where('d_date', $formatted)` -- an EXACT
- * equality, not `>=`. Observed, not assumed: with any realistic $time value this
- * matches nothing at all, which is what the "default $time" pin below shows.
+ * getSearchesByDate() compares `d_date >= ?`, the range its name and docblock
+ * ("given since time") describe. It counts each search term over the rows on or
+ * after the cutoff. (It previously used an exact equality, which matched only
+ * rows written in the same second as the cutoff and so returned nothing.)
  *
  * purgeNumber()'s single call to `$this->dao->limit($number, 1)` is the one
  * legacy two-argument limit() site in this model. DBCommandClass's own
@@ -177,23 +177,25 @@ pin('one getSearches() call costs one query', 1, harness_query_count(static func
 /* ----------------------------------------------------------------------------
  * getSearchesByDate() — the return ledger.
  * ------------------------------------------------------------------------- */
-harness_section('LatestSearches::getSearchesByDate — exact-match semantics (not a range)');
+harness_section('LatestSearches::getSearchesByDate — range semantics (on or after the timestamp)');
 
+/* Seeded: car (01-01), car (01-02), bike (01-03), truck (01-04), plane (01-05).
+ * A cutoff of 01-03 returns the bike/truck/plane groups. */
 $rows = $model->getSearchesByDate(strtotime('2026-01-03 00:00:00'), 20);
-pin('an exact timestamp match returns that one group', 1, count($rows));
-pin('it is the matching group', 'bike', $rows[0]['s_search']);
+pin('a cutoff returns every group on or after it', 3, count($rows));
+pin('ordered by d_date descending, the most recent group sorts first', 'plane', $rows[0]['s_search']);
 check('every value is a string or null (C4)', all_rows_string($rows), describe($rows));
 
 pin(
-    'a timestamp with no exact d_date match returns an empty array, not the whole table',
-    array(),
-    $model->getSearchesByDate(strtotime('2026-01-03 12:00:00'), 20)
+    'a later cutoff excludes the earlier groups',
+    2,
+    count($model->getSearchesByDate(strtotime('2026-01-03 12:00:00'), 20))
 );
 
-harness_section('LatestSearches::getSearchesByDate — default $time (now - 7 days) matches nothing here');
+harness_section('LatestSearches::getSearchesByDate — default $time (now - 7 days) is after every seeded row');
 
 pin(
-    'the default "since" time is a real timestamp, not one of the seeded rows, so it returns empty',
+    'the default "since" time is more recent than any seeded row, so it returns empty',
     array(),
     $model->getSearchesByDate(null, 20)
 );
@@ -201,7 +203,7 @@ pin(
 harness_section('LatestSearches::getSearchesByDate — limit gates apply on top of the WHERE match');
 
 pin(
-    'LIMIT 0 excludes an otherwise-matching row',
+    'LIMIT 0 excludes the otherwise-matching rows',
     array(),
     $model->getSearchesByDate(strtotime('2026-01-03 00:00:00'), 0)
 );
