@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -34,7 +35,7 @@ use mindstellar\migration\MigrationInterface;
  * idempotent; the same tables are declared in struct.sql for a fresh install.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $submission = DB_TABLE_PREFIX . 't_form_submission';
         $sql = 'CREATE TABLE IF NOT EXISTS ' . $submission . ' ('
@@ -51,9 +52,7 @@ return new class implements MigrationInterface {
             . ' INDEX idx_context (s_context_type, i_context_id),'
             . ' INDEX idx_status (s_status)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('form submissions migration: failed to create t_form_submission');
-        }
+        $conn->execute($sql);
 
         $value = DB_TABLE_PREFIX . 't_form_submission_value';
         $sql = 'CREATE TABLE IF NOT EXISTS ' . $value . ' ('
@@ -66,8 +65,6 @@ return new class implements MigrationInterface {
             . ' FOREIGN KEY (fk_i_submission_id) REFERENCES ' . $submission . ' (pk_i_id) ON DELETE CASCADE,'
             . ' FOREIGN KEY (fk_i_field_id) REFERENCES ' . DB_TABLE_PREFIX . 't_meta_fields (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('form submissions migration: failed to create t_form_submission_value');
-        }
+        $conn->execute($sql);
     }
 };

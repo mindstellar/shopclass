@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -50,26 +51,20 @@ return new class implements MigrationInterface {
         'custom_urls'         => array('', 'STRING'),
     );
 
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $table  = DB_TABLE_PREFIX . 't_preference';
-        $legacy = $this->sectionValues($comm, $table, self::LEGACY_SECTION);
+        $legacy = $this->sectionValues($conn, $table, self::LEGACY_SECTION);
 
         foreach (self::PREFERENCES as $name => $spec) {
             [$default, $type] = $spec;
             // Prefer the value the theme already held; fall back to the default.
             $value = array_key_exists($name, $legacy) ? $legacy[$name] : $default;
 
-            $sql = 'INSERT IGNORE INTO ' . $table
-                . ' (s_section, s_name, s_value, e_type) VALUES ('
-                . $comm->escape(self::TARGET_SECTION) . ', '
-                . $comm->escape($name) . ', '
-                . $comm->escape($value) . ', '
-                . $comm->escape($type) . ')';
-
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('sitemap prefs migration: failed to seed ' . $name);
-            }
+            $conn->execute(
+                'INSERT IGNORE INTO ' . $table . ' (s_section, s_name, s_value, e_type) VALUES (?, ?, ?, ?)',
+                array(self::TARGET_SECTION, $name, $value, $type)
+            );
         }
     }
 
@@ -78,18 +73,14 @@ return new class implements MigrationInterface {
      *
      * @return array<string, string>
      */
-    private function sectionValues(DBCommandClass $comm, string $table, string $section): array
+    private function sectionValues(Connection $conn, string $table, string $section): array
     {
-        $result = $comm->query(
-            'SELECT s_name, s_value FROM ' . $table
-            . ' WHERE s_section = ' . $comm->escape($section)
-        );
-        if (!is_object($result)) {
-            return array();
-        }
-
         $values = array();
-        foreach ($result->result('array') as $row) {
+        $rows   = $conn->select(
+            'SELECT s_name, s_value FROM ' . $table . ' WHERE s_section = ?',
+            array($section)
+        );
+        foreach ($rows as $row) {
             $values[$row['s_name']] = $row['s_value'];
         }
 

@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -36,7 +37,7 @@ use mindstellar\migration\MigrationInterface;
  * baselines rather than replays.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $link = DB_TABLE_PREFIX . 't_meta_group_fields';
         $sql  = 'CREATE TABLE IF NOT EXISTS ' . $link . ' ('
@@ -48,9 +49,7 @@ return new class implements MigrationInterface {
             . ' FOREIGN KEY (fk_i_group_id) REFERENCES ' . DB_TABLE_PREFIX . 't_meta_group (pk_i_id),'
             . ' FOREIGN KEY (fk_i_field_id) REFERENCES ' . DB_TABLE_PREFIX . 't_meta_fields (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('form field links migration: failed to create t_meta_group_fields');
-        }
+        $conn->execute($sql);
 
         // Back-fill one link row per currently-grouped field. WHERE NOT EXISTS keeps
         // the step idempotent if a partial run already inserted some rows.
@@ -60,8 +59,6 @@ return new class implements MigrationInterface {
             . ' WHERE mf.fk_i_group_id IS NOT NULL'
             . ' AND NOT EXISTS (SELECT 1 FROM ' . $link . ' gf'
             . '   WHERE gf.fk_i_group_id = mf.fk_i_group_id AND gf.fk_i_field_id = mf.pk_i_id)';
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('form field links migration: failed to back-fill t_meta_group_fields');
-        }
+        $conn->execute($sql);
     }
 };

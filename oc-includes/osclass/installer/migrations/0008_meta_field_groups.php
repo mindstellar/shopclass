@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -31,7 +32,7 @@ use mindstellar\migration\MigrationInterface;
  * which the runner baselines rather than replays.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $group = DB_TABLE_PREFIX . 't_meta_group';
         $sql = 'CREATE TABLE IF NOT EXISTS ' . $group . ' ('
@@ -42,9 +43,7 @@ return new class implements MigrationInterface {
             . ' s_meta MEDIUMTEXT NULL DEFAULT NULL,'
             . ' PRIMARY KEY (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('field groups migration: failed to create t_meta_group');
-        }
+        $conn->execute($sql);
 
         $groupCat = DB_TABLE_PREFIX . 't_meta_group_categories';
         // Foreign keys mirror t_meta_categories and struct.sql so a fresh install and
@@ -57,36 +56,28 @@ return new class implements MigrationInterface {
             . ' FOREIGN KEY (fk_i_group_id) REFERENCES ' . $group . ' (pk_i_id),'
             . ' FOREIGN KEY (fk_i_category_id) REFERENCES ' . DB_TABLE_PREFIX . 't_category (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('field groups migration: failed to create t_meta_group_categories');
-        }
+        $conn->execute($sql);
 
         $fields = DB_TABLE_PREFIX . 't_meta_fields';
-        if (!$this->columnExists($comm, $fields, 'fk_i_group_id')) {
+        if (!$this->columnExists($conn, $fields, 'fk_i_group_id')) {
             $sql = 'ALTER TABLE ' . $fields . ' ADD COLUMN fk_i_group_id INT UNSIGNED NULL DEFAULT NULL';
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('field groups migration: failed to add fk_i_group_id to t_meta_fields');
-            }
+            $conn->execute($sql);
         }
     }
 
     /**
      * Whether $column already exists on $table in the current database.
      */
-    private function columnExists(DBCommandClass $comm, string $table, string $column): bool
+    private function columnExists(Connection $conn, string $table, string $column): bool
     {
-        $sql = 'SELECT COUNT(*) AS c FROM information_schema.COLUMNS'
+        $count = $conn->scalar(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ' . $comm->escape($table)
-            . ' AND COLUMN_NAME = ' . $comm->escape($column);
+            . ' AND TABLE_NAME = ?'
+            . ' AND COLUMN_NAME = ?',
+            array($table, $column)
+        );
 
-        $result = $comm->query($sql);
-        if (!is_object($result)) {
-            throw new RuntimeException('field groups migration: unable to inspect columns of ' . $table);
-        }
-
-        $row = $result->row();
-
-        return isset($row['c']) && (int) $row['c'] > 0;
+        return (int) $count > 0;
     }
 };

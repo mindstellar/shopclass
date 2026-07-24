@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -30,35 +31,29 @@ use mindstellar\migration\MigrationInterface;
  * already-utf8mb4 table is a no-op.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_report_log';
-        if (!$this->tableExists($comm, $table)) {
+        if (!$this->tableExists($conn, $table)) {
             return;
         }
 
         $sql = 'ALTER TABLE ' . $table . ' CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci';
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('report log utf8mb4 migration: failed to convert ' . $table);
-        }
+        $conn->execute($sql);
     }
 
     /**
      * Whether $table exists in the current database.
      */
-    private function tableExists(DBCommandClass $comm, string $table): bool
+    private function tableExists(Connection $conn, string $table): bool
     {
-        $sql = 'SELECT COUNT(*) AS c FROM information_schema.TABLES'
+        $count = $conn->scalar(
+            'SELECT COUNT(*) FROM information_schema.TABLES'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ' . $comm->escape($table);
+            . ' AND TABLE_NAME = ?',
+            array($table)
+        );
 
-        $result = $comm->query($sql);
-        if (!is_object($result)) {
-            throw new RuntimeException('report log utf8mb4 migration: unable to inspect tables');
-        }
-
-        $row = $result->row();
-
-        return isset($row['c']) && (int) $row['c'] > 0;
+        return (int) $count > 0;
     }
 };

@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -26,7 +27,7 @@ use mindstellar\migration\MigrationInterface;
  * than replays; this migration brings an existing install up to the same state.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_resource ('
             . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
@@ -44,8 +45,6 @@ return new class implements MigrationInterface {
             . ' INDEX idx_storage (s_storage)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
 
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('resource migration: failed to create t_resource');
-        }
+        $conn->execute($sql);
     }
 };

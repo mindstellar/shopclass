@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -25,37 +26,31 @@ use mindstellar\migration\MigrationInterface;
  * migration brings an existing install up to the same state.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
-        if ($this->columnExists($comm, DB_TABLE_PREFIX . 't_widget', 'i_order')) {
+        if ($this->columnExists($conn, DB_TABLE_PREFIX . 't_widget', 'i_order')) {
             return;
         }
 
         $sql = 'ALTER TABLE ' . DB_TABLE_PREFIX . 't_widget'
             . ' ADD COLUMN i_order INT NOT NULL DEFAULT 0';
 
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('widget order migration: failed to add i_order to t_widget');
-        }
+        $conn->execute($sql);
     }
 
     /**
      * Whether $column already exists on $table in the current database.
      */
-    private function columnExists(DBCommandClass $comm, string $table, string $column): bool
+    private function columnExists(Connection $conn, string $table, string $column): bool
     {
-        $sql = 'SELECT COUNT(*) AS c FROM information_schema.COLUMNS'
+        $count = $conn->scalar(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ' . $comm->escape($table)
-            . ' AND COLUMN_NAME = ' . $comm->escape($column);
+            . ' AND TABLE_NAME = ?'
+            . ' AND COLUMN_NAME = ?',
+            array($table, $column)
+        );
 
-        $result = $comm->query($sql);
-        if (!is_object($result)) {
-            throw new RuntimeException('widget order migration: unable to inspect columns of ' . $table);
-        }
-
-        $row = $result->row();
-
-        return isset($row['c']) && (int) $row['c'] > 0;
+        return (int) $count > 0;
     }
 };

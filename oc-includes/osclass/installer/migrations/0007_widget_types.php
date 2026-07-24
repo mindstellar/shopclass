@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -25,42 +26,34 @@ use mindstellar\migration\MigrationInterface;
  * migration brings an existing install up to the same state.
  */
 return new class implements MigrationInterface {
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_widget';
 
-        if (!$this->columnExists($comm, $table, 's_type')) {
+        if (!$this->columnExists($conn, $table, 's_type')) {
             $sql = 'ALTER TABLE ' . $table . ' ADD COLUMN s_type VARCHAR(60) NULL';
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('widget types migration: failed to add s_type to t_widget');
-            }
+            $conn->execute($sql);
         }
 
-        if (!$this->columnExists($comm, $table, 's_config')) {
+        if (!$this->columnExists($conn, $table, 's_config')) {
             $sql = 'ALTER TABLE ' . $table . ' ADD COLUMN s_config TEXT NULL';
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('widget types migration: failed to add s_config to t_widget');
-            }
+            $conn->execute($sql);
         }
     }
 
     /**
      * Whether $column already exists on $table in the current database.
      */
-    private function columnExists(DBCommandClass $comm, string $table, string $column): bool
+    private function columnExists(Connection $conn, string $table, string $column): bool
     {
-        $sql = 'SELECT COUNT(*) AS c FROM information_schema.COLUMNS'
+        $count = $conn->scalar(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ' . $comm->escape($table)
-            . ' AND COLUMN_NAME = ' . $comm->escape($column);
+            . ' AND TABLE_NAME = ?'
+            . ' AND COLUMN_NAME = ?',
+            array($table, $column)
+        );
 
-        $result = $comm->query($sql);
-        if (!is_object($result)) {
-            throw new RuntimeException('widget types migration: unable to inspect columns of ' . $table);
-        }
-
-        $row = $result->row();
-
-        return isset($row['c']) && (int) $row['c'] > 0;
+        return (int) $count > 0;
     }
 };

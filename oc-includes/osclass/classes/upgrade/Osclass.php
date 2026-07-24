@@ -23,6 +23,7 @@ namespace mindstellar\upgrade;
 
 use DBCommandClass;
 use DBConnectionClass;
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
@@ -112,7 +113,9 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner($comm, osc_lib_path() . 'osclass/installer/migrations');
+            // updateDB() above still needs the legacy object; the runner takes the
+            // same underlying handle through the parameterized Connection.
+            $runner = new MigrationRunner(new Connection($c_db), osc_lib_path() . 'osclass/installer/migrations');
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {

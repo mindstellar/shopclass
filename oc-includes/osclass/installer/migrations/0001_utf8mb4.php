@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -86,13 +87,13 @@ return new class implements MigrationInterface {
     private const BACKUP_SECTION = 'osclass';
     private const BACKUP_NAME    = 'utf8mb4_fk_backup';
 
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
-        $comm->query('SET FOREIGN_KEY_CHECKS = 0');
+        $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
 
-        $tables = $this->installTables($comm);
+        $tables = $this->installTables($conn);
         if ($tables === array()) {
-            $comm->query('SET FOREIGN_KEY_CHECKS = 1');
+            $conn->execute('SET FOREIGN_KEY_CHECKS = 1');
             return;
         }
 
@@ -101,12 +102,12 @@ return new class implements MigrationInterface {
         // and persist them. On a retry after an interrupted run, load that snapshot
         // instead: the dropped FKs and already-widened TEXT columns are no longer
         // recoverable from the live schema, so recomputing would lose them.
-        $backup = $this->loadBackup($comm);
+        $backup = $this->loadBackup($conn);
         if ($backup === null) {
-            $charForeignKeys = $this->computeCharForeignKeys($comm, $tables);
-            $textColumns     = $this->textColumns($comm, $tables);
+            $charForeignKeys = $this->computeCharForeignKeys($conn, $tables);
+            $textColumns     = $this->textColumns($conn, $tables);
             $backup = array('fks' => $charForeignKeys, 'texts' => $textColumns);
-            $this->saveBackup($comm, $backup);
+            $this->saveBackup($conn, $backup);
         }
         $charForeignKeys = $backup['fks'];
         $textColumns     = $backup['texts'];
@@ -114,7 +115,7 @@ return new class implements MigrationInterface {
         // Reconstruct the pre-drop index picture: start from the live indexes, then
         // fold in each FK's original support-index name from the snapshot so a retry
         // (whose live schema has already lost those indexes) can still restore them.
-        $indexesBefore = $this->secondaryIndexes($comm, $tables);
+        $indexesBefore = $this->secondaryIndexes($conn, $tables);
         foreach ($charForeignKeys as $fk) {
             $signature = implode(',', $fk['columns']);
             if (($fk['index_name'] ?? null) !== null
@@ -126,13 +127,13 @@ return new class implements MigrationInterface {
 
         // 1. Drop the char/varchar foreign keys so their columns become convertible.
         //    Guarded: only drop a key that still exists (a retry may have dropped it).
-        $liveForeignKeys = $this->liveForeignKeyNames($comm, $tables);
+        $liveForeignKeys = $this->liveForeignKeyNames($conn, $tables);
         foreach ($charForeignKeys as $fk) {
             if (!isset($liveForeignKeys[$fk['table'] . '.' . $fk['name']])) {
                 continue;
             }
             $this->run(
-                $comm,
+                $conn,
                 'ALTER TABLE ' . $this->quoteIdent($fk['table'])
                 . ' DROP FOREIGN KEY ' . $this->quoteIdent($fk['name']),
                 'drop foreign key ' . $fk['name'] . ' on ' . $fk['table']
@@ -143,7 +144,7 @@ return new class implements MigrationInterface {
         //    already at utf8mb4/utf8mb4_general_ci is a harmless no-op.
         foreach ($tables as $table) {
             $this->run(
-                $comm,
+                $conn,
                 'ALTER TABLE ' . $this->quoteIdent($table)
                 . ' CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci',
                 'convert table ' . $table
@@ -155,7 +156,7 @@ return new class implements MigrationInterface {
         foreach ($textColumns as $col) {
             $nullSql = $col['nullable'] ? ' DEFAULT NULL' : ' NOT NULL';
             $this->run(
-                $comm,
+                $conn,
                 'ALTER TABLE ' . $this->quoteIdent($col['table'])
                 . ' MODIFY ' . $this->quoteIdent($col['column']) . ' ' . $col['type'] . $nullSql,
                 'restore type of ' . $col['table'] . '.' . $col['column']
@@ -168,13 +169,13 @@ return new class implements MigrationInterface {
         //    a retry restores keys an earlier interrupted run had already dropped. Any
         //    non-default ON DELETE/ON UPDATE action is re-emitted so referential
         //    behaviour survives; RESTRICT/NO ACTION are the defaults and stay implicit.
-        $liveForeignKeys = $this->liveForeignKeyNames($comm, $tables);
+        $liveForeignKeys = $this->liveForeignKeyNames($conn, $tables);
         foreach ($charForeignKeys as $fk) {
             if (isset($liveForeignKeys[$fk['table'] . '.' . $fk['name']])) {
                 continue;
             }
             $this->run(
-                $comm,
+                $conn,
                 'ALTER TABLE ' . $this->quoteIdent($fk['table'])
                 . ' ADD CONSTRAINT ' . $this->quoteIdent($fk['name'])
                 . ' FOREIGN KEY (' . $this->columnList($fk['columns']) . ')'
@@ -186,7 +187,7 @@ return new class implements MigrationInterface {
         }
 
         // 5. Rename any FK support index back to the name it had before recreation.
-        $indexesAfter = $this->secondaryIndexes($comm, $tables);
+        $indexesAfter = $this->secondaryIndexes($conn, $tables);
         foreach ($indexesAfter as $table => $signatures) {
             foreach ($signatures as $signature => $currentName) {
                 $originalName = $indexesBefore[$table][$signature] ?? null;
@@ -195,7 +196,7 @@ return new class implements MigrationInterface {
                     && !$this->indexNameInUse($indexesAfter[$table], $originalName)
                 ) {
                     $this->run(
-                        $comm,
+                        $conn,
                         'ALTER TABLE ' . $this->quoteIdent($table)
                         . ' RENAME INDEX ' . $this->quoteIdent($currentName)
                         . ' TO ' . $this->quoteIdent($originalName),
@@ -209,9 +210,9 @@ return new class implements MigrationInterface {
         // Full success: the conversion is complete and every FK is back, so the
         // durable snapshot is no longer needed. A partial failure above leaves it in
         // place for the next run to finish from.
-        $this->deleteBackup($comm);
+        $this->deleteBackup($conn);
 
-        $comm->query('SET FOREIGN_KEY_CHECKS = 1');
+        $conn->execute('SET FOREIGN_KEY_CHECKS = 1');
     }
 
     /**
@@ -222,10 +223,10 @@ return new class implements MigrationInterface {
      *
      * @return array<int, array{name:string,table:string,columns:string[],ref_table:string,ref_columns:string[],delete_rule:string,update_rule:string,index_name:?string}>
      */
-    private function computeCharForeignKeys(DBCommandClass $comm, array $tables): array
+    private function computeCharForeignKeys(Connection $conn, array $tables): array
     {
-        $charColumns = $this->charColumns($comm);
-        $foreignKeys = $this->foreignKeys($comm, $tables);
+        $charColumns = $this->charColumns($conn);
+        $foreignKeys = $this->foreignKeys($conn, $tables);
 
         // Only foreign keys whose columns carry a charset (char/varchar) block the
         // convert; integer keys are left untouched so their indexes never move.
@@ -241,7 +242,7 @@ return new class implements MigrationInterface {
             }
         ));
 
-        $indexes = $this->secondaryIndexes($comm, $tables);
+        $indexes = $this->secondaryIndexes($conn, $tables);
         foreach ($charForeignKeys as &$fk) {
             $signature = implode(',', $fk['columns']);
             $fk['index_name'] = $indexes[$fk['table']][$signature] ?? null;
@@ -255,11 +256,9 @@ return new class implements MigrationInterface {
      * Run one DDL statement, throwing on failure so the runner halts and does not
      * record the migration as applied.
      */
-    private function run(DBCommandClass $comm, string $sql, string $what): void
+    private function run(Connection $conn, string $sql, string $what, array $params = array()): void
     {
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('utf8mb4 migration: failed to ' . $what);
-        }
+        $conn->execute($sql, $params);
     }
 
     /**
@@ -267,18 +266,13 @@ return new class implements MigrationInterface {
      *
      * @return null|array{fks:array<int,array<string,mixed>>,texts:array<int,array<string,mixed>>}
      */
-    private function loadBackup(DBCommandClass $comm): ?array
+    private function loadBackup(Connection $conn): ?array
     {
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT s_value FROM ' . $this->quoteIdent(DB_TABLE_PREFIX . 't_preference')
-            . ' WHERE s_section = ' . $comm->escape(self::BACKUP_SECTION)
-            . ' AND s_name = ' . $comm->escape(self::BACKUP_NAME)
+            . ' WHERE s_section = ? AND s_name = ?',
+            array(self::BACKUP_SECTION, self::BACKUP_NAME)
         );
-        if (!is_object($result)) {
-            return null;
-        }
-
-        $rows = $result->result('array');
         if ($rows === array()) {
             return null;
         }
@@ -297,7 +291,7 @@ return new class implements MigrationInterface {
      *
      * @param array{fks:array,texts:array} $backup
      */
-    private function saveBackup(DBCommandClass $comm, array $backup): void
+    private function saveBackup(Connection $conn, array $backup): void
     {
         $json = json_encode($backup);
         if ($json === false) {
@@ -305,26 +299,23 @@ return new class implements MigrationInterface {
         }
 
         $this->run(
-            $comm,
+            $conn,
             'REPLACE INTO ' . $this->quoteIdent(DB_TABLE_PREFIX . 't_preference')
-            . ' (s_section, s_name, s_value, e_type) VALUES ('
-            . $comm->escape(self::BACKUP_SECTION) . ', '
-            . $comm->escape(self::BACKUP_NAME) . ', '
-            . $comm->escape($json) . ', '
-            . $comm->escape('STRING') . ')',
-            'save foreign-key backup'
+            . ' (s_section, s_name, s_value, e_type) VALUES (?, ?, ?, ?)',
+            'save foreign-key backup',
+            array(self::BACKUP_SECTION, self::BACKUP_NAME, $json, 'STRING')
         );
     }
 
     /**
      * Delete the re-entrancy snapshot after a fully successful conversion.
      */
-    private function deleteBackup(DBCommandClass $comm): void
+    private function deleteBackup(Connection $conn): void
     {
-        $comm->query(
+        $conn->execute(
             'DELETE FROM ' . $this->quoteIdent(DB_TABLE_PREFIX . 't_preference')
-            . ' WHERE s_section = ' . $comm->escape(self::BACKUP_SECTION)
-            . ' AND s_name = ' . $comm->escape(self::BACKUP_NAME)
+            . ' WHERE s_section = ? AND s_name = ?',
+            array(self::BACKUP_SECTION, self::BACKUP_NAME)
         );
     }
 
@@ -336,10 +327,10 @@ return new class implements MigrationInterface {
      *
      * @return array<string,true>
      */
-    private function liveForeignKeyNames(DBCommandClass $comm, array $tables): array
+    private function liveForeignKeyNames(Connection $conn, array $tables): array
     {
         $set = array();
-        foreach ($this->foreignKeys($comm, $tables) as $fk) {
+        foreach ($this->foreignKeys($conn, $tables) as $fk) {
             $set[$fk['table'] . '.' . $fk['name']] = true;
         }
 
@@ -351,15 +342,12 @@ return new class implements MigrationInterface {
      *
      * @return string[]
      */
-    private function installTables(DBCommandClass $comm): array
+    private function installTables(Connection $conn): array
     {
-        $result = $comm->query("SHOW TABLES LIKE '" . $this->prefixLikePattern() . "'");
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to list tables for prefix ' . DB_TABLE_PREFIX);
-        }
+        $rows = $conn->select("SHOW TABLES LIKE '" . $this->prefixLikePattern() . "'");
 
         $tables = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             // SHOW TABLES returns a single column keyed by "Tables_in_<db>"; read
             // it positionally so the key name is irrelevant.
             $tables[] = array_values($row)[0];
@@ -390,20 +378,17 @@ return new class implements MigrationInterface {
      *
      * @return array<string,true>
      */
-    private function charColumns(DBCommandClass $comm): array
+    private function charColumns(Connection $conn): array
     {
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
             . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
             . " AND DATA_TYPE IN ('char', 'varchar')"
         );
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to read char columns');
-        }
 
         $set = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             $set[$row['TABLE_NAME'] . '.' . $row['COLUMN_NAME']] = true;
         }
 
@@ -419,21 +404,18 @@ return new class implements MigrationInterface {
      *
      * @return array<int, array{table:string,column:string,type:string,nullable:bool}>
      */
-    private function textColumns(DBCommandClass $comm, array $tables): array
+    private function textColumns(Connection $conn, array $tables): array
     {
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE FROM information_schema.COLUMNS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
             . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
             . " AND DATA_TYPE IN ('tinytext', 'text', 'mediumtext')"
         );
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to read text columns');
-        }
 
         $tableSet = array_flip($tables);
         $columns = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             if (!isset($tableSet[$row['TABLE_NAME']])) {
                 continue;
             }
@@ -456,11 +438,11 @@ return new class implements MigrationInterface {
      *
      * @return array<int, array{name:string,table:string,columns:string[],ref_table:string,ref_columns:string[],delete_rule:string,update_rule:string}>
      */
-    private function foreignKeys(DBCommandClass $comm, array $tables): array
+    private function foreignKeys(Connection $conn, array $tables): array
     {
-        $rules = $this->referentialRules($comm);
+        $rules = $this->referentialRules($conn);
 
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME'
             . ' FROM information_schema.KEY_COLUMN_USAGE'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
@@ -468,13 +450,10 @@ return new class implements MigrationInterface {
             . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
             . ' ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION'
         );
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to read foreign keys');
-        }
 
         $tableSet = array_flip($tables);
         $keys = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             $table = $row['TABLE_NAME'];
             if (!isset($tableSet[$table])) {
                 continue;
@@ -505,20 +484,17 @@ return new class implements MigrationInterface {
      *
      * @return array<string, array{delete_rule:string,update_rule:string}>
      */
-    private function referentialRules(DBCommandClass $comm): array
+    private function referentialRules(Connection $conn): array
     {
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT CONSTRAINT_NAME, TABLE_NAME, UPDATE_RULE, DELETE_RULE'
             . ' FROM information_schema.REFERENTIAL_CONSTRAINTS'
             . ' WHERE CONSTRAINT_SCHEMA = DATABASE()'
             . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
         );
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to read referential constraints');
-        }
 
         $rules = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             $rules[$row['TABLE_NAME'] . '.' . $row['CONSTRAINT_NAME']] = array(
                 'delete_rule' => (string) $row['DELETE_RULE'],
                 'update_rule' => (string) $row['UPDATE_RULE'],
@@ -557,22 +533,19 @@ return new class implements MigrationInterface {
      *
      * @return array<string, array<string,string>>
      */
-    private function secondaryIndexes(DBCommandClass $comm, array $tables): array
+    private function secondaryIndexes(Connection $conn, array $tables): array
     {
-        $result = $comm->query(
+        $rows = $conn->select(
             'SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX FROM information_schema.STATISTICS'
             . ' WHERE TABLE_SCHEMA = DATABASE()'
             . " AND TABLE_NAME LIKE '" . $this->prefixLikePattern() . "'"
             . " AND INDEX_NAME <> 'PRIMARY'"
             . ' ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX'
         );
-        if (!is_object($result)) {
-            throw new RuntimeException('utf8mb4 migration: unable to read indexes');
-        }
 
         $tableSet = array_flip($tables);
         $byIndex = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($rows as $row) {
             if (!isset($tableSet[$row['TABLE_NAME']])) {
                 continue;
             }

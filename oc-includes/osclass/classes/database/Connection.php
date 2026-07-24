@@ -47,15 +47,24 @@ class Connection
     private $conn;
 
     /**
+     * Bind to a specific mysqli handle, or to the shared Shopclass one when none
+     * is given. Passing a handle is what lets a caller work against a database
+     * other than the configured one -- the upgrade tooling builds scratch
+     * databases and drives them through the same code paths.
+     *
+     * @param \mysqli|null $conn
+     *
      * @throws DbException when no mysqli connection is available
      */
-    public function __construct()
+    public function __construct(?\mysqli $conn = null)
     {
-        $db = \DBConnectionClass::newInstance()->getOsclassDb();
-        if (!$db instanceof mysqli) {
+        if ($conn === null) {
+            $conn = \DBConnectionClass::newInstance()->getOsclassDb();
+        }
+        if (!$conn instanceof mysqli) {
             throw new DbException('No database connection available');
         }
-        $this->conn = $db;
+        $this->conn = $conn;
     }
 
     /**

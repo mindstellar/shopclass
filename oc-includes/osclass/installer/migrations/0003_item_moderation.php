@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -44,15 +45,15 @@ return new class implements MigrationInterface {
         'report_threshold'        => array('5', 'INTEGER'),
     );
 
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
-        $this->createKeywordBlock($comm);
-        $this->createReportLog($comm);
-        $this->createModerationLog($comm);
-        $this->seedPreferences($comm);
+        $this->createKeywordBlock($conn);
+        $this->createReportLog($conn);
+        $this->createModerationLog($conn);
+        $this->seedPreferences($conn);
     }
 
-    private function createKeywordBlock(DBCommandClass $comm): void
+    private function createKeywordBlock(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_keyword_block ('
             . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
@@ -63,12 +64,10 @@ return new class implements MigrationInterface {
             . ' PRIMARY KEY (pk_i_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
 
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('item moderation migration: failed to create t_keyword_block');
-        }
+        $conn->execute($sql);
     }
 
-    private function createReportLog(DBCommandClass $comm): void
+    private function createReportLog(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_report_log ('
             . ' fk_i_item_id INT UNSIGNED NOT NULL,'
@@ -80,12 +79,10 @@ return new class implements MigrationInterface {
             . ' PRIMARY KEY (fk_i_item_id, s_reporter)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI'";
 
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('item moderation migration: failed to create t_item_report_log');
-        }
+        $conn->execute($sql);
     }
 
-    private function createModerationLog(DBCommandClass $comm): void
+    private function createModerationLog(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_moderation_log ('
             . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
@@ -99,28 +96,20 @@ return new class implements MigrationInterface {
             . ' KEY fk_i_item_id (fk_i_item_id)'
             . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'";
 
-        if ($comm->query($sql) === false) {
-            throw new RuntimeException('item moderation migration: failed to create t_item_moderation_log');
-        }
+        $conn->execute($sql);
     }
 
-    private function seedPreferences(DBCommandClass $comm): void
+    private function seedPreferences(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';
 
         foreach (self::PREFERENCES as $name => $spec) {
             [$default, $type] = $spec;
 
-            $sql = 'INSERT IGNORE INTO ' . $table
-                . ' (s_section, s_name, s_value, e_type) VALUES ('
-                . $comm->escape(self::SECTION) . ', '
-                . $comm->escape($name) . ', '
-                . $comm->escape($default) . ', '
-                . $comm->escape($type) . ')';
-
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('item moderation migration: failed to seed ' . $name);
-            }
+            $conn->execute(
+                'INSERT IGNORE INTO ' . $table . ' (s_section, s_name, s_value, e_type) VALUES (?, ?, ?, ?)',
+                array(self::SECTION, $name, $default, $type)
+            );
         }
     }
 };

@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
@@ -35,23 +36,17 @@ return new class implements MigrationInterface {
         'avatar_dimensions'    => array('200x200', 'STRING'),
     );
 
-    public function up(DBCommandClass $comm): void
+    public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';
 
         foreach (self::PREFERENCES as $name => $spec) {
             [$default, $type] = $spec;
 
-            $sql = 'INSERT IGNORE INTO ' . $table
-                . ' (s_section, s_name, s_value, e_type) VALUES ('
-                . $comm->escape(self::SECTION) . ', '
-                . $comm->escape($name) . ', '
-                . $comm->escape($default) . ', '
-                . $comm->escape($type) . ')';
-
-            if ($comm->query($sql) === false) {
-                throw new RuntimeException('user avatars migration: failed to seed ' . $name);
-            }
+            $conn->execute(
+                'INSERT IGNORE INTO ' . $table . ' (s_section, s_name, s_value, e_type) VALUES (?, ?, ?, ?)',
+                array(self::SECTION, $name, $default, $type)
+            );
         }
     }
 };
