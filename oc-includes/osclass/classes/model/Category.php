@@ -142,9 +142,6 @@ class Category extends DAO
      */
     public function listEnabled()
     {
-        // $this->dao->where("b.s_name != ''");
-        // $this->dao->where("a.b_enabled = 1");
-
         return $this->listWhere("b.s_name != '' AND a.b_enabled = 1");
     }
 
@@ -308,10 +305,6 @@ class Category extends DAO
      */
     public function findRootCategories()
     {
-        // juanramon: specific condition
-        // $this->dao->where( 'a.fk_i_parent_id IS NULL' );
-        // end specific condition
-
         return $this->listWhere('a.fk_i_parent_id IS NULL');
     }
 
@@ -324,11 +317,6 @@ class Category extends DAO
      */
     public function findRootCategoriesEnabled()
     {
-        // juanramon: specific condition
-        // $this->dao->where( 'a.fk_i_parent_id IS NULL' );
-        // $this->dao->where( 'a.b_enabled', '1' );
-        // end specific condition
-
         return $this->listWhere('a.fk_i_parent_id IS NULL AND a.b_enabled = 1');
     }
 
@@ -399,10 +387,6 @@ class Category extends DAO
      */
     public function listAll($description = true)
     {
-        // juanramon: specific condition
-        // $this->dao->where( '1 = 1' );
-        // end specific condition
-
         return $this->listWhere('1 = 1');
     }
 
@@ -418,11 +402,6 @@ class Category extends DAO
      */
     public function findRootCategory($categoryID)
     {
-        // juanramon: specific condition
-        // $this->dao->where( 'a.fk_i_parent_id IS NOT NULL' );
-        // $this->dao->where( 'a.pk_i_id', $categoryID );
-        // end specific condition
-
         $results = $this->listWhere('a.fk_i_parent_id IS NOT NULL AND a.pk_i_id = %d', (int)$categoryID);
 
         if (count($results) > 0) {
@@ -471,7 +450,6 @@ class Category extends DAO
                     return $category;
                 }
             } else {
-                // $this->dao->where('pk_i_id', $categoryID);
                 $category = $this->listWhere('a.pk_i_id = %d', (int)$categoryID);
 
                 if (!isset($category[0]) || !isset($category[0]['pk_i_id'])) {
@@ -584,7 +562,6 @@ class Category extends DAO
      */
     public function findSubcategories($categoryID)
     {
-        // $this->dao->where( 'fk_i_parent_id', (int)($categoryID));
         return $this->listWhere('fk_i_parent_id = %d', (int)$categoryID);
     }
 
@@ -734,9 +711,6 @@ class Category extends DAO
                 return $this->findByPrimaryKey($this->slugs[$slug]);
             }
             $slug = urlencode($slug);
-            // $this->dao->where('b.s_slug', $slug);
-            // end specific condition
-
             $results = $this->listWhere('b.s_slug = %s', $slug);
             if (count($results) > 0) {
                 $this->slugs[$slug] = $results[0]['pk_i_id'];
@@ -875,11 +849,6 @@ class Category extends DAO
      */
     public function isRoot($categoryID)
     {
-        // juanramon: specific condition
-        // $this->dao->where( 'fk_i_parent_id IS NULL' );
-        // $this->dao->where( 'pk_i_id', $categoryID );
-        // end specific condition
-
         $results = $this->listWhere('a.fk_i_parent_id IS NULL AND a.pk_i_id = %d', (int)$categoryID);
 
         return count($results) > 0;
@@ -897,8 +866,6 @@ class Category extends DAO
      */
     public function findSubcategoriesEnabled($categoryID)
     {
-        // $this->dao->where( 'fk_i_parent_id', (int)($categoryID));
-        // $this->dao->where( 'a.b_enabled', '1' );
         return $this->listWhere('a.fk_i_parent_id = %s AND a.b_enabled = 1', (int)$categoryID);
     }
 

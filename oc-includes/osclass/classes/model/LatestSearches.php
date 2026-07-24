@@ -67,11 +67,10 @@ class LatestSearches extends DAO
         $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
             . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
 
-        // Legacy dao->limit($limit) only appends a clause when is_numeric($limit)
-        // is true; a non-numeric $limit leaves the whole clause off (unbounded),
-        // not zero rows. A negative numeric $limit compiles an invalid clause,
-        // which the try/catch below turns into the same false the legacy
-        // get()-returned-false branch produced.
+        // A non-numeric $limit leaves the clause off entirely and returns every
+        // row, not zero rows -- callers relying on that unbounded behaviour exist.
+        // A negative numeric $limit builds invalid SQL, which the try/catch below
+        // reports as false.
         if (is_numeric($limit)) {
             $sql .= ' LIMIT ' . (int) $limit;
         }
@@ -142,17 +141,12 @@ class LatestSearches extends DAO
 
         $sql = 'SELECT d_date FROM ' . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
 
-        // Legacy $this->dao->limit($number, 1) compiles the literal clause
-        // "LIMIT $number, 1": DBCommandClass's own aLimit/aOffset names are
-        // misleading -- with two arguments the FIRST becomes the emitted
-        // clause's offset and the SECOND its row count (MySQL's comma form of
-        // LIMIT is offset-then-count), so $number is the OFFSET here despite
-        // its name. A non-numeric $number disables the whole clause (legacy's
-        // is_numeric() gate), running the query unbounded; a negative numeric
-        // $number instead compiles an invalid clause. Legacy's next line reads
-        // ->row() off that failed result before its own false-check and
-        // crashes with an uncaught Error, so a negative $number here throws
-        // rather than being silently clamped to offset 0 by the new offset().
+        // $number is an OFFSET, not a row count: the clause is MySQL's comma form
+        // ("LIMIT <offset>, <count>"), so this selects the single row $number
+        // places down the list and purges from there. A non-numeric $number
+        // leaves the clause off entirely, running the query unbounded; a negative
+        // one is rejected rather than clamped to offset 0, since silently purging
+        // from the newest row would delete far more than the caller asked for.
         if (is_numeric($number)) {
             if ((int) $number < 0) {
                 throw new \mindstellar\database\DbException('Invalid limit');
