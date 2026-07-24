@@ -26,13 +26,10 @@
  *    and count() aggregate with no GROUP BY and therefore always get exactly
  *    one row back from MySQL — their zero-row branches are unreachable through
  *    this model's own signature and are pinned as such, not exercised.
- *  - search()'s $order_by/$order pair reach DBCommandClass::orderBy() with NO
- *    allowlist of their own (unlike KeywordBlock's own admin-added regex
- *    guard) — the column name is concatenated into the SQL exactly as given.
- *    The one caller in this codebase (CommentsDataTable) always passes the
- *    fixed literal 'c.dt_pub_date', so this is inert in practice, but it is a
- *    genuine unvalidated raw site on a public method and is pinned exactly as
- *    legacy behaves, not hardened.
+ *  - search()'s $order_by is validated against the same `^[A-Za-z0-9_.]+$`
+ *    allowlist KeywordBlock and BanRule carry, and $order is narrowed to
+ *    ASC/DESC/RAND(), so neither reaches ORDER BY unchecked. A column that fails
+ *    the allowlist falls back to the default sort.
  *  - extendData() is private and issues one query per comment row, every time,
  *    with no de-duplication even when several comments share the same item —
  *    the N+1 baseline is measured at two fixture sizes below.
@@ -339,14 +336,15 @@ $zeroDir = $model->search($itemC, 0, 10, 'c.pk_i_id', '0');
 error_reporting($prevLevel);
 pin('a "0" direction concatenates onto the column and fails the query', array(), $zeroDir);
 
-harness_section('ItemComment::search — order_by has no allowlist of its own');
+harness_section('ItemComment::search — an invalid order_by is rejected, not executed');
 
-$prevLevel = error_reporting(E_ALL & ~E_WARNING);
-$bogusOrderBy = $model->search($itemC, 0, 10, 'c.pk_i_id; DROP TABLE ' . $table . ' -- ', 'ASC');
-error_reporting($prevLevel);
-check('an invalid order_by does not raise', is_array($bogusOrderBy), describe($bogusOrderBy));
-pin('the malformed order_by fails the query, same as any other SQL error', array(), $bogusOrderBy);
-check('the table is untouched by the injection attempt', $rowCount() > 0, (string) $rowCount());
+/* An order_by that fails the identifier allowlist falls back to the default
+ * sort, so an injection attempt runs a normal, safe query rather than reaching
+ * ORDER BY. */
+$safeOrderBy = $model->search($itemC, 0, 10, 'c.pk_i_id; DROP TABLE ' . $table . ' -- ', 'ASC');
+check('an injection attempt in order_by does not raise', is_array($safeOrderBy), describe($safeOrderBy));
+check('it falls back to the default sort and still returns the item\'s comments', count($safeOrderBy) > 0, (string) count($safeOrderBy));
+check('the table is untouched', $rowCount() > 0, (string) $rowCount());
 
 harness_section('ItemComment::search — itemId=null joins every comment to its item');
 

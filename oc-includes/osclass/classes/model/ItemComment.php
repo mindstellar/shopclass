@@ -409,11 +409,13 @@ class ItemComment extends DAO
             $sql .= ' AND ( c.b_enabled = 0 OR c.b_active = 0 OR c.b_spam = 1 )';
         }
 
-        // $order_by/$order reach here exactly as the caller supplied them.
-        // DBCommandClass::orderBy() concatenates $order_by raw with no identifier
-        // allowlist of its own (only $order gets narrowed to ASC/DESC/RAND()), so this
-        // reproduces that behaviour rather than adding validation this method never
-        // had: every current caller passes the fixed literal 'c.dt_pub_date'.
+        // Validate the sort column against the same identifier allowlist the other
+        // paged searches use before it reaches ORDER BY. Every in-repo caller
+        // passes a fixed literal, but this is a public method a plugin could call
+        // with request input, so an unvalidated column is not reproduced.
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_by)) {
+            $order_by = 'c.pk_i_id';
+        }
         $direction = (string)$order;
         if (strtolower($direction) === 'random') {
             $orderSql = $order_by . ' RAND()';

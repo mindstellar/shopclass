@@ -653,13 +653,13 @@ class Search extends DAO
                 );
                 if ($this->order_column === 'relevance') {
                     $this->dao->select(sprintf(
-                                           "MATCH(d.s_title, d.s_description) AGAINST(%s) as relevance",
+                                           "MATCH(d.s_description, d.s_title) AGAINST(%s) as relevance",
                                            $this->sPattern
                                        ));
                     $this->dao->having(sprintf("relevance > %s", 0));
                 } else {
                     $this->dao->where(sprintf(
-                                          "MATCH(d.s_title, d.s_description) AGAINST(%s IN BOOLEAN MODE)",
+                                          "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
                                           $this->sPattern
                                       ));
                 }
@@ -935,7 +935,7 @@ class Search extends DAO
             $this->dao->from(DB_TABLE_PREFIX . 't_item as ti');
             $this->dao->where('ti.pk_i_id = d.fk_i_item_id');
             $this->dao->where(sprintf(
-                                  "MATCH(d.s_title, d.s_description) AGAINST(%s IN BOOLEAN MODE)",
+                                  "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
                                   $this->sPattern
                               ));
             $this->dao->where('ti.b_premium = 1');
