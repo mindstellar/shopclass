@@ -21,9 +21,9 @@
 
 namespace mindstellar\upgrade;
 
-use DBCommandClass;
 use DBConnectionClass;
 use mindstellar\database\Connection;
+use mindstellar\database\SchemaReconciler;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
@@ -75,9 +75,10 @@ class Osclass extends UpgradePackage
 
             $conn = DBConnectionClass::newInstance();
             $c_db = $conn->getOsclassDb();
-            $comm = new DBCommandClass($c_db);
+            $db   = new Connection($c_db);
 
-            $result = $comm->updateDB(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
+            $result = (new SchemaReconciler($db))
+                ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
             list($status, $message, $errorQueries) = $result;
         }
         if (isset($status, $message, $errorQueries)) {
@@ -113,9 +114,7 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            // updateDB() above still needs the legacy object; the runner takes the
-            // same underlying handle through the parameterized Connection.
-            $runner = new MigrationRunner(new Connection($c_db), osc_lib_path() . 'osclass/installer/migrations');
+            $runner = new MigrationRunner($db, osc_lib_path() . 'osclass/installer/migrations');
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {

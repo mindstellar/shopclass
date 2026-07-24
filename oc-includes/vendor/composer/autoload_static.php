@@ -954,6 +954,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\database\\Db' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Db.php',
         'mindstellar\\database\\DbException' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/DbException.php',
         'mindstellar\\database\\QueryBuilder' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/QueryBuilder.php',
+        'mindstellar\\database\\SchemaReconciler' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/SchemaReconciler.php',
         'mindstellar\\database\\SqlScript' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/SqlScript.php',
         'mindstellar\\fields\\FieldTypeRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/fields/FieldTypeRegistry.php',
         'mindstellar\\form\\admin\\Item' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/admin/Item.php',

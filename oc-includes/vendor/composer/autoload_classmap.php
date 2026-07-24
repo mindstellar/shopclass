@@ -819,6 +819,7 @@ return array(
     'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',
     'mindstellar\\database\\DbException' => $baseDir . '/oc-includes/osclass/classes/database/DbException.php',
     'mindstellar\\database\\QueryBuilder' => $baseDir . '/oc-includes/osclass/classes/database/QueryBuilder.php',
+    'mindstellar\\database\\SchemaReconciler' => $baseDir . '/oc-includes/osclass/classes/database/SchemaReconciler.php',
     'mindstellar\\database\\SqlScript' => $baseDir . '/oc-includes/osclass/classes/database/SqlScript.php',
     'mindstellar\\fields\\FieldTypeRegistry' => $baseDir . '/oc-includes/osclass/classes/fields/FieldTypeRegistry.php',
     'mindstellar\\form\\admin\\Item' => $baseDir . '/oc-includes/osclass/classes/form/admin/Item.php',
