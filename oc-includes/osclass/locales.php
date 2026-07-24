@@ -76,12 +76,12 @@ function osc_checkLocales()
                 // old templates
                 $path = osc_translations_path() . $locale['locale_code'] . '/mail.sql';
                 if (file_exists($path)) {
-                    $sql    = file_get_contents($path);
-                    $conn   = DBConnectionClass::newInstance();
-                    $c_db   = $conn->getOsclassDb();
-                    $comm   = new DBCommandClass($c_db);
-                    $result = $comm->importSQL($sql);
-                    if (!$result) {
+                    $sql  = file_get_contents($path);
+                    $conn = DBConnectionClass::newInstance();
+
+                    try {
+                        (new \mindstellar\database\Connection($conn->getOsclassDb()))->executeScript($sql);
+                    } catch (\mindstellar\database\DbException $e) {
                         return false;
                     }
                 }

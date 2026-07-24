@@ -560,24 +560,24 @@ function oc_install()
             return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
-        $m_db = $adminInstance->getOsclassDb();
-        $comm = new DBCommandClass($m_db);
+        // Bound to the admin handle rather than the shared one: the database this
+        // statement creates does not exist yet, so there is nothing to connect to.
+        $adminDb = new \mindstellar\database\Connection($adminInstance->getOsclassDb());
         // Backtick-quote the database name (escaping any backtick) so a name with
         // a hyphen or other punctuation — common on shared hosting — is created
         // safely and can't break out of the identifier.
         $quotedDbName = '`' . str_replace('`', '``', $dbname) . '`';
-        $comm->query(sprintf(
-            "CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'",
-            $quotedDbName
-        ));
 
-        $error_num = $comm->getErrorLevel();
-
-        if ($error_num > 0) {
-            return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+        try {
+            $adminDb->execute(sprintf(
+                "CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'",
+                $quotedDbName
+            ));
+        } catch (\mindstellar\database\DbException $e) {
+            return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
-        unset($dbInstance, $comm, $adminInstance);
+        unset($dbInstance, $adminDb, $adminInstance);
     }
 
     // Ad-hoc probe of the real Shopclass credentials (still not the singleton).
@@ -622,19 +622,18 @@ function oc_install()
     // this same handle, so they all run over one connection to the new schema.
     $conn = DBConnectionClass::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $c_db = $conn->getOsclassDb();
-    $comm = new DBCommandClass($c_db);
+    $db   = new \mindstellar\database\Connection($c_db);
 
     $sql = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
-    $comm->importSQL($sql);
 
-    $error_num = $comm->getErrorLevel();
-
-    if ($error_num > 0) {
-        return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+    try {
+        $db->executeScript($sql);
+    } catch (\mindstellar\database\DbException $e) {
+        return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
 
     // Schema is already at target state; record every migration as applied without running it.
-    $runner = new mindstellar\migration\MigrationRunner($comm, ABS_PATH . 'oc-includes/osclass/installer/migrations');
+    $runner = new mindstellar\migration\MigrationRunner($db, ABS_PATH . 'oc-includes/osclass/installer/migrations');
     $runner->ensureLedger();
     $runner->baseline();
 
@@ -696,12 +695,10 @@ function oc_install()
         $sql .= file_get_contents($file);
     }
 
-    $comm->importSQL($sql);
-
-    $error_num = $comm->getErrorLevel();
-
-    if ($error_num > 0) {
-        return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+    try {
+        $db->executeScript($sql);
+    } catch (\mindstellar\database\DbException $e) {
+        return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
 
     // Seed the installer's own preference rows through the parameterized API,
@@ -1147,11 +1144,17 @@ function install_locations()
         $sql = osc_file_get_contents(osc_get_locations_sql_url($location));
         if ($sql) {
             $conn = DBConnectionClass::newInstance();
-            $c_db = $conn->getOsclassDb();
-            $comm = new DBCommandClass($c_db);
-            $comm->query('SET FOREIGN_KEY_CHECKS = 0');
-            $comm->importSQL($sql);
-            $comm->query('SET FOREIGN_KEY_CHECKS = 1');
+            $locationDb = new \mindstellar\database\Connection($conn->getOsclassDb());
+            // A failed locations import is not fatal to the install: the dataset is
+            // optional, and the previous layer likewise reported success regardless.
+            try {
+                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 0');
+                $locationDb->executeScript($sql);
+            } catch (\mindstellar\database\DbException $e) {
+                error_log('Location dataset import failed: ' . $e->getMessage());
+            } finally {
+                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 1');
+            }
 
             return true;
         }
