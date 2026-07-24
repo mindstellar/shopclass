@@ -13,7 +13,13 @@
  */
 
 /**
- * Stats
+ * Aggregate counts backing the admin statistics screens.
+ *
+ * Every query is a read-only aggregate, so these run through the parameterized
+ * osc_db_select() helper rather than a query builder: the grouped date buckets
+ * (WEEK/MONTHNAME/DATE) and the derived table in items_by_user() are not
+ * expressible through QueryBuilder's identifier allowlist. Only $from_date
+ * varies at runtime and it is bound, never interpolated.
  */
 class Stats
 {
@@ -22,17 +28,6 @@ class Stats
      * @var \Stats
      */
     private static $instance;
-    private $conn;
-
-    /**
-     * Stats constructor.
-     */
-    public function __construct()
-    {
-        $conn       = DBConnectionClass::newInstance();
-        $data       = $conn->getOsclassDb();
-        $this->conn = new DBCommandClass($data);
-    }
 
     /**
      * @return \Stats
@@ -47,104 +42,117 @@ class Stats
     }
 
     /**
+     * Pick the date-bucket expressions for the requested granularity.
+     *
+     * $map holds the verbatim SQL fragments per granularity as
+     * array('week' => array(<d_date expr>, <group by expr>), 'month' => ..., 'day' => ...).
+     * They differ between callers -- some bucket a day as DATE(), others as DAY()
+     * or the bare column -- so each caller supplies its own rather than sharing a
+     * single definition.
+     *
+     * @param string $date
+     * @param array  $map
+     *
+     * @return array
+     */
+    private function bucket($date, array $map)
+    {
+        if ($date === 'week') {
+            return $map['week'];
+        }
+
+        if ($date === 'month') {
+            return $map['month'];
+        }
+
+        return $map['day'];
+    }
+
+    /**
+     * Run an aggregate query, returning legacy string-typed rows.
+     *
+     * The driver hands back native ints for integer columns while the previous
+     * query layer returned strings; the views compare and print these loosely, so
+     * rows are stringified to keep that shape. A failed query yields $fallback,
+     * matching what the previous layer returned when it could not run.
+     *
+     * @param string $sql
+     * @param array  $params
+     * @param mixed  $fallback
+     *
+     * @return mixed
+     */
+    private function rows($sql, array $params = array(), $fallback = array())
+    {
+        try {
+            return osc_db_stringify_rows(osc_db_select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
+            return $fallback;
+        }
+    }
+
+    /**
      * @param        $from_date
      * @param string $date
      *
-     * @return array|\countable|object
+     * @return array
      */
     public function new_users_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_reg_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('WEEK(dt_reg_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTHNAME(dt_reg_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('MONTH(dt_reg_date)');
-        } else {
-            $this->conn->select('DATE(dt_reg_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('DAY(dt_reg_date)');
-        }
-        $this->conn->from(DB_TABLE_PREFIX . 't_user');
-        $this->conn->where("dt_reg_date >= '$from_date'");
-        $this->conn->orderBy('dt_reg_date', 'DESC');
+        list($dDate, $groupBy) = $this->bucket($date, array(
+            'week'  => array('WEEK(dt_reg_date)', 'WEEK(dt_reg_date)'),
+            'month' => array('MONTHNAME(dt_reg_date)', 'MONTH(dt_reg_date)'),
+            'day'   => array('DATE(dt_reg_date)', 'DAY(dt_reg_date)'),
+        ));
 
-        $result = $this->conn->get();
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
+        $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_user'
+            . ' WHERE dt_reg_date >= ?'
+            . ' GROUP BY ' . $groupBy
+            . ' ORDER BY dt_reg_date DESC';
 
-        return array();
+        return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array|\countable|object
+     * @return array
      */
     public function users_by_country()
     {
-        $this->conn->select('s_country, COUNT(pk_i_id) as num');
-        $this->conn->from(DB_TABLE_PREFIX . 't_user');
-        $this->conn->groupBy('s_country');
-
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows(
+            'SELECT s_country, COUNT(pk_i_id) as num FROM ' . DB_TABLE_PREFIX . 't_user GROUP BY s_country'
+        );
     }
 
     /**
-     * @return array|\countable|object
+     * @return array
      */
     public function users_by_region()
     {
-        $this->conn->select('s_region, COUNT(pk_i_id) as num');
-        $this->conn->from(DB_TABLE_PREFIX . 't_user');
-        $this->conn->groupBy('s_region');
-
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows(
+            'SELECT s_region, COUNT(pk_i_id) as num FROM ' . DB_TABLE_PREFIX . 't_user GROUP BY s_region'
+        );
     }
 
     /**
-     * @return array|\countable|object
+     * @return array
      */
     public function items_by_user()
     {
-        $result =
-            $this->conn->query('SELECT AVG( num ) as avg FROM (SELECT COUNT( pk_i_id ) AS num FROM ' . DB_TABLE_PREFIX
-                . 't_item GROUP BY s_contact_email ) AS dummy_table');
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows(
+            'SELECT AVG( num ) as avg FROM (SELECT COUNT( pk_i_id ) AS num FROM ' . DB_TABLE_PREFIX
+            . 't_item GROUP BY s_contact_email ) AS dummy_table'
+        );
     }
 
     /**
-     * @return array|\countable|object
+     * @return array
      */
     public function latest_users()
     {
-        $this->conn->select();
-        $this->conn->from(DB_TABLE_PREFIX . 't_user');
-        $this->conn->orderBy('dt_reg_date', 'DESC');
-        $this->conn->limit('5');
-
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows(
+            'SELECT * FROM ' . DB_TABLE_PREFIX . 't_user ORDER BY dt_reg_date DESC LIMIT 5'
+        );
     }
 
     /**
@@ -155,197 +163,142 @@ class Stats
      */
     public function new_items_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('WEEK(dt_pub_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTHNAME(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('MONTH(dt_pub_date)');
-        } else {
-            $this->conn->select('DATE(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('DAY(dt_pub_date)');
-        }
+        list($dDate, $groupBy) = $this->bucket($date, array(
+            'week'  => array('WEEK(dt_pub_date)', 'WEEK(dt_pub_date)'),
+            'month' => array('MONTHNAME(dt_pub_date)', 'MONTH(dt_pub_date)'),
+            'day'   => array('DATE(dt_pub_date)', 'DAY(dt_pub_date)'),
+        ));
 
-        $this->conn->from(DB_TABLE_PREFIX . 't_item');
-        $this->conn->where("dt_pub_date >= '$from_date'");
-        $this->conn->orderBy('dt_pub_date', 'DESC');
+        $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item'
+            . ' WHERE dt_pub_date >= ?'
+            . ' GROUP BY ' . $groupBy
+            . ' ORDER BY dt_pub_date DESC';
 
-        $result = $this->conn->get();
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array|\countable|object
+     * @return array
      */
     public function latest_items()
     {
-        $this->conn->select('l.*, i.*, d.*');
-        $this->conn->from(DB_TABLE_PREFIX . 't_item i, ' . DB_TABLE_PREFIX . 't_item_location l, ' . DB_TABLE_PREFIX
-            . 't_item_description d');
-        $this->conn->where('l.fk_i_item_id = i.pk_i_id AND d.fk_i_item_id = i.pk_i_id');
-        $this->conn->groupBy('i.pk_i_id');
-        $this->conn->orderBy('dt_pub_date', 'DESC');
-        $this->conn->limit('5');
+        $sql = 'SELECT l.*, i.*, d.*'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item i, ' . DB_TABLE_PREFIX . 't_item_location l, '
+            . DB_TABLE_PREFIX . 't_item_description d'
+            . ' WHERE l.fk_i_item_id = i.pk_i_id AND d.fk_i_item_id = i.pk_i_id'
+            . ' GROUP BY i.pk_i_id'
+            . ' ORDER BY dt_pub_date DESC'
+            . ' LIMIT 5';
 
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows($sql);
     }
 
     /**
      * @param        $from_date
      * @param string $date
      *
-     * @return array|\countable|object
+     * @return array
      */
     public function new_comments_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('WEEK(dt_pub_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTH(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('MONTH(dt_pub_date)');
-        } else {
-            $this->conn->select('DAY(dt_pub_date) as d_date, COUNT(pk_i_id) as num');
-            $this->conn->groupBy('DAY(dt_pub_date)');
-        }
+        list($dDate, $groupBy) = $this->bucket($date, array(
+            'week'  => array('WEEK(dt_pub_date)', 'WEEK(dt_pub_date)'),
+            'month' => array('MONTH(dt_pub_date)', 'MONTH(dt_pub_date)'),
+            'day'   => array('DAY(dt_pub_date)', 'DAY(dt_pub_date)'),
+        ));
 
-        $this->conn->from(DB_TABLE_PREFIX . 't_item_comment');
-        $this->conn->where("dt_pub_date >= '$from_date'");
-        $this->conn->orderBy('dt_pub_date', 'DESC');
+        $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item_comment'
+            . ' WHERE dt_pub_date >= ?'
+            . ' GROUP BY ' . $groupBy
+            . ' ORDER BY dt_pub_date DESC';
 
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array|\countable|false|object
+     * @return array|false
      */
     public function latest_comments()
     {
-        $this->conn->select('i.*, c.*');
-        $this->conn->from(DB_TABLE_PREFIX . 't_item i, ' . DB_TABLE_PREFIX . 't_item_comment c');
-        $this->conn->where('c.fk_i_item_id = i.pk_i_id');
-        $this->conn->orderBy('c.dt_pub_date', 'DESC');
-        $this->conn->limit('5');
+        $sql = 'SELECT i.*, c.*'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item i, ' . DB_TABLE_PREFIX . 't_item_comment c'
+            . ' WHERE c.fk_i_item_id = i.pk_i_id'
+            . ' ORDER BY c.dt_pub_date DESC'
+            . ' LIMIT 5';
 
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return false;
+        return $this->rows($sql, array(), false);
     }
 
     /**
      * @param        $from_date
      * @param string $date
      *
-     * @return array|\countable|object
+     * @return array
      */
     public function new_reports_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_date) as d_date, SUM(i_num_views) as views, SUM(i_num_spam) as spam, SUM(i_num_repeated) as repeated, SUM(i_num_bad_classified) as bad_classified, SUM(i_num_offensive) as offensive, SUM(i_num_expired) as expired');
-            $this->conn->groupBy('WEEK(dt_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTHNAME(dt_date) as d_date, SUM(i_num_views) as views, SUM(i_num_spam) as spam, SUM(i_num_repeated) as repeated, SUM(i_num_bad_classified) as bad_classified, SUM(i_num_offensive) as offensive, SUM(i_num_expired) as expired');
-            $this->conn->groupBy('MONTH(dt_date)');
-        } else {
-            $this->conn->select('dt_date as d_date, SUM(i_num_views) as views, SUM(i_num_spam) as spam, SUM(i_num_repeated) as repeated, SUM(i_num_bad_classified) as bad_classified, SUM(i_num_offensive) as offensive, SUM(i_num_expired) as expired');
-            $this->conn->groupBy('DAY(dt_date)');
-        }
+        $sums = 'SUM(i_num_views) as views, SUM(i_num_spam) as spam, SUM(i_num_repeated) as repeated,'
+            . ' SUM(i_num_bad_classified) as bad_classified, SUM(i_num_offensive) as offensive,'
+            . ' SUM(i_num_expired) as expired';
 
-        $this->conn->from(DB_TABLE_PREFIX . 't_item_stats');
-        $this->conn->where("dt_date >= '$from_date'");
+        list($dDate, $groupBy) = $this->bucket($date, array(
+            'week'  => array('WEEK(dt_date)', 'WEEK(dt_date)'),
+            'month' => array('MONTHNAME(dt_date)', 'MONTH(dt_date)'),
+            'day'   => array('dt_date', 'DAY(dt_date)'),
+        ));
 
-        $result = $this->conn->get();
+        $sql = 'SELECT ' . $dDate . ' as d_date, ' . $sums
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats'
+            . ' WHERE dt_date >= ?'
+            . ' GROUP BY ' . $groupBy;
 
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows($sql, array($from_date));
     }
 
     /**
      * @param        $from_date
      * @param string $date
      *
-     * @return array|\countable|object
+     * @return array
      */
     public function new_alerts_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_date) as d_date, COUNT(s_email) as num');
-            $this->conn->groupBy('WEEK(dt_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTHNAME(dt_date) as d_date, COUNT(s_email) as num');
-            $this->conn->groupBy('MONTH(dt_date)');
-        } else {
-            $this->conn->select('DATE(dt_date) as d_date, COUNT(s_email) as num');
-            $this->conn->groupBy('DAY(dt_date)');
-        }
-
-        $this->conn->from(DB_TABLE_PREFIX . 't_alerts');
-        $this->conn->where("dt_date >= '$from_date'");
-        $this->conn->where('dt_unsub_date IS NULL');
-        $this->conn->orderBy('dt_date', 'ASC');
-
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return $this->rows($this->alertsSql($date, 'COUNT(s_email)'), array($from_date));
     }
 
     /**
      * @param        $from_date
      * @param string $date
      *
-     * @return array|\countable|object
+     * @return array
      */
     public function new_subscribers_count($from_date, $date = 'day')
     {
-        if ($date === 'week') {
-            $this->conn->select('WEEK(dt_date) as d_date, COUNT(DISTINCT s_email) as num');
-            $this->conn->groupBy('WEEK(dt_date)');
-        } elseif ($date === 'month') {
-            $this->conn->select('MONTHNAME(dt_date) as d_date, COUNT(DISTINCT s_email) as num');
-            $this->conn->groupBy('MONTH(dt_date)');
-        } else {
-            $this->conn->select('DATE(dt_date) as d_date, COUNT(DISTINCT s_email) as num');
-            $this->conn->groupBy('DAY(dt_date)');
-        }
+        return $this->rows($this->alertsSql($date, 'COUNT(DISTINCT s_email)'), array($from_date));
+    }
 
-        $this->conn->from(DB_TABLE_PREFIX . 't_alerts');
-        $this->conn->where("dt_date >= '$from_date'");
-        $this->conn->where('dt_unsub_date IS NULL');
-        $this->conn->orderBy('dt_date', 'ASC');
+    /**
+     * Alert counts and subscriber counts differ only in their aggregate.
+     *
+     * @param string $date
+     * @param string $aggregate
+     *
+     * @return string
+     */
+    private function alertsSql($date, $aggregate)
+    {
+        list($dDate, $groupBy) = $this->bucket($date, array(
+            'week'  => array('WEEK(dt_date)', 'WEEK(dt_date)'),
+            'month' => array('MONTHNAME(dt_date)', 'MONTH(dt_date)'),
+            'day'   => array('DATE(dt_date)', 'DAY(dt_date)'),
+        ));
 
-        $result = $this->conn->get();
-
-        if ($result instanceof DBRecordsetClass) {
-            return $result->result();
-        }
-
-        return array();
+        return 'SELECT ' . $dDate . ' as d_date, ' . $aggregate . ' as num'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_alerts'
+            . ' WHERE dt_date >= ? AND dt_unsub_date IS NULL'
+            . ' GROUP BY ' . $groupBy
+            . ' ORDER BY dt_date ASC';
     }
 }

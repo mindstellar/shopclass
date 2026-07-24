@@ -362,38 +362,47 @@ function osc_search_footer_links()
         }
     }
 
-    $conn = DBConnectionClass::newInstance();
-    $data = $conn->getOsclassDb();
-    $comm = new DBCommandClass($data);
-
-    $comm->select('i.fk_i_category_id');
-    $comm->select('l.*');
-    $comm->select('COUNT(*) AS total');
-    $comm->from(DB_TABLE_PREFIX . 't_item as i');
-    $comm->from(DB_TABLE_PREFIX . 't_item_location as l');
-    if (!empty($categoryID)) {
-        $comm->whereIn('i.fk_i_category_id', $categoryID);
+    // $categoryID reaches here straight from the search request, so the id list
+    // is cast and bound rather than pasted into the statement.
+    $ids = array();
+    foreach ((array)$categoryID as $c) {
+        $ids[] = (int)$c;
     }
-    $comm->where('i.pk_i_id = l.fk_i_item_id');
-    $comm->where('i.b_enabled = 1');
-    $comm->where('i.b_active = 1');
-    $comm->where(sprintf("dt_expiration >= '%s'", date('Y-m-d H:i:s')));
 
-    $comm->where('l.fk_i_region_id IS NOT NULL');
-    $comm->where('l.fk_i_city_id IS NOT NULL');
+    $where  = array();
+    $params = array();
+
+    if ($ids !== array()) {
+        $where[]  = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
+        $params   = array_merge($params, $ids);
+    }
+
+    $where[]  = 'i.pk_i_id = l.fk_i_item_id';
+    $where[]  = 'i.b_enabled = 1';
+    $where[]  = 'i.b_active = 1';
+    $where[]  = 'dt_expiration >= ?';
+    $params[] = date('Y-m-d H:i:s');
+    $where[]  = 'l.fk_i_region_id IS NOT NULL';
+    $where[]  = 'l.fk_i_city_id IS NOT NULL';
+
     if ($regionID != '') {
-        $comm->where('l.fk_i_region_id', $regionID);
-        $comm->groupBy('l.fk_i_city_id');
+        $where[]  = 'l.fk_i_region_id = ?';
+        $params[] = (int)$regionID;
+        $groupBy  = 'l.fk_i_city_id';
     } else {
-        $comm->groupBy('l.fk_i_region_id');
+        $groupBy = 'l.fk_i_region_id';
     }
-    $rs = $comm->get();
 
-    if (!$rs) {
+    $sql = 'SELECT i.fk_i_category_id, l.*, COUNT(*) AS total'
+        . ' FROM ' . DB_TABLE_PREFIX . 't_item as i, ' . DB_TABLE_PREFIX . 't_item_location as l'
+        . ' WHERE ' . implode(' AND ', $where)
+        . ' GROUP BY ' . $groupBy;
+
+    try {
+        return osc_db_stringify_rows(osc_db_select($sql, $params));
+    } catch (\mindstellar\database\DbException $e) {
         return array();
     }
-
-    return $rs->result();
 }
 
 
