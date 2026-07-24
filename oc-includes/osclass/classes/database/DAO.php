@@ -40,12 +40,16 @@ class DAO
     /**
      * DBCommandClass object
      *
-     * The legacy stateful query builder. Retained because plugins use it as
-     * $model->dao; nothing in this class routes through it any more. For new
-     * query code prefer mindstellar\database\Connection / QueryBuilder.
+     * The legacy stateful query builder. Nothing in core routes through it any
+     * more; it is kept because plugins reach a model's builder as $model->dao,
+     * and two of the bundled ones do.
      *
-     * @acces public
-     * @since 2.3
+     * @acces      public
+     * @since      2.3
+     * @deprecated 5.3 Build queries with mindstellar\database\Connection or
+     *             QueryBuilder instead. Still populated and still supported --
+     *             the models themselves stopped using it in 5.3, so this is now
+     *             purely a compatibility surface for plugins.
      * @var DBCommandClass
      */
     public $dao;
