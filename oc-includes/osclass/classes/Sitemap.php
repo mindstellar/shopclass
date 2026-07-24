@@ -386,15 +386,7 @@ class Sitemap extends DAO
     {
         $xml = $this->render('sitemap_cat_region_xml', false, function () {
             @set_time_limit(160);
-            $this->dao->select('DISTINCT a.fk_i_category_id, b.fk_i_region_id');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item AS a');
-            $this->dao->join(DB_TABLE_PREFIX . 't_item_location AS b', 'a.pk_i_id = b.fk_i_item_id', 'LEFT');
-            $this->dao->where(self::liveItemCondition('a'));
-            $this->dao->where('a.fk_i_category_id IS NOT NULL');
-            $this->dao->where('b.fk_i_region_id IS NOT NULL');
-            $this->dao->limit(self::MAX_SITEMAP_URLS);
-            $result = $this->dao->get();
-            $rows   = $result ? $result->result() : array();
+            $rows = $this->locationPairs('b.fk_i_region_id');
 
             foreach ($rows as $row) {
                 $url = osc_update_search_url(array(
@@ -421,15 +413,7 @@ class Sitemap extends DAO
     {
         $xml = $this->render('sitemap_cat_city_xml', false, function () {
             @set_time_limit(160);
-            $this->dao->select('DISTINCT a.fk_i_category_id, b.fk_i_city_id');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item AS a');
-            $this->dao->join(DB_TABLE_PREFIX . 't_item_location AS b', 'a.pk_i_id = b.fk_i_item_id', 'LEFT');
-            $this->dao->where(self::liveItemCondition('a'));
-            $this->dao->where('a.fk_i_category_id IS NOT NULL');
-            $this->dao->where('b.fk_i_city_id IS NOT NULL');
-            $this->dao->limit(self::MAX_SITEMAP_URLS);
-            $result = $this->dao->get();
-            $rows   = $result ? $result->result() : array();
+            $rows = $this->locationPairs('b.fk_i_city_id');
 
             foreach ($rows as $row) {
                 $url = osc_update_search_url(array(
@@ -468,26 +452,56 @@ class Sitemap extends DAO
      */
     public function defaultItemsSource($page, $perPage)
     {
-        $this->dao->select('pk_i_id, fk_i_category_id, dt_pub_date, dt_mod_date');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item');
-        $this->dao->where(self::liveItemCondition());
-        $this->dao->orderby('pk_i_id', 'ASC');
-        $this->dao->limit($page * $perPage, $perPage);
-        $subQuery = $this->dao->_getSelect();
-        $this->dao->_resetSelect();
+        // Page window cast rather than bound: MySQL only accepts a placeholder in
+        // LIMIT on a prepared statement. Both values are integers by this point --
+        // $page is cast in serve() and again in generateItemSitemap().
+        $offset  = (int)$page * (int)$perPage;
+        $perPage = (int)$perPage;
 
-        $this->dao->select(
-            't.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date,'
+        $subQuery = 'SELECT pk_i_id, fk_i_category_id, dt_pub_date, dt_mod_date'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item'
+            . ' WHERE ' . self::liveItemCondition()
+            . ' ORDER BY pk_i_id ASC'
+            . ' LIMIT ' . $offset . ', ' . $perPage;
+
+        $sql = 'SELECT t.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date,'
             . ' MAX(d.s_title) AS s_title, MAX(l.s_city) AS s_city'
-        );
-        $this->dao->from('(' . $subQuery . ') AS t');
-        $this->dao->join(DB_TABLE_PREFIX . 't_item_description AS d', 't.pk_i_id = d.fk_i_item_id', 'LEFT');
-        $this->dao->join(DB_TABLE_PREFIX . 't_item_location AS l', 'd.fk_i_item_id = l.fk_i_item_id', 'LEFT');
-        $this->dao->where("d.s_title IS NOT NULL AND d.s_title != ''");
-        $this->dao->groupBy('t.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date');
-        $result = $this->dao->get();
+            . ' FROM (' . $subQuery . ') AS t'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_description AS d ON t.pk_i_id = d.fk_i_item_id'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location AS l ON d.fk_i_item_id = l.fk_i_item_id'
+            . " WHERE d.s_title IS NOT NULL AND d.s_title != ''"
+            . ' GROUP BY t.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date';
 
-        return $result ? $result->result() : array();
+        try {
+            return osc_db_stringify_rows(osc_db_select($sql));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+    }
+
+    /**
+     * Distinct (category, location) pairs across live listings — the shared body
+     * of the category x region and category x city sitemaps.
+     *
+     * @param string $locationColumn qualified column on the joined location table
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function locationPairs($locationColumn)
+    {
+        $sql = 'SELECT DISTINCT a.fk_i_category_id, ' . $locationColumn
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item AS a'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location AS b ON a.pk_i_id = b.fk_i_item_id'
+            . ' WHERE ' . self::liveItemCondition('a')
+            . ' AND a.fk_i_category_id IS NOT NULL'
+            . ' AND ' . $locationColumn . ' IS NOT NULL'
+            . ' LIMIT ' . self::MAX_SITEMAP_URLS;
+
+        try {
+            return osc_db_stringify_rows(osc_db_select($sql));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
     }
 
     /**
@@ -541,12 +555,15 @@ class Sitemap extends DAO
     public function countLiveItems()
     {
         if ($this->total_results_table === null) {
-            $result = $this->dao->query(
-                'SELECT COUNT(*) AS total FROM ' . DB_TABLE_PREFIX . 't_item'
-                . ' WHERE ' . self::liveItemCondition()
-            );
-            $row                       = $result ? $result->row() : array('total' => 0);
-            $this->total_results_table = (int) $row['total'];
+            try {
+                $total = osc_db_scalar(
+                    'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
+                    . ' WHERE ' . self::liveItemCondition()
+                );
+            } catch (\mindstellar\database\DbException $e) {
+                $total = 0;
+            }
+            $this->total_results_table = (int) $total;
         }
 
         return $this->total_results_table;
@@ -575,11 +592,17 @@ class Sitemap extends DAO
      */
     private function pagesModificationDate()
     {
-        $result = $this->dao->query(
-            'SELECT MAX(dt_pub_date) AS max_pub_date, MAX(dt_mod_date) AS max_mod_date'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_pages WHERE b_indelible < 1'
-        );
-        $row     = $result ? $result->row() : array('max_pub_date' => null, 'max_mod_date' => null);
+        try {
+            $row = osc_db_select_one(
+                'SELECT MAX(dt_pub_date) AS max_pub_date, MAX(dt_mod_date) AS max_mod_date'
+                . ' FROM ' . DB_TABLE_PREFIX . 't_pages WHERE b_indelible < 1'
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            $row = null;
+        }
+        if ($row === null) {
+            $row = array('max_pub_date' => null, 'max_mod_date' => null);
+        }
         $newdate = ($row['max_pub_date'] > $row['max_mod_date']) ? $row['max_pub_date'] : $row['max_mod_date'];
 
         foreach ($this->customUrls() as $custom) {
