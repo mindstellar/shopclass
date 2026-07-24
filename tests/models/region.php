@@ -557,14 +557,13 @@ pin('the survivor user\'s region pointer is untouched', (string) $survivorRegion
 pin('the survivor user\'s city pointer is untouched', (string) $survivorCity, (string) $survivor['fk_i_city_id']);
 pin('the survivor user\'s city-area pointer is untouched', (string) $survivorArea, (string) $survivor['fk_i_city_area_id']);
 
-harness_section('Region::deleteByPrimaryKey — a nonexistent id reports int 1, not int 0');
+harness_section('Region::deleteByPrimaryKey — a nonexistent id reports int 0, not a failure');
 
-/* $this->delete(['pk_i_id' => $pk]) (the inherited DAO::delete()) is a valid
- * query that matches zero rows, so it returns int 0 — which is falsy in PHP,
- * so `!$this->delete(...)` is true and $result is incremented. Nothing failed
- * in the sense of a SQL error; the return value is simply counting "rows this
- * step expected to remove but didn't", by construction. */
-pin('deleting an id that never existed reports int 1', 1, $model->deleteByPrimaryKey(999999999));
+/* The return counts failures (the admin caller reads 0 as success). Deleting an
+ * id that never existed is a valid query matching zero rows, not a failure, so
+ * the own-row step now counts it only when DAO::delete() returns false (a real
+ * SQL error), not when it returns 0. */
+pin('deleting an id that never existed reports int 0', 0, $model->deleteByPrimaryKey(999999999));
 
 harness_section('Region::deleteByPrimaryKey — a region with no cities and no dependents');
 

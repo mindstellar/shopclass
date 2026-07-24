@@ -198,7 +198,11 @@ class Region extends DAO
         Item::newInstance()->deleteByRegion($pk);
         RegionStats::newInstance()->delete(array('fk_i_region_id' => $pk));
         User::newInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
-        if (!$this->delete(array('pk_i_id' => $pk))) {
+        // Count the own-row delete as a failure only when the query itself
+        // errors (DAO::delete() returns false), not when it validly matches no
+        // rows (returns 0). Deleting a primary key that does not exist is not a
+        // failure -- there was simply nothing to remove.
+        if ($this->delete(array('pk_i_id' => $pk)) === false) {
             $result++;
         }
 
