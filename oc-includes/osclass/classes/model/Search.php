@@ -54,7 +54,30 @@ class Search extends DAO
     private $price_max;
     private $user_ids;
     private $itemId;
-    private $userTableLoaded;
+
+    /**
+     * Accumulated clauses for the statement currently being assembled.
+     *
+     * Search composes SQL as text rather than as bound parameters, and that is a
+     * compatibility boundary rather than an oversight: the condition fragments are
+     * serialized verbatim into t_alerts, handed to the sql_search_* plugin filters,
+     * and parsed back by getConditions() with regexes that match their exact
+     * spelling. Alerts already stored by earlier versions must keep round-tripping,
+     * so the emitted text -- including its whitespace -- is preserved exactly.
+     *
+     * Cleared by resetQuery() once a statement has been compiled. notFromUser()
+     * writes here before makeSQL() runs, so the state deliberately outlives a
+     * single call.
+     */
+    private $qSelect = array();
+    private $qFrom = array();
+    private $qJoin = array();
+    private $qWhere = array();
+    private $qGroupBy = array();
+    private $qHaving = array();
+    private $qOrderBy = array();
+    private $qLimit = false;
+    private $qOffset = false;
 
     /**
      * @param bool $expired
@@ -76,9 +99,9 @@ class Search extends DAO
         $this->price_min = null;
         $this->price_max = null;
 
-        $this->user_ids        = null;
-        $this->itemId          = null;
-        $this->userTableLoaded = false;
+        $this->user_ids = null;
+        $this->itemId   = null;
+        $this->resetQuery();
 
         $this->city_areas     = array();
         $this->cities         = array();
@@ -390,14 +413,14 @@ class Search extends DAO
                             sprintf(
                                 '%st_item_location.fk_i_city_area_id = %d ',
                                 DB_TABLE_PREFIX,
-                                $this->dao->escape($c)
+                                $this->escapeValue($c)
                             );
                     } else {
                         $this->city_areas[] =
                             sprintf(
                                 "%st_item_location.s_city_area LIKE %s ",
                                 DB_TABLE_PREFIX,
-                                $this->dao->escape($c)
+                                $this->escapeValue($c)
                             );
                     }
                 }
@@ -410,14 +433,14 @@ class Search extends DAO
                         sprintf(
                             '%st_item_location.fk_i_city_area_id = %d ',
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($city_area)
+                            $this->escapeValue($city_area)
                         );
                 } else {
                     $this->city_areas[] =
                         sprintf(
                             "%st_item_location.s_city_area LIKE %s ",
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($city_area)
+                            $this->escapeValue($city_area)
                         );
                 }
             }
@@ -498,7 +521,7 @@ class Search extends DAO
      */
     public function notFromUser($id)
     {
-        $this->dao->where(sprintf(
+        $this->addWhere(sprintf(
                               '(%st_item.fk_i_user_id != %d || %st_item.fk_i_user_id IS NULL) ',
                               DB_TABLE_PREFIX,
                               $id,
@@ -623,42 +646,42 @@ class Search extends DAO
 
         if ($this->withItemId) {
             // add field s_user_name
-            $this->dao->select(sprintf(
+            $this->addSelect(sprintf(
                                    '%st_item.*, %st_item.s_contact_name as s_user_name',
                                    DB_TABLE_PREFIX,
                                    DB_TABLE_PREFIX
                                ));
-            $this->dao->from(sprintf('%st_item', DB_TABLE_PREFIX));
-            $this->dao->where('pk_i_id', (int)$this->itemId);
+            $this->addFrom(sprintf('%st_item', DB_TABLE_PREFIX));
+            $this->addWhere('pk_i_id', (int)$this->itemId);
         } else {
             if ($count) {
-                $this->dao->select(DB_TABLE_PREFIX . 't_item.pk_i_id');
-                $this->dao->select($extraFields); // plugins!
+                $this->addSelect(DB_TABLE_PREFIX . 't_item.pk_i_id');
+                $this->addSelect($extraFields); // plugins!
             } else {
-                $this->dao->select(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
+                $this->addSelect(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
                                    . 't_item.s_contact_name as s_user_name');
-                $this->dao->select($extraFields); // plugins!
+                $this->addSelect($extraFields); // plugins!
             }
-            $this->dao->from(DB_TABLE_PREFIX . 't_item');
+            $this->addFrom(DB_TABLE_PREFIX . 't_item');
 
             if ($this->withNoUserEmail) {
-                $this->dao->where(DB_TABLE_PREFIX . 't_item.s_contact_email', $this->sEmail);
+                $this->addWhere(DB_TABLE_PREFIX . 't_item.s_contact_email', $this->sEmail);
             }
 
             if ($this->withPattern) {
-                $this->dao->join(
+                $this->addJoin(
                     DB_TABLE_PREFIX . 't_item_description as d',
                     'd.fk_i_item_id = ' . DB_TABLE_PREFIX . 't_item.pk_i_id',
                     'LEFT'
                 );
                 if ($this->order_column === 'relevance') {
-                    $this->dao->select(sprintf(
+                    $this->addSelect(sprintf(
                                            "MATCH(d.s_description, d.s_title) AGAINST(%s) as relevance",
                                            $this->sPattern
                                        ));
-                    $this->dao->having(sprintf("relevance > %s", 0));
+                    $this->addHavingClause(sprintf("relevance > %s", 0));
                 } else {
-                    $this->dao->where(sprintf(
+                    $this->addWhere(sprintf(
                                           "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
                                           $this->sPattern
                                       ));
@@ -666,7 +689,7 @@ class Search extends DAO
                 if (empty($this->locale_code)) {
                     $this->locale_code[$this->userLocaleCode] = $this->userLocaleCode;
                 }
-                $this->dao->where(sprintf(
+                $this->addWhere(sprintf(
                                       "( d.fk_c_locale_code LIKE '%s' )",
                                       implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
                                   ));
@@ -678,17 +701,17 @@ class Search extends DAO
                     ' AND ',
                     osc_apply_filter('sql_search_item_conditions', $this->itemConditions)
                 );
-                $this->dao->where($itemConditions);
+                $this->addWhere($itemConditions);
             }
             if ($this->withCategoryId && (count($this->categories) > 0)) {
-                $this->dao->where(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
+                $this->addWhere(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
                                   . implode(', ', $this->categories) . ')');
             }
             if ($this->withUserId) {
                 $this->addFromUser();
             }
             if ($this->withLocations || (defined('OC_ADMIN') && OC_ADMIN)) {
-                $this->dao->join(
+                $this->addJoin(
                     sprintf('%st_item_location', DB_TABLE_PREFIX),
                     sprintf(
                         '%st_item_location.fk_i_item_id = %st_item.pk_i_id',
@@ -700,7 +723,7 @@ class Search extends DAO
                 $this->addLocations();
             }
             if ($this->withPicture) {
-                $this->dao->join(
+                $this->addJoin(
                     sprintf('%st_item_resource', DB_TABLE_PREFIX),
                     sprintf(
                         '%st_item_resource.fk_i_item_id = %st_item.pk_i_id',
@@ -709,14 +732,14 @@ class Search extends DAO
                     ),
                     'LEFT'
                 );
-                $this->dao->where(sprintf(
+                $this->addWhere(sprintf(
                                       "%st_item_resource.s_content_type LIKE '%%image%%' ",
                                       DB_TABLE_PREFIX
                                   ));
-                $this->dao->groupBy(DB_TABLE_PREFIX . 't_item.pk_i_id');
+                $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
             }
             if ($this->onlyPremium) {
-                $this->dao->where(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
+                $this->addWhere(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
             }
             $this->addPriceRange();
 
@@ -726,34 +749,34 @@ class Search extends DAO
             // PLUGINS TABLES !!
             if (!empty($this->tables)) {
                 $tables = implode(', ', $this->tables);
-                $this->dao->from($tables);
+                $this->addFrom($tables);
             }
             // WHERE PLUGINS extra conditions
             if (count($this->conditions) > 0) {
-                $this->dao->where($conditionsSQL);
+                $this->addWhere($conditionsSQL);
             }
             // ---------------------------------------------------------
             // groupBy
             if ($this->groupBy) {
-                $this->dao->groupBy($this->groupBy);
+                $this->addGroupByClause($this->groupBy);
             }
             // having
             if ($this->having) {
-                $this->dao->having($this->having);
+                $this->addHavingClause($this->having);
             }
             // ---------------------------------------------------------
 
             // order & limit — neither matters when we only need COUNT(*), and dropping
             // the limit is what makes the wrapped count exact instead of capped.
             if (!$count) {
-                $this->dao->orderBy($this->order_column, $this->order_direction);
-                $this->dao->limit($this->limit_init, $this->results_per_page);
+                $this->addOrderBy($this->order_column, $this->order_direction);
+                $this->addLimit($this->limit_init, $this->results_per_page);
             }
         }
 
-        $this->sql = $this->dao->_getSelect();
+        $this->sql = $this->compileQuery();
         // reset dao attributes
-        $this->dao->_resetSelect();
+        $this->resetQuery();
 
         return $this->sql;
     }
@@ -808,11 +831,11 @@ class Search extends DAO
 
     private function addFromUser()
     {
-        $this->dao->join(DB_TABLE_PREFIX.'t_user', DB_TABLE_PREFIX.'t_user.pk_i_id = '.DB_TABLE_PREFIX.'t_item.fk_i_user_id', 'LEFT');
+        $this->addJoin(DB_TABLE_PREFIX.'t_user', DB_TABLE_PREFIX.'t_user.pk_i_id = '.DB_TABLE_PREFIX.'t_item.fk_i_user_id', 'LEFT');
         if (is_array($this->user_ids)) {
-            $this->dao->where(' ( ' . implode(' || ', $this->user_ids) . ' ) ');
+            $this->addWhere(' ( ' . implode(' || ', $this->user_ids) . ' ) ');
         } else {
-            $this->dao->where(sprintf(
+            $this->addWhere(sprintf(
                                   '%st_item.fk_i_user_id = %d ',
                                   DB_TABLE_PREFIX,
                                   $this->user_ids
@@ -820,38 +843,29 @@ class Search extends DAO
         }
     }
 
-    private function loadUserTable()
-    {
-        $from = $this->dao->aFrom;
-        if (!in_array(DB_TABLE_PREFIX . 't_user', $from)) {
-            $this->dao->from(DB_TABLE_PREFIX . 't_user');
-            $this->userTableLoaded = true;
-        }
-    }
-
     private function addLocations()
     {
         if (count($this->city_areas) > 0) {
-            $this->dao->where('( ' . implode(' || ', $this->city_areas) . ' )');
+            $this->addWhere('( ' . implode(' || ', $this->city_areas) . ' )');
         }
         if (count($this->cities) > 0) {
-            $this->dao->where('( ' . implode(' || ', $this->cities) . ' )');
+            $this->addWhere('( ' . implode(' || ', $this->cities) . ' )');
         }
         if (count($this->regions) > 0) {
-            $this->dao->where('( ' . implode(' || ', $this->regions) . ' )');
+            $this->addWhere('( ' . implode(' || ', $this->regions) . ' )');
         }
         if (count($this->countries) > 0) {
-            $this->dao->where('( ' . implode(' || ', $this->countries) . ' )');
+            $this->addWhere('( ' . implode(' || ', $this->countries) . ' )');
         }
     }
 
     private function addPriceRange()
     {
         if (is_numeric($this->price_min) && $this->price_min != 0) {
-            $this->dao->where(sprintf('i_price >= %0.0f', $this->price_min));
+            $this->addWhere(sprintf('i_price >= %0.0f', $this->price_min));
         }
         if (is_numeric($this->price_max) && $this->price_max > 0) {
-            $this->dao->where(sprintf('i_price <= %0.0f', $this->price_max));
+            $this->addWhere(sprintf('i_price <= %0.0f', $this->price_max));
         }
     }
 
@@ -863,8 +877,299 @@ class Search extends DAO
     private function joinTable()
     {
         foreach ($this->tables_join as $tJoin) {
-            $this->dao->join($tJoin[0], $tJoin[1], $tJoin[2]);
+            $this->addJoin($tJoin[0], $tJoin[1], $tJoin[2]);
         }
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  Statement assembly                                                 *
+     *                                                                     *
+     *  Search builds SQL text, so these reproduce the emitted spelling    *
+     *  exactly -- including the quirks callers and stored alerts already  *
+     *  depend on: a two-space "LEFT  JOIN", comma-separated tables        *
+     *  compiled as CROSS JOIN, and the trailing space a valueless HAVING  *
+     *  leaves behind.                                                     *
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Quote a value for inclusion in SQL text.
+     *
+     * Numbers pass through unquoted unless they carry a leading zero, which would
+     * otherwise be lost; strings are driver-escaped and quoted; booleans become
+     * 1/0 and null becomes NULL.
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    private function escapeValue($value)
+    {
+        if (is_numeric($value)) {
+            if (strlen($value) > 1 && strpos($value, '0') === 0) {
+                return "'" . $value . "'";
+            }
+
+            return $value;
+        }
+        if (is_string($value)) {
+            return "'" . $this->escapeString($value) . "'";
+        }
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+        if (null === $value) {
+            return 'NULL';
+        }
+
+        return $value;
+    }
+
+    /**
+     * Driver-level string escaping, without the surrounding quotes.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    private function escapeString($value)
+    {
+        $conn = DBConnectionClass::newInstance()->getOsclassDb();
+
+        return is_object($conn) ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
+    }
+
+    /**
+     * Whether a fragment already carries its own operator, in which case it is
+     * emitted as written instead of having " =" appended.
+     *
+     * @param string $str
+     *
+     * @return bool
+     */
+    private function hasOperator($str)
+    {
+        return preg_match('/(\s|<|>|!|=|is null|is not null)/i', trim((string)$str)) === 1;
+    }
+
+    /**
+     * @param string|array $select comma-separated list or array of expressions
+     *
+     * @return void
+     */
+    private function addSelect($select = '*')
+    {
+        if (is_string($select)) {
+            $select = explode(',', $select);
+        }
+        foreach ($select as $s) {
+            $s = trim($s);
+            if ($s != '') {
+                $this->qSelect[] = $s;
+            }
+        }
+    }
+
+    /**
+     * @param string|array $from
+     *
+     * @return void
+     */
+    private function addFrom($from)
+    {
+        if (!is_array($from)) {
+            if (strpos($from, '(') !== false && strpos($from, ')') !== false) {
+                // A subquery: never split, its own commas are not table separators.
+                $from = array($from);
+            } elseif (strpos($from, ',') !== false) {
+                $from = explode(',', $from);
+            } else {
+                $from = array($from);
+            }
+        }
+        foreach ($from as $f) {
+            $this->qFrom[] = $f;
+        }
+    }
+
+    /**
+     * @param string $table
+     * @param string $cond
+     * @param string $type LEFT, RIGHT, OUTER, INNER, LEFT OUTER or RIGHT OUTER
+     *
+     * @return void
+     */
+    private function addJoin($table, $cond, $type = '')
+    {
+        if ($type != '') {
+            $type = strtoupper(trim($type));
+            $type = in_array($type, array('LEFT', 'RIGHT', 'OUTER', 'INNER', 'LEFT OUTER', 'RIGHT OUTER'))
+                ? $type . ' '
+                : '';
+        }
+
+        $this->qJoin[] = $type . ' JOIN ' . $table . ' ON ' . $cond;
+    }
+
+    /**
+     * @param string|array $key   fragment, or column when $value is supplied
+     * @param mixed        $value bound-by-value; escaped into the text
+     *
+     * @return void
+     */
+    private function addWhere($key, $value = null)
+    {
+        if (!is_array($key)) {
+            $key = array($key => $value);
+        }
+        foreach ($key as $k => $v) {
+            $prefix = (count($this->qWhere) > 0) ? 'AND ' : '';
+            if (!$this->hasOperator($k)) {
+                $k .= ' =';
+            }
+            if (null !== $v) {
+                $v = ' ' . $this->escapeValue($v);
+            }
+            $this->qWhere[] = $prefix . $k . $v;
+        }
+    }
+
+    /**
+     * @param string|array $by
+     *
+     * @return void
+     */
+    private function addGroupByClause($by)
+    {
+        if (is_string($by)) {
+            $by = explode(',', $by);
+        }
+        foreach ($by as $val) {
+            $val = trim($val);
+            if ($val != '') {
+                $this->qGroupBy[] = $val;
+            }
+        }
+    }
+
+    /**
+     * @param string|array $key
+     * @param string       $value
+     *
+     * @return void
+     */
+    private function addHavingClause($key, $value = '')
+    {
+        if (!is_array($key)) {
+            $key = array($key => $value);
+        }
+        foreach ($key as $k => $v) {
+            $prefix = (count($this->qHaving) === 0) ? '' : 'AND ';
+            if (!$this->hasOperator($k)) {
+                $k .= ' = ';
+            }
+            $this->qHaving[] = $prefix . $k . ' ' . $this->escapeString($v);
+        }
+    }
+
+    /**
+     * @param string $orderby
+     * @param string $direction ASC, DESC or 'random'
+     *
+     * @return void
+     */
+    private function addOrderBy($orderby, $direction = '')
+    {
+        if (strtolower($direction) === 'random') {
+            $direction = ' RAND()';
+        } elseif (trim($direction)) {
+            $direction = in_array(strtoupper(trim($direction)), array('ASC', 'DESC')) ? ' ' . $direction : ' ASC';
+        }
+
+        $this->qOrderBy[] = $orderby . $direction;
+    }
+
+    /**
+     * Row window. Compiles to MySQL's comma form, "LIMIT <count>, <offset>", which
+     * is how the previous layer emitted it: the first argument lands in the
+     * clause's leading position and the second in its trailing one.
+     *
+     * @param int        $value
+     * @param int|string $offset
+     *
+     * @return void
+     */
+    private function addLimit($value, $offset = '')
+    {
+        if (is_numeric($value)) {
+            $this->qLimit = (int)$value;
+        }
+        if ($offset != '') {
+            $this->qOffset = is_numeric($offset) ? (int)$offset : 0;
+        }
+    }
+
+    /**
+     * Compile the accumulated clauses into a SELECT statement.
+     *
+     * @return string
+     */
+    private function compileQuery()
+    {
+        $sql = 'SELECT ';
+        $sql .= (count($this->qSelect) === 0) ? '*' : implode(', ', $this->qSelect);
+
+        if (count($this->qFrom) > 0) {
+            $sql .= "\nFROM ";
+            // More than one table is a cross join, which is what the comma form means.
+            $sql .= (count($this->qFrom) > 1)
+                ? implode(' CROSS JOIN ', $this->qFrom)
+                : implode(', ', $this->qFrom);
+        }
+
+        if (count($this->qJoin) > 0) {
+            $sql .= "\n" . implode("\n", $this->qJoin);
+        }
+
+        if (count($this->qWhere) > 0) {
+            $sql .= "\nWHERE ";
+        }
+        $sql .= implode("\n", $this->qWhere);
+
+        if (count($this->qGroupBy) > 0) {
+            $sql .= "\nGROUP BY " . implode(', ', $this->qGroupBy);
+        }
+        if (count($this->qHaving) > 0) {
+            $sql .= "\nHAVING " . implode(', ', $this->qHaving);
+        }
+        if (count($this->qOrderBy) > 0) {
+            $sql .= "\nORDER BY " . implode(', ', $this->qOrderBy);
+        }
+        if (is_numeric($this->qLimit)) {
+            $sql .= "\nLIMIT " . $this->qLimit;
+            if ($this->qOffset > 0) {
+                $sql .= ', ' . $this->qOffset;
+            }
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Drop every accumulated clause, so the next statement starts clean.
+     *
+     * @return void
+     */
+    private function resetQuery()
+    {
+        $this->qSelect  = array();
+        $this->qFrom    = array();
+        $this->qJoin    = array();
+        $this->qWhere   = array();
+        $this->qGroupBy = array();
+        $this->qHaving  = array();
+        $this->qOrderBy = array();
+        $this->qLimit   = false;
+        $this->qOffset  = false;
     }
 
     /**
@@ -930,15 +1235,15 @@ class Search extends DAO
 
         if ($this->withPattern) {
             // sub select for JOIN ----------------------
-            $this->dao->select('distinct d.fk_i_item_id');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item_description as d');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item as ti');
-            $this->dao->where('ti.pk_i_id = d.fk_i_item_id');
-            $this->dao->where(sprintf(
+            $this->addSelect('distinct d.fk_i_item_id');
+            $this->addFrom(DB_TABLE_PREFIX . 't_item_description as d');
+            $this->addFrom(DB_TABLE_PREFIX . 't_item as ti');
+            $this->addWhere('ti.pk_i_id = d.fk_i_item_id');
+            $this->addWhere(sprintf(
                                   "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
                                   $this->sPattern
                               ));
-            $this->dao->where('ti.b_premium = 1');
+            $this->addWhere('ti.b_premium = 1');
 
             if (empty($this->locale_code)) {
                 if (defined('OC_ADMIN') && OC_ADMIN) {
@@ -947,31 +1252,31 @@ class Search extends DAO
                     $this->locale_code[osc_current_user_locale()] = osc_current_user_locale();
                 }
             }
-            $this->dao->where(sprintf(
+            $this->addWhere(sprintf(
                                   "( d.fk_c_locale_code LIKE '%s' )",
                                   implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
                               ));
 
-            $subSelect = $this->dao->_getSelect();
-            $this->dao->_resetSelect();
+            $subSelect = $this->compileQuery();
+            $this->resetQuery();
             // END sub select ----------------------
-            $this->dao->select(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
+            $this->addSelect(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
                                . 't_item.s_contact_name as s_user_name');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item');
-            $this->dao->from(sprintf('%st_item_stats', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf(
+            $this->addFrom(DB_TABLE_PREFIX . 't_item');
+            $this->addFrom(sprintf('%st_item_stats', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf(
                                   '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
                                   DB_TABLE_PREFIX,
                                   DB_TABLE_PREFIX
                               ));
-            $this->dao->where(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
 
 
             if ($this->withLocations || (defined('OC_ADMIN') && OC_ADMIN)) {
-                $this->dao->join(
+                $this->addJoin(
                     sprintf('%st_item_location', DB_TABLE_PREFIX),
                     sprintf(
                         '%st_item_location.fk_i_item_id = %st_item.pk_i_id',
@@ -983,35 +1288,35 @@ class Search extends DAO
                 $this->addLocations();
             }
             if ($this->withCategoryId && (count($this->categories) > 0)) {
-                $this->dao->where(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
+                $this->addWhere(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
                                   . implode(', ', $this->categories) . ')');
             }
-            $this->dao->where(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $subSelect . ')');
+            $this->addWhere(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $subSelect . ')');
 
-            $this->dao->groupBy(DB_TABLE_PREFIX . 't_item.pk_i_id');
-            $this->dao->orderBy(
+            $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
+            $this->addOrderBy(
                 sprintf('SUM(%st_item_stats.i_num_premium_views)', DB_TABLE_PREFIX),
                 'ASC'
             );
-            $this->dao->orderBy(null, 'random');
-            $this->dao->limit(0, $num);
+            $this->addOrderBy(null, 'random');
+            $this->addLimit(0, $num);
         } else {
-            $this->dao->select(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
+            $this->addSelect(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
                                . 't_item.s_contact_name as s_user_name');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item');
-            $this->dao->from(sprintf('%st_item_stats', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf(
+            $this->addFrom(DB_TABLE_PREFIX . 't_item');
+            $this->addFrom(sprintf('%st_item_stats', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf(
                                   '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
                                   DB_TABLE_PREFIX,
                                   DB_TABLE_PREFIX
                               ));
-            $this->dao->where(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
-            $this->dao->where(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
+            $this->addWhere(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
 
             if ($this->withLocations || (defined('OC_ADMIN') && OC_ADMIN)) {
-                $this->dao->join(
+                $this->addJoin(
                     sprintf('%st_item_location', DB_TABLE_PREFIX),
                     sprintf(
                         '%st_item_location.fk_i_item_id = %st_item.pk_i_id',
@@ -1023,22 +1328,22 @@ class Search extends DAO
                 $this->addLocations();
             }
             if ($this->withCategoryId && (count($this->categories) > 0)) {
-                $this->dao->where(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
+                $this->addWhere(sprintf('%st_item.fk_i_category_id', DB_TABLE_PREFIX) . ' IN ('
                                   . implode(', ', $this->categories) . ')');
             }
 
-            $this->dao->groupBy(DB_TABLE_PREFIX . 't_item.pk_i_id');
-            $this->dao->orderBy(
+            $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
+            $this->addOrderBy(
                 sprintf('SUM(%st_item_stats.i_num_premium_views)', DB_TABLE_PREFIX),
                 'ASC'
             );
-            $this->dao->orderBy(null, 'random');
-            $this->dao->limit(0, $num);
+            $this->addOrderBy(null, 'random');
+            $this->addLimit(0, $num);
         }
 
-        $sql = $this->dao->_getSelect();
+        $sql = $this->compileQuery();
         // reset dao attributes
-        $this->dao->_resetSelect();
+        $this->resetQuery();
 
         return $sql;
     }
@@ -1195,14 +1500,14 @@ class Search extends DAO
                         sprintf(
                             "%st_item_location.fk_c_country_code = %s ",
                             DB_TABLE_PREFIX,
-                            strtolower($this->dao->escape($country))
+                            strtolower($this->escapeValue($country))
                         );
                 } else {
                     $this->countries[] =
                         sprintf(
                             "%st_item_location.s_country LIKE %s ",
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($country)
+                            $this->escapeValue($country)
                         );
                 }
             }
@@ -1235,14 +1540,14 @@ class Search extends DAO
                         sprintf(
                             '%st_item_location.fk_i_region_id = %d ',
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($region)
+                            $this->escapeValue($region)
                         );
                 } else {
                     $this->regions[] =
                         sprintf(
                             "%st_item_location.s_region LIKE %s ",
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($region)
+                            $this->escapeValue($region)
                         );
                 }
             }
@@ -1275,14 +1580,14 @@ class Search extends DAO
                         sprintf(
                             '%st_item_location.fk_i_city_id = %d ',
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($city)
+                            $this->escapeValue($city)
                         );
                 } else {
                     $this->cities[] =
                         sprintf(
                             "%st_item_location.s_city LIKE %s ",
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($city)
+                            $this->escapeValue($city)
                         );
                 }
             }
@@ -1317,7 +1622,7 @@ class Search extends DAO
                         $ids[] = sprintf(
                             '%st_item.fk_i_user_id = %d ',
                             DB_TABLE_PREFIX,
-                            $this->dao->escape($user['pk_i_id'])
+                            $this->escapeValue($user['pk_i_id'])
                         );
                     }
                 } else {
@@ -1330,10 +1635,10 @@ class Search extends DAO
             if (!is_numeric($id)) {
                 $user = User::newInstance()->findByUsername($id);
                 if (isset($user['pk_i_id'])) {
-                    $this->user_ids = $this->dao->escape($user['pk_i_id']);
+                    $this->user_ids = $this->escapeValue($user['pk_i_id']);
                 }
             } else {
-                $this->user_ids = $this->dao->escape($id);
+                $this->user_ids = $this->escapeValue($id);
             }
         }
     }
@@ -1750,7 +2055,7 @@ class Search extends DAO
     public function addPattern($pattern)
     {
         $this->withPattern = true;
-        $this->sPattern    = $this->dao->escape($pattern);
+        $this->sPattern    = $this->escapeValue($pattern);
     }
 
     /**
