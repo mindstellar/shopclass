@@ -332,13 +332,36 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
 </div>
 <script>
-    tinyMCE.init({
-        selector: 'textarea',
-        promotion: false,
-        theme_advanced_toolbar_align: 'left',
-        theme_advanced_toolbar_location: 'top',
-        theme_advanced_buttons1_add: 'forecolorpicker,fontsizeselect',
-        plugins: 'advlist anchor autolink charmap code fullscreen insertdatetime link lists paste preview searchreplace table',
+    // This block used to call tinyMCE.init() inline, before the enqueued tinymce
+    // bundle had executed, which threw "tinyMCE is not defined" and left bare
+    // textareas. Wait for DOM ready (the library has loaded by then) and guard,
+    // the same way the page and email editors do. The old config also carried
+    // TinyMCE 3-era options (theme_advanced_*, forecolorpicker, fontsizeselect,
+    // the merged-in paste plugin) that are inert in TinyMCE 7 — replaced with the
+    // valid equivalents.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        var cfg = {
+            // Only the per-locale description editors (name="description[<locale>]"),
+            // never plugin textareas elsewhere on the form.
+            selector: 'textarea[name^="description["]',
+            promotion: false,
+            branding: false,
+            menubar: false,
+            height: 320,
+            entity_encoding: 'raw',
+            relative_urls: false,
+            remove_script_host: false,
+            convert_urls: false,
+            plugins: 'advlist anchor autolink charmap code fullscreen insertdatetime'
+                + ' link lists preview searchreplace table',
+            toolbar: 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
+                + ' | link charmap table | removeformat | searchreplace code fullscreen preview'
+        };
+        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
+        tinymce.init(cfg);
     });
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
