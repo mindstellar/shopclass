@@ -560,32 +560,37 @@ class Search extends DAO
      */
     public function doSearch($extended = true, $count = true)
     {
-        $sql    = $this->makeSQL();
-        $result = $this->dao->query($sql);
+        // The assembler still inlines its values (they are serialized verbatim
+        // into t_alerts and read by the sql_search_conditions plugin filter, so
+        // their format is a compatibility boundary), but execution now runs
+        // through the parameterized Connection like every other model. makeSQL
+        // produces complete SQL, so the params list is empty here.
+        $sql       = $this->makeSQL();
+        $mainError = false;
+        try {
+            $items = osc_db_stringify_rows(osc_db_select($sql));
+        } catch (\mindstellar\database\DbException $e) {
+            $items     = array();
+            $mainError = true;
+        }
+
         if ($count) {
             // Wrap the (unlimited) match query in COUNT(*) so the total is exact and
             // only one row crosses the wire, instead of fetching up to 100 pages of
             // ids and counting them client-side (which also capped the total).
-            $sql     = 'SELECT COUNT(*) AS total FROM (' . $this->makeSQL(true) . ') AS search_count';
-            $datatmp = $this->dao->query($sql);
-
-            if ($datatmp === false) {
-                $this->total_results = 0;
-            } else {
-                $row                 = $datatmp->row();
+            $sql = 'SELECT COUNT(*) AS total FROM (' . $this->makeSQL(true) . ') AS search_count';
+            try {
+                $row                 = osc_db_select_one($sql);
                 $this->total_results = (int)($row['total'] ?? 0);
+            } catch (\mindstellar\database\DbException $e) {
+                $this->total_results = 0;
             }
         } else {
             $this->total_results = 0;
         }
 
-        if ($result === false) {
+        if ($mainError) {
             return array();
-        }
-
-        $items = array();
-        if ($result instanceof DBRecordsetClass) {
-            $items = $result->result();
         }
 
         if (($extended === true) && !empty($items)) {
@@ -870,14 +875,13 @@ class Search extends DAO
     public function countAll()
     {
         if (null === $this->total_results_table) {
-            $result =
-                $this->dao->query(sprintf(
-                                      'select count(*) as total from %st_item',
-                                      DB_TABLE_PREFIX
-                                  ));
-            if ($result instanceof DBRecordsetClass) {
-                $row                       = $result->row();
-                $this->total_results_table = $row['total'];
+            try {
+                $row                       = osc_db_select_one('SELECT COUNT(*) AS total FROM ' . DB_TABLE_PREFIX . 't_item');
+                $this->total_results_table = $row === null ? null : (string)$row['total'];
+            } catch (\mindstellar\database\DbException $e) {
+                // Leave the memo null so a later call retries, as the legacy
+                // recordset-instanceof check did on a failed query.
+                $this->total_results_table = null;
             }
         }
 
@@ -895,17 +899,19 @@ class Search extends DAO
     {
         $premium_sql = $this->makeSQLPremium($max); // make premium sql
 
-        $result = $this->dao->query($premium_sql);
-        if ($result instanceof DBRecordsetClass) {
-            $items = $result->result();
-            if (!empty($items)) {
-                $mStat = ItemStats::newInstance();
-                foreach ($items as $item) {
-                    $mStat->increase('i_num_premium_views', $item['pk_i_id']);
-                }
+        try {
+            $items = osc_db_stringify_rows(osc_db_select($premium_sql));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
 
-                return Item::newInstance()->extendData($items);
+        if (!empty($items)) {
+            $mStat = ItemStats::newInstance();
+            foreach ($items as $item) {
+                $mStat->increase('i_num_premium_views', $item['pk_i_id']);
             }
+
+            return Item::newInstance()->extendData($items);
         }
 
         return array();
@@ -1407,60 +1413,54 @@ class Search extends DAO
      */
     public function listCityAreas($city = null, $zero = '>', $order = 'items DESC')
     {
-        $aOrder = explode(' ', $order);
-        $nOrder = count($aOrder);
-
-        if ($nOrder === 2) {
-            $this->dao->orderBy($aOrder[0], $aOrder[1]);
-        } elseif ($nOrder === 1) {
-            $this->dao->orderBy($aOrder[0], 'DESC');
-        } else {
-            $this->dao->orderBy('item', 'DESC');
+        // Validate the sort and the comparison operator against fixed sets
+        // before they reach the SQL text — the same identifiers the location
+        // stats listers allowlist. Callers pass literals today; this keeps that
+        // the only thing that can reach ORDER BY / HAVING.
+        $aOrder    = explode(' ', $order);
+        $orderCol  = preg_match('/^[A-Za-z0-9_.]+$/', $aOrder[0] ?? '') === 1 ? $aOrder[0] : 'items';
+        $orderDir  = (isset($aOrder[1]) && in_array(strtoupper($aOrder[1]), array('ASC', 'DESC'), true))
+            ? strtoupper($aOrder[1]) : 'DESC';
+        if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {
+            $zero = '>';
         }
 
-        $this->dao->select('fk_i_city_area_id as city_area_id');
-        $this->dao->select('s_city_area as city_area_name');
-        $this->dao->select('fk_i_city_id');
-        $this->dao->select('s_city as city_name');
-        $this->dao->select('fk_i_region_id as region_id');
-        $this->dao->select('s_region as region_name');
-        $this->dao->select('fk_c_country_code as pk_c_code');
-        $this->dao->select('s_country as country_name');
-        $this->dao->select('count(*) as items');
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT fk_i_city_area_id as city_area_id, s_city_area as city_area_name,'
+            . ' fk_i_city_id, s_city as city_name, fk_i_region_id as region_id,'
+            . ' s_region as region_name, fk_c_country_code as pk_c_code, s_country as country_name,'
+            . ' count(*) as items'
+            . ' FROM ' . $p . 't_item, ' . $p . 't_item_location, ' . $p . 't_category, ' . $p . 't_country'
+            . ' WHERE ' . $p . 't_item.pk_i_id = ' . $p . 't_item_location.fk_i_item_id'
+            . ' AND ' . $p . 't_item.b_enabled = 1'
+            . ' AND ' . $p . 't_item.b_active = 1'
+            . ' AND ' . $p . 't_item.b_spam = 0'
+            . ' AND ' . $p . 't_category.b_enabled = 1'
+            . ' AND ' . $p . 't_category.pk_i_id = ' . $p . 't_item.fk_i_category_id'
+            // The premium/expiry test is one fully-parenthesised OR group, so it
+            // carries no precedence hazard. The cut-off timestamp is bound.
+            . ' AND (' . $p . 't_item.b_premium = 1 || ' . $p . 't_category.i_expiration_days = 0'
+            . ' || DATEDIFF(?, ' . $p . 't_item.dt_pub_date) < ' . $p . 't_category.i_expiration_days)'
+            . ' AND fk_i_city_area_id IS NOT NULL'
+            . ' AND ' . $p . 't_country.pk_c_code = fk_c_country_code';
 
-        $this->dao->from(DB_TABLE_PREFIX . 't_item');
-        $this->dao->from(DB_TABLE_PREFIX . 't_item_location');
-        $this->dao->from(DB_TABLE_PREFIX . 't_category');
-        $this->dao->from(DB_TABLE_PREFIX . 't_country');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.pk_i_id = ' . DB_TABLE_PREFIX
-                          . 't_item_location.fk_i_item_id');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_enabled = 1');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_active = 1');
-        $this->dao->where(DB_TABLE_PREFIX . 't_item.b_spam = 0');
-        $this->dao->where(DB_TABLE_PREFIX . 't_category.b_enabled = 1');
-        $this->dao->where(DB_TABLE_PREFIX . 't_category.pk_i_id = ' . DB_TABLE_PREFIX
-                          . 't_item.fk_i_category_id');
-        $this->dao->where('(' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-                          . 't_category.i_expiration_days = 0 || DATEDIFF(\'' . date('Y-m-d H:i:s') . '\','
-                          . DB_TABLE_PREFIX . 't_item.dt_pub_date) < ' . DB_TABLE_PREFIX
-                          . 't_category.i_expiration_days)');
-        $this->dao->where('fk_i_city_area_id IS NOT NULL');
-        $this->dao->where(DB_TABLE_PREFIX . 't_country.pk_c_code = fk_c_country_code');
-        $this->dao->groupBy('fk_i_city_area_id');
-        $this->dao->having("items $zero 0");
+        $params = array(date('Y-m-d H:i:s'));
 
         $city_int = (int)$city;
-
-        if (is_numeric($city_int) && $city_int != 0) {
-            $this->dao->where("fk_i_city_id = $city_int");
+        if ($city_int !== 0) {
+            // int-cast, so it is a literal integer, not caller text.
+            $sql .= ' AND fk_i_city_id = ' . $city_int;
         }
 
-        $result = $this->dao->get();
-        if ($result) {
-            return $result->result();
-        }
+        $sql .= ' GROUP BY fk_i_city_area_id'
+            . ' HAVING items ' . $zero . ' 0'
+            . ' ORDER BY ' . $orderCol . ' ' . $orderDir;
 
-        return array();
+        try {
+            return osc_db_stringify_rows(osc_db_select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
     }
 
     /**

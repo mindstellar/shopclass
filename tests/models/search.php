@@ -299,6 +299,58 @@ $revived->setJsonAlert($decoded);
 $revivedIds = $sorted($ids($revived->doSearch()));
 pin('a search revived from its own serialized form returns the same items', $sorted(array($car1, $car2, $car3)), $revivedIds);
 
+/* ----------------------------------------------------------------------------
+ * Secondary execution paths that were routed off the legacy query layer.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: countAll and listCityAreas');
+
+$s = new Search();
+pin('countAll returns the unfiltered total as a string', '5', (string)$s->countAll());
+
+$s = new Search();
+check('listCityAreas returns a well-formed array', is_array($s->listCityAreas(null, '>=', 'items DESC')));
+
+/* ----------------------------------------------------------------------------
+ * getLatestItems (the F4 cache path) — baseline.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: getLatestItems');
+
+$s = new Search();
+$latest = $s->getLatestItems(10);
+check('getLatestItems returns the recent items', is_array($latest) && count($latest) === 5);
+
+/* ----------------------------------------------------------------------------
+ * Old-format alert compat: a blob whose location fragments and pattern were
+ * serialized in the legacy inlined form must still revive and run, because the
+ * conversion left that value format untouched.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: legacy alert blob still revives');
+
+$legacyBlob = array(
+    'price_min'             => 0,
+    'price_max'             => 0,
+    'aCategories'           => array($catCars),
+    'city_areas'            => array(),
+    'cities'                => array(),
+    'regions'               => array(),
+    'countries'             => array(),
+    'user_ids'              => null,
+    'tables_join'           => array(),
+    'no_catched_tables'     => array(),
+    'no_catched_conditions' => array(),
+    'order_column'          => 'i_price',
+    'order_direction'       => 'ASC',
+    'limit_init'            => 0,
+    'results_per_page'      => 20,
+);
+$legacyRevived = new Search();
+$legacyRevived->setJsonAlert($legacyBlob);
+pin(
+    'a legacy-shaped alert blob revives and returns its category items',
+    $sorted(array($car1, $car2, $car3)),
+    $sorted($ids($legacyRevived->doSearch()))
+);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
