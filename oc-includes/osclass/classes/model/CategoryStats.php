@@ -279,8 +279,13 @@ class CategoryStats extends DAO
             return $numItemsMap['parent'][$cat['pk_i_id']]['numItems'];
         }
 
-        if (isset($numItemsMap['subcategories'][$cat['pk_i_id']])) {
-            return $numItemsMap['subcategories'][$cat['pk_i_id']]['numItems'];
+        // The subcategories map is keyed by ROOT id, each holding a map of its
+        // own children by id, so a subcategory is found by searching those
+        // child maps rather than indexing the root level with the child's id.
+        foreach ($numItemsMap['subcategories'] ?? array() as $children) {
+            if (isset($children[$cat['pk_i_id']])) {
+                return $children[$cat['pk_i_id']]['numItems'];
+            }
         }
 
         return 0;

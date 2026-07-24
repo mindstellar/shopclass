@@ -63,15 +63,11 @@
  *    null); the identical situation for a SUBcategory has no `@` and raises
  *    a genuine "Undefined array key" warning while still yielding null — an
  *    asymmetry between the two branches, not a difference in outcome.
- *  - getNumItems()'s own "subcategories" branch is dead code: it is keyed by
- *    ROOT id (mirroring how toNumItemsMap() built it), so a real
- *    subcategory's id can never match it — pk_i_id is a single sequence
- *    shared by every category row, so a subcategory id can never collide
- *    with a root's id either. getNumItems() therefore returns 0 for every
- *    subcategory, unconditionally, and only ever returns a real count for a
- *    ROOT category. There is exactly one (commented-out, inactive) caller
- *    of getNumItems() anywhere in this codebase, so this has never been
- *    observed in production.
+ *  - getNumItems() resolves both a root and a subcategory. The subcategories
+ *    map is keyed by ROOT id, each root holding a map of its own children by
+ *    id, so a subcategory is found by searching those child maps rather than
+ *    indexing the root level with the child's id (which is what an earlier
+ *    version did, so a subcategory always returned 0).
  *  - getNumItems()'s cache is a function-static local (`static $numItemsMap
  *    = null;`), NOT a class property — `ReflectionProperty` (the pattern
  *    tests/models/currency.php uses to reset Currency's cache) cannot see
@@ -628,8 +624,8 @@ $warmCost = harness_query_count(static function () use ($model, $rootCat) {
 pin('a repeat call is served from the static map at zero queries', 0, $warmCost);
 
 pin(
-    'a subcategory returns int 0 -- the "subcategories" branch can never match (dead code), pinned as observed, not fixed',
-    0,
+    'a subcategory returns its own string count, found by searching the per-root child maps',
+    '4',
     $model->getNumItems($subCat)
 );
 
