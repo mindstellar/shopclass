@@ -32,15 +32,11 @@
  * outcomes are pinned separately because they are not the same value.
  *
  * insertLocaleInfo() has no query of its own: it calls findByCode() (pinned
- * here) and then the inherited DAO::update()/insert() base methods, out of
- * scope for this conversion. Exercising it end to end is still worthwhile
- * because it depends on findByCode()'s exact return shape — a list of rows,
- * not a single row — and that shape feeds a latent defect: on an existing
- * locale, array_merge() layers the whole numerically-indexed row list on top
- * of the string-keyed $values array instead of merging field-by-field, so
- * checkFieldKeys() rejects the numeric key and the update always reports
- * false. That is pinned as observed behaviour, not fixed, since it is not
- * caused by anything this conversion touches.
+ * here) and then the inherited DAO::update()/insert() base methods. Exercising
+ * it end to end is worthwhile because it depends on findByCode()'s exact return
+ * shape — a list of rows, not a single row. It indexes into the first row before
+ * merging, so on an existing locale the update branch works: array_merge keeps
+ * the stored values and bumps only s_version.
  *
  * Usage:  php tests/models/osclocale.php          (standalone, own scratch database)
  *         php tests/run-models.php osclocale      (as part of the suite)
@@ -393,20 +389,21 @@ pin('exactly one row now exists for the new code', 1, count($stored));
 pin('b_enabled is forced to 0 on a fresh import, regardless of caller input', '0', $stored[0]['b_enabled']);
 pin('b_enabled_bo is forced to 1 on a fresh import', '1', $stored[0]['b_enabled_bo']);
 
-harness_section('OSCLocale::insertLocaleInfo — an existing locale never actually updates');
+harness_section('OSCLocale::insertLocaleInfo — an existing locale updates its version, keeping the rest');
 
-/* findByCode() returns a LIST of rows (index 0 => the row), not the row
- * itself. insertLocaleInfo() unsets $existingLocale['s_version'] (a no-op:
- * that key lives at $existingLocale[0]['s_version'], not at the top level)
- * and array_merge()s $values with that list, which layers a numeric key 0
- * holding the whole nested row on top of the string-keyed $values. DAO::
- * update()'s checkFieldKeys() rejects that numeric key, so the update always
- * reports false — the row is left exactly as it was. This is pinned as
- * observed behaviour: it predates this conversion and is not caused by it. */
+/* findByCode() returns a LIST of rows, so insertLocaleInfo() indexes into [0]
+ * before merging. array_merge keeps the stored values — they win on a key clash
+ * — and lets only the new s_version through, because s_version is unset from the
+ * existing row. So a re-import bumps the version and preserves everything else. */
 $before = $model->findByCode('it_IT')[0];
-$updateRet = $model->insertLocaleInfo($freshLocale);
-pin('calling it again on the same code returns bool false', false, $updateRet);
-pin('the stored row is unchanged', $before, $model->findByCode('it_IT')[0]);
+$bumped               = $freshLocale;
+$bumped['version']    = '2.0';
+$bumped['name']       = 'A New Name That Must Not Win';
+$updateRet            = $model->insertLocaleInfo($bumped);
+pin('a second call on the same code updates one row', 1, $updateRet);
+$after = $model->findByCode('it_IT')[0];
+pin('the version was bumped to the new value', '2.0', $after['s_version']);
+pin('but the existing name was kept, not overwritten by the caller', $before['s_name'], $after['s_name']);
 
 /* ----------------------------------------------------------------------------
  * Query cost.

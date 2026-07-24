@@ -232,11 +232,17 @@ class OSCLocale extends DAO
                 'b_enabled'         => 0,
                 'b_enabled_bo'      => 1
             );
-            $existingLocale = $this->findByCode($localeCode);
-            if ($existingLocale) {
-                // don't overwrite existing values use array_merge
-                unset($existingLocale['s_version']);
-                $values = array_merge($values, $existingLocale);
+            // findByCode() returns a LIST of rows, so take the first before
+            // merging; merging the list itself injected a numeric key that
+            // checkFieldKeys() rejected, which is why the update branch never
+            // ran. array_merge keeps the existing values (they win on a key
+            // clash) and lets only the new s_version through, since it is unset
+            // from the existing row.
+            $existing = $this->findByCode($localeCode);
+            if (!empty($existing)) {
+                $existingRow = $existing[0];
+                unset($existingRow['s_version']);
+                $values = array_merge($values, $existingRow);
                 return $this->update($values, ['pk_c_code' => $localeCode]);
             }
             return $this->insert($values);
