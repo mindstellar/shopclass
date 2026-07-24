@@ -52,14 +52,13 @@
  *    counter is clamped rather than rejected: setNumItems($id, -1) reports
  *    success and stores 0.
  *
- * 4. calculateAllStats() (private, reached through updateAllStats) builds its
- *    premium/expiry test WITHOUT parentheses, so `||` splits the whole WHERE in
- *    two and the city filter only constrains one half. Two consequences are
- *    pinned as latent product bugs, deliberately preserved by the conversion and
- *    flagged for separate triage: an inactive listing is counted as long as it
- *    has not expired, and a premium listing in a city that was NOT asked for gets
- *    a counter row written anyway. calculateNumItems() has the parentheses and
- *    disagrees with calculateAllStats() on the same fixture.
+ * 4. calculateAllStats() (private, reached through updateAllStats) parenthesises
+ *    its premium/expiry test — `AND (b_premium = 1 || dt_expiration >= ?) AND` —
+ *    so the b_active/b_enabled/b_spam and city filters apply to the whole WHERE.
+ *    It agrees with calculateNumItems() on the same fixture: an inactive listing
+ *    is excluded, and a premium listing in a city that was not asked for gets no
+ *    counter row. (This corrects an earlier missing-parentheses defect that split
+ *    the WHERE across the `||`.)
  *
  * findByCityId() is pure delegation to DAO::findByPrimaryKey(), a base method
  * this effort does not convert; it is pinned as a regression guard only.
@@ -916,13 +915,13 @@ pin('nothing was written', '', $rows());
 
 harness_section('updateAllStats — the happy path');
 
-/* Aville holds three listings, one of them inactive, and the batch aggregate
- * counts all three — see the LATENT BUG sections below for why. The numbers here
- * are what the code produces, not what the single-city recount would say. */
+/* Aville holds three listings, one of them inactive, so the batch aggregate
+ * counts the two active ones — the same as the single-city recount, now that the
+ * premium/expiry test is correctly parenthesised. */
 pin('a list of known cities returns bool true', true, $model->updateAllStats(array($cityAlpha, $cityBravo)));
 pin(
     'both counters were written',
-    $cityAlpha . '=3,' . $cityBravo . '=1',
+    $cityAlpha . '=2,' . $cityBravo . '=1',
     $rows()
 );
 pin('one call costs two queries: the aggregate then the upsert', 2, harness_query_count(
@@ -935,14 +934,14 @@ harness_section('updateAllStats — an existing counter is overwritten, not incr
 
 $admin->query("UPDATE $table SET i_num_items = 99 WHERE fk_i_city_id = $cityAlpha");
 pin('rewriting returns bool true', true, $model->updateAllStats(array($cityAlpha)));
-pin('and the stale value was replaced', $cityAlpha . '=3,' . $cityBravo . '=1', $rows());
+pin('and the stale value was replaced', $cityAlpha . '=2,' . $cityBravo . '=1', $rows());
 
 harness_section('updateAllStats — a city with nothing to count is written as zero');
 
 pin('a city with no items returns bool true', true, $model->updateAllStats(array($cityCharlie)));
 pin(
     'and gets an explicit zero row',
-    $cityAlpha . '=3,' . $cityBravo . '=1,' . $cityCharlie . '=0',
+    $cityAlpha . '=2,' . $cityBravo . '=1,' . $cityCharlie . '=0',
     $rows()
 );
 
@@ -952,7 +951,7 @@ pin('a numeric string id works', true, $model->updateAllStats(array((string)$cit
 pin('a duplicated id collapses to one row', true, $model->updateAllStats(array($cityAlpha, $cityAlpha)));
 pin(
     'the table is unchanged by either',
-    $cityAlpha . '=3,' . $cityBravo . '=1,' . $cityCharlie . '=0',
+    $cityAlpha . '=2,' . $cityBravo . '=1,' . $cityCharlie . '=0',
     $rows()
 );
 
@@ -968,45 +967,37 @@ pin('a non-numeric member casts to 0, which has no city, and returns bool false'
 ));
 pin(
     'neither wrote anything',
-    $cityAlpha . '=3,' . $cityBravo . '=1,' . $cityCharlie . '=0',
+    $cityAlpha . '=2,' . $cityBravo . '=1,' . $cityCharlie . '=0',
     $rows()
 );
 
-harness_section('updateAllStats — LATENT BUG: an inactive listing is counted');
+harness_section('updateAllStats — the batch recount agrees with the single-city recount');
 
-/* calculateAllStats() writes its premium/expiry test as
- *     ... AND b_spam = 0 AND b_premium = 1 || dt_expiration >= '<now>' AND ...
- * with no parentheses. `||` binds looser than AND, so the whole WHERE splits in
- * two: the b_active/b_enabled/b_spam half applies only to premium listings, and
- * an ordinary unexpired listing is counted whatever its b_active flag says.
- * calculateNumItems() has the parentheses and therefore disagrees with
- * calculateAllStats() on the same fixture.
- *
- * Preserved deliberately — a conversion reproduces behaviour; changing it is a
- * separate decision with its own commit. Logged for triage. */
+/* calculateAllStats() now parenthesises its premium/expiry test
+ *     ... AND b_spam = 0 AND (b_premium = 1 || dt_expiration >= ?) AND ...
+ * so the b_active/b_enabled/b_spam filters apply to every listing. It agrees with
+ * calculateNumItems() on the same fixture — an inactive listing is excluded. */
 $truncate();
 pin('the single-city recount excludes the inactive listing', '2', $model->calculateNumItems($cityAlpha));
 pin('the batch recount runs', true, $model->updateAllStats(array($cityAlpha)));
-pin('but writes 3 — the inactive listing is counted', $cityAlpha . '=3', $rows());
+pin('and writes 2 — the inactive listing is excluded, matching the single recount', $cityAlpha . '=2', $rows());
 
 $admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_item SET dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id = $itemA3");
-pin('expiring the inactive listing removes it from the batch count', true, $model->updateAllStats(array($cityAlpha)));
-pin('and the counter agrees with the single-city recount again', $cityAlpha . '=2', $rows());
+pin('expiring the already-excluded listing leaves the count unchanged', true, $model->updateAllStats(array($cityAlpha)));
+pin('still 2', $cityAlpha . '=2', $rows());
 
-harness_section('updateAllStats — LATENT BUG: a premium listing outside the requested set leaks in');
+harness_section('updateAllStats — a premium listing outside the requested set stays out');
 
-/* Same missing parentheses: the city filter sits in the right-hand half of the
- * `||`, so the left-hand (premium) half has no city restriction at all. A premium
- * listing anywhere in the database produces a GROUP BY row for ITS city, and
- * updateAllStats writes a counter for a city the caller never named. Preserved
- * deliberately and logged for triage. */
+/* Same parentheses fix: the city filter now applies to the whole WHERE, so a
+ * premium listing in another city no longer produces a counter row for a city the
+ * caller never named. */
 $truncate();
 $admin->query('UPDATE ' . DB_TABLE_PREFIX
     . "t_item SET b_premium = 1, dt_expiration = '2000-01-01 00:00:00' WHERE pk_i_id = $itemB1");
 pin('asking for one city returns bool true', true, $model->updateAllStats(array($cityAlpha)));
 pin(
-    'but a counter row was written for the other city too',
-    $cityAlpha . '=2,' . $cityBravo . '=1',
+    'and only that city gets a counter row',
+    $cityAlpha . '=2',
     $rows()
 );
 $admin->query('UPDATE ' . DB_TABLE_PREFIX

@@ -351,8 +351,8 @@ class RegionStats extends DAO
             . ' WHERE ' . DB_TABLE_PREFIX . 't_item.b_active = 1'
             . ' AND ' . DB_TABLE_PREFIX . 't_item.b_enabled = 1'
             . ' AND ' . DB_TABLE_PREFIX . 't_item.b_spam = 0'
-            . ' AND ' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
-            . 't_item.dt_expiration >= ? '
+            . ' AND (' . DB_TABLE_PREFIX . 't_item.b_premium = 1 || ' . DB_TABLE_PREFIX
+            . 't_item.dt_expiration >= ?) '
             . ' AND ' . DB_TABLE_PREFIX . 't_category.b_enabled = 1'
             . ' AND fk_i_region_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
             . ' GROUP BY fk_i_region_id';
