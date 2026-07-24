@@ -1469,21 +1469,13 @@ class DBCommandClass
      */
     public function importSQL($sql)
     {
-        $sql     = str_replace(
-            array('/*TABLE_PREFIX*/', '/*OSCLASS_VERSION*/'),
-            array(DB_TABLE_PREFIX, OSCLASS_VERSION),
-            $sql
-        );
-        $sql     = preg_replace('#/\*(?:[^*]*(?:\*(?!/))*)*\*/#', '', $sql);
-        $queries = $this->splitSQL($sql, ';');
-
-        if (count($queries) == 0) {
-            return false;
-        }
-
-        foreach ($queries as $q) {
-            $q = trim($q);
-            if (!empty($q) && !$this->query($q)) {
+        // Parsing lives in mindstellar\database\SqlScript so the installer, the
+        // migration runner and this path all split a script the same way.
+        // Execution stays here, on this object's own connection: callers read
+        // getErrorLevel() straight afterwards, and one of them holds a handle
+        // that is not the shared singleton.
+        foreach (\mindstellar\database\SqlScript::statements($sql) as $q) {
+            if (!$this->query($q)) {
                 return false;
             }
         }
@@ -1498,6 +1490,8 @@ class DBCommandClass
      * @param string $explodeChars
      *
      * @return array
+     * @deprecated 5.3 Use mindstellar\database\SqlScript::statements(), which also
+     *             substitutes the schema tokens and strips block comments.
      */
     private function splitSQL($sql, $explodeChars)
     {

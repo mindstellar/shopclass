@@ -174,6 +174,31 @@ class Connection
     }
 
     /**
+     * Run a multi-statement script -- a schema file, a locale template, an
+     * uploaded import -- and return how many statements were executed.
+     *
+     * Statements run one at a time rather than through multi_query, so a failure
+     * names the statement that caused it and no result set is left undrained.
+     * Execution stops at the first failure; MySQL auto-commits DDL, so a script
+     * that fails part way leaves the statements before it applied.
+     *
+     * @param string $sql
+     *
+     * @return int
+     * @throws DbException on the first failing statement
+     */
+    public function executeScript(string $sql): int
+    {
+        $executed = 0;
+        foreach (SqlScript::statements($sql) as $statement) {
+            $this->execute($statement);
+            $executed++;
+        }
+
+        return $executed;
+    }
+
+    /**
      * Run an INSERT and return the generated AUTO_INCREMENT id.
      *
      * @param string $sql

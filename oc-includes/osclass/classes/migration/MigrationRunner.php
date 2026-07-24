@@ -11,6 +11,7 @@
 namespace mindstellar\migration;
 
 use DBCommandClass;
+use mindstellar\database\SqlScript;
 use RuntimeException;
 use Throwable;
 
@@ -202,8 +203,10 @@ class MigrationRunner
             throw new RuntimeException('Unable to read migration file: ' . $path);
         }
 
-        $sql = str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql);
-        foreach ($this->splitStatements($sql) as $statement) {
+        // SqlScript substitutes the schema tokens and strips block comments as
+        // well as splitting, so a .sql migration is parsed exactly like the
+        // schema files the installer loads.
+        foreach (SqlScript::statements($sql) as $statement) {
             if ($this->comm->query($statement) === false) {
                 throw new RuntimeException('Migration statement failed: ' . $statement);
             }
@@ -223,27 +226,6 @@ class MigrationRunner
         }
 
         $migration->up($this->comm);
-    }
-
-    /**
-     * Naive `;` split — adequate for the one-logical-change-per-migration convention.
-     * Migrations needing statements that embed `;` should use a `.php` migration instead.
-     *
-     * @param string $sql
-     *
-     * @return string[]
-     */
-    private function splitStatements($sql): array
-    {
-        $statements = array();
-        foreach (explode(';', $sql) as $part) {
-            $part = trim($part);
-            if ($part !== '') {
-                $statements[] = $part;
-            }
-        }
-
-        return $statements;
     }
 
     /**
