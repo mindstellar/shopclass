@@ -11,14 +11,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Created by Mindstellar Community.
- * User: navjottomer
- * Date: 11/07/20
- * Time: 5:32 PM
- * License is provided in root directory.
- */
-
 namespace mindstellar;
 
 use mindstellar\utility\Utils;
@@ -30,24 +22,55 @@ use Session;
 /**
  * Class Csrf
  *
+ * Stateless, HMAC-signed CSRF tokens. A token is a base64url payload
+ * (version, issue timestamp, identity binding) plus its HMAC-SHA256 signature over that
+ * payload. Validation recomputes the signature and checks the timestamp and binding — no
+ * per-token state is kept server-side, so issuing a token reads and writes no session and a
+ * page carrying one stays cookieless and cacheable.
+ *
  * @package mindstellar\osclass\classes
  */
 class Csrf
 {
-    private static $instance;
     /**
-     * @var string
+     * How long a token stays valid, in seconds (2 hours). A token older than this is rejected
+     * as expired. Kept well above any request-cache TTL so a token embedded in a briefly-cached
+     * page is never stale by the time a visitor submits.
      */
-    private $csrfTokenName;
-    /**
-     * @var string
-     */
-    private $csrfTokenValue;
+    private const TOKEN_LIFETIME = 7200;
 
     /**
+     * Tolerance for a token dated slightly in the future, in seconds, to absorb clock drift
+     * between front-ends behind a load balancer.
+     */
+    private const CLOCK_SKEW = 300;
+
+    /**
+     * Payload layout version. Bump if the payload format changes so old tokens fail cleanly
+     * instead of being misparsed.
+     */
+    private const TOKEN_VERSION = '1';
+
+    private static $instance;
+
+    /**
+     * Signing secret, resolved once per request.
      * @var string
      */
-    public $csrfName;
+    private static $secret;
+
+    /**
+     * Encoded payload for the token issued this request (the CSRFName value).
+     * @var string
+     */
+    private $tokenName;
+
+    /**
+     * Signature for the token issued this request (the CSRFToken value).
+     * @var string
+     */
+    private $tokenValue;
+
     /**
      * @var \Session
      */
@@ -58,8 +81,7 @@ class Csrf
      */
     public function __construct()
     {
-        $this->session  = Session::newInstance();
-        $this->csrfName = Preference::newInstance()->get('csrf_name');
+        $this->session = Session::newInstance();
     }
 
     /**
@@ -72,29 +94,6 @@ class Csrf
         }
 
         return self::$instance;
-    }
-
-    /**
-     * Resolve the CSRF token: reuse the one already resolved for this request, then the one
-     * in the session, otherwise generate a fresh pair. Called lazily at the point a token is
-     * actually emitted (see tokenForm/tokenUrl and replaceForms) so a page with no protected
-     * form never generates a token — and therefore never starts a session.
-     */
-    private function setToken()
-    {
-        if ($this->csrfTokenName !== null && $this->csrfTokenValue !== null) {
-            return;
-        }
-        $token_name = $this->session->_get('token_name');
-        if ($token_name !== '' && $this->session->_get($token_name) !== '') {
-            $this->csrfTokenName  = $token_name;
-            $this->csrfTokenValue = $this->session->_get($token_name);
-        } else {
-            $this->csrfTokenName  = $this->csrfName . '_' . bin2hex(random_bytes(8));
-            $this->csrfTokenValue = bin2hex(random_bytes(32));
-            $this->session->_set('token_name', $this->csrfTokenName);
-            $this->session->_set($this->csrfTokenName, $this->csrfTokenValue);
-        }
     }
 
     /**
@@ -136,7 +135,22 @@ class Csrf
     }
 
     /**
-     * Create a hidden CSRF token input field to be placed in a form
+     * Resolve the token for this request. Signing touches no session state, so this is called
+     * lazily at the point a token is actually emitted (tokenForm/tokenUrl/replaceForms) and never
+     * starts a session. All forms on a page share one token — same issue time and binding.
+     */
+    private function setToken()
+    {
+        if ($this->tokenName !== null) {
+            return;
+        }
+        $payload          = self::TOKEN_VERSION . '|' . time() . '|' . $this->bind();
+        $this->tokenName  = self::b64urlEncode($payload);
+        $this->tokenValue = self::sign($this->tokenName);
+    }
+
+    /**
+     * Create hidden CSRF token input fields to be placed in a form
      *
      * @return string
      *
@@ -145,8 +159,8 @@ class Csrf
     {
         $this->setToken();
 
-        return "<input type='hidden' name='CSRFName' value='" . $this->csrfTokenName . "' />
-        <input type='hidden' name='CSRFToken' value='" . $this->csrfTokenValue . "' />";
+        return "<input type='hidden' name='CSRFName' value='" . $this->tokenName . "' />
+        <input type='hidden' name='CSRFToken' value='" . $this->tokenValue . "' />";
     }
 
     /**
@@ -159,7 +173,7 @@ class Csrf
     {
         $this->setToken();
 
-        return 'CSRFName=' . $this->csrfTokenName . '&CSRFToken=' . $this->csrfTokenValue;
+        return 'CSRFName=' . $this->tokenName . '&CSRFToken=' . $this->tokenValue;
     }
 
     /**
@@ -167,48 +181,161 @@ class Csrf
      */
     public function check()
     {
-        $error         = false;
-        $str_error     = '';
         $csrfTokenName = Params::getParam('CSRFName');
         $csrfToken     = Params::getParam('CSRFToken');
+
         if (!$csrfTokenName || !$csrfToken) {
+            $status = 'missing';
+        } else {
+            $status = $this->verify($csrfTokenName, $csrfToken);
+        }
+
+        if ($status === 'ok') {
+            return;
+        }
+
+        $expired = ($status === 'expired');
+        if ($status === 'missing') {
             $str_error = _m('Probable invalid request.');
-            $error     = true;
-        } elseif (!$this->validateToken($csrfTokenName, $csrfToken)) {
+        } elseif ($expired) {
+            $str_error = _m('Your session has expired, please reload the page and try again.');
+        } else {
             $str_error = _m('Invalid CSRF token.');
-            $error     = true;
         }
 
         // check ajax request
-        if (defined('IS_AJAX') && $error && IS_AJAX === true) {
+        if (defined('IS_AJAX') && IS_AJAX === true) {
             echo json_encode(array(
-                'error' => 1,
-                'msg'   => $str_error
+                'error'   => 1,
+                'expired' => $expired ? 1 : 0,
+                'msg'     => $str_error
             ));
             exit;
         }
 
-        if ($error === true) {
-            $this->setMessage($str_error);
-
-            $this->errorRedirect();
-        }
+        $this->setMessage($str_error);
+        $this->errorRedirect();
     }
 
     /**
-     * Check if Token is valid
+     * Verify a submitted token: the signature must match, the payload must be well-formed and
+     * unexpired, and its identity binding must match the current visitor.
      *
-     * @param $csrfTokenName
-     * @param $csrfTokenValue
+     * @param string $name  submitted CSRFName (encoded payload)
+     * @param string $token submitted CSRFToken (signature)
      *
-     * @return bool
+     * @return string 'ok' | 'invalid' | 'expired'
      */
-    private function validateToken($csrfTokenName, $csrfTokenValue)
+    private function verify($name, $token)
     {
-        $name  = $this->session->_get('token_name');
-        $token = $this->session->_get($csrfTokenName);
+        if (!hash_equals(self::sign($name), (string)$token)) {
+            return 'invalid';
+        }
 
-        return $name === $csrfTokenName && hash_equals((string)$token, (string)$csrfTokenValue);
+        $payload = self::b64urlDecode($name);
+        if ($payload === false) {
+            return 'invalid';
+        }
+        $parts = explode('|', $payload);
+        if (count($parts) !== 3 || $parts[0] !== self::TOKEN_VERSION || !ctype_digit($parts[1])) {
+            return 'invalid';
+        }
+
+        $issuedAt = (int)$parts[1];
+        $now      = time();
+        if ($issuedAt > $now + self::CLOCK_SKEW || $now - $issuedAt > self::TOKEN_LIFETIME) {
+            return 'expired';
+        }
+
+        if (!hash_equals($this->bind(), (string)$parts[2])) {
+            return 'invalid';
+        }
+
+        return 'ok';
+    }
+
+    /**
+     * Identity the token is bound to: the logged-in admin or web user, else empty for an
+     * anonymous visitor. Read-only — Session::_get resumes an existing session but never starts a
+     * new one, so anonymous requests stay cacheable. Binding stops a valid token issued to one
+     * logged-in account from being replayed against another.
+     *
+     * @return string
+     */
+    private function bind()
+    {
+        $adminId = $this->session->_get('adminId');
+        if ($adminId !== '' && $adminId !== null) {
+            return 'a' . $adminId;
+        }
+        $userId = $this->session->_get('userId');
+        if ($userId !== '' && $userId !== null) {
+            return 'u' . $userId;
+        }
+
+        return '';
+    }
+
+    /**
+     * HMAC-SHA256 of $data under the install signing secret.
+     *
+     * @param string $data
+     *
+     * @return string
+     */
+    private static function sign($data)
+    {
+        return hash_hmac('sha256', $data, self::secret());
+    }
+
+    /**
+     * The server-side signing secret. Prefers an OSC_CSRF_SECRET config constant (keeps the
+     * secret out of the database); otherwise a persisted csrf_secret preference, generated once
+     * on first use so existing installs need no migration. Rotating it invalidates every
+     * outstanding token — a one-time re-issue, no data loss.
+     *
+     * @return string
+     */
+    private static function secret()
+    {
+        if (self::$secret !== null) {
+            return self::$secret;
+        }
+        if (defined('OSC_CSRF_SECRET') && OSC_CSRF_SECRET !== '') {
+            return self::$secret = OSC_CSRF_SECRET;
+        }
+        $secret = Preference::newInstance()->get('csrf_secret');
+        if ($secret === '' || $secret === null) {
+            $secret = bin2hex(random_bytes(32));
+            // Prime the in-memory cache so this same request signs and verifies consistently;
+            // replace() only writes the row, it does not refresh the loaded preferences.
+            Preference::newInstance()->set('csrf_secret', $secret);
+            osc_set_preference('csrf_secret', $secret, 'osclass', 'STRING');
+        }
+
+        return self::$secret = $secret;
+    }
+
+    /**
+     * URL/attribute-safe base64 (RFC 4648 §5), unpadded.
+     *
+     * @param string $data
+     *
+     * @return string
+     */
+    private static function b64urlEncode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    /**
+     * @param string $data
+     *
+     * @return string|false decoded payload, or false on malformed input
+     */
+    private static function b64urlDecode($data)
+    {
+        return base64_decode(strtr($data, '-_', '+/'), true);
     }
 
     /**
@@ -248,7 +375,7 @@ class Csrf
     {
         $this->setToken();
 
-        return $this->csrfTokenName;
+        return $this->tokenName;
     }
 
     /**
@@ -258,6 +385,6 @@ class Csrf
     {
         $this->setToken();
 
-        return $this->csrfTokenValue;
+        return $this->tokenValue;
     }
 }

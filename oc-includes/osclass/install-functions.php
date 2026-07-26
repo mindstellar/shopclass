@@ -713,6 +713,7 @@ function oc_install()
             osc_db_execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
             osc_db_execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
             osc_db_execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
+            osc_db_execute($replace, array('csrf_secret', bin2hex(random_bytes(32)), 'osclass', 'STRING'));
         });
     } catch (\Throwable $e) {
         error_log('Shopclass install: seeding preferences failed: ' . $e->getMessage());
