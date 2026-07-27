@@ -933,9 +933,7 @@ class Search extends DAO
      */
     private function escapeString($value)
     {
-        $conn = DBConnectionClass::newInstance()->getOsclassDb();
-
-        return is_object($conn) ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
+        return \mindstellar\database\Connection::instance()->escape((string)$value);
     }
 
     /**

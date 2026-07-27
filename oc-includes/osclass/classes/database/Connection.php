@@ -258,6 +258,25 @@ class Connection
     }
 
     /**
+     * Escape a value for interpolation into a raw SQL string, WITHOUT surrounding
+     * quotes.
+     *
+     * New code must NOT use this -- pass values as bound parameters to
+     * select()/execute() instead, which is injection-safe by construction. It exists
+     * only for the legacy Search builder, which emits one SQL string that is also
+     * handed to the sql_search_conditions plugin filter as raw fragments; a
+     * bound-parameter channel is not available there without breaking that public hook.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function escape(string $value): string
+    {
+        return $this->conn->real_escape_string($value);
+    }
+
+    /**
      * Begin a transaction. Delegates to Db so Connection is a one-stop entry point.
      *
      * @return bool
