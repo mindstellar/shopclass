@@ -578,14 +578,19 @@ class Item extends DAO
         // $conditions is RAW SQL the CALLER owns: a string or an array of strings
         // (a raw-fragment public API, like User::countUsers). Internal callers
         // build safe fragments — 'fk_i_user_id = ' . (int)$userId — and the
-        // (int)/escaped values they use keep it injection-safe. Each element is a
-        // trusted fragment with no bound value of its own.
+        // (int) values they use keep it injection-safe. An array element may also be
+        // a [fragment-with-?-placeholders, [bound values]] pair, which is how a caller
+        // passes an untrusted value safely instead of escaping it into the fragment.
         $conds  = array();
         $params = array();
         if ($conditions !== null) {
             if (is_array($conditions)) {
                 foreach ($conditions as $condition) {
-                    $this->pushWhere($conds, $params, $condition, 'AND');
+                    if (is_array($condition)) {
+                        $this->pushWhere($conds, $params, $condition[0], 'AND', $condition[1] ?? array());
+                    } else {
+                        $this->pushWhere($conds, $params, $condition, 'AND');
+                    }
                 }
             } else {
                 $this->pushWhere($conds, $params, $conditions, 'AND');
@@ -813,16 +818,12 @@ class Item extends DAO
      */
     public function countItemTypesByEmail($email, $itemType = false, $cond = '')
     {
-        // findItemByTypes() takes raw WHERE fragments with no bound-value channel,
-        // so the email is escaped into the fragment through the shared connection
-        // handle and ALWAYS quoted — injection-safe, and dropping the legacy
-        // numeric coercion (amendment T) since it no longer returns a bare number.
-        $handle      = DBConnectionClass::newInstance()->getOsclassDb();
-        $where_email = "s_contact_email = '" . $handle->real_escape_string((string)$email) . "'";
+        // The email is untrusted, so it goes through findItemByTypes' bound-value
+        // channel as a [fragment, values] pair rather than being escaped into the
+        // WHERE string. $cond stays a raw caller-owned fragment.
+        $conditions = array(array('s_contact_email = ?', array((string)$email)));
         if ($cond) {
-            $conditions = array($where_email, $cond);
-        } else {
-            $conditions = $where_email;
+            $conditions[] = $cond;
         }
 
         return $this->findItemByTypes($conditions, $itemType, true);
