@@ -234,6 +234,30 @@ class Connection
     }
 
     /**
+     * The database server version string, e.g. "8.0.36" or "10.11.6-MariaDB".
+     * Diagnostics only (system-info screen, upgrade reports) -- a narrow accessor so
+     * those callers depend on Connection instead of reaching for the raw mysqli handle.
+     *
+     * @return string
+     */
+    public function serverInfo(): string
+    {
+        return (string) $this->conn->get_server_info();
+    }
+
+    /**
+     * The driver's last error message on this connection, or '' when the last
+     * statement succeeded. For surfacing a failure in admin tooling; it is not a
+     * substitute for the DbException that select()/execute() raise on error.
+     *
+     * @return string
+     */
+    public function lastError(): string
+    {
+        return (string) $this->conn->error;
+    }
+
+    /**
      * Begin a transaction. Delegates to Db so Connection is a one-stop entry point.
      *
      * @return bool

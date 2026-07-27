@@ -364,7 +364,7 @@ define('OSC_DEBUG_LOG', true);</pre>
 
             $dbServer = '';
             try {
-                $dbServer = DBConnectionClass::newInstance()->getOsclassDb()->get_server_info();
+                $dbServer = \mindstellar\database\Connection::instance()->serverInfo();
             } catch (Throwable $e) {
                 $dbServer = __('unavailable');
             }

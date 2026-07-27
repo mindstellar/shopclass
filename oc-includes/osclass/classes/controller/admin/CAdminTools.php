@@ -45,10 +45,8 @@ class CAdminTools extends AdminSecBaseModel
                 if (isset($sql['size']) && $sql['size'] != 0) {
                     $content_file = file_get_contents($sql['tmp_name']);
 
-                    $conn = DBConnectionClass::newInstance();
-
                     try {
-                        (new \mindstellar\database\Connection($conn->getOsclassDb()))
+                        \mindstellar\database\Connection::instance()
                             ->executeScript($content_file);
                         osc_calculate_location_slug(osc_subdomain_type());
                         osc_add_flash_ok_message(_m('Import complete'), 'admin');
@@ -169,13 +167,13 @@ class CAdminTools extends AdminSecBaseModel
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-2):
-                        $msg = sprintf(_m('Could not connect with the database. Error: %s'), DBConnectionClass::newInstance()
-                                                                                                              ->getOsclassDb()->connect_error);
+                        $msg = sprintf(_m('Could not connect with the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError());
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-3):
-                        $msg = sprintf(_m('Could not select the database. Error: %s'), DBConnectionClass::newInstance()
-                                                                                                        ->getOsclassDb()->error);
+                        $msg = sprintf(_m('Could not select the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError());
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-4):

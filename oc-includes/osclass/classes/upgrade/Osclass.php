@@ -21,7 +21,6 @@
 
 namespace mindstellar\upgrade;
 
-use DBConnectionClass;
 use mindstellar\database\Connection;
 use mindstellar\database\SchemaReconciler;
 use mindstellar\migration\MigrationRunner;
@@ -73,11 +72,7 @@ class Osclass extends UpgradePackage
         if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
             $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
 
-            $conn = DBConnectionClass::newInstance();
-            $c_db = $conn->getOsclassDb();
-            $db   = new Connection($c_db);
-
-            $result = (new SchemaReconciler($db))
+            $result = (new SchemaReconciler(Connection::instance()))
                 ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
             list($status, $message, $errorQueries) = $result;
         }

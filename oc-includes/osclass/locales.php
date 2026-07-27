@@ -77,10 +77,9 @@ function osc_checkLocales()
                 $path = osc_translations_path() . $locale['locale_code'] . '/mail.sql';
                 if (file_exists($path)) {
                     $sql  = file_get_contents($path);
-                    $conn = DBConnectionClass::newInstance();
 
                     try {
-                        (new \mindstellar\database\Connection($conn->getOsclassDb()))->executeScript($sql);
+                        \mindstellar\database\Connection::instance()->executeScript($sql);
                     } catch (\mindstellar\database\DbException $e) {
                         return false;
                     }
