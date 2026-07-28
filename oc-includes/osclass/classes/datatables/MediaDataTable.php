@@ -75,7 +75,7 @@ class MediaDataTable extends DataTable
         }
 
         Rewrite::newInstance()->init();
-        $page = (int)Params::getParam('iPage');
+        $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
         }
@@ -139,7 +139,7 @@ class MediaDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $start = ((int)Params::getParam('iPage') - 1) * $_get['iDisplayLength'];
+        $start = (Params::getParamInt('iPage') - 1) * $_get['iDisplayLength'];
 
         $this->start = (int)$start;
         $this->limit = (int)$_get['iDisplayLength'];

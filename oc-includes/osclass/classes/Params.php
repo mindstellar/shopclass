@@ -49,6 +49,78 @@ class Params
     }
 
     /**
+     * Type-safe integer accessor. Request values are attacker-controlled in shape as well as
+     * content: `?id[]=1` makes the raw value an array, and `(int)getParam('id')` then juggles
+     * that array to 1 (with a warning) instead of failing. This never returns an array — an
+     * array (or a missing param) yields $default, a scalar is cast to int. A drop-in, array-safe
+     * replacement for `(int) Params::getParam($p)` at ID/page/count sites.
+     *
+     * @param string $param
+     * @param int    $default value for a missing or array-valued param
+     *
+     * @return int
+     */
+    public static function getParamInt($param, $default = 0)
+    {
+        if ($param === '' || !isset(self::$request[$param])) {
+            return $default;
+        }
+        $value = self::$request[$param];
+        if (is_array($value)) {
+            return $default;
+        }
+
+        return (int)$value;
+    }
+
+    /**
+     * Type-safe string accessor. Same purification as getParam(), but an array-valued param
+     * (e.g. `?s_name[]=x`) yields '' instead of an array leaking into string/SQL context. Use at
+     * sites that require a scalar string.
+     *
+     * @param string $param
+     * @param bool   $html_encode
+     * @param bool   $xss_check
+     * @param bool   $quotes_encode
+     *
+     * @return string
+     */
+    public static function getParamString($param, $html_encode = false, $xss_check = true, $quotes_encode = true)
+    {
+        if ($param === '' || !isset(self::$request[$param])) {
+            return '';
+        }
+        $value = self::$request[$param];
+        if (is_array($value)) {
+            return '';
+        }
+
+        return self::purify($value, $html_encode, $xss_check, $quotes_encode);
+    }
+
+    /**
+     * Type-safe array accessor for genuinely multi-valued params (meta[], s_info[], sCategory[]…).
+     * A scalar-valued param (or a missing one) yields an empty array, so a caller that iterates
+     * the result can never trip over a scalar an attacker sent where an array was expected.
+     * Purification matches getParam()'s defaults, applied recursively.
+     *
+     * @param string $param
+     * @param bool   $html_encode
+     * @param bool   $xss_check
+     * @param bool   $quotes_encode
+     *
+     * @return array
+     */
+    public static function getParamArray($param, $html_encode = false, $xss_check = true, $quotes_encode = true)
+    {
+        if ($param === '' || !isset(self::$request[$param]) || !is_array(self::$request[$param])) {
+            return array();
+        }
+
+        return self::purify(self::$request[$param], $html_encode, $xss_check, $quotes_encode);
+    }
+
+    /**
      * Function to purify given string or array
      * Should be moved to separate class
      *

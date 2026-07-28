@@ -256,11 +256,8 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_csrf_check();
 
                 $location = Params::getParam('location');
-                $moved    = (int)Params::getParam('id');
-                $ids      = Params::getParam('ids');
-                if (!is_array($ids)) {
-                    $ids = array();
-                }
+                $moved    = Params::getParamInt('id');
+                $ids      = Params::getParamArray('ids');
                 $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
                 // The section must be one the active theme actually declares, so a
@@ -297,10 +294,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_csrf_check();
 
                 $location = Params::getParam('location');
-                $ids      = Params::getParam('ids');
-                if (!is_array($ids)) {
-                    $ids = array();
-                }
+                $ids      = Params::getParamArray('ids');
                 // Integer-validate the id list, dropping any non-numeric value.
                 $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
@@ -389,7 +383,7 @@ class CAdminAppearance extends AdminSecBaseModel
      */
     private function widgetReturnUrl()
     {
-        $pageBuilderId = (int) Params::getParam('page_builder_id');
+        $pageBuilderId = Params::getParamInt('page_builder_id');
         if ($pageBuilderId > 0) {
             return osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $pageBuilderId;
         }

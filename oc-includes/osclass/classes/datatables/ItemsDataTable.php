@@ -69,7 +69,7 @@ class ItemsDataTable extends DataTable
         }
 
         Rewrite::newInstance()->init();
-        $page = (int)Params::getParam('iPage');
+        $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
         }
@@ -576,7 +576,7 @@ class ItemsDataTable extends DataTable
     {
 
         Rewrite::newInstance()->init();
-        $page = (int)Params::getParam('iPage');
+        $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
         }

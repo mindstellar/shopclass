@@ -39,14 +39,14 @@ class CAdminMedia extends AdminSecBaseModel
         switch ($this->action) {
             case ('delete'):
                 osc_csrf_check();
-                $this->deleteMedia(Params::getParam('src'), (int) Params::getParam('id'));
+                $this->deleteMedia(Params::getParam('src'), Params::getParamInt('id'));
                 osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
             default:
                 $type    = $this->resolveType(Params::getParam('type'));
                 $perPage = 24;
-                $iPage   = max(1, (int) Params::getParam('iPage'));
+                $iPage   = max(1, Params::getParamInt('iPage'));
                 $data    = osc_media_library_query($type, $iPage, $perPage);
 
                 // Snap a too-high page back to the last one with results.

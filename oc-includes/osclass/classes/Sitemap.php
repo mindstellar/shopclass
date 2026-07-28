@@ -122,7 +122,7 @@ class Sitemap extends DAO
                 $this->generateIndex();
                 break;
             case 'item':
-                $page = (int) Params::getParam('sitemap_page');
+                $page = Params::getParamInt('sitemap_page');
                 if ($page < 0 || $page > $this->lastItemPage()) {
                     $this->notFound();
                 }

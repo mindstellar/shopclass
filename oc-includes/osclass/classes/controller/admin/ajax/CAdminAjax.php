@@ -82,7 +82,7 @@ class CAdminAjax extends AdminSecBaseModel
                 if (!in_array($type, array_merge(array('all', 'item'), osc_media_owner_types()), true)) {
                     $type = 'all';
                 }
-                $iPage   = max(1, (int) Params::getParam('iPage'));
+                $iPage   = max(1, Params::getParamInt('iPage'));
                 $perPage = 30;
                 $data    = osc_media_library_query($type, $iPage, $perPage);
 
@@ -112,7 +112,7 @@ class CAdminAjax extends AdminSecBaseModel
                 header('Content-Type: application/json');
 
                 $ownerType = Params::getParam('owner_type');
-                $ownerId   = (int) Params::getParam('owner_id');
+                $ownerId   = Params::getParamInt('owner_id');
 
                 // Two targets are allowed: a page image (must exist) and an
                 // unattached library upload (ownerless). Whitelisting the owner
@@ -273,7 +273,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // will change the field in more than one form.
                 $this->_exportVariableToView(
                     'form_count',
-                    (new \mindstellar\forms\FormService())->formCountForField((int)Params::getParam('id'))
+                    (new \mindstellar\forms\FormService())->formCountForField(Params::getParamInt('id'))
                 );
                 $this->doView('fields/iframe.php');
                 break;
@@ -313,7 +313,7 @@ class CAdminAjax extends AdminSecBaseModel
                         }
                         // prepare multi locale data
                         $currentAdminLocale = osc_current_admin_locale();
-                        $aMetaNames        = Params::getParam('meta_s_name');
+                        $aMetaNames        = Params::getParamArray('meta_s_name');
                         $metaLocale = array();
                         foreach ($aMetaNames as $k => $v) {
                             if (!empty($v)) {
@@ -323,7 +323,7 @@ class CAdminAjax extends AdminSecBaseModel
                             }
                         }
 
-                        $metaOptions     = Params::getParam('s_options');
+                        $metaOptions     = Params::getParamString('s_options');
 
                         // trim all csv options
                         if (!empty($metaOptions)) {
@@ -354,20 +354,20 @@ class CAdminAjax extends AdminSecBaseModel
                             's_options'    => $metaOptions,
                         );
                         if (!$builderMode) {
-                            $groupId = (int)Params::getParam('field_group');
+                            $groupId = Params::getParamInt('field_group');
                             $updateData['fk_i_group_id'] = $groupId > 0 ? $groupId : null;
                         }
                         $res = Field::newInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
                         // Keep the link table (source of truth) in sync with the
                         // single-group editor; the builder manages links via drag-drop.
                         if (!$builderMode) {
-                            FieldGroup::newInstance()->setFieldSingleGroup((int)Params::getParam('id'), $groupId);
+                            FieldGroup::newInstance()->setFieldSingleGroup(Params::getParamInt('id'), $groupId);
                         }
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
                         // Per-type config (placeholder, help text, numeric bounds, …).
-                        self::persistFieldConfig((int)Params::getParam('id'), $chosenType);
+                        self::persistFieldConfig(Params::getParamInt('id'), $chosenType);
                         if (is_bool($res) && !$res) {
                             $error = 1;
                         }
@@ -486,7 +486,7 @@ class CAdminAjax extends AdminSecBaseModel
             case 'group_post':
                 osc_csrf_check();
                 $groupManager = FieldGroup::newInstance();
-                $groupId      = (int)Params::getParam('id');
+                $groupId      = Params::getParamInt('id');
                 $name         = trim((string)Params::getParam('group_name'));
                 $error        = 0;
                 if ($groupId <= 0 || $name === '') {
@@ -523,7 +523,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'delete_group':
                 osc_csrf_check();
-                $res = FieldGroup::newInstance()->deleteByPrimaryKey((int)Params::getParam('id'));
+                $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
                 if ($res !== false) {
                     echo json_encode(array('ok' => __('The field group has been deleted')));
                 } else {
@@ -534,7 +534,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // The builder posts a form's whole ordered field list after each drag;
                 // FormService reconciles the link table (add/remove/reorder in one go).
                 osc_csrf_check();
-                $formId = (int)Params::getParam('form_id');
+                $formId = Params::getParamInt('form_id');
                 $ids    = json_decode((string)Params::getParam('fields'), true);
                 if ($formId <= 0 || !is_array($ids)) {
                     echo json_encode(array('error' => __('Invalid request')));
@@ -550,21 +550,21 @@ class CAdminAjax extends AdminSecBaseModel
             case 'form_submission_status':
                 osc_csrf_check();
                 $ok = \mindstellar\model\FormSubmission::newInstance()
-                    ->setStatus((int)Params::getParam('id'), (string)Params::getParam('status'));
+                    ->setStatus(Params::getParamInt('id'), (string)Params::getParam('status'));
                 echo json_encode($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
                 break;
             case 'form_submission_delete':
                 osc_csrf_check();
-                $ok = \mindstellar\model\FormSubmission::newInstance()->delete((int)Params::getParam('id'));
+                $ok = \mindstellar\model\FormSubmission::newInstance()->delete(Params::getParamInt('id'));
                 echo json_encode($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'form_submissions_purge':
                 osc_csrf_check();
-                $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm((int)Params::getParam('form_id'));
+                $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm(Params::getParamInt('form_id'));
                 echo json_encode($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'group_categories_iframe':
-                $groupId = (int)Params::getParam('id');
+                $groupId = Params::getParamInt('id');
                 $selected = FieldGroup::newInstance()->categories($groupId);
                 $this->_exportVariableToView('selected', $selected);
                 $this->_exportVariableToView('group', FieldGroup::newInstance()->findByPrimaryKey($groupId));

@@ -53,7 +53,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int) Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }
@@ -122,7 +122,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 break;
             case ('keyword_block_edit_post'):
                 osc_csrf_check();
-                $this->_saveKeywordBlock((int) Params::getParam('id'));
+                $this->_saveKeywordBlock(Params::getParamInt('id'));
                 break;
             case ('keyword_block_delete'):
                 osc_csrf_check();
@@ -172,7 +172,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
             case ('keyword_block_prefs_post'):
                 osc_csrf_check();
 
-                $threshold = (int) Params::getParam('report_threshold');
+                $threshold = Params::getParamInt('report_threshold');
                 if ($threshold < 1) {
                     $threshold = 1;
                 }

@@ -102,7 +102,7 @@ class CAdminCFields extends AdminSecBaseModel
 
         // Which form to show — the requested one, else the first with entries, else
         // the first form.
-        $formId = (int)Params::getParam('form_id');
+        $formId = Params::getParamInt('form_id');
         if ($formId <= 0) {
             foreach ($forms as $f) {
                 if ($submissionModel->countByForm((int)$f['pk_i_id']) > 0) {

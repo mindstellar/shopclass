@@ -436,7 +436,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $array['aaInfo']               = $aInfo;
 
                 // --------------------------------------------------------
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if (count($array['aaData']) == 0 && $page != 1) {
                     $total   = $array['iTotalDisplayRecords'];
                     $maxPage = ceil($total / (int)$array['iDisplayLength']);

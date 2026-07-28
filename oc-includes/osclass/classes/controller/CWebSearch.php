@@ -151,10 +151,7 @@ class CWebSearch extends BaseModel
                             if (preg_match("/meta(\d+)-?(.*)?/", $m[1][$k], $results)) {
                                 $meta_key   = $m[1][$k];
                                 $meta_value = $m[2][$k];
-                                $array_r    = array();
-                                if (Params::existParam('meta')) {
-                                    $array_r = Params::getParam('meta');
-                                }
+                                $array_r    = Params::getParamArray('meta');
                                 if ($results[2] == '') {
                                     // meta[meta_id] = meta_value
                                     $meta_key           = $results[1];
@@ -301,7 +298,7 @@ class CWebSearch extends BaseModel
         $p_sFeed = Params::getParam('sFeed');
         $p_iPage = 0;
         if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') > 0) {
-            $p_iPage = (int)Params::getParam('iPage') - 1;
+            $p_iPage = Params::getParamInt('iPage') - 1;
         }
 
         if ($p_sFeed != '') {
@@ -315,7 +312,7 @@ class CWebSearch extends BaseModel
         }
 
         // search results: it's blocked with the maxResultsPerPage@search defined in t_preferences
-        $p_iPageSize = (int)Params::getParam('iPagesize');
+        $p_iPageSize = Params::getParamInt('iPagesize');
         if ($p_iPageSize > 0) {
             if ($p_iPageSize > osc_max_results_per_page_at_search()) {
                 $p_iPageSize = osc_max_results_per_page_at_search();

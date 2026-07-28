@@ -147,7 +147,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $success     = $userActions->edit(Params::getParam('id'));
 
                 // Admin edits any user; the avatar owner is the edited user's id.
-                $this->handleAvatarUpload((int)Params::getParam('id'));
+                $this->handleAvatarUpload(Params::getParamInt('id'));
 
                 if ($success == 1) {
                     osc_add_flash_ok_message(_m('The user has been updated'), 'admin');
@@ -458,7 +458,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }
@@ -519,7 +519,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }
@@ -682,7 +682,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }

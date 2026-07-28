@@ -515,7 +515,7 @@ class CAdminItems extends AdminSecBaseModel
                 // reports already on file cannot immediately re-trigger the
                 // report-threshold auto-block.
                 osc_csrf_check();
-                $id = (int) Params::getParam('id');
+                $id = Params::getParamInt('id');
 
                 if ($id <= 0) {
                     return false;
@@ -870,7 +870,7 @@ class CAdminItems extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }
@@ -927,7 +927,7 @@ class CAdminItems extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }

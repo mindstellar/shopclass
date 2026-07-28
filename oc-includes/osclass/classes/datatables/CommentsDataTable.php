@@ -114,7 +114,7 @@ class CommentsDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $start = ((int)Params::getParam('iPage') - 1) * $_get['iDisplayLength'];
+        $start = (Params::getParamInt('iPage') - 1) * $_get['iDisplayLength'];
 
         $this->start = (int)$start;
         $this->limit = (int)$_get['iDisplayLength'];

@@ -302,12 +302,12 @@ class CAdminTools extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 }
                 osc_csrf_check();
-                $limit = (int)Params::getParam('batch_limit');
+                $limit = Params::getParamInt('batch_limit');
                 osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'cleanup', 'INTEGER');
                 foreach (Cleanup::RULES as $rule) {
                     osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'cleanup', 'BOOLEAN');
                     if ($rule !== 'reported') {
-                        $days = (int)Params::getParam('days_' . $rule);
+                        $days = Params::getParamInt('days_' . $rule);
                         osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'cleanup', 'INTEGER');
                     }
                 }

@@ -58,7 +58,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
             case ('sitemap_settings_post'):
                 osc_csrf_check();
 
-                $number = (int) Params::getParam('sitemap_number');
+                $number = Params::getParamInt('sitemap_number');
                 if ($number <= 0) {
                     $number = 5000;
                 }
@@ -109,7 +109,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
             case ('sitemap_custom_url_remove'):
                 osc_csrf_check();
 
-                $index = (int) Params::getParam('sitemap_url_index');
+                $index = Params::getParamInt('sitemap_url_index');
                 $list  = $this->_customUrls();
 
                 if (isset($list[$index])) {

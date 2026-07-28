@@ -86,7 +86,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 $endpoint = $this->_httpUrlOrEmpty(Params::getParam('storage_s3_endpoint'));
                 $publicUrl = $this->_httpUrlOrEmpty(Params::getParam('storage_s3_public_url'));
 
-                $signedTtl = (int) Params::getParam('storage_s3_signed_ttl');
+                $signedTtl = Params::getParamInt('storage_s3_signed_ttl');
                 $signedTtl = $signedTtl > 0 ? max(60, min(604800, $signedTtl)) : 900;
 
                 osc_set_preference('storage_active', Params::getParam('storage_active') === 's3' ? 's3' : 'local');

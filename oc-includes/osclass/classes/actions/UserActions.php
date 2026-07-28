@@ -238,7 +238,7 @@ class UserActions
             $input['s_country'] = $this->Sanitize->string(Params::getParam('country'));
         }
 
-        if ((int)Params::getParam('regionId')) {
+        if (Params::getParamInt('regionId')) {
             $region = Region::newInstance()->findByPrimaryKey(Params::getParam('regionId'));
             if (count($region) > 0) {
                 $input['fk_i_region_id']   = $region['pk_i_id'];
@@ -249,7 +249,7 @@ class UserActions
             $input['s_region'] = $this->Sanitize->string(Params::getParam('region'));
         }
 
-        if ((int)Params::getParam('cityId')) {
+        if (Params::getParamInt('cityId')) {
             $city = City::newInstance()->findByPrimaryKey(Params::getParam('cityId'));
             if (count($city) > 0) {
                 $input['fk_i_city_id']   = $city['pk_i_id'];

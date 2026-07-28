@@ -47,7 +47,7 @@ class CWebForm extends BaseModel
 
         $return = $this->safeReturnUrl();
 
-        $formId = (int) Params::getParam('osc_form_id');
+        $formId = Params::getParamInt('osc_form_id');
         $form   = $formId > 0 ? FieldGroup::newInstance()->findByPrimaryKey($formId) : array();
         if (empty($form)) {
             osc_add_flash_error_message(_m('That form is no longer available.'));
@@ -84,8 +84,7 @@ class CWebForm extends BaseModel
             return;
         }
 
-        $meta   = Params::getParam('meta');
-        $meta   = is_array($meta) ? $meta : array();
+        $meta   = Params::getParamArray('meta');
         $result = FieldValidator::process($fields, $meta);
 
         // Plugins may amend the validation errors (add or clear their own).

@@ -79,7 +79,7 @@ class CWebRegister extends BaseModel
                 }
                 break;
             case ('validate'):       //validate account
-                $id          = (int)Params::getParam('id');
+                $id          = Params::getParamInt('id');
                 $code        = Params::getParam('code');
                 $userManager = new User();
                 $user        = $userManager->findByIdSecret($id, \mindstellar\security\ActionToken::hash($code));

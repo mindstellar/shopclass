@@ -53,17 +53,17 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 $keepOriginalImage      = Params::getParam('keep_original_image');
                 $forceAspectImage       = Params::getParam('force_aspect_image');
                 $forceJPEG              = Params::getParam('force_jpeg');
-                $jpegQuality            = (int) Params::getParam('jpeg_quality');
+                $jpegQuality            = Params::getParamInt('jpeg_quality');
                 $use_imagick            = Params::getParam('use_imagick');
                 $type_watermark         = Params::getParam('watermark_type');
                 $watermark_color        = Params::getParam('watermark_text_color');
                 $watermark_text         = Params::getParam('watermark_text');
                 $watermark_text_options = array(
-                    'watermark_width'  => (int)Params::getParam(('watermark_width')),
-                    'watermark_height' => (int)Params::getParam(('watermark_height')),
-                    'text_offset_x'    => (int)Params::getParam(('text_offset_x')),
-                    'text_offset_y'    => (int)Params::getParam(('text_offset_y')),
-                    'text_angle'       => (int)Params::getParam(('text_angle')),
+                    'watermark_width'  => Params::getParamInt('watermark_width'),
+                    'watermark_height' => Params::getParamInt('watermark_height'),
+                    'text_offset_x'    => Params::getParamInt('text_offset_x'),
+                    'text_offset_y'    => Params::getParamInt('text_offset_y'),
+                    'text_angle'       => Params::getParamInt('text_angle'),
                     'background_color' => Params::getParam(('background_color'))
                 );
 

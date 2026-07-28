@@ -358,7 +358,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if (count($array['aaData']) == 0 && $page != 1) {
                     $total   = $array['iTotalDisplayRecords'];
                     $maxPage = ceil($total / (int)$array['iDisplayLength']);

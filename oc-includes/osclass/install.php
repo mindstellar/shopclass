@@ -51,7 +51,7 @@ define('WEB_PATH', osc_get_absolute_url());
 Params::init();
 Session::newInstance()->session_start();
 
-$step = (int)Params::getParam('step');
+$step = Params::getParamInt('step');
 if ($step < 1) {
     $step = 1;
 }
