@@ -513,7 +513,11 @@ class CWebSearch extends BaseModel
         osc_run_hook('search_conditions', Params::getParamsAsArray());
 
         // RETRIEVE ITEMS AND TOTAL
-        $key         = md5(osc_base_url() . $this->mSearch->toJson());
+        // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
+        // enable/spam/delete) that bumps it makes every stored search result unreachable at
+        // once — the same immediate invalidation getLatestItems() already gets. Without it a
+        // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
+        $key         = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
         $found       = null;
         $cache       = osc_cache_get($key, $found);
         $aItems      = null;
