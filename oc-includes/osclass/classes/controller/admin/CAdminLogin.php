@@ -83,16 +83,16 @@ class CAdminLogin extends AdminBaseModel
                     ), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 } elseif (@$admin['s_password'] != '') {
+                    $needs_rehash = true;
                     if (preg_match('|\$2y\$([0-9]{2})\$|', $admin['s_password'], $cost)) {
-                        if ($cost[1] != BCRYPT_COST) {
-                            Admin::newInstance()->update(
-                                array('s_password' => osc_hash_password($password)),
-                                array('pk_i_id' => $admin['pk_i_id'])
-                            );
-                        }
-                    } else {
+                        $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
+                    }
+                    if ($needs_rehash) {
+                        // Mirror the rehash into the in-memory row so the remember-me token below
+                        // binds to the hash actually persisted, not the stale one.
+                        $admin['s_password'] = osc_hash_password($password);
                         Admin::newInstance()->update(
-                            array('s_password' => osc_hash_password($password)),
+                            array('s_password' => $admin['s_password']),
                             array('pk_i_id' => $admin['pk_i_id'])
                         );
                     }
@@ -100,17 +100,17 @@ class CAdminLogin extends AdminBaseModel
                 $locale          = Params::getParam('locale');
                 $is_valid_locale = osc_validate_locale($locale, true);
                 if (Params::getParam('remember')) {
-                    $secret = osc_genRandomPassword();
-
-                    Admin::newInstance()->update(
-                        array('s_secret' => $secret),
-                        array('pk_i_id' => $admin['pk_i_id'])
-                    );
-
-
                     Cookie::newInstance()->set_expires(osc_time_cookie());
                     Cookie::newInstance()->push('oc_adminId', $admin['pk_i_id']);
-                    Cookie::newInstance()->push('oc_adminSecret', $secret);
+                    Cookie::newInstance()->push(
+                        'oc_adminSecret',
+                        \mindstellar\security\RememberMe::issue(
+                            'admin',
+                            $admin['pk_i_id'],
+                            $admin['s_password'],
+                            osc_time_cookie()
+                        )
+                    );
                     if ($is_valid_locale === true) {
                         Cookie::newInstance()->push('oc_adminLocale', Params::getParam('locale'));
                     } else {

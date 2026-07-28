@@ -16,7 +16,6 @@ namespace mindstellar;
 use mindstellar\utility\Utils;
 use Params;
 use Plugins;
-use Preference;
 use Session;
 
 /**
@@ -52,12 +51,6 @@ class Csrf
     private const TOKEN_VERSION = '1';
 
     private static $instance;
-
-    /**
-     * Signing secret, resolved once per request.
-     * @var string
-     */
-    private static $secret;
 
     /**
      * Encoded payload for the token issued this request (the CSRFName value).
@@ -289,31 +282,13 @@ class Csrf
     }
 
     /**
-     * The server-side signing secret. Prefers an OSC_CSRF_SECRET config constant (keeps the
-     * secret out of the database); otherwise a persisted csrf_secret preference, generated once
-     * on first use so existing installs need no migration. Rotating it invalidates every
-     * outstanding token — a one-time re-issue, no data loss.
+     * The server-side signing secret, shared with every other stateless signed token.
      *
      * @return string
      */
     private static function secret()
     {
-        if (self::$secret !== null) {
-            return self::$secret;
-        }
-        if (defined('OSC_CSRF_SECRET') && OSC_CSRF_SECRET !== '') {
-            return self::$secret = OSC_CSRF_SECRET;
-        }
-        $secret = Preference::newInstance()->get('csrf_secret');
-        if ($secret === '' || $secret === null) {
-            $secret = bin2hex(random_bytes(32));
-            // Prime the in-memory cache so this same request signs and verifies consistently;
-            // replace() only writes the row, it does not refresh the loaded preferences.
-            Preference::newInstance()->set('csrf_secret', $secret);
-            osc_set_preference('csrf_secret', $secret, 'osclass', 'STRING');
-        }
-
-        return self::$secret = $secret;
+        return \mindstellar\security\SigningKey::get();
     }
 
     /**

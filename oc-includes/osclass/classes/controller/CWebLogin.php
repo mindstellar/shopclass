@@ -76,16 +76,16 @@ class CWebLogin extends BaseModel
                 )
                 ) {
                     if (@$user['s_password'] != '') {
+                        $needs_rehash = true;
                         if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
-                            if ($cost[1] != BCRYPT_COST) {
-                                User::newInstance()->update(
-                                    array('s_password' => osc_hash_password($password)),
-                                    array('pk_i_id' => $user['pk_i_id'])
-                                );
-                            }
-                        } else {
+                            $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
+                        }
+                        if ($needs_rehash) {
+                            // Mirror the rehash into the in-memory row so a remember-me token
+                            // issued below binds to the hash actually persisted.
+                            $user['s_password'] = osc_hash_password($password);
                             User::newInstance()->update(
-                                array('s_password' => osc_hash_password($password)),
+                                array('s_password' => $user['s_password']),
                                 array('pk_i_id' => $user['pk_i_id'])
                             );
                         }
@@ -158,18 +158,17 @@ class CWebLogin extends BaseModel
                     osc_add_flash_error_message(_m('The user has been suspended'));
                 } elseif ($logged == 3) {
                     if (Params::getParam('remember') == 1) {
-                        //this include contains de osc_genRandomPassword function
-                        require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
-                        $secret = osc_genRandomPassword();
-
-                        User::newInstance()->update(
-                            array('s_secret' => $secret),
-                            array('pk_i_id' => $user['pk_i_id'])
-                        );
-
                         Cookie::newInstance()->set_expires(osc_time_cookie());
                         Cookie::newInstance()->push('oc_userId', $user['pk_i_id']);
-                        Cookie::newInstance()->push('oc_userSecret', $secret);
+                        Cookie::newInstance()->push(
+                            'oc_userSecret',
+                            \mindstellar\security\RememberMe::issue(
+                                'web',
+                                $user['pk_i_id'],
+                                $user['s_password'],
+                                osc_time_cookie()
+                            )
+                        );
                         Cookie::newInstance()->set();
                     }
 

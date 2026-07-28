@@ -69,11 +69,19 @@ function osc_is_web_user_logged_in()
         $user = User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
         View::newInstance()->_exportVariableToView('_loggedUser', $user);
     } elseif (Cookie::newInstance()->get_value('oc_userId') != '' && Cookie::newInstance()->get_value('oc_userSecret') != '') {
-        $user = User::newInstance()->findByIdSecret(
-            Cookie::newInstance()->get_value('oc_userId'),
-            Cookie::newInstance()->get_value('oc_userSecret')
-        );
-        View::newInstance()->_exportVariableToView('_loggedUser', $user);
+        $userId    = Cookie::newInstance()->get_value('oc_userId');
+        $candidate = User::newInstance()->findByPrimaryKey($userId);
+        if (isset($candidate['pk_i_id'])
+            && \mindstellar\security\RememberMe::verify(
+                'web',
+                $userId,
+                Cookie::newInstance()->get_value('oc_userSecret'),
+                $candidate['s_password']
+            )
+        ) {
+            $user = $candidate;
+            View::newInstance()->_exportVariableToView('_loggedUser', $user);
+        }
     }
     if (isset($user['b_enabled'], $user['b_active']) && $user['b_enabled'] == 1 && $user['b_active'] == 1) {
         Session::newInstance()->_set('userId', $user['pk_i_id']);
@@ -215,11 +223,16 @@ function osc_is_admin_user_logged_in()
     if (Cookie::newInstance()->get_value('oc_adminId') != ''
         && Cookie::newInstance()->get_value('oc_adminSecret') != ''
     ) {
-        $admin = Admin::newInstance()->findByIdSecret(
-            Cookie::newInstance()->get_value('oc_adminId'),
-            Cookie::newInstance()->get_value('oc_adminSecret')
-        );
-        if (isset($admin['pk_i_id'])) {
+        $adminId = Cookie::newInstance()->get_value('oc_adminId');
+        $admin   = Admin::newInstance()->findByPrimaryKey($adminId);
+        if (isset($admin['pk_i_id'])
+            && \mindstellar\security\RememberMe::verify(
+                'admin',
+                $adminId,
+                Cookie::newInstance()->get_value('oc_adminSecret'),
+                $admin['s_password']
+            )
+        ) {
             Session::newInstance()->_set('adminId', $admin['pk_i_id']);
             Session::newInstance()->_set('adminUserName', $admin['s_username']);
             Session::newInstance()->_set('adminName', $admin['s_name']);
