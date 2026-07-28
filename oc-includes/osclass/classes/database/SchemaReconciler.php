@@ -452,7 +452,6 @@ class SchemaReconciler
             }
         }
 
-        $delete_foreign = array();
         if (count($foreignRepited) > 0) {
             foreach ($foreignRepited as $_key) {
                 $struct_queries[] = 'ALTER TABLE ' . $table . ' DROP FOREIGN KEY ' . $_key;
