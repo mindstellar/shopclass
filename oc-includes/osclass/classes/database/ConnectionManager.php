@@ -171,7 +171,6 @@ class ConnectionManager
 
         if ($conn === false) {
             $this->handleDbError(
-                'Shopclass &raquo; Error',
                 'Shopclass database server is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
             );
             return false;
@@ -189,7 +188,6 @@ class ConnectionManager
             $this->errorReport();
             $this->releaseDb();
             $this->handleDbError(
-                'Shopclass &raquo; Error',
                 'Shopclass database is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
             );
         }
@@ -360,12 +358,12 @@ class ConnectionManager
     }
 
     /**
-     * This handle database error and show error page with given title,message.
+     * Handle a database error: render an error page (or, during install, defer to
+     * the installer) with the given message.
      *
-     * @param $title
-     * @param $message
+     * @param string $message
      */
-    private function handleDbError($title, $message)
+    private function handleDbError($message)
     {
         // During installation the installer renders its own database errors, so
         // return and let the caller handle the failure inline.
@@ -572,15 +570,6 @@ class ConnectionManager
         }
 
         return false;
-    }
-
-    /**
-     * It reconnects to Shopclass database. First, it releases the database link connection and it connects again
-     */
-    private function reconnectOsclassDb()
-    {
-        $this->releaseDb();
-        $this->connectToOsclassDb();
     }
 }
 
