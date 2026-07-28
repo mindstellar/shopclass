@@ -40,19 +40,16 @@ class Db
     private static $depth = 0;
 
     /**
-     * Resolve the singleton mysqli connection.
+     * Resolve the singleton mysqli connection through the Connection wrapper, which
+     * owns the sole sanctioned access to the raw handle. Keeps this class off the
+     * deprecated DBConnectionClass::getOsclassDb() path.
      *
      * @return mysqli
-     * @throws RuntimeException when no database connection is available
+     * @throws DbException when no database connection is available
      */
     private static function conn(): mysqli
     {
-        $db = \DBConnectionClass::newInstance()->getOsclassDb();
-        if (!$db instanceof mysqli) {
-            throw new RuntimeException('No database connection available');
-        }
-
-        return $db;
+        return Connection::instance()->handle();
     }
 
     /**
@@ -239,8 +236,13 @@ class Db
     {
         // beginTransaction()/commit()/rollBack() are depth-aware (a real
         // transaction at the top level, SAVEPOINTs when nested), so this one
-        // path handles both the outer and any nested call correctly.
-        self::beginTransaction();
+        // path handles both the outer and any nested call correctly. Bail loudly
+        // if it fails to open: proceeding would run $fn unprotected (top level) or
+        // prematurely commit the outer transaction (nested), silently losing
+        // atomicity — the one guarantee this helper exists to provide.
+        if (!self::beginTransaction()) {
+            throw new RuntimeException('Could not begin transaction');
+        }
         try {
             $result = $fn();
             self::commit();

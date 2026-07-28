@@ -277,6 +277,19 @@ class Connection
     }
 
     /**
+     * The underlying mysqli handle, for sibling infrastructure in this package (the
+     * Db transaction helper) that must issue raw transaction/savepoint statements
+     * mysqli exposes but this wrapper intentionally does not. Application code must
+     * use the query methods above and never touch the handle directly.
+     *
+     * @return mysqli
+     */
+    public function handle(): mysqli
+    {
+        return $this->conn;
+    }
+
+    /**
      * Begin a transaction. Delegates to Db so Connection is a one-stop entry point.
      *
      * @return bool
