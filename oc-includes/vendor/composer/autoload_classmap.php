@@ -816,6 +816,7 @@ return array(
     'iObject_Cache' => $baseDir . '/oc-includes/osclass/classes/cache/interface/iObject_Cache.php',
     'mindstellar\\Csrf' => $baseDir . '/oc-includes/osclass/classes/Csrf.php',
     'mindstellar\\database\\Connection' => $baseDir . '/oc-includes/osclass/classes/database/Connection.php',
+    'mindstellar\\database\\ConnectionManager' => $baseDir . '/oc-includes/osclass/classes/database/ConnectionManager.php',
     'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',
     'mindstellar\\database\\DbException' => $baseDir . '/oc-includes/osclass/classes/database/DbException.php',
     'mindstellar\\database\\QueryBuilder' => $baseDir . '/oc-includes/osclass/classes/database/QueryBuilder.php',

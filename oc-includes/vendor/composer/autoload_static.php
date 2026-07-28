@@ -951,6 +951,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'iObject_Cache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/interface/iObject_Cache.php',
         'mindstellar\\Csrf' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Csrf.php',
         'mindstellar\\database\\Connection' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Connection.php',
+        'mindstellar\\database\\ConnectionManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/ConnectionManager.php',
         'mindstellar\\database\\Db' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Db.php',
         'mindstellar\\database\\DbException' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/DbException.php',
         'mindstellar\\database\\QueryBuilder' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/QueryBuilder.php',

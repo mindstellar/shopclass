@@ -20,7 +20,7 @@ use Throwable;
  * Class Db
  *
  * Transaction helpers operating on the singleton mysqli connection managed by
- * DBConnectionClass. Supports flat begin/commit/rollBack as well as nested
+ * ConnectionManager. Supports flat begin/commit/rollBack as well as nested
  * transactions via SAVEPOINTs, so an inner transaction() call inside an outer
  * one is safe.
  *

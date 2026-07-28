@@ -18,7 +18,7 @@ use Throwable;
  * Class Connection
  *
  * Injection-safe query API over the singleton mysqli connection managed by
- * DBConnectionClass. New code and plugins should use this instead of building
+ * ConnectionManager. New code and plugins should use this instead of building
  * SQL strings by hand: every value in $params is sent as a bound parameter, so
  * it can never be interpreted as SQL.
  *
@@ -59,7 +59,7 @@ class Connection
     public function __construct(?\mysqli $conn = null)
     {
         if ($conn === null) {
-            $conn = \DBConnectionClass::newInstance()->getOsclassDb();
+            $conn = ConnectionManager::newInstance()->getHandle();
         }
         if (!$conn instanceof mysqli) {
             throw new DbException('No database connection available');
