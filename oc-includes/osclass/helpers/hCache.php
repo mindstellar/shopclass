@@ -152,6 +152,40 @@ function osc_invalidate_item_cache($itemId)
 }
 
 /**
+ * Invalidate the cached row for one user (User::findByPrimaryKey). Used when a user's
+ * password changes: the cached row carries s_password, which is the remember-me binding, so a
+ * persistent object cache serving the old hash would delay "log out on password change" by up
+ * to the cache TTL. The osc_cache_* helpers suffix every key with the current user locale, so
+ * the row is cached once per locale that has requested it; clear each enabled locale's entry.
+ *
+ * @param int $userId
+ *
+ * @return void
+ */
+function osc_invalidate_user_cache($userId)
+{
+    $userId = (int)$userId;
+    if ($userId <= 0) {
+        return;
+    }
+
+    $baseKey = md5(osc_base_url() . 'User:findByPrimaryKey:' . $userId);
+    $cache   = Object_Cache_Factory::newInstance();
+
+    $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
+    if (empty($locales)) {
+        // No locale list available yet (early boot / install): clear the current-locale key.
+        osc_cache_delete($baseKey);
+
+        return;
+    }
+
+    foreach ($locales as $locale) {
+        $cache->delete($baseKey . $locale['pk_c_code']);
+    }
+}
+
+/**
  * Current generation number for the search/latest-items cache. Callers fold it
  * into their cache key so a bump (see osc_invalidate_search_cache) makes every
  * previously stored entry unreachable at once — the practical way to invalidate a

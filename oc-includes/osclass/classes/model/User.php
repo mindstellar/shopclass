@@ -153,6 +153,34 @@ class User extends DAO
     }
 
     /**
+     * Update user rows, dropping the cached row when the password changes.
+     *
+     * findByPrimaryKey() caches the full user row, including s_password. That hash is the
+     * remember-me binding, so with a persistent object cache a password change would keep
+     * authenticating old cookies until the entry's TTL lapsed. Clear this user's cache the
+     * moment its s_password is written. Scoped to s_password writes so ordinary field updates
+     * keep their TTL behaviour; only pk-targeted updates carry an id to invalidate.
+     *
+     * @param array $values
+     * @param array $where
+     *
+     * @return bool|int rows changed, or false on a rejected/failed update (as DAO::update)
+     */
+    public function update($values, $where)
+    {
+        $result = parent::update($values, $where);
+
+        if (is_array($values) && array_key_exists('s_password', $values)
+            && is_array($where) && isset($where['pk_i_id'])
+            && function_exists('osc_invalidate_user_cache')
+        ) {
+            osc_invalidate_user_cache($where['pk_i_id']);
+        }
+
+        return $result;
+    }
+
+    /**
      * Add description to user array
      *
      * @param      $user
