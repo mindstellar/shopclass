@@ -400,7 +400,7 @@ function install_test_db_connection()
     if ($createdb) {
         $adminUser = Params::getParam('admin_username');
         $adminPwd  = Params::getParam('admin_password', false, false);
-        $probe     = new DBConnectionClass($dbhost, $adminUser, $adminPwd, '');
+        $probe     = new \mindstellar\database\ConnectionManager($dbhost, $adminUser, $adminPwd, '');
         $code      = $probe->getErrorConnectionLevel();
         if ($code > 0) {
             $msg = install_db_error_message($code, $ctx);
@@ -420,7 +420,7 @@ function install_test_db_connection()
     }
 
     // Otherwise connect as the real user, to the target database.
-    $probe = new DBConnectionClass($dbhost, $username, $password, $dbname);
+    $probe = new \mindstellar\database\ConnectionManager($dbhost, $username, $password, $dbname);
     $code  = $probe->getErrorConnectionLevel();
     if ($code === 0) {
         $code = $probe->getErrorLevel();
@@ -434,7 +434,7 @@ function install_test_db_connection()
     // Connected. Warn early if this prefix already has Shopclass tables — the
     // 1050 collision the real install would otherwise hit halfway through. The
     // LIKE pattern is escaped so a literal prefix can't act as a wildcard.
-    $db = $probe->getOsclassDb();
+    $db = $probe->getHandle();
     if ($db instanceof mysqli) {
         $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $tableprefix) . 't_preference';
         $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
@@ -553,7 +553,7 @@ function oc_install()
 
         // Probe with an ad-hoc connection: it must never become the shared
         // singleton, so a wrong password here can't poison later queries.
-        $adminInstance = new DBConnectionClass($dbhost, $adminuser, $adminpwd, '');
+        $adminInstance = new \mindstellar\database\ConnectionManager($dbhost, $adminuser, $adminpwd, '');
         $error_num   = $adminInstance->getErrorConnectionLevel();
 
         if ($error_num > 0) {
@@ -562,7 +562,7 @@ function oc_install()
 
         // Bound to the admin handle rather than the shared one: the database this
         // statement creates does not exist yet, so there is nothing to connect to.
-        $adminDb = new \mindstellar\database\Connection($adminInstance->getOsclassDb());
+        $adminDb = new \mindstellar\database\Connection($adminInstance->getHandle());
         // Backtick-quote the database name (escaping any backtick) so a name with
         // a hyphen or other punctuation — common on shared hosting — is created
         // safely and can't break out of the identifier.
@@ -581,7 +581,7 @@ function oc_install()
     }
 
     // Ad-hoc probe of the real Shopclass credentials (still not the singleton).
-    $dbInstance      = new DBConnectionClass($dbhost, $username, $password, $dbname);
+    $dbInstance      = new \mindstellar\database\ConnectionManager($dbhost, $username, $password, $dbname);
     $error_num = $dbInstance->getErrorConnectionLevel();
 
     if ($error_num == 0) {
@@ -620,8 +620,8 @@ function oc_install()
     // Establish the shared singleton connection now. Every write below — the DAO
     // models, the migration ledger and the parameterized osc_db_* API — resolves
     // this same handle, so they all run over one connection to the new schema.
-    $conn = DBConnectionClass::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-    $c_db = $conn->getOsclassDb();
+    $conn = \mindstellar\database\ConnectionManager::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $c_db = $conn->getHandle();
     $db   = new \mindstellar\database\Connection($c_db);
 
     $sql = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
@@ -951,7 +951,7 @@ function is_osclass_installed()
         // API. Any failure — no server, missing table, wrong credentials —
         // means "not installed", exactly as the previous raw query behaved.
         // The table prefix is a config constant, never request input.
-        DBConnectionClass::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        \mindstellar\database\ConnectionManager::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
         $count = osc_db_scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_preference WHERE s_name = ?',
             array('osclass_installed')
@@ -1144,8 +1144,8 @@ function install_locations()
     if ($location) {
         $sql = osc_file_get_contents(osc_get_locations_sql_url($location));
         if ($sql) {
-            $conn = DBConnectionClass::newInstance();
-            $locationDb = new \mindstellar\database\Connection($conn->getOsclassDb());
+            $conn = \mindstellar\database\ConnectionManager::newInstance();
+            $locationDb = new \mindstellar\database\Connection($conn->getHandle());
             // A failed locations import is not fatal to the install: the dataset is
             // optional, and the previous layer likewise reported success regardless.
             try {

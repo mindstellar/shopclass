@@ -144,7 +144,7 @@ class Dump extends DAO
         $fields     = array();
 
         if ($this->isValidTableName($table)) {
-            $conn = DBConnectionClass::newInstance()->getOsclassDb();
+            $conn = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
             $res  = false;
             if ($conn instanceof mysqli) {
                 try {
@@ -336,7 +336,7 @@ class Dump extends DAO
             return $value;
         }
 
-        $conn = DBConnectionClass::newInstance()->getOsclassDb();
+        $conn = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
         $escaped = $conn instanceof mysqli ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
 
         return "'" . $escaped . "'";
