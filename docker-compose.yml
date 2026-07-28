@@ -33,10 +33,15 @@ services:
       - DB_NAME=${SHOPCLASS_DATABASE_NAME:-shopclass}
       - DB_USER=${SHOPCLASS_DATABASE_USER:-shopclass}
       - DB_PASSWORD=${SHOPCLASS_DATABASE_PASSWORD:-shopclass}
+      # Persistent object cache backed by the memcached service below.
       - OSC_CACHE=memcached
+      - OSC_CACHE_HOST=memcached
+      - OSC_CACHE_PORT=11211
     depends_on:
       mariadb:
         condition: service_healthy
+      memcached:
+        condition: service_started
     command: php-fpm
 
   # MariaDB database

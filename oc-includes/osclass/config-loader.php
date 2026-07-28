@@ -24,7 +24,9 @@
  * defaults.
  *
  * Recognised variables: DB_HOST (accepts "host:port"), DB_PORT, DB_NAME,
- * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, and optionally REL_WEB_URL / WEB_PATH.
+ * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, optionally REL_WEB_URL / WEB_PATH, and the
+ * object cache — OSC_CACHE (driver name) plus OSC_CACHE_HOST / OSC_CACHE_PORT for the
+ * memcached/memcache server.
  *
  * Safe to include more than once.
  */
@@ -85,6 +87,29 @@ if (!defined('REL_WEB_URL') && $oscEnv('REL_WEB_URL') !== null) {
 }
 if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
     define('WEB_PATH', $oscEnv('WEB_PATH'));
+}
+
+// Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
+// 'memcache' — and the memcached/memcache drivers read their server list from the
+// $_cache_config global. Bridge both from the environment so a containerised deploy can
+// enable a persistent cache without a config.php. A value set in config.php (the constant,
+// or the $_cache_config global) still wins; when OSC_CACHE is unset the app keeps its
+// per-request default cache, so existing installs are unaffected.
+if (!defined('OSC_CACHE') && $oscEnv('OSC_CACHE') !== null) {
+    define('OSC_CACHE', $oscEnv('OSC_CACHE'));
+}
+if (defined('OSC_CACHE')
+    && in_array(OSC_CACHE, array('memcached', 'memcache'), true)
+    && !isset($GLOBALS['_cache_config'])
+    && $oscEnv('OSC_CACHE_HOST') !== null
+) {
+    $GLOBALS['_cache_config'] = array(
+        array(
+            'default_host'   => $oscEnv('OSC_CACHE_HOST'),
+            'default_port'   => (int)($oscEnv('OSC_CACHE_PORT') ?? 11211),
+            'default_weight' => 1,
+        ),
+    );
 }
 
 // Last-resort fallback for env-only deploys (no config.php): when the site URLs
