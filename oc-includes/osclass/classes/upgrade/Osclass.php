@@ -109,7 +109,7 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner($db, osc_lib_path() . 'osclass/installer/migrations');
+            $runner = new MigrationRunner(Connection::instance(), osc_lib_path() . 'osclass/installer/migrations');
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {
