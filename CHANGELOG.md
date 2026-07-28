@@ -29,6 +29,7 @@
 * New: The admin mirrors under `dir="rtl"` — all component CSS uses logical properties (`inline-start/end`, logical corner radii) and Bootstrap's directional utilities are redefined logically, so RTL locales get a correct layout without a separate stylesheet.
 * New: Versioned database migration system — an ordered, ledger-backed (`t_migration`) runner for schema and data changes the existing struct.sql reconciler cannot express (column/table drops, renames, data backfills). Runs forward-only and fail-fast, after the reconcile, on upgrade.
 * New: Schema-drift CI check that proves a fresh install and an upgraded install converge to the same database schema.
+* Changed: Retired the unused `t_keywords` table — a legacy search-keyword index nothing populated or read (search uses `t_latest_searches`). It is gone from a fresh install's schema, and a migration drops it on upgrade.
 * Changed: Build toolchain moved from Grunt to `sass-embedded` + `esbuild` (`npm run build`).
 * Changed: Minimum PHP raised to 8.0.
 * Fixed: Added a missing CSRF check to the `upgrade_db` admin action.

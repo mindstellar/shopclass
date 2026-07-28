@@ -188,7 +188,6 @@ class OSCLocale extends DAO
             array(
                 DB_TABLE_PREFIX . 't_category_description',
                 DB_TABLE_PREFIX . 't_item_description',
-                DB_TABLE_PREFIX . 't_keywords',
                 DB_TABLE_PREFIX . 't_user_description',
                 DB_TABLE_PREFIX . 't_pages_description',
             ) as $table

@@ -438,23 +438,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
     PRIMARY KEY (d_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_keywords (
-    s_md5 VARCHAR(32) NOT NULL,
-    fk_c_locale_code CHAR(5) NOT NULL,
-    s_original_text VARCHAR(255) NOT NULL,
-    s_anchor_text VARCHAR(255) NOT NULL,
-    s_normalized_text VARCHAR(255) NOT NULL,
-    fk_i_category_id INT UNSIGNED NULL,
-    fk_i_city_id INT UNSIGNED NULL,
-
-        PRIMARY KEY (s_md5, fk_c_locale_code),
-        INDEX fk_i_category_id (fk_i_category_id),
-        INDEX fk_i_city_id (fk_i_city_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
-        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
-        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
   d_date DATETIME NOT NULL,
   s_search VARCHAR(255) NOT NULL

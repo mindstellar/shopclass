@@ -579,13 +579,11 @@ function osc_dbdump($path, $file)
         't_item_resource',
         't_item_comment',
         't_preference',
-        't_user_preferences',
         't_pages',
         't_pages_description',
         't_plugin_category',
         't_cron',
         't_alerts',
-        't_keywords',
         't_meta_fields',
         't_meta_categories',
         't_item_meta'
