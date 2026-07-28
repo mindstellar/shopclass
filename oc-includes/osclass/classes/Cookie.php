@@ -85,9 +85,8 @@ class Cookie
     {
         $cookie_val = '';
         if (is_array($this->val) && count($this->val) > 0) {
-            $cookie_val = '';
-            $vals       = array();
-            $vars       = $vals;
+            $vals = array();
+            $vars = array();
 
             foreach ($this->val as $key => $curr) {
                 if ($curr !== '') {
@@ -99,7 +98,41 @@ class Cookie
                 $cookie_val = implode('._.', $vars) . '&' . implode('._.', $vals);
             }
         }
-        setcookie($this->name, $cookie_val, $this->expires, REL_WEB_URL);
+
+        $options = $this->cookieOptions();
+        if ($cookie_val === '') {
+            // No values left (e.g. logout pops every key): actively expire the cookie instead
+            // of leaving an empty long-lived one behind. A logged-out visitor then carries no
+            // auth cookie at all, so a reverse-proxy cache can serve them the anonymous page.
+            $options['expires'] = time() - 3600;
+        }
+        setcookie($this->name, $cookie_val, $options);
+    }
+
+    /**
+     * Attributes shared by every write. This container carries a long-lived "remember me"
+     * secret, so it is HttpOnly (out of reach of JS, hence XSS), Secure on HTTPS, and
+     * SameSite=Lax — still sent on top-level navigation, so following a link into the site
+     * keeps the visitor remembered while blocking the cookie on cross-site subrequests.
+     *
+     * @return array
+     */
+    private function cookieOptions()
+    {
+        $options = array(
+            'expires'  => $this->expires,
+            'path'     => REL_WEB_URL,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        );
+        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+            $options['secure'] = true;
+        }
+        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+            $options['domain'] = COOKIE_DOMAIN;
+        }
+
+        return $options;
     }
 
     /**
