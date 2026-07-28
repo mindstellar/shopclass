@@ -971,6 +971,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\model\\FormSubmission' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/FormSubmission.php',
         'mindstellar\\model\\Resource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Resource.php',
         'mindstellar\\pages\\PageTemplateRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
+        'mindstellar\\security\\ActionToken' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionToken.php',
         'mindstellar\\security\\RememberMe' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RememberMe.php',
         'mindstellar\\security\\SigningKey' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SigningKey.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',

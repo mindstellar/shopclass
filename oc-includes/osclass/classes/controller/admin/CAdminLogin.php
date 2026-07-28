@@ -161,8 +161,9 @@ class CAdminLogin extends AdminBaseModel
                     require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
                     $newPassword = osc_genRandomPassword(40);
 
+                    // Persist only a fingerprint; the plaintext code lives solely in the emailed link.
                     Admin::newInstance()->update(
-                        array('s_secret' => $newPassword),
+                        array('s_secret' => \mindstellar\security\ActionToken::hash($newPassword)),
                         array('pk_i_id' => $admin['pk_i_id'])
                     );
                     $password_url = osc_forgot_admin_password_confirm_url($admin['pk_i_id'], $newPassword);
@@ -174,7 +175,10 @@ class CAdminLogin extends AdminBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 break;
             case ('forgot'):         // form to recover the password (in this case we have the form in /gui/)
-                $admin = Admin::newInstance()->findByIdSecret(Params::getParam('adminId'), Params::getParam('code'));
+                $admin = Admin::newInstance()->findByIdSecret(
+                    Params::getParam('adminId'),
+                    \mindstellar\security\ActionToken::hash(Params::getParam('code'))
+                );
                 if (!$admin) {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
                     $this->redirectTo(osc_admin_base_url());
@@ -185,7 +189,10 @@ class CAdminLogin extends AdminBaseModel
                 break;
             case ('forgot_post'):
                 osc_csrf_check();
-                $admin = Admin::newInstance()->findByIdSecret(Params::getParam('adminId'), Params::getParam('code'));
+                $admin = Admin::newInstance()->findByIdSecret(
+                    Params::getParam('adminId'),
+                    \mindstellar\security\ActionToken::hash(Params::getParam('code'))
+                );
                 if (!$admin) {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
                     $this->redirectTo(osc_admin_base_url());
@@ -193,9 +200,11 @@ class CAdminLogin extends AdminBaseModel
 
                 if (Params::getParam('new_password', false, false) === Params::getParam('new_password2', false,
                         false)) {
+                    // Consume the reset code (single-use) by replacing its fingerprint with a
+                    // fresh dead one, alongside the new password.
                     Admin::newInstance()->update(
                         array(
-                            's_secret'   => osc_genRandomPassword(),
+                            's_secret'   => \mindstellar\security\ActionToken::hash(osc_genRandomPassword(40)),
                             's_password' => osc_hash_password(Params::getParam('new_password', false, false))
                         ),
                         array('pk_i_id' => $admin['pk_i_id'])

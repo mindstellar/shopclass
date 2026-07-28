@@ -82,7 +82,7 @@ class CWebRegister extends BaseModel
                 $id          = (int)Params::getParam('id');
                 $code        = Params::getParam('code');
                 $userManager = new User();
-                $user        = $userManager->findByIdSecret($id, $code);
+                $user        = $userManager->findByIdSecret($id, \mindstellar\security\ActionToken::hash($code));
 
                 if (!$user) {
                     osc_add_flash_error_message(_m('The link is not valid anymore. Sorry for the inconvenience!'));
@@ -96,8 +96,10 @@ class CWebRegister extends BaseModel
 
                 $userManager = new User();
                 $success     = $userManager->update(
-                    array('b_active' => '1'),
-                    array('pk_i_id' => $id, 's_secret' => $code)
+                    // Consume the activation code (single-use) and leave a fresh plaintext secret
+                    // for the logged-in account-delete link, which renders s_secret directly.
+                    array('b_active' => '1', 's_secret' => osc_genRandomPassword()),
+                    array('pk_i_id' => $id, 's_secret' => \mindstellar\security\ActionToken::hash($code))
                 );
 
                 if ($success) {

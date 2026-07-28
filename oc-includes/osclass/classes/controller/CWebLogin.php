@@ -206,11 +206,17 @@ class CWebLogin extends BaseModel
                     if (osc_notify_new_user()) {
                         osc_run_hook('hook_email_admin_new_user', $user);
                     }
+                    // Rotate the activation code: email a fresh plaintext, persist only its fingerprint.
+                    $activation_plain = osc_genRandomPassword();
+                    $user['s_secret'] = $activation_plain;
                     if (osc_user_validation_enabled()) {
                         osc_run_hook('hook_email_user_validation', $user, $user);
                     }
                     User::newInstance()->update(
-                        array('dt_access_date' => date('Y-m-d H:i:s')),
+                        array(
+                            'dt_access_date' => date('Y-m-d H:i:s'),
+                            's_secret'       => \mindstellar\security\ActionToken::hash($activation_plain),
+                        ),
                         array('pk_i_id' => $user['pk_i_id'])
                     );
                     osc_add_flash_ok_message(_m('Validation email re-sent'));

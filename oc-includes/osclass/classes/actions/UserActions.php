@@ -123,6 +123,12 @@ class UserActions
         // hook pre add or edit
         osc_run_hook('pre_user_post');
 
+        // Persist only a fingerprint of the activation code; the plaintext travels solely in the
+        // validation email below, which reads it back from $input.
+        $activation_plain = $input['s_secret'] ?? '';
+        if ($activation_plain !== '') {
+            $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
+        }
 
         $this->manager->insert($input);
         $userId = $this->manager->dao->insertedId();
@@ -155,6 +161,8 @@ class UserActions
         }
 
         if (!$this->is_admin && osc_user_validation_enabled()) {
+            // Restore the plaintext code so the validation email builds a working link.
+            $input['s_secret'] = $activation_plain;
             osc_run_hook('hook_email_user_validation', $user, $input);
             $success = 1;
         } else {
@@ -592,14 +600,20 @@ class UserActions
      */
     public function resend_activation($user_id)
     {
-        $user              = $this->manager->findByPrimaryKey($user_id);
-        $input['s_secret'] = $user['s_secret'];
+        $user = $this->manager->findByPrimaryKey($user_id);
 
         if (!$user || $user['b_active'] == 1) {
             return 0;
         }
 
         if (osc_user_validation_enabled()) {
+            // Rotate the activation code: email a fresh plaintext, persist only its fingerprint.
+            $activation_plain  = osc_genRandomPassword();
+            $input['s_secret'] = $activation_plain;
+            $this->manager->update(
+                array('s_secret' => \mindstellar\security\ActionToken::hash($activation_plain)),
+                array('pk_i_id' => $user_id)
+            );
             osc_run_hook('hook_email_user_validation', $user, $input);
 
             return 1;
