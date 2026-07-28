@@ -75,7 +75,9 @@ class Params
                 if (self::$HTMLPurifier === null) {
                     $purifier_config = HTMLPurifier_Config::createDefault();
                     $purifier_config->set('HTML.Allowed', '');
-                    $purifier_config->set('Cache.SerializerPath', osc_uploads_path());
+                    // Stripping all tags leaves no definition to persist, so use the in-memory
+                    // NullCache instead of writing serializer blobs into the public uploads dir.
+                    $purifier_config->set('Cache.DefinitionImpl', null);
                     self::$HTMLPurifier = new HTMLPurifier($purifier_config);
                 }
 
@@ -84,10 +86,10 @@ class Params
 
             if ($html_encode === true) {
                 if ($quotes_encode === true) {
-                    return htmlspecialchars(stripslashes($value), ENT_QUOTES);
+                    return htmlspecialchars($value, ENT_QUOTES);
                 }
 
-                return htmlspecialchars(stripslashes($value), ENT_NOQUOTES);
+                return htmlspecialchars($value, ENT_NOQUOTES);
             }
         }
 

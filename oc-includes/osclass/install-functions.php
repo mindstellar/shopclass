@@ -28,10 +28,9 @@ function _purify($value, $xss_check)
 
     $_config = HTMLPurifier_Config::createDefault();
     $_config->set('HTML.Allowed', '');
-    $_config->set(
-        'Cache.SerializerPath',
-        dirname(dirname(__DIR__)) . '/oc-content/uploads/'
-    );
+    // Strips all tags, so nothing needs persisting: use the in-memory NullCache rather than
+    // writing serializer blobs into oc-content/uploads/ (which may not yet exist during install).
+    $_config->set('Cache.DefinitionImpl', null);
 
     $_purifier = new HTMLPurifier($_config);
 
@@ -67,10 +66,10 @@ function getServerParam($param, $htmlencode = false, $xss_check = true, $quotes_
     $value = _purify($_SERVER[$param], $xss_check);
     if ($htmlencode) {
         if ($quotes_encode) {
-            return htmlspecialchars(stripslashes($value), ENT_QUOTES);
+            return htmlspecialchars($value, ENT_QUOTES);
         }
 
-        return htmlspecialchars(stripslashes($value), ENT_NOQUOTES);
+        return htmlspecialchars($value, ENT_NOQUOTES);
     }
 
     return ($value);
