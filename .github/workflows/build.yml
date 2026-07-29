@@ -16,6 +16,20 @@ jobs:
   release:
     needs: [test, drift]
     runs-on: ubuntu-latest
+    # For the install smoke test below: the zip is installed against a real
+    # database before it is allowed to become a release.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -93,6 +107,31 @@ jobs:
         env:
           OSCLASS_REF: ${{ github.sha }}
         run: bash ./.build.sh
+
+      # Everything above tests the repository. This tests the artefact: unpack
+      # the zip a site owner would download, run the installer against a real
+      # database, and sign in. A file the archive missed, a build artefact that
+      # was never committed, or an installer step that only fails on a clean
+      # database is invisible to every other check in this pipeline, and would
+      # otherwise be found by whoever downloaded the release.
+      # Pinned rather than taking whatever the runner happens to ship: the smoke
+      # test needs mysqli both for the app and to prepare the database, and the
+      # preinstalled PHP carries no guarantee of it.
+      - name: Setup PHP
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, intl, gd, curl, zip
+
+      - name: Install smoke test
+        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
+        env:
+          SMOKE_DB_HOST: 127.0.0.1
+          SMOKE_DB_PORT: 3306
+          SMOKE_DB_USER: root
+          SMOKE_DB_PASS: root
+        run: bash tests/install-smoke.sh "release/osclass_v${OSCLASS_VERSION}.zip"
 
       - name: Extract release notes from CHANGELOG
         if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
