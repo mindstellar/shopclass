@@ -86,14 +86,14 @@ jobs:
     # For the install smoke test below: the zip is installed against a real
     # database before it is allowed to become a release.
     services:
-      mysql:
-        image: mysql:8.0
+      mariadb:
+        image: mariadb:11
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10

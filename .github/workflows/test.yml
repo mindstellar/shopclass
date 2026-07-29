@@ -29,11 +29,25 @@ on:
   workflow_call:
 jobs:
   tests:
+    name: parse (PHP ${{ matrix.php-versions }})
     strategy:
+      # One version failing must not cancel the others: knowing a file parses on
+      # 8.3 but not on 8.5 is the entire point of running more than one.
+      fail-fast: false
       matrix:
         operating-system: [ubuntu-latest]
         php-versions: [ '8.3', '8.4', '8.5' ]
+        experimental: [false]
+        include:
+          # Unreleased PHP, for information only. It reports what is coming --
+          # a construct deprecated in the next version, or one already removed
+          # -- without a build breaking because upstream changed something in
+          # a build nobody runs in production yet.
+          - operating-system: ubuntu-latest
+            php-versions: 'nightly'
+            experimental: true
     runs-on: ${{ matrix.operating-system }}
+    continue-on-error: ${{ matrix.experimental }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -42,8 +56,12 @@ jobs:
         with:
           php-version: ${{ matrix.php-versions }}
           extensions: mbstring, intl, pdo_sqlite, pdo_mysql
-      - name: Test Syntax
-        run: find -L . ! -name 'HTMLPurifierExtras.autoload-legacy.php' ! -name 'HTMLPurifier.autoload-legacy.php' -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l
+      # Fails on a parse error, reports deprecations without failing. `php -l`
+      # already draws that line by exit code; what it does not do is separate
+      # them in its output, so across a thousand files the deprecations were
+      # printed and lost. See tests/php-lint.sh.
+      - name: Parse check
+        run: bash tests/php-lint.sh
 
   # Characterization tests for the DAO base layer and the models built on it.
   # These pin observable behaviour against a live database so that rewriting a
@@ -51,14 +69,14 @@ jobs:
   model-contracts:
     runs-on: ubuntu-latest
     services:
-      mysql:
-        image: mysql:8.0
+      mariadb:
+        image: mariadb:11
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
