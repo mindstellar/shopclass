@@ -113,6 +113,12 @@ if (is_array($cron)) {
             ItemStats::newInstance()->purgeOlderThan(date('Y-m-d', time() - ($statsRetention * 24 * 3600)));
         }
 
+        // Retention: drop recorded sign-in attempts past the configured window
+        // (0 = keep forever). Only the throttle's own rolling window decides
+        // anything; what is left is history, and under a sustained guessing run
+        // the table is the fastest-growing one in the schema.
+        \mindstellar\security\LoginThrottle::prune();
+
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
         // is otherwise lazy-on-request; this closes that gap.

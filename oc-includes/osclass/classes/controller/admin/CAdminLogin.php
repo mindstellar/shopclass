@@ -66,6 +66,14 @@ class CAdminLogin extends AdminBaseModel
                 }
 
                 // fields are not empty
+                // Before the account is looked up and before any password is
+                // hashed, so that a refused attempt costs neither.
+                $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParam('user'));
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
+                }
+
                 $admin = Admin::newInstance()->findByUsername(Params::getParam('user'));
 
                 // An unknown account and a wrong password must answer the same way,
@@ -76,6 +84,9 @@ class CAdminLogin extends AdminBaseModel
                     : osc_verify_password($password, $admin['s_password']);
 
                 if (!$authenticated) {
+                    // Counted against the name as submitted, so one nobody holds
+                    // accumulates exactly like a real one.
+                    \mindstellar\security\LoginThrottle::recordFailure('admin', Params::getParam('user'));
                     osc_add_flash_error_message(sprintf(
                         _m('Sorry, incorrect username or password. <a href="%s">Have you lost your password?</a>'),
                         osc_admin_base_url(true) . '?page=login&amp;action=recover'
@@ -96,6 +107,9 @@ class CAdminLogin extends AdminBaseModel
                         );
                     }
                 }
+
+                \mindstellar\security\LoginThrottle::clear('admin', Params::getParam('user'));
+
                 $locale          = Params::getParam('locale');
                 $is_valid_locale = osc_validate_locale($locale, true);
                 if (Params::getParam('remember')) {
@@ -155,6 +169,21 @@ class CAdminLogin extends AdminBaseModel
 
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
+
+                // Counted on its own, so that reset requests cannot lock anyone
+                // out of signing in. Every request counts, not only the ones
+                // that match an account: sending mail to an address someone else
+                // owns is the abuse being bounded here, and that only happens
+                // when the address does match.
+                $recoverAccount = trim((string)Params::getParam('email'));
+                $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount);
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
+
+                    return false;
+                }
+                \mindstellar\security\LoginThrottle::recordFailure('admin-recover', $recoverAccount);
 
                 $admin = Admin::newInstance()->findByEmail(Params::getParam('email'));
                 if (!isset($admin['pk_i_id'])) {

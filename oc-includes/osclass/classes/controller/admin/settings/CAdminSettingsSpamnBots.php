@@ -101,6 +101,36 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('login_throttle_post'):
+                // updating the sign-in rate limit
+                osc_csrf_check();
+
+                // Every limit is floored at 1: a zero would read as "no attempt
+                // allowed" and shut the form for everyone, including whoever
+                // typed it. Turning the limiter off is the checkbox, not a zero.
+                $enabled    = Params::getParam('login_throttle_enabled') != '' ? 1 : 0;
+                $window     = max(1, Params::getParamInt('login_throttle_window'));
+                $maxIp      = max(1, Params::getParamInt('login_throttle_max_ip'));
+                $maxAccount = max(1, Params::getParamInt('login_throttle_max_account'));
+                $retention  = max(0, Params::getParamInt('login_attempt_retention_days'));
+
+                osc_set_preference('login_throttle_enabled', $enabled, 'security', 'BOOLEAN');
+                osc_set_preference('login_throttle_window', $window, 'security', 'INTEGER');
+                osc_set_preference('login_throttle_max_ip', $maxIp, 'security', 'INTEGER');
+                osc_set_preference('login_throttle_max_account', $maxAccount, 'security', 'INTEGER');
+                osc_set_preference('login_attempt_retention_days', $retention, 'security', 'INTEGER');
+
+                osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
+            case ('login_throttle_reset'):
+                // clearing every recorded attempt, so an operator can let a
+                // locked-out visitor (or themselves) back in immediately
+                osc_csrf_check();
+                LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
+                osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
         }
     }
 }

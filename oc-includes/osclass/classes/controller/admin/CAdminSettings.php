@@ -50,6 +50,9 @@ class CAdminSettings
             case ('spamNbots'):
             case ('akismet_post'):
             case ('recaptcha_post'):
+            case ('alerts_post'):
+            case ('login_throttle_post'):
+            case ('login_throttle_reset'):
                 $do = new CAdminSettingsSpamnBots();
                 break;
             case ('sitemap'):

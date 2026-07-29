@@ -257,6 +257,32 @@ function osc_verify_password($password, $hash)
 
 
 /**
+ * Wording for a sign-in refused by {@see \mindstellar\security\LoginThrottle}.
+ *
+ * Deliberately says nothing about the account: the limiter counts a name that
+ * exists and one that does not exactly alike, and the message has to keep that
+ * true or it becomes the account oracle the login form no longer is.
+ *
+ * @param int $seconds how long the block has left to run
+ *
+ * @return string
+ */
+function osc_login_throttle_message($seconds)
+{
+    $minutes = max(1, (int)ceil($seconds / 60));
+
+    return sprintf(
+        _mn(
+            'Too many failed attempts. Please try again in %d minute.',
+            'Too many failed attempts. Please try again in %d minutes.',
+            $minutes
+        ),
+        $minutes
+    );
+}
+
+
+/**
  * Spend the work of a password check against a hash that cannot match.
  *
  * A sign-in for an account that does not exist would otherwise return without

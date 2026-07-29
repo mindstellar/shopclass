@@ -241,5 +241,88 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </fieldset>
         </form>
     </div>
+    <div id="login-throttle-settings" class="separate-top">
+        <h3 class="render-title"><?php _e('Sign-in protection'); ?></h3>
+        <p><?php _e('Failed sign-ins and password-reset requests are counted per visitor address and per account '
+                    . 'name. Passing a limit refuses further attempts until the older ones age out of the window, '
+                    . 'which is what stops a stolen password list being tried one guess at a time.'); ?></p>
+        <p><?php _e('The account limit is skipped while a captcha provider is configured above, because every '
+                    . 'attempt already has to solve one. Without that, an attacker could hold someone else\'s '
+                    . 'account shut simply by failing against it.'); ?></p>
+        <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
+            <input type="hidden" name="page" value="settings"/>
+            <input type="hidden" name="action" value="login_throttle_post"/>
+            <fieldset class="form-horizontal">
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Limit sign-in attempts'); ?></div>
+                    <div class="form-controls">
+                        <label>
+                            <input type="checkbox" name="login_throttle_enabled" value="1"
+                                <?php echo osc_login_throttle_enabled() ? 'checked="checked"' : ''; ?>/>
+                            <?php _e('Count failed attempts and refuse further ones past the limits below'); ?>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Window'); ?></div>
+                    <div class="form-controls">
+                        <input type="number" min="1" class="input-small" name="login_throttle_window"
+                               value="<?php echo osc_esc_html(osc_login_throttle_window()); ?>"/>
+                        <span class="help-inline"><?php _e('minutes. How far back failures are counted, and so how '
+                                                          . 'long a refusal lasts.'); ?></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Attempts per address'); ?></div>
+                    <div class="form-controls">
+                        <input type="number" min="1" class="input-small" name="login_throttle_max_ip"
+                               value="<?php echo osc_esc_html(osc_login_throttle_max_ip()); ?>"/>
+                        <span class="help-inline"><?php _e('Failures from one visitor address, across every account '
+                                                          . 'it tried. Keep this generous: an office or mobile '
+                                                          . 'network is many people behind one address.'); ?></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Attempts per account'); ?></div>
+                    <div class="form-controls">
+                        <input type="number" min="1" class="input-small" name="login_throttle_max_account"
+                               value="<?php echo osc_esc_html(osc_login_throttle_max_account()); ?>"/>
+                        <span class="help-inline"><?php _e('Failures against one account name, from anywhere. This '
+                                                          . 'is what catches guessing spread across many '
+                                                          . 'addresses.'); ?></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Keep records for'); ?></div>
+                    <div class="form-controls">
+                        <input type="number" min="0" class="input-small" name="login_attempt_retention_days"
+                               value="<?php echo osc_esc_html(osc_login_attempt_retention_days()); ?>"/>
+                        <span class="help-inline"><?php _e('days, pruned by the daily cron. Only the window above '
+                                                          . 'affects the limits; the rest is history. 0 keeps '
+                                                          . 'everything.'); ?></span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <input type="submit" id="submit_login_throttle"
+                           value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
+                </div>
+            </fieldset>
+        </form>
+        <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
+            <input type="hidden" name="page" value="settings"/>
+            <input type="hidden" name="action" value="login_throttle_reset"/>
+            <fieldset class="form-horizontal">
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Clear recorded attempts'); ?></div>
+                    <div class="form-controls">
+                        <input type="submit" id="submit_login_throttle_reset"
+                               value="<?php echo osc_esc_html(__('Clear now')); ?>" class="btn"/>
+                        <span class="help-inline"><?php _e('Lets anyone currently refused try again straight away, '
+                                                          . 'including you.'); ?></span>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

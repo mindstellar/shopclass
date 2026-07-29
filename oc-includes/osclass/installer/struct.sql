@@ -642,3 +642,19 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Failed sign-in and password-reset attempts, counted per source address and
+-- per submitted account name inside a rolling window. Append-only, and pruned
+-- by the daily cron down to the retention window.
+CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_context VARCHAR(20) NOT NULL DEFAULT '',
+    s_account VARCHAR(191) NOT NULL DEFAULT '',
+    s_ip VARCHAR(45) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_ip (s_ip, dt_date),
+        INDEX idx_account (s_context, s_account(64), dt_date),
+        INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

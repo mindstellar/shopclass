@@ -60,6 +60,14 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
+                // Before the account is looked up and before any password is
+                // hashed, so that a refused attempt costs neither.
+                $throttle = \mindstellar\security\LoginThrottle::evaluate('web', $email);
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
                 if (osc_validate_email($email)) {
                     $user = User::newInstance()->findByEmail($email);
                 }
@@ -75,9 +83,14 @@ class CWebLogin extends BaseModel
                     : osc_verify_password($password, (isset($user['s_password']) ? $user['s_password'] : ''));
 
                 if (!$authenticated) {
+                    // Counted against the name as submitted, so one nobody holds
+                    // accumulates exactly like a real one.
+                    \mindstellar\security\LoginThrottle::recordFailure('web', $email);
                     osc_add_flash_error_message(_m('Invalid email/username or password'));
                     $this->redirectTo(osc_user_login_url());
                 }
+
+                \mindstellar\security\LoginThrottle::clear('web', $email);
 
                 if (@$user['s_password'] != '') {
                     $needs_rehash = true;
@@ -238,6 +251,19 @@ class CWebLogin extends BaseModel
                     osc_add_flash_error_message(_m('Invalid email address'));
                     $this->redirectTo(osc_recover_user_password_url());
                 }
+
+                // Counted on its own, so that reset requests cannot lock anyone
+                // out of signing in. Every request counts, not only the ones
+                // that match an account: sending mail to an address someone else
+                // owns is the abuse being bounded here, and that only happens
+                // when the address does match.
+                $recoverAccount = trim((string)Params::getParam('s_email'));
+                $throttle       = \mindstellar\security\LoginThrottle::evaluate('web-recover', $recoverAccount);
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
+                    $this->redirectTo(osc_recover_user_password_url());
+                }
+                \mindstellar\security\LoginThrottle::recordFailure('web-recover', $recoverAccount);
 
                 $userActions = new UserActions(false);
                 $success     = $userActions->recover_password();

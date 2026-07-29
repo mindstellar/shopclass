@@ -1098,6 +1098,80 @@ function osc_item_stats_retention_days()
 
 
 /**
+ * Whether failed sign-ins are counted and limited. On unless turned off.
+ *
+ * @return bool
+ */
+function osc_login_throttle_enabled()
+{
+    $v = osc_get_preference('login_throttle_enabled', 'security');
+
+    return $v === '' || $v === null ? true : (bool)(int)$v;
+}
+
+
+/**
+ * How far back failures are counted, in minutes. Doubles as how long a block
+ * lasts, since a block lifts once enough attempts have aged past the window.
+ *
+ * @return int
+ */
+function osc_login_throttle_window()
+{
+    $v = (int)osc_get_preference('login_throttle_window', 'security');
+
+    return $v > 0 ? $v : 15;
+}
+
+
+/**
+ * Failures from one address within the window before it is blocked. Counts
+ * every account the address tried, so it is the looser of the two limits --
+ * a shared office or NAT address is several people behind one IP.
+ *
+ * @return int
+ */
+function osc_login_throttle_max_ip()
+{
+    $v = (int)osc_get_preference('login_throttle_max_ip', 'security');
+
+    return $v > 0 ? $v : 20;
+}
+
+
+/**
+ * Failures against one account within the window before it needs a captcha,
+ * or is blocked where no captcha can be shown.
+ *
+ * @return int
+ */
+function osc_login_throttle_max_account()
+{
+    $v = (int)osc_get_preference('login_throttle_max_account', 'security');
+
+    return $v > 0 ? $v : 10;
+}
+
+
+/**
+ * How long recorded attempts are kept, in days, before the daily cron drops
+ * them. Only the window matters to the limiter; the rest is history. 0 keeps
+ * them forever.
+ *
+ * @return int
+ */
+function osc_login_attempt_retention_days()
+{
+    $v = osc_get_preference('login_attempt_retention_days', 'security');
+    if ($v === '' || $v === null) {
+        return 7;
+    }
+
+    return max(0, (int)$v);
+}
+
+
+/**
  * Gets how many seconds between item post to not consider it SPAM
  *
  * @return int
