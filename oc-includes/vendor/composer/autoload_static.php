@@ -780,6 +780,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'LogDatabase' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/LogDatabase.php',
         'LogOsclassInstaller' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/LogOsclassInstaller.php',
         'Logger' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/abstract/Logger.php',
+        'LogsDataTable' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/datatables/LogsDataTable.php',
         'ManageItemsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/ManageItemsForm.php',
         'MediaDataTable' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/datatables/MediaDataTable.php',
         'OSCLocale' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/OSCLocale.php',

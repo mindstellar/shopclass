@@ -645,6 +645,7 @@ return array(
     'LogDatabase' => $baseDir . '/oc-includes/osclass/classes/logger/LogDatabase.php',
     'LogOsclassInstaller' => $baseDir . '/oc-includes/osclass/classes/logger/LogOsclassInstaller.php',
     'Logger' => $baseDir . '/oc-includes/osclass/classes/logger/abstract/Logger.php',
+    'LogsDataTable' => $baseDir . '/oc-includes/osclass/classes/datatables/LogsDataTable.php',
     'ManageItemsForm' => $baseDir . '/oc-includes/osclass/classes/form/ManageItemsForm.php',
     'MediaDataTable' => $baseDir . '/oc-includes/osclass/classes/datatables/MediaDataTable.php',
     'OSCLocale' => $baseDir . '/oc-includes/osclass/classes/model/OSCLocale.php',

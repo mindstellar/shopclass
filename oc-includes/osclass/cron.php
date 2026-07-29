@@ -96,6 +96,14 @@ if (is_array($cron)) {
         }
         osc_update_cat_stats();
 
+        // Retention: prune admin activity-log rows past the configured window
+        // (0 = keep forever), so t_log cannot grow without bound. Mirrors the
+        // latest-searches purge above.
+        $logRetention = osc_admin_log_retention_days();
+        if ($logRetention > 0) {
+            Log::newInstance()->purgeOlderThan(date('Y-m-d H:i:s', time() - ($logRetention * 24 * 3600)));
+        }
+
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
         // is otherwise lazy-on-request; this closes that gap.

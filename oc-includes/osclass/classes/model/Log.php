@@ -73,6 +73,12 @@ class Log extends DAO
      */
     public function insertLog($section, $action, $id, $data, $who, $whoId)
     {
+        // Honour the admin activity-log toggle: when logging is turned off, write
+        // nothing. Defaults to on, so existing installs are unaffected.
+        if (!osc_is_admin_log_enabled()) {
+            return false;
+        }
+
         $ip = Params::getServerParam('REMOTE_ADDR');
         if (!$ip) {
             // No request address (e.g. a cron run): record the loopback address,
@@ -102,6 +108,160 @@ class Log extends DAO
         }
 
         return true;
+    }
+
+    /**
+     * Paginated, filterable list for the admin activity-log datatable.
+     *
+     * Hand-written SELECT (SQL_CALC_FOUND_ROWS is not a column identifier the
+     * query builder's allowlist will pass), with every value bound and the
+     * ORDER BY column checked against the known column set. Mirrors
+     * KeywordBlock::search().
+     *
+     * @param int    $start
+     * @param int    $end
+     * @param string $order_column
+     * @param string $order_direction
+     * @param array  $filters optional {section:string, who:string, q:string}
+     *
+     * @return array{rows:int,total_results:int,logs:array}
+     */
+    public function search($start = 0, $end = 20, $order_column = 'dt_date', $order_direction = 'DESC', $filters = array())
+    {
+        $result = array('rows' => 0, 'total_results' => 0, 'logs' => array());
+
+        $sortable = array('dt_date', 's_section', 's_action', 's_who', 's_ip');
+        if (!in_array((string) $order_column, $sortable, true)) {
+            $order_column = 'dt_date';
+        }
+        $direction = in_array(strtoupper(trim((string) $order_direction)), array('ASC', 'DESC'), true)
+            ? strtoupper(trim((string) $order_direction))
+            : 'DESC';
+
+        $table  = $this->getTableName();
+        $params = array();
+        $where  = array();
+
+        if (!empty($filters['section'])) {
+            $where[]  = 's_section = ?';
+            $params[] = (string) $filters['section'];
+        }
+        if (!empty($filters['who'])) {
+            $where[]  = 's_who = ?';
+            $params[] = (string) $filters['who'];
+        }
+        if (isset($filters['q']) && $filters['q'] !== '') {
+            // Same wildcard escaping the builder applies before a LIKE: a literal
+            // % or _ typed by an admin stays literal rather than acting as a
+            // SQL wildcard.
+            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $filters['q']) . '%';
+            $where[]  = '(s_data LIKE ? OR s_action LIKE ? OR s_ip LIKE ?)';
+            $params[] = $pattern;
+            $params[] = $pattern;
+            $params[] = $pattern;
+        }
+
+        $sql = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $table;
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        // $order_column and $direction are both validated against fixed allowlists
+        // above; only those literals ever reach the SQL text.
+        $sql .= ' ORDER BY ' . $order_column . ' ' . $direction;
+        if (is_numeric($start)) {
+            $sql .= ' LIMIT ' . (int) $start;
+            if ($end !== '' && is_numeric($end) && (int) $end > 0) {
+                $sql .= ', ' . (int) $end;
+            }
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
+            return $result;
+        }
+
+        $result['logs'] = osc_db_stringify_rows($rows);
+
+        // FOUND_ROWS() reads off the SQL_CALC_FOUND_ROWS query just run, on the
+        // same connection with nothing in between.
+        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
+        if ($total) {
+            $result['total_results'] = $total;
+        }
+
+        // $table is fixed in the constructor, never runtime input.
+        $rowsTotal = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table);
+        if ($rowsTotal) {
+            $result['rows'] = $rowsTotal;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Distinct section names present in the log, for the filter dropdown.
+     *
+     * @return string[]
+     */
+    public function distinctSections()
+    {
+        try {
+            $rows = osc_db_select(
+                'SELECT DISTINCT s_section FROM ' . $this->getTableName() . ' ORDER BY s_section ASC'
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        $out = array();
+        foreach (osc_db_stringify_rows($rows) as $r) {
+            if ($r['s_section'] !== '') {
+                $out[] = $r['s_section'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Delete log rows older than $date (Y-m-d H:i:s). Backs the retention cron.
+     *
+     * @param string $date
+     *
+     * @return int rows removed (0 on error or nothing matched)
+     */
+    public function purgeOlderThan($date)
+    {
+        if (empty($date)) {
+            return 0;
+        }
+
+        try {
+            return (int) osc_db_table($this->getTableName())
+                ->where('dt_date', '<', $date)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Remove every log row. Backs the admin "Clear log" action.
+     *
+     * @return int rows removed (0 on error)
+     */
+    public function clearAll()
+    {
+        try {
+            $conn = \mindstellar\database\Connection::instance();
+            $n    = (int) $conn->scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
+            $conn->execute('DELETE FROM ' . $this->getTableName());
+
+            return $n;
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
     }
 }
 

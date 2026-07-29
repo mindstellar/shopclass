@@ -329,6 +329,86 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 break;
+            case ('logs'):
+                // set default iDisplayLength (same cookie behaviour as the listings)
+                if (Params::getParam('iDisplayLength') != '') {
+                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
+                    Cookie::newInstance()->set();
+                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
+                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
+                } else {
+                    Params::setParam('iDisplayLength', 20);
+                }
+                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+                if (Params::getParam('sort') == '') {
+                    Params::setParam('sort', 'date');
+                }
+                if (Params::getParam('direction') == '') {
+                    Params::setParam('direction', 'desc');
+                }
+
+                $page = Params::getParamInt('iPage');
+                if ($page == 0) {
+                    $page = 1;
+                }
+                Params::setParam('iPage', $page);
+
+                $logsDataTable = new LogsDataTable();
+                $logsDataTable->table(Params::getParamsAsArray());
+                $aData = $logsDataTable->getData();
+
+                if (count($aData['aRows']) == 0 && $page != 1) {
+                    $total   = (int) $aData['iTotalDisplayRecords'];
+                    $maxPage = (int) ceil($total / (int) $aData['iDisplayLength']);
+
+                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
+                    if ($maxPage == 0) {
+                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=1', $url));
+                    }
+                    if ($page > 1) {
+                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url));
+                    }
+                }
+
+                $this->_exportVariableToView('aData', $aData);
+                $this->_exportVariableToView('sections', Log::newInstance()->distinctSections());
+                $this->_exportVariableToView('log_enabled', osc_is_admin_log_enabled());
+                $this->_exportVariableToView('log_retention_days', osc_admin_log_retention_days());
+                $this->doView('tools/logs.php');
+                break;
+            case ('logs_settings_post'):
+                osc_csrf_check();
+                $retention = Params::getParamInt('admin_log_retention_days');
+                osc_set_preference(
+                    'admin_log_enabled',
+                    Params::getParam('admin_log_enabled') != '' ? 1 : 0,
+                    'log',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'admin_log_retention_days',
+                    $retention > 0 ? $retention : 0,
+                    'log',
+                    'INTEGER'
+                );
+                osc_reset_preferences();
+                osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                break;
+            case ('logs_clear'):
+                if (defined('DEMO')) {
+                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                }
+                osc_csrf_check();
+                $removed = Log::newInstance()->clearAll();
+                osc_add_flash_ok_message(
+                    sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
+                    'admin'
+                );
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                break;
             case 'system_info':
             default:
                 $this->doView('tools/system-info.php');

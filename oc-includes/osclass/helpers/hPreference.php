@@ -1014,6 +1014,37 @@ function osc_purge_latest_searches()
 
 
 /**
+ * Whether admin activity logging (t_log) is enabled. Defaults to on when the
+ * preference has never been set, so existing installs keep logging as before.
+ *
+ * @return bool
+ */
+function osc_is_admin_log_enabled()
+{
+    $v = osc_get_preference('admin_log_enabled', 'log');
+
+    return $v === '' ? true : ((int) $v === 1);
+}
+
+
+/**
+ * Retention window for admin activity logs, in days. 0 keeps rows forever.
+ * Defaults to 90 days when unset, so the log cannot grow without bound.
+ *
+ * @return int
+ */
+function osc_admin_log_retention_days()
+{
+    $v = osc_get_preference('admin_log_retention_days', 'log');
+    if ($v === '' || $v === null) {
+        return 90;
+    }
+
+    return max(0, (int) $v);
+}
+
+
+/**
  * Gets how many seconds between item post to not consider it SPAM
  *
  * @return int
