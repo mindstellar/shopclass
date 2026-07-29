@@ -4,8 +4,31 @@
 # upgrade path does not reproduce — i.e. a migration is owed.
 name: Schema Drift
 on:
+  # develop and master are excluded here because the release workflow calls this
+  # one for those branches. Without that, a push to either ran this twice: once
+  # from this trigger and once as a called job.
+  #
+  # paths-ignore covers this trigger and pull_request only, never workflow_call
+  # — a release always runs the full check whatever it touched.
   push:
+    branches-ignore:
+      - develop
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
   workflow_call:
 jobs:
   drift:

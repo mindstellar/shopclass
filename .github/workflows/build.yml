@@ -4,17 +4,84 @@ on:
     branches:
       - develop
       - master
+    # A change to prose cannot alter what gets built or whether it releases:
+    # the version this workflow keys off lives in default-constants.php.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
 permissions:
   contents: write
 jobs:
-  # Gate the release on the same checks that run for PRs (reusable workflows).
+  # Decide whether this push releases anything at all, before spending a runner
+  # on building or packaging. Most pushes to develop are ordinary commits that
+  # do not move the version, and for those every step below this is wasted.
+  #
+  # Note this deliberately does NOT gate the test and drift jobs: they run on
+  # every push to these branches whether or not a release comes out of it, so
+  # that a commit landing straight on develop is still verified.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.decide.outputs.should_release }}
+      version: ${{ steps.decide.outputs.version }}
+      suffix: ${{ steps.decide.outputs.suffix }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Decide whether to release
+        id: decide
+        shell: bash
+        run: |
+          RAW_VERSION=$(grep -oP "(?<=define\('OSCLASS_VERSION', ')[^']+" oc-includes/osclass/default-constants.php)
+          if [[ ! "${RAW_VERSION}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(\.(dev[0-9]*|beta[0-9]*|rc[0-9]*))?$ ]]; then
+            echo "Invalid OSCLASS_VERSION format: ${RAW_VERSION}"
+            exit 1
+          fi
+          SUFFIX="${BASH_REMATCH[2]}"
+          echo "version=${RAW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "suffix=${SUFFIX}" >> "$GITHUB_OUTPUT"
+
+          # Branch decides the release type; a mismatch publishes nothing.
+          # develop -> prereleases only (suffix required); master -> stable only (no suffix).
+          SHOULD_RELEASE=false
+          if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" ]]; then
+            SHOULD_RELEASE=true
+          elif [[ "${GITHUB_REF_NAME}" == "master" && -z "${SUFFIX}" ]]; then
+            SHOULD_RELEASE=true
+          fi
+
+          # An existing tag means this version already shipped. Folded in here so
+          # the answer is one output rather than two conditions repeated later.
+          if [[ "${SHOULD_RELEASE}" == "true" ]]; then
+            git fetch --tags --quiet
+            if git tag --list "${RAW_VERSION}" | grep -q "^${RAW_VERSION}$"; then
+              echo "Tag ${RAW_VERSION} already exists — nothing to release."
+              SHOULD_RELEASE=false
+            fi
+          else
+            echo "No release for ${RAW_VERSION} on ${GITHUB_REF_NAME}."
+            echo "develop publishes prereleases (suffix required); master publishes stable (no suffix)."
+          fi
+
+          echo "should_release=${SHOULD_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${RAW_VERSION}, Branch: ${GITHUB_REF_NAME}, Release: ${SHOULD_RELEASE}"
+
+  # These run on every push to develop/master regardless of the gate. They are
+  # invoked here rather than triggering themselves on these branches, which is
+  # what used to run the whole suite twice for a single push.
   test:
     uses: ./.github/workflows/test.yml
   drift:
     uses: ./.github/workflows/schema-drift.yml
 
   release:
-    needs: [test, drift]
+    needs: [gate, test, drift]
+    if: needs.gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     # For the install smoke test below: the zip is installed against a real
     # database before it is allowed to become a release.
@@ -30,102 +97,49 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+    env:
+      OSCLASS_VERSION: ${{ needs.gate.outputs.version }}
+      SUFFIX: ${{ needs.gate.outputs.suffix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
-
-      - name: Extract OSCLASS_VERSION
-        id: extract_version
-        run: |
-          RAW_VERSION=$(grep -oP "(?<=define\\('OSCLASS_VERSION', ')[^']+" oc-includes/osclass/default-constants.php)
-          # Validate version and extract major.minor.patch and optional suffix
-          if [[ "${RAW_VERSION}" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(\.(dev[0-9]*|beta[0-9]*|rc[0-9]*))?$ ]]; then
-            BASE_VERSION="${BASH_REMATCH[1]}"
-            SUFFIX="${BASH_REMATCH[2]}"
-            echo "OSCLASS_VERSION=${RAW_VERSION}" >> $GITHUB_ENV
-            echo "BASE_VERSION=${BASE_VERSION}" >> $GITHUB_ENV
-            echo "SUFFIX=${SUFFIX}" >> $GITHUB_ENV
-            echo "Extracted version: ${RAW_VERSION}, Base: ${BASE_VERSION}, Suffix: ${SUFFIX}"
-          else
-            echo "Invalid OSCLASS_VERSION format: ${RAW_VERSION}"
-            exit 1
-          fi
-          # Branch decides the release type; a mismatch publishes nothing.
-          # develop -> prereleases only (suffix required); master -> stable only (no suffix).
-          SHOULD_RELEASE=false
-          if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" ]]; then
-            SHOULD_RELEASE=true
-          elif [[ "${GITHUB_REF_NAME}" == "master" && -z "${SUFFIX}" ]]; then
-            SHOULD_RELEASE=true
-          fi
-          echo "SHOULD_RELEASE=${SHOULD_RELEASE}" >> $GITHUB_ENV
-          echo "Branch: ${GITHUB_REF_NAME}, ShouldRelease: ${SHOULD_RELEASE}"
-
-      - name: Skip release (branch/version mismatch)
-        if: ${{ env.SHOULD_RELEASE != 'true' }}
-        run: |
-          echo "No release for ${OSCLASS_VERSION} on ${GITHUB_REF_NAME}."
-          echo "develop publishes prereleases (suffix required); master publishes stable (no suffix)."
-
-      - name: Check if Tag Exists
-        id: check_tag
-        if: ${{ env.SHOULD_RELEASE == 'true' }}
-        shell: bash
-        run: |
-          git fetch --tags --quiet
-          if git tag --list "${OSCLASS_VERSION}" | grep -q "^${OSCLASS_VERSION}$"; then
-            echo "Tag ${OSCLASS_VERSION} already exists. Skipping release."
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "Tag ${OSCLASS_VERSION} does not exist. Proceeding with release."
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Stop if Tag Exists
-        if: ${{ env.TAG_EXISTS == 'true' }}
-        run: echo "Tag already exists. Exiting."
 
       # Build and package BEFORE tagging: the tag is created only by a successful
       # release (below), so a failed build can never leave a dangling tag that blocks
       # the next run.
       - name: Setup Node
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
 
       - name: Build assets
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         run: |
           npm ci
           npm run build
 
       - name: Package release
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         # Archive from the pushed commit, not a tag — the tag does not exist yet.
         env:
           OSCLASS_REF: ${{ github.sha }}
         run: bash ./.build.sh
 
-      # Everything above tests the repository. This tests the artefact: unpack
-      # the zip a site owner would download, run the installer against a real
-      # database, and sign in. A file the archive missed, a build artefact that
-      # was never committed, or an installer step that only fails on a clean
-      # database is invisible to every other check in this pipeline, and would
-      # otherwise be found by whoever downloaded the release.
       # Pinned rather than taking whatever the runner happens to ship: the smoke
       # test needs mysqli both for the app and to prepare the database, and the
       # preinstalled PHP carries no guarantee of it.
       - name: Setup PHP
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: mysqli, mbstring, intl, gd, curl, zip
 
+      # Everything else tests the repository. This tests the artefact: unpack the
+      # zip a site owner would download, run the installer against a real
+      # database, and sign in. A file the archive missed, a build artefact that
+      # was never committed, or an installer step that only fails on a clean
+      # database is invisible to every other check in this pipeline, and would
+      # otherwise be found by whoever downloaded the release.
       - name: Install smoke test
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         env:
           SMOKE_DB_HOST: 127.0.0.1
           SMOKE_DB_PORT: 3306
@@ -134,7 +148,6 @@ jobs:
         run: bash tests/install-smoke.sh "release/osclass_v${OSCLASS_VERSION}.zip"
 
       - name: Extract release notes from CHANGELOG
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         run: |
           # Use the top-most CHANGELOG section (up to the next one) as the release body.
           awk 'BEGIN{n=0} /^## Update changelog/{n++; if (n==2) exit} n>=1{print}' CHANGELOG.md > release_notes.md
@@ -144,7 +157,6 @@ jobs:
           printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${GITHUB_REF_NAME}" >> release_notes.md
 
       - name: Create GitHub Release
-        if: ${{ env.SHOULD_RELEASE == 'true' && env.TAG_EXISTS == 'false' }}
         uses: softprops/action-gh-release@v3
         with:
           files: release/osclass_v${{ env.OSCLASS_VERSION }}.zip
