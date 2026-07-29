@@ -121,7 +121,7 @@ class LogsDataTable extends DataTable
     {
         $who = osc_esc_html($aRow['s_who']);
         if ((int) $aRow['fk_i_who_id'] > 0) {
-            $who .= ' <span class="text-muted">#' . (int) $aRow['fk_i_who_id'] . '</span>';
+            $who .= ' <span class="log-id">#' . (int) $aRow['fk_i_who_id'] . '</span>';
         }
 
         return $who;
@@ -139,16 +139,20 @@ class LogsDataTable extends DataTable
         foreach ($logs as $aRow) {
             $details = osc_esc_html($aRow['s_data']);
             if ((int) $aRow['fk_i_id'] > 0) {
-                $details = '<span class="text-muted">#' . (int) $aRow['fk_i_id'] . '</span> ' . $details;
+                $details = '<span class="log-id">#' . (int) $aRow['fk_i_id'] . '</span> ' . $details;
             }
 
+            $section = trim((string) $aRow['s_section']);
+
             $row            = array();
-            $row['date']    = osc_esc_html($aRow['dt_date']);
+            $row['date']    = '<span class="log-when">' . osc_esc_html($aRow['dt_date']) . '</span>';
             $row['who']     = $this->whoLabel($aRow);
-            $row['section'] = osc_esc_html($aRow['s_section']);
-            $row['action']  = osc_esc_html($aRow['s_action']);
+            $row['section'] = $section === ''
+                ? '<span class="text-muted">&mdash;</span>'
+                : '<span class="log-tag">' . osc_esc_html($section) . '</span>';
+            $row['action']  = '<span class="log-action">' . osc_esc_html($aRow['s_action']) . '</span>';
             $row['details'] = $details;
-            $row['ip']      = osc_esc_html($aRow['s_ip']);
+            $row['ip']      = '<span class="log-ip">' . osc_esc_html($aRow['s_ip']) . '</span>';
 
             $row = osc_apply_filter('logs_processing_row', $row, $aRow);
 

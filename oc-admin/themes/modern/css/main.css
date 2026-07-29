@@ -15379,6 +15379,159 @@ code {
   outline-offset: 2px;
 }
 
+.log-panel {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  margin-block-end: 1.5rem;
+  max-width: 680px;
+  overflow: hidden;
+}
+
+.log-panel-head {
+  background: var(--osc-bench-warm);
+  border-block-end: 1px solid var(--osc-rule);
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+}
+
+.log-panel-body {
+  align-items: center;
+  column-gap: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1rem;
+  row-gap: 0.75rem;
+}
+
+.log-panel-toggle {
+  margin: 0;
+  min-height: auto;
+}
+
+.log-panel-retention {
+  align-items: center;
+  color: var(--osc-ink);
+  display: inline-flex;
+  gap: 0.5rem;
+}
+.log-panel-retention .input-group {
+  width: auto;
+}
+.log-panel-retention .form-control, .log-panel-retention .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls .log-panel-retention input:not([type=checkbox]):not([type=radio]):not([type=submit]), .log-panel-retention .form-controls textarea, .form-controls .log-panel-retention textarea, .log-panel-retention input.large,
+.log-panel-retention input.xlarge,
+.log-panel-retention .input-text,
+.log-panel-retention .input-password, .log-panel-retention input.input-small, .log-panel-retention input.input-medium, .log-panel-retention input.input-large {
+  max-width: 5rem;
+}
+
+.log-panel-note {
+  color: var(--osc-ink-muted);
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.log-toolbar {
+  align-items: end;
+  column-gap: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-block-end: 0.75rem;
+  row-gap: 0.75rem;
+}
+
+.log-filters {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.log-field {
+  display: flex;
+  flex-direction: column;
+}
+.log-field .form-label {
+  margin-block-end: 0.15rem;
+}
+
+.log-field-actions {
+  align-self: end;
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+.log-summary {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  padding-block-end: 0.35rem;
+  white-space: nowrap;
+}
+
+.log-summary-count {
+  color: var(--osc-ink);
+  font-weight: 600;
+}
+
+.log-table th {
+  white-space: nowrap;
+}
+.log-table .col-date,
+.log-table .col-ip,
+.log-table .col-action {
+  white-space: nowrap;
+}
+.log-table .log-when,
+.log-table .log-ip,
+.log-table .log-action,
+.log-table .log-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+.log-table .log-when,
+.log-table .log-ip,
+.log-table .log-id {
+  color: var(--osc-ink-muted);
+}
+
+.log-tag {
+  background: var(--osc-bench-sunk);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  display: inline-block;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  padding: 0 0.45rem;
+  white-space: nowrap;
+}
+
+.log-empty {
+  color: var(--osc-ink-muted);
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+.log-empty i {
+  display: block;
+  font-size: 1.75rem;
+  margin-block-end: 0.4rem;
+  opacity: 0.7;
+}
+.log-empty p {
+  margin: 0;
+}
+
+.log-footer {
+  border-block-start: 1px solid var(--osc-rule);
+  clear: both;
+  margin-block-start: 1rem;
+  padding-block-start: 1rem;
+}
+
 #media-library .media-filters {
   display: flex;
   flex-wrap: wrap;
