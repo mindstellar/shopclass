@@ -23,8 +23,21 @@
 use mindstellar\Csrf;
 use OpensslCryptor\Cryptor;
 
+/**
+ * bcrypt work factor used by osc_hash_password().
+ *
+ * Each step up doubles the time to hash and to verify a password. Cost 12 is
+ * roughly 175ms on typical 2026 hardware; cost 15 (the historic value) is about
+ * 1.4s, which put a full second and a half of CPU into every login attempt,
+ * successful or not. Raise it on hardware that can afford it, or lower it on
+ * constrained shared hosting, by defining BCRYPT_COST in config.php.
+ *
+ * Existing hashes are unaffected: bcrypt stores its own cost, so a password is
+ * always verified at the cost it was hashed with, and the login controllers
+ * re-hash an account to the current value the next time its owner signs in.
+ */
 if (!defined('BCRYPT_COST')) {
-    define('BCRYPT_COST', 15);
+    define('BCRYPT_COST', 12);
 }
 
 /**
