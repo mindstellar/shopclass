@@ -50,7 +50,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mysqli
       # oc-includes/vendor/ is committed (releases are cut with git archive and
       # run no build step), so the autoloader is present straight from checkout.
