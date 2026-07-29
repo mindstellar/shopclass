@@ -112,7 +112,10 @@ class Cleanup extends DAO
             case 'blocked':
                 return array($item, 'b_enabled = 0 AND dt_pub_date < ?', array($before), $cols);
             case 'reported':
-                // Listings with at least one spam report (t_item_stats is 1:1 with t_item).
+                // Listings with at least one spam report. t_item_stats holds one row
+                // per listing, so the join cannot multiply a listing out — it could
+                // when the table was keyed by date as well, and a listing reported on
+                // several days was then counted and offered for deletion once per day.
                 return array(
                     $item . ' AS i INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats AS s'
                         . ' ON s.fk_i_item_id = i.pk_i_id',

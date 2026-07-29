@@ -726,22 +726,13 @@ class CWebItem extends BaseModel
                     }
                 }
 
+                // Neither the admin nor the listing's own owner counts as a view.
                 if (!osc_is_admin_user_logged_in()
                     && !($item['fk_i_user_id'] != ''
                         && $item['fk_i_user_id'] == osc_logged_user_id())
+                    && osc_request_counts_as_view()
                 ) {
-                    require_once osc_lib_path() . 'osclass/user-agents.php';
-                    foreach ($user_agents as $ua) {
-                        if (preg_match(
-                            '|' . $ua . '|',
-                            Params::getServerParam('HTTP_USER_AGENT')
-                        )
-                        ) {
-                            $mStats = new ItemStats();
-                            $mStats->increase('i_num_views', $item['pk_i_id']);
-                            break;
-                        }
-                    }
+                    ItemStats::newInstance()->increase('i_num_views', $item['pk_i_id']);
                 }
 
                 foreach ($item['locale'] as $k => $v) {

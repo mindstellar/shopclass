@@ -1045,6 +1045,59 @@ function osc_admin_log_retention_days()
 
 
 /**
+ * Whether listing view counting is enabled. Defaults to on when the preference
+ * has never been set, so existing installs keep counting as before.
+ *
+ * This covers only the two traffic counters (listing views and premium-block
+ * views), which are written on every render. The moderation counters are always
+ * recorded: they drive the reported-listings screen and the report threshold,
+ * so switching them off would break moderation rather than save space.
+ *
+ * @return bool
+ */
+function osc_item_views_enabled()
+{
+    $v = osc_get_preference('item_views_enabled', 'stats');
+
+    return $v === '' ? true : ((int) $v === 1);
+}
+
+
+/**
+ * Whether requests from crawlers count as listing views. Defaults to off — a
+ * crawler is not a reader, and on a well-indexed site bots are the majority of
+ * traffic, so counting them both inflates the numbers and multiplies the writes.
+ *
+ * @return bool
+ */
+function osc_count_bot_views()
+{
+    $v = osc_get_preference('count_bot_views', 'stats');
+
+    return $v === '' ? false : ((int) $v === 1);
+}
+
+
+/**
+ * Retention window for the site-wide daily stats rollup, in days. 0 keeps rows
+ * forever, which is the default: the rollup is a handful of rows per day for the
+ * whole site regardless of its size, and the admin reports chart looks back as
+ * far as ten months.
+ *
+ * @return int
+ */
+function osc_item_stats_retention_days()
+{
+    $v = osc_get_preference('item_stats_retention_days', 'stats');
+    if ($v === '' || $v === null) {
+        return 0;
+    }
+
+    return max(0, (int) $v);
+}
+
+
+/**
  * Gets how many seconds between item post to not consider it SPAM
  *
  * @return int

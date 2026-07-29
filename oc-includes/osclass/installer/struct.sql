@@ -288,18 +288,25 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
     i_num_offensive INT UNSIGNED NOT NULL DEFAULT 0,
     i_num_expired INT UNSIGNED NOT NULL DEFAULT 0,
     i_num_premium_views INT UNSIGNED NOT NULL DEFAULT 0,
-    dt_date DATE NOT NULL,
+    dt_date DATE NULL,
 
-        PRIMARY KEY (fk_i_item_id, dt_date),
-        INDEX dt_date_fk_i_item_id (dt_date, fk_i_item_id),
+        PRIMARY KEY (fk_i_item_id),
         INDEX i_num_spam (i_num_spam),
-        INDEX i_num_views (i_num_views),
-        INDEX i_num_repeated (i_num_repeated),
-        INDEX i_num_bad_classified (i_num_bad_classified),
-        INDEX i_num_offensive (i_num_offensive),
-        INDEX i_num_expired (i_num_expired),
-        INDEX i_num_premium_views (i_num_premium_views),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_stats_daily (
+    dt_date DATE NOT NULL,
+    i_bucket TINYINT UNSIGNED NOT NULL,
+    i_num_views INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_spam INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_repeated INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_bad_classified INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_offensive INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_expired INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_premium_views INT UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (dt_date, i_bucket)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_resource (

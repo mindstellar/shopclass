@@ -311,6 +311,24 @@ class CAdminTools extends AdminSecBaseModel
                         osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'cleanup', 'INTEGER');
                     }
                 }
+                osc_set_preference(
+                    'item_views_enabled',
+                    Params::getParam('item_views_enabled') ? '1' : '0',
+                    'stats',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'count_bot_views',
+                    Params::getParam('count_bot_views') ? '1' : '0',
+                    'stats',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'item_stats_retention_days',
+                    max(0, Params::getParamInt('item_stats_retention_days')),
+                    'stats',
+                    'INTEGER'
+                );
                 osc_reset_preferences();
                 osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');

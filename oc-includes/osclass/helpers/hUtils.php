@@ -599,6 +599,83 @@ function osc_autop($text, $line_breaks = true)
 
 
 /**
+ * Whether this request came from a crawler rather than a person.
+ *
+ * A denylist, not an allowlist. The allowlist this replaces named the browsers
+ * of the day and treated everything matching one as human — but a crawler
+ * identifies itself by appending to an ordinary browser string, so the modern
+ * Googlebot, Bingbot and GPTBot user agents all contain "Safari" and "like
+ * Gecko" and sailed straight through it. Anything the list does not recognise is
+ * treated as a person, so a new crawler is counted until its token is added
+ * (or added by a plugin through the bot_user_agents filter) rather than a new
+ * browser being silently discounted.
+ *
+ * Deliberately cheap: one lowercase pass and a substring search per token, on a
+ * request path that runs for every listing view.
+ *
+ * @return bool
+ */
+function osc_is_bot_request()
+{
+    static $isBot = null;
+
+    if ($isBot !== null) {
+        return $isBot;
+    }
+
+    $ua = strtolower(trim((string)Params::getServerParam('HTTP_USER_AGENT', false, false)));
+
+    // No user agent at all is not a browser either.
+    if ($ua === '') {
+        return $isBot = true;
+    }
+
+    $tokens = osc_apply_filter('bot_user_agents', array(
+        // Generic — catches the long tail, which is most of it.
+        'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher',
+        // Search engines.
+        'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex',
+        'sogou', 'exabot', 'seznambot', 'petalbot', 'applebot', 'qwantify',
+        // AI and dataset collectors.
+        'gptbot', 'oai-searchbot', 'chatgpt-user', 'ccbot', 'claudebot',
+        'claude-web', 'anthropic-ai', 'perplexitybot', 'google-extended',
+        'bytespider', 'amazonbot', 'meta-externalagent', 'diffbot',
+        // SEO and marketing crawlers.
+        'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'blexbot', 'dataforseo',
+        'screaming frog', 'serpstat', 'megaindex',
+        // Monitoring, previews and libraries.
+        'uptimerobot', 'pingdom', 'statuscake', 'facebookexternalhit',
+        'telegrambot', 'whatsapp', 'slackbot', 'discordbot', 'embedly',
+        'curl/', 'wget', 'python-requests', 'python-urllib', 'go-http-client',
+        'java/', 'okhttp', 'libwww-perl', 'headlesschrome', 'phantomjs',
+    ));
+
+    foreach ($tokens as $token) {
+        if ($token !== '' && strpos($ua, $token) !== false) {
+            return $isBot = true;
+        }
+    }
+
+    return $isBot = false;
+}
+
+
+/**
+ * Whether this request should be counted in the listing view statistics.
+ *
+ * @return bool
+ */
+function osc_request_counts_as_view()
+{
+    if (!osc_item_views_enabled()) {
+        return false;
+    }
+
+    return !osc_is_bot_request() || osc_count_bot_views();
+}
+
+
+/**
  *
  */
 function osc_get_http_referer()

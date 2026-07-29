@@ -450,12 +450,33 @@ pin('listLatest returns the requested count', 3, count($latest));
 // recent pub dates, so they lead. Only b_active=1 AND b_enabled=1 qualify.
 pin('rows are ordered newest pub date first', true, ($latest[0]['dt_pub_date'] >= $latest[1]['dt_pub_date']) && ($latest[1]['dt_pub_date'] >= $latest[2]['dt_pub_date']));
 
-harness_section('Item::mostViewed — ORDER BY i_num_views DESC');
+harness_section('Item::mostViewed — ORDER BY i_num_views DESC, visible listings only');
 
 $resetDao();
 $mv = $model->mostViewed(3);
 pin('mostViewed returns the requested count', 3, count($mv));
-pin('the most-viewed item (B, 99 views) leads', 'Item B', $mv[0]['s_title']);
+// B has the highest count (99 views) but is disabled, and this list used to be
+// led by it: the query carried no visibility filter, so a blocked listing was
+// advertised as the site's most popular. A (10 views) is the most-viewed listing
+// a visitor is actually allowed to see.
+pin('the most-viewed VISIBLE listing (A, 10 views) leads', 'Item A', $mv[0]['s_title']);
+$mvTitles = array_column($mv, 's_title');
+check(
+    'the disabled listing with the highest count is excluded',
+    !in_array('Item B', $mvTitles, true),
+    describe($mvTitles)
+);
+check(
+    'so are the spam, unactivated and expired ones',
+    !array_intersect(array('Item C', 'Item D', 'Item E'), $mvTitles),
+    describe($mvTitles)
+);
+pin(
+    'rows are ordered by view count descending',
+    true,
+    ((int)$mv[0]['i_num_views'] >= (int)$mv[1]['i_num_views'])
+    && ((int)$mv[1]['i_num_views'] >= (int)$mv[2]['i_num_views'])
+);
 
 harness_section('Item::listAllWithCategories');
 

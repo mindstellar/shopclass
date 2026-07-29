@@ -104,6 +104,15 @@ if (is_array($cron)) {
             Log::newInstance()->purgeOlderThan(date('Y-m-d H:i:s', time() - ($logRetention * 24 * 3600)));
         }
 
+        // Retention: prune the site-wide daily stats rollup past the configured
+        // window (0 = keep forever, the default). The rollup is a few rows per day
+        // for the whole site, so this is a knob for owners who want it rather than
+        // something the schema depends on.
+        $statsRetention = osc_item_stats_retention_days();
+        if ($statsRetention > 0) {
+            ItemStats::newInstance()->purgeOlderThan(date('Y-m-d', time() - ($statsRetention * 24 * 3600)));
+        }
+
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
         // is otherwise lazy-on-request; this closes that gap.

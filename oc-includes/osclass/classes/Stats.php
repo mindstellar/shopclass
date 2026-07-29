@@ -249,8 +249,13 @@ class Stats
             'day'   => array('dt_date', 'DAY(dt_date)'),
         ));
 
+        // The site-wide daily rollup rather than the per-listing table: this
+        // screen never wanted one listing's history, only the site's, and holding
+        // the date dimension per listing is what made that table grow with page
+        // views. Same aggregates over a few rows per day instead of one per
+        // listing per day.
         $sql = 'SELECT ' . $dDate . ' as d_date, ' . $sums
-            . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats_daily'
             . ' WHERE dt_date >= ?'
             . ' GROUP BY ' . $groupBy;
 

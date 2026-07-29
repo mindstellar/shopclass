@@ -102,14 +102,6 @@ $seedChildRow = static function (string $table, string $localeCode, int $n) use 
                 array($n, $localeCode, "title$n", "body$n")
             );
             break;
-        case DB_TABLE_PREFIX . 't_keywords':
-            seed_exec(
-                $admin,
-                "INSERT INTO $table (s_md5, fk_c_locale_code, s_original_text, s_anchor_text, s_normalized_text) VALUES (?, ?, ?, ?, ?)",
-                'sssss',
-                array(md5((string) $n), $localeCode, "orig$n", "anchor$n", "norm$n")
-            );
-            break;
         case DB_TABLE_PREFIX . 't_user_description':
             seed_exec(
                 $admin,
@@ -319,10 +311,12 @@ scratchdb_truncate_all($admin);
 $seedLocaleFlags('en_US', 'English', 1, 1);
 $seedLocaleFlags('es_ES', 'Spanish', 1, 1);
 
+/* t_keywords was a fifth cascade table until it was retired: nothing populated
+ * or read it any more, struct.sql stopped creating it and migration 0013 drops
+ * it on upgrade, so deleteLocale() no longer has it to clean up. */
 $cascadeTables = array(
     DB_TABLE_PREFIX . 't_category_description',
     DB_TABLE_PREFIX . 't_item_description',
-    DB_TABLE_PREFIX . 't_keywords',
     DB_TABLE_PREFIX . 't_user_description',
     DB_TABLE_PREFIX . 't_pages_description',
 );
@@ -348,12 +342,13 @@ pin('deleting a code with no matching row returns int 0, not bool false', 0, $mo
 
 harness_section('OSCLocale::deleteLocale — malformed lookup (null code)');
 
-/* A null code fails at the driver for every one of the six deletes; that
- * failure has always been swallowed by the first five (their own return
- * value was already discarded) and surfaces as bool false only through the
- * last one, which is what deleteLocale() itself returns. A non-null code
- * that simply matches nothing instead succeeds and reports int 0 (pinned
- * just above) — the two are deliberately not the same value. */
+/* Legacy behaviour: a null code built a bare comparison with no right-hand
+ * side, so every delete failed at the driver — swallowed by the cascade ones,
+ * whose return value was already discarded, and surfacing as bool false only
+ * through the final delete, which is what deleteLocale() returns. The model
+ * now guards null explicitly instead, but returns the same false, because a
+ * non-null code that simply matches nothing succeeds and reports int 0
+ * (pinned just above) — the two are deliberately not the same value. */
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin('a null locale code returns bool false rather than raising', false, $model->deleteLocale(null));
 error_reporting($prevLevel);
@@ -419,7 +414,7 @@ pin('one listAllEnabled() call costs one query', 1, harness_query_count(static f
 pin('one findByCode() call costs one query', 1, harness_query_count(static function () use ($model) {
     $model->findByCode('it_IT');
 }));
-pin('one deleteLocale() call on a matching code costs six queries (5 cascades + 1 own row)', 6, harness_query_count(static function () use ($model) {
+pin('one deleteLocale() call on a matching code costs five queries (4 cascades + 1 own row)', 5, harness_query_count(static function () use ($model) {
     $model->deleteLocale('nonexistent-code-cost-probe');
 }));
 

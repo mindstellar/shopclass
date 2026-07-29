@@ -100,6 +100,17 @@ if (!function_exists('scratchdb_bootstrap')) {
         // Helpers are loaded by oc-load.php at runtime, not by composer, so a
         // standalone script has to require them explicitly.
         require_once ABS_PATH . 'oc-includes/osclass/helpers/hDatabase.php';
+        // Models consult preferences (ItemStats checks whether view counting is
+        // on before it writes), and getPreference() reads t_preference through
+        // the Preference model, so this works against the scratch schema —
+        // an unset preference reads as '' and each helper falls back to its
+        // documented default.
+        require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
+        // Search::getPremiums() asks osc_request_counts_as_view() (hUtils) whether
+        // the caller is a reader before it counts anything, and that helper runs
+        // its crawler list through osc_apply_filter() (hPlugins).
+        require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
+        require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 
         // Anything reaching Params::getServerParam()/getParam() lands in purify(),
         // which builds an HTMLPurifier whose constructor wants a cache directory

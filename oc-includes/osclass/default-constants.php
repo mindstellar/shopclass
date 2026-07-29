@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '5.3.0.dev5');
+    define('OSCLASS_VERSION', '5.3.0.dev6');
 }
 
 if (!defined('MULTISITE')) {

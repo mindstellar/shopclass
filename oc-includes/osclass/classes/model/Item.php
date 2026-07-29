@@ -92,15 +92,23 @@ class Item extends DAO
      */
     public function mostViewed($limit = 10)
     {
-        // Three-table comodin join with a GROUP BY the builder cannot express, so
-        // this stays hand-written SQL. There are no caller values: the join
+        // Hand-written for the i.*/stat-column projection, which is outside the
+        // builder's identifier allowlist. There are no caller values: the join
         // conditions and column names are compile-time literals and $limit is
-        // (int)-cast into a bound LIMIT placeholder.
-        $sql = 'SELECT * FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l, '
-            . DB_TABLE_PREFIX . 't_item_stats s'
-            . ' WHERE l.fk_i_item_id = i.pk_i_id AND s.fk_i_item_id = i.pk_i_id'
-            . ' GROUP BY s.fk_i_item_id'
-            . ' ORDER BY i_num_views DESC'
+        // (int)-cast into a bound LIMIT placeholder. Location comes back from
+        // extendData() below, so this no longer joins it.
+        //
+        // The stats row holds the running total, so ordering on it is exact.
+        // Previously this grouped by listing without aggregating and ordered on
+        // whichever day's row the server happened to pick — a total only by
+        // accident, and only because ONLY_FULL_GROUP_BY is stripped from the
+        // session. It also listed hidden and expired listings; the visibility
+        // filters below are the same ones the public listing queries apply.
+        $sql = 'SELECT i.*, s.i_num_views FROM ' . $this->getTableName() . ' i'
+            . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats s ON s.fk_i_item_id = i.pk_i_id'
+            . ' WHERE i.b_enabled = 1 AND i.b_active = 1 AND i.b_spam = 0'
+            . ' AND i.dt_expiration >= NOW()'
+            . ' ORDER BY s.i_num_views DESC'
             . ' LIMIT ?';
 
         try {
@@ -131,25 +139,26 @@ class Item extends DAO
             $items = $this->extendItemDescription($items, $prefLocale);
             $items = $this->extendCategoryName($items, $prefLocale);
             $itemIds = array_column($items, 'pk_i_id');
-            // First get stats and locations data. The SUM(...) aggregates and the
-            // l.* alias are outside the query builder's identifier allowlist, so
-            // this is hand-written SQL: same seven aggregates, same INNER JOIN and
-            // GROUP BY. The only values are the item ids, bound as an IN (?, ...)
-            // list.
+            // First get stats and locations data. The s.*/l.* aliases are outside
+            // the query builder's identifier allowlist, so this is hand-written
+            // SQL. The only values are the item ids, bound as an IN (?, ...) list.
+            //
+            // This used to aggregate the seven counters over every dated row each
+            // listing had ever accumulated, on every list render. The stats row is
+            // now the total, so the counters come back as plain columns.
             if (!empty($itemIds)) {
                 $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
-                $sql = 'SELECT SUM(s.i_num_views) as i_num_views,'
-                    . ' SUM(s.i_num_spam) as i_num_spam,'
-                    . ' SUM(s.i_num_bad_classified) as i_num_bad_classified,'
-                    . ' SUM(s.i_num_repeated) as i_num_repeated,'
-                    . ' SUM(s.i_num_offensive) as i_num_offensive,'
-                    . ' SUM(s.i_num_expired) as i_num_expired,'
-                    . ' SUM(s.i_num_premium_views) as i_num_premium_views,'
+                $sql = 'SELECT s.i_num_views,'
+                    . ' s.i_num_spam,'
+                    . ' s.i_num_bad_classified,'
+                    . ' s.i_num_repeated,'
+                    . ' s.i_num_offensive,'
+                    . ' s.i_num_expired,'
+                    . ' s.i_num_premium_views,'
                     . ' l.*'
                     . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats s'
                     . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
-                    . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')'
-                    . ' GROUP BY s.fk_i_item_id';
+                    . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')';
 
                 try {
                     $itemStatsLocations = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
@@ -1083,10 +1092,16 @@ class Item extends DAO
             default:
         }
 
-        // Aliased two-table comodin join; the stat comparisons are fixed literals
-        // with no bound value. Hand-written to preserve the exact projection.
-        $sql = 'SELECT count(*) as total FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_stats s'
-            . ' WHERE i.pk_i_id = s.fk_i_item_id' . $extra;
+        // The stat comparisons are fixed literals with no bound value. Hand-written
+        // to preserve the exact projection.
+        //
+        // This counts rows, and the stats table now holds exactly one per listing —
+        // so it counts listings, which is what the caller wants and what the name
+        // says. It did not before: a listing reported on three different days had
+        // three rows and was counted three times.
+        $sql = 'SELECT count(*) as total FROM ' . $this->getTableName() . ' i'
+            . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats s ON s.fk_i_item_id = i.pk_i_id'
+            . ' WHERE 1 = 1' . $extra;
 
         try {
             $total = osc_db_scalar($sql);

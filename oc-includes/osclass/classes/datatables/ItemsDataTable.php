@@ -529,41 +529,37 @@ class ItemsDataTable extends DataTable
             'date'       => 'dt_pub_date',
             'expiration' => 'dt_expiration'
         );
-        // column sort
+        // Reported at all, for any reason.
+        $anyReport = 's.i_num_spam > 0 OR s.i_num_bad_classified > 0 OR s.i_num_repeated > 0'
+            . ' OR s.i_num_offensive > 0 OR s.i_num_expired > 0';
+
+        // column sort. Sorting by one report type also narrows to it.
         if (!array_key_exists($sort, $arraySortColumns)) {
-            $sort = 'dt_pub_date';
-            $this->mSearch->addHaving('i_num_spam > 0 OR i_num_bad_classified > 0 OR i_num_repeated > 0 OR i_num_offensive > 0 OR i_num_expired > 0');
+            $sort   = 'dt_pub_date';
+            $filter = $anyReport;
         } else {
-            $sort = $arraySortColumns[$sort];
-            if ($sort !== 'dt_pub_date') {
-                $this->mSearch->addHaving($sort . ' > 0');
-            } else {
-                $this->mSearch->addHaving('i_num_spam > 0 OR i_num_bad_classified > 0 OR i_num_repeated > 0 OR i_num_offensive > 0 OR i_num_expired > 0');
-            }
+            $sort   = $arraySortColumns[$sort];
+            $filter = in_array($sort, array('dt_pub_date', 'dt_expiration'), true)
+                ? $anyReport
+                : 's.' . $sort . ' > 0';
         }
 
         $this->mSearch->order($sort, $direction);
 
+        // One stats row per listing now, so the counters are plain columns: no
+        // aggregate to build them, no GROUP BY to collapse a listing's dated rows,
+        // and therefore no HAVING — the filter is an ordinary WHERE. The
+        // IN (SELECT ...) that used to stand in for an index_merge over seven
+        // single-column indexes goes with them.
         $this->mSearch->addTable(sprintf('%st_item_stats s', DB_TABLE_PREFIX));
-        $this->mSearch->addField('SUM(s.`i_num_spam`) as i_num_spam');
-        $this->mSearch->addField('SUM(s.`i_num_bad_classified`) as i_num_bad_classified');
-        $this->mSearch->addField('SUM(s.`i_num_repeated`) as i_num_repeated');
-        $this->mSearch->addField('SUM(s.`i_num_offensive`) as i_num_offensive');
-        $this->mSearch->addField('SUM(s.`i_num_expired`) as i_num_expired');
+        $this->mSearch->addField('s.`i_num_spam` as i_num_spam');
+        $this->mSearch->addField('s.`i_num_bad_classified` as i_num_bad_classified');
+        $this->mSearch->addField('s.`i_num_repeated` as i_num_repeated');
+        $this->mSearch->addField('s.`i_num_offensive` as i_num_offensive');
+        $this->mSearch->addField('s.`i_num_expired` as i_num_expired');
 
-        // having
-        
-        // Faster for large tables (tested with 1.5 million rows)
-        // if indexes for all i_num_* columns are created
-        $this->mSearch->addConditions(sprintf(' 
-            %st_item.pk_i_id IN ( 
-            SELECT s.fk_i_item_id 
-            FROM %st_item_stats s 
-            WHERE s.i_num_spam > 0 OR s.i_num_bad_classified > 0 OR s.i_num_repeated > 0 OR s.i_num_offensive > 0 OR s.i_num_expired > 0 
-            )', DB_TABLE_PREFIX, DB_TABLE_PREFIX));
-        $this->mSearch->addConditions(sprintf(' %st_item.pk_i_id ', DB_TABLE_PREFIX));
-        $this->mSearch->addConditions(sprintf(' %st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
-        $this->mSearch->addGroupBy(sprintf(' %st_item.pk_i_id ', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions(sprintf('%st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions('(' . $filter . ')');
         // do Search
         $this->processDataReported(Item::newInstance()->extendCategoryName($this->mSearch->doSearch()));
         $this->totalFiltered = $this->mSearch->count();

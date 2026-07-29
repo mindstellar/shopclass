@@ -1209,9 +1209,17 @@ class Search extends DAO
         }
 
         if (!empty($items)) {
-            $mStat = ItemStats::newInstance();
-            foreach ($items as $item) {
-                $mStat->increase('i_num_premium_views', $item['pk_i_id']);
+            // The premium block renders on the home page, every category page and
+            // every search page, so this is the most frequently executed write on
+            // the site. One statement for the whole block rather than one per
+            // listing, and only when the request is a reader rather than a crawler
+            // — this path had no such check at all, so bots drove both the counter
+            // and the write load.
+            if (osc_request_counts_as_view()) {
+                ItemStats::newInstance()->increaseBatch(
+                    'i_num_premium_views',
+                    array_column($items, 'pk_i_id')
+                );
             }
 
             return Item::newInstance()->extendData($items);
@@ -1291,9 +1299,12 @@ class Search extends DAO
             }
             $this->addWhere(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $subSelect . ')');
 
-            $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
+            // Least-shown first, so the block rotates. The stats row holds the
+            // running total and there is exactly one per listing, so neither the
+            // SUM nor the GROUP BY that used to collapse a listing's dated rows
+            // is needed to read it.
             $this->addOrderBy(
-                sprintf('SUM(%st_item_stats.i_num_premium_views)', DB_TABLE_PREFIX),
+                sprintf('%st_item_stats.i_num_premium_views', DB_TABLE_PREFIX),
                 'ASC'
             );
             $this->addOrderBy(null, 'random');
@@ -1330,9 +1341,12 @@ class Search extends DAO
                                   . implode(', ', $this->categories) . ')');
             }
 
-            $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
+            // Least-shown first, so the block rotates. The stats row holds the
+            // running total and there is exactly one per listing, so neither the
+            // SUM nor the GROUP BY that used to collapse a listing's dated rows
+            // is needed to read it.
             $this->addOrderBy(
-                sprintf('SUM(%st_item_stats.i_num_premium_views)', DB_TABLE_PREFIX),
+                sprintf('%st_item_stats.i_num_premium_views', DB_TABLE_PREFIX),
                 'ASC'
             );
             $this->addOrderBy(null, 'random');
