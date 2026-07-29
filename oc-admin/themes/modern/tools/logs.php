@@ -40,88 +40,86 @@ $enabled    = __get('log_enabled');
 $retention  = (int) __get('log_retention_days');
 $curSection = (string) Params::getParam('section');
 $curQuery   = (string) Params::getParam('q');
+$hasFilter  = ($curSection !== '' || $curQuery !== '');
 $sort       = Params::getParam('sort');
 $direction  = Params::getParam('direction');
 
-$columns   = $aData['aColumns'];
-$rows      = $aData['aRows'];
-$total     = (int) $aData['iTotalRecords'];
-$retainStr = $retention > 0
-    ? sprintf(__('pruned after %d days'), $retention)
-    : __('kept forever');
+$columns = $aData['aColumns'];
+$rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <h2 class="render-title"><?php _e('Activity log'); ?></h2>
 
-    <section class="log-panel">
-        <header class="log-panel-head"><?php _e('Logging'); ?></header>
-        <form class="log-panel-body" method="post" action="<?php echo osc_admin_base_url(true); ?>">
+    <div id="log-settings">
+        <h3 class="render-title"><?php _e('Logging'); ?></h3>
+        <form name="log_settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="tools"/>
             <input type="hidden" name="action" value="logs_settings_post"/>
             <?php osc_csrf_token_form(); ?>
-
-            <div class="form-check form-switch log-panel-toggle">
-                <input class="form-check-input" type="checkbox" role="switch" id="admin_log_enabled"
-                       name="admin_log_enabled" value="1" <?php echo($enabled ? 'checked' : ''); ?>>
-                <label class="form-check-label" for="admin_log_enabled"><?php _e('Record activity'); ?></label>
-            </div>
-
-            <div class="log-panel-retention">
-                <label for="admin_log_retention_days"><?php _e('Keep entries for'); ?></label>
-                <div class="input-group input-group-sm">
-                    <input type="number" min="0" class="form-control" id="admin_log_retention_days"
-                           name="admin_log_retention_days" value="<?php echo $retention; ?>">
-                    <span class="input-group-text"><?php _e('days'); ?></span>
+            <fieldset class="form-horizontal">
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Record activity'); ?></div>
+                    <div class="form-controls">
+                        <div class="form-label-checkbox">
+                            <input type="checkbox" id="admin_log_enabled" name="admin_log_enabled" value="1"
+                                <?php echo($enabled ? 'checked="checked"' : ''); ?> />
+                            <label for="admin_log_enabled"><?php _e('Record admin and listing activity'); ?></label>
+                        </div>
+                        <div class="help-box">
+                            <?php _e('Turn logging off to stop recording new entries. Existing entries are kept until pruned.'); ?>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <button type="submit" class="btn btn-sm btn-submit"><?php _e('Save'); ?></button>
-
-            <p class="log-panel-note">
-                <?php _e('The daily task deletes entries older than this — set to 0 to keep them forever. Turning logging off stops new entries immediately.'); ?>
-            </p>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Keep entries for'); ?></div>
+                    <div class="form-controls">
+                        <div class="input-group input-group-sm" style="max-width:12rem">
+                            <input type="number" min="0" class="form-control" id="admin_log_retention_days"
+                                   name="admin_log_retention_days" value="<?php echo $retention; ?>">
+                            <span class="input-group-text"><?php _e('days'); ?></span>
+                        </div>
+                        <div class="help-box">
+                            <?php _e('The daily task deletes entries older than this. Set to 0 to keep them forever.'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <input type="submit" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
+                </div>
+            </fieldset>
         </form>
-    </section>
-
-    <div class="log-toolbar">
-        <form class="log-filters" method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="tools"/>
-            <input type="hidden" name="action" value="logs"/>
-            <div class="log-field">
-                <label class="form-label" for="section"><?php _e('Section'); ?></label>
-                <select class="form-select form-select-sm" id="section" name="section">
-                    <option value=""><?php _e('All sections'); ?></option>
-                    <?php foreach ($sections as $s) { ?>
-                        <option value="<?php echo osc_esc_html($s); ?>" <?php echo($curSection === $s ? 'selected' : ''); ?>>
-                            <?php echo osc_esc_html($s); ?>
-                        </option>
-                    <?php } ?>
-                </select>
-            </div>
-            <div class="log-field">
-                <label class="form-label" for="q"><?php _e('Search'); ?></label>
-                <input type="text" class="form-control form-control-sm" id="q" name="q"
-                       value="<?php echo osc_esc_html($curQuery); ?>"
-                       placeholder="<?php echo osc_esc_html(__('details, action or IP')); ?>">
-            </div>
-            <div class="log-field log-field-actions">
-                <button type="submit" class="btn btn-sm btn-primary"><?php _e('Filter'); ?></button>
-                <?php if ($curSection !== '' || $curQuery !== '') { ?>
-                    <a class="btn btn-sm btn-dim"
-                       href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
-                <?php } ?>
-            </div>
-        </form>
-
-        <div class="log-summary">
-            <span class="log-summary-count"><?php echo number_format($total); ?></span>
-            <?php _e('entries'); ?> &middot; <?php echo osc_esc_html($retainStr); ?>
-        </div>
     </div>
 
+    <h3 class="render-title separate-top"><?php _e('Recent activity'); ?></h3>
     <div class="relative">
+        <div class="table-toolbar">
+            <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+                <input type="hidden" name="page" value="tools"/>
+                <input type="hidden" name="action" value="logs"/>
+                <div class="input-group input-group-sm">
+                    <?php if ($hasFilter) { ?>
+                        <a class="btn btn-dim"
+                           href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
+                    <?php } ?>
+                    <select name="section" class="form-select form-select-sm">
+                        <option value=""><?php _e('All sections'); ?></option>
+                        <?php foreach ($sections as $s) { ?>
+                            <option value="<?php echo osc_esc_html($s); ?>" <?php echo($curSection === $s ? 'selected="selected"' : ''); ?>>
+                                <?php echo osc_esc_html($s); ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                    <input type="text" name="q" class="form-control"
+                           placeholder="<?php echo osc_esc_html(__('details, action or IP')); ?>"
+                           value="<?php echo osc_esc_html($curQuery); ?>"/>
+                    <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
         <div class="table-contains-actions">
-            <table class="table log-table" cellpadding="0" cellspacing="0">
+            <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                 <tr>
                     <?php foreach ($columns as $k => $v) {
@@ -141,16 +139,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php } ?>
                 <?php } else { ?>
                     <tr>
-                        <td colspan="6">
-                            <div class="log-empty">
-                                <i class="bi bi-clipboard-x"></i>
-                                <p><?php echo($total > 0 ? osc_esc_html(__('No entries match your filter')) : osc_esc_html(__('No activity has been logged yet'))); ?></p>
-                            </div>
+                        <td colspan="<?php echo count($columns); ?>" class="empty-listings text-center">
+                            <?php if ($hasFilter) { ?>
+                                <p><?php _e('No entries match your filter.'); ?></p>
+                                <a class="btn btn-secondary btn-sm"
+                                   href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
+                            <?php } else { ?>
+                                <p><?php _e('No activity has been logged yet.'); ?></p>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>
                 </tbody>
             </table>
+            <div id="table-row-actions"></div>
         </div>
     </div>
 <?php
@@ -169,8 +171,8 @@ function showingResults()
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);
 ?>
-    <div class="log-footer">
-        <button type="button" class="btn btn-sm btn-danger" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
+    <div class="form-actions">
+        <button type="button" class="btn btn-danger btn-sm" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
     </div>
 
     <dialog id="logs-clear-dialog" class="osc-dialog osc-dialog-danger">
