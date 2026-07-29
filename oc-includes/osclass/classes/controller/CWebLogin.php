@@ -66,33 +66,33 @@ class CWebLogin extends BaseModel
                 if (empty($user)) {
                     $user = User::newInstance()->findByUsername($email);
                 }
-                if (empty($user)) {
-                    osc_add_flash_error_message(_m("The user doesn't exist"));
+
+                // An unknown account and a wrong password must answer the same way,
+                // and take about as long, or the form tells anyone who asks which
+                // addresses are registered.
+                $authenticated = empty($user)
+                    ? osc_dummy_password_verify($password)
+                    : osc_verify_password($password, (isset($user['s_password']) ? $user['s_password'] : ''));
+
+                if (!$authenticated) {
+                    osc_add_flash_error_message(_m('Invalid email/username or password'));
                     $this->redirectTo(osc_user_login_url());
                 }
-                if (osc_verify_password(
-                    $password,
-                    (isset($user['s_password']) ? $user['s_password'] : '')
-                )
-                ) {
-                    if (@$user['s_password'] != '') {
-                        $needs_rehash = true;
-                        if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
-                            $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
-                        }
-                        if ($needs_rehash) {
-                            // Mirror the rehash into the in-memory row so a remember-me token
-                            // issued below binds to the hash actually persisted.
-                            $user['s_password'] = osc_hash_password($password);
-                            User::newInstance()->update(
-                                array('s_password' => $user['s_password']),
-                                array('pk_i_id' => $user['pk_i_id'])
-                            );
-                        }
+
+                if (@$user['s_password'] != '') {
+                    $needs_rehash = true;
+                    if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
+                        $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
                     }
-                } else {
-                    osc_add_flash_error_message(_m('The password is incorrect'));
-                    $this->redirectTo(osc_user_login_url()); // @TODO if valid user, send email parameter back to the login form
+                    if ($needs_rehash) {
+                        // Mirror the rehash into the in-memory row so a remember-me token
+                        // issued below binds to the hash actually persisted.
+                        $user['s_password'] = osc_hash_password($password);
+                        User::newInstance()->update(
+                            array('s_password' => $user['s_password']),
+                            array('pk_i_id' => $user['pk_i_id'])
+                        );
+                    }
                 }
                 // e-mail or/and IP is/are banned
                 $banned =
@@ -243,13 +243,13 @@ class CWebLogin extends BaseModel
                 $success     = $userActions->recover_password();
 
                 switch ($success) {
+                    // Whether or not the address belongs to an account, the answer is
+                    // the same -- telling the visitor it was not recognised would let
+                    // anyone use this form to test addresses.
                     case (0): // recover ok
-                        osc_add_flash_ok_message(_m('We have sent you an email with the instructions to reset your password'));
+                    case (1): // no account for that address
+                        osc_add_flash_ok_message(_m('If that email address belongs to an account, we have sent it instructions to reset the password'));
                         $this->redirectTo(osc_base_url());
-                        break;
-                    case (1): // e-mail does not exist
-                        osc_add_flash_error_message(_m('We were not able to identify you given the information provided'));
-                        $this->redirectTo(osc_recover_user_password_url());
                         break;
                     case (2): // captcha wrong
                         osc_add_flash_error_message(_m('Please complete the security check.'));

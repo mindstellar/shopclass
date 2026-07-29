@@ -68,17 +68,16 @@ class CAdminLogin extends AdminBaseModel
                 // fields are not empty
                 $admin = Admin::newInstance()->findByUsername(Params::getParam('user'));
 
-                if (!$admin) {
-                    osc_add_flash_error_message(sprintf(
-                        _m('Sorry, incorrect username. <a href="%s">Have you lost your password?</a>'),
-                        osc_admin_base_url(true) . '?page=login&amp;action=recover'
-                    ), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login');
-                }
+                // An unknown account and a wrong password must answer the same way,
+                // and take about as long, or the form tells anyone who asks which
+                // administrator names exist.
+                $authenticated = !$admin
+                    ? osc_dummy_password_verify($password)
+                    : osc_verify_password($password, $admin['s_password']);
 
-                if (!osc_verify_password($password, $admin['s_password'])) {
+                if (!$authenticated) {
                     osc_add_flash_error_message(sprintf(
-                        _m('Sorry, incorrect password. <a href="%s">Have you lost your password?</a>'),
+                        _m('Sorry, incorrect username or password. <a href="%s">Have you lost your password?</a>'),
                         osc_admin_base_url(true) . '?page=login&amp;action=recover'
                     ), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
@@ -146,18 +145,22 @@ class CAdminLogin extends AdminBaseModel
                 osc_csrf_check();
 
                 // post execution to recover the password
+
+                // The security check runs before the account is looked up. Inside the
+                // branch below it would only ever fail for names that exist, which
+                // would hand back the answer the shared message is meant to withhold.
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
+
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                }
+
                 $admin = Admin::newInstance()->findByEmail(Params::getParam('email'));
                 if (!isset($admin['pk_i_id'])) {
                     $admin = Admin::newInstance()->findByUsername(Params::getParam('email'));
                 }
                 if (isset($admin['pk_i_id'])) {
-                    if (osc_captcha_enabled() && !osc_check_captcha()) {
-                        osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
-
-                        return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
-                    }
-
                     require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
                     $newPassword = osc_genRandomPassword(40);
 
