@@ -83,6 +83,9 @@ class StorageWorker
                 case 'regenerate':
                     self::handleRegenerate($job, $snapshot);
                     break;
+                case 'seed':
+                    self::handleSeed($job, $snapshot);
+                    break;
                 default:
                     throw new RuntimeException('Unknown storage queue job type: ' . $job['s_type']);
             }
@@ -235,6 +238,43 @@ class StorageWorker
         }
 
         self::updateStorage($snapshot, $job['s_storage']);
+    }
+
+    /**
+     * Expand a bulk-migration seed into per-resource jobs, one page at a time.
+     * Pages $batch resources on the source storage from $offset, queues an
+     * $op job for each, then re-queues the seed for the next page while a full
+     * page came back. Running this in the worker (not the admin request) is what
+     * lets a catalogue of any size migrate without the request timing out.
+     *
+     * @param array $job
+     * @param array $snapshot the seed payload: op, source, offset
+     */
+    private static function handleSeed(array $job, array $snapshot): void
+    {
+        $op     = (string) ($snapshot['op'] ?? '');
+        $source = (string) ($snapshot['source'] ?? 'local');
+        $target = (string) $job['s_storage'];
+        $offset = (int) ($snapshot['offset'] ?? 0);
+        $batch  = 1000;
+
+        // Only the bulk migration types seed per-resource work.
+        if (!in_array($op, array('adopt', 'offload', 'restore'), true)) {
+            return;
+        }
+
+        $queue = StorageQueue::newInstance();
+        $rows  = ItemResource::newInstance()->getResourcesBatchByStorage($source, $offset, $batch);
+
+        foreach ($rows as $row) {
+            $queue->enqueue($op, $target, $row);
+        }
+
+        // A full page means there may be more — continue from the next offset on
+        // a later tick. A short (or empty) page means we've reached the end.
+        if (count($rows) === $batch) {
+            $queue->enqueueSeed($op, $source, $target, $offset + $batch);
+        }
     }
 
     /**

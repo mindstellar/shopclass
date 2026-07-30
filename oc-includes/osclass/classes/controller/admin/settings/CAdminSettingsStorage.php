@@ -161,9 +161,9 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                             break;
                         }
 
-                        $n = $this->_enqueueByStorage('offload', 'local', $remote->getId());
+                        StorageQueue::newInstance()->enqueueSeed('offload', 'local', $remote->getId());
                         osc_add_flash_ok_message(
-                            sprintf(_m('Queued %d images to offload to remote storage.'), $n),
+                            _m('Offload queued. Images move to remote storage in the background as the storage worker runs.'),
                             'admin'
                         );
                         break;
@@ -174,9 +174,9 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                             break;
                         }
 
-                        $n = $this->_enqueueByStorage('restore', $remote->getId(), $remote->getId());
+                        StorageQueue::newInstance()->enqueueSeed('restore', $remote->getId(), $remote->getId());
                         osc_add_flash_ok_message(
-                            sprintf(_m('Queued %d images to download back to local storage.'), $n),
+                            _m('Restore queued. Images download back to local storage in the background as the storage worker runs.'),
                             'admin'
                         );
                         break;
@@ -208,9 +208,9 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                         // re-upload. The 's3' adapter for this run may not exist yet if it wasn't
                         // already active; the worker resolves it fresh from the prefs saved above
                         // on the next cron run, once hStorage.php has registered it.
-                        $n = $this->_enqueueByStorage('adopt', 'local', 's3');
+                        StorageQueue::newInstance()->enqueueSeed('adopt', 'local', 's3');
                         osc_add_flash_ok_message(
-                            sprintf(_m('Better S3 settings imported and %d local images queued for adoption.'), $n),
+                            _m('Better S3 settings imported. Existing images are adopted in the background as the storage worker runs.'),
                             'admin'
                         );
                         break;
@@ -219,52 +219,6 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=storage');
                 break;
         }
-    }
-
-    /**
-     * Pages through every resource currently on $sourceStorage and enqueues
-     * a $jobType job targeting $targetStorageId for each one. Full rows are
-     * passed to StorageQueue::enqueue() (not just ids): the queue trims each
-     * snapshot to the fields its handlers need (s_path, s_extension,
-     * s_content_type, ...), and those fields have to come from somewhere.
-     *
-     * @param string $jobType
-     * @param string $sourceStorage
-     * @param string $targetStorageId
-     *
-     * @return int
-     */
-    private function _enqueueByStorage(string $jobType, string $sourceStorage, string $targetStorageId): int
-    {
-        $queue = StorageQueue::newInstance();
-        $model = ItemResource::newInstance();
-        $total = 0;
-        $offset = 0;
-        $batch = 500;
-
-        while (true) {
-            // Reset the request's time budget before each page. Seeding a large
-            // catalog is many cheap INSERTs, but on a big enough library the loop
-            // can outrun max_execution_time; without this a run dies part-way and
-            // leaves only some rows queued. Re-running is safe (the worker's
-            // handlers are idempotent, so a duplicate job is a no-op), but a
-            // completed run is friendlier than one the admin has to repeat.
-            @set_time_limit(0);
-
-            $rows = $model->getResourcesBatchByStorage($sourceStorage, $offset, $batch);
-            if (empty($rows)) {
-                break;
-            }
-
-            foreach ($rows as $row) {
-                $queue->enqueue($jobType, $targetStorageId, $row);
-                $total++;
-            }
-
-            $offset += $batch;
-        }
-
-        return $total;
     }
 
     /**

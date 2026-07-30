@@ -96,6 +96,39 @@ class StorageQueue extends DAO
     }
 
     /**
+     * Queue a single "seed" job that the worker expands into per-resource jobs
+     * in the background. This keeps a bulk migration (offload/restore/adopt of
+     * a whole catalogue) off the admin request, which would otherwise run one
+     * INSERT per resource inline and time out at the web server on a large site.
+     * The worker pages through the resources on $sourceStorage from $offset and
+     * re-queues the seed until the catalogue is exhausted.
+     *
+     * @param string $op              adopt|offload|restore
+     * @param string $sourceStorage   storage id the resources currently live on
+     * @param string $targetStorageId storage id to migrate them to
+     * @param int    $offset          paging offset to resume from
+     */
+    public function enqueueSeed(string $op, string $sourceStorage, string $targetStorageId, int $offset = 0): void
+    {
+        $now = date('Y-m-d H:i:s');
+
+        $this->insert(
+            array(
+                's_type'      => 'seed',
+                's_storage'   => $targetStorageId,
+                's_payload'   => json_encode(array(
+                    'op'     => $op,
+                    'source' => $sourceStorage,
+                    'offset' => $offset,
+                )),
+                's_status'    => 'pending',
+                'dt_next_run' => $now,
+                'dt_created'  => $now,
+            )
+        );
+    }
+
+    /**
      * Recover stale locks (a worker that died mid-job), then claim up to
      * $batch pending, due jobs under a fresh worker token.
      *
