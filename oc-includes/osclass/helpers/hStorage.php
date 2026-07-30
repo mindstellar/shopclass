@@ -34,14 +34,25 @@ StorageManager::instance()->boot();
 // Plugins are loaded after this file but before 'init' fires (which happens
 // once per request, from BaseModel::__construct), so this is the first safe
 // point for a plugin-provided adapter to register itself.
-osc_add_hook('init', static function () {
-    osc_run_hook('register_storage_adapters', StorageManager::instance());
-
-    // Bundled S3-compatible adapter: only registers when an install has
-    // filled in all four connection settings (there's no admin UI for these
-    // yet, so on a stock install this stays a no-op and behavior is
-    // unchanged).
+/**
+ * Register the bundled S3-compatible adapter from saved preferences, when an
+ * install has filled in all four connection settings. Idempotent and cheap —
+ * it returns immediately once the adapter is registered for this request, and
+ * register() keys by id — so it is safe to call from the `init` hook, from the
+ * upload hooks, and before the worker runs.
+ *
+ * Registering at the point of use (not only on `init`) is deliberate: the
+ * offload enqueue below decides whether to queue based on the registered
+ * remote, and an upload processed on a request where the `init` registration
+ * had not run would otherwise be dropped silently. On a stock install with no
+ * connection configured this stays a no-op and behaviour is unchanged.
+ */
+function osc_storage_register_remote()
+{
     if (!function_exists('osc_get_preference')) {
+        return;
+    }
+    if (StorageManager::instance()->adapter('s3') !== null) {
         return;
     }
 
@@ -65,33 +76,42 @@ osc_add_hook('init', static function () {
         'signed_urls' => osc_get_bool_preference('storage_s3_signed_urls', 'osclass'),
         'signed_ttl' => (int) (osc_get_preference('storage_s3_signed_ttl', 'osclass') ?: 900),
     ]));
+}
+
+osc_add_hook('init', static function () {
+    osc_run_hook('register_storage_adapters', StorageManager::instance());
+    osc_storage_register_remote();
 });
 
 // The worker self-exits instantly when the queue is empty, so running it on
-// every cron tick is cheap for installs that never queue a job.
+// every cron tick is cheap for installs that never queue a job. Register the
+// remote first so the worker can resolve the adapter regardless of the request
+// context it is triggered from (web cron vs. CLI).
 osc_add_hook('cron', static function () {
+    osc_storage_register_remote();
     \mindstellar\storage\StorageWorker::run();
 });
 
 // Queue a freshly uploaded resource for offload to the configured remote
 // adapter. No-op on installs that never configured one.
-osc_add_hook('uploaded_file', static function ($resource) {
+$oscStorageEnqueueOffload = static function ($resource) {
+    if (!is_array($resource) || empty($resource['pk_i_id'])) {
+        return;
+    }
+    // Make sure the configured remote is registered for THIS request before
+    // deciding whether to queue — the offload must not hinge on the init-time
+    // registration having run on the request that produced the upload.
+    osc_storage_register_remote();
     $remote = StorageManager::instance()->remote();
-    if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
+    if ($remote === null) {
         return;
     }
     StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
-});
+};
 
-// Same as above, for variants rewritten by the "regenerate images" admin
-// action.
-osc_add_hook('regenerated_image', static function ($resource) {
-    $remote = StorageManager::instance()->remote();
-    if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
-        return;
-    }
-    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
-});
+osc_add_hook('uploaded_file', $oscStorageEnqueueOffload);
+// Same, for variants rewritten by the "regenerate images" admin action.
+osc_add_hook('regenerated_image', $oscStorageEnqueueOffload);
 
 // Regenerating images needs a local source file to resize from. When the
 // resource lives on a remote adapter and local copies were removed

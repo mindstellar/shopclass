@@ -365,6 +365,32 @@ pin(
     $sorted($ids($legacyRevived->doSearch()))
 );
 
+/* ----------------------------------------------------------------------------
+ * Conditions added straight onto $this->dao — the legacy way a theme or plugin
+ * filters a search (a Manticore theme hydrating an id list via
+ * $oSearch->dao->where('... IN (...)'), for one). The builder no longer reads the
+ * dao on its own, so mergeDaoConditions() folds them back in; without it these
+ * were silently dropped and the search came back unfiltered.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: conditions added on $this->dao are honoured');
+
+$s = new Search();
+$s->dao->where(sprintf('%st_item.pk_i_id IN (%d, %d)', $prefix, $car1, $car3));
+pin(
+    'a raw dao->where() filters the result set',
+    $sorted(array($car1, $car3)),
+    $sorted($ids($s->doSearch()))
+);
+
+$s = new Search();
+$s->dao->where(sprintf('%st_item.pk_i_id IN (%d, %d, %d)', $prefix, $car1, $car2, $car3));
+$s->dao->orderBy(sprintf("FIND_IN_SET(%st_item.pk_i_id, '%d,%d,%d')", $prefix, $car3, $car1, $car2));
+pin(
+    'a raw dao->orderBy() decides the order — caller ordering is primary',
+    array($car3, $car1, $car2),
+    $ids($s->doSearch())
+);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

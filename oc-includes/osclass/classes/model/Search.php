@@ -772,6 +772,10 @@ class Search extends DAO
                 $this->addOrderBy($this->order_column, $this->order_direction);
                 $this->addLimit($this->limit_init, $this->results_per_page);
             }
+
+            // Fold in anything a caller added straight onto $this->dao (the legacy
+            // DBCommandClass API), which this builder no longer reads on its own.
+            $this->mergeDaoConditions($count);
         }
 
         $this->sql = $this->compileQuery();
@@ -1084,6 +1088,80 @@ class Search extends DAO
         }
 
         $this->qOrderBy[] = $orderby . $direction;
+    }
+
+    /**
+     * Bridge conditions added directly on $this->dao into the internal builder.
+     *
+     * Before this model assembled its own statement, callers filtered a search by
+     * calling $oSearch->dao->where()/orderBy()/select()/join()/having()/groupBy()
+     * and the dao compiled them in. The builder no longer touches $this->dao, so
+     * those clauses were being dropped — silently returning an unfiltered result
+     * (e.g. a theme hydrating a Manticore id list via dao->where('... IN (...)')).
+     * Fold them back in here so that contract keeps working.
+     *
+     * The dao's own first WHERE carries no boolean connector, so add one when it
+     * lands after clauses the model already built. ORDER BY goes to the FRONT so a
+     * caller ordering stays primary (a FIND_IN_SET() preserving an external rank
+     * must win over the model's default), and is skipped for a COUNT(*) wrap.
+     *
+     * @param bool $count
+     *
+     * @return void
+     */
+    private function mergeDaoConditions($count = false)
+    {
+        $dao = $this->dao;
+        if (!$dao instanceof DBCommandClass) {
+            return;
+        }
+
+        foreach ((array) $dao->aSelect as $s) {
+            $s = trim($s);
+            if ($s !== '') {
+                $this->qSelect[] = $s;
+            }
+        }
+        foreach ((array) $dao->aJoin as $j) {
+            $j = trim($j);
+            if ($j !== '') {
+                $this->qJoin[] = $j;
+            }
+        }
+        foreach ((array) $dao->aGroupby as $g) {
+            $g = trim($g);
+            if ($g !== '') {
+                $this->qGroupBy[] = $g;
+            }
+        }
+        foreach ((array) $dao->aHaving as $h) {
+            $h = trim($h);
+            if ($h !== '') {
+                $this->qHaving[] = $h;
+            }
+        }
+        foreach ((array) $dao->aWhere as $w) {
+            $w = trim($w);
+            if ($w === '') {
+                continue;
+            }
+            if (count($this->qWhere) > 0 && !preg_match('/^(AND|OR)\b/i', $w)) {
+                $w = 'AND ' . $w;
+            }
+            $this->qWhere[] = $w;
+        }
+        if (!$count) {
+            $daoOrder = array();
+            foreach ((array) $dao->aOrderby as $o) {
+                $o = trim($o);
+                if ($o !== '') {
+                    $daoOrder[] = $o;
+                }
+            }
+            if ($daoOrder !== array()) {
+                $this->qOrderBy = array_merge($daoOrder, $this->qOrderBy);
+            }
+        }
     }
 
     /**

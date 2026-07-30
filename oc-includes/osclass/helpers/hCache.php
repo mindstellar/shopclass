@@ -77,6 +77,41 @@ function osc_cache_stats()
 
 
 /**
+ * Atomically increment a numeric cache key, creating it at $initial on first
+ * sighting, and return the new value. This is what a lock-free hit counter needs:
+ * concurrent callers do not clobber one another the way a get()/set() would.
+ *
+ * The native atomic increment is probed with method_exists() rather than declared
+ * on iObject_Cache — a required interface method would fatal any third-party driver
+ * that implements the interface, exactly the reason osc_cache_stats() probes for
+ * statsData(). A driver without it degrades to a (non-atomic) get/set here.
+ *
+ * @param string $key
+ * @param int    $by
+ * @param int    $initial
+ * @param int    $expire
+ *
+ * @return int the new counter value
+ */
+function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
+{
+    $key  .= osc_current_user_locale();
+    $cache = Object_Cache_Factory::newInstance();
+
+    if (method_exists($cache, 'increment')) {
+        return (int)$cache->increment($key, $by, $initial, $expire);
+    }
+
+    $found = null;
+    $value = $cache->get($key, $found);
+    $value = ($found && is_numeric($value)) ? (int)$value + $by : $initial;
+    $cache->set($key, $value, $expire);
+
+    return $value;
+}
+
+
+/**
  * Initialize Cache factory instance using singleton
  */
 function osc_cache_init()

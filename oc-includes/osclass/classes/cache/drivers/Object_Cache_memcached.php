@@ -203,6 +203,46 @@ class Object_Cache_memcached implements iObject_Cache
     }
 
     /**
+     * Atomically increment a numeric key, creating it at $initial on first sighting.
+     *
+     * Unlike a get()/set() read-modify-write, concurrent callers do not clobber each
+     * other, which is what a hit counter needs. NOT the 4-arg
+     * Memcached::increment($key, $by, $initial, $expiry): its auto-create only works
+     * under the binary protocol, and the default ASCII protocol warns and returns
+     * false there. So: 2-arg increment (atomic), and on a miss add() the key at
+     * $initial. add() is create-only, so if a second caller raced us to create it our
+     * add fails and we increment once more — no count is lost.
+     *
+     * @param int|string $key
+     * @param int        $by
+     * @param int        $initial value to create the key at on first sighting
+     * @param int        $expire
+     *
+     * @return int the new counter value
+     */
+    public function increment($key, $by = 1, $initial = 0, $expire = 0)
+    {
+        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $mKey   = $this->_key($key);
+
+        $value = $this->memcached->increment($mKey, $by);
+        if (false === $value) {
+            if ($this->memcached->add($mKey, $initial, $expire)) {
+                $value = $initial;
+            } else {
+                $value = $this->memcached->increment($mKey, $by);
+                if (false === $value) {
+                    $value = $initial;
+                }
+            }
+        }
+
+        $this->cache[$key] = $value;
+
+        return $value;
+    }
+
+    /**
      * Echoes the stats of the caching.
      */
     public function stats()

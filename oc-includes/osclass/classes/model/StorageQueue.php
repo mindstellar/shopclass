@@ -71,9 +71,17 @@ class StorageQueue extends DAO
     {
         $now = date('Y-m-d H:i:s');
 
+        // s_owner_type / i_owner_id are the polymorphic discriminator. StorageWorker routes a
+        // job to the Resource (t_resource) model vs ItemResource (t_item_resource) purely on
+        // s_owner_type (resolveRow/updateStorage). Dropping them here sent every t_resource
+        // offload — user avatars via the uploaded_resource hook — to the item table, where the
+        // pk hits an unrelated item resource (or none): the avatar never flipped, and its
+        // freshly-uploaded object could even be queued for deletion.
         $payload = array(
             'pk_i_id'        => $snapshot['pk_i_id'] ?? null,
             'fk_i_item_id'   => $snapshot['fk_i_item_id'] ?? null,
+            's_owner_type'   => $snapshot['s_owner_type'] ?? null,
+            'i_owner_id'     => $snapshot['i_owner_id'] ?? null,
             's_path'         => $snapshot['s_path'] ?? null,
             's_extension'    => $snapshot['s_extension'] ?? null,
             's_content_type' => $snapshot['s_content_type'] ?? null,
@@ -88,6 +96,39 @@ class StorageQueue extends DAO
                 's_type'      => $type,
                 's_storage'   => $storageId,
                 's_payload'   => json_encode($payload),
+                's_status'    => 'pending',
+                'dt_next_run' => $now,
+                'dt_created'  => $now,
+            )
+        );
+    }
+
+    /**
+     * Queue a single "seed" job that the worker expands into per-resource jobs
+     * in the background. This keeps a bulk migration (offload/restore/adopt of
+     * a whole catalogue) off the admin request, which would otherwise run one
+     * INSERT per resource inline and time out at the web server on a large site.
+     * The worker pages through the resources on $sourceStorage from $offset and
+     * re-queues the seed until the catalogue is exhausted.
+     *
+     * @param string $op              adopt|offload|restore
+     * @param string $sourceStorage   storage id the resources currently live on
+     * @param string $targetStorageId storage id to migrate them to
+     * @param int    $offset          paging offset to resume from
+     */
+    public function enqueueSeed(string $op, string $sourceStorage, string $targetStorageId, int $offset = 0): void
+    {
+        $now = date('Y-m-d H:i:s');
+
+        $this->insert(
+            array(
+                's_type'      => 'seed',
+                's_storage'   => $targetStorageId,
+                's_payload'   => json_encode(array(
+                    'op'     => $op,
+                    'source' => $sourceStorage,
+                    'offset' => $offset,
+                )),
                 's_status'    => 'pending',
                 'dt_next_run' => $now,
                 'dt_created'  => $now,

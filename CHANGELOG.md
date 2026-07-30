@@ -79,6 +79,12 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - Item reporting is gate-able: an `item_mark` filter can veto a report and an `item_marked` action
   fires after it counts.
 - `osc_csrf_token_form()` helper, complementing `osc_csrf_token_url()`.
+- Images can be offered as friendly-named downloads. A new resource download endpoint serves a file
+  as `<owner-slug>-<id>.<ext>` (e.g. `red-toyota-corolla-4831.jpg`) instead of the id-based name it
+  is stored under, resolving the name from the owner — listing title, page title or user display
+  name — for listing images, page images, avatars and ownerless resources alike. Themes link to it
+  with `osc_resource_download_url()`; inline display is unchanged. A private (signed-URL) bucket
+  redirects to a short-lived signed URL rather than being proxied.
 
 ### Security
 
@@ -149,6 +155,15 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - Retired the unused `t_keywords` table, a legacy search index nothing populated or read. A
   migration drops it on upgrade.
 - Build toolchain moved from Grunt to `sass-embedded` + `esbuild` (`npm run build`).
+- The object cache gained an atomic `osc_cache_increment()` — native on the memcached and APCu
+  drivers, with a get/set fallback elsewhere — so a lock-free counter cannot clobber itself under
+  concurrent requests.
+- The retired APC object-cache driver was removed — APC was superseded by OPcache + APCu and is
+  absent on the PHP 8 floor, so it only ever fell through to the per-request default. An `OSC_CACHE`
+  naming an unknown driver now falls back to that default instead of erroring.
+- The render-time item view increment is wrapped in a `count_view_on_render` filter (default
+  unchanged), so a theme that counts views client-side (a beacon) can turn off render-time counting
+  without disabling the counter.
 
 ### Fixed
 
@@ -183,6 +198,22 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - Corrected an invalid `version` string in `composer.json` that broke every Composer command.
 - Item title sanitisation and locale handling in the Item model.
 - A 500 error on the update check (`check_version`).
+- Storage settings keep the S3 provider you selected. The provider dropdown was a display-only
+  prefill helper, so the form always reopened on "Amazon S3" no matter which backend was configured.
+- A provider that locks its region (Cloudflare R2's `auto`) no longer saves a blank region — the
+  field was rendered disabled, and browsers never submit a disabled field.
+- The "Better S3 plugin is active" storage warning reflects the plugin's real activation state,
+  not a leftover preference that persisted after the plugin was disabled.
+- Newly uploaded images are reliably queued for offload. The offload hook only queued when the S3
+  adapter happened to be registered on that request; the configured remote is now registered at the
+  point of use, so an upload is never silently left on local disk.
+- Reading an owner's resources no longer fatals when the object cache returns a non-array for the
+  key (a colliding or poisoned entry). `Resource::findByOwner()` treats anything that is not an
+  array as a cache miss and reads fresh, self-healing past a bad entry — this could otherwise halt a
+  bulk avatar migration or break any request that lists an owner's resources.
+- The canonical-host redirect (e.g. www → apex) no longer emits a malformed `Location: https://host:/…`
+  — a bare `:` with no port — on default-port requests. The port is appended only when it is a real,
+  non-default port for the scheme.
 
 Source: https://github.com/mindstellar/shopclass
 

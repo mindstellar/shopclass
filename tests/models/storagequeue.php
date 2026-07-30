@@ -22,11 +22,11 @@
  * never by trusting a method name or a comment. The quirks that matter, all
  * reproduced rather than fixed:
  *
- *  - Of the eight own methods only three carry SQL of their own. enqueue() (DAO
- *    insert), complete() (deleteByPrimaryKey) and fail() (findByPrimaryKey +
- *    updateByPrimaryKey) are pure delegation to inherited DAO base bodies, which
- *    are out of scope; their bodies stay byte-identical and are pinned as a
- *    regression guard.
+ *  - Of the nine own methods only three carry SQL of their own. enqueue() and
+ *    enqueueSeed() (DAO inserts), complete() (deleteByPrimaryKey) and fail()
+ *    (findByPrimaryKey + updateByPrimaryKey) are pure delegation to inherited DAO
+ *    base bodies, which are out of scope; their bodies stay byte-identical and
+ *    are pinned as a regression guard.
  *  - claim() is a three-statement sequence: a stale-lock recovery UPDATE, a
  *    conditional claim UPDATE that stamps a fresh unique worker token onto up to
  *    max(1,$batch) pending+due rows ORDER BY pk_i_id, then a SELECT of that
@@ -176,6 +176,11 @@ pin(
     'public enqueue(string $type, string $storageId, array $snapshot): void',
     harness_method_signature('StorageQueue', 'enqueue')
 );
+pin(
+    'enqueueSeed signature',
+    'public enqueueSeed(string $op, string $sourceStorage, string $targetStorageId, int $offset = 0): void',
+    harness_method_signature('StorageQueue', 'enqueueSeed')
+);
 pin('claim signature is unchanged', 'public claim(int $batch = 20): array', harness_method_signature('StorageQueue', 'claim'));
 pin('complete signature is unchanged', 'public complete(int $id): void', harness_method_signature('StorageQueue', 'complete'));
 pin('fail signature is unchanged', 'public fail(int $id, string $error): void', harness_method_signature('StorageQueue', 'fail'));
@@ -192,7 +197,7 @@ pin(
 
 pin(
     'the model exposes exactly these public+protected methods, nothing added or removed',
-    array('__construct', 'claim', 'complete', 'countByStatus', 'deadLetters', 'enqueue', 'fail', 'newInstance'),
+    array('__construct', 'claim', 'complete', 'countByStatus', 'deadLetters', 'enqueue', 'enqueueSeed', 'fail', 'newInstance'),
     (static function () {
         $names = array();
         foreach ((new ReflectionClass('StorageQueue'))->getMethods() as $m) {
@@ -221,6 +226,13 @@ $model->enqueue('offload', 's3', array(
 ));
 $model->enqueue('delete', 's3', array('pk_i_id' => 6, 'local' => 0));
 $model->enqueue('delete', 's3', array());
+$model->enqueue('offload', 's3', array(
+    'pk_i_id'      => 7,
+    's_owner_type' => 'user',
+    'i_owner_id'   => 42,
+    's_path'       => 'user/0/',
+    's_extension'  => 'jpg',
+));
 
 $rowOf = static function (int $id) use ($admin, $table): array {
     $res = $admin->query("SELECT * FROM $table WHERE pk_i_id = $id");
@@ -243,6 +255,8 @@ pin(
     array(
         'pk_i_id'        => 5,
         'fk_i_item_id'   => 9,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => 'p/',
         's_extension'    => 'jpg',
         's_content_type' => 'image/jpeg',
@@ -255,6 +269,8 @@ pin(
     array(
         'pk_i_id'        => 6,
         'fk_i_item_id'   => null,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => null,
         's_extension'    => null,
         's_content_type' => null,
@@ -268,6 +284,8 @@ pin(
     array(
         'pk_i_id'        => null,
         'fk_i_item_id'   => null,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => null,
         's_extension'    => null,
         's_content_type' => null,
@@ -275,9 +293,49 @@ pin(
     ),
     json_decode($rowOf(3)['s_payload'], true)
 );
+pin(
+    'an owner snapshot keeps s_owner_type / i_owner_id, so the worker routes it to t_resource (avatars) not t_item_resource',
+    array(
+        'pk_i_id'        => 7,
+        'fk_i_item_id'   => null,
+        's_owner_type'   => 'user',
+        'i_owner_id'     => 42,
+        's_path'         => 'user/0/',
+        's_extension'    => 'jpg',
+        's_content_type' => null,
+        's_storage'      => 's3',
+    ),
+    json_decode($rowOf(4)['s_payload'], true)
+);
 pin('enqueue returns void', null, $model->enqueue('delete', 'local', array('pk_i_id' => 1)));
 pin('enqueue costs a single query', 1, harness_query_count(static function () use ($model) {
     $model->enqueue('delete', 'local', array('pk_i_id' => 2));
+}));
+
+/* ----------------------------------------------------------------------------
+ * enqueueSeed() — queues one background "seed" the worker expands into
+ * per-resource jobs. Pure DAO insert, like enqueue().
+ * ------------------------------------------------------------------------- */
+harness_section('StorageQueue::enqueueSeed');
+
+$truncate();
+$model->enqueueSeed('adopt', 'local', 's3', 0);
+$model->enqueueSeed('offload', 'local', 's3');
+
+$s1 = $rowOf(1);
+pin('a seed is typed "seed"', 'seed', $s1['s_type']);
+pin('the seed carries the target storage id', 's3', $s1['s_storage']);
+pin('a fresh seed starts pending', 'pending', $s1['s_status']);
+pin('dt_next_run and dt_created are stamped together', $s1['dt_created'], $s1['dt_next_run']);
+pin(
+    'the payload carries the op, source storage and paging offset',
+    array('op' => 'adopt', 'source' => 'local', 'offset' => 0),
+    json_decode($s1['s_payload'], true)
+);
+pin('the offset defaults to zero', 0, json_decode($rowOf(2)['s_payload'], true)['offset']);
+pin('enqueueSeed returns void', null, $model->enqueueSeed('adopt', 'local', 's3', 5));
+pin('enqueueSeed costs a single query', 1, harness_query_count(static function () use ($model) {
+    $model->enqueueSeed('adopt', 'local', 's3', 10);
 }));
 
 /* ----------------------------------------------------------------------------

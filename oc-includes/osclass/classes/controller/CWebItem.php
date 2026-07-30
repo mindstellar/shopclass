@@ -726,11 +726,15 @@ class CWebItem extends BaseModel
                     }
                 }
 
-                // Neither the admin nor the listing's own owner counts as a view.
+                // Neither the admin nor the listing's own owner counts as a view. The final
+                // gate is filterable ('count_view_on_render') so a theme that counts views
+                // client-side — e.g. a pixel/beacon, which stays accurate when the item page
+                // is served from a full-page cache and PHP never runs — can switch off this
+                // render-time increment without also disabling the counter itself.
                 if (!osc_is_admin_user_logged_in()
                     && !($item['fk_i_user_id'] != ''
                         && $item['fk_i_user_id'] == osc_logged_user_id())
-                    && osc_request_counts_as_view()
+                    && osc_apply_filter('count_view_on_render', osc_request_counts_as_view(), $item)
                 ) {
                     ItemStats::newInstance()->increase('i_num_views', $item['pk_i_id']);
                 }

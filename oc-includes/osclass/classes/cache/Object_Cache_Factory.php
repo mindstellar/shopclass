@@ -44,20 +44,28 @@ class Object_Cache_Factory
 
             $cache_class = 'Object_Cache_' . $cache;
 
-            if (class_exists($cache_class, true)) {
-                // all correct ?
-                if (call_user_func(array($cache_class, 'is_supported'))) {
-                    self::$instance = new $cache_class();
-                } else {
-                    self::$instance = new Object_Cache_default();
-                    trigger_error('Cache ' . $cache . ' NOT SUPPORTED - loaded Object_Cache_default cache',
-                        E_USER_NOTICE);
-                }
+            // An OSC_CACHE naming a driver we no longer ship (e.g. the retired
+            // 'apc') or a plain typo falls back to the per-request default rather
+            // than fataling the whole site. Tools > System info surfaces the
+            // mismatch so the misconfiguration is not silent.
+            if (!class_exists($cache_class, true)) {
+                self::$instance = new Object_Cache_default();
+                trigger_error('Cache ' . $cache . ' UNKNOWN - loaded Object_Cache_default cache',
+                    E_USER_NOTICE);
 
                 return self::$instance;
             }
 
-            throw new RuntimeException('Unknown cache');
+            // all correct ?
+            if (call_user_func(array($cache_class, 'is_supported'))) {
+                self::$instance = new $cache_class();
+            } else {
+                self::$instance = new Object_Cache_default();
+                trigger_error('Cache ' . $cache . ' NOT SUPPORTED - loaded Object_Cache_default cache',
+                    E_USER_NOTICE);
+            }
+
+            return self::$instance;
         }
 
         return self::$instance;
