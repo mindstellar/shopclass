@@ -149,6 +149,9 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - Retired the unused `t_keywords` table, a legacy search index nothing populated or read. A
   migration drops it on upgrade.
 - Build toolchain moved from Grunt to `sass-embedded` + `esbuild` (`npm run build`).
+- The object cache gained an atomic `osc_cache_increment()` — native on the memcached and APCu
+  drivers, with a get/set fallback elsewhere — so a lock-free counter cannot clobber itself under
+  concurrent requests.
 
 ### Fixed
 
@@ -183,6 +186,15 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - Corrected an invalid `version` string in `composer.json` that broke every Composer command.
 - Item title sanitisation and locale handling in the Item model.
 - A 500 error on the update check (`check_version`).
+- Storage settings keep the S3 provider you selected. The provider dropdown was a display-only
+  prefill helper, so the form always reopened on "Amazon S3" no matter which backend was configured.
+- A provider that locks its region (Cloudflare R2's `auto`) no longer saves a blank region — the
+  field was rendered disabled, and browsers never submit a disabled field.
+- The "Better S3 plugin is active" storage warning reflects the plugin's real activation state,
+  not a leftover preference that persisted after the plugin was disabled.
+- Newly uploaded images are reliably queued for offload. The offload hook only queued when the S3
+  adapter happened to be registered on that request; the configured remote is now registered at the
+  point of use, so an upload is never silently left on local disk.
 
 Source: https://github.com/mindstellar/shopclass
 
