@@ -261,7 +261,7 @@ function osc_category_slug($locale = '')
  */
 function osc_category_price_enabled()
 {
-    return (boolean)osc_category_field('b_price_enabled');
+    return (bool)osc_category_field('b_price_enabled');
 }
 
 

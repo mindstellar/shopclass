@@ -42,7 +42,7 @@ class FieldForm extends Form
      */
     private $activeUserLocale;
 
-    public function __construct(Escape $escape = null, Sanitize $sanitize = null)
+    public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         $this->adminLocales = osc_get_admin_locales();
         $this->activeAdminLocale = osc_current_admin_locale();
@@ -826,7 +826,7 @@ class FieldForm extends Form
      * @param                                   $locale
      * @param array                             $field
      */
-    private function printFieldTitle($locale, array $field = null)
+    private function printFieldTitle($locale, ?array $field = null)
     {
         $fieldTitleInputName         = 'meta_s_name' . '[' . $locale['pk_c_code'] . ']';
         $valueTitleInput        = $field['locale'][$locale['pk_c_code']]['s_name'] ?? '';

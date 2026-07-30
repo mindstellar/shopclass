@@ -685,7 +685,7 @@ class FileSystem
      *
      * @return array
      */
-    public function rSearch(string $root_dir, string $pattern = null, bool $follow_symlinks = false)
+    public function rSearch(string $root_dir, ?string $pattern = null, bool $follow_symlinks = false)
     {
         $dirIterator = new RecursiveDirectoryIterator($root_dir, RecursiveDirectoryIterator::SKIP_DOTS);
 

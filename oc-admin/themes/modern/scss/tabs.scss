@@ -1,0 +1,21 @@
+// Tabs — the admin's vanilla tab strip (oscInitTabs() in ui-osc.js).
+//
+// The `.ui-osc-tabs` / `.ui-tabs-nav` / `.ui-tabs-active` / `.ui-state-active` class names
+// are inherited from the jQuery-UI widget this replaced. The widget is gone; the names stay
+// because the admin's own templates and JS still emit them.
+
+.ui-osc-tabs {
+  border: 0;
+  padding: 0;
+}
+
+.ui-osc-tabs .ui-tabs-nav {
+  border: 0;
+  border-bottom: solid 1px var(--osc-bench-sunk);
+  @include rounded-corners(4px 4px 0 0);
+  padding: 4px 5px 0;
+}
+
+.ui-osc-tabs .ui-tabs-nav li {
+  float: inline-end;
+}

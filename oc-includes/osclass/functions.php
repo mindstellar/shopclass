@@ -841,7 +841,7 @@ function osc_item_tinymce_header()
 /**
  * Load the shared oscAutocomplete combobox on the public item form (publish/edit),
  * where ItemForm::location_javascript_new() drives the location fields with it. It
- * replaces a jQuery-UI widget, so jQuery stays merely registered, never enqueued.
+ * replaces a jQuery-UI widget and pulls in no jQuery of its own.
  * (The photo uploader self-enqueues from ItemForm::ajax_photos when it renders.)
  */
 function osc_ui_common_header()

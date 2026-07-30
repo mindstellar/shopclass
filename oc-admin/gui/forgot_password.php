@@ -25,7 +25,7 @@ if (!defined('ABS_PATH')) {
         <div class="form-floating mb-3">
             <input id="new_password" type="password" name="new_password" class="form-control"
                    placeholder="<?php _e('New password'); ?>"
-                   autocomplete="off">
+                   autocomplete="off" autofocus>
             <label for="user_pass"><?php _e('New password'); ?></label>
         </div>
         <div class="form-floating mb-3">
@@ -45,14 +45,3 @@ if (!defined('ABS_PATH')) {
     <p id="nav">
         <a title="<?php _e('Log in'); ?>" href="<?php echo osc_admin_base_url(); ?>"><?php _e('Log in'); ?></a>
     </p>
-<?php $login_js = static function () { ?>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $(".ico-close").click(function () {
-                $(this).parent().hide();
-            });
-            $("#new_password").focus();
-        });
-    </script>
-<?php };
-osc_add_hook('admin_login_footer', $login_js); ?>

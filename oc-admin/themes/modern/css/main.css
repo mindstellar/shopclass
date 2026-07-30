@@ -12744,15 +12744,6 @@ ul.showing-results {
   *margin-top: -27px;
 }
 
-.ui-autocomplete-loading {
-  background: var(--osc-bench) url("../images/loading.gif") right center no-repeat;
-  display: block;
-}
-
-ul.ui-autocomplete.ui-menu {
-  z-index: 1060;
-}
-
 .btn-disabled {
   filter: alpha(opacity=70);
   opacity: 0.7;
@@ -17452,90 +17443,6 @@ form h3, form .h3 {
 
 .ui-osc-tabs .ui-tabs-nav li {
   float: inline-end;
-}
-
-.ui-dialog {
-  background: var(--osc-bench-warm);
-  border: 0;
-  padding: 5px;
-  border-radius: 4px;
-}
-
-.ui-dialog .ui-dialog-titlebar {
-  border: none;
-  color: var(--osc-ink);
-  font-size: 18px;
-  margin: 0;
-  padding: 7px 5px;
-  position: relative;
-  border-start-start-radius: 4px;
-  border-start-end-radius: 4px;
-  border-end-end-radius: 0;
-  border-end-start-radius: 0;
-  border-start-start-radius: 4px;
-  border-start-end-radius: 4px;
-  border-end-end-radius: 0;
-  border-end-start-radius: 0;
-}
-
-.ui-dialog .ui-dialog-title {
-  font-size: 18px;
-  font-weight: normal;
-  margin: 0;
-}
-
-.ui-dialog .ui-dialog-content {
-  background: var(--osc-bench);
-  padding: 15px;
-  border-start-start-radius: 0;
-  border-start-end-radius: 0;
-  border-end-end-radius: 4px;
-  border-end-start-radius: 4px;
-  position: relative;
-}
-
-.ui-dialog .form-actions {
-  border-start-start-radius: 0;
-  border-start-end-radius: 0;
-  border-end-end-radius: 4px;
-  border-end-start-radius: 4px;
-  bottom: 0;
-  inset-inline-start: 0;
-  margin-bottom: 0;
-  padding: 0;
-  position: absolute;
-  width: 100%;
-}
-
-.ui-dialog .form-actions .wrapper {
-  border-radius: none;
-}
-
-.ui-dialog .btn a {
-  color: var(--osc-ink-inverse);
-}
-
-.ui-dialog .has-form-actions {
-  padding-bottom: 85px !important;
-  position: relative;
-}
-
-.osc-modal-content-market img {
-  border: solid 2px var(--osc-bench-warm);
-  float: inline-start;
-  margin-inline-end: 20px;
-  max-height: 106px;
-  border-radius: 4px;
-}
-
-.osc-modal-content-market .table {
-  float: inline-start;
-  width: 300px;
-}
-
-.osc-modal-content-market .form-row .market-data {
-  display: block;
-  padding-inline-start: 100px;
 }
 
 .plugin-support-icon {

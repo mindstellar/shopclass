@@ -42,8 +42,25 @@ if (!defined('ABS_PATH')) {
             </div>
             <?php require_once osc_admin_base_path() . View::newInstance()->_get('login_admin_form'); ?>
         </div>
-        <script type="text/javascript" src="<?php echo osc_assets_url('jquery/jquery.min.js'); ?>"></script>
         <script type="text/javascript" src="<?php echo osc_assets_url('bootstrap/bootstrap.min.js'); ?>"></script>
+        <script type="text/javascript">
+            // The login shell renders its flash message as `.alert` (see the
+            // osc_show_flash_message call above), not `.flashmessage`, so the admin theme's
+            // own dismissal handler does not cover it — and the theme's JS is not loaded
+            // here anyway. Delegated from the document so a plugin rendering its own
+            // dismissible box into the login page gets the behaviour for free.
+            document.addEventListener('click', function (e) {
+                var close = e.target.closest ? e.target.closest('.ico-close') : null;
+                if (!close) {
+                    return;
+                }
+                e.preventDefault();
+                var box = close.closest('.alert') || close.parentElement;
+                if (box) {
+                    box.style.display = 'none';
+                }
+            });
+        </script>
         <?php osc_run_hook('admin_login_footer'); ?>
     </div>
 </div>

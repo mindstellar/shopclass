@@ -1887,14 +1887,14 @@ class Search extends DAO
                 $matches
             )
             ) {
-                $aData['price_min'] = ((double)$matches[2] / 1000000);
+                $aData['price_min'] = ((float)$matches[2] / 1000000);
             } elseif (preg_match(
                 '/(' . DB_TABLE_PREFIX . 't_item\.)?i_price <= (.*)/',
                 $condition,
                 $matches
             )
             ) {
-                $aData['price_max'] = ((double)$matches[2] / 1000000);
+                $aData['price_max'] = ((float)$matches[2] / 1000000);
             } elseif (preg_match_all(
                 '/(' . DB_TABLE_PREFIX
                 . 't_item_location.s_city_area\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'\s*)/u',
