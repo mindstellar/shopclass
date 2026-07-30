@@ -228,6 +228,48 @@ pin('one countByIp() call costs one query', 1, harness_query_count(static functi
 }));
 
 /* ----------------------------------------------------------------------------
+ * The per-account limit is excused by a solved captcha, and by nothing else.
+ *
+ * evaluate() used to infer this from osc_captcha_enabled() -- a global setting
+ * standing in for a per-request fact. The recovery form rendered no captcha on a
+ * fresh session, so with a provider merely configured it lost the per-account
+ * limit for a captcha nobody solved. The caller states it now, and the default is
+ * false so a call site that says nothing keeps the limit. These pin all three.
+ *
+ * No REMOTE_ADDR under CLI, so ip() is '' and the address counter is skipped --
+ * what these exercise is the account counter on its own.
+ * ------------------------------------------------------------------------- */
+harness_section('LoginThrottle: the captcha exemption');
+
+$truncate();
+for ($i = 0; $i < 10; $i++) {           // osc_login_throttle_max_account() default
+    $seed('web-recover', 'victim@example.com', '203.0.113.50', $at(60));
+}
+
+pin(
+    'over the account limit, an unsolved captcha blocks',
+    'blocked',
+    \mindstellar\security\LoginThrottle::evaluate('web-recover', 'victim@example.com', false)['status']
+);
+pin(
+    'over the account limit, a solved captcha is let through',
+    'ok',
+    \mindstellar\security\LoginThrottle::evaluate('web-recover', 'victim@example.com', true)['status']
+);
+pin(
+    'omitting the argument keeps the limit rather than excusing it',
+    'blocked',
+    \mindstellar\security\LoginThrottle::evaluate('web-recover', 'victim@example.com')['status']
+);
+
+$truncate();
+pin(
+    'under the limit, a solved captcha is irrelevant',
+    'ok',
+    \mindstellar\security\LoginThrottle::evaluate('web-recover', 'victim@example.com', false)['status']
+);
+
+/* ----------------------------------------------------------------------------
  * LoginThrottle fails open when the ledger is missing.
  *
  * Not a model pin, but it belongs with this table: t_login_attempt arrives with

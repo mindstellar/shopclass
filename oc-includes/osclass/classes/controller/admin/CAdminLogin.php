@@ -68,7 +68,7 @@ class CAdminLogin extends AdminBaseModel
                 // fields are not empty
                 // Before the account is looked up and before any password is
                 // hashed, so that a refused attempt costs neither.
-                $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParam('user'));
+                $throttle = \mindstellar\security\LoginThrottle::evaluate('admin', Params::getParam('user'), osc_captcha_enabled());
                 if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
                     osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
@@ -176,7 +176,7 @@ class CAdminLogin extends AdminBaseModel
                 // owns is the abuse being bounded here, and that only happens
                 // when the address does match.
                 $recoverAccount = trim((string)Params::getParam('email'));
-                $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount);
+                $throttle       = \mindstellar\security\LoginThrottle::evaluate('admin-recover', $recoverAccount, osc_captcha_enabled());
                 if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
                     osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');

@@ -62,7 +62,7 @@ class CWebLogin extends BaseModel
 
                 // Before the account is looked up and before any password is
                 // hashed, so that a refused attempt costs neither.
-                $throttle = \mindstellar\security\LoginThrottle::evaluate('web', $email);
+                $throttle = \mindstellar\security\LoginThrottle::evaluate('web', $email, osc_captcha_enabled());
                 if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
                     osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
                     $this->redirectTo(osc_user_login_url());
@@ -268,7 +268,7 @@ class CWebLogin extends BaseModel
                 // owns is the abuse being bounded here, and that only happens
                 // when the address does match.
                 $recoverAccount = trim((string)Params::getParam('s_email'));
-                $throttle       = \mindstellar\security\LoginThrottle::evaluate('web-recover', $recoverAccount);
+                $throttle       = \mindstellar\security\LoginThrottle::evaluate('web-recover', $recoverAccount, osc_captcha_enabled());
                 if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
                     osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
                     $this->redirectTo(osc_recover_user_password_url());

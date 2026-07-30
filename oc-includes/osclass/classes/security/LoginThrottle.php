@@ -27,19 +27,23 @@ use Params;
  *   by address  every failure from one IP, whichever account it aimed at.
  *               Over the limit blocks that address outright.
  *   by account  every failure against one submitted name, from wherever.
- *               Over the limit blocks, unless a captcha provider is configured.
+ *               Over the limit blocks, unless the caller solved a captcha.
  *
  * The account counter is what catches guessing spread across many addresses,
  * which the address counter cannot see. It also means an attacker can hold a
  * named account shut for the length of the window, so the window is short and
  * lifts on its own.
  *
- * That is why a configured captcha excuses the account limit. Both sign-in
- * forms already demand a captcha on every attempt when a provider is set, so an
- * attempt that reaches this point has solved one; the guess rate is bounded
- * already, and blocking as well would only hand an attacker a way to shut a
- * named account without getting past the captcha themselves. Where no provider
- * is configured there is nothing bounding the rate, so the block stands.
+ * That is why a solved captcha excuses the account limit: the guess rate is
+ * bounded already, and blocking as well would only hand an attacker a way to
+ * shut a named account without getting past the captcha themselves. With
+ * nothing bounding the rate the block stands.
+ *
+ * The caller states whether one was solved -- evaluate() does not infer it.
+ * Inferring it from "a provider is configured" is what let the recovery form
+ * lose its per-account limit for a captcha it had not rendered: a global setting
+ * cannot answer a per-request question. The parameter defaults to false so a
+ * call site that says nothing keeps the limit.
  *
  * Failures are recorded against the name as submitted whether or not it matches
  * anything. That keeps the limiter from becoming the account oracle that was
@@ -61,15 +65,18 @@ class LoginThrottle
     /**
      * Decide what to do with an attempt, before any password is checked.
      *
-     * Call it after the form's own captcha check, so that a configured captcha
-     * has already been solved by the time the account limit is considered.
+     * Call it after the form's own captcha check, and pass whether that check
+     * actually cleared a captcha on this request.
      *
-     * @param string $context 'web' or 'admin'
-     * @param string $account identifier as submitted
+     * @param string $context       'web' or 'admin'
+     * @param string $account       identifier as submitted
+     * @param bool   $captchaSolved true only when this request presented a
+     *                              captcha and it verified. Excuses the
+     *                              per-account limit; see the class comment.
      *
      * @return array{status:string,retry_after:int} retry_after is seconds, 0 when not blocked
      */
-    public static function evaluate($context, $account)
+    public static function evaluate($context, $account, $captchaSolved = false)
     {
         $pass = array('status' => self::OK, 'retry_after' => 0);
 
@@ -93,7 +100,7 @@ class LoginThrottle
             }
 
             if ($account !== ''
-                && !osc_captcha_enabled()
+                && !$captchaSolved
                 && $model->countByAccount($context, $account, $since) >= osc_login_throttle_max_account()
             ) {
                 return array(
