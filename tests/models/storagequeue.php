@@ -226,6 +226,13 @@ $model->enqueue('offload', 's3', array(
 ));
 $model->enqueue('delete', 's3', array('pk_i_id' => 6, 'local' => 0));
 $model->enqueue('delete', 's3', array());
+$model->enqueue('offload', 's3', array(
+    'pk_i_id'      => 7,
+    's_owner_type' => 'user',
+    'i_owner_id'   => 42,
+    's_path'       => 'user/0/',
+    's_extension'  => 'jpg',
+));
 
 $rowOf = static function (int $id) use ($admin, $table): array {
     $res = $admin->query("SELECT * FROM $table WHERE pk_i_id = $id");
@@ -248,6 +255,8 @@ pin(
     array(
         'pk_i_id'        => 5,
         'fk_i_item_id'   => 9,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => 'p/',
         's_extension'    => 'jpg',
         's_content_type' => 'image/jpeg',
@@ -260,6 +269,8 @@ pin(
     array(
         'pk_i_id'        => 6,
         'fk_i_item_id'   => null,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => null,
         's_extension'    => null,
         's_content_type' => null,
@@ -273,12 +284,28 @@ pin(
     array(
         'pk_i_id'        => null,
         'fk_i_item_id'   => null,
+        's_owner_type'   => null,
+        'i_owner_id'     => null,
         's_path'         => null,
         's_extension'    => null,
         's_content_type' => null,
         's_storage'      => 's3',
     ),
     json_decode($rowOf(3)['s_payload'], true)
+);
+pin(
+    'an owner snapshot keeps s_owner_type / i_owner_id, so the worker routes it to t_resource (avatars) not t_item_resource',
+    array(
+        'pk_i_id'        => 7,
+        'fk_i_item_id'   => null,
+        's_owner_type'   => 'user',
+        'i_owner_id'     => 42,
+        's_path'         => 'user/0/',
+        's_extension'    => 'jpg',
+        's_content_type' => null,
+        's_storage'      => 's3',
+    ),
+    json_decode($rowOf(4)['s_payload'], true)
 );
 pin('enqueue returns void', null, $model->enqueue('delete', 'local', array('pk_i_id' => 1)));
 pin('enqueue costs a single query', 1, harness_query_count(static function () use ($model) {
