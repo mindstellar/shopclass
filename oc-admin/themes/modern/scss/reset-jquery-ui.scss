@@ -1,3 +1,9 @@
+// Branding for jQuery-UI-generated markup. Core no longer loads jQuery UI — the tab strip
+// and the autocomplete are vanilla now, and `.ui-osc-tabs` / `.ui-tabs-*` are kept only
+// because plugins emit those class names. The `.ui-dialog` rules below still matter: a
+// plugin that enqueues jquery-ui itself and calls .dialog() gets this markup at runtime,
+// and without these it falls back to stock jQuery UI grey instead of the admin's palette.
+
 .ui-osc-tabs {
   border: 0;
   padding: 0;
@@ -66,22 +72,4 @@
 .ui-dialog .has-form-actions {
   padding-bottom: 85px !important;
   position: relative;
-}
-
-.osc-modal-content-market img {
-  border: solid 2px var(--osc-bench-warm);
-  float: inline-start;
-  margin-inline-end: 20px;
-  max-height: 106px;
-  @include rounded-corners;
-}
-
-.osc-modal-content-market .table {
-  float: inline-start;
-  width: 300px;
-}
-
-.osc-modal-content-market .form-row .market-data {
-  display: block;
-  padding-inline-start: 100px;
 }

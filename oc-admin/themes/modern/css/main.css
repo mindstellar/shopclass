@@ -17520,24 +17520,6 @@ form h3, form .h3 {
   position: relative;
 }
 
-.osc-modal-content-market img {
-  border: solid 2px var(--osc-bench-warm);
-  float: inline-start;
-  margin-inline-end: 20px;
-  max-height: 106px;
-  border-radius: 4px;
-}
-
-.osc-modal-content-market .table {
-  float: inline-start;
-  width: 300px;
-}
-
-.osc-modal-content-market .form-row .market-data {
-  display: block;
-  padding-inline-start: 100px;
-}
-
 .plugin-support-icon {
   margin: 5px;
 }

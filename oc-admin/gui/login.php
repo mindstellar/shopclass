@@ -72,12 +72,3 @@ if (!defined('ABS_PATH')) {
             <i class="text-dark bi bi-arrow-left"></i> <?php printf(__('Back to %s'), osc_page_title()); ?></a>
     </div>
 </form>
-<?php $login_js = static function () { ?><script type="text/javascript">
-    $(document).ready(function () {
-        $(".ico-close").click(function () {
-            $(this).parent().hide();
-        });
-    });
-</script>
-<?php };
-osc_add_hook('admin_login_footer', $login_js); ?>

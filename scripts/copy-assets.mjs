@@ -27,7 +27,6 @@ const TARGETS = [
   { dest: `${ASSETS}/jquery-treeview`, flatten: true, src: ['jquery-treeview/jquery.treeview.js'] },
   { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/dist/additional-methods.min.js', 'jquery-validation/LICENSE.md'] },
   { dest: `${ASSETS}/jquery-ui-nested`, flatten: true, src: ['jquery-ui-nested/jquery-ui-nested.js'] },
-  { dest: `${ASSETS}/spectrum-colorpicker`, flatten: true, src: ['spectrum-colorpicker/spectrum.js', 'spectrum-colorpicker/spectrum.css', 'spectrum-colorpicker/LICENSE'] },
   { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/css/bootstrap.min.*', 'bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
   { dest: `${ASSETS}/chart-js`, flatten: true, src: ['chart.js/dist/chart.min.js', 'chart.js/LICENSE.md'] },

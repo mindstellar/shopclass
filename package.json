@@ -40,7 +40,6 @@
     "npm-font-open-sans": "^1.1.0",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
     "sortablejs": "^1.15.7",
-    "spectrum-colorpicker": "^1.8.1",
     "tinymce": "^7.7.0"
   }
 }
