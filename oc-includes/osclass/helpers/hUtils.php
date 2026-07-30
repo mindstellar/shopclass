@@ -116,8 +116,12 @@ function osc_show_widgets_by_description($description)
 
 
 /**
- * Print recaptcha html, if $section = "recover_password"
- * set 'recover_time' at session.
+ * Print recaptcha html.
+ *
+ * The 'recover_password' section only shows a captcha when a recovery attempt was made in
+ * the last 20 minutes; otherwise it records that none was rendered, so
+ * UserActions::recover_password() knows not to validate one. A first visit to the form
+ * therefore gets no captcha.
  *
  * @param string $section
  *
@@ -129,7 +133,9 @@ function osc_show_recaptcha($section = '')
         switch ($section) {
             case ('recover_password'):
                 Session::newInstance()->_set('recover_captcha_not_set', 0);
-                $time = Session::newInstance()->_get('recover_time');
+                // Cast: 'recover_time' is only set by the POST action, and Session::_get()
+                // returns '' for a missing key — subtracting that is a TypeError on PHP 8.
+                $time = (int)Session::newInstance()->_get('recover_time');
                 if ((time() - $time) <= 1200) {
                     echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
                 } else {
