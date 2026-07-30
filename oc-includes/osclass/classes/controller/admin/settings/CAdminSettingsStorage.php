@@ -243,6 +243,14 @@ class CAdminSettingsStorage extends AdminSecBaseModel
         $batch = 500;
 
         while (true) {
+            // Reset the request's time budget before each page. Seeding a large
+            // catalog is many cheap INSERTs, but on a big enough library the loop
+            // can outrun max_execution_time; without this a run dies part-way and
+            // leaves only some rows queued. Re-running is safe (the worker's
+            // handlers are idempotent, so a duplicate job is a no-op), but a
+            // completed run is friendlier than one the admin has to repeat.
+            @set_time_limit(0);
+
             $rows = $model->getResourcesBatchByStorage($sourceStorage, $offset, $batch);
             if (empty($rows)) {
                 break;
