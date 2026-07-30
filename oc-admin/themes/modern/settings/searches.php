@@ -79,7 +79,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -172,6 +172,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php printf(
                                     __('Store %s queries'),
                                     '<input name="custom_queries" id="custom_queries" type="number" class="input-medium" '
+                                    . 'style="width:6rem;display:inline-block" '
                                     . (!in_array(
                                         osc_purge_latest_searches(),
                                         array('hour', 'day', 'week', 'forever', '1000')

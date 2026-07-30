@@ -26,7 +26,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
     </h1>
     <?php
 }
@@ -105,6 +105,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         __('Are you sure you want to %s the selected items?'),
                         strtolower(__('Delete'))
                     ); ?>"><?php _e('Delete'); ?></option>
+                    <option value="clear_reports_all" data-dialog-content="<?php _e('Are you sure you want to clear the deduplicated reports (and all reportings) of the selected items? This also resets their report-threshold auto-block state.'); ?>"><?php _e('Clear reports'); ?></option>
                     <option value="clear_all" data-dialog-content="<?php _e('Are you sure you want to clear all the reportings of the selected items?'); ?>"><?php _e('Clear All'); ?></option>
                     <option value="clear_spam_all" data-dialog-content="<?php _e('Are you sure you want to clear the spam reportings of the selected items?'); ?>"><?php _e('Clear Spam'); ?></option>
                     <option value="clear_bad_all" data-dialog-content="<?php _e('Are you sure you want to clear the misclassified reportings of the selected items?'); ?>"><?php _e('Clear Missclassified'); ?></option>
@@ -143,7 +144,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <?php } ?>
                     <?php } else { ?>
                         <tr>
-                            <td colspan="10" class="text-center">
+                            <td colspan="<?php echo count($columns); ?>" class="text-center">
                                 <p><?php _e('No data available in table'); ?></p>
                             </td>
                         </tr>

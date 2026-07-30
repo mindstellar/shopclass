@@ -29,7 +29,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -67,11 +67,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php if (count($aData['aaData']) > 0) { ?>
                 <?php foreach ($aData['aaData'] as $array) { ?>
                     <tr>
-                        <?php foreach ($array as $key => $value) { ?>
-                            <td data-col-name="<?php echo ucfirst($key); ?>">
-                                <?php echo $value; ?>
-                            </td>
-                        <?php } ?>
+                        <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
+                            <?php echo $array[0]; ?>
+                        </td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Title')); ?>">
+                            <?php echo $array[1]; ?>
+                        </td>
                     </tr>
                 <?php } ?>
             <?php } else { ?>

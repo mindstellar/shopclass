@@ -118,7 +118,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                         array('pk_c_code' => Params::getParam('country_code'))
                     );
 
-                    if ($ok) {
+                    // Affected rows, false only on error: re-saving a country with the
+                    // same name changes nothing and must not read as a failure.
+                    if ($ok !== false) {
                         osc_add_flash_ok_message(_m('Country has been edited'), 'admin');
                     } else {
                         osc_add_flash_error_message(

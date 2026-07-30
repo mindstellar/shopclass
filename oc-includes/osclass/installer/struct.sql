@@ -1,4 +1,4 @@
-SET NAMES 'UTF8';
+SET NAMES 'utf8mb4';
 
 CREATE TABLE /*TABLE_PREFIX*/t_locale (
     pk_c_code CHAR(5) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_locale (
 
         PRIMARY KEY (pk_c_code),
         UNIQUE KEY (s_short_name)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_country (
     pk_c_code CHAR(2) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_country (
         PRIMARY KEY (pk_c_code),
         INDEX idx_s_slug (s_slug),
         INDEX idx_s_name (s_name)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_currency (
     pk_c_code CHAR(3) NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_currency (
 
         PRIMARY KEY (pk_c_code),
         UNIQUE KEY (s_name)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_region (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -54,7 +54,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 
 CREATE TABLE /*TABLE_PREFIX*/t_city (
@@ -71,7 +71,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
         INDEX idx_s_slug (s_slug),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_area (
     pk_i_id INT UNSIGNED NOT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city_area (
         INDEX fk_i_city_id (fk_i_city_id),
         INDEX idx_s_name (s_name),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_widget (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -90,9 +90,12 @@ CREATE TABLE /*TABLE_PREFIX*/t_widget (
     s_location VARCHAR(40) NOT NULL,
     e_kind ENUM('TEXT', 'HTML') NOT NULL,
     s_content MEDIUMTEXT NOT NULL,
+    i_order INT NOT NULL DEFAULT 0,
+    s_type VARCHAR(60) NULL,
+    s_config TEXT NULL,
 
         PRIMARY KEY (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_admin (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -106,7 +109,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY (s_username),
         UNIQUE KEY (s_email)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_user (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -151,7 +154,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
         FOREIGN KEY (fk_i_city_area_id) REFERENCES /*TABLE_PREFIX*/t_city_area (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_user_description (
     fk_i_user_id INT UNSIGNED NOT NULL,
@@ -161,7 +164,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_description (
         PRIMARY KEY (fk_i_user_id, fk_c_locale_code),
         FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id),
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
     fk_i_user_id INT UNSIGNED NOT NULL,
@@ -170,7 +173,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
 
         PRIMARY KEY (fk_i_user_id),
         FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -185,7 +188,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category (
         INDEX fk_i_parent_id (fk_i_parent_id),
         INDEX i_position (i_position),
         FOREIGN KEY (fk_i_parent_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category_description (
     fk_i_category_id INT UNSIGNED NOT NULL,
@@ -198,7 +201,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_description (
         INDEX idx_s_slug (s_slug),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
     fk_i_category_id INT UNSIGNED NOT NULL,
@@ -206,7 +209,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
 
         PRIMARY KEY (fk_i_category_id),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -241,7 +244,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX fk_c_currency_code (fk_c_currency_code),
         INDEX idx_pub_date (dt_pub_date),
         INDEX idx_price (i_price)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     fk_i_item_id INT UNSIGNED NOT NULL,
@@ -250,7 +253,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     s_description MEDIUMTEXT NOT NULL,
         PRIMARY KEY (fk_i_item_id, fk_c_locale_code),
         FULLTEXT s_description (s_description, s_title)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_location (
@@ -274,7 +277,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_location (
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
         FOREIGN KEY (fk_i_city_area_id) REFERENCES /*TABLE_PREFIX*/t_city_area (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
     fk_i_item_id INT UNSIGNED NOT NULL,
@@ -285,19 +288,26 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
     i_num_offensive INT UNSIGNED NOT NULL DEFAULT 0,
     i_num_expired INT UNSIGNED NOT NULL DEFAULT 0,
     i_num_premium_views INT UNSIGNED NOT NULL DEFAULT 0,
-    dt_date DATE NOT NULL,
+    dt_date DATE NULL,
 
-        PRIMARY KEY (fk_i_item_id, dt_date),
-        INDEX dt_date_fk_i_item_id (dt_date, fk_i_item_id),
+        PRIMARY KEY (fk_i_item_id),
         INDEX i_num_spam (i_num_spam),
-        INDEX i_num_views (i_num_views),
-        INDEX i_num_repeated (i_num_repeated),
-        INDEX i_num_bad_classified (i_num_bad_classified),
-        INDEX i_num_offensive (i_num_offensive),
-        INDEX i_num_expired (i_num_expired),
-        INDEX i_num_premium_views (i_num_premium_views),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_stats_daily (
+    dt_date DATE NOT NULL,
+    i_bucket TINYINT UNSIGNED NOT NULL,
+    i_num_views INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_spam INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_repeated INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_bad_classified INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_offensive INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_expired INT UNSIGNED NOT NULL DEFAULT 0,
+    i_num_premium_views INT UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (dt_date, i_bucket)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -306,12 +316,47 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
     s_extension VARCHAR(10) NULL,
     s_content_type VARCHAR(40) NULL,
     s_path VARCHAR(250) NULL,
+    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),
         INDEX idx_s_content_type (pk_i_id,s_content_type(10)),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_type VARCHAR(20) NOT NULL,
+    s_storage VARCHAR(30) NOT NULL,
+    s_payload TEXT NOT NULL,
+    s_status VARCHAR(10) NOT NULL DEFAULT 'pending',
+    i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    s_last_error VARCHAR(250) NULL,
+    s_worker VARCHAR(30) NULL,
+    dt_next_run DATETIME NOT NULL,
+    dt_locked DATETIME NULL,
+    dt_created DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_status_next (s_status, dt_next_run)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_resource (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_owner_type VARCHAR(20) NOT NULL,
+    i_owner_id INT UNSIGNED NOT NULL,
+    s_name VARCHAR(60) NULL,
+    s_extension VARCHAR(10) NULL,
+    s_content_type VARCHAR(40) NULL,
+    s_path VARCHAR(250) NULL,
+    s_storage VARCHAR(30) NOT NULL DEFAULT 'local',
+    dt_created DATETIME NOT NULL,
+    dt_updated DATETIME NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_owner (s_owner_type, i_owner_id),
+        INDEX idx_storage (s_storage)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -330,7 +375,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_comment (
         INDEX fk_i_item_id (fk_i_item_id),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id),
         FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_preference (
     s_section VARCHAR(128) NOT NULL,
@@ -339,7 +384,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_preference (
     e_type ENUM('STRING', 'INTEGER', 'BOOLEAN') NOT NULL,
 
         UNIQUE KEY (s_section, s_name)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_pages (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -352,7 +397,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages (
     s_meta TEXT NULL,
 
         PRIMARY KEY (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
     fk_i_pages_id INT UNSIGNED NOT NULL,
@@ -363,7 +408,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
         PRIMARY KEY (fk_i_pages_id, fk_c_locale_code),
         FOREIGN KEY (fk_i_pages_id) REFERENCES /*TABLE_PREFIX*/t_pages (pk_i_id),
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
     s_plugin_name VARCHAR(40) NOT NULL,
@@ -371,13 +416,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
 
         INDEX fk_i_category_id (fk_i_category_id),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
   e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
   d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
   d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00'
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -391,36 +436,29 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     dt_unsub_date DATETIME NULL DEFAULT NULL,
 
     PRIMARY KEY (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
     d_date DATE NOT NULL,
     i_num_alerts_sent INT UNSIGNED NOT NULL DEFAULT 0,
 
     PRIMARY KEY (d_date)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
-
-CREATE TABLE /*TABLE_PREFIX*/t_keywords (
-    s_md5 VARCHAR(32) NOT NULL,
-    fk_c_locale_code CHAR(5) NOT NULL,
-    s_original_text VARCHAR(255) NOT NULL,
-    s_anchor_text VARCHAR(255) NOT NULL,
-    s_normalized_text VARCHAR(255) NOT NULL,
-    fk_i_category_id INT UNSIGNED NULL,
-    fk_i_city_id INT UNSIGNED NULL,
-
-        PRIMARY KEY (s_md5, fk_c_locale_code),
-        INDEX fk_i_category_id (fk_i_category_id),
-        INDEX fk_i_city_id (fk_i_city_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
-        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
-        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
   d_date DATETIME NOT NULL,
   s_search VARCHAR(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_name VARCHAR(255) NOT NULL,
+    s_slug VARCHAR(255) NOT NULL,
+    i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+    s_meta MEDIUMTEXT NULL DEFAULT NULL,
+
+        PRIMARY KEY (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -432,9 +470,59 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     b_searchable TINYINT(1) NOT NULL DEFAULT 0,
     s_meta MEDIUMTEXT NULL DEFAULT NULL,
     i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+    fk_i_group_id INT UNSIGNED NULL DEFAULT NULL,
 
         PRIMARY KEY (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    fk_i_category_id INT UNSIGNED NOT NULL,
+
+        PRIMARY KEY (fk_i_group_id, fk_i_category_id),
+        INDEX idx_group_cat_category (fk_i_category_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_meta_group_fields (
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    fk_i_field_id INT UNSIGNED NOT NULL,
+    i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (fk_i_group_id, fk_i_field_id),
+        INDEX idx_group_fields_field (fk_i_field_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_group_id INT UNSIGNED NOT NULL,
+    s_context_type VARCHAR(20) NOT NULL,
+    i_context_id INT UNSIGNED NOT NULL DEFAULT 0,
+    fk_i_user_id INT UNSIGNED NULL DEFAULT NULL,
+    s_ip VARCHAR(45) NULL DEFAULT NULL,
+    s_status VARCHAR(20) NOT NULL DEFAULT 'new',
+    dt_created DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_form (fk_i_group_id, dt_created),
+        INDEX idx_context (s_context_type, i_context_id),
+        INDEX idx_status (s_status)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (
+    fk_i_submission_id INT UNSIGNED NOT NULL,
+    fk_i_field_id INT UNSIGNED NOT NULL,
+    s_value TEXT NULL,
+    s_multi VARCHAR(20) NOT NULL DEFAULT '',
+
+        PRIMARY KEY (fk_i_submission_id, fk_i_field_id, s_multi),
+        INDEX idx_field (fk_i_field_id),
+        FOREIGN KEY (fk_i_submission_id) REFERENCES /*TABLE_PREFIX*/t_form_submission (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
     fk_i_category_id INT UNSIGNED NOT NULL,
@@ -443,7 +531,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
         PRIMARY KEY (fk_i_category_id, fk_i_field_id),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
         FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_meta (
     fk_i_item_id INT UNSIGNED NOT NULL,
@@ -455,7 +543,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_meta (
         INDEX s_value (s_value(255)),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id),
         FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_log (
     dt_date DATETIME NOT NULL,
@@ -466,7 +554,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_log (
     s_ip VARCHAR(50) NOT NULL,
     s_who VARCHAR(50) NOT NULL,
     fk_i_who_id INT UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
     fk_i_city_id INT UNSIGNED NOT NULL,
@@ -475,7 +563,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
         PRIMARY KEY (fk_i_city_id),
         INDEX idx_num_items (i_num_items),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
     fk_i_region_id INT UNSIGNED NOT NULL,
@@ -484,7 +572,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
         PRIMARY KEY (fk_i_region_id),
         INDEX idx_num_items (i_num_items),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
     fk_c_country_code CHAR(2) NOT NULL,
@@ -493,13 +581,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
         PRIMARY KEY (fk_c_country_code),
         INDEX idx_num_items (i_num_items),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_locations_tmp (
     id_location varchar(10) NOT NULL,
     e_type enum('COUNTRY','REGION','CITY') NOT NULL,
     PRIMARY KEY (id_location, e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -508,7 +596,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   s_email VARCHAR(250) NOT NULL DEFAULT '',
 
   PRIMARY KEY (pk_i_id)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_migration (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -517,4 +605,56 @@ CREATE TABLE /*TABLE_PREFIX*/t_migration (
 
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY (s_migration)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI';
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_keyword_block (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_keyword VARCHAR(191) NOT NULL DEFAULT '',
+    s_scope ENUM('title','description','all','meta') NOT NULL DEFAULT 'all',
+    b_substring TINYINT(1) NOT NULL DEFAULT 0,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Charset kept at UTF8 to stay byte-compatible with the report-log table an
+-- already installed classifieds theme creates via its own IF NOT EXISTS import.
+CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_reporter   VARCHAR(70) NOT NULL,
+    fk_i_user_id INT UNSIGNED NULL,
+    s_ip         VARCHAR(64) NULL,
+    s_reason     VARCHAR(20) NOT NULL,
+    dt_date      DATETIME NOT NULL,
+
+        PRIMARY KEY (fk_i_item_id, s_reporter)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_moderation_log (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_source VARCHAR(20) NOT NULL DEFAULT '',
+    s_reason VARCHAR(191) NOT NULL DEFAULT '',
+    s_field VARCHAR(20) NOT NULL DEFAULT '',
+    s_action VARCHAR(20) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX fk_i_item_id (fk_i_item_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Failed sign-in and password-reset attempts, counted per source address and
+-- per submitted account name inside a rolling window. Append-only, and pruned
+-- by the daily cron down to the retention window.
+CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_context VARCHAR(20) NOT NULL DEFAULT '',
+    s_account VARCHAR(191) NOT NULL DEFAULT '',
+    s_ip VARCHAR(45) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_ip (s_ip, dt_date),
+        INDEX idx_account (s_context, s_account(64), dt_date),
+        INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

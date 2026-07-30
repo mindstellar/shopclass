@@ -20,14 +20,13 @@ const NM = 'node_modules';
  * directly into `dest`, false preserves its path relative to `cwd`.
  */
 const TARGETS = [
+  // jQuery is dead weight for core — nothing in the admin or in any core form uses it. It
+  // ships only because the bundled `bender` front theme still enqueues these three, and
+  // that theme lives in its own repository. Delete them here once bender is vanilla.
   { dest: `${ASSETS}/jquery`, flatten: true, src: ['jquery/dist/jquery.min.js', 'jquery/LICENSE.txt'] },
-  { dest: `${ASSETS}/jquery-migrate`, flatten: true, src: ['jquery-migrate/dist/jquery-migrate.min.js', 'jquery-migrate/LICENSE.txt'] },
   { dest: `${ASSETS}/jquery-ui`, flatten: true, src: ['jquery-ui-dist/*.min.js', 'jquery-ui-dist/*.min.css', 'jquery-ui-dist/LICENSE.txt'] },
   { dest: `${ASSETS}/jquery-ui/images`, flatten: true, src: ['jquery-ui-dist/images/*'] },
-  { dest: `${ASSETS}/jquery-treeview`, flatten: true, src: ['jquery-treeview/jquery.treeview.js'] },
-  { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/dist/additional-methods.min.js', 'jquery-validation/LICENSE.md'] },
-  { dest: `${ASSETS}/jquery-ui-nested`, flatten: true, src: ['jquery-ui-nested/jquery-ui-nested.js'] },
-  { dest: `${ASSETS}/spectrum-colorpicker`, flatten: true, src: ['spectrum-colorpicker/spectrum.js', 'spectrum-colorpicker/spectrum.css', 'spectrum-colorpicker/LICENSE'] },
+  { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/LICENSE.md'] },
   { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/css/bootstrap.min.*', 'bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
   { dest: `${ASSETS}/chart-js`, flatten: true, src: ['chart.js/dist/chart.min.js', 'chart.js/LICENSE.md'] },
@@ -38,12 +37,15 @@ const TARGETS = [
   { dest: `${ASSETS}/bootstrap-icons`, flatten: false, cwd: 'bootstrap-icons/font', src: ['**/*'] },
 
   { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['license.txt', 'tinymce.min.js'] },
-  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/content/default/**/*.min.*', 'themes/silver/**/*.min.*'] },
+  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/ui/oxide-dark/**/*.min.*', 'skins/content/default/**/*.min.*', 'skins/content/dark/**/*.min.*', 'themes/silver/**/*.min.*'] },
   { dest: `${ASSETS}/tinymce/models/dom`, flatten: false, cwd: 'tinymce/models/dom', src: ['**/*.min.js'] },
-  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'ui/oxide/skin.min.css'] },
+  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'content/dark/content.min.css', 'ui/oxide/skin.min.css', 'ui/oxide-dark/skin.min.css'] },
   { dest: `${ASSETS}/tinymce/plugins`, flatten: false, cwd: 'tinymce/plugins', src: ['{advlist,anchor,autolink,charmap,code,fullscreen,image,imagetools,insertdatetime,link,lists,media,paste,preview,searchreplace,table,visualblocks}/*.min.js'] },
 
-  { dest: `${ASSETS}/osclass-legacy`, flatten: false, cwd: 'osclass-legacy-assets/src', src: ['**/*'] },
+  // Only date.js is still registered (as `php-date`). The colorpicker, the jQuery
+  // fine-uploader and tabber were 217 KB of unreachable vendor code — nothing registered
+  // or enqueued them, so they are no longer copied out of the package.
+  { dest: `${ASSETS}/osclass-legacy`, flatten: false, cwd: 'osclass-legacy-assets/src', src: ['index.php', 'js/index.php', 'js/date.js'] },
 
   // Bootstrap's SCSS sources, imported by main.scss. Not an asset — it lands in the theme
   // and is gitignored, because it is a verbatim vendor copy. Brand overrides live in

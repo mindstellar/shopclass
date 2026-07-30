@@ -54,12 +54,21 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 
         require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 
-        $title   = sprintf(__('Maintenance &raquo; %s'), osc_page_title());
-        $message = sprintf(
-            __('We are sorry for any inconvenience. %s is undergoing maintenance.') . '.',
-            osc_page_title()
+        osc_die(
+            sprintf(__('Maintenance &raquo; %s'), osc_page_title()),
+            sprintf(
+                __('%s is undergoing maintenance right now. We\'re making some improvements and will be back shortly — thanks for your patience.'),
+                osc_page_title()
+            ),
+            array(
+                'heading'   => __('We\'ll be right back'),
+                'tone'      => 'info',
+                'status'    => 503,
+                // The database is reachable in maintenance mode, so show the
+                // site's own name rather than the generic wordmark.
+                'brandName' => osc_page_title(),
+            )
         );
-        osc_die($title, $message);
     }
 }
 
@@ -135,6 +144,10 @@ switch (Params::getParam('page')) {
         $do = new CWebContact();
         $do->doModel();
         break;
+    case ('form'):      // custom form submission (core.form widget)
+        $do = new CWebForm();
+        $do->doModel();
+        break;
     case ('custom'):   //custom
         $do = new CWebCustom();
         $do->doModel();
@@ -143,6 +156,9 @@ switch (Params::getParam('page')) {
         if (Params::getParam('route')) {
             osc_run_hook(Params::getParam('route'));
         }
+        break;
+    case ('sitemap'):   // core XML sitemap (index + child sitemaps)
+        Sitemap::newInstance()->serve();
         break;
     default:            // home and static pages that are mandatory...
         $do = new CWebMain();

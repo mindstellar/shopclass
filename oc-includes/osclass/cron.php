@@ -96,6 +96,38 @@ if (is_array($cron)) {
         }
         osc_update_cat_stats();
 
+        // Retention: prune admin activity-log rows past the configured window
+        // (0 = keep forever), so t_log cannot grow without bound. Mirrors the
+        // latest-searches purge above.
+        $logRetention = osc_admin_log_retention_days();
+        if ($logRetention > 0) {
+            Log::newInstance()->purgeOlderThan(date('Y-m-d H:i:s', time() - ($logRetention * 24 * 3600)));
+        }
+
+        // Retention: prune the site-wide daily stats rollup past the configured
+        // window (0 = keep forever, the default). The rollup is a few rows per day
+        // for the whole site, so this is a knob for owners who want it rather than
+        // something the schema depends on.
+        $statsRetention = osc_item_stats_retention_days();
+        if ($statsRetention > 0) {
+            ItemStats::newInstance()->purgeOlderThan(date('Y-m-d', time() - ($statsRetention * 24 * 3600)));
+        }
+
+        // Retention: drop recorded sign-in attempts past the configured window
+        // (0 = keep forever). Only the throttle's own rolling window decides
+        // anything; what is left is history, and under a sustained guessing run
+        // the table is the fastest-growing one in the schema.
+        \mindstellar\security\LoginThrottle::prune();
+
+        // Pre-generate the XML sitemap into the object cache so bots never trigger
+        // the (potentially heavy) location scans on the request path. Regeneration
+        // is otherwise lazy-on-request; this closes that gap.
+        try {
+            Sitemap::newInstance()->warmCache();
+        } catch (Throwable $e) {
+            error_log('Sitemap cron warming failed: ' . $e->getMessage());
+        }
+
         // WARN EXPIRATION EACH DAY (UNCOMMENT TO ENABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON HOURLY
         /*if(is_numeric(osc_warn_expiration()) && osc_warn_expiration()>0) {

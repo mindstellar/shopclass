@@ -70,6 +70,65 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
+/**
+ * Parse the newest release section of CHANGELOG.md into a label plus typed entries,
+ * the entries ordered so features and notable changes surface first. Falls back to
+ * the running version and an empty list when the changelog is missing or unreadable.
+ *
+ * @return array{label:string,entries:array<int,array{cat:string,text:string}>}
+ */
+function upgradeReleaseNotes()
+{
+    $fallbackLabel = 'Shopclass ' . (defined('OSCLASS_VERSION') ? OSCLASS_VERSION : '');
+    $file          = ABS_PATH . 'CHANGELOG.md';
+    if (!is_readable($file)) {
+        return array('label' => $fallbackLabel, 'entries' => array());
+    }
+
+    $label   = $fallbackLabel;
+    $entries = array();
+    $inFirst = false;
+    $cat     = '';
+    foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) {
+        // "## Shopclass 5.3.0" opens a release; the next one ends the newest section.
+        if (preg_match('/^##\s+(?!#)(.+?)\s*$/', $line, $m)) {
+            if ($inFirst) {
+                break; // reached the previous release
+            }
+            $inFirst = true;
+            $label   = trim($m[1]);
+            continue;
+        }
+        if (!$inFirst) {
+            continue;
+        }
+        // "### Security" names the category the following bullets belong to.
+        if (preg_match('/^###\s+(.+?)\s*$/', $line, $m)) {
+            $cat = trim($m[1]);
+            continue;
+        }
+        if (preg_match('/^-\s+(.+)$/', $line, $m)) {
+            $entries[] = array('cat' => $cat, 'text' => trim(str_replace('`', '', $m[1])));
+            continue;
+        }
+        // Entries are hard-wrapped, so an indented line continues the previous bullet.
+        if ($entries !== array() && preg_match('/^\s+(\S.*)$/', $line, $m)) {
+            $last                     = count($entries) - 1;
+            $entries[$last]['text'] .= ' ' . trim(str_replace('`', '', $m[1]));
+        }
+    }
+
+    // Surface features and breaking/security notes before routine fixes; PHP 8's
+    // stable sort keeps each category in its authored changelog order.
+    $priority = array('New' => 0, 'Breaking' => 1, 'Security' => 2, 'Changed' => 3, 'Performance' => 4, 'Fixed' => 5);
+    usort($entries, static function ($a, $b) use ($priority) {
+        return ($priority[$a['cat']] ?? 9) <=> ($priority[$b['cat']] ?? 9);
+    });
+
+    return array('label' => $label, 'entries' => $entries);
+}
+
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 
 <div id="backup-settings">
@@ -88,4 +147,53 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
+<?php
+$release  = upgradeReleaseNotes();
+$whatsNew = $release['entries'];
+// Link at the release tag for the current major.minor.patch, dropping any
+// pre-release suffix (5.3.0.dev5 => v5.3.0) so it tracks the version; fall back
+// to the releases listing if the version can't be parsed.
+$version    = defined('OSCLASS_VERSION') ? OSCLASS_VERSION : '';
+$releaseUrl = preg_match('/^\d+\.\d+\.\d+/', $version, $m)
+    ? 'https://github.com/mindstellar/shopclass/releases/tag/v' . $m[0]
+    : 'https://github.com/mindstellar/shopclass/releases';
+if (!empty($whatsNew)) {
+    $shown     = array_slice($whatsNew, 0, 10);
+    $remaining = count($whatsNew) - count($shown);
+    ?>
+    <section class="whatsnew" aria-labelledby="whatsnew-title">
+        <header class="whatsnew-head">
+            <div>
+                <h2 id="whatsnew-title" class="whatsnew-heading"><?php _e("What's new"); ?></h2>
+                <p class="whatsnew-sub">
+                    <?php printf(__('Highlights from %s'), osc_esc_html($release['label'])); ?>
+                </p>
+            </div>
+            <span class="whatsnew-count">
+                <?php printf(_n('%d change', '%d changes', count($whatsNew)), count($whatsNew)); ?>
+            </span>
+        </header>
+        <ul class="whatsnew-list">
+            <?php foreach ($shown as $entry) {
+                $slug = strtolower(preg_replace('/[^a-z]/i', '', $entry['cat'])); ?>
+                <li class="whatsnew-item">
+                    <span class="whatsnew-tag whatsnew-tag-<?php echo osc_esc_html($slug); ?>"><?php
+                        echo osc_esc_html($entry['cat']); ?></span>
+                    <span class="whatsnew-text"><?php echo osc_esc_html($entry['text']); ?></span>
+                </li>
+            <?php } ?>
+        </ul>
+        <footer class="whatsnew-foot">
+            <a class="whatsnew-more-link" href="<?php echo osc_esc_html($releaseUrl); ?>"
+               target="_blank" rel="noopener noreferrer">
+                <?php if ($remaining > 0) {
+                    printf(_n('%d more change', '%d more changes', $remaining), $remaining);
+                    echo ' · ';
+                } ?>
+                <?php _e('Read the full release notes on GitHub'); ?>
+                <span aria-hidden="true">↗</span>
+            </a>
+        </footer>
+    </section>
+<?php } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -69,11 +69,19 @@ function osc_is_web_user_logged_in()
         $user = User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
         View::newInstance()->_exportVariableToView('_loggedUser', $user);
     } elseif (Cookie::newInstance()->get_value('oc_userId') != '' && Cookie::newInstance()->get_value('oc_userSecret') != '') {
-        $user = User::newInstance()->findByIdSecret(
-            Cookie::newInstance()->get_value('oc_userId'),
-            Cookie::newInstance()->get_value('oc_userSecret')
-        );
-        View::newInstance()->_exportVariableToView('_loggedUser', $user);
+        $userId    = Cookie::newInstance()->get_value('oc_userId');
+        $candidate = User::newInstance()->findByPrimaryKey($userId);
+        if (isset($candidate['pk_i_id'])
+            && \mindstellar\security\RememberMe::verify(
+                'web',
+                $userId,
+                Cookie::newInstance()->get_value('oc_userSecret'),
+                $candidate['s_password']
+            )
+        ) {
+            $user = $candidate;
+            View::newInstance()->_exportVariableToView('_loggedUser', $user);
+        }
     }
     if (isset($user['b_enabled'], $user['b_active']) && $user['b_enabled'] == 1 && $user['b_active'] == 1) {
         Session::newInstance()->_set('userId', $user['pk_i_id']);
@@ -215,11 +223,16 @@ function osc_is_admin_user_logged_in()
     if (Cookie::newInstance()->get_value('oc_adminId') != ''
         && Cookie::newInstance()->get_value('oc_adminSecret') != ''
     ) {
-        $admin = Admin::newInstance()->findByIdSecret(
-            Cookie::newInstance()->get_value('oc_adminId'),
-            Cookie::newInstance()->get_value('oc_adminSecret')
-        );
-        if (isset($admin['pk_i_id'])) {
+        $adminId = Cookie::newInstance()->get_value('oc_adminId');
+        $admin   = Admin::newInstance()->findByPrimaryKey($adminId);
+        if (isset($admin['pk_i_id'])
+            && \mindstellar\security\RememberMe::verify(
+                'admin',
+                $adminId,
+                Cookie::newInstance()->get_value('oc_adminSecret'),
+                $admin['s_password']
+            )
+        ) {
             Session::newInstance()->_set('adminId', $admin['pk_i_id']);
             Session::newInstance()->_set('adminUserName', $admin['s_username']);
             Session::newInstance()->_set('adminName', $admin['s_name']);
@@ -749,6 +762,56 @@ function osc_alert_type()
 function osc_alert_is_active()
 {
     return (bool)osc_alert_field('b_active');
+}
+
+
+/**
+ * Public URL of a user's avatar, or a bundled placeholder when they have none.
+ *
+ * Resolves the user's single 'user'-owned resource through the polymorphic
+ * resource layer, so the URL reflects whichever storage adapter the avatar lives
+ * on (local or remote). The main image is stored at the 'normal' variant (its
+ * base file, no suffix) and a 'thumbnail' variant; pass 'normal' for the base
+ * file or 'thumbnail' (the default) for the small one.
+ *
+ * @param int|null $userId  defaults to the logged-in web user
+ * @param string   $variant 'normal' (base file), 'thumbnail', 'preview', 'original'
+ *
+ * @return string
+ */
+function osc_user_avatar_url(?int $userId = null, string $variant = 'thumbnail'): string
+{
+    if ($userId === null) {
+        $userId = osc_logged_user_id();
+    }
+    $userId = (int)$userId;
+
+    if ($userId > 0) {
+        $resources = osc_get_resources('user', $userId);
+        if (!empty($resources)) {
+            return osc_get_resource_url($resources[0], $variant === 'normal' ? '' : $variant);
+        }
+    }
+
+    return osc_base_url() . 'oc-includes/images/avatar-placeholder.svg';
+}
+
+
+/**
+ * Whether a user has an uploaded avatar.
+ *
+ * @param int|null $userId defaults to the logged-in web user
+ *
+ * @return bool
+ */
+function osc_has_user_avatar(?int $userId = null): bool
+{
+    if ($userId === null) {
+        $userId = osc_logged_user_id();
+    }
+    $userId = (int)$userId;
+
+    return $userId > 0 && !empty(osc_get_resources('user', $userId));
 }
 
 

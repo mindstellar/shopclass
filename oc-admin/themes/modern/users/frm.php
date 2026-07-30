@@ -202,7 +202,7 @@ $aux = customFrmText();
                 <!-- add user form -->
                 <div class="settings-user">
                     <ul id="error_list"></ul>
-                    <form name="register" action="<?php echo osc_admin_base_url(true); ?>" method="post">
+                    <form name="register" action="<?php echo osc_admin_base_url(true); ?>" method="post" enctype="multipart/form-data">
                         <input type="hidden" name="page" value="users"/>
                         <input type="hidden" name="action" value="<?php echo $aux['action_frm']; ?>"/>
                         <h3 class="render-title"><?php _e('Contact info'); ?></h3>
@@ -258,6 +258,30 @@ $aux = customFrmText();
                                     <div class="form-label"><?php _e('Website'); ?></div>
                                     <div class="form-controls">
                                         <?php UserForm::website_text($user); ?>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-label"><?php _e('Avatar'); ?></div>
+                                    <div class="form-controls">
+                                        <?php if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
+                                            <div class="form-label-checkbox">
+                                                <img src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
+                                                     alt="<?php echo osc_esc_html(__('Current avatar')); ?>"
+                                                     width="96" height="96" style="border-radius: 4px; object-fit: cover;"/>
+                                            </div>
+                                        <?php } ?>
+                                        <div class="form-label-checkbox">
+                                            <input type="file" name="avatar" id="avatar" accept="image/*"/>
+                                        </div>
+                                        <?php if ($aux['edit']) { ?>
+                                            <div class="input-separate-top">
+                                                <label>
+                                                    <input type="checkbox" name="remove_avatar" id="remove_avatar" value="1"
+                                                           style="width: inherit!important;"/>
+                                                    <?php _e('Remove current avatar'); ?>
+                                                </label>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                                 <h3 class="render-title"><?php _e('About you'); ?></h3>

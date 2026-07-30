@@ -63,6 +63,7 @@ define('DB_NAME', $freshDb);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 
+use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
 
 $currentStruct = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
@@ -76,7 +77,7 @@ if ($admin->connect_errno) {
 }
 foreach (array($freshDb, $upgradeDb) as $db) {
     $admin->query("DROP DATABASE IF EXISTS `$db`");
-    if (!$admin->query("CREATE DATABASE `$db` DEFAULT CHARACTER SET utf8")) {
+    if (!$admin->query("CREATE DATABASE `$db` DEFAULT CHARACTER SET utf8mb4")) {
         fwrite(STDERR, "cannot create $db: " . $admin->error . "\n");
         exit(2);
     }
@@ -93,6 +94,19 @@ function comm_for($db)
     return new DBCommandClass($conn->getOsclassDb());
 }
 
+/**
+ * A parameterized Connection bound to $db rather than to the configured database.
+ *
+ * @param string $db
+ *
+ * @return Connection
+ */
+function connection_for($db)
+{
+    $conn = new DBConnectionClass(DB_HOST, DB_USER, DB_PASSWORD, $db);
+    return new Connection($conn->getOsclassDb());
+}
+
 // ---- FRESH ---------------------------------------------------------------
 $fresh = comm_for($freshDb);
 $fresh->importSQL($currentStruct);
@@ -106,7 +120,7 @@ if (!$result[0]) {
     fwrite(STDERR, "updateDB reported failing queries:\n" . implode("\n", $result[2]) . "\n");
     exit(2);
 }
-$runner = new MigrationRunner($upgrade, $migrationsDir);
+$runner = new MigrationRunner(connection_for($upgradeDb), $migrationsDir);
 $runner->ensureLedger();
 $migrated = $runner->run();
 if (!$migrated['ok']) {

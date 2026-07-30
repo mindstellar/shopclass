@@ -72,13 +72,18 @@ class CWebPage extends BaseModel
             Session::newInstance()->_set('userLocale', Params::getParam('lang'));
         }
 
-        $meta = json_decode($page['s_meta'], true);
+        $meta       = json_decode($page['s_meta'], true);
+        $templateId = isset($meta['template']) ? (string)$meta['template'] : '';
+        $registered = ($templateId !== '') ? osc_page_template($templateId) : null;
 
         // load the right template file
         if (file_exists(osc_themes_path() . osc_theme() . '/page-' . $page['s_internal_name']
             . '.php')
         ) {
+            // Theme convention override wins over any picked template.
             $this->doView('page-' . $page['s_internal_name'] . '.php');
+        } elseif ($registered !== null) {
+            $this->renderRegisteredTemplate($registered, $page);
         } elseif (isset($meta['template'])
             && file_exists(osc_themes_path() . osc_theme() . '/' . $meta['template'])
         ) {
@@ -93,6 +98,49 @@ class CWebPage extends BaseModel
         } else {
             $this->doView('page.php');
         }
+    }
+
+    /**
+     * Render a page through a registered PageTemplateRegistry spec. A callable
+     * spec emits the page directly; a file-path spec is resolved against the
+     * active theme (rendered as a theme view) then the plugins dir (required in
+     * page scope, mirroring the legacy plugin-template branch). An unresolvable
+     * file path degrades to the default page view rather than fataling.
+     *
+     * @param array $spec A registered template spec (render, capability, …).
+     * @param array $page The current page row.
+     *
+     * @return void
+     */
+    private function renderRegisteredTemplate(array $spec, array $page)
+    {
+        $render = $spec['render'];
+
+        if (is_callable($render)) {
+            osc_run_hook('before_html');
+            $render($page);
+            Session::newInstance()->_clearVariables();
+            osc_run_hook('after_html');
+
+            return;
+        }
+
+        if (file_exists(osc_themes_path() . osc_theme() . '/' . $render)) {
+            $this->doView($render);
+
+            return;
+        }
+
+        if (file_exists(osc_plugins_path() . '/' . $render)) {
+            osc_run_hook('before_html');
+            require osc_plugins_path() . '/' . $render;
+            Session::newInstance()->_clearVariables();
+            osc_run_hook('after_html');
+
+            return;
+        }
+
+        $this->doView('page.php');
     }
 
     /**

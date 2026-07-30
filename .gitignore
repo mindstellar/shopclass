@@ -27,6 +27,8 @@ oc-content/themes/*
 oc-content/plugins/*
 !oc-content/plugins/index.php
 !oc-content/plugins/google_maps/
+!oc-content/plugins/sample-widgets/
+!oc-content/plugins/sample-forms/
 
 # languages
 oc-content/languages/*
@@ -75,3 +77,7 @@ CLAUDE.md
 DESIGN.md
 PRODUCT.md
 MODERNISATION.md
+PAGE-BUILDER.md
+CUSTOM-FIELDS.md
+FORMS.md
+DB-MODELS.md

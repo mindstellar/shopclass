@@ -220,7 +220,7 @@ class PageForm extends Form
      * @param                                   $locale
      * @param array                             $item
      */
-    private static function printPageDescriptionInput($locale, array $page = null)
+    private static function printPageDescriptionInput($locale, ?array $page = null)
     {
         $description = '';
         $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
@@ -244,7 +244,12 @@ class PageForm extends Form
             'sanitize' => null,
         ];
         try {
+            // Wrapper so a consumer can show/hide the whole editor (label + control
+            // + any TinyMCE UI) as a unit — the page builder toggles it off when a
+            // page is composed from widgets instead.
+            echo '<div class="multilang-description">';
             echo (new self())->textarea($name, $value, $attributes, $options);
+            echo '</div>';
         } catch (Exception $e) {
             if (OSC_DEBUG) {
                 trigger_error($e->getTraceAsString());

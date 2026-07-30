@@ -69,7 +69,7 @@ class ItemsDataTable extends DataTable
         }
 
         Rewrite::newInstance()->init();
-        $page = (int)Params::getParam('iPage');
+        $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
         }
@@ -83,6 +83,7 @@ class ItemsDataTable extends DataTable
         $this->addColumn('status-border', '');
         $this->addColumn('status', __('Status'));
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('image', __('Image'));
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
         $this->addColumn('category', __('Category'));
@@ -332,8 +333,36 @@ class ItemsDataTable extends DataTable
                 $status               = $this->get_row_status();
                 $row['status-border'] = '';
                 $row['status']        = $status['text'];
-                $row['title']         =
-                    '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . $title . '</a>' . $actions;
+
+                // A spam-quarantined listing has no user reports behind it (that is the
+                // reported-listings screen's job) — this is its only "why" surface, so
+                // the lookup only runs for the rows that actually need it.
+                $moderationBadge = '';
+                if ($aRow['b_spam']) {
+                    $modLog = ItemModerationLog::newInstance()->latestForItem((int) $aRow['pk_i_id']);
+                    if ($modLog !== null) {
+                        $moderationBadge = ' <span class="badge bg-warning text-dark" title="'
+                            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format()))
+                            . '">' . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+                    }
+                }
+                $itemUrl    = osc_esc_html(osc_item_url());
+
+                // Dedicated image column: the listing's first photo (storage-aware) or a
+                // placeholder icon, linking through to the listing.
+                $thumbUrl     = $this->listingThumb((int) $aRow['pk_i_id']);
+                $thumbInner   = $thumbUrl !== ''
+                    ? '<img src="' . osc_esc_html($thumbUrl) . '" loading="lazy" alt=""/>'
+                    : '<i class="bi bi-image" aria-hidden="true"></i>';
+                $row['image'] = '<a class="listing-thumb' . ($thumbUrl === '' ? ' listing-thumb--empty' : '')
+                    . '" href="' . $itemUrl . '" target="_blank" rel="noopener">' . $thumbInner . '</a>';
+
+                // Title cell: the title link + row actions, with the moderation/spam
+                // keyword badge dropped to its own line below everything.
+                $row['title'] = '<a href="' . $itemUrl . '" target="_blank">' . $title . '</a>'
+                    . $actions
+                    . ($moderationBadge !== '' ? '<div class="listing-keyword">' . $moderationBadge . '</div>' : '');
+
                 if ($aRow['fk_i_user_id'] != null) {
                     $row['user'] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=edit&id=' . $aRow['fk_i_user_id']
@@ -356,6 +385,37 @@ class ItemsDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * Storage-aware thumbnail URL for a listing's first image, or '' if it has none.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function listingThumb($itemId)
+    {
+        $rows = osc_db_select(
+            'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
+            . DB_TABLE_PREFIX . "t_item_resource WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
+            . 'ORDER BY pk_i_id ASC LIMIT 1',
+            array((int) $itemId)
+        );
+        if (empty($rows)) {
+            return '';
+        }
+        $r = (array) $rows[0];
+
+        return (string) osc_get_resource_url(array(
+            'pk_i_id'        => $r['pk_i_id'],
+            's_path'         => $r['s_path'],
+            's_extension'    => $r['s_extension'],
+            's_storage'      => $r['s_storage'] ?? 'local',
+            's_content_type' => $r['s_content_type'] ?? '',
+            's_owner_type'   => 'item',
+            'i_owner_id'     => $itemId,
+        ), 'thumbnail');
     }
 
     /**
@@ -469,41 +529,37 @@ class ItemsDataTable extends DataTable
             'date'       => 'dt_pub_date',
             'expiration' => 'dt_expiration'
         );
-        // column sort
+        // Reported at all, for any reason.
+        $anyReport = 's.i_num_spam > 0 OR s.i_num_bad_classified > 0 OR s.i_num_repeated > 0'
+            . ' OR s.i_num_offensive > 0 OR s.i_num_expired > 0';
+
+        // column sort. Sorting by one report type also narrows to it.
         if (!array_key_exists($sort, $arraySortColumns)) {
-            $sort = 'dt_pub_date';
-            $this->mSearch->addHaving('i_num_spam > 0 OR i_num_bad_classified > 0 OR i_num_repeated > 0 OR i_num_offensive > 0 OR i_num_expired > 0');
+            $sort   = 'dt_pub_date';
+            $filter = $anyReport;
         } else {
-            $sort = $arraySortColumns[$sort];
-            if ($sort !== 'dt_pub_date') {
-                $this->mSearch->addHaving($sort . ' > 0');
-            } else {
-                $this->mSearch->addHaving('i_num_spam > 0 OR i_num_bad_classified > 0 OR i_num_repeated > 0 OR i_num_offensive > 0 OR i_num_expired > 0');
-            }
+            $sort   = $arraySortColumns[$sort];
+            $filter = in_array($sort, array('dt_pub_date', 'dt_expiration'), true)
+                ? $anyReport
+                : 's.' . $sort . ' > 0';
         }
 
         $this->mSearch->order($sort, $direction);
 
+        // One stats row per listing now, so the counters are plain columns: no
+        // aggregate to build them, no GROUP BY to collapse a listing's dated rows,
+        // and therefore no HAVING — the filter is an ordinary WHERE. The
+        // IN (SELECT ...) that used to stand in for an index_merge over seven
+        // single-column indexes goes with them.
         $this->mSearch->addTable(sprintf('%st_item_stats s', DB_TABLE_PREFIX));
-        $this->mSearch->addField('SUM(s.`i_num_spam`) as i_num_spam');
-        $this->mSearch->addField('SUM(s.`i_num_bad_classified`) as i_num_bad_classified');
-        $this->mSearch->addField('SUM(s.`i_num_repeated`) as i_num_repeated');
-        $this->mSearch->addField('SUM(s.`i_num_offensive`) as i_num_offensive');
-        $this->mSearch->addField('SUM(s.`i_num_expired`) as i_num_expired');
+        $this->mSearch->addField('s.`i_num_spam` as i_num_spam');
+        $this->mSearch->addField('s.`i_num_bad_classified` as i_num_bad_classified');
+        $this->mSearch->addField('s.`i_num_repeated` as i_num_repeated');
+        $this->mSearch->addField('s.`i_num_offensive` as i_num_offensive');
+        $this->mSearch->addField('s.`i_num_expired` as i_num_expired');
 
-        // having
-        
-        // Faster for large tables (tested with 1.5 million rows)
-        // if indexes for all i_num_* columns are created
-        $this->mSearch->addConditions(sprintf(' 
-            %st_item.pk_i_id IN ( 
-            SELECT s.fk_i_item_id 
-            FROM %st_item_stats s 
-            WHERE s.i_num_spam > 0 OR s.i_num_bad_classified > 0 OR s.i_num_repeated > 0 OR s.i_num_offensive > 0 OR s.i_num_expired > 0 
-            )', DB_TABLE_PREFIX, DB_TABLE_PREFIX));
-        $this->mSearch->addConditions(sprintf(' %st_item.pk_i_id ', DB_TABLE_PREFIX));
-        $this->mSearch->addConditions(sprintf(' %st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
-        $this->mSearch->addGroupBy(sprintf(' %st_item.pk_i_id ', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions(sprintf('%st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions('(' . $filter . ')');
         // do Search
         $this->processDataReported(Item::newInstance()->extendCategoryName($this->mSearch->doSearch()));
         $this->totalFiltered = $this->mSearch->count();
@@ -516,7 +572,7 @@ class ItemsDataTable extends DataTable
     {
 
         Rewrite::newInstance()->init();
-        $page = (int)Params::getParam('iPage');
+        $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
         }
@@ -587,6 +643,11 @@ class ItemsDataTable extends DataTable
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
+        // Distinct, deduplicated reporters (one vote per person) and the recorded
+        // "why hidden" reason — both new in the item-moderation log, both plainly
+        // distinct from the raw, un-deduplicated i_num_* columns to their right.
+        $this->addColumn('reporters', __('Unique reporters'));
+        $this->addColumn('reason', __('Why hidden'));
         $this->addColumn('spam', '<a id="order_spam" href="' . osc_esc_html($url_spam) . '">' . __('Spam') . '</a>');
         $this->addColumn(
             'bad',
@@ -624,6 +685,8 @@ class ItemsDataTable extends DataTable
                     $title .= '...';
                 }
 
+                $options[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=clear_reports&amp;id='
+                    . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Clear reports') . '</a>';
                 $options[] = '<a href="' . osc_admin_base_url(true) . '?page=items&amp;action=clear_stat&amp;id='
                     . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;stat=all">' . __('Clear All') . '</a>';
                 if ($aRow['i_num_spam'] > 0) {
@@ -673,6 +736,8 @@ class ItemsDataTable extends DataTable
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
                 $row['title']       = '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
                 $row['user']        = osc_esc_html($aRow['s_user_name']);
+                $row['reporters']   = $this->reportersCell((int) $aRow['pk_i_id']);
+                $row['reason']      = $this->reasonCell((int) $aRow['pk_i_id']);
                 $row['spam']        = $aRow['i_num_spam'];
                 $row['bad']         = $aRow['i_num_bad_classified'];
                 $row['rep']         = $aRow['i_num_repeated'];
@@ -692,6 +757,74 @@ class ItemsDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * The "Unique reporters" cell: the deduplicated, one-vote-per-person count
+     * from t_item_report_log, with the per-reason breakdown on hover. Deliberately
+     * distinct from the raw i_num_* columns, which count every report including
+     * repeats from the same person.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function reportersCell($itemId)
+    {
+        $count = ItemReport::newInstance()->countReporters($itemId);
+        if ($count === 0) {
+            return '<span class="text-muted">' . osc_esc_html(__('None')) . '</span>';
+        }
+
+        $parts = array();
+        foreach (ItemReport::newInstance()->reasonBreakdown($itemId) as $reason => $reasonCount) {
+            $parts[] = osc_esc_html($reason) . ': ' . (int) $reasonCount;
+        }
+
+        return '<span class="badge bg-secondary" title="' . osc_esc_html(implode(', ', $parts)) . '">'
+            . (int) $count . '</span>';
+    }
+
+    /**
+     * The "Why hidden" cell: the latest t_item_moderation_log entry for this
+     * item, if any — the durable record of what quarantined or auto-blocked it.
+     *
+     * @param int $itemId
+     *
+     * @return string
+     */
+    private function reasonCell($itemId)
+    {
+        $modLog = ItemModerationLog::newInstance()->latestForItem($itemId);
+        if ($modLog === null) {
+            return '';
+        }
+
+        return '<span class="badge bg-warning text-dark" title="'
+            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format())) . '">'
+            . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+    }
+
+    /**
+     * Render a short "why hidden" label from a moderation-log row —
+     * `keyword: "viagra"` for a keyword hit, `reports: 5` for a report-threshold
+     * auto-block. The caller is responsible for escaping; this returns raw text.
+     *
+     * @param array $modLog a t_item_moderation_log row
+     *
+     * @return string
+     */
+    private function moderationReasonLabel($modLog)
+    {
+        if ($modLog['s_source'] === 'keyword') {
+            return sprintf('%s: "%s"', __('keyword'), $modLog['s_reason']);
+        }
+        if ($modLog['s_source'] === 'report_threshold') {
+            // Stored as "reports:5" (osc_item_report_record()) — add the space back.
+            return str_replace(':', ': ', (string) $modLog['s_reason']);
+        }
+
+        return (string) $modLog['s_reason'];
     }
 
     /**

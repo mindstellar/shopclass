@@ -36,8 +36,8 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Categories'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box"
+    <h1><?php _e('Listings'); ?>
+        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box"
            data-bs-toggle="collapse"></a>
     </h1>
     <?php
@@ -152,6 +152,7 @@ function drawCategory($category)
 $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
+    <h2 class="render-title"><?php _e('Categories'); ?></h2>
 
     <div class="categories-app"
          data-edit-url="<?php echo osc_esc_html(osc_admin_base_url(true)

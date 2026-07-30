@@ -23,10 +23,10 @@ if (!defined('ABS_PATH')) {
     <input type="hidden" name="action" value="recover_post"/>
     <div class="form-floating mb-3">
         <input type="text" name="email" class="form-control" id="user_email" value="" size="20" tabindex="10"
-               placeholder="Enter your E-mail">
+               placeholder="Enter your E-mail" autofocus>
         <label for="user_email"><?php _e('E-mail'); ?></label>
     </div>
-    <?php osc_show_recaptcha(); ?>
+    <?php osc_show_captcha(); ?>
     <?php osc_run_hook('admin_forgot_password_form'); ?>
     <button class="w-100 btn btn-lg btn-primary" type="submit" name="submit" id="submit"><?php
         echo osc_esc_html(__('Get new password')); ?></button>
@@ -38,14 +38,3 @@ if (!defined('ABS_PATH')) {
 <p id="nav">
     <a title="<?php _e('Log in'); ?>" href="<?php echo osc_admin_base_url(); ?>"><?php _e('Log in'); ?></a>
 </p>
-<?php $login_js = static function () { ?>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $(".ico-close").click(function () {
-                $(this).parent().hide();
-            });
-            $("#user_email").focus();
-        });
-    </script>
-<?php };
-osc_add_hook('admin_login_footer', $login_js); ?>

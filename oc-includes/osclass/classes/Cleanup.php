@@ -51,15 +51,13 @@ class Cleanup extends DAO
      */
     public function countFor($rule, $days)
     {
-        $this->applyRule($rule, (int)$days);
-        $this->dao->select('COUNT(*) AS total');
-        $result = $this->dao->get();
-        if ($result === false) {
+        list($from, $where, $params) = $this->ruleQuery($rule, (int)$days);
+
+        try {
+            return (int)osc_db_scalar('SELECT COUNT(*) FROM ' . $from . ' WHERE ' . $where, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-        $rows = $result->result();
-
-        return isset($rows[0]['total']) ? (int)$rows[0]['total'] : 0;
     }
 
     /**
@@ -70,60 +68,71 @@ class Cleanup extends DAO
      */
     public function candidates($rule, $days, $limit)
     {
-        $this->applyRule($rule, (int)$days);
-        $this->dao->select(self::isUserRule($rule) ? 'pk_i_id' : 'pk_i_id, s_secret');
-        $this->dao->limit(max(1, (int)$limit));
-        $result = $this->dao->get();
-        if ($result === false) {
+        list($from, $where, $params, $columns) = $this->ruleQuery($rule, (int)$days);
+
+        // $limit is a caller-supplied batch size, cast rather than bound: MySQL
+        // only accepts a placeholder in LIMIT on a prepared statement, and this
+        // statement is not always prepared.
+        $sql = 'SELECT ' . $columns . ' FROM ' . $from . ' WHERE ' . $where
+            . ' LIMIT ' . max(1, (int)$limit);
+
+        try {
+            return osc_db_stringify_rows(osc_db_select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
-
-        return $result->result();
     }
 
     /**
-     * Build the FROM + WHERE for a rule (the SELECT and LIMIT are added by the caller).
+     * The FROM, WHERE, bound values and candidate columns for one rule.
+     *
+     * Returned as a description rather than applied to a shared builder so that
+     * countFor() and candidates() each compose a complete statement: the count is
+     * a plain COUNT(*) instead of a COUNT alongside ungrouped columns, which is
+     * rejected outright under ONLY_FULL_GROUP_BY (on by default from MySQL 5.7).
+     *
+     * @param string $rule
+     * @param int    $days
+     *
+     * @return array{0:string,1:string,2:array,3:string}
      */
-    private function applyRule($rule, $days)
+    private function ruleQuery($rule, $days)
     {
-        $before = '"' . date('Y-m-d H:i:s', time() - ($days * 24 * 3600)) . '"';
+        $before = date('Y-m-d H:i:s', time() - ($days * 24 * 3600));
+        $item   = DB_TABLE_PREFIX . 't_item';
+        $cols   = 'pk_i_id, s_secret';
+
         switch ($rule) {
             case 'expired':
-                $this->dao->from(DB_TABLE_PREFIX . 't_item');
-                $this->dao->where('dt_expiration < ' . $before);
-                break;
+                return array($item, 'dt_expiration < ?', array($before), $cols);
             case 'inactive_listings':
-                $this->dao->from(DB_TABLE_PREFIX . 't_item');
-                $this->dao->where('b_active', 0);
-                $this->dao->where('dt_pub_date < ' . $before);
-                break;
+                return array($item, 'b_active = 0 AND dt_pub_date < ?', array($before), $cols);
             case 'spam':
-                $this->dao->from(DB_TABLE_PREFIX . 't_item');
-                $this->dao->where('b_spam', 1);
-                $this->dao->where('dt_pub_date < ' . $before);
-                break;
+                return array($item, 'b_spam = 1 AND dt_pub_date < ?', array($before), $cols);
             case 'blocked':
-                $this->dao->from(DB_TABLE_PREFIX . 't_item');
-                $this->dao->where('b_enabled', 0);
-                $this->dao->where('dt_pub_date < ' . $before);
-                break;
+                return array($item, 'b_enabled = 0 AND dt_pub_date < ?', array($before), $cols);
             case 'reported':
-                // Listings with at least one spam report (t_item_stats is 1:1 with t_item).
-                $this->dao->from(DB_TABLE_PREFIX . 't_item AS i');
-                $this->dao->join(DB_TABLE_PREFIX . 't_item_stats AS s', 's.fk_i_item_id = i.pk_i_id', 'INNER');
-                $this->dao->select('i.pk_i_id AS pk_i_id, i.s_secret AS s_secret');
-                $this->dao->where('s.i_num_spam > 0');
-                break;
+                // Listings with at least one spam report. t_item_stats holds one row
+                // per listing, so the join cannot multiply a listing out — it could
+                // when the table was keyed by date as well, and a listing reported on
+                // several days was then counted and offered for deletion once per day.
+                return array(
+                    $item . ' AS i INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats AS s'
+                        . ' ON s.fk_i_item_id = i.pk_i_id',
+                    's.i_num_spam > 0',
+                    array(),
+                    'i.pk_i_id AS pk_i_id, i.s_secret AS s_secret'
+                );
             case 'inactive_users':
-                $this->dao->from(DB_TABLE_PREFIX . 't_user');
-                $this->dao->where('b_active', 0);
-                $this->dao->where('dt_reg_date < ' . $before);
-                break;
+                return array(
+                    DB_TABLE_PREFIX . 't_user',
+                    'b_active = 0 AND dt_reg_date < ?',
+                    array($before),
+                    'pk_i_id'
+                );
             default:
                 // Unknown rule: an impossible condition, so nothing is ever matched/deleted.
-                $this->dao->from(DB_TABLE_PREFIX . 't_item');
-                $this->dao->where('1 = 0');
-                break;
+                return array($item, '1 = 0', array(), $cols);
         }
     }
 

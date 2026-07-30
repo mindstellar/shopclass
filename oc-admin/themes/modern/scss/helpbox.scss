@@ -9,6 +9,7 @@
   color: var(--osc-ink);
   display: flex;
   gap: .6rem;
+  margin-block-end: 1rem;
   padding: 1rem;
 }
 
@@ -42,15 +43,25 @@
 }
 
 .help-callout-close {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: $border-radius;
   color: var(--osc-ink-muted);
   cursor: pointer;
+  display: inline-flex;
   flex: 0 0 auto;
   font-size: .9rem;
+  justify-content: center;
   line-height: 1;
-  padding: .3rem;
+  // Pin the close to the note's top-right corner (the body caps at a readable width, so
+  // without this the button would strand mid-band). Square, centred hit target so the
+  // hover surface is a tidy chip and the glyph sits optically on the first text line.
+  margin-block-start: -.15rem;
+  margin-inline-start: auto;
+  min-height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0;
   transition: background-color var(--osc-duration-fast) var(--osc-ease),
               color var(--osc-duration-fast) var(--osc-ease);
 

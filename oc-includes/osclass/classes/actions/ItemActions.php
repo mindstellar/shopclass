@@ -70,6 +70,82 @@ class ItemActions
     }
 
     /**
+     * Regenerate the normal/preview/thumbnail variants of a single resource
+     * from its best available local source (preferring the original, then
+     * the current normal, then the preview). No-op when none of those exist
+     * locally or the resource isn't an image.
+     *
+     * Used by the "Regenerate images" admin action, run inline for every
+     * resource on local installs and via the storage queue 'regenerate' job,
+     * one resource at a time, on installs backed by a remote adapter.
+     *
+     * @param array $resource
+     *
+     * @return void
+     */
+    public static function regenerateResourceImages(array $resource): void
+    {
+        osc_run_hook('regenerate_image', $resource);
+        if (strpos($resource['s_content_type'], 'image') === false) {
+            return;
+        }
+
+        if (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
+                . $resource['s_extension'];
+            $use_original = true;
+        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+                . $resource['s_extension'];
+            $use_original = false;
+        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+            . $resource['s_extension'])
+        ) {
+            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+                . $resource['s_extension'];
+            $use_original = false;
+        } else {
+            return;
+        }
+
+        // Create normal size
+        $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
+            . $resource['s_extension'];
+        $path_normal = $path;
+        $size        = explode('x', osc_normal_dimensions());
+        $img         = ImageProcessing::fromFile($image_tmp)->resizeTo($size[0], $size[1]);
+        if ($use_original) {
+            if (osc_is_watermark_text()) {
+                $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
+            } elseif (osc_is_watermark_image()) {
+                $img->doWatermarkImage();
+            }
+        }
+        $img->saveToFile($path);
+
+        // Create preview
+        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
+            . $resource['s_extension'];
+        $size = explode('x', osc_preview_dimensions());
+        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+
+        // Create thumbnail
+        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
+            . $resource['s_extension'];
+        $size = explode('x', osc_thumbnail_dimensions());
+        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+
+        osc_run_hook(
+            'regenerated_image',
+            ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])
+        );
+    }
+
+    /**
      * @return boolean
      */
     public function add()
@@ -547,10 +623,41 @@ class ItemActions
      */
     private function validateMetaFields($_meta, $meta, $flash_error)
     {
+        // Map slug -> submitted value so conditional rules (stored by slug) can be
+        // re-evaluated server-side; the client engine is UX only.
+        $slugValues = array();
         foreach ($_meta as $_m) {
+            $slugValues[$_m['s_slug']] = $meta[$_m['pk_i_id']] ?? null;
+        }
+
+        foreach ($_meta as $_m) {
+            // Conditional logic: a field hidden by its show_when rule is not part of
+            // this submission — drop any value and never require it. A required_when
+            // rule overrides the field's static required flag.
+            $rules = (isset($_m['rules']) && is_array($_m['rules'])) ? $_m['rules'] : array();
+            if (isset($rules['show_when']) && !$this->evaluateFieldCondition($rules['show_when'], $slugValues)) {
+                unset($meta[$_m['pk_i_id']]);
+                continue;
+            }
             $isMetaRequired = $_m['b_required'];
+            if (isset($rules['required_when'])) {
+                $isMetaRequired = $this->evaluateFieldCondition($rules['required_when'], $slugValues) ? 1 : 0;
+            }
             $isMetaValueSet = isset($meta[$_m['pk_i_id']]);
             $metaValue      = $meta[$_m['pk_i_id']] ?? null;
+
+            // Registry-defined types (e.g. EMAIL) validate their stored value here,
+            // on top of the storage primitive's required/format checks below.
+            if ($isMetaValueSet && $metaValue !== '' && $metaValue !== null) {
+                $typeSpec = osc_field_type(osc_field_resolve_type($_m));
+                if ($typeSpec !== null && is_callable($typeSpec['validate'])) {
+                    $typeError = call_user_func($typeSpec['validate'], $metaValue, $_m);
+                    if (is_string($typeError) && $typeError !== '') {
+                        $flash_error .= $typeError . PHP_EOL;
+                    }
+                }
+            }
+
             switch ($_m['e_type']) {
                 case 'DATEINTERVAL':
                     if ($isMetaValueSet && $metaValue) {
@@ -579,8 +686,25 @@ class ItemActions
                 case 'RADIO':
                 case 'DROPDOWN':
                     if ($isMetaValueSet && $metaValue) {
-                        // check value exist in options csv
-                        if (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
+                        // Cascading option fields validate against the option set for
+                        // the parent's submitted value (falling back to the union), not
+                        // the flat s_options list (which is empty for a cascade child).
+                        if (!empty($_m['cascade_map']) && is_array($_m['cascade_map'])) {
+                            $parentSlug  = $_m['cascade_parent'] ?? '';
+                            $parentValue = $slugValues[$parentSlug] ?? '';
+                            if (isset($_m['cascade_map'][$parentValue])) {
+                                $allowed = $_m['cascade_map'][$parentValue];
+                            } else {
+                                $allowed = array();
+                                foreach ($_m['cascade_map'] as $opts) {
+                                    $allowed = array_merge($allowed, (array)$opts);
+                                }
+                            }
+                            if (!in_array($metaValue, $allowed, false)) {
+                                $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
+                            }
+                        } elseif (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
+                            // check value exist in options csv
                             $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
                         }
                     } elseif ($isMetaRequired) {
@@ -610,6 +734,43 @@ class ItemActions
         }
 
         return array($meta, $flash_error);
+    }
+
+    /**
+     * Evaluate a single conditional-logic condition (the value stored under a rule's
+     * show_when/required_when key) against the submitted field values, keyed by the
+     * controlling field's slug. Mirrors the client engine so client and server agree.
+     *
+     * @param array $cond       {field: slug, op: eq|neq|filled|gt|lt, value?: mixed}
+     * @param array $slugValues submitted meta values keyed by field slug
+     *
+     * @return bool
+     */
+    private function evaluateFieldCondition($cond, $slugValues)
+    {
+        if (!is_array($cond) || empty($cond['field'])) {
+            return true;
+        }
+        $actual   = $slugValues[$cond['field']] ?? '';
+        if (is_array($actual)) {
+            // interval/number ranges have no single scalar; treat as filled/empty only
+            $actual = implode('', array_map('strval', $actual));
+        }
+        $expected = isset($cond['value']) ? (string)$cond['value'] : '';
+        $op       = $cond['op'] ?? 'eq';
+        switch ($op) {
+            case 'neq':
+                return (string)$actual !== $expected;
+            case 'filled':
+                return trim((string)$actual) !== '';
+            case 'gt':
+                return is_numeric($actual) && is_numeric($expected) && (float)$actual > (float)$expected;
+            case 'lt':
+                return is_numeric($actual) && is_numeric($expected) && (float)$actual < (float)$expected;
+            case 'eq':
+            default:
+                return (string)$actual === $expected;
+        }
     }
 
     /**

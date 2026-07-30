@@ -62,18 +62,26 @@ class LatestSearches extends DAO
      */
     public function getSearches($limit = 20)
     {
-        $this->dao->select('d_date, s_search, COUNT(s_search) as i_total');
-        $this->dao->from($this->getTableName());
-        $this->dao->groupBy('s_search');
-        $this->dao->orderBy('d_date', 'DESC');
-        $this->dao->limit($limit);
-        $result = $this->dao->get();
+        // The COUNT(...) AS alias in a comma-separated column list is rejected
+        // by the builder's identifier allowlist, so this stays hand-written SQL.
+        $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
+            . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
 
-        if ($result == false) {
+        // A non-numeric $limit leaves the clause off entirely and returns every
+        // row, not zero rows -- callers relying on that unbounded behaviour exist.
+        // A negative numeric $limit builds invalid SQL, which the try/catch below
+        // reports as false.
+        if (is_numeric($limit)) {
+            $sql .= ' LIMIT ' . (int) $limit;
+        }
+
+        try {
+            $rows = osc_db_select($sql);
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -93,19 +101,26 @@ class LatestSearches extends DAO
             $time = time() - (7 * 24 * 3600);
         }
 
-        $this->dao->select('d_date, s_search, COUNT(s_search) as i_total');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('d_date', date('Y-m-d H:i:s', $time));
-        $this->dao->groupBy('s_search');
-        $this->dao->orderBy('d_date', 'DESC');
-        $this->dao->limit($limit);
-        $result = $this->dao->get();
+        // Searches on or after $time (which defaults to seven days ago), which is
+        // what the method name and its $time parameter describe. An exact equality
+        // here matched only rows written in the same second as the cutoff, so it
+        // returned nothing for any realistic input.
+        $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
+            . $this->getTableName() . ' WHERE d_date >= ? GROUP BY s_search ORDER BY d_date DESC';
+        $params = array(date('Y-m-d H:i:s', $time));
 
-        if ($result == false) {
+        // Same is_numeric() gate as getSearches() above.
+        if (is_numeric($limit)) {
+            $sql .= ' LIMIT ' . (int) $limit;
+        }
+
+        try {
+            $rows = osc_db_select($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -124,23 +139,28 @@ class LatestSearches extends DAO
             return false;
         }
 
-        $this->dao->select('d_date');
-        $this->dao->from($this->getTableName());
-        $this->dao->groupBy('s_search');
-        $this->dao->orderBy('d_date', 'DESC');
-        $this->dao->limit($number, 1);
-        $result = $this->dao->get();
-        $last   = $result->row();
+        $sql = 'SELECT d_date FROM ' . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
 
-        if ($result == false) {
+        // $number is an OFFSET, not a row count: the clause is MySQL's comma form
+        // ("LIMIT <offset>, <count>"), so this selects the single row $number
+        // places down the list and purges from there. A non-numeric $number
+        // leaves the clause off entirely, running the query unbounded; a negative
+        // one is rejected rather than clamped to offset 0, since silently purging
+        // from the newest row would delete far more than the caller asked for.
+        if (is_numeric($number)) {
+            if ((int) $number < 0) {
+                throw new \mindstellar\database\DbException('Invalid limit');
+            }
+            $sql .= ' LIMIT ' . (int) $number . ', 1';
+        }
+
+        $rows = osc_db_select($sql);
+
+        if (count($rows) === 0) {
             return false;
         }
 
-        if ($result->numRows() == 0) {
-            return false;
-        }
-
-        return $this->purgeDate($last['d_date']);
+        return $this->purgeDate($rows[0]['d_date']);
     }
 
     /**
@@ -159,10 +179,13 @@ class LatestSearches extends DAO
             return false;
         }
 
-        $this->dao->from($this->getTableName());
-        $this->dao->where('d_date <= ' . $this->dao->escape($date));
-
-        return $this->dao->delete();
+        try {
+            return osc_db_table($this->getTableName())
+                ->where('d_date', '<=', $date)
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 }
 

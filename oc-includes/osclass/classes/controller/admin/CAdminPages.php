@@ -51,6 +51,7 @@ class CAdminPages extends AdminSecBaseModel
 
                 $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
                 $this->_exportVariableToView('templates', $templates);
+                $this->_exportVariableToView('registeredTemplates', osc_page_templates());
                 $this->_exportVariableToView('page', $this->pageManager->findByPrimaryKey(Params::getParam('id')));
                 $this->doView('pages/frm.php');
                 break;
@@ -121,6 +122,7 @@ class CAdminPages extends AdminSecBaseModel
 
                 $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
                 $this->_exportVariableToView('templates', $templates);
+                $this->_exportVariableToView('registeredTemplates', osc_page_templates());
                 $this->_exportVariableToView('page', array());
                 $this->doView('pages/frm.php');
                 break;
@@ -205,6 +207,14 @@ class CAdminPages extends AdminSecBaseModel
                             break;
                         case 1:
                             $page_deleted_correcty++;
+                            // Remove any page-builder blocks placed on this page.
+                            Widget::newInstance()->delete(
+                                array('s_location' => 'page.' . (int)$_id)
+                            );
+                            // Remove page-owned images (editor uploads) — files and
+                            // rows — so they don't wait for the daily orphan sweep.
+                            (new \mindstellar\storage\ResourceUploader())
+                                ->deleteByOwner(\mindstellar\model\Resource::OWNER_PAGE, (int)$_id);
                     }
                 }
 
@@ -269,7 +279,7 @@ class CAdminPages extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }

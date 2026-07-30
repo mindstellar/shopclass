@@ -10,7 +10,7 @@
 
 namespace mindstellar\utility;
 
-use DBConnectionClass;
+use mindstellar\database\Connection;
 use Preference;
 
 /**
@@ -398,8 +398,7 @@ class SystemInfo
     public function setDbInfo()
     : self
     {
-        $db                    = DBConnectionClass::newInstance();
-        $this->db_serverinfo   = $db->getOsclassDb()->get_server_info();
+        $this->db_serverinfo   = Connection::instance()->serverInfo();
         $this->db_host         = DB_HOST;
         $this->db_name         = DB_NAME;
         $this->db_user         = DB_USER;

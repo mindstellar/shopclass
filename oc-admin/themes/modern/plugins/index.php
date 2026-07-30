@@ -27,8 +27,8 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Manage Plugins'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+    <h1><?php _e('Plugins'); ?>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=plugins&amp;action=add"
            class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add plugin'); ?>"><i
@@ -59,10 +59,11 @@ $aData          = __get('aPlugins');
 $tab_index = 2;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
+<h2 class="render-title"><?php _e('Manage plugins'); ?></h2>
 
 <?php if (Params::getParam('error') != '') { ?>
     <!-- flash message -->
-    <div class="flashmessage flashmessage-error" style="display:block">
+    <div class="flashmessage flashmessage-error">
         <?php _e("Plugin couldn't be installed because it triggered a <strong>fatal error</strong>"); ?>
         <a class="btn ico btn-mini ico-close">x</a>
         <iframe style="border:0;" width="100%" height="60"
@@ -103,9 +104,9 @@ $tab_index = 2;
                     : '<div class="actions"><ul><li>' . implode('</li><li>', $options) . '</li></ul></div>';
                 ?>
                 <tr class="plugin-<?php echo $sStatus; ?> status-<?php echo $sStatus; ?>">
-                    <td><?php echo $array[0] . $actions; ?></td>
-                    <td class="col-status"><?php echo $array['status']; ?></td>
-                    <td><?php echo $array[1]; ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>"><?php echo $array[0] . $actions; ?></td>
+                    <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php echo $array['status']; ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(__('Description')); ?>"><?php echo $array[1]; ?></td>
                 </tr>
             <?php } ?>
         <?php } else { ?>

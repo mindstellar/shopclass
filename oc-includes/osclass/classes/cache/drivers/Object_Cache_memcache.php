@@ -72,7 +72,7 @@ class Object_Cache_memcache implements iObject_Cache
             . 'or "apcu" instead.',
             E_USER_DEPRECATED
         );
-        $this->site_prefix = '';
+        $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
         $cache_server      = array();
         global $_cache_config;
         if (!isset($_cache_config) && !is_array($_cache_config)) {
@@ -123,7 +123,7 @@ class Object_Cache_memcache implements iObject_Cache
         }
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
-        $result = $this->memcached->add($key, array($store_data, time(), $expire), 0, $expire);
+        $result = $this->memcached->add($this->_key($key), array($store_data, time(), $expire), 0, $expire);
         if (false !== $result) {
             $this->cache[$key] = $data;
         }
@@ -142,7 +142,7 @@ class Object_Cache_memcache implements iObject_Cache
      */
     public function delete($key)
     {
-        $result = $this->memcached->delete($key);
+        $result = $this->memcached->delete($this->_key($key));
         if (false !== $result) {
             unset($this->cache[$key]);
         }
@@ -189,7 +189,7 @@ class Object_Cache_memcache implements iObject_Cache
             $return = $value;
         } else {
             $found = true;
-            $value = $this->memcached->get($key);
+            $value = $this->memcached->get($this->_key($key));
             if (is_object($value) && 'ArrayObject' === get_class($value)) {
                 $value = $value->getArrayCopy();
             }
@@ -238,7 +238,7 @@ class Object_Cache_memcache implements iObject_Cache
 
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
 
-        return $this->memcached->set($key, $store_data, 0, $expire);
+        return $this->memcached->set($this->_key($key), $store_data, 0, $expire);
     }
 
     /**
@@ -267,6 +267,71 @@ padding: 1em;'><h2>Memcache stats</h2>";
      *
      * Check to see if Memcache is available on this system, bail if it isn't.
      */
+    /**
+     * Normalised cache statistics for the admin's cache screen.
+     *
+     * Deliberately NOT part of iObject_Cache: third-party drivers implement that
+     * interface, and adding a required method would fatal them. Callers probe with
+     * method_exists() instead. The legacy stats() is left alone — it echoes debug
+     * markup and anything already calling it keeps working.
+     *
+     * @return array|null Null when the driver has nothing to report.
+     */
+    public function statsData()
+    {
+        if (!is_object($this->memcached) || !method_exists($this->memcached, 'getStats')) {
+            return null;
+        }
+        $all = @$this->memcached->getStats();
+        if (!is_array($all) || $all === array()) {
+            return null;
+        }
+        // getStats() is keyed by "host:port"; report the first server that answered
+        // and name it, so a multi-server setup does not silently show only one.
+        $server = null;
+        $stats  = null;
+        foreach ($all as $name => $row) {
+            if (is_array($row) && isset($row['uptime'])) {
+                $server = $name;
+                $stats  = $row;
+                break;
+            }
+        }
+        if ($stats === null) {
+            return null;
+        }
+
+        return array(
+            'entries'      => isset($stats['curr_items']) ? (int)$stats['curr_items'] : null,
+            'hits'         => isset($stats['get_hits']) ? (int)$stats['get_hits'] : null,
+            'misses'       => isset($stats['get_misses']) ? (int)$stats['get_misses'] : null,
+            'memory_used'  => isset($stats['bytes']) ? (int)$stats['bytes'] : null,
+            'memory_total' => isset($stats['limit_maxbytes']) ? (int)$stats['limit_maxbytes'] : null,
+            'uptime'       => isset($stats['uptime']) ? (int)$stats['uptime'] : null,
+            'evictions'    => isset($stats['evictions']) ? (int)$stats['evictions'] : null,
+            'server'       => $server,
+        );
+    }
+
+
+    /**
+     * Namespace every key with a value unique to this install.
+     *
+     * APCu and memcached are shared stores: several installs can sit behind one
+     * PHP-FPM pool or point at one memcached. site_prefix existed for exactly this
+     * but was set to '' and never read, so two installs collided on identical keys
+     * and could serve each other's cached values. Derived from WEB_PATH, so it is
+     * stable across requests and different for each install.
+     *
+     * @param int|string $key
+     *
+     * @return string
+     */
+    private function _key($key)
+    {
+        return $this->site_prefix . $key;
+    }
+
     public static function is_supported()
     {
         if (!class_exists('Memcache')) {

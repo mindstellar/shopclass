@@ -73,21 +73,25 @@ class CityArea extends DAO
      */
     public function findByName($cityAreaName, $cityId = null)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $cityAreaName);
-        $this->dao->limit(1);
+        $query = osc_db_table($this->getTableName())
+            ->select(...$this->getFields())
+            ->where('s_name', $cityAreaName);
+
         if ($cityId != null) {
-            $this->dao->where('fk_i_city_id', $cityId);
+            $query = $query->where('fk_i_city_id', $cityId);
         }
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = $query->first();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->row();
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
     }
 
     /**
@@ -102,17 +106,16 @@ class CityArea extends DAO
      */
     public function findByCity($cityId)
     {
-        $this->dao->select($this->getFields());
-        $this->dao->from($this->getTableName());
-        $this->dao->where('fk_i_city_id', $cityId);
-
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->select(...$this->getFields())
+                ->where('fk_i_city_id', $cityId)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**

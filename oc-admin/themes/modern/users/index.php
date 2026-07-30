@@ -30,7 +30,7 @@ function customPageHeader()
     <h1><?php _e('Users'); ?>
         <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=settings'; ?>"
            class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=create'; ?>"
            class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add'); ?>"><i
                     class="bi bi-plus-circle-fill"></i></a>
@@ -111,16 +111,16 @@ $withFilters = __get('withFilters');
                 } ?>
                 <select name="iDisplayLength" class="form-select form-select-sm"
                         onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
+                    <option value="10"><?php printf(__('%d users'), 10); ?></option>
                     <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d Listings'), 25); ?></option>
+                                       } ?> ><?php printf(__('%d users'), 25); ?></option>
                     <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d Listings'), 50); ?></option>
+                                       } ?> ><?php printf(__('%d users'), 50); ?></option>
                     <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
                         echo 'selected';
-                                        } ?> ><?php printf(__('%d Listings'), 100); ?></option>
+                                        } ?> ><?php printf(__('%d users'), 100); ?></option>
                 </select>
             </form>
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"

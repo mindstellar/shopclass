@@ -237,7 +237,7 @@ class CAdminItemComments extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = (int)Params::getParam('iPage');
+                $page = Params::getParamInt('iPage');
                 if ($page == 0) {
                     $page = 1;
                 }

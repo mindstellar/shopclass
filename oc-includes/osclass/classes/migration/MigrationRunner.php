@@ -10,14 +10,15 @@
 
 namespace mindstellar\migration;
 
-use DBCommandClass;
+use mindstellar\database\Connection;
+use mindstellar\database\SqlScript;
 use RuntimeException;
 use Throwable;
 
 /**
  * Forward-only migration runner backed by a ledger table (t_migration).
  *
- * Complements DBCommandClass::updateDB(), which diffs struct.sql against the live schema and
+ * Complements the schema reconcile in the upgrader, which diffs struct.sql against the live schema and
  * can add tables/columns/indexes/foreign keys and even apply column type and default changes
  * (CHANGE COLUMN / ALTER COLUMN). What it cannot do is DROP a column/index/table, rename, or
  * transform/backfill data — anything of that kind is authored as an ordered, immutable
@@ -26,21 +27,21 @@ use Throwable;
  *
  * Migration files are named NNNN_description.sql or NNNN_description.php (zero-padded prefix
  * so string order == numeric order). `.sql` files run their statements verbatim; `.php`
- * files return an object with an up(DBCommandClass) method (see MigrationInterface).
+ * files return an object with an up(Connection) method (see MigrationInterface).
  */
 class MigrationRunner
 {
-    private DBCommandClass $comm;
+    private Connection $conn;
     private string $dir;
     private string $table;
 
     /**
-     * @param DBCommandClass $comm         command object bound to the Shopclass DB
-     * @param string         $migrationsDir absolute path to the migrations directory
+     * @param Connection $conn          connection bound to the database being migrated
+     * @param string     $migrationsDir absolute path to the migrations directory
      */
-    public function __construct(DBCommandClass $comm, string $migrationsDir)
+    public function __construct(Connection $conn, string $migrationsDir)
     {
-        $this->comm  = $comm;
+        $this->conn  = $conn;
         $this->dir   = rtrim($migrationsDir, '/\\');
         $this->table = DB_TABLE_PREFIX . 't_migration';
     }
@@ -53,14 +54,14 @@ class MigrationRunner
      */
     public function ensureLedger(): void
     {
-        $this->comm->query(
+        $this->conn->execute(
             'CREATE TABLE IF NOT EXISTS ' . $this->table . ' ('
             . ' pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,'
             . ' s_migration VARCHAR(255) NOT NULL,'
             . ' dt_applied DATETIME NOT NULL,'
             . ' PRIMARY KEY (pk_i_id),'
             . ' UNIQUE KEY (s_migration)'
-            . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'UTF8' COLLATE 'UTF8_GENERAL_CI'"
+            . ") ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         );
     }
 
@@ -71,13 +72,8 @@ class MigrationRunner
      */
     public function applied(): array
     {
-        $result = $this->comm->query('SELECT s_migration FROM ' . $this->table);
-        if (!is_object($result)) {
-            return array();
-        }
-
         $names = array();
-        foreach ($result->result('array') as $row) {
+        foreach ($this->conn->select('SELECT s_migration FROM ' . $this->table) as $row) {
             $names[] = $row['s_migration'];
         }
 
@@ -202,11 +198,11 @@ class MigrationRunner
             throw new RuntimeException('Unable to read migration file: ' . $path);
         }
 
-        $sql = str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql);
-        foreach ($this->splitStatements($sql) as $statement) {
-            if ($this->comm->query($statement) === false) {
-                throw new RuntimeException('Migration statement failed: ' . $statement);
-            }
+        // SqlScript substitutes the schema tokens and strips block comments as
+        // well as splitting, so a .sql migration is parsed exactly like the
+        // schema files the installer loads.
+        foreach (SqlScript::statements($sql) as $statement) {
+            $this->conn->execute($statement);
         }
     }
 
@@ -222,28 +218,7 @@ class MigrationRunner
             throw new RuntimeException('Migration must return an object with an up() method: ' . $path);
         }
 
-        $migration->up($this->comm);
-    }
-
-    /**
-     * Naive `;` split — adequate for the one-logical-change-per-migration convention.
-     * Migrations needing statements that embed `;` should use a `.php` migration instead.
-     *
-     * @param string $sql
-     *
-     * @return string[]
-     */
-    private function splitStatements($sql): array
-    {
-        $statements = array();
-        foreach (explode(';', $sql) as $part) {
-            $part = trim($part);
-            if ($part !== '') {
-                $statements[] = $part;
-            }
-        }
-
-        return $statements;
+        $migration->up($this->conn);
     }
 
     /**
@@ -253,9 +228,9 @@ class MigrationRunner
      */
     private function record($name): void
     {
-        $this->comm->query(
-            'INSERT INTO ' . $this->table . ' (s_migration, dt_applied) VALUES ('
-            . $this->comm->escape($name) . ', NOW())'
+        $this->conn->execute(
+            'INSERT INTO ' . $this->table . ' (s_migration, dt_applied) VALUES (?, NOW())',
+            array($name)
         );
     }
 }

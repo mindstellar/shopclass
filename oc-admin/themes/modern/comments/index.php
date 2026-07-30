@@ -27,11 +27,11 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Comments'); ?>
+    <h1><?php _e('Listings'); ?>
         <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=comments'; ?>"
            class="ms-1 float-end" title="<?php echo osc_esc_html(__('Settings')); ?>"
            aria-label="<?php echo osc_esc_html(__('Comment settings')); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box" aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
     </h1>
     <?php
@@ -62,6 +62,7 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
+<h2 class="render-title"><?php _e('Comments'); ?></h2>
 <div class="relative">
     <div id="listing-toolbar">
         <div class="float-right">

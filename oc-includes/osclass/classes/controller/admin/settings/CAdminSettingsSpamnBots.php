@@ -72,9 +72,19 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $recaptchaVersion = Params::getParam('recaptchaVersion');
                 $recaptchaVersion = trim($recaptchaVersion);
 
+                $captchaProvider = trim(Params::getParam('captchaProvider'));
+                if (!in_array($captchaProvider, array('auto', 'recaptcha', 'turnstile', 'none'), true)) {
+                    $captchaProvider = 'auto';
+                }
+                $turnstileSiteKey   = trim(Params::getParam('turnstileSiteKey'));
+                $turnstileSecretKey = trim(Params::getParam('turnstileSecretKey'));
+
                 $iUpdated += osc_set_preference('recaptchaPrivKey', $recaptchaPrivKey);
                 $iUpdated += osc_set_preference('recaptchaPubKey', $recaptchaPubKey);
                 $iUpdated += osc_set_preference('recaptcha_version', $recaptchaVersion);
+                $iUpdated += osc_set_preference('captchaProvider', $captchaProvider);
+                $iUpdated += osc_set_preference('turnstileSiteKey', $turnstileSiteKey);
+                $iUpdated += osc_set_preference('turnstileSecretKey', $turnstileSecretKey);
 
                 if ($recaptchaPubKey == '') {
                     osc_add_flash_info_message(_m('Your reCAPTCHA key has been cleared'), 'admin');
@@ -89,6 +99,36 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $alertsRequireLogin = Params::getParam('alerts_require_login') != '' ? 1 : 0;
                 osc_set_preference('alerts_require_login', $alertsRequireLogin, 'osclass', 'BOOLEAN');
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
+            case ('login_throttle_post'):
+                // updating the sign-in rate limit
+                osc_csrf_check();
+
+                // Every limit is floored at 1: a zero would read as "no attempt
+                // allowed" and shut the form for everyone, including whoever
+                // typed it. Turning the limiter off is the checkbox, not a zero.
+                $enabled    = Params::getParam('login_throttle_enabled') != '' ? 1 : 0;
+                $window     = max(1, Params::getParamInt('login_throttle_window'));
+                $maxIp      = max(1, Params::getParamInt('login_throttle_max_ip'));
+                $maxAccount = max(1, Params::getParamInt('login_throttle_max_account'));
+                $retention  = max(0, Params::getParamInt('login_attempt_retention_days'));
+
+                osc_set_preference('login_throttle_enabled', $enabled, 'security', 'BOOLEAN');
+                osc_set_preference('login_throttle_window', $window, 'security', 'INTEGER');
+                osc_set_preference('login_throttle_max_ip', $maxIp, 'security', 'INTEGER');
+                osc_set_preference('login_throttle_max_account', $maxAccount, 'security', 'INTEGER');
+                osc_set_preference('login_attempt_retention_days', $retention, 'security', 'INTEGER');
+
+                osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
+            case ('login_throttle_reset'):
+                // clearing every recorded attempt, so an operator can let a
+                // locked-out visitor (or themselves) back in immediately
+                osc_csrf_check();
+                LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
+                osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
         }

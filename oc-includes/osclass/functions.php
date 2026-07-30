@@ -362,38 +362,47 @@ function osc_search_footer_links()
         }
     }
 
-    $conn = DBConnectionClass::newInstance();
-    $data = $conn->getOsclassDb();
-    $comm = new DBCommandClass($data);
-
-    $comm->select('i.fk_i_category_id');
-    $comm->select('l.*');
-    $comm->select('COUNT(*) AS total');
-    $comm->from(DB_TABLE_PREFIX . 't_item as i');
-    $comm->from(DB_TABLE_PREFIX . 't_item_location as l');
-    if (!empty($categoryID)) {
-        $comm->whereIn('i.fk_i_category_id', $categoryID);
+    // $categoryID reaches here straight from the search request, so the id list
+    // is cast and bound rather than pasted into the statement.
+    $ids = array();
+    foreach ((array)$categoryID as $c) {
+        $ids[] = (int)$c;
     }
-    $comm->where('i.pk_i_id = l.fk_i_item_id');
-    $comm->where('i.b_enabled = 1');
-    $comm->where('i.b_active = 1');
-    $comm->where(sprintf("dt_expiration >= '%s'", date('Y-m-d H:i:s')));
 
-    $comm->where('l.fk_i_region_id IS NOT NULL');
-    $comm->where('l.fk_i_city_id IS NOT NULL');
+    $where  = array();
+    $params = array();
+
+    if ($ids !== array()) {
+        $where[]  = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
+        $params   = array_merge($params, $ids);
+    }
+
+    $where[]  = 'i.pk_i_id = l.fk_i_item_id';
+    $where[]  = 'i.b_enabled = 1';
+    $where[]  = 'i.b_active = 1';
+    $where[]  = 'dt_expiration >= ?';
+    $params[] = date('Y-m-d H:i:s');
+    $where[]  = 'l.fk_i_region_id IS NOT NULL';
+    $where[]  = 'l.fk_i_city_id IS NOT NULL';
+
     if ($regionID != '') {
-        $comm->where('l.fk_i_region_id', $regionID);
-        $comm->groupBy('l.fk_i_city_id');
+        $where[]  = 'l.fk_i_region_id = ?';
+        $params[] = (int)$regionID;
+        $groupBy  = 'l.fk_i_city_id';
     } else {
-        $comm->groupBy('l.fk_i_region_id');
+        $groupBy = 'l.fk_i_region_id';
     }
-    $rs = $comm->get();
 
-    if (!$rs) {
+    $sql = 'SELECT i.fk_i_category_id, l.*, COUNT(*) AS total'
+        . ' FROM ' . DB_TABLE_PREFIX . 't_item as i, ' . DB_TABLE_PREFIX . 't_item_location as l'
+        . ' WHERE ' . implode(' AND ', $where)
+        . ' GROUP BY ' . $groupBy;
+
+    try {
+        return osc_db_stringify_rows(osc_db_select($sql, $params));
+    } catch (\mindstellar\database\DbException $e) {
         return array();
     }
-
-    return $rs->result();
 }
 
 
@@ -832,7 +841,7 @@ function osc_item_tinymce_header()
 /**
  * Load the shared oscAutocomplete combobox on the public item form (publish/edit),
  * where ItemForm::location_javascript_new() drives the location fields with it. It
- * replaces a jQuery-UI widget, so jQuery stays merely registered, never enqueued.
+ * replaces a jQuery-UI widget and pulls in no jQuery of its own.
  * (The photo uploader self-enqueues from ItemForm::ajax_photos when it renders.)
  */
 function osc_ui_common_header()
@@ -913,20 +922,27 @@ osc_add_hook('cron_daily', 'osc_run_cleanup');
 function osc_show_maintenance()
 {
     if (defined('__OSC_MAINTENANCE__')) { ?>
-        <div id="maintenance" name="maintenance">
-            <?php _e('The website is currently undergoing maintenance'); ?>
+        <div id="osc-maintenance-bar" role="status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+            </svg>
+            <?php _e('Maintenance mode is on — only signed-in admins can see the site right now.'); ?>
         </div>
         <style>
-            #maintenance {
-                position: static;
-                top: 0px;
-                right: 0px;
-                background-color: #ff5252;
+            #osc-maintenance-bar {
                 width: 100%;
                 text-align: center;
-                padding: 10px 0;
-                font-size: 14px;
-                color: #fefefe;
+                padding: 10px 16px;
+                background-color: #fdf4d2;
+                color: #7a6716;
+                border-bottom: 1px solid #ecdca0;
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 500;
+            }
+            #osc-maintenance-bar svg {
+                vertical-align: -3px;
+                margin-inline-end: 8px;
             }
         </style>
     <?php }

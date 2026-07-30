@@ -46,8 +46,8 @@ class UserActions
     {
         $error       = array();
         $flash_error = '';
-        if (!$this->is_admin && osc_recaptcha_private_key() && !osc_check_recaptcha()) {
-            $flash_error .= _m('The reCAPTCHA was not entered correctly') . PHP_EOL;
+        if (!$this->is_admin && osc_captcha_enabled() && !osc_check_captcha()) {
+            $flash_error .= _m('Please complete the security check.') . PHP_EOL;
             $error[]     = 4;
         }
 
@@ -123,6 +123,12 @@ class UserActions
         // hook pre add or edit
         osc_run_hook('pre_user_post');
 
+        // Persist only a fingerprint of the activation code; the plaintext travels solely in the
+        // validation email below, which reads it back from $input.
+        $activation_plain = $input['s_secret'] ?? '';
+        if ($activation_plain !== '') {
+            $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
+        }
 
         $this->manager->insert($input);
         $userId = $this->manager->dao->insertedId();
@@ -155,6 +161,8 @@ class UserActions
         }
 
         if (!$this->is_admin && osc_user_validation_enabled()) {
+            // Restore the plaintext code so the validation email builds a working link.
+            $input['s_secret'] = $activation_plain;
             osc_run_hook('hook_email_user_validation', $user, $input);
             $success = 1;
         } else {
@@ -170,7 +178,7 @@ class UserActions
                     array('s_contact_email' => $input['s_email'])
                 );
             if ($items_updated !== false && $items_updated > 0) {
-                User::newInstance()->update('i_items = i_items + ' . (int)$items_updated, array('pk_i_id' => $userId));
+                User::newInstance()->increaseNumItems($userId, $items_updated);
             }
             // update alerts user id with the same email
             Alerts::newInstance()->update(array('fk_i_user_id' => $userId), array('s_email' => $input['s_email']));
@@ -230,7 +238,7 @@ class UserActions
             $input['s_country'] = $this->Sanitize->string(Params::getParam('country'));
         }
 
-        if ((int)Params::getParam('regionId')) {
+        if (Params::getParamInt('regionId')) {
             $region = Region::newInstance()->findByPrimaryKey(Params::getParam('regionId'));
             if (count($region) > 0) {
                 $input['fk_i_region_id']   = $region['pk_i_id'];
@@ -241,7 +249,7 @@ class UserActions
             $input['s_region'] = $this->Sanitize->string(Params::getParam('region'));
         }
 
-        if ((int)Params::getParam('cityId')) {
+        if (Params::getParamInt('cityId')) {
             $city = City::newInstance()->findByPrimaryKey(Params::getParam('cityId'));
             if (count($city) > 0) {
                 $input['fk_i_city_id']   = $city['pk_i_id'];
@@ -387,18 +395,16 @@ class UserActions
 
     /**
      * Recover user password
+     *
+     * The caller owns the captcha check, which has to happen before the throttle is
+     * consulted — and a captcha token verifies exactly once, so there is only ever one
+     * place to do it. CWebLogin's 'recover_post' does it, mirroring CAdminLogin.
+     *
      * @return int
      */
     public function recover_password()
     {
         $user = User::newInstance()->findByEmail(Params::getParam('s_email'));
-        Session::newInstance()->_set('recover_time', time());
-
-        if ((osc_recaptcha_private_key() != '') && Session::newInstance()->_get('recover_captcha_not_set') != 1
-            && !osc_check_recaptcha()
-        ) {
-            return 2; // BREAK THE PROCESS, THE RECAPTCHA IS WRONG
-        }
 
         if (!$user || ($user['b_enabled'] == 0)) {
             return 1;
@@ -462,7 +468,7 @@ class UserActions
                 array('s_contact_email' => $user['s_email'])
             );
         if ($items_updated !== false && $items_updated > 0) {
-            User::newInstance()->update('i_items = i_items + ' . (int)$items_updated, array('pk_i_id' => $user_id));
+            User::newInstance()->increaseNumItems($user_id, $items_updated);
         }
         // update alerts user id with the same email
         Alerts::newInstance()->update(array('fk_i_user_id' => $user_id), array('s_email' => $user['s_email']));
@@ -592,14 +598,20 @@ class UserActions
      */
     public function resend_activation($user_id)
     {
-        $user              = $this->manager->findByPrimaryKey($user_id);
-        $input['s_secret'] = $user['s_secret'];
+        $user = $this->manager->findByPrimaryKey($user_id);
 
         if (!$user || $user['b_active'] == 1) {
             return 0;
         }
 
         if (osc_user_validation_enabled()) {
+            // Rotate the activation code: email a fresh plaintext, persist only its fingerprint.
+            $activation_plain  = osc_genRandomPassword();
+            $input['s_secret'] = $activation_plain;
+            $this->manager->update(
+                array('s_secret' => \mindstellar\security\ActionToken::hash($activation_plain)),
+                array('pk_i_id' => $user_id)
+            );
             osc_run_hook('hook_email_user_validation', $user, $input);
 
             return 1;

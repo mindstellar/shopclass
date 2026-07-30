@@ -17,7 +17,7 @@ class AjaxUploader
      * @param array|null $allowedExtensions
      * @param null       $sizeLimit
      */
-    public function __construct(array $allowedExtensions = null, $sizeLimit = null)
+    public function __construct(?array $allowedExtensions = null, $sizeLimit = null)
     {
         if ($allowedExtensions === null) {
             $allowedExtensions = osc_allowed_extension();

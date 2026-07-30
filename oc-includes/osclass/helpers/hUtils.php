@@ -94,7 +94,7 @@ function osc_show_widgets($location)
 {
     $widgets = Widget::newInstance()->findByLocation($location);
     foreach ($widgets as $w) {
-        echo $w['s_content'];
+        osc_render_widget($w);
     }
 }
 
@@ -110,37 +110,33 @@ function osc_show_widgets_by_description($description)
 {
     $widgets = Widget::newInstance()->findByDescription($description);
     foreach ($widgets as $w) {
-        echo $w['s_content'];
+        osc_render_widget($w);
     }
 }
 
 
 /**
- * Print recaptcha html, if $section = "recover_password"
- * set 'recover_time' at session.
+ * Print recaptcha html.
  *
- * @param string $section
+ * Every form gets the same widget. `$section` is only a per-form label kept for the
+ * documented signature, so a theme passing one still works.
+ *
+ * It used to select a 'recover_password' branch that rendered a captcha only when a reset
+ * had been requested in the last 20 minutes, recording in the session when it had not so
+ * the reset action would skip validating one. Both values were session-scoped, so a client
+ * discarding cookies was always on its first attempt and never saw a captcha at all — and
+ * because LoginThrottle drops its per-account limit whenever a provider is configured, the
+ * reset form ended up with neither. The window bought nothing a cookie jar could not
+ * sidestep, so it is gone.
+ *
+ * @param string $section per-form label; does not change what is rendered
  *
  * @return void
  */
 function osc_show_recaptcha($section = '')
 {
     if (osc_recaptcha_public_key()) {
-        switch ($section) {
-            case ('recover_password'):
-                Session::newInstance()->_set('recover_captcha_not_set', 0);
-                $time = Session::newInstance()->_get('recover_time');
-                if ((time() - $time) <= 1200) {
-                    echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
-                } else {
-                    Session::newInstance()->_set('recover_captcha_not_set', 1);
-                }
-                break;
-
-            default:
-                echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
-                break;
-        }
+        echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
     }
 }
 
@@ -153,6 +149,155 @@ function _osc_recaptcha_get_html($siteKey, $lang)
 {
     echo '<div class="g-recaptcha" data-sitekey="' . $siteKey . '"></div>';
     echo '<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?hl=' . $lang . '"></script>';
+}
+
+
+/**
+ * Resolves the active captcha provider for this request.
+ *
+ * reCAPTCHA and Cloudflare Turnstile sit behind one abstraction. The stored
+ * captchaProvider preference selects the leg; the result is memoised per
+ * request. Resolution rules:
+ *   - 'none'      -> 'none'
+ *   - 'turnstile' -> 'turnstile' when both Turnstile keys are set, else 'none'
+ *   - 'recaptcha' -> 'recaptcha' when the reCAPTCHA private key is set, else 'none'
+ *   - 'auto'/''   -> 'turnstile' when Turnstile is configured AND reCAPTCHA is
+ *                    not enabled; else 'recaptcha' when reCAPTCHA is enabled;
+ *                    else 'none'.
+ *
+ * Auto prefers reCAPTCHA when both are configured because core validates
+ * g-recaptcha-response natively whenever the reCAPTCHA private key is set:
+ * clearing the reCAPTCHA keys is what stands core down and flips auto to
+ * Turnstile.
+ *
+ * @return string 'recaptcha' | 'turnstile' | 'none'
+ */
+function osc_captcha_provider()
+{
+    static $provider = null;
+    if ($provider !== null) {
+        return $provider;
+    }
+
+    $recaptcha_enabled = osc_recaptcha_private_key() !== '';
+
+    switch (osc_captcha_provider_pref()) {
+        case 'none':
+            $provider = 'none';
+            break;
+        case 'turnstile':
+            $provider = osc_turnstile_configured() ? 'turnstile' : 'none';
+            break;
+        case 'recaptcha':
+            $provider = $recaptcha_enabled ? 'recaptcha' : 'none';
+            break;
+        case 'auto':
+        case '':
+        default:
+            if (osc_turnstile_configured() && !$recaptcha_enabled) {
+                $provider = 'turnstile';
+            } elseif ($recaptcha_enabled) {
+                $provider = 'recaptcha';
+            } else {
+                $provider = 'none';
+            }
+            break;
+    }
+
+    return $provider;
+}
+
+
+/**
+ * Whether a usable captcha provider is active (not 'none').
+ *
+ * @return bool
+ */
+function osc_captcha_enabled()
+{
+    return osc_captcha_provider() !== 'none';
+}
+
+
+/**
+ * Whether both Cloudflare Turnstile keys are configured.
+ *
+ * @return bool
+ */
+function osc_turnstile_configured()
+{
+    return osc_turnstile_site_key() !== '' && osc_turnstile_secret_key() !== '';
+}
+
+
+/**
+ * Builds the active provider's captcha widget markup as a string.
+ *
+ * The reCAPTCHA leg buffers the existing osc_show_recaptcha() output verbatim
+ * so rendered bytes are unchanged in reCAPTCHA mode; $context is passed through
+ * as its $section argument. The Turnstile leg emits the cf-turnstile div and,
+ * unless $deferred, the Turnstile api.js loader.
+ *
+ * @param string $context per-form label. reCAPTCHA leg: osc_show_recaptcha()
+ *                        section. Turnstile leg: data-action (omitted when empty).
+ * @param bool   $deferred true = widget markup only, no provider <script>.
+ *
+ * @return string
+ */
+function osc_captcha_widget_html($context = '', $deferred = false)
+{
+    switch (osc_captcha_provider()) {
+        case 'recaptcha':
+            ob_start();
+            osc_show_recaptcha($context);
+
+            return ob_get_clean();
+        case 'turnstile':
+            $html = '<div class="cf-turnstile" data-sitekey="' . osc_esc_html(osc_turnstile_site_key()) . '"';
+            if ($context !== '') {
+                $html .= ' data-action="' . osc_esc_html($context) . '"';
+            }
+            $html .= '></div>';
+            if (!$deferred) {
+                $html .= '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
+            }
+
+            return $html;
+        default:
+            return '';
+    }
+}
+
+
+/**
+ * Echoes the active provider's captcha widget.
+ *
+ * @param string $context per-form label (see osc_captcha_widget_html()).
+ * @param bool   $deferred true = widget markup only, no provider <script>.
+ *
+ * @return void
+ */
+function osc_show_captcha($context = '', $deferred = false)
+{
+    echo osc_captcha_widget_html($context, $deferred);
+}
+
+
+/**
+ * The active provider's client script URL.
+ *
+ * @return string Turnstile/reCAPTCHA api.js URL; '' when no provider is active.
+ */
+function osc_captcha_script_url()
+{
+    switch (osc_captcha_provider()) {
+        case 'turnstile':
+            return 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        case 'recaptcha':
+            return 'https://www.google.com/recaptcha/api.js?hl=' . substr(osc_language(), 0, 2);
+        default:
+            return '';
+    }
 }
 
 
@@ -345,6 +490,184 @@ function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</
     }
 
     return $txt;
+}
+
+
+/**
+ * Convert plain-text line breaks into HTML paragraphs and line breaks.
+ *
+ * A blank line starts a new paragraph; a single newline within a block becomes
+ * a line break. Existing block-level markup (<p>, <ul>, <table>, <pre>, <h2>…)
+ * is left intact and never paragraph-wrapped, so the function is safe — and
+ * stable when re-applied — on content that already contains HTML, such as the
+ * markup the WYSIWYG editor stores. This is what lets multi-line page and
+ * listing text render as real paragraphs on the public site instead of
+ * collapsing onto a single line.
+ *
+ * @param string $text        the raw stored text
+ * @param bool   $line_breaks convert single newlines to <br />
+ *
+ * @return string
+ */
+function osc_autop($text, $line_breaks = true)
+{
+    if ($text === null || trim($text) === '') {
+        return '';
+    }
+
+    // Block-level tags that stand on their own and must never be wrapped in <p>.
+    $blocks = 'table|thead|tfoot|tbody|tr|th|td|caption|col|colgroup'
+        . '|ul|ol|li|dl|dt|dd|menu'
+        . '|div|section|article|aside|header|footer|nav|figure|figcaption|main|details|summary'
+        . '|blockquote|pre|address|hr|fieldset|legend|form|noscript'
+        . '|h[1-6]|p';
+
+    // Normalise newlines and give the text a trailing break to simplify matching.
+    $text = str_replace(array("\r\n", "\r"), "\n", (string)$text);
+    $text .= "\n";
+
+    // Pull <pre> blocks out of harm's way — their whitespace is significant.
+    $stash = array();
+    if (stripos($text, '<pre') !== false) {
+        $segments = preg_split('#(<pre[^>]*>.*?</pre>)#is', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $text     = '';
+        foreach ($segments as $i => $segment) {
+            if ($i % 2 === 1) {
+                // Bare marker so restoration does not depend on surrounding
+                // newlines (which the paragraph pass strips).
+                $token         = "\x02osc-pre-" . $i . "\x03";
+                $stash[$token] = $segment;
+                $text         .= "\n\n" . $token . "\n\n";
+            } else {
+                $text .= $segment;
+            }
+        }
+    }
+
+    // Surround block tags with blank lines so each becomes its own chunk.
+    $text = preg_replace('#(<(?:' . $blocks . ')(?:\s[^>]*)?>)#i', "\n\n$1", $text);
+    $text = preg_replace('#(</(?:' . $blocks . ')>)#i', "$1\n\n", $text);
+    $text = preg_replace('#(<hr\s*/?>)#i', "\n\n$1\n\n", $text);
+
+    // Split on blank lines and wrap the loose text runs in paragraphs.
+    $chunks = preg_split('/\n[ \t]*\n/', $text);
+    $out    = '';
+    foreach ($chunks as $chunk) {
+        $trimmed = trim($chunk);
+        if ($trimmed === '') {
+            continue;
+        }
+        // Leave chunks that are already block-level markup (or a stash token) alone.
+        if (isset($stash[$trimmed])
+            || preg_match('#^</?(?:' . $blocks . ')[\s/>]#i', $trimmed)
+            || preg_match('#^<!--#', $trimmed)
+        ) {
+            $out .= $trimmed . "\n\n";
+        } else {
+            $out .= '<p>' . $trimmed . "</p>\n\n";
+        }
+    }
+    $text = $out;
+
+    // Convert the remaining single newlines inside paragraphs to <br />.
+    if ($line_breaks) {
+        // Drop newlines that merely hug a block tag — they are structural, not content.
+        $text = preg_replace('#(<(?:' . $blocks . ')(?:\s[^>]*)?>)\n+#i', '$1', $text);
+        $text = preg_replace('#\n+(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+        // A lone newline that is neither preceded nor followed by another newline.
+        // No trailing newline is kept, so a re-run finds nothing left to convert.
+        $text = preg_replace('/(?<!\n)\n(?!\n)/', '<br />', $text);
+    }
+
+    // Tidy: kill empty paragraphs and paragraphs that only fence a block element.
+    $text = preg_replace('#<p>\s*</p>#i', '', $text);
+    $text = preg_replace('#<p>\s*(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+    $text = preg_replace('#(</?(?:' . $blocks . ')(?:\s[^>]*)?>)\s*</p>#i', '$1', $text);
+    $text = preg_replace('#<br />\s*(</?(?:' . $blocks . ')(?:\s[^>]*)?>)#i', '$1', $text);
+
+    // Restore stashed <pre> blocks.
+    if (!empty($stash)) {
+        $text = str_replace(array_keys($stash), array_values($stash), $text);
+    }
+
+    return trim($text);
+}
+
+
+/**
+ * Whether this request came from a crawler rather than a person.
+ *
+ * A denylist, not an allowlist. The allowlist this replaces named the browsers
+ * of the day and treated everything matching one as human — but a crawler
+ * identifies itself by appending to an ordinary browser string, so the modern
+ * Googlebot, Bingbot and GPTBot user agents all contain "Safari" and "like
+ * Gecko" and sailed straight through it. Anything the list does not recognise is
+ * treated as a person, so a new crawler is counted until its token is added
+ * (or added by a plugin through the bot_user_agents filter) rather than a new
+ * browser being silently discounted.
+ *
+ * Deliberately cheap: one lowercase pass and a substring search per token, on a
+ * request path that runs for every listing view.
+ *
+ * @return bool
+ */
+function osc_is_bot_request()
+{
+    static $isBot = null;
+
+    if ($isBot !== null) {
+        return $isBot;
+    }
+
+    $ua = strtolower(trim((string)Params::getServerParam('HTTP_USER_AGENT', false, false)));
+
+    // No user agent at all is not a browser either.
+    if ($ua === '') {
+        return $isBot = true;
+    }
+
+    $tokens = osc_apply_filter('bot_user_agents', array(
+        // Generic — catches the long tail, which is most of it.
+        'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher',
+        // Search engines.
+        'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex',
+        'sogou', 'exabot', 'seznambot', 'petalbot', 'applebot', 'qwantify',
+        // AI and dataset collectors.
+        'gptbot', 'oai-searchbot', 'chatgpt-user', 'ccbot', 'claudebot',
+        'claude-web', 'anthropic-ai', 'perplexitybot', 'google-extended',
+        'bytespider', 'amazonbot', 'meta-externalagent', 'diffbot',
+        // SEO and marketing crawlers.
+        'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'blexbot', 'dataforseo',
+        'screaming frog', 'serpstat', 'megaindex',
+        // Monitoring, previews and libraries.
+        'uptimerobot', 'pingdom', 'statuscake', 'facebookexternalhit',
+        'telegrambot', 'whatsapp', 'slackbot', 'discordbot', 'embedly',
+        'curl/', 'wget', 'python-requests', 'python-urllib', 'go-http-client',
+        'java/', 'okhttp', 'libwww-perl', 'headlesschrome', 'phantomjs',
+    ));
+
+    foreach ($tokens as $token) {
+        if ($token !== '' && strpos($ua, $token) !== false) {
+            return $isBot = true;
+        }
+    }
+
+    return $isBot = false;
+}
+
+
+/**
+ * Whether this request should be counted in the listing view statistics.
+ *
+ * @return bool
+ */
+function osc_request_counts_as_view()
+{
+    if (!osc_item_views_enabled()) {
+        return false;
+    }
+
+    return !osc_is_bot_request() || osc_count_bot_views();
 }
 
 

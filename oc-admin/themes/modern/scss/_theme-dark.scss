@@ -1,10 +1,11 @@
 // =============================================================================
 // Dark theme — "the same workshop at night" (the One Room Rule)
 //
-// This is not an inversion. It is the Workshop Bench under a low warm light: the bench
-// goes to a near-black on the bronze's own hue, the tools stay bronze but brighten so
-// they still read as the brightest thing in the room, and every semantic tint becomes a
-// dark tinted surface rather than a pale one.
+// This is not an inversion. It is the same bench after hours: the surface drops to a cool
+// near-black tinted toward the navy/teal end (never a neutral or warm grey), the teal tools
+// brighten so they still read as the brightest thing in the room, and every semantic tint
+// becomes a dark tinted surface rather than a pale one. (The --osc-bronze* token NAMES are
+// kept for plugin compatibility; their values are teal — see _brand.scss.)
 //
 // WHY THIS FILE IS IMPORTED LAST. Bootstrap 5.3 emits its OWN `[data-bs-theme="dark"]`
 // block (its stock cool-grey dark), from the bootstrap import on line 5 of main.scss. A
@@ -39,6 +40,7 @@
   --osc-chrome:        #262d39;
   --osc-chrome-edge:   #3a424f;
   --osc-chrome-hover:  rgba(255, 255, 255, .06);
+  --osc-nav-label:     var(--osc-ink-muted); // 6.31:1 on the dark chrome — no darkening needed
 
   // --- Lines -----------------------------------------------------------------
   --osc-rule:          #333a45; // decorative divider — deliberately low contrast
@@ -75,6 +77,7 @@
   --osc-danger-deep:   #e56b64; // error-button border
   --osc-warning:       #e8c14a; // glyph on warning-tint 8.51:1
   --osc-warning-tint:  #2e2812; // ink on it 11.95:1
+  --osc-warning-deep:  var(--osc-warning); // already 8.51:1 on the dark tint — no darkening needed
   --osc-info:          #5bb6e8; // glyph on info-tint 6.72:1
   --osc-info-tint:     #152833; // ink on it 12.34:1
 
@@ -91,11 +94,13 @@
   // whole admin is one material, not our tokens over a cold Bootstrap shell.
   // ---------------------------------------------------------------------------
   --bs-body-bg:            var(--osc-bench);
-  --bs-body-bg-rgb:        33, 30, 26;
+  --bs-body-bg-rgb:        26, 31, 39;   // = --osc-bench #1a1f27 (cool). Was 33,30,26 (#211e1a),
+                                         // a stale warm value the bronze->teal recolor missed —
+                                         // it warm-tinted every rgba() Bootstrap surface.
   --bs-body-color:         var(--osc-ink);
-  --bs-body-color-rgb:     236, 231, 224;
+  --bs-body-color-rgb:     230, 235, 242; // = --osc-ink #e6ebf2 (cool). Was 236,231,224 (warm).
   --bs-emphasis-color:     var(--osc-ink);
-  --bs-emphasis-color-rgb: 236, 231, 224;
+  --bs-emphasis-color-rgb: 230, 235, 242;
   --bs-secondary-bg:       var(--osc-bench-warm);
   --bs-secondary-color:    var(--osc-ink-muted);
   --bs-tertiary-bg:        var(--osc-bench-sunk);
@@ -105,8 +110,8 @@
   --bs-link-color:         var(--osc-bronze);
   --bs-link-color-rgb:     var(--osc-bronze-rgb);
   --bs-link-hover-color:   var(--osc-bronze-deep);
-  --bs-secondary-bg-rgb:   43, 39, 35;
-  --bs-tertiary-bg-rgb:    26, 23, 20;
+  --bs-secondary-bg-rgb:   35, 42, 53;  // = --osc-bench-warm #232a35 (cool). Was 43,39,35 (warm).
+  --bs-tertiary-bg-rgb:    20, 24, 31;  // = --osc-bench-sunk #14181f (cool). Was 26,23,20 (warm).
 
   // Form controls compile $input-bg to a literal at build time (it is a Sass value, not a
   // var), so they do not follow the tokens on their own. Point them at the bench by hand:

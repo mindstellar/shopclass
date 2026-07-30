@@ -50,7 +50,28 @@ class CAdminSettings
             case ('spamNbots'):
             case ('akismet_post'):
             case ('recaptcha_post'):
+            case ('alerts_post'):
+            case ('login_throttle_post'):
+            case ('login_throttle_reset'):
                 $do = new CAdminSettingsSpamnBots();
+                break;
+            case ('sitemap'):
+            case ('sitemap_settings_post'):
+            case ('sitemap_custom_url_add'):
+            case ('sitemap_custom_url_remove'):
+            case ('sitemap_robots_post'):
+            case ('sitemap_regenerate'):
+                $do = new CAdminSettingsSitemap();
+                break;
+            case ('keyword_block'):
+            case ('keyword_block_add'):
+            case ('keyword_block_add_post'):
+            case ('keyword_block_edit'):
+            case ('keyword_block_edit_post'):
+            case ('keyword_block_delete'):
+            case ('keyword_block_import_post'):
+            case ('keyword_block_prefs_post'):
+                $do = new CAdminSettingsKeywordBlock();
                 break;
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();
@@ -67,6 +88,13 @@ class CAdminSettings
             case ('latestsearches'):
             case ('latestsearches_post'):
                 $do = new CAdminSettingsLatestSearches();
+                break;
+            case ('storage'):
+            case ('storage_post'):
+            case ('storage_test_post'):
+            case ('storage_queue_run'):
+            case ('storage_migrate_post'):
+                $do = new CAdminSettingsStorage();
                 break;
             case ('update'):
             case ('check_updates'):

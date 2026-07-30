@@ -57,7 +57,7 @@ class Item extends FormInputs
      */
     private $userLocales;
 
-    public function __construct(Escape $escape = null, Sanitize $sanitize = null)
+    public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         parent::__construct($escape, $sanitize);
         $this->Session           = Session::newInstance();
@@ -138,7 +138,7 @@ class Item extends FormInputs
      * @param                                   $locale
      * @param array                             $item
      */
-    private function printItemTitleInput($locale, array $item = null)
+    private function printItemTitleInput($locale, ?array $item = null)
     {
         $sessionTitle = $this->Session->_getForm('title');
         $value        = $sessionTitle[$locale['pk_c_code']] ?? $item['locale'][$locale['pk_c_code']]['s_title'] ?? '';
@@ -167,7 +167,7 @@ class Item extends FormInputs
      * @param                                   $locale
      * @param array                             $item
      */
-    private function printItemDescriptionInput($locale, array $item = null)
+    private function printItemDescriptionInput($locale, ?array $item = null)
     {
         $sessionDesc = $this->Session->_getForm('description');
         $value       = $sessionDesc[$locale['pk_c_code']] ?? $item['locale'][$locale['pk_c_code']]['s_description'] ?? '';
@@ -242,7 +242,7 @@ class Item extends FormInputs
      * @param array $item
      *
      */
-    private function printPriceInput(array $item = null)
+    private function printPriceInput(?array $item = null)
     {
         if ($this->Session->_getForm('price')) {
             $item['i_price'] = $this->Session->_getForm('price');

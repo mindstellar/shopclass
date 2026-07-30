@@ -35,7 +35,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Appearance'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
         <a class="text-success ms-1 float-end"
            href="<?php echo osc_admin_base_url(true); ?>?page=appearance&amp;action=add"
            title="<?php _e('Add theme'); ?>">
@@ -87,17 +87,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <h2 class="render-title lead"><?php _e('Available themes'); ?></h2>
-                <hr>
+                <h2 class="render-title separate-top"><?php _e('Available themes'); ?></h2>
                 <div class="available-theme row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4">
                     <?php
                     $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
                     $bThemesToUpdate = is_array($aThemesToUpdate);
                     $csrf_token      = osc_csrf_token_url();
+                    $hasOtherThemes  = false;
                     foreach ($themes as $theme) {
                         if ($theme === osc_theme()) {
                             continue;
                         }
+                        $hasOtherThemes = true;
                         $info = WebThemes::newInstance()->loadThemeInfo($theme);
                         ?>
                         <div class="col">
@@ -139,6 +140,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    <?php } ?>
+                    <?php if (!$hasOtherThemes) { ?>
+                        <div class="col-12">
+                            <p class="text-muted mb-0"><?php _e('No other themes are installed. Upload a theme to change your site\'s look.'); ?></p>
                         </div>
                     <?php } ?>
                 </div>

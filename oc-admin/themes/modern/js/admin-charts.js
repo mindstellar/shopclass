@@ -49,6 +49,29 @@
         return base;
     };
 
+    // Pie/geo charts don't use axes, but they still default to a white fill and
+    // dark legend/label text — unreadable in dark mode. Paint on a transparent
+    // surface and pull legend/title/slice-label colours from the live theme tokens.
+    window.oscPieOpts = function (overrides) {
+        var muted = tok('--osc-ink-muted', '#67635d');
+        var base = {
+            backgroundColor: { fill: 'transparent' },
+            legend: { textStyle: { color: muted } },
+            titleTextStyle: { color: muted, bold: false },
+            pieSliceTextStyle: { color: tok('--osc-bench', '#ffffff') },
+            chartArea: { left: 8, top: 16, width: '92%', height: '78%' }
+        };
+        if (overrides) {
+            for (var k in overrides) {
+                if (Object.prototype.hasOwnProperty.call(overrides, k)) {
+                    base[k] = overrides[k];
+                }
+            }
+        }
+
+        return base;
+    };
+
     // Register a (re)draw callback; the first registration wires a single observer
     // that re-runs them all when data-bs-theme changes, so charts follow the theme.
     var redraws = [];

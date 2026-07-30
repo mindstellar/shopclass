@@ -71,7 +71,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box" aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
     </h1>
     <?php

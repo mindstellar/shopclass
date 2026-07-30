@@ -109,7 +109,8 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
 
             if (isset($message['msg']) && $message['msg'] != '') {
                 echo '<div id="' . $id . '" class="' . strtolower($class) . ' ' . strtolower($class) . '-'
-                    . $message['type'] . '"><a class="btn ico btn-mini ico-close">x</a>';
+                    . $message['type'] . '"><a class="btn ico btn-mini ico-close" data-oc-close-label="'
+                    . osc_esc_html(__('Dismiss')) . '">x</a>';
                 echo osc_apply_filter('flash_message_text', $message['msg']);
                 echo '</div>';
             } elseif ($message != '') {

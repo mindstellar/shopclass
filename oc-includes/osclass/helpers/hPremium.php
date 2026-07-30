@@ -400,7 +400,7 @@ function osc_premium_address()
  */
 function osc_premium_show_email()
 {
-    return (boolean)osc_premium_field('b_show_email');
+    return (bool)osc_premium_field('b_show_email');
 }
 
 
@@ -477,7 +477,7 @@ function osc_premium_views()
  */
 function osc_premium_status()
 {
-    return (boolean)osc_premium_field('b_active');
+    return (bool)osc_premium_field('b_active');
 }
 
 

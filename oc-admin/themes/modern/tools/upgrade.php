@@ -148,7 +148,7 @@ function customHead()
             var message1 = document.createElement('div');
             message1.className = 'step';
             message1.innerHTML = '<h3><?php _e('No Upgrade Available'); ?></h3>' +
-                '<p><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></p>'
+                '<div class="callout-success"><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></div>'
             steps.innerHTML = '';
             steps.appendChild(message1);
             steps_div.style.display = 'block';
@@ -186,7 +186,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
     </h1>
     <?php
 }

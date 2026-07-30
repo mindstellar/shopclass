@@ -21,8 +21,8 @@
 
 namespace mindstellar\upgrade;
 
-use DBCommandClass;
-use DBConnectionClass;
+use mindstellar\database\Connection;
+use mindstellar\database\SchemaReconciler;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
@@ -72,11 +72,8 @@ class Osclass extends UpgradePackage
         if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
             $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
 
-            $conn = DBConnectionClass::newInstance();
-            $c_db = $conn->getOsclassDb();
-            $comm = new DBCommandClass($c_db);
-
-            $result = $comm->updateDB(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
+            $result = (new SchemaReconciler(Connection::instance()))
+                ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
             list($status, $message, $errorQueries) = $result;
         }
         if (isset($status, $message, $errorQueries)) {
@@ -92,8 +89,8 @@ class Osclass extends UpgradePackage
                 $message      .= __('These errors could be false-positive errors.');
                 $message      .= __(" If you're sure that is the case, you can continue with the upgrade.");
                 $message      .= '<a class="btn btn-sm btn-primary" href="' . $skip_db_link . '">' . __('Continue with upgrade') . '</a>';
-                $message      .= __(" Or you can ask help in our support forum");
-                $message      .= ': <a class="btn btn-sm btn-info" href="https://osclass.discourse.group">' . __('Support Forum') . '</a>';
+                $message      .= __(" Or you can ask for help in our community discussions");
+                $message      .= ': <a class="btn btn-sm btn-info" href="https://github.com/mindstellar/shopclass/discussions">' . __('Community discussions') . '</a>';
 
                 return json_encode(['error' => 2, 'message' => $message]);
             }
@@ -112,7 +109,7 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner($comm, osc_lib_path() . 'osclass/installer/migrations');
+            $runner = new MigrationRunner(Connection::instance(), osc_lib_path() . 'osclass/installer/migrations');
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {

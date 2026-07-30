@@ -28,7 +28,7 @@ class CAdminAjax extends AdminSecBaseModel
         parent::__construct();
         $this->ajax = true;
         if ($this->isModerator()
-            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state'))
+            && !in_array($this->action, array('items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list'))
         ) {
             $this->action = 'error_permissions';
         }
@@ -72,6 +72,81 @@ class CAdminAjax extends AdminSecBaseModel
                     'format'        => Params::getParam('format'),
                     'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
                 ));
+                break;
+            case 'media_list': // JSON media for the editor's media picker (read-only)
+                header('Content-Type: application/json');
+                $type = Params::getParam('type');
+                if ($type === '' || $type === null) {
+                    $type = 'all';
+                }
+                if (!in_array($type, array_merge(array('all', 'item'), osc_media_owner_types()), true)) {
+                    $type = 'all';
+                }
+                $iPage   = max(1, Params::getParamInt('iPage'));
+                $perPage = 30;
+                $data    = osc_media_library_query($type, $iPage, $perPage);
+
+                $items = array();
+                foreach ($data['rows'] as $row) {
+                    $urls    = osc_media_row_urls($row);
+                    $items[] = array(
+                        'id'         => (int) $row['id'],
+                        'src'        => $row['src'],
+                        'owner_type' => $row['owner_type'],
+                        'owner_id'   => (int) $row['owner_id'],
+                        'name'       => (string) $row['s_name'],
+                        'thumb'      => $urls['thumb'],
+                        'url'        => $urls['full'],
+                    );
+                }
+                echo json_encode(array(
+                    'items'   => $items,
+                    'total'   => (int) $data['total'],
+                    'page'    => $iPage,
+                    'perPage' => $perPage,
+                    'more'    => ($iPage * $perPage) < (int) $data['total'],
+                ));
+                break;
+            case 'resource_upload': // editor image upload -> the resource pipeline
+                osc_csrf_check();
+                header('Content-Type: application/json');
+
+                $ownerType = Params::getParam('owner_type');
+                $ownerId   = Params::getParamInt('owner_id');
+
+                // Two targets are allowed: a page image (must exist) and an
+                // unattached library upload (ownerless). Whitelisting the owner
+                // type here stops the generic endpoint writing for arbitrary owners.
+                if ($ownerType === \mindstellar\model\Resource::OWNER_LIBRARY) {
+                    $ownerId = 0;
+                } elseif ($ownerType !== \mindstellar\model\Resource::OWNER_PAGE
+                    || !osc_resource_owner_exists($ownerType, $ownerId)
+                ) {
+                    http_response_code(403);
+                    echo json_encode(array('error' => __('Upload target not allowed')));
+                    break;
+                }
+
+                if (!isset($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+                    http_response_code(400);
+                    echo json_encode(array('error' => __('No file was received')));
+                    break;
+                }
+
+                // ResourceUploader validates the file is a real image and rewrites
+                // it into managed variants (storage-aware: local or S3), so nothing
+                // untrusted is stored as-is.
+                $row = (new \mindstellar\storage\ResourceUploader())
+                    ->upload($ownerType, $ownerId, $_FILES['file']['tmp_name']);
+
+                if ($row === false) {
+                    http_response_code(415);
+                    echo json_encode(array('error' => __('The file is not a valid image')));
+                    break;
+                }
+
+                // TinyMCE expects { location: url }.
+                echo json_encode(array('location' => osc_get_resource_url($row)));
                 break;
             case 'save_admin_theme': // persist this admin's light/dark choice
                 osc_csrf_check();
@@ -189,19 +264,36 @@ class CAdminAjax extends AdminSecBaseModel
                 $this->_exportVariableToView('selected', $selected);
                 $this->_exportVariableToView('field', Field::newInstance()->findByPrimaryKey(Params::getParam('id')));
                 $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                // Sibling fields power the conditional-visibility "controlling field"
+                // picker (a field can be shown/required based on another's value).
+                $this->_exportVariableToView('allFields', Field::newInstance()->listAll());
+                // Groups populate the membership dropdown (Ungrouped + each group).
+                $this->_exportVariableToView('allGroups', FieldGroup::newInstance()->listAll());
+                // How many forms this field is placed in — the editor warns when a save
+                // will change the field in more than one form.
+                $this->_exportVariableToView(
+                    'form_count',
+                    (new \mindstellar\forms\FormService())->formCountForField(Params::getParamInt('id'))
+                );
                 $this->doView('fields/iframe.php');
                 break;
             case 'field_categories_post':
                 osc_csrf_check();
                 $error = 0;
+                // Builder mode edits the field DEFINITION only; form membership and
+                // category placement are managed by drag-drop / on the form, so those
+                // controls are absent from the post and must not be cleared here.
+                $builderMode = Params::getParam('builder') == '1';
                 $field = Field::newInstance()->findByName(Params::getParam('s_name'));
 
                 if (!isset($field['pk_i_id'])
                     || (isset($field['pk_i_id'])
                         && $field['pk_i_id'] == Params::getParam('id'))
                 ) {
-                    // remove categories from a field
-                    Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                    // remove categories from a field (definition-only saves keep them)
+                    if (!$builderMode) {
+                        Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                    }
                     // no error... continue updating fields
                     if ($error == 0) {
                         $slug     = Params::getParam('field_slug') != '' ? Params::getParam('field_slug')
@@ -221,7 +313,7 @@ class CAdminAjax extends AdminSecBaseModel
                         }
                         // prepare multi locale data
                         $currentAdminLocale = osc_current_admin_locale();
-                        $aMetaNames        = Params::getParam('meta_s_name');
+                        $aMetaNames        = Params::getParamArray('meta_s_name');
                         $metaLocale = array();
                         foreach ($aMetaNames as $k => $v) {
                             if (!empty($v)) {
@@ -231,7 +323,7 @@ class CAdminAjax extends AdminSecBaseModel
                             }
                         }
 
-                        $metaOptions     = Params::getParam('s_options');
+                        $metaOptions     = Params::getParamString('s_options');
 
                         // trim all csv options
                         if (!empty($metaOptions)) {
@@ -243,25 +335,46 @@ class CAdminAjax extends AdminSecBaseModel
                             unset($tmpValues);
                         }
 
-                        $res = Field::newInstance()->update(
-                            array(
-                                's_name'       => $aMetaNames[$currentAdminLocale],
-                                'e_type'       => Params::getParam('field_type'),
-                                's_slug'       => $slug,
-                                'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
-                                'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
-                                's_options'    => $metaOptions,
-                            ),
-                            array('pk_i_id' => Params::getParam('id'))
+                        // The chosen type may be a registry type (e.g. EMAIL) that
+                        // stores as a primitive. e_type holds the storage primitive;
+                        // a non-primitive type persists its real id in s_meta['type'].
+                        $chosenType   = Params::getParam('field_type');
+                        $storageType  = osc_field_type_storage($chosenType);
+                        $realTypeMeta = in_array($chosenType, \mindstellar\fields\FieldTypeRegistry::STORAGE_PRIMITIVES, true)
+                            ? '' : $chosenType;
+
+                        // Definition fields always saved. Group membership is only
+                        // touched by the legacy single-group editor (not builder mode).
+                        $updateData = array(
+                            's_name'       => $aMetaNames[$currentAdminLocale],
+                            'e_type'       => $storageType,
+                            's_slug'       => $slug,
+                            'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
+                            'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
+                            's_options'    => $metaOptions,
                         );
+                        if (!$builderMode) {
+                            $groupId = Params::getParamInt('field_group');
+                            $updateData['fk_i_group_id'] = $groupId > 0 ? $groupId : null;
+                        }
+                        $res = Field::newInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
+                        // Keep the link table (source of truth) in sync with the
+                        // single-group editor; the builder manages links via drag-drop.
+                        if (!$builderMode) {
+                            FieldGroup::newInstance()->setFieldSingleGroup(Params::getParamInt('id'), $groupId);
+                        }
+                        Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
                         Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
+                        // Per-type config (placeholder, help text, numeric bounds, …).
+                        self::persistFieldConfig(Params::getParamInt('id'), $chosenType);
                         if (is_bool($res) && !$res) {
                             $error = 1;
                         }
                     }
-                    // no error... continue inserting categories-field
-                    if ($error == 0) {
+                    // no error... continue inserting categories-field (skipped in
+                    // builder mode, which does not manage per-field categories)
+                    if ($error == 0 && !$builderMode) {
                         $aCategories = Params::getParam('categories');
                         if (is_array($aCategories) && count($aCategories) > 0) {
                             $res = Field::newInstance()->insertCategories(Params::getParam('id'), $aCategories);
@@ -282,10 +395,12 @@ class CAdminAjax extends AdminSecBaseModel
                 if ($error) {
                     $result = array('error' => $message);
                 } else {
+                    $typeSpec = osc_field_type($chosenType);
                     $result = array(
-                        'ok'       => __('Saved'),
-                        'text'     => $aMetaNames[$currentAdminLocale],
-                        'field_id' => Params::getParam('id')
+                        'ok'         => __('Saved'),
+                        'text'       => $aMetaNames[$currentAdminLocale],
+                        'field_id'   => Params::getParam('id'),
+                        'type_label' => $typeSpec !== null ? __($typeSpec['label']) : $chosenType,
                     );
                 }
 
@@ -357,6 +472,121 @@ class CAdminAjax extends AdminSecBaseModel
                 }
 
                 echo json_encode($result);
+                break;
+            case 'add_group':
+                osc_csrf_check();
+                $groupManager = FieldGroup::newInstance();
+                $newId        = $groupManager->insertGroup(__('New field group'));
+                if ($newId) {
+                    echo json_encode(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
+                } else {
+                    echo json_encode(array('error' => 1));
+                }
+                break;
+            case 'group_post':
+                osc_csrf_check();
+                $groupManager = FieldGroup::newInstance();
+                $groupId      = Params::getParamInt('id');
+                $name         = trim((string)Params::getParam('group_name'));
+                $error        = 0;
+                if ($groupId <= 0 || $name === '') {
+                    $error = 1;
+                } else {
+                    $slugParam = trim((string)Params::getParam('group_slug'));
+                    $existing  = $groupManager->findByPrimaryKey($groupId);
+                    $slug      = $slugParam !== '' ? $slugParam : (isset($existing['s_slug']) ? $existing['s_slug'] : '');
+                    // regenerate a unique slug only when it is empty or being changed
+                    if ($slug === '' || (isset($existing['s_slug']) && $slug !== $existing['s_slug'])) {
+                        $slug = $groupManager->uniqueSlug($slug !== '' ? $slug : $name);
+                    }
+                    $res = $groupManager->update(
+                        array('s_name' => $name, 's_slug' => $slug),
+                        array('pk_i_id' => $groupId)
+                    );
+                    if (is_bool($res) && !$res) {
+                        $error = 1;
+                    }
+                    // rewrite the group's category assignments
+                    $groupManager->cleanCategoriesFromGroup($groupId);
+                    $aCategories = Params::getParam('categories');
+                    if (is_array($aCategories) && count($aCategories) > 0) {
+                        $groupManager->insertCategories($groupId, $aCategories);
+                    }
+                    // "Available as a block" flag → s_meta.placeable (core.form picker)
+                    $groupManager->setMeta($groupId, 'placeable', Params::getParam('group_placeable') == '1' ? 1 : '');
+                }
+                if ($error) {
+                    echo json_encode(array('error' => __('An error occurred while saving the group')));
+                } else {
+                    echo json_encode(array('ok' => __('Saved'), 'group_id' => $groupId, 'text' => $name));
+                }
+                break;
+            case 'delete_group':
+                osc_csrf_check();
+                $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
+                if ($res !== false) {
+                    echo json_encode(array('ok' => __('The field group has been deleted')));
+                } else {
+                    echo json_encode(array('error' => __('An error occurred while deleting')));
+                }
+                break;
+            case 'form_set_fields':
+                // The builder posts a form's whole ordered field list after each drag;
+                // FormService reconciles the link table (add/remove/reorder in one go).
+                osc_csrf_check();
+                $formId = Params::getParamInt('form_id');
+                $ids    = json_decode((string)Params::getParam('fields'), true);
+                if ($formId <= 0 || !is_array($ids)) {
+                    echo json_encode(array('error' => __('Invalid request')));
+                    break;
+                }
+                $service = new \mindstellar\forms\FormService();
+                if ($service->setFormFields($formId, $ids)) {
+                    echo json_encode(array('ok' => __('Saved')));
+                } else {
+                    echo json_encode(array('error' => __('An error occurred while saving the form')));
+                }
+                break;
+            case 'migrate_loose_fields':
+                // Bridge legacy loose fields into the forms model: gather fields that
+                // sit directly on categories but in no form into forms (one per
+                // distinct category set), so the builder can manage them. Reversible —
+                // see FormService::migrateLooseFields().
+                osc_csrf_check();
+                $result = (new \mindstellar\forms\FormService())->migrateLooseFields();
+                if ($result['forms'] === 0) {
+                    echo json_encode(array('ok' => __('There were no fields to move.')));
+                } else {
+                    echo json_encode(array('ok' => sprintf(
+                        __('Moved %1$d fields into %2$d forms.'),
+                        $result['fields'],
+                        $result['forms']
+                    )));
+                }
+                break;
+            case 'form_submission_status':
+                osc_csrf_check();
+                $ok = \mindstellar\model\FormSubmission::newInstance()
+                    ->setStatus(Params::getParamInt('id'), (string)Params::getParam('status'));
+                echo json_encode($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
+                break;
+            case 'form_submission_delete':
+                osc_csrf_check();
+                $ok = \mindstellar\model\FormSubmission::newInstance()->delete(Params::getParamInt('id'));
+                echo json_encode($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
+                break;
+            case 'form_submissions_purge':
+                osc_csrf_check();
+                $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm(Params::getParamInt('form_id'));
+                echo json_encode($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
+                break;
+            case 'group_categories_iframe':
+                $groupId = Params::getParamInt('id');
+                $selected = FieldGroup::newInstance()->categories($groupId);
+                $this->_exportVariableToView('selected', $selected);
+                $this->_exportVariableToView('group', FieldGroup::newInstance()->findByPrimaryKey($groupId));
+                $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                $this->doView('fields/group_iframe.php');
                 break;
             case 'enable_category':
                 osc_csrf_check();
@@ -760,6 +990,86 @@ class CAdminAjax extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Persist the per-type configuration (placeholder, help text, numeric bounds,
+     * conditional rules, …) for a field into its s_meta JSON. Only the config keys
+     * the chosen type declares in the registry are read from the request, so a
+     * posted key a type does not support is ignored. An empty value clears the key
+     * (updateJsonMeta unsets on '' / null), keeping s_meta compact.
+     *
+     * @param int    $fieldId
+     * @param string $typeId  the chosen (possibly non-primitive) field type id
+     *
+     * @return void
+     */
+    private static function persistFieldConfig($fieldId, $typeId)
+    {
+        $spec = osc_field_type($typeId);
+        if ($spec === null || empty($spec['config'])) {
+            return;
+        }
+        $field = Field::newInstance();
+        foreach ($spec['config'] as $key) {
+            // b_new_tab has its own dedicated checkbox handled above; skip it here.
+            if ($key === 'b_new_tab') {
+                continue;
+            }
+            $value = Params::getParam('cfg_' . $key);
+            // numeric config keys stay numeric; everything else is a trimmed string.
+            if (in_array($key, array('min', 'max', 'step', 'rows', 'maxlength'), true)) {
+                $value = ($value === '' || $value === null) ? '' : $value + 0;
+            } elseif (is_string($value)) {
+                $value = trim($value);
+            }
+            $field->updateJsonMeta($fieldId, $key, $value);
+        }
+
+        // Conditional-visibility rules, posted as a JSON string by the builder.
+        $rules = Params::getParam('cfg_rules');
+        if (is_string($rules) && $rules !== '') {
+            $decoded = json_decode($rules, true);
+            $field->updateJsonMeta($fieldId, 'rules', is_array($decoded) ? $decoded : '');
+        } else {
+            $field->updateJsonMeta($fieldId, 'rules', '');
+        }
+
+        // Cascading options (small-set): a dropdown/radio whose options are filtered
+        // by a parent field's value. cfg_cascade_map is a line-per-parent-value block
+        // ("Toyota: Corolla, Camry"); parse it into a { parentValue: [opts] } map.
+        $cascadeParent = trim((string)Params::getParam('cfg_cascade_parent'));
+        // cascade_parent is a field slug; reject anything that is not slug-shaped so a
+        // crafted value cannot ride through into rendered markup.
+        if ($cascadeParent !== '' && !preg_match('/^[a-z0-9_-]+$/', $cascadeParent)) {
+            $cascadeParent = '';
+        }
+        $cascadeText   = (string)Params::getParam('cfg_cascade_map');
+        if ($cascadeParent !== '' && trim($cascadeText) !== '') {
+            $map = array();
+            foreach (preg_split('/\r\n|\r|\n/', $cascadeText) as $line) {
+                $line = trim($line);
+                if ($line === '' || strpos($line, ':') === false) {
+                    continue;
+                }
+                list($key, $vals) = explode(':', $line, 2);
+                $key  = trim($key);
+                $opts = array_values(array_filter(
+                    array_map('trim', explode(',', $vals)),
+                    static function ($v) {
+                        return $v !== '';
+                    }
+                ));
+                if ($key !== '' && $opts) {
+                    $map[$key] = $opts;
+                }
+            }
+            $field->updateJsonMeta($fieldId, 'cascade_parent', $map ? $cascadeParent : '');
+            $field->updateJsonMeta($fieldId, 'cascade_map', $map ?: '');
+        } else {
+            $field->updateJsonMeta($fieldId, 'cascade_parent', '');
+            $field->updateJsonMeta($fieldId, 'cascade_map', '');
+        }
+    }
 
     /**
      * @param $file

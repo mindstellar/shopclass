@@ -116,7 +116,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -481,8 +481,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="form-controls">
                             <span id="last-version-check">
                                 <?php
-                                echo __('Last checked on ') . osc_format_date(date('d-m-Y h:i:s', osc_get_preference('last_version_check'))
-                                    ); ?></span>
+                                $last_version_check = (int) osc_get_preference('last_version_check');
+                                echo __('Last checked on ') . ($last_version_check > 0
+                                    ? osc_format_date(date('d-m-Y h:i:s', $last_version_check))
+                                    : __('never')); ?></span>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="checkOsclassUpdate()"><?php _e('Check updates'); ?></button>
                         </div>
                     </div>

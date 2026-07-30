@@ -1289,7 +1289,8 @@ class ItemForm extends Form
                         <img src="
                         <?php echo osc_apply_filter(
                                 'resource_path',
-                                osc_base_url() . $_r['s_path']
+                                osc_base_url() . $_r['s_path'],
+                                $_r
                             )
                             . $_r['pk_i_id'] . '_thumbnail.'
                             . $_r['s_extension']; ?>"/><a
@@ -1431,7 +1432,17 @@ class ItemForm extends Form
                         .then(function (r) { return r.text(); })
                         .then(function (html) {
                             var hook = document.getElementById('plugin-hook');
-                            if (hook) { hook.innerHTML = html; }
+                            if (!hook) { return; }
+                            hook.innerHTML = html;
+                            // innerHTML does not execute <script> tags; re-create them so
+                            // custom-field logic and plugin scripts emitted through the
+                            // item_form hook actually run (conditional/cascade fields,
+                            // datepickers, third-party field plugins).
+                            hook.querySelectorAll('script').forEach(function (old) {
+                                var s = document.createElement('script');
+                                if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
+                                old.parentNode.replaceChild(s, old);
+                            });
                         });
                 }
 
@@ -1486,7 +1497,7 @@ class ItemForm extends Form
             <div class="osc-uploader-grid">
                 <?php foreach ($resources as $_r) {
                     $img   = $_r['pk_i_id'] . '.' . $_r['s_extension'];
-                    $thumb = osc_apply_filter('resource_path', osc_base_url() . $_r['s_path'])
+                    $thumb = osc_apply_filter('resource_path', osc_base_url() . $_r['s_path'], $_r)
                              . $_r['pk_i_id'] . '_thumbnail.' . $_r['s_extension']; ?>
                     <div class="osc-uploader-item"
                          data-id="<?php echo osc_esc_html($_r['pk_i_id']); ?>"

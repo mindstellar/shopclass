@@ -59,6 +59,11 @@ if (!defined('ABS_PATH')) {
            title="<?php echo osc_esc_html(__('Forgot your password?')); ?>"><?php _e('Forgot your password?'); ?></a>
     </div>
     <?php osc_run_hook('admin_login_form'); ?>
+    <?php if (osc_captcha_enabled()) { ?>
+        <div class="mb-3">
+            <?php osc_show_captcha('admin_login'); ?>
+        </div>
+    <?php } ?>
     <button class="w-100 btn btn-lg btn-primary" type="submit" name="submit"
             id="submit"><?php echo osc_esc_html
             (__('Log in')); ?></button>
@@ -67,12 +72,3 @@ if (!defined('ABS_PATH')) {
             <i class="text-dark bi bi-arrow-left"></i> <?php printf(__('Back to %s'), osc_page_title()); ?></a>
     </div>
 </form>
-<?php $login_js = static function () { ?><script type="text/javascript">
-    $(document).ready(function () {
-        $(".ico-close").click(function () {
-            $(this).parent().hide();
-        });
-    });
-</script>
-<?php };
-osc_add_hook('admin_login_footer', $login_js); ?>

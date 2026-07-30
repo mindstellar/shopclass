@@ -58,6 +58,25 @@ function osc_cache_flush()
 
 
 /**
+ * Normalised statistics for the active cache driver, or null when it has none.
+ *
+ * Probed rather than declared on iObject_Cache, because third-party drivers
+ * implement that interface and a new required method would fatal them.
+ *
+ * @return array|null
+ */
+function osc_cache_stats()
+{
+    $cache = Object_Cache_Factory::newInstance();
+    if (!method_exists($cache, 'statsData')) {
+        return null;
+    }
+
+    return $cache->statsData();
+}
+
+
+/**
  * Initialize Cache factory instance using singleton
  */
 function osc_cache_init()
@@ -132,6 +151,82 @@ function osc_invalidate_item_cache($itemId)
     }
 }
 
+/**
+ * Invalidate the cached row for one user (User::findByPrimaryKey). Used when a user's
+ * password changes: the cached row carries s_password, which is the remember-me binding, so a
+ * persistent object cache serving the old hash would delay "log out on password change" by up
+ * to the cache TTL. The osc_cache_* helpers suffix every key with the current user locale, so
+ * the row is cached once per locale that has requested it; clear each enabled locale's entry.
+ *
+ * @param int $userId
+ *
+ * @return void
+ */
+function osc_invalidate_user_cache($userId)
+{
+    $userId = (int)$userId;
+    if ($userId <= 0) {
+        return;
+    }
+
+    $baseKey = md5(osc_base_url() . 'User:findByPrimaryKey:' . $userId);
+    $cache   = Object_Cache_Factory::newInstance();
+
+    $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
+    if (empty($locales)) {
+        // No locale list available yet (early boot / install): clear the current-locale key.
+        osc_cache_delete($baseKey);
+
+        return;
+    }
+
+    foreach ($locales as $locale) {
+        $cache->delete($baseKey . $locale['pk_c_code']);
+    }
+}
+
+/**
+ * Current generation number for the search/latest-items cache. Callers fold it
+ * into their cache key so a bump (see osc_invalidate_search_cache) makes every
+ * previously stored entry unreachable at once — the practical way to invalidate a
+ * key space whose members are not enumerable (one entry per filter combination).
+ *
+ * Read through the raw cache factory rather than osc_cache_get so the generation
+ * is global rather than per-locale. A backend that does not persist (the default
+ * dummy cache) simply keeps returning 0, which leaves caching behaviour exactly
+ * as it was before this helper existed.
+ *
+ * @return int
+ */
+function osc_cache_search_generation()
+{
+    $found = null;
+    $gen   = Object_Cache_Factory::newInstance()->get('osc_search_cache_gen', $found);
+
+    return is_numeric($gen) ? (int)$gen : 0;
+}
+
+
+/**
+ * Bump the search-cache generation, invalidating every cached search/latest-items
+ * result. Called on the item lifecycle events that change what a search returns
+ * (post, edit, disable, enable, spam on/off) so a quarantined or edited listing
+ * leaves the search cache immediately instead of lingering for the cache TTL.
+ *
+ * @return int the new generation
+ */
+function osc_invalidate_search_cache()
+{
+    $cache = Object_Cache_Factory::newInstance();
+    $found = null;
+    $gen   = $cache->get('osc_search_cache_gen', $found);
+    $gen   = (is_numeric($gen) ? (int)$gen : 0) + 1;
+    $cache->set('osc_search_cache_gen', $gen, 0);
+
+    return $gen;
+}
+
+
 // Clear an item's derived cache on the lifecycle events that change it, so reads
 // following a write see fresh data instead of a stale cached copy.
 osc_add_hook('edited_item', static function ($item) {
@@ -139,6 +234,17 @@ osc_add_hook('edited_item', static function ($item) {
         osc_invalidate_item_cache($item['pk_i_id']);
     }
 });
+
+// Bump the search cache on every lifecycle event that changes the live set, so a
+// quarantined, disabled or edited listing stops being served from a stale search
+// result. The generation bump ignores its hook arguments by design.
+osc_add_hook('posted_item', 'osc_invalidate_search_cache');
+osc_add_hook('edited_item', 'osc_invalidate_search_cache');
+osc_add_hook('disable_item', 'osc_invalidate_search_cache');
+osc_add_hook('enable_item', 'osc_invalidate_search_cache');
+osc_add_hook('item_spam_on', 'osc_invalidate_search_cache');
+osc_add_hook('item_spam_off', 'osc_invalidate_search_cache');
+osc_add_hook('after_delete_item', 'osc_invalidate_search_cache');
 osc_add_hook('uploaded_file', static function ($resource) {
     if (is_array($resource) && isset($resource['fk_i_item_id'])) {
         osc_invalidate_item_cache($resource['fk_i_item_id']);

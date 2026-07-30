@@ -23,7 +23,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -60,7 +60,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_csrf_token_form(); ?>
         <div class="widget-box">
             <div class="widget-box-content">
-                <table class="table">
+                <div class="table-responsive">
+                <table class="table" style="min-width:34rem">
                     <thead>
                     <tr>
                         <th><?php _e('Enabled'); ?></th>
@@ -102,6 +103,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php } ?>
                     </tbody>
                 </table>
+                </div>
 
                 <div class="form-row mt-3" style="max-width:20rem">
                     <label for="batch_limit"><?php _e('Maximum items removed per run'); ?></label>
@@ -111,6 +113,51 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
             </div>
         </div>
+
+        <div class="widget-box">
+            <div class="widget-box-title">
+                <span><?php _e('Listing statistics'); ?></span>
+            </div>
+            <div class="widget-box-content">
+                <p class="text-muted">
+                    <?php _e('View counts are written on every page render, so they are the busiest '
+                             . 'write on a large site. Turn them off if you do not use them.'); ?>
+                </p>
+
+                <div class="form-row">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="item_views_enabled"
+                               name="item_views_enabled" value="1" <?php echo osc_item_views_enabled() ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="item_views_enabled">
+                            <?php _e('Count listing views'); ?>
+                        </label>
+                    </div>
+                    <div class="help-block"><?php _e('Report counts are always recorded — moderation depends on them.'); ?></div>
+                </div>
+
+                <div class="form-row mt-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="count_bot_views"
+                               name="count_bot_views" value="1" <?php echo osc_count_bot_views() ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="count_bot_views">
+                            <?php _e('Count crawler visits as views'); ?>
+                        </label>
+                    </div>
+                    <div class="help-block"><?php _e('Off by default. Search-engine and AI crawlers are usually most of a busy site\'s traffic, so counting them both inflates the numbers and multiplies the writes.'); ?></div>
+                </div>
+
+                <div class="form-row mt-3" style="max-width:20rem">
+                    <label for="item_stats_retention_days"><?php _e('Keep daily statistics history for'); ?></label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" min="0" class="form-control" id="item_stats_retention_days"
+                               name="item_stats_retention_days" value="<?php echo osc_item_stats_retention_days(); ?>">
+                        <span class="input-group-text"><?php _e('days'); ?></span>
+                    </div>
+                    <div class="help-block"><?php _e('0 keeps it forever. This is the history behind the statistics charts, which look back up to ten months; it is a few rows per day for the whole site.'); ?></div>
+                </div>
+            </div>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(__('Save settings')); ?></button>
             <button type="button" class="btn btn-danger" data-osc-dialog-open="#cleanup-run-dialog"><?php _e('Run cleanup now'); ?></button>

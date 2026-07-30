@@ -258,6 +258,15 @@ class ImageProcessing
             $ext = 'jpeg';
         }
 
+        // Default comes from the admin Media settings (jpeg_quality preference), 82 if unset;
+        // the image_jpeg_quality filter can still override it for a specific resize.
+        $qualityPref     = (int)osc_get_preference('jpeg_quality');
+        if ($qualityPref < 1 || $qualityPref > 100) {
+            $qualityPref = 82;
+        }
+        $jpeg_quality    = max(1, min(100, (int)Plugins::applyFilter('image_jpeg_quality', $qualityPref)));
+        $png_compression = max(0, min(9, (int)Plugins::applyFilter('image_png_compression', 6)));
+
         if ($this->use_imagick) {
             try {
                 if ($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) {
@@ -269,6 +278,13 @@ class ImageProcessing
                     $this->ext = 'jpeg';
                 }
                 $this->im->setImageDepth(8);
+                // Strip EXIF/profiles: smaller files, and no leaking camera/GPS metadata.
+                $this->im->stripImage();
+                if ($ext === 'png' || $ext === 'gif') {
+                    $this->im->setOption('png:compression-level', (string)$png_compression);
+                } else {
+                    $this->im->setImageCompressionQuality($jpeg_quality);
+                }
                 $this->im->setImageFilename($imagePath);
                 $this->im->setImageFormat($ext);
                 $this->im->writeImage($imagePath);
@@ -279,13 +295,13 @@ class ImageProcessing
             switch ($ext) {
                 case 'gif':
                 case 'png':
-                    imagepng($this->im, $imagePath, 0);
+                    imagepng($this->im, $imagePath, $png_compression);
                     break;
                 default:
                     if (($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) || $this->watermarked) {
                         $this->ext = 'jpeg';
                     }
-                    imagejpeg($this->im, $imagePath);
+                    imagejpeg($this->im, $imagePath, $jpeg_quality);
                     break;
             }
         }

@@ -54,13 +54,6 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Manage media'),
-            osc_admin_base_url(true) . '?page=media',
-            'items_media',
-            'moderator'
-        );
-        $this->add_submenu(
-            'items',
             __('Comments'),
             osc_admin_base_url(true) . '?page=comments',
             'items_comments',
@@ -68,9 +61,23 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Custom fields'),
-            osc_admin_base_url(true) . '?page=cfields',
-            'items_cfields',
+            __('Categories'),
+            osc_admin_base_url(true) . '?page=categories',
+            'settings_categories',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
+            __('Locations'),
+            osc_admin_base_url(true) . '?page=settings&action=locations',
+            'settings_locations',
+            'administrator'
+        );
+        $this->add_submenu(
+            'items',
+            __('Currencies'),
+            osc_admin_base_url(true) . '?page=settings&action=currencies',
+            'settings_currencies',
             'administrator'
         );
         $this->add_submenu(
@@ -81,8 +88,43 @@ class AdminMenu
             'administrator'
         );
 
+        // Forms: the field/form builder and the entries its placeable forms collect.
+        // Its own section rather than a listings sub-item — a form is no longer only a
+        // listing's custom-field section, it can also be a standalone placeable form.
+        $this->add_menu(__('Forms'), osc_admin_base_url(true) . '?page=cfields', 'forms', 'administrator', 'bi bi-ui-checks-grid');
+        $this->add_submenu(
+            'forms',
+            __('Custom forms'),
+            osc_admin_base_url(true) . '?page=cfields',
+            'items_cfields',
+            'administrator'
+        );
+        $this->add_submenu(
+            'forms',
+            __('Form submissions'),
+            osc_admin_base_url(true) . '?page=cfields&action=submissions',
+            'items_form_submissions',
+            'administrator'
+        );
+
+        $this->add_menu(__('Media'), osc_admin_base_url(true) . '?page=media', 'media', 'moderator', 'bi bi-images');
+        $this->add_submenu(
+            'media',
+            __('Library'),
+            osc_admin_base_url(true) . '?page=media',
+            'media_library',
+            'moderator'
+        );
+        $this->add_submenu(
+            'media',
+            __('Settings'),
+            osc_admin_base_url(true) . '?page=settings&action=media',
+            'media_settings',
+            'administrator'
+        );
+
         $this->add_menu(__('Appearance'), osc_admin_base_url(true) . '?page=appearance', 'appearance', 'administrator',
-                        'bi bi-palette-fill');
+                        'bi bi-palette');
         $this->add_submenu(
             'appearance',
             __('Manage themes'),
@@ -98,7 +140,7 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Plugins'), osc_admin_base_url(true) . '?page=plugins', 'plugins', 'administrator', 'bi bi-plug-fill');
+        $this->add_menu(__('Plugins'), osc_admin_base_url(true) . '?page=plugins', 'plugins', 'administrator', 'bi bi-plugin');
         $this->add_submenu(
             'plugins',
             __('Manage plugins'),
@@ -108,7 +150,7 @@ class AdminMenu
         );
 
         $this->add_menu(__('Statistics'), osc_admin_base_url(true) . '?page=stats&action=items', 'stats', 'moderator',
-                        'bi bi-bar-chart-fill');
+                        'bi bi-bar-chart');
         $this->add_submenu(
             'stats',
             __('Listings'),
@@ -137,20 +179,27 @@ class AdminMenu
             'stats_comments',
             'moderator'
         );
+        $this->add_submenu(
+            'stats',
+            __('Renew location stats'),
+            osc_admin_base_url(true) . '?page=tools&action=locations',
+            'tools_location',
+            'administrator'
+        );
+        $this->add_submenu(
+            'stats',
+            __('Renew category stats'),
+            osc_admin_base_url(true) . '?page=tools&action=category',
+            'tools_category',
+            'administrator'
+        );
 
-        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear-fill');
+        $this->add_menu(__('Settings'), osc_admin_base_url(true) . '?page=settings', 'settings', 'administrator', 'bi bi-gear');
         $this->add_submenu(
             'settings',
             __('General'),
             osc_admin_base_url(true) . '?page=settings',
             'settings_general',
-            'administrator'
-        );
-        $this->add_submenu(
-            'settings',
-            __('Categories'),
-            osc_admin_base_url(true) . '?page=categories',
-            'settings_categories',
             'administrator'
         );
         $this->add_submenu(
@@ -162,16 +211,16 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
-            __('Locations'),
-            osc_admin_base_url(true) . '?page=settings&action=locations',
-            'settings_locations',
+            __('Email templates'),
+            osc_admin_base_url(true) . '?page=emails',
+            'settings_emails_manage',
             'administrator'
         );
         $this->add_submenu(
             'settings',
-            __('Email templates'),
-            osc_admin_base_url(true) . '?page=emails',
-            'settings_emails_manage',
+            __('Mail server'),
+            osc_admin_base_url(true) . '?page=settings&action=mailserver',
+            'settings_mailserver',
             'administrator'
         );
         $this->add_submenu(
@@ -197,23 +246,23 @@ class AdminMenu
         );
         $this->add_submenu(
             'settings',
-            __('Currencies'),
-            osc_admin_base_url(true) . '?page=settings&action=currencies',
-            'settings_currencies',
+            __('Keyword blocklist'),
+            osc_admin_base_url(true) . '?page=settings&action=keyword_block',
+            'settings_keyword_block',
             'administrator'
         );
         $this->add_submenu(
             'settings',
-            __('Mail server'),
-            osc_admin_base_url(true) . '?page=settings&action=mailserver',
-            'settings_mailserver',
+            __('Sitemap'),
+            osc_admin_base_url(true) . '?page=settings&action=sitemap',
+            'settings_sitemap',
             'administrator'
         );
         $this->add_submenu(
             'settings',
-            __('Media'),
-            osc_admin_base_url(true) . '?page=settings&action=media',
-            'settings_media',
+            __('Storage'),
+            osc_admin_base_url(true) . '?page=settings&action=storage',
+            'settings_storage',
             'administrator'
         );
         $this->add_submenu(
@@ -232,9 +281,9 @@ class AdminMenu
         );
 
         $this->add_menu(__('Pages'), osc_admin_base_url(true) . '?page=pages', 'pages', 'administrator',
-                        'bi bi-file-earmark-richtext-fill');
+                        'bi bi-file-earmark-text');
 
-        $this->add_menu(__('Users'), osc_admin_base_url(true) . '?page=users', 'users', 'moderator', 'bi bi-people-fill');
+        $this->add_menu(__('Users'), osc_admin_base_url(true) . '?page=users', 'users', 'moderator', 'bi bi-people');
         $this->add_submenu(
             'users',
             __('Users'),
@@ -302,6 +351,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
+            __('Cache'),
+            osc_admin_base_url(true) . '?page=tools&action=cache',
+            'tools_cache',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
             __('Maintenance mode'),
             osc_admin_base_url(true) . '?page=tools&action=maintenance',
             'tools_maintenance',
@@ -309,23 +365,16 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
-            __('Renew location stats'),
-            osc_admin_base_url(true) . '?page=tools&action=locations',
-            'tools_location',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Renew category stats'),
-            osc_admin_base_url(true) . '?page=tools&action=category',
-            'tools_category',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
             __('Cleanup'),
             osc_admin_base_url(true) . '?page=tools&action=cleanup',
             'tools_cleanup',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
+            __('Activity log'),
+            osc_admin_base_url(true) . '?page=tools&action=logs',
+            'tools_logs',
             'administrator'
         );
         $this->add_submenu(
@@ -458,7 +507,7 @@ class AdminMenu
         // base, so no query fragment matches it by URL. An empty query string is the
         // reliable signal for that route — fall back to the dashboard when nothing else
         // matched, so the highlight never silently disappears on the home page.
-        if ($current_menu === '' && $actual_url === '') {
+        if ($current_menu === '' && ($actual_url === '' || $actual_page === 'dashboard')) {
             $current_menu = 'dash';
         }
 

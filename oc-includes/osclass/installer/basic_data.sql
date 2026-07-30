@@ -15,6 +15,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'dimPreview', '480x340', 'STRING')
     ,('osclass', 'dimNormal', '640x480', 'STRING')
     ,('osclass', 'keep_original_image', '1', 'BOOLEAN')
+    ,('osclass', 'enabled_user_avatars', '1', 'BOOLEAN')
+    ,('osclass', 'avatar_dimensions', '200x200', 'STRING')
     ,('osclass', 'dateFormat', 'F j, Y', 'STRING')
     ,('osclass', 'timeFormat', 'g:i a', 'STRING')
     ,('osclass', 'timezone', 'Europe/Madrid', 'STRING')
@@ -129,7 +131,20 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'auto_update', 'disabled', 'STRING')
     ,('osclass', 'title_character_length', '100', 'INTEGER')
     ,('osclass', 'description_character_length', '5000', 'INTEGER')
-    ,('osclass', 'update_core_json', '', 'STRING');
+    ,('osclass', 'update_core_json', '', 'STRING')
+    ,('sitemap', 'sitemap_number', '5000', 'INTEGER')
+    ,('sitemap', 'sitemap_categories', '1', 'BOOLEAN')
+    ,('sitemap', 'sitemap_pages', '1', 'BOOLEAN')
+    ,('sitemap', 'sitemap_cities', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_regions', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_countries', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_cat_regions', '0', 'BOOLEAN')
+    ,('sitemap', 'sitemap_cat_city', '0', 'BOOLEAN')
+    ,('sitemap', 'custom_urls', '', 'STRING')
+    ,('moderation', 'keyword_spam_enabled', '0', 'BOOLEAN')
+    ,('moderation', 'keyword_spam_hard_block', '0', 'BOOLEAN')
+    ,('moderation', 'report_autoblock', '1', 'BOOLEAN')
+    ,('moderation', 'report_threshold', '5', 'INTEGER');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

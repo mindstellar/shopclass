@@ -19,16 +19,39 @@
   margin: 0;
 }
 
+// The filters dialog was still on the legacy horizontal geometry: a 70px label
+// well with the control beside it, which left every input and select a stub —
+// "Choose…" truncated to "Choo…". The rows stack instead, label above a control
+// that fills its column, which is the shape the rest of the admin's forms use.
 #display-filters {
   padding: 40px 0 0;
-}
 
-#display-filters .form-label {
-  width: 70px;
-}
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
 
-#display-filters .form-controls {
-  margin-inline-start: 80px;
+  .form-label {
+    flex: none;
+    margin-bottom: .25rem;
+    padding-block-start: 0;
+    text-align: start;
+    width: auto;
+  }
+
+  .form-controls {
+    margin-inline-start: 0;
+    min-width: 0;
+
+    .form-control,
+    .form-select,
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+      max-width: none;
+      width: 100%;
+    }
+  }
 }
 
 #item-form label {
@@ -118,9 +141,29 @@
     padding-inline-start: 180px;
   }
   .meta {
-    select, input[type='text'], input[type='email'], input.cf_date {
+    select, input[type='text'], input[type='email'], input[type='tel'], input[type='number'], input.cf_date {
       max-width:15rem;
     }
+  }
+
+  // A field group renders as a titled section grouping its fields on the form.
+  .meta-section {
+    border-block-start: 1px solid var(--osc-rule);
+    margin-block-start: 1rem;
+    padding-block-start: .75rem;
+
+    &:first-child {
+      border-block-start: 0;
+      margin-block-start: 0;
+      padding-block-start: 0;
+    }
+  }
+
+  .meta-section-title {
+    color: var(--osc-ink);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-block-end: .5rem;
   }
 }
 
@@ -129,6 +172,40 @@
     min-height: 30rem;
   }
 }
+// Manage listings: the Image column thumbnail, and the moderation/spam keyword
+// badge dropped onto its own line below the title and its row actions.
+.listing-thumb {
+  align-items: center;
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  overflow: hidden;
+  width: 48px;
+
+  img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  &--empty {
+    font-size: 1.35rem;
+  }
+}
+
+.col-image {
+  width: 64px;
+}
+
+.listing-keyword {
+  margin-block-start: .35rem;
+}
+
 // The "add another photo" affordance on the listing form. Bronze, on-brand — the
 // old green was one of the off-brand accents DESIGN calls out.
 .add-photo-btn {
@@ -143,5 +220,16 @@
 
   > i {
     margin: 0;
+  }
+}
+
+// A filter <select> in a listing toolbar sizes to its longest option instead of
+// the input-group's equal-width default, so a form or status name is never
+// clipped mid-word.
+#listing-toolbar,
+.table-toolbar {
+  .input-group > .form-select {
+    flex: 0 0 auto;
+    width: fit-content;
   }
 }

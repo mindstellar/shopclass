@@ -14,6 +14,15 @@
  */
 
 
+/*
+ * Kept for compatibility only — core no longer reads this list.
+ *
+ * It was an allowlist of browsers, used to decide whether a request counted as a
+ * listing view. That could not work: a crawler identifies itself by appending to
+ * an ordinary browser string, so modern crawler user agents match these patterns
+ * and were counted as readers. View counting now uses osc_is_bot_request(), a
+ * denylist, which a plugin can extend through the bot_user_agents filter.
+ */
 $user_agents = array(
     'MSIE ([0-9].*)$',
     '^Mozilla/[0-9].([^c][^o][^m].)$',

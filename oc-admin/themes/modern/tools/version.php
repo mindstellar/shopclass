@@ -16,7 +16,7 @@
 
 $customPageHeader = static function () { ?>
     <h1><?php printf(__('Shopclass %s'), OSCLASS_VERSION); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
     </h1>
     <?php
 };
@@ -40,11 +40,19 @@ osc_current_admin_theme_path('parts/header.php');
         <?php
         $changelog = file_get_contents(ABS_PATH . '/CHANGELOG.md');
 
-        $changelog = preg_replace('/\r\n{2,}/', "\n", $changelog);
-        $changelog = preg_replace('/^(#+)(.*)$/m', '<h3>$2</h3>', $changelog);
-        $changelog = preg_replace('/^(##+)(.*)$/m', '<h4>$2</h4>', $changelog);
-        $changelog = preg_replace('/^(###+)(.*)$/m', '<h5>$2</h5>', $changelog);
-        $changelog = preg_replace('/^\*(.*)$/m', '<li>$1</li>', $changelog);
+        // Escape first: the changelog quotes tag names and attributes inside code spans
+        // (`<enclosure>`, `<input type="date">`), which would otherwise be injected into the
+        // page as real elements rather than shown as text.
+        $changelog = osc_esc_html($changelog);
+        // Entries are hard-wrapped; join each continuation line back onto its bullet.
+        $changelog = preg_replace('/\R[ \t]+(\S)/', ' $1', $changelog);
+        // Most specific heading first — otherwise a broader pattern consumes them all.
+        $changelog = preg_replace('/^###\s*(.*)$/m', '<h5>$1</h5>', $changelog);
+        $changelog = preg_replace('/^##\s*(.*)$/m', '<h4>$1</h4>', $changelog);
+        $changelog = preg_replace('/^#\s*(.*)$/m', '<h3>$1</h3>', $changelog);
+        $changelog = preg_replace('/^[-*]\s+(.*)$/m', '<li>$1</li>', $changelog);
+        $changelog = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $changelog);
+        $changelog = preg_replace('/`([^`]+)`/', '<code>$1</code>', $changelog);
         echo $changelog;
         ?>
     </div>

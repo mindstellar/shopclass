@@ -151,10 +151,7 @@ class CWebSearch extends BaseModel
                             if (preg_match("/meta(\d+)-?(.*)?/", $m[1][$k], $results)) {
                                 $meta_key   = $m[1][$k];
                                 $meta_value = $m[2][$k];
-                                $array_r    = array();
-                                if (Params::existParam('meta')) {
-                                    $array_r = Params::getParam('meta');
-                                }
+                                $array_r    = Params::getParamArray('meta');
                                 if ($results[2] == '') {
                                     // meta[meta_id] = meta_value
                                     $meta_key           = $results[1];
@@ -301,7 +298,7 @@ class CWebSearch extends BaseModel
         $p_sFeed = Params::getParam('sFeed');
         $p_iPage = 0;
         if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') > 0) {
-            $p_iPage = (int)Params::getParam('iPage') - 1;
+            $p_iPage = Params::getParamInt('iPage') - 1;
         }
 
         if ($p_sFeed != '') {
@@ -315,7 +312,7 @@ class CWebSearch extends BaseModel
         }
 
         // search results: it's blocked with the maxResultsPerPage@search defined in t_preferences
-        $p_iPageSize = (int)Params::getParam('iPagesize');
+        $p_iPageSize = Params::getParamInt('iPagesize');
         if ($p_iPageSize > 0) {
             if ($p_iPageSize > osc_max_results_per_page_at_search()) {
                 $p_iPageSize = osc_max_results_per_page_at_search();
@@ -428,7 +425,7 @@ class CWebSearch extends BaseModel
                                 $aux         = "%$aux%";
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
                                 $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value LIKE ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -439,7 +436,7 @@ class CWebSearch extends BaseModel
                             if ($aux != '') {
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
                                 $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value = ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -448,7 +445,7 @@ class CWebSearch extends BaseModel
                         case 'CHECKBOX':
                             if ($aux != '') {
                                 $sql = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql .= $table . '.s_value = 1';
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
@@ -462,7 +459,7 @@ class CWebSearch extends BaseModel
                                 $start = mktime('0', '0', '0', $m, $d, $y);
                                 $end   = mktime('23', '59', '59', $m, $d, $y);
                                 $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql   .= $table . '.s_value >= ' . $start . ' AND ';
                                 $sql   .= $table . '.s_value <= ' . $end;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
@@ -470,17 +467,20 @@ class CWebSearch extends BaseModel
                             }
                             break;
                         case 'DATEINTERVAL':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))) {
-                                $from         = $aux['from'];
-                                $to           = $aux['to'];
+                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
+                                && is_numeric($aux['from']) && is_numeric($aux['to'])
+                            ) {
+                                // s_value stores unix timestamps for DATEINTERVAL fields
+                                $from         = (int)$aux['from'];
+                                $to           = (int)$aux['to'];
                                 $start        = $from;
                                 $end          = $to;
                                 $sql          = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql          .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql          .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql          .= $start . ' >= ' . $table
                                     . ".s_value AND s_multi = 'from'";
                                 $sql1         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql1         .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql1         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql1         .= $end . ' <= ' . $table
                                     . ".s_value AND s_multi = 'to'";
                                 $sql_interval = 'select a.fk_i_item_id from (' . $sql
@@ -490,11 +490,13 @@ class CWebSearch extends BaseModel
                             }
                             break;
                         case 'NUMBER':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))) {
-                                $min   = $aux['from'];
-                                $max   = $aux['to'];
+                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
+                                && is_numeric($aux['from']) && is_numeric($aux['to'])
+                            ) {
+                                $min   = (float)$aux['from'];
+                                $max   = (float)$aux['to'];
                                 $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . $key . ' AND ';
+                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql   .= $table . '.s_value >= ' . $min . ' AND ';
                                 $sql   .= $table . '.s_value <= ' . $max;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
@@ -511,7 +513,11 @@ class CWebSearch extends BaseModel
         osc_run_hook('search_conditions', Params::getParamsAsArray());
 
         // RETRIEVE ITEMS AND TOTAL
-        $key         = md5(osc_base_url() . $this->mSearch->toJson());
+        // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
+        // enable/spam/delete) that bumps it makes every stored search result unreachable at
+        // once — the same immediate invalidation getLatestItems() already gets. Without it a
+        // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
+        $key         = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
         $found       = null;
         $cache       = osc_cache_get($key, $found);
         $aItems      = null;
@@ -624,9 +630,10 @@ class CWebSearch extends BaseModel
 
                 if (osc_count_items() > 0) {
                     while (osc_has_items()) {
+                        // Raw values: RSSFeed handles all XML/HTML escaping.
                         $itemArray = array(
                             'title'       => osc_item_title(),
-                            'link'        => htmlentities(osc_item_url(), ENT_COMPAT, 'UTF-8'),
+                            'link'        => osc_item_url(),
                             'description' => osc_item_description(),
                             'country'     => osc_item_country(),
                             'region'      => osc_item_region(),
@@ -639,16 +646,26 @@ class CWebSearch extends BaseModel
                         if (osc_count_item_resources() > 0) {
                             osc_has_item_resources();
 
+                            // Thumbnail rendered into the description (legacy behaviour).
                             $itemArray['image'] = array(
-                                'url'   => htmlentities(
-                                    osc_resource_thumbnail_url(),
-                                    ENT_COMPAT,
-                                    'UTF-8'
-                                ),
+                                'url'   => osc_resource_thumbnail_url(),
                                 'title' => osc_item_title(),
-                                'link'  => htmlentities(osc_item_url(), ENT_COMPAT, 'UTF-8')
+                                'link'  => osc_item_url()
+                            );
+
+                            // Spec-correct RSS enclosure for the first resource.
+                            // No size is stored (t_item_resource has no size column),
+                            // so length is best-effort 0.
+                            $itemArray['enclosure'] = array(
+                                'url'    => osc_resource_url(),
+                                'type'   => osc_resource_type(),
+                                'length' => 0
                             );
                         }
+
+                        // Per-item extension seam (citizen parity with the sitemap's
+                        // per-URL filters): a plugin can adjust or drop feed entries.
+                        $itemArray = osc_apply_filter('rss_feed_item', $itemArray, osc_item());
 
                         $feed->addItem($itemArray);
                     }

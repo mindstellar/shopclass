@@ -50,21 +50,21 @@ class Preference extends DAO
      */
     public function toArray()
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 0) {
+        if ($rows === []) {
             return false;
         }
 
-        $aTmpPref = $result->result();
-        foreach ($aTmpPref as $tmpPref) {
-            $this->pref[$tmpPref['s_section']][$tmpPref['s_name']] = $tmpPref['s_value'];
+        // Merges into the existing map rather than replacing it, so a key
+        // removed from the table since the last load stays cached until it is
+        // overwritten by name.
+        foreach (osc_db_stringify_rows($rows) as $row) {
+            $this->pref[$row['s_section']][$row['s_name']] = $row['s_value'];
         }
 
         return true;
@@ -95,22 +95,20 @@ class Preference extends DAO
      */
     public function findValueByName($name)
     {
-        $this->dao->select('s_value');
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_name', $name);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->select('s_value')
+                ->where('s_name', $name)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 0) {
+        if ($row === null) {
             return false;
         }
 
-        $row = $result->row();
-
-        return $row['s_value'];
+        return osc_db_stringify_row($row)['s_value'];
     }
 
     /**
@@ -126,20 +124,27 @@ class Preference extends DAO
      */
     public function findBySection($name)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_section', $name);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        if ($name === null) {
+            // A null section builds a comparison with no right-hand side under
+            // the legacy query layer, which fails outright and lands on the
+            // array() branch below rather than the zero-row false branch a
+            // valid, merely non-matching section reaches.
             return array();
         }
 
-        if ($result->numRows() == 0) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('s_section', $name)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        if ($rows === []) {
             return false;
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
     /**
@@ -209,14 +214,20 @@ class Preference extends DAO
     public function replace($key, $value, $section = 'osclass', $type = 'STRING')
     {
         static $aValidEnumTypes = array('STRING', 'INTEGER', 'BOOLEAN');
-        $array_replace = array(
-            's_name'    => $key,
-            's_value'   => $value,
-            's_section' => $section,
-            'e_type'    => in_array($type, $aValidEnumTypes) ? $type : 'STRING'
-        );
+        $e_type = in_array($type, $aValidEnumTypes) ? $type : 'STRING';
 
-        return $this->dao->replace($this->getTableName(), $array_replace);
+        try {
+            // No QueryBuilder equivalent for REPLACE INTO; the unique key on
+            // (s_section, s_name) is what makes this an upsert.
+            osc_db_execute(
+                'REPLACE INTO ' . $this->getTableName() . ' (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)',
+                array($key, $value, $section, $e_type)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+
+        return true;
     }
 }
 

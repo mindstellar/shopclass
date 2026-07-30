@@ -38,6 +38,9 @@ class CAdminCFields extends AdminSecBaseModel
 
         //specific things for this class
         switch ($this->action) {
+            case 'submissions':
+                $this->submissionsView();
+                break;
             default:
                 $categories = Category::newInstance()->toTreeAll();
                 $selected   = array();
@@ -49,13 +52,129 @@ class CAdminCFields extends AdminSecBaseModel
                 }
                 $this->_exportVariableToView('categories', $categories);
                 $this->_exportVariableToView('default_selected', $selected);
-                $this->_exportVariableToView('fields', $this->fieldManager->listAll());
+
+                // Field palette (all definitions) + forms with their ordered field ids,
+                // for the two-pane drag-and-drop builder.
+                $allFields = $this->fieldManager->listAll();
+                $service   = new \mindstellar\forms\FormService();
+                $groupModel = FieldGroup::newInstance();
+                $forms     = $groupModel->listAll();
+                foreach ($forms as &$form) {
+                    $form['field_ids']    = $service->formFieldIds((int)$form['pk_i_id']);
+                    // The categories a form applies to. A form with none renders on no
+                    // listing at all (findByCategory inner-joins the link table), so the
+                    // builder surfaces this as a visible "not attached yet" warning.
+                    $form['category_ids'] = $groupModel->categories((int)$form['pk_i_id']);
+                }
+                unset($form);
+
+                // Flat id => localised name map, so the builder can label each form's
+                // categories at load and after an inline save without another lookup.
+                $categoryNames = array();
+                $flatten = static function ($nodes) use (&$flatten, &$categoryNames) {
+                    foreach ((array)$nodes as $node) {
+                        $categoryNames[(int)$node['pk_i_id']] = $node['s_name'];
+                        if (!empty($node['categories'])) {
+                            $flatten($node['categories']);
+                        }
+                    }
+                };
+                $flatten($categories);
+
+                // Legacy "loose" fields: created before the forms builder, assigned
+                // straight to categories (t_meta_categories) and never placed in a
+                // form. They still render on those listings via the loose branch of
+                // findByCategoryItem, but the form-centric builder gives no sign of
+                // that — so surface, per such field, the categories it is attached to.
+                // A field that lives in a form ignores its loose rows (the resolver's
+                // NOT EXISTS guard), so those are deliberately excluded here.
+                $placedIds     = $service->placedFieldIds();
+                $placedLookup  = array_fill_keys(array_map('intval', $placedIds), true);
+                $looseCategories = array();
+                foreach ($allFields as $field) {
+                    $fid = (int)$field['pk_i_id'];
+                    if (isset($placedLookup[$fid])) {
+                        continue;
+                    }
+                    $names = array();
+                    foreach ($this->fieldManager->categories($fid) as $cid) {
+                        if (isset($categoryNames[(int)$cid])) {
+                            $names[] = $categoryNames[(int)$cid];
+                        }
+                    }
+                    if (!empty($names)) {
+                        $looseCategories[$fid] = $names;
+                    }
+                }
+
+                $this->_exportVariableToView('fields', $allFields);
+                $this->_exportVariableToView('groups', $forms);
+                $this->_exportVariableToView('category_names', $categoryNames);
+                $this->_exportVariableToView('placed_field_ids', $placedIds);
+                $this->_exportVariableToView('loose_field_categories', $looseCategories);
                 $this->doView('fields/index.php');
                 break;
         }
     }
 
     //hopefully generic...
+
+    /**
+     * Form submissions browser: pick a form, filter by status, view entries.
+     */
+    private function submissionsView()
+    {
+        $submissionModel = \mindstellar\model\FormSubmission::newInstance();
+        $forms           = FieldGroup::newInstance()->listAll();
+
+        // Which form to show — the requested one, else the first with entries, else
+        // the first form.
+        $formId = Params::getParamInt('form_id');
+        if ($formId <= 0) {
+            foreach ($forms as $f) {
+                if ($submissionModel->countByForm((int)$f['pk_i_id']) > 0) {
+                    $formId = (int)$f['pk_i_id'];
+                    break;
+                }
+            }
+            if ($formId <= 0 && !empty($forms)) {
+                $formId = (int)$forms[0]['pk_i_id'];
+            }
+        }
+
+        $status = Params::getParam('status');
+        if (!\mindstellar\model\FormSubmission::isValidStatus($status)) {
+            $status = null;
+        }
+
+        $submissions = array();
+        $statusCounts = array();
+        $formFields   = array();
+        if ($formId > 0) {
+            $submissions  = $submissionModel->listByForm($formId, $status, 200, 0);
+            $statusCounts = $submissionModel->statusCounts($formId);
+            $formFields   = Field::newInstance()->findByGroup($formId);
+            // attach each submission's values
+            foreach ($submissions as &$s) {
+                $s['values'] = $submissionModel->valuesFor((int)$s['pk_i_id']);
+            }
+            unset($s);
+        }
+
+        // per-form total counts for the form switcher
+        foreach ($forms as &$f) {
+            $f['submission_count'] = $submissionModel->countByForm((int)$f['pk_i_id']);
+        }
+        unset($f);
+
+        $this->_exportVariableToView('forms', $forms);
+        $this->_exportVariableToView('current_form_id', $formId);
+        $this->_exportVariableToView('current_status', $status);
+        $this->_exportVariableToView('status_counts', $statusCounts);
+        $this->_exportVariableToView('form_fields', $formFields);
+        $this->_exportVariableToView('submissions', $submissions);
+        $this->doView('fields/submissions.php');
+    }
 
 }
 

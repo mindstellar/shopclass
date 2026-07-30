@@ -76,22 +76,19 @@ class AlertsStats extends DAO
             return false;
         }
 
-        // first we try to insert
-        if ($this->insert(array('d_date' => $date, 'i_num_alerts_sent' => '1'))) {
-            return true;
-        }
+        // One statement covers both the first alert of the day and every one
+        // after it, so there is no failed insert to interpret. The date is
+        // bound rather than interpolated, and the format guard above already
+        // constrains it.
+        $sql = 'INSERT INTO ' . $this->getTableName() . ' (d_date, i_num_alerts_sent)
+                VALUES (?, 1)
+                ON DUPLICATE KEY UPDATE i_num_alerts_sent = i_num_alerts_sent + 1';
 
-        // duplicate key?
-        if ($this->getErrorLevel() != 1062) {
+        try {
+            osc_db_execute($sql, array($date));
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
-
-        $sql = sprintf(
-            "UPDATE %s SET i_num_alerts_sent = i_num_alerts_sent + 1 WHERE d_date = '%s'",
-            $this->getTableName(),
-            $date
-        );
-        $this->dao->query($sql);
 
         return true;
     }

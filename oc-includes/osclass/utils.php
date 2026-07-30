@@ -84,20 +84,25 @@ function osc_deleteResource($id, $admin)
             $admin ? osc_logged_admin_id() : osc_logged_user_id()
         );
         // check if resource s_path, pk_i_id and s_extension are set and not empty
-        try {
-            $filesToRemove = [
-                $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
-                $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
-            ];
-            foreach ($filesToRemove as $file) {
-                if (file_exists($file) && !is_dir($file)) {
-                    (new mindstellar\utility\FileSystem)->remove($file);
+        if (($resource['s_storage'] ?? 'local') === 'local'
+            && \mindstellar\storage\StorageManager::instance()->remote() === null) {
+            try {
+                $filesToRemove = [
+                    $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
+                    $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
+                ];
+                foreach ($filesToRemove as $file) {
+                    if (file_exists($file) && !is_dir($file)) {
+                        (new mindstellar\utility\FileSystem)->remove($file);
+                    }
                 }
+            } catch (Exception $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+        } else {
+            \StorageQueue::newInstance()->enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
         }
         osc_run_hook('delete_resource', $resource);
     }
@@ -571,16 +576,15 @@ function osc_dbdump($path, $file)
         't_item_description',
         't_item_location',
         't_item_stats',
+        't_item_stats_daily',
         't_item_resource',
         't_item_comment',
         't_preference',
-        't_user_preferences',
         't_pages',
         't_pages_description',
         't_plugin_category',
         't_cron',
         't_alerts',
-        't_keywords',
         't_meta_fields',
         't_meta_categories',
         't_item_meta'
@@ -864,13 +868,18 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  *
  * @param      $url
  * @param null $post_data
+ * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to false
+ *                         for backward compatibility; pass true for requests
+ *                         carrying secrets.
+ * @param int  $timeout    total transfer timeout in seconds; 0 (default) leaves
+ *                         no overall limit, so existing callers are unaffected.
  *
  * @return bool|string|null
  */
-function osc_file_get_contents($url, $post_data = null)
+function osc_file_get_contents($url, $post_data = null, $verify_ssl = false, $timeout = 0)
 {
     try {
-        return (new FileSystem())->getContents($url, $post_data, false);
+        return (new FileSystem())->getContents($url, $post_data, $verify_ssl, (int)$timeout);
     } catch (Exception $e) {
         trigger_error($e->getMessage(), E_USER_WARNING);
 
@@ -967,6 +976,52 @@ function osc_check_recaptcha()
     }
 
     return false;
+}
+
+
+/**
+ * Verifies the submitted captcha token for the active provider.
+ *
+ * reCAPTCHA leg delegates to osc_check_recaptcha(). Turnstile leg posts the
+ * cf-turnstile-response token to Cloudflare's siteverify endpoint and fails
+ * closed on every abnormal path: empty or oversize token, transport error,
+ * timeout, non-JSON response, or a body whose success flag is not true.
+ *
+ * @return bool
+ */
+function osc_check_captcha()
+{
+    switch (osc_captcha_provider()) {
+        case 'recaptcha':
+            return osc_check_recaptcha();
+        case 'turnstile':
+            $token = Params::getParam('cf-turnstile-response');
+            if (!is_string($token) || $token === '' || strlen($token) > 2048) {
+                return false;
+            }
+            try {
+                $raw = osc_file_get_contents(
+                    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+                    array(
+                        'secret'   => osc_turnstile_secret_key(),
+                        'response' => $token,
+                        'remoteip' => Params::getServerParam('REMOTE_ADDR'),
+                    ),
+                    true,
+                    8
+                );
+            } catch (Exception $e) {
+                return false;
+            }
+            if (!is_string($raw)) {
+                return false;
+            }
+            $json = json_decode($raw, true);
+
+            return is_array($json) && (($json['success'] ?? false) === true);
+        default:
+            return false;
+    }
 }
 
 

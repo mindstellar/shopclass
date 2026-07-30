@@ -59,6 +59,14 @@ $status-badge: (
         "blocked":  (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
         "spam":     (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f33a"), // ⚠ triangle
 
+        // Form submissions. Same component and the same glyph vocabulary as above —
+        // an unread submission is the one that wants attention, so it takes the brand
+        // accent; once read or archived it recedes to the neutral tint like any other
+        // switched-off state. "spam" is shared with the listing states above.
+        "new":      (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f287"), // ● disc
+        "read":     (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
+        "archived": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
+
         // The plugins screen. "disabled" is the plugins-domain word for "inactive" and shares
         // its look deliberately — an installed-but-switched-off plugin and a switched-off
         // listing are the same kind of state, and the admin should not invent a second visual

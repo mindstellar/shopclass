@@ -253,7 +253,9 @@ function oscEnhanceFlash(root) {
         if (close) {
             close.setAttribute('role', 'button');
             if (!close.hasAttribute('tabindex')) { close.setAttribute('tabindex', '0'); }
-            if (!close.hasAttribute('aria-label')) { close.setAttribute('aria-label', 'Dismiss'); }
+            // Prefer the translated label the server emits; fall back for plugin markup that
+            // renders its own flash without it.
+            if (!close.hasAttribute('aria-label')) { close.setAttribute('aria-label', close.dataset.ocCloseLabel || 'Dismiss'); }
         }
     });
 }

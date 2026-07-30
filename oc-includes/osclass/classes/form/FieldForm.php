@@ -42,7 +42,7 @@ class FieldForm extends Form
      */
     private $activeUserLocale;
 
-    public function __construct(Escape $escape = null, Sanitize $sanitize = null)
+    public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         $this->adminLocales = osc_get_admin_locales();
         $this->activeAdminLocale = osc_current_admin_locale();
@@ -170,8 +170,28 @@ class FieldForm extends Form
         $name                         = 'field_type';
         $attributes['id']             = $name;
         $options['selectPlaceholder'] = false;
-        $options['selectOptions']     = 'TEXT,NUMBER,TEXTAREA,DROPDOWN,RADIO,CHECKBOX,URL,DATE,DATEINTERVAL';
-        echo self::getInstance()->select($name, $field['e_type'] ?? '', $attributes, $options);
+
+        // Build the option map from the field-type registry so plugins that register
+        // their own types appear here. Falls back to the historical primitives if the
+        // registry is somehow empty.
+        $registered = osc_field_types();
+        $selectOptions = array();
+        foreach ($registered as $id => $spec) {
+            $selectOptions[$id] = __($spec['label']);
+        }
+        if (empty($selectOptions)) {
+            $selectOptions = array(
+                'TEXT' => 'TEXT', 'NUMBER' => 'NUMBER', 'TEXTAREA' => 'TEXTAREA',
+                'DROPDOWN' => 'DROPDOWN', 'RADIO' => 'RADIO', 'CHECKBOX' => 'CHECKBOX',
+                'URL' => 'URL', 'DATE' => 'DATE', 'DATEINTERVAL' => 'DATEINTERVAL',
+            );
+        }
+        $options['selectOptions'] = $selectOptions;
+
+        // The stored primitive is e_type; a plugin type persists its real id in
+        // s_meta['type'] (surfaced as $field['type'] after extendField).
+        $current = $field['type'] ?? ($field['e_type'] ?? '');
+        echo self::getInstance()->select($name, $current, $attributes, $options);
     }
 
     /**
@@ -267,6 +287,90 @@ class FieldForm extends Form
             $attributes['id'] = $id;
             $options = [];
 
+            // Resolved field type (a registry type such as EMAIL maps its identity
+            // here while e_type stays the storage primitive) and its per-field config
+            // (placeholder/help text/bounds/…), merged into $field by extendField.
+            // Config values are admin-entered and stored raw in s_meta; the form input
+            // helper does not escape attribute or help-text values, and meta() renders
+            // on the PUBLIC item and search forms, so escape here to avoid stored XSS.
+            $type = osc_field_resolve_type($field);
+            // Native input type declared by the field type (email, url, number, tel,
+            // …). The browser then validates the value and offers the matching mobile
+            // keyboard, and a theme styles a plain native input. Branches below that
+            // need something else (date, number range) override it.
+            // Not on the search form: a native email/url input would refuse to submit
+            // a partial term, which is exactly what searching by one needs to allow.
+            $typeSpec   = osc_field_type($type);
+            $nativeType = $search ? '' : (string)($typeSpec['input_type'] ?? '');
+            // url and email are the two the browser refuses to submit when it judges
+            // the value malformed. A row saved before this existed can hold something
+            // it rejects — a URL with no scheme is the common one, and the URL type
+            // has no server-side validator — and blocking the whole listing's save
+            // until that one field is corrected would be a regression on live data.
+            // Such a value stays on a plain text input; valid ones get the native type.
+            if ($nativeType !== '' && is_string($value) && $value !== '') {
+                $strict = array('url' => FILTER_VALIDATE_URL, 'email' => FILTER_VALIDATE_EMAIL);
+                if (isset($strict[$nativeType]) && !filter_var($value, $strict[$nativeType])) {
+                    $nativeType = '';
+                }
+            }
+            if ($nativeType !== '') {
+                $attributes['type'] = $nativeType;
+            }
+
+            // The framework classes the control ships with. These render on public
+            // theme markup, so a theme that would rather style bare native elements
+            // can filter them to '' or to its own names. Radio and checkbox carry no
+            // class today and are left alone. Default is unchanged, so existing
+            // themes see exactly what they saw before.
+            $defaultInputClass = null;
+            if ($field['e_type'] === 'DROPDOWN') {
+                $defaultInputClass = self::getInstance()->selectClass;
+            } elseif ($field['e_type'] !== 'RADIO' && $field['e_type'] !== 'CHECKBOX') {
+                $defaultInputClass = self::getInstance()->textClass;
+            }
+            $fieldInputClass = $defaultInputClass === null
+                ? null
+                : osc_apply_filter('custom_field_input_class', $defaultInputClass, $field, $type, $search);
+            if ($fieldInputClass !== null && $fieldInputClass !== $defaultInputClass) {
+                $attributes['class'] = $fieldInputClass;
+            }
+            if (!empty($field['placeholder'])) {
+                $attributes['placeholder'] = osc_esc_html($field['placeholder']);
+            }
+            if (!empty($field['help_text'])) {
+                $options['inputHelp'] = osc_esc_html($field['help_text']);
+            }
+            // Prefill a configured default only when editing a fresh value.
+            if (!$search && ($value === '' || $value === null) && isset($field['default']) && $field['default'] !== '') {
+                $value = $field['default'];
+            }
+            // Conditional rules drive client-side show/hide; carry them on the input.
+            // The form input helper does not escape attribute values, and the JSON
+            // contains double quotes, so pre-escape it to keep the attribute valid
+            // (getAttribute decodes the entities back to parseable JSON).
+            if (!$search && !empty($field['rules']) && is_array($field['rules'])) {
+                $attributes['data-cf-rules'] = osc_esc_html(json_encode($field['rules']));
+            }
+
+            // Cascading options (small-set): a dropdown whose options are narrowed to
+            // the parent field's value. Carry the parent slug and the parentValue ->
+            // options map on the select; the select renders the union of all options
+            // (so a stored value stays selectable) and JS narrows it on the client.
+            $cascadeUnion = null;
+            if (!$search && !empty($field['cascade_map']) && is_array($field['cascade_map'])
+                && !empty($field['cascade_parent'])) {
+                $attributes['data-cascade-parent'] = osc_esc_html($field['cascade_parent']);
+                $attributes['data-cascade-map']    = osc_esc_html(json_encode($field['cascade_map']));
+                $union = array();
+                foreach ($field['cascade_map'] as $opts) {
+                    foreach ((array)$opts as $opt) {
+                        $union[$opt] = $opt;
+                    }
+                }
+                $cascadeUnion = implode(',', array_keys($union));
+            }
+
             switch ($field['e_type']) {
                 case 'TEXTAREA':
                     if ($search) {
@@ -280,7 +384,7 @@ class FieldForm extends Form
                             $value,
                             $field
                         );
-                        $attributes['rows'] = 10;
+                        $attributes['rows'] = (isset($field['rows']) && (int)$field['rows'] > 0) ? (int)$field['rows'] : 10;
                         $options['label']   = $label;
                         echo self::getInstance()->textarea($name, $value, $attributes, $options);
                     }
@@ -292,8 +396,8 @@ class FieldForm extends Form
                         $options['label'] = $label;
                     }
 
-                    if (isset($field['s_options'])) {
-                        $options['selectOptions']     = $field['s_options'];
+                    if (isset($field['s_options']) || $cascadeUnion !== null) {
+                        $options['selectOptions']     = $cascadeUnion !== null ? $cascadeUnion : $field['s_options'];
                         $options['selectPlaceholder'] = __('Select', 'osclass');
                         echo self::getInstance()->select($name, $value, $attributes, $options);
                     }
@@ -325,7 +429,7 @@ class FieldForm extends Form
                     }
                     // add cf_date class to the input field; the visible control is a
                     // native date input, the hidden field carries the unix timestamp.
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date ' . $id;
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date ' . $id);
                     $attributes['type']  = 'date';
                     echo self::getInstance()->hidden($name, $value, ['id' => $id]);
                     unset($attributes['id']);
@@ -347,7 +451,7 @@ class FieldForm extends Form
                     // add cf_date_interval class to the input field; native date
                     // inputs, hidden fields carry the unix timestamps.
                     $attributes['type']  = 'date';
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date_interval ' . $id . '_from';
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_from');
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
                     echo '<div class="input-group input-group-sm">';
                     echo '<span class="input-group-text">' . ucfirst(__('from')) . ' </span>';
@@ -355,7 +459,7 @@ class FieldForm extends Form
                     echo self::getInstance()->text('datepicker-placeholder-from', '', $attributes);
 
                     echo '<span class="input-group-text">' . ucfirst(__('to')) . ' </span>';
-                    $attributes['class'] = self::getInstance()->textClass . ' cf_date_interval ' . $id . '_to';
+                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_to');
                     echo self::getInstance()->hidden($name . '[to]', $value['to'], ['id' => $id . '_to']);
                     unset($attributes['id']);
                     echo self::getInstance()->text('datepicker-placeholder-to', '', $attributes);
@@ -387,6 +491,11 @@ class FieldForm extends Form
                     } else {
                         $options['label'] = $label;
                         $attributes['type'] = 'number';
+                        foreach (array('min', 'max', 'step') as $numCfg) {
+                            if (isset($field[$numCfg]) && $field[$numCfg] !== '') {
+                                $attributes[$numCfg] = $field[$numCfg];
+                            }
+                        }
                         echo self::getInstance()->text($name, $value, $attributes, $options);
                     }
                     break;
@@ -395,6 +504,12 @@ class FieldForm extends Form
                         echo '<h6>' . $label . '</h6>';
                     } else {
                         $options['label'] = $label;
+                    }
+                    if (isset($field['maxlength']) && (int)$field['maxlength'] > 0) {
+                        $attributes['maxlength'] = (int)$field['maxlength'];
+                    }
+                    if (!empty($field['pattern'])) {
+                        $attributes['pattern'] = osc_esc_html($field['pattern']);
                     }
                     echo self::getInstance()->text($name, $value, $attributes, $options);
                     break;
@@ -467,15 +582,194 @@ class FieldForm extends Form
     public static function meta_fields_input($catId = null, $itemId = null)
     {
         $fields = Field::newInstance()->findByCategoryItem($catId, $itemId);
-        if (count($fields) > 0) {
-            echo '<div class="meta_list card-body">';
-            foreach ($fields as $field) {
+        self::renderFieldList($fields, 'meta_list card-body');
+    }
+
+    /**
+     * Render a list of resolved field rows as inputs, bucketed into sections. Shared
+     * by the item form (meta_fields_input) and by standalone forms placed anywhere
+     * (osc_render_form) so a field looks and behaves identically in both contexts.
+     *
+     * A field row carrying a non-empty cf_group_name renders under that section
+     * heading; rows without one render flat. Emits the conditional-logic engine once.
+     *
+     * @param array  $fields       resolved + extended field rows (each may carry
+     *                             cf_group_name / s_value)
+     * @param string $wrapperClass class for the outer container
+     *
+     * @return void
+     */
+    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list')
+    {
+        if (count($fields) === 0) {
+            return;
+        }
+        // Bucket into sections in resolution order: grouped fields under their
+        // section heading, loose fields under the default (no header) section.
+        $sections = array();
+        foreach ($fields as $field) {
+            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
+                      && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
+            if (!isset($sections[$gname])) {
+                $sections[$gname] = array();
+            }
+            $sections[$gname][] = $field;
+        }
+
+        echo '<div class="' . osc_esc_html($wrapperClass) . '">';
+        foreach ($sections as $gname => $sectionFields) {
+            if ($gname !== '') {
+                echo '<div class="meta-section">';
+                echo '<h5 class="meta-section-title">' . osc_esc_html($gname) . '</h5>';
+            }
+            foreach ($sectionFields as $field) {
                 echo '<div class="meta">';
                 self::meta($field);
                 echo '</div>';
             }
-            echo '</div>';
+            if ($gname !== '') {
+                echo '</div>';
+            }
         }
+        echo '</div>';
+        self::conditionalLogicScript();
+    }
+
+    /**
+     * Emit the client-side conditional-logic engine once per request. It reads the
+     * data-cf-rules JSON that meta() writes onto each rule-driven input and shows/
+     * hides (show_when) or toggles required (required_when) the field as the value
+     * of a sibling field changes. Vanilla JS, no jQuery. The server re-evaluates the
+     * same rules on save, so this is UX only and never gates data integrity.
+     */
+    public static function conditionalLogicScript()
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+        ?>
+        <script type="text/javascript">
+            (function () {
+                // ---- Cascading option dropdowns (Make -> Model) -----------------
+                document.querySelectorAll('select[data-cascade-parent]').forEach(function (child) {
+                    var parentSlug = child.getAttribute('data-cascade-parent');
+                    var parent = document.getElementById('meta_' + parentSlug);
+                    var map;
+                    try { map = JSON.parse(child.getAttribute('data-cascade-map')); } catch (e) { return; }
+                    if (!parent) { return; }
+
+                    var placeholder = child.querySelector('option[value=""]');
+                    var placeholderHtml = placeholder ? placeholder.outerHTML : '';
+
+                    function parentValue() {
+                        var name = parent.getAttribute('name');
+                        var checked = name ? document.querySelector('[name="' + name + '"]:checked') : null;
+                        return checked ? checked.value : (parent.value || '');
+                    }
+
+                    function repopulate() {
+                        var current = child.value;
+                        var opts = map[parentValue()] || [];
+                        child.innerHTML = placeholderHtml;
+                        var keep = '';
+                        opts.forEach(function (o) {
+                            var opt = document.createElement('option');
+                            opt.value = o;
+                            opt.textContent = o;
+                            if (o === current) { opt.selected = true; keep = o; }
+                            child.appendChild(opt);
+                        });
+                        // if the previous value is no longer valid, fall back to the placeholder
+                        if (!keep && placeholder) { child.value = ''; }
+                    }
+
+                    var pName = parent.getAttribute('name');
+                    var group = pName ? document.querySelectorAll('[name="' + pName + '"]') : [parent];
+                    group.forEach(function (m) { m.addEventListener('change', repopulate); });
+                    repopulate();
+                });
+
+                // ---- Conditional visibility / requirement -----------------------
+                var nodes = document.querySelectorAll('[data-cf-rules]');
+                if (!nodes.length) { return; }
+
+                // Read a controlling field's current value by slug. Inputs carry
+                // id="meta_<slug>"; radios/checkboxes are read from the checked member.
+                function controlValue(slug) {
+                    var el = document.getElementById('meta_' + slug);
+                    if (!el) { return ''; }
+                    var name = el.getAttribute('name');
+                    if (name) {
+                        var checked = document.querySelector('[name="' + name + '"]:checked');
+                        if (checked) { return checked.value; }
+                        var anyRadio = document.querySelector('[name="' + name + '"][type="radio"]');
+                        if (anyRadio) { return ''; }
+                    }
+                    if (el.type === 'checkbox') { return el.checked ? (el.value || '1') : ''; }
+                    return el.value || '';
+                }
+
+                function test(cond) {
+                    if (!cond || !cond.field) { return true; }
+                    var actual = controlValue(cond.field);
+                    var expected = (cond.value !== undefined && cond.value !== null) ? String(cond.value) : '';
+                    switch (cond.op) {
+                        case 'neq':    return String(actual) !== expected;
+                        case 'filled': return String(actual).trim() !== '';
+                        case 'gt':     return parseFloat(actual) > parseFloat(expected);
+                        case 'lt':     return parseFloat(actual) < parseFloat(expected);
+                        case 'eq':
+                        default:       return String(actual) === expected;
+                    }
+                }
+
+                var watched = {};
+                var entries = [];
+                nodes.forEach(function (node) {
+                    var rules;
+                    try { rules = JSON.parse(node.getAttribute('data-cf-rules')); } catch (e) { return; }
+                    var wrapper = node.closest('.meta') || node.closest('.form-row') || node.parentNode;
+                    entries.push({ node: node, wrapper: wrapper, rules: rules });
+                    ['show_when', 'required_when'].forEach(function (k) {
+                        if (rules[k] && rules[k].field) { watched[rules[k].field] = true; }
+                    });
+                });
+
+                function apply() {
+                    entries.forEach(function (entry) {
+                        if (entry.rules.show_when) {
+                            var visible = test(entry.rules.show_when);
+                            if (entry.wrapper) { entry.wrapper.style.display = visible ? '' : 'none'; }
+                            if (!visible) { entry.node.removeAttribute('required'); }
+                        }
+                        if (entry.rules.required_when) {
+                            if (test(entry.rules.required_when)) {
+                                entry.node.setAttribute('required', 'required');
+                            } else {
+                                entry.node.removeAttribute('required');
+                            }
+                        }
+                    });
+                }
+
+                // Re-evaluate whenever a watched controlling field changes.
+                Object.keys(watched).forEach(function (slug) {
+                    var el = document.getElementById('meta_' + slug);
+                    if (!el) { return; }
+                    var name = el.getAttribute('name');
+                    var group = name ? document.querySelectorAll('[name="' + name + '"]') : [el];
+                    group.forEach(function (member) {
+                        member.addEventListener('change', apply);
+                        member.addEventListener('keyup', apply);
+                    });
+                });
+
+                apply();
+            })();
+        </script>
+        <?php
     }
     /**
      * Generate MultiLanguage Title Description Fields for Item
@@ -532,7 +826,7 @@ class FieldForm extends Form
      * @param                                   $locale
      * @param array                             $field
      */
-    private function printFieldTitle($locale, array $field = null)
+    private function printFieldTitle($locale, ?array $field = null)
     {
         $fieldTitleInputName         = 'meta_s_name' . '[' . $locale['pk_c_code'] . ']';
         $valueTitleInput        = $field['locale'][$locale['pk_c_code']]['s_name'] ?? '';

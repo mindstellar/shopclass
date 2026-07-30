@@ -21,19 +21,31 @@ if (!defined('ABS_PATH')) {
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
-if (!file_exists(ABS_PATH . 'config.php')) {
-    $title   = 'Shopclass &raquo; Error';
-    $message =
-        'There doesn\'t seem to be a <code>config.php</code> file. Shopclass isn\'t installed. '
-        . '<a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>';
-    $message .= '<p><a class="btn btn-primary" href="' . osc_get_absolute_url()
-        . 'oc-includes/osclass/install.php">'
-        . 'Install</a></p>';
-    osc_die($title, $message);
-}
+// Load configuration from config.php when present, otherwise from environment
+// variables (config.php is optional — Shopclass can run entirely from env).
+require_once LIB_PATH . 'osclass/config-loader.php';
 
-// load osclass configuration
-require_once ABS_PATH . 'config.php';
+if (!osc_is_configured()) {
+    osc_die(
+        'Shopclass isn\'t set up yet',
+        'There\'s no <code>config.php</code> file and no database settings in the environment yet. '
+        . 'Run the installer to get started.',
+        array(
+            'tone'    => 'info',
+            'actions' => array(
+                array(
+                    'label'   => 'Run the installer',
+                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
+                    'primary' => true,
+                ),
+                array(
+                    'label' => 'Need help?',
+                    'href'  => 'https://github.com/mindstellar/shopclass/discussions',
+                ),
+            ),
+        )
+    );
+}
 
 // load default constants
 require_once LIB_PATH . 'osclass/default-constants.php';
@@ -43,16 +55,24 @@ require_once LIB_PATH . 'vendor/autoload.php';
 //Register error handler
 OsclassErrors::newInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
+require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 // check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {
-    $title   = 'Shopclass &raquo; Error';
-    $message =
-        '<code>config.php</code> file is present but Shopclass isn\'t installed. '
-        .'Are you sure you want to install Shopclass?'
-        . '<p><a class="button" href="' . osc_get_absolute_url()
-        . 'oc-includes/osclass/install.php">Install</a></p>';
-    osc_die($title, $message);
+    osc_die(
+        'Shopclass isn\'t installed yet',
+        'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
+        array(
+            'tone'    => 'info',
+            'actions' => array(
+                array(
+                    'label'   => 'Run the installer',
+                    'href'    => osc_get_absolute_url() . 'oc-includes/osclass/install.php',
+                    'primary' => true,
+                ),
+            ),
+        )
+    );
 }
 require_once LIB_PATH . 'osclass/helpers/hDefines.php';
 require_once LIB_PATH . 'osclass/helpers/hLocale.php';
@@ -75,11 +95,19 @@ require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/formatting.php';
 require_once LIB_PATH . 'osclass/locales.php';
 require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
+require_once LIB_PATH . 'osclass/helpers/hStorage.php';
+require_once LIB_PATH . 'osclass/helpers/hResources.php';
 require_once LIB_PATH . 'osclass/emails.php';
 require_once LIB_PATH . 'osclass/alerts.php';
 require_once LIB_PATH . 'osclass/functions.php';
 require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
+require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
+require_once LIB_PATH . 'osclass/helpers/hSpam.php';
+require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
+require_once LIB_PATH . 'osclass/helpers/hPageTemplates.php';
+require_once LIB_PATH . 'osclass/helpers/hFields.php';
+require_once LIB_PATH . 'osclass/helpers/hForms.php';
 require_once LIB_PATH . 'osclass/compatibility.php';
 
 
@@ -102,18 +130,14 @@ Scripts::init();
 Styles::init();
 
 // register scripts
+//
+// jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
+// These three stay registered because the bundled `bender` front theme still enqueues
+// them (it lives in its own repository, so it migrates separately). Nothing in core
+// enqueues them, so they cost nothing until a theme asks for them.
 osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
-osc_register_script('jquery-migrate', osc_assets_url('jquery-migrate/jquery-migrate.min.js'), 'jquery');
 osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
-
-//osc_register_script('jquery-json', osc_assets_url('js/jquery.json.js'), 'jquery');
-//Not used in osclass core, removed.
-//osc_register_script('fancybox', osc_assets_url('js/fancybox/jquery.fancybox.pack.js'), array('jquery'));
-
-osc_register_script('jquery-treeview', osc_assets_url('jquery-treeview/jquery.treeview.js'), 'jquery');
-osc_register_script('jquery-nested', osc_assets_url('jquery-ui-nested/jquery-ui-nested.js'), 'jquery-ui');
 osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');
-osc_register_script('jquery-validate-additional', osc_assets_url('jquery-validation/additional-methods.min.js'), 'jquery-validate');
 
 osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
 
@@ -127,8 +151,6 @@ osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('oscl
 osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.css')));
 
 //Legacy js libraries
-osc_register_script('tabber', osc_assets_url('osclass-legacy/js/tabber-minimized.js'), 'jquery');
-osc_register_script('colorpicker', osc_assets_url('osclass-legacy/js/colorpicker/js/colorpicker.js'));
 osc_register_script('php-date', osc_assets_url('osclass-legacy/js/date.js'));
 
 Plugins::init();

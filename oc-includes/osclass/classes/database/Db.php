@@ -1,0 +1,273 @@
+<?php
+
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+namespace mindstellar\database;
+
+use InvalidArgumentException;
+use mysqli;
+use RuntimeException;
+use Throwable;
+
+/**
+ * Class Db
+ *
+ * Transaction helpers operating on the singleton mysqli connection managed by
+ * ConnectionManager. Supports flat begin/commit/rollBack as well as nested
+ * transactions via SAVEPOINTs, so an inner transaction() call inside an outer
+ * one is safe.
+ *
+ * Note: DDL statements (ALTER, CREATE, DROP, TRUNCATE, RENAME, ...) cause an
+ * implicit COMMIT in MySQL and cannot be rolled back. These helpers must wrap
+ * DML only (INSERT/UPDATE/DELETE/REPLACE).
+ *
+ * @package mindstellar\database
+ */
+class Db
+{
+    /**
+     * Current transaction nesting depth.
+     *
+     * @var int
+     */
+    private static $depth = 0;
+
+    /**
+     * Resolve the singleton mysqli connection through the Connection wrapper, which
+     * owns the sole sanctioned access to the raw handle. Keeps this class off the
+     * deprecated DBConnectionClass::getOsclassDb() path.
+     *
+     * @return mysqli
+     * @throws DbException when no database connection is available
+     */
+    private static function conn(): mysqli
+    {
+        return Connection::instance()->handle();
+    }
+
+    /**
+     * Start a new immutable query builder for $table.
+     *
+     * Entry point to the fluent QueryBuilder: every clause method returns a
+     * cloned builder, so the returned object can be reused and branched without
+     * shared state, and terminals compile to prepared statements.
+     *
+     * @param string $table
+     *
+     * @return QueryBuilder
+     */
+    public static function table(string $table): QueryBuilder
+    {
+        return new QueryBuilder($table);
+    }
+
+    /**
+     * Start a transaction, or a SAVEPOINT when one is already open, and increment
+     * the nesting depth. This is depth-aware on purpose: a bare
+     * begin_transaction() issued while a transaction is already open would cause
+     * MySQL to implicitly COMMIT the outer transaction, so nesting is done with
+     * savepoints instead. Pairs with commit()/rollBack(), which unwind the same
+     * levels — so mixing these raw helpers with transaction() is safe.
+     *
+     * @return bool
+     */
+    public static function beginTransaction(): bool
+    {
+        if (self::$depth > 0) {
+            if (!self::savepoint('oscsp' . self::$depth)) {
+                return false;
+            }
+            self::$depth++;
+
+            return true;
+        }
+
+        try {
+            $result = self::conn()->begin_transaction();
+        } catch (Throwable $e) {
+            return false;
+        }
+        if ($result) {
+            self::$depth++;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Commit the innermost level: release its SAVEPOINT when nested, or commit the
+     * real transaction at the outermost level. Decrements the nesting depth.
+     *
+     * @return bool
+     */
+    public static function commit(): bool
+    {
+        if (self::$depth > 1) {
+            $result = self::releaseSavepoint('oscsp' . (self::$depth - 1));
+            self::$depth--;
+
+            return $result;
+        }
+
+        try {
+            return self::conn()->commit();
+        } catch (Throwable $e) {
+            return false;
+        } finally {
+            if (self::$depth > 0) {
+                self::$depth--;
+            }
+        }
+    }
+
+    /**
+     * Roll back the innermost level: to its SAVEPOINT when nested, or the whole
+     * transaction at the outermost level. Decrements the nesting depth.
+     *
+     * @return bool
+     */
+    public static function rollBack(): bool
+    {
+        if (self::$depth > 1) {
+            $result = self::rollbackToSavepoint('oscsp' . (self::$depth - 1));
+            self::$depth--;
+
+            return $result;
+        }
+
+        try {
+            return self::conn()->rollback();
+        } catch (Throwable $e) {
+            return false;
+        } finally {
+            if (self::$depth > 0) {
+                self::$depth--;
+            }
+        }
+    }
+
+    /**
+     * Whether a transaction is currently open.
+     *
+     * @return bool
+     */
+    public static function inTransaction(): bool
+    {
+        return self::$depth > 0;
+    }
+
+    /**
+     * Create a named savepoint within the current transaction.
+     *
+     * @param string $name
+     *
+     * @return bool
+     * @throws InvalidArgumentException when the savepoint name is not [A-Za-z0-9_]+
+     */
+    public static function savepoint(string $name): bool
+    {
+        self::assertValidName($name);
+
+        try {
+            return (bool) self::conn()->query('SAVEPOINT ' . $name);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Roll back to a named savepoint.
+     *
+     * @param string $name
+     *
+     * @return bool
+     * @throws InvalidArgumentException when the savepoint name is not [A-Za-z0-9_]+
+     */
+    public static function rollbackToSavepoint(string $name): bool
+    {
+        self::assertValidName($name);
+
+        try {
+            return (bool) self::conn()->query('ROLLBACK TO ' . $name);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Release a named savepoint.
+     *
+     * @param string $name
+     *
+     * @return bool
+     * @throws InvalidArgumentException when the savepoint name is not [A-Za-z0-9_]+
+     */
+    public static function releaseSavepoint(string $name): bool
+    {
+        self::assertValidName($name);
+
+        try {
+            return (bool) self::conn()->query('RELEASE SAVEPOINT ' . $name);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Run $fn inside a transaction, committing on success and rolling back on
+     * any Throwable. When already inside a transaction, a SAVEPOINT is used so
+     * that an inner failure does not abort the outer transaction.
+     *
+     * DDL auto-commits in MySQL, so $fn must perform DML only.
+     *
+     * @param callable $fn
+     *
+     * @return mixed The value returned by $fn
+     * @throws Throwable Re-throws whatever $fn throws, after rolling back
+     */
+    public static function transaction(callable $fn)
+    {
+        // beginTransaction()/commit()/rollBack() are depth-aware (a real
+        // transaction at the top level, SAVEPOINTs when nested), so this one
+        // path handles both the outer and any nested call correctly. Bail loudly
+        // if it fails to open: proceeding would run $fn unprotected (top level) or
+        // prematurely commit the outer transaction (nested), silently losing
+        // atomicity — the one guarantee this helper exists to provide.
+        if (!self::beginTransaction()) {
+            throw new RuntimeException('Could not begin transaction');
+        }
+        try {
+            $result = $fn();
+            self::commit();
+
+            return $result;
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Validate a savepoint identifier. Savepoint names cannot be bound as query
+     * parameters, so they are an injection surface and must be whitelisted.
+     *
+     * @param string $name
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function assertValidName(string $name): void
+    {
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $name)) {
+            throw new InvalidArgumentException('Invalid savepoint name');
+        }
+    }
+}
+
+/* file end: ./oc-includes/osclass/classes/database/Db.php */

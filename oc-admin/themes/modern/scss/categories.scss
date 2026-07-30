@@ -174,6 +174,777 @@
   font-family: "bootstrap-icons";
 }
 
+// ---- Field groups (reusable forms) -----------------------------------------
+.field-groups {
+  margin-bottom: 1.75rem;
+  max-width: 62rem;
+}
+
+.field-groups-head {
+  align-items: center;
+  display: flex;
+  gap: .75rem;
+  justify-content: space-between;
+}
+
+.field-groups-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.field-groups-hint {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: .35rem 0 .75rem;
+  max-width: 60ch;
+}
+
+.list-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.group_li {
+  margin-bottom: .5rem;
+}
+
+.group-div {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  gap: .6rem;
+  padding: .5rem .75rem;
+}
+
+.group-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+}
+
+.group-empty {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  padding: .35rem 0;
+}
+
+// The "in group" badge on a field row.
+.cfield-group {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius-pill;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .8125rem;
+  gap: .25rem;
+  padding: .1rem .55rem;
+}
+
+// Field-configuration + conditional-logic blocks in the field editor.
+.cf-config-block {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: .75rem;
+  padding-block-start: .75rem;
+}
+
+.cf-rules-block {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: .75rem;
+  padding-block-start: .75rem;
+}
+
+.cf-rule-condition {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  .form-select,
+  .form-control {
+    flex: 1 1 8rem;
+    min-width: 6rem;
+    width: auto;
+  }
+}
+
+
+// =============================================================================
+// Custom forms builder (fields/index.php) — two panes: forms on the left,
+// a draggable field palette on the right. Drag a field chip into any form; the
+// same field can live in several forms. Workshop Bench: white surfaces, bronze
+// only for the active/edited chip, hairline structure, no jQuery (SortableJS).
+// =============================================================================
+// Upgrade prompt for installs with fields predating the builder — attached to
+// categories directly, live on listings, but shown here only as bare chips. One
+// click gathers them into forms so they become manageable.
+.cf-legacy-banner {
+  align-items: center;
+  background-color: var(--osc-warning-tint);
+  border: 1px solid var(--osc-warning);
+  border-radius: $border-radius-lg;
+  color: var(--osc-warning-deep);
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+  padding: .75rem 1rem;
+
+  > .bi {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+  }
+
+  .cf-legacy-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    font-size: .8125rem;
+    gap: .1rem;
+    line-height: 1.4;
+    min-width: 0;
+  }
+
+  .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.forms-builder-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  // Fields is the working library and carries the most content (its editors
+  // expand inline here), so it gets the width. A form is a simple grouping — a
+  // name, its categories, an ordered list — so it sits in the narrow column.
+  grid-template-columns: 24rem minmax(0, 1fr);
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col-head {
+  align-items: center;
+  display: flex;
+  gap: .75rem;
+  justify-content: space-between;
+  margin-bottom: .5rem;
+
+  // Keep the action button on one line; the narrow palette rail was letting
+  // "New field" shrink and wrap to three lines.
+  .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+.col-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+  min-width: 0;
+}
+
+.col-hint {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0 0 .75rem;
+  // Reserve two lines so the Forms and Fields lists start at the same height and
+  // the two columns line up.
+  min-height: 2.4em;
+}
+
+.builder-empty {
+  border: 1px dashed var(--osc-rule-strong);
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  list-style: none;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+// ---- Forms (left) -----------------------------------------------------------
+.form-card {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  margin-bottom: 1rem;
+  padding: .75rem;
+}
+
+.form-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: .5rem;
+  justify-content: space-between;
+  margin-bottom: .5rem;
+}
+
+.form-card-heading {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+}
+
+// Caret that collapses a form down to its header (title + categories).
+.form-card-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.75rem;
+  justify-content: center;
+  margin-inline-start: -.25rem;
+  width: 1.75rem;
+
+  .bi {
+    transition: transform var(--osc-duration-fast) var(--osc-ease);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+}
+
+.form-card.is-collapsed {
+  .form-card-toggle .bi {
+    transform: rotate(-90deg);
+  }
+
+  .form-fieldlist,
+  .form-empty,
+  .form-card-add {
+    display: none;
+  }
+}
+
+.form-card-title {
+  color: var(--osc-ink);
+  font-size: .9375rem;
+  font-weight: 600;
+}
+
+// "Applies to: For sale, Vehicles +1" — the categories a form renders on. A form
+// with none is flagged, because it then appears on no listing at all.
+.form-card-cats {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  line-height: 1.35;
+
+  .cats-label {
+    font-weight: 500;
+  }
+
+  .cats-more {
+    color: var(--osc-ink-muted);
+    font-weight: 500;
+  }
+
+  &.is-unattached {
+    color: var(--osc-warning-deep);
+
+    .bi {
+      margin-inline-end: .15rem;
+    }
+  }
+}
+
+.form-card-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: .15rem;
+}
+
+// Transient autosave feedback next to a form's actions.
+.form-card-status {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  transition: opacity var(--osc-duration-fast) var(--osc-ease);
+  white-space: nowrap;
+
+  &:empty {
+    display: none;
+  }
+
+  &.is-saved {
+    color: var(--osc-success);
+
+    &::before {
+      content: "\2713\00a0"; // ✓
+    }
+  }
+}
+
+.form-fieldlist {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+// The drop hint shown when a form has no fields.
+.form-empty {
+  border: 1px dashed var(--osc-rule);
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-top: .4rem;
+  padding: .6rem;
+  text-align: center;
+}
+
+// ---- Field palette (right) --------------------------------------------------
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// ---- A field chip (shared by palette + form lists) --------------------------
+.field-chip {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  transition: border-color var(--osc-duration-fast) var(--osc-ease),
+              background-color var(--osc-duration-fast) var(--osc-ease);
+
+  &:hover {
+    border-color: var(--osc-rule-strong);
+  }
+
+  // The field's editor is open, expanded inside this row.
+  &.is-editing {
+    border-color: var(--osc-bronze);
+    overflow: hidden;
+
+    > .field-chip-row {
+      background-color: var(--osc-bronze-tint);
+    }
+  }
+
+  // A palette chip whose field is already placed in a form.
+  &.is-placed .chip-name {
+    color: var(--osc-ink-muted);
+  }
+}
+
+// The summary row: grip | name | badges | type | actions. Sits above the editor.
+.field-chip-row {
+  align-items: center;
+  border-radius: inherit;
+  display: flex;
+  gap: .5rem;
+  padding: .4rem .55rem;
+}
+
+// The editor expands here, in the field's own row, where the edit control is.
+.field-chip-editor {
+  background-color: var(--osc-bench);
+  border-top: 1px solid var(--osc-rule);
+  padding: .85rem 1rem 1rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .custom-field-frame {
+    max-width: 42rem;
+  }
+}
+
+.chip-ghost {
+  opacity: .4;
+}
+
+// A button, so a field can be reordered from the keyboard as well as dragged.
+.chip-grip {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // Only meaningful where it is a tab stop (inside a form).
+  &:focus-visible {
+    color: var(--osc-bronze);
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+}
+
+.form-fieldlist .chip-grip:hover {
+  color: var(--osc-ink);
+}
+
+.chip-name {
+  color: var(--osc-ink);
+  flex: 1 1 auto;
+  font-size: .875rem;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-type {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius-pill;
+  color: var(--osc-ink-muted);
+  flex: 0 0 auto;
+  font-size: .75rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+}
+
+// "In N forms" — shown on a palette chip whose field is placed in more than one
+// form, so its shared nature is visible before it is edited.
+.chip-shared {
+  background-color: var(--osc-bronze-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+  white-space: nowrap;
+}
+
+// "N cats · no form" — a legacy field attached straight to categories but in no
+// form. It is live on those listings yet invisible in the form-centric builder,
+// so it is flagged (warning tint) as needing a home. Only meaningful in the
+// palette: dragging the chip into a form makes it resolve via the form instead,
+// so the flag is hidden there.
+.chip-legacy {
+  background-color: var(--osc-warning-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-warning-deep);
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+  white-space: nowrap;
+
+  .bi {
+    margin-inline-end: .1rem;
+  }
+}
+
+.form-fieldlist .chip-legacy {
+  display: none;
+}
+
+.chip-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: .1rem;
+}
+
+.chip-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  width: 1.75rem;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+
+  &.chip-danger:hover,
+  &.chip-danger:focus-visible {
+    background-color: var(--osc-danger-tint);
+    color: var(--osc-danger);
+  }
+}
+
+// The remove (✕) control exists in every chip but is meaningful only inside a
+// form, so it is hidden in the palette — a palette chip cloned into a form then
+// reveals it for free.
+.palette-list .chip-remove {
+  display: none;
+}
+
+.form-fieldlist .chip-remove:hover,
+.form-fieldlist .chip-remove:focus-visible {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+}
+
+// ---- Inline editor contents (field + form) ----------------------------------
+// Both editors reuse the legacy .form-horizontal geometry — a 150px right-aligned
+// label well beside its control. Inline the rows stack instead: label above a
+// full-width control, so the two editors read as one clean vertical form.
+.field-chip-editor .custom-field-frame,
+.form-card-editor .custom-field-frame {
+  border: 0;
+  margin: 0;
+
+  // The chip / card already says which field or form this is.
+  .card-header {
+    display: none;
+  }
+
+  // A calm heads-up that this field definition is shared across several forms.
+  .cf-editor-note {
+    align-items: baseline;
+    background-color: var(--osc-info-tint);
+    border-radius: $border-radius;
+    color: var(--osc-info);
+    display: flex;
+    font-size: .8125rem;
+    gap: .4rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+    padding: .5rem .65rem;
+
+    .bi {
+      flex: 0 0 auto;
+    }
+  }
+
+  // Neutralise the leftover half-width column wrapper in the field editor so the
+  // controls take the full width of whichever pane the editor opens in.
+  .cf-editor-body {
+    max-width: none;
+    width: 100%;
+  }
+
+  // Stack every row: label first, then its control.
+  .form-row {
+    align-items: stretch;
+    column-gap: 0;
+    flex-direction: column;
+    margin-bottom: .85rem;
+  }
+
+  .form-label {
+    flex: none;
+    margin-bottom: .25rem;
+    padding-block-start: 0;
+    text-align: start;
+
+    // An empty label well (the checkbox rows carry one) would otherwise leave a
+    // stray gap above the control.
+    &:empty {
+      display: none;
+    }
+  }
+
+  .form-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+    select,
+    textarea {
+      max-width: 100%;
+      width: 100%;
+    }
+
+    // Checkbox rows (required / searchable / block) read as one line: box, label.
+    > label {
+      align-items: center;
+      display: inline-flex;
+      gap: .4rem;
+
+      input[type="checkbox"] {
+        flex: 0 0 auto;
+        margin: 0;
+      }
+    }
+  }
+
+  // Footer actions: left-aligned, side by side, flush with the editor's padding.
+  .card-footer.form-actions,
+  .form-actions {
+    background: transparent;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: flex-start;
+    margin-block-start: 1rem;
+    padding: 0;
+  }
+
+  // Category tree (form editor): separate the checkbox from its label.
+  ul[id^="cat"],
+  #group_cat_tree,
+  #cat_tree {
+    input[type="checkbox"] {
+      margin-inline-end: .35rem;
+    }
+  }
+
+  .separate-top {
+    margin-block-start: 1rem;
+  }
+}
+
+// A field/form editor is loading inline.
+.cf-editor-loading {
+  color: var(--osc-ink-muted);
+  padding: .5rem 0;
+}
+
+// The form editor expands inside its card, below the field list.
+.form-card-editor {
+  &:empty {
+    display: none;
+  }
+
+  margin-top: .85rem;
+}
+
+.form-card.is-editing {
+  border-color: var(--osc-bronze);
+}
+
+// ---- "Add field" menu (the no-drag path) ------------------------------------
+.form-card-add {
+  margin-top: .6rem;
+  position: relative;
+}
+
+.cf-add-menu {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  box-shadow: 0 6px 20px rgba(9, 14, 20, .14);
+  margin-top: .35rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: .25rem;
+}
+
+.cf-add-menu[hidden] {
+  display: none;
+}
+
+.cf-add-item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  cursor: pointer;
+  display: flex;
+  font-size: .875rem;
+  gap: .5rem;
+  justify-content: space-between;
+  padding: .4rem .55rem;
+  text-align: start;
+  width: 100%;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+  }
+
+  .cf-add-name {
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.cf-add-empty {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  padding: .5rem .55rem;
+}
+
+
+// =============================================================================
+// Form submissions (fields/submissions.php)
+// -----------------------------------------------------------------------------
+// The page is a standard admin listing: #listing-toolbar, table.table, the shared
+// .osc-status badge and in-flow row .actions. The only thing it adds is the value
+// list inside the Submission cell, because one submission is several field values
+// and a table cell has no other way to carry a label with each one.
+// =============================================================================
+// The row shows one line of the submission and opens the rest in a dialog, so a
+// form with twenty fields makes the row no taller than a form with two.
+.submission-preview {
+  color: var(--osc-ink);
+  display: block;
+  max-width: 44ch;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+  }
+}
+
+.submission-values {
+  margin: 0;
+
+  dt {
+    color: var(--osc-ink-muted);
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    color: var(--osc-ink);
+    margin: 0 0 .5rem;
+    word-break: break-word;
+  }
+
+  dd:last-child {
+    margin-bottom: 0;
+  }
+}
+
 
 // =============================================================================
 // Categories manager (categories/index.php, categories/iframe.php)

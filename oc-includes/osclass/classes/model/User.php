@@ -94,19 +94,22 @@ class User extends DAO
      */
     public function ajax($query = '')
     {
-        $this->dao->select('pk_i_id as id, CONCAT(s_name, \' (\', s_email , \')\') as label, s_name as value');
-        $this->dao->from($this->getTableName());
-        $this->dao->like('s_name', $query, 'after');
-        $this->dao->orLike('s_email', $query, 'after');
-        $this->dao->limit(0, 10);
+        // Aliased projection and an OR of two prefix LIKEs are beyond the
+        // builder's identifier allowlist, so this is hand-written. The search
+        // term is bound; legacy like(..., 'after') matched a prefix and escaped
+        // %/_ in the payload, reproduced here. LIMIT 0, 10 is offset 0, count 10.
+        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+        $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value'
+            . ' FROM ' . $this->getTableName()
+            . ' WHERE s_name LIKE ? OR s_email LIKE ? LIMIT 10';
 
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_select($sql, array($pattern, $pattern));
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $result->result();
+        return osc_db_stringify_rows($rows);
     }
 
 
@@ -130,22 +133,51 @@ class User extends DAO
             return $cache;
         }
 
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where($this->getPrimaryKey(), $id);
-        $result = $this->dao->get();
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where($this->getPrimaryKey(), $id)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        if ($result->numRows() != 1) {
+        if (count($rows) != 1) {
             return array();
         }
 
-        $user = $this->extendData($result->row(), $locale);
+        $user = $this->extendData(osc_db_stringify_row($rows[0]), $locale);
         osc_cache_set($key, $user, OSC_CACHE_TTL);
 
         return $user;
+    }
+
+    /**
+     * Update user rows, dropping the cached row when the password changes.
+     *
+     * findByPrimaryKey() caches the full user row, including s_password. That hash is the
+     * remember-me binding, so with a persistent object cache a password change would keep
+     * authenticating old cookies until the entry's TTL lapsed. Clear this user's cache the
+     * moment its s_password is written. Scoped to s_password writes so ordinary field updates
+     * keep their TTL behaviour; only pk-targeted updates carry an id to invalidate.
+     *
+     * @param array $values
+     * @param array $where
+     *
+     * @return bool|int rows changed, or false on a rejected/failed update (as DAO::update)
+     */
+    public function update($values, $where)
+    {
+        $result = parent::update($values, $where);
+
+        if (is_array($values) && array_key_exists('s_password', $values)
+            && is_array($where) && isset($where['pk_i_id'])
+            && function_exists('osc_invalidate_user_cache')
+        ) {
+            osc_invalidate_user_cache($where['pk_i_id']);
+        }
+
+        return $result;
     }
 
     /**
@@ -159,14 +191,12 @@ class User extends DAO
      */
     private function extendData($user, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from(DB_TABLE_PREFIX . 't_user_description');
-        $this->dao->where('fk_i_user_id', $user['pk_i_id']);
+        $query = osc_db_table(DB_TABLE_PREFIX . 't_user_description')
+            ->where('fk_i_user_id', $user['pk_i_id']);
         if (null !== $locale) {
-            $this->dao->where('fk_c_locale_code', $locale);
+            $query = $query->where('fk_c_locale_code', $locale);
         }
-        $result       = $this->dao->get();
-        $descriptions = $result->result();
+        $descriptions = osc_db_stringify_rows($query->get());
 
         $user['locale'] = array();
         foreach ($descriptions as $sub_row) {
@@ -190,17 +220,17 @@ class User extends DAO
      */
     public function findByUsername($username, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_username', $username);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('s_username', $username)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($rows) == 1) {
+            return $this->extendData(osc_db_stringify_row($rows[0]), $locale);
         }
 
         return array();
@@ -242,17 +272,17 @@ class User extends DAO
      */
     public function findByEmail($email, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $this->dao->where('s_email', $email);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        try {
+            $rows = osc_db_table($this->getTableName())
+                ->where('s_email', $email)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($rows) == 1) {
+            return $this->extendData(osc_db_stringify_row($rows[0]), $locale);
         }
 
         return array();
@@ -274,21 +304,23 @@ class User extends DAO
      */
     public function findByIdSecret($id, $secret, $locale = null)
     {
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'  => $id,
-            's_secret' => $secret
-        );
-        $this->dao->where($conditions);
-        $result = $this->dao->get();
-
-        if ($result == false) {
+        // The secret must be compared as a string. Passed through the legacy
+        // escape(), a value such as "0" reached MySQL unquoted, which turned this
+        // into a numeric comparison against a VARCHAR column -- and any secret
+        // beginning with a letter evaluates to 0, so the cookie value "0" matched
+        // almost every account.
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_secret', (string)$secret)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($row) === 1) {
+            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
         }
 
         return array();
@@ -313,22 +345,23 @@ class User extends DAO
             return null;
         }
         $date = date('Y-m-d H:i:s', time() - (24 * 3600));
-        $this->dao->select();
-        $this->dao->from($this->getTableName());
-        $conditions = array(
-            'pk_i_id'     => $id,
-            's_pass_code' => $secret
-        );
-        $this->dao->where($conditions);
-        $this->dao->where("s_pass_date >= '$date'");
-        $result = $this->dao->get();
 
-        if ($result == false) {
+        // Same string comparison as findByIdSecret: the reset code is a VARCHAR,
+        // and comparing it numerically let "0" match any code beginning with a
+        // letter. The cut-off date is bound rather than interpolated.
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('pk_i_id', $id)
+                ->where('s_pass_code', (string)$secret)
+                ->where('s_pass_date', '>=', $date)
+                ->limit(2)
+                ->get();
+        } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        if ($result->numRows() == 1) {
-            return $this->extendData($result->row(), $locale);
+        if (count($row) === 1) {
+            return $this->extendData(osc_db_stringify_row($row[0]), $locale);
         }
 
         return array();
@@ -350,11 +383,14 @@ class User extends DAO
         if ($id != null) {
             osc_run_hook('delete_user', $id);
 
-            $this->dao->select('pk_i_id, fk_i_category_id');
-            $this->dao->from(DB_TABLE_PREFIX . 't_item');
-            $this->dao->where('fk_i_user_id', $id);
-            $result = $this->dao->get();
-            $items  = $result->result();
+            try {
+                $items = osc_db_table(DB_TABLE_PREFIX . 't_item')
+                    ->select('pk_i_id', 'fk_i_category_id')
+                    ->where('fk_i_user_id', $id)
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
+                $items = array();
+            }
 
             $itemManager = Item::newInstance();
             foreach ($items as $item) {
@@ -363,10 +399,24 @@ class User extends DAO
 
             ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
 
-            $this->dao->delete(DB_TABLE_PREFIX . 't_user_email_tmp', array('fk_i_user_id' => $id));
-            $this->dao->delete(DB_TABLE_PREFIX . 't_user_description', array('fk_i_user_id' => $id));
-            $this->dao->delete(DB_TABLE_PREFIX . 't_alerts', array('fk_i_user_id' => $id));
-            $deleted = $this->dao->delete($this->getTableName(), array('pk_i_id' => $id));
+            // The dependent deletes discarded their own result before, so a
+            // failure on any one must not stop the rest; only the final user
+            // delete's count decides the return.
+            foreach (
+                array('t_user_email_tmp', 't_user_description', 't_alerts') as $depTable
+            ) {
+                try {
+                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
+                } catch (\mindstellar\database\DbException $e) {
+                    // discarded, as before
+                }
+            }
+
+            try {
+                $deleted = osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                $deleted = 0;
+            }
             if ($deleted === 1) {
                 osc_run_hook('after_delete_user', $id);
 
@@ -403,7 +453,14 @@ class User extends DAO
             'fk_i_user_id'     => $id
         );
 
-        return $this->dao->update(DB_TABLE_PREFIX . 't_user_description', array('s_info' => $info), $array_where);
+        try {
+            return osc_db_table(DB_TABLE_PREFIX . 't_user_description')
+                ->where('fk_c_locale_code', $locale)
+                ->where('fk_i_user_id', $id)
+                ->update(array('s_info' => $info));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -418,13 +475,16 @@ class User extends DAO
      */
     private function existDescription($conditions)
     {
-        $this->dao->select();
-        $this->dao->from(DB_TABLE_PREFIX . 't_user_description');
-        $this->dao->where($conditions);
+        $query = osc_db_table(DB_TABLE_PREFIX . 't_user_description');
+        foreach ($conditions as $column => $value) {
+            $query = $query->where($column, $value);
+        }
 
-        $result = $this->dao->get();
-
-        return !($result == false || $result->numRows() == 0);
+        try {
+            return $query->count() > 0;
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -441,13 +501,17 @@ class User extends DAO
      */
     private function insertDescription($id, $locale, $info)
     {
-        $array_set = array(
-            'fk_i_user_id'     => $id,
-            'fk_c_locale_code' => $locale,
-            's_info'           => $info
-        );
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_user_description')->insert(array(
+                'fk_i_user_id'     => $id,
+                'fk_c_locale_code' => $locale,
+                's_info'           => $info
+            ));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
 
-        return $this->dao->insert(DB_TABLE_PREFIX . 't_user_description', $array_set);
+        return true;
     }
 
     /**
@@ -492,33 +556,58 @@ class User extends DAO
         $users['total_results'] = 0;
         $users['users']         = array();
 
-        $this->dao->select('SQL_CALC_FOUND_ROWS *');
-        $this->dao->from($this->getTableName());
-        $this->dao->orderBy($order_column, $order_direction);
-        $this->dao->limit($start, $end);
-
-        foreach ($fields as $k => $v) {
-            $this->dao->where($k, $v);
+        // $order_column is allowlisted; $order_direction reproduces the legacy
+        // ASC/DESC/RAND() handling. The where values are bound. LIMIT $start,$end
+        // is offset $start, count $end (the emitted comma form). SQL_CALC_FOUND_ROWS
+        // and the aliased select keep this hand-written.
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
+            $order_column = 'pk_i_id';
+        }
+        $direction = (string)$order_direction;
+        if (strtolower($direction) === 'random') {
+            $orderSql = $order_column . ' RAND()';
+        } elseif (trim($direction) !== '' && trim($direction) !== '0') {
+            $orderSql = $order_column
+                . (in_array(strtoupper(trim($direction)), array('ASC', 'DESC'), true) ? ' ' . $direction : ' ASC');
+        } else {
+            $orderSql = $order_column . $direction;
         }
 
-        $rs = $this->dao->get();
+        $params = array();
+        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        if (is_array($fields) && count($fields) > 0) {
+            $clauses = array();
+            foreach ($fields as $k => $v) {
+                // Each key is a fixed column name supplied by the wrapper methods,
+                // validated against the same allowlist as the sort column; each
+                // value is bound.
+                if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$k)) {
+                    continue;
+                }
+                $clauses[] = $k . ' = ?';
+                $params[]  = $v;
+            }
+            if (count($clauses) > 0) {
+                $sql .= ' WHERE ' . implode(' AND ', $clauses);
+            }
+        }
+        $sql .= ' ORDER BY ' . $orderSql;
+        $sql .= ' LIMIT ' . (int)$start . ', ' . (int)$end;
 
-        if (!$rs) {
+        try {
+            $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
+        } catch (\mindstellar\database\DbException $e) {
             return $users;
         }
 
-        $users['users'] = $rs->result();
-
-        $rsRows = $this->dao->query('SELECT FOUND_ROWS() as total');
-        $data   = $rsRows->row();
-        if ($data['total']) {
-            $users['total_results'] = $data['total'];
+        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
+        if ($total) {
+            $users['total_results'] = (string)$total;
         }
 
-        $rsTotal = $this->dao->query('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        $data    = $rsTotal->row();
-        if ($data['total']) {
-            $users['rows'] = $data['total'];
+        $rows = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $this->getTableName());
+        if ($rows) {
+            $users['rows'] = (string)$rows;
         }
 
         return $users;
@@ -584,19 +673,18 @@ class User extends DAO
      */
     public function countUsers($condition = 'b_enabled = 1 AND b_active = 1')
     {
-        $this->dao->select('COUNT(*) as i_total');
-        $this->dao->from(DB_TABLE_PREFIX . 't_user');
-        $this->dao->where($condition);
-
-        $result = $this->dao->get();
-
-        if ($result == false || $result->numRows() == 0) {
+        // $condition is a raw SQL fragment: this is a public API and every caller
+        // passes a fixed literal such as 'b_enabled = 1 AND b_active = 1'. It is
+        // trusted SQL the caller owns, so it goes through whereRaw unchanged --
+        // parameterizing an arbitrary fragment is not possible without breaking
+        // the contract. The count is cast back to a string, as the row value was.
+        try {
+            return (string)osc_db_table(DB_TABLE_PREFIX . 't_user')
+                ->whereRaw($condition)
+                ->count();
+        } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
-
-        $row = $result->row();
-
-        return $row['i_total'];
     }
 
     /**
@@ -613,12 +701,16 @@ class User extends DAO
     public function lastAccess($userId, $date, $ip, $time = null)
     {
         if ($time != null) {
-            $this->dao->select('dt_access_date, s_access_ip');
-            $this->dao->from(DB_TABLE_PREFIX . 't_user');
-            $this->dao->where('pk_i_id', $userId);
-            $this->dao->where("dt_access_date <= '" . date('Y-m-d H:i:s', time() - $time) . "'");
-            $result = $this->dao->get();
-            if ($result == false || $result->numRows() == 0) {
+            try {
+                $row = osc_db_table(DB_TABLE_PREFIX . 't_user')
+                    ->select('dt_access_date', 's_access_ip')
+                    ->where('pk_i_id', $userId)
+                    ->where('dt_access_date', '<=', date('Y-m-d H:i:s', time() - $time))
+                    ->first();
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+            if ($row === null) {
                 return false;
             }
         }
@@ -631,20 +723,29 @@ class User extends DAO
      *
      * @access public
      *
-     * @param int $id user id
+     * @param int $id    user id
+     * @param int $items number of items to add (default 1)
      *
      * @return bool|\DBRecordsetClass number of affected rows, id error occurred return false
      * @since  unknown
      */
-    public function increaseNumItems($id)
+    public function increaseNumItems($id, $items = 1)
     {
         if (!is_numeric($id)) {
             return false;
         }
 
-        $sql = sprintf('UPDATE %s SET i_items = i_items + 1 WHERE pk_i_id = %d', $this->getTableName(), $id);
-
-        return $this->dao->query($sql);
+        // Self-referential SET; the amount and id were %d-formatted, so they are
+        // int-cast before binding to reproduce that truncation. Returns the
+        // affected-row count, as the legacy write did.
+        try {
+            return osc_db_execute(
+                'UPDATE ' . $this->getTableName() . ' SET i_items = i_items + ? WHERE pk_i_id = ?',
+                array((int)$items, (int)$id)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 
     /**
@@ -663,9 +764,15 @@ class User extends DAO
             return false;
         }
 
-        $sql = sprintf('UPDATE %s SET i_items = IF(i_items > 0, i_items - 1, i_items) WHERE pk_i_id = %d', $this->getTableName(), $id);
-
-        return $this->dao->query($sql);
+        try {
+            return osc_db_execute(
+                'UPDATE ' . $this->getTableName()
+                . ' SET i_items = IF(i_items > 0, i_items - 1, i_items) WHERE pk_i_id = ?',
+                array((int)$id)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
     }
 }
 

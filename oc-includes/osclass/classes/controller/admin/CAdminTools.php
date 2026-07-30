@@ -45,13 +45,12 @@ class CAdminTools extends AdminSecBaseModel
                 if (isset($sql['size']) && $sql['size'] != 0) {
                     $content_file = file_get_contents($sql['tmp_name']);
 
-                    $conn = DBConnectionClass::newInstance();
-                    $c_db = $conn->getOsclassDb();
-                    $comm = new DBCommandClass($c_db);
-                    if ($comm->importSQL($content_file)) {
+                    try {
+                        \mindstellar\database\Connection::instance()
+                            ->executeScript($content_file);
                         osc_calculate_location_slug(osc_subdomain_type());
                         osc_add_flash_ok_message(_m('Import complete'), 'admin');
-                    } else {
+                    } catch (\mindstellar\database\DbException $e) {
                         osc_add_flash_error_message(_m('There was a problem importing data to the database'), 'admin');
                     }
                 } else {
@@ -94,6 +93,18 @@ class CAdminTools extends AdminSecBaseModel
                 break;
             case 'version':
                 $this->doView('tools/version.php');
+                break;
+            case ('cache'):
+                $this->doView('tools/cache.php');
+                break;
+            case ('cache_clear'):
+                osc_csrf_check();
+                if (osc_cache_flush()) {
+                    osc_add_flash_ok_message(_m('The cache has been cleared'), 'admin');
+                } else {
+                    osc_add_flash_error_message(_m('The cache could not be cleared'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cache');
                 break;
             case ('backup'):
             case ('backup_post'):
@@ -156,13 +167,13 @@ class CAdminTools extends AdminSecBaseModel
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-2):
-                        $msg = sprintf(_m('Could not connect with the database. Error: %s'), DBConnectionClass::newInstance()
-                                                                                                              ->getOsclassDb()->connect_error);
+                        $msg = sprintf(_m('Could not connect with the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError());
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-3):
-                        $msg = sprintf(_m('Could not select the database. Error: %s'), DBConnectionClass::newInstance()
-                                                                                                        ->getOsclassDb()->error);
+                        $msg = sprintf(_m('Could not select the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError());
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-4):
@@ -291,15 +302,33 @@ class CAdminTools extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 }
                 osc_csrf_check();
-                $limit = (int)Params::getParam('batch_limit');
+                $limit = Params::getParamInt('batch_limit');
                 osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'cleanup', 'INTEGER');
                 foreach (Cleanup::RULES as $rule) {
                     osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'cleanup', 'BOOLEAN');
                     if ($rule !== 'reported') {
-                        $days = (int)Params::getParam('days_' . $rule);
+                        $days = Params::getParamInt('days_' . $rule);
                         osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'cleanup', 'INTEGER');
                     }
                 }
+                osc_set_preference(
+                    'item_views_enabled',
+                    Params::getParam('item_views_enabled') ? '1' : '0',
+                    'stats',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'count_bot_views',
+                    Params::getParam('count_bot_views') ? '1' : '0',
+                    'stats',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'item_stats_retention_days',
+                    max(0, Params::getParamInt('item_stats_retention_days')),
+                    'stats',
+                    'INTEGER'
+                );
                 osc_reset_preferences();
                 osc_add_flash_ok_message(_m('Cleanup settings saved'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
@@ -317,6 +346,86 @@ class CAdminTools extends AdminSecBaseModel
                     osc_add_flash_warning_message(_m('Cleanup ran, but nothing matched the enabled rules.'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                break;
+            case ('logs'):
+                // set default iDisplayLength (same cookie behaviour as the listings)
+                if (Params::getParam('iDisplayLength') != '') {
+                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
+                    Cookie::newInstance()->set();
+                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
+                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
+                } else {
+                    Params::setParam('iDisplayLength', 20);
+                }
+                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+                if (Params::getParam('sort') == '') {
+                    Params::setParam('sort', 'date');
+                }
+                if (Params::getParam('direction') == '') {
+                    Params::setParam('direction', 'desc');
+                }
+
+                $page = Params::getParamInt('iPage');
+                if ($page == 0) {
+                    $page = 1;
+                }
+                Params::setParam('iPage', $page);
+
+                $logsDataTable = new LogsDataTable();
+                $logsDataTable->table(Params::getParamsAsArray());
+                $aData = $logsDataTable->getData();
+
+                if (count($aData['aRows']) == 0 && $page != 1) {
+                    $total   = (int) $aData['iTotalDisplayRecords'];
+                    $maxPage = (int) ceil($total / (int) $aData['iDisplayLength']);
+
+                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
+                    if ($maxPage == 0) {
+                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=1', $url));
+                    }
+                    if ($page > 1) {
+                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url));
+                    }
+                }
+
+                $this->_exportVariableToView('aData', $aData);
+                $this->_exportVariableToView('sections', Log::newInstance()->distinctSections());
+                $this->_exportVariableToView('log_enabled', osc_is_admin_log_enabled());
+                $this->_exportVariableToView('log_retention_days', osc_admin_log_retention_days());
+                $this->doView('tools/logs.php');
+                break;
+            case ('logs_settings_post'):
+                osc_csrf_check();
+                $retention = Params::getParamInt('admin_log_retention_days');
+                osc_set_preference(
+                    'admin_log_enabled',
+                    Params::getParam('admin_log_enabled') != '' ? 1 : 0,
+                    'log',
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'admin_log_retention_days',
+                    $retention > 0 ? $retention : 0,
+                    'log',
+                    'INTEGER'
+                );
+                osc_reset_preferences();
+                osc_add_flash_ok_message(_m('Activity log settings saved'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                break;
+            case ('logs_clear'):
+                if (defined('DEMO')) {
+                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                }
+                osc_csrf_check();
+                $removed = Log::newInstance()->clearAll();
+                osc_add_flash_ok_message(
+                    sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
+                    'admin'
+                );
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case 'system_info':
             default:

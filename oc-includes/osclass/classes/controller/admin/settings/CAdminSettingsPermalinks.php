@@ -55,6 +55,9 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . {$rewrite_base}index.php [L]
 </IfModule>
+<IfModule mod_mime.c>
+AddType text/xsl .xsl
+</IfModule>
 HTACCESS;
 
                 if ($rewriteEnabled) {

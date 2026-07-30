@@ -55,39 +55,57 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
+                // Before the account is looked up and before any password is
+                // hashed, so that a refused attempt costs neither.
+                $throttle = \mindstellar\security\LoginThrottle::evaluate('web', $email, osc_captcha_enabled());
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
                 if (osc_validate_email($email)) {
                     $user = User::newInstance()->findByEmail($email);
                 }
                 if (empty($user)) {
                     $user = User::newInstance()->findByUsername($email);
                 }
-                if (empty($user)) {
-                    osc_add_flash_error_message(_m("The user doesn't exist"));
+
+                // An unknown account and a wrong password must answer the same way,
+                // and take about as long, or the form tells anyone who asks which
+                // addresses are registered.
+                $authenticated = empty($user)
+                    ? osc_dummy_password_verify($password)
+                    : osc_verify_password($password, (isset($user['s_password']) ? $user['s_password'] : ''));
+
+                if (!$authenticated) {
+                    // Counted against the name as submitted, so one nobody holds
+                    // accumulates exactly like a real one.
+                    \mindstellar\security\LoginThrottle::recordFailure('web', $email);
+                    osc_add_flash_error_message(_m('Invalid email/username or password'));
                     $this->redirectTo(osc_user_login_url());
                 }
-                if (osc_verify_password(
-                    $password,
-                    (isset($user['s_password']) ? $user['s_password'] : '')
-                )
-                ) {
-                    if (@$user['s_password'] != '') {
-                        if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
-                            if ($cost[1] != BCRYPT_COST) {
-                                User::newInstance()->update(
-                                    array('s_password' => osc_hash_password($password)),
-                                    array('pk_i_id' => $user['pk_i_id'])
-                                );
-                            }
-                        } else {
-                            User::newInstance()->update(
-                                array('s_password' => osc_hash_password($password)),
-                                array('pk_i_id' => $user['pk_i_id'])
-                            );
-                        }
+
+                \mindstellar\security\LoginThrottle::clear('web', $email);
+
+                if (@$user['s_password'] != '') {
+                    $needs_rehash = true;
+                    if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
+                        $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
                     }
-                } else {
-                    osc_add_flash_error_message(_m('The password is incorrect'));
-                    $this->redirectTo(osc_user_login_url()); // @TODO if valid user, send email parameter back to the login form
+                    if ($needs_rehash) {
+                        // Mirror the rehash into the in-memory row so a remember-me token
+                        // issued below binds to the hash actually persisted.
+                        $user['s_password'] = osc_hash_password($password);
+                        User::newInstance()->update(
+                            array('s_password' => $user['s_password']),
+                            array('pk_i_id' => $user['pk_i_id'])
+                        );
+                    }
                 }
                 // e-mail or/and IP is/are banned
                 $banned =
@@ -153,18 +171,17 @@ class CWebLogin extends BaseModel
                     osc_add_flash_error_message(_m('The user has been suspended'));
                 } elseif ($logged == 3) {
                     if (Params::getParam('remember') == 1) {
-                        //this include contains de osc_genRandomPassword function
-                        require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
-                        $secret = osc_genRandomPassword();
-
-                        User::newInstance()->update(
-                            array('s_secret' => $secret),
-                            array('pk_i_id' => $user['pk_i_id'])
-                        );
-
                         Cookie::newInstance()->set_expires(osc_time_cookie());
                         Cookie::newInstance()->push('oc_userId', $user['pk_i_id']);
-                        Cookie::newInstance()->push('oc_userSecret', $secret);
+                        Cookie::newInstance()->push(
+                            'oc_userSecret',
+                            \mindstellar\security\RememberMe::issue(
+                                'web',
+                                $user['pk_i_id'],
+                                $user['s_password'],
+                                osc_time_cookie()
+                            )
+                        );
                         Cookie::newInstance()->set();
                     }
 
@@ -202,11 +219,17 @@ class CWebLogin extends BaseModel
                     if (osc_notify_new_user()) {
                         osc_run_hook('hook_email_admin_new_user', $user);
                     }
+                    // Rotate the activation code: email a fresh plaintext, persist only its fingerprint.
+                    $activation_plain = osc_genRandomPassword();
+                    $user['s_secret'] = $activation_plain;
                     if (osc_user_validation_enabled()) {
                         osc_run_hook('hook_email_user_validation', $user, $user);
                     }
                     User::newInstance()->update(
-                        array('dt_access_date' => date('Y-m-d H:i:s')),
+                        array(
+                            'dt_access_date' => date('Y-m-d H:i:s'),
+                            's_secret'       => \mindstellar\security\ActionToken::hash($activation_plain),
+                        ),
                         array('pk_i_id' => $user['pk_i_id'])
                     );
                     osc_add_flash_ok_message(_m('Validation email re-sent'));
@@ -229,21 +252,40 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_recover_user_password_url());
                 }
 
+                // Before the account is looked up, so it cannot only fail for
+                // addresses that exist -- that would hand back the answer the
+                // shared message below withholds. It also has to precede the
+                // throttle, which relaxes its per-account limit on the strength
+                // of a solved captcha.
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_recover_user_password_url());
+                }
+
+                // Counted on its own, so that reset requests cannot lock anyone
+                // out of signing in. Every request counts, not only the ones
+                // that match an account: sending mail to an address someone else
+                // owns is the abuse being bounded here, and that only happens
+                // when the address does match.
+                $recoverAccount = trim((string)Params::getParam('s_email'));
+                $throttle       = \mindstellar\security\LoginThrottle::evaluate('web-recover', $recoverAccount, osc_captcha_enabled());
+                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
+                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
+                    $this->redirectTo(osc_recover_user_password_url());
+                }
+                \mindstellar\security\LoginThrottle::recordFailure('web-recover', $recoverAccount);
+
                 $userActions = new UserActions(false);
                 $success     = $userActions->recover_password();
 
                 switch ($success) {
+                    // Whether or not the address belongs to an account, the answer is
+                    // the same -- telling the visitor it was not recognised would let
+                    // anyone use this form to test addresses.
                     case (0): // recover ok
-                        osc_add_flash_ok_message(_m('We have sent you an email with the instructions to reset your password'));
+                    case (1): // no account for that address
+                        osc_add_flash_ok_message(_m('If that email address belongs to an account, we have sent it instructions to reset the password'));
                         $this->redirectTo(osc_base_url());
-                        break;
-                    case (1): // e-mail does not exist
-                        osc_add_flash_error_message(_m('We were not able to identify you given the information provided'));
-                        $this->redirectTo(osc_recover_user_password_url());
-                        break;
-                    case (2): // recaptcha wrong
-                        osc_add_flash_error_message(_m('The recaptcha code is wrong'));
-                        $this->redirectTo(osc_recover_user_password_url());
                         break;
                 }
                 break;

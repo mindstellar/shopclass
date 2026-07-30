@@ -22,8 +22,8 @@ osc_add_hook('help_box', 'addHelp');
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Alerts'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+    <h1><?php _e('Users'); ?>
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -81,7 +81,7 @@ $rows    = $aData['aRows'];
             <div id="bulk-actions">
                 <div class="input-group input-group-sm">
                     <select name="alert_action" id="bulk_actions" class="form-select select-box-extra">
-                        <option value=""><?php _e('Bulk Actions'); ?></option>
+                        <option value=""><?php _e('Bulk actions'); ?></option>
                         <option value="activate"
                                 data-dialog-content="<?php printf(__('Are you sure you want to %s the selected alerts?'),
                                                                   strtolower(__('Activate'))); ?>"><?php _e('Activate'); ?></option>

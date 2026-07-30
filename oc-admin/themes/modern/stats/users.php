@@ -58,7 +58,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Statistics'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -133,10 +133,10 @@ function customHead()
             } ?>
 
             // Create and draw the visualization.
-            new google.visualization.PieChart(document.getElementById('by_country')).draw(data_country, {
+            new google.visualization.PieChart(document.getElementById('by_country')).draw(data_country, oscPieOpts({
                 title: null,
                 height: 200
-            });
+            }));
 
             var data_region = new google.visualization.DataTable();
             data_region.addColumn('string', '<?php _e('Region'); ?>');
@@ -149,10 +149,10 @@ function customHead()
             } ?>
 
             // Create and draw the visualization.
-            new google.visualization.PieChart(document.getElementById('by_region')).draw(data_region, {
+            new google.visualization.PieChart(document.getElementById('by_region')).draw(data_region, oscPieOpts({
                 title: null,
                 height: 200
-            });
+            }));
         }
     </script>
     <?php }
@@ -202,7 +202,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"></b>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($users) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>
@@ -217,7 +217,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"></b>
                     <div id="by_country" class="graph-placeholder" style="height:150px">
                         <?php if (count($users_by_country) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>
@@ -232,7 +232,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                     <b class="stats-title"></b>
                     <div id="by_region" class="graph-placeholder" style="height:150px">
                         <?php if (count($users_by_region) == 0) {
-                            _e("There're no statistics yet");
+                            _e("There are no statistics yet");
                         } ?>
                     </div>
                 </div>

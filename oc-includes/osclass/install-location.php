@@ -16,7 +16,11 @@ error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR | E_PARSE);
 define('ABS_PATH', dirname(dirname(__DIR__)) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
-require_once ABS_PATH . 'config.php';
+// Resolve the database configuration the same way the app does: from config.php
+// when present, otherwise from the environment. Requiring config.php directly
+// here broke an environment-only install (no config.php / OSC_IGNORE_CONFIG_FILE)
+// — this AJAX endpoint would connect to the wrong host and fail with a 503.
+require_once LIB_PATH . 'osclass/config-loader.php';
 require_once LIB_PATH . 'vendor/autoload.php';
 
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
@@ -34,16 +38,59 @@ require_once LIB_PATH . 'osclass/formatting.php';
 require_once LIB_PATH . 'osclass/install-functions.php';
 require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
+require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 
 Params::init();
+Session::newInstance()->session_start();
+
 if (is_osclass_installed()) {
     die();
+}
+
+header('Content-Type: application/json; charset=utf-8');
+
+// State-changing request: require the installer nonce (osc_csrf_check() cannot
+// work yet — no preferences exist).
+if (!install_nonce_check()) {
+    echo json_encode(array(
+        'status' => false,
+        'error'  => __('Your session expired. Reload the page and start again.'),
+    ));
+    exit;
+}
+
+// Re-validate on the server. The browser validates too, but never trust it.
+$adminUser = (string)Params::getParam('s_name');
+$email     = (string)Params::getParam('email');
+if ($adminUser !== '' && !preg_match('/^[A-Za-z0-9]+$/', $adminUser)) {
+    echo json_encode(array(
+        'status' => false,
+        'error'  => __('The admin username may only contain letters and numbers.'),
+    ));
+    exit;
+}
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(array(
+        'status' => false,
+        'error'  => __('Enter a valid contact email address.'),
+    ));
+    exit;
 }
 
 $json_message           = array();
 $json_message['status'] = true;
 
-$result                       = basic_info();
+try {
+    $result = basic_info();
+} catch (\Throwable $e) {
+    error_log('Shopclass install: creating the admin account failed: ' . $e->getMessage());
+    echo json_encode(array(
+        'status' => false,
+        'error'  => __('The admin account could not be created. Nothing was saved — please try again.'),
+    ));
+    exit;
+}
+
 $json_message['email_status'] = $result['email_status'];
 $json_message['password']     = $result['s_password'];
 

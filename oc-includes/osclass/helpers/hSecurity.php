@@ -23,8 +23,21 @@
 use mindstellar\Csrf;
 use OpensslCryptor\Cryptor;
 
+/**
+ * bcrypt work factor used by osc_hash_password().
+ *
+ * Each step up doubles the time to hash and to verify a password. Cost 12 is
+ * roughly 175ms on typical 2026 hardware; cost 15 (the historic value) is about
+ * 1.4s, which put a full second and a half of CPU into every login attempt,
+ * successful or not. Raise it on hardware that can afford it, or lower it on
+ * constrained shared hosting, by defining BCRYPT_COST in config.php.
+ *
+ * Existing hashes are unaffected: bcrypt stores its own cost, so a password is
+ * always verified at the cost it was hashed with, and the login controllers
+ * re-hash an account to the current value the next time its owner signs in.
+ */
 if (!defined('BCRYPT_COST')) {
-    define('BCRYPT_COST', 15);
+    define('BCRYPT_COST', 12);
 }
 
 /**
@@ -227,8 +240,83 @@ function osc_is_username_blacklisted($username)
  */
 function osc_verify_password($password, $hash)
 {
+    if (password_verify($password, $hash)) {
+        return true;
+    }
 
-    return password_verify($password, $hash) ? true : hash_equals((string)$hash, sha1($password));
+    // Fall back to the pre-3.3 sha1 format. That comparison costs microseconds,
+    // and password_verify() above rejects a non-bcrypt hash just as cheaply, so
+    // an account still on a sha1 hash would answer far quicker than one on
+    // bcrypt and could be picked out by timing alone. Match the work first.
+    if (strncmp((string)$hash, '$2', 2) !== 0) {
+        osc_dummy_password_verify($password);
+    }
+
+    return hash_equals((string)$hash, sha1($password));
+}
+
+
+/**
+ * Wording for a sign-in refused by {@see \mindstellar\security\LoginThrottle}.
+ *
+ * Deliberately says nothing about the account: the limiter counts a name that
+ * exists and one that does not exactly alike, and the message has to keep that
+ * true or it becomes the account oracle the login form no longer is.
+ *
+ * @param int $seconds how long the block has left to run
+ *
+ * @return string
+ */
+function osc_login_throttle_message($seconds)
+{
+    $minutes = max(1, (int)ceil($seconds / 60));
+
+    return sprintf(
+        _mn(
+            'Too many failed attempts. Please try again in %d minute.',
+            'Too many failed attempts. Please try again in %d minutes.',
+            $minutes
+        ),
+        $minutes
+    );
+}
+
+
+/**
+ * Spend the work of a password check against a hash that cannot match.
+ *
+ * A sign-in for an account that does not exist would otherwise return without
+ * hashing anything, so "no such account" and "wrong password" would be tens of
+ * milliseconds apart and anyone could ask the login form which usernames and
+ * e-mail addresses are registered. Call this on the no-such-account branch so
+ * both answers cost roughly the same.
+ *
+ * The two are comparable, not identical: a real check runs at the cost recorded
+ * in that account's own hash, which differs from BCRYPT_COST until the account
+ * has been re-hashed. The aim is to remove the step change that gives an answer
+ * in a single request, not to reach constant time.
+ *
+ * @param $password string
+ *
+ * @return bool always false, so callers can use it in place of a real check
+ */
+function osc_dummy_password_verify($password)
+{
+    static $hash = null;
+
+    if ($hash === null) {
+        // A throwaway hash, kept at the default work factor. An install that
+        // overrides BCRYPT_COST needs one at that cost instead, or this branch
+        // would be measurably cheaper than a real check.
+        $hash = '$2y$12$z.gUvYjOgcp04F2UhY2Odue946VtgluqoVMNNqWfIPfF0s.XE0cIK';
+        if (strpos($hash, sprintf('$2y$%02d$', BCRYPT_COST)) !== 0) {
+            $hash = password_hash(osc_genRandomPassword(32), PASSWORD_BCRYPT, array('cost' => BCRYPT_COST));
+        }
+    }
+
+    password_verify($password, $hash);
+
+    return false;
 }
 
 

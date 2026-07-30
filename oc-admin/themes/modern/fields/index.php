@@ -15,39 +15,58 @@
 
 osc_enqueue_script('sortablejs');
 
-$fields     = __get('fields');
-$categories = __get('categories');
-$selected   = __get('default_selected');
+$fields    = __get('fields');
+$forms     = __get('groups');
+$placedIds = __get('placed_field_ids');
+$catNames  = __get('category_names');
+$looseCats = __get('loose_field_categories');
+if (!is_array($fields)) {
+    $fields = array();
+}
+if (!is_array($forms)) {
+    $forms = array();
+}
+if (!is_array($placedIds)) {
+    $placedIds = array();
+}
+if (!is_array($catNames)) {
+    $catNames = array();
+}
+if (!is_array($looseCats)) {
+    $looseCats = array();
+}
+$placedIds = array_map('intval', $placedIds);
+
+// Field lookup by id, for rendering a form's chips from its ordered field_ids.
+$fieldsById = array();
+foreach ($fields as $f) {
+    $fieldsById[(int)$f['pk_i_id']] = $f;
+}
 
 function addHelp()
 {
     echo '<p>'
-         . __('Create new fields for users to fill out when they publish a listing. '
-              . 'You can require extra  information such as the number of bedrooms in real estate listings or '
-              . 'fuel type in car listings, for example.'
-              . 'Reorder fields by dragging and dropping. ')
+         . __('Build reusable forms by dragging fields from the palette on the right into a form on the left. '
+              . 'A field can be placed in any number of forms. Each form is attached to categories and renders '
+              . 'as a section on the listing form.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
 {
     ?>
-    <h1><?php _e('Custom fields'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+    <h1><?php _e('Forms'); ?>
+        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
-        <a href="#" class="ms-1 float-end" id="add-button"
-           title="<?php echo osc_esc_html(__('Add custom field')); ?>"
-           aria-label="<?php echo osc_esc_html(__('Add custom field')); ?>"><i class="bi bi-plus-circle-fill"></i></a>
     </h1>
     <?php
 }
 
 if (!function_exists('cfields_type_label')) {
     /**
-     * Human label for a custom-field storage type.
+     * Human label for a custom-field type (registry-aware).
      *
      * @param string $type
      *
@@ -55,33 +74,112 @@ if (!function_exists('cfields_type_label')) {
      */
     function cfields_type_label($type)
     {
-        $labels = array(
-            'TEXT'          => __('Text'),
-            'TEXTAREA'      => __('Text area'),
-            'DROPDOWN'      => __('Dropdown'),
-            'RADIO'         => __('Radio'),
-            'CHECKBOX'      => __('Checkbox'),
-            'URL'           => __('URL'),
-            'DATE'          => __('Date'),
-            'DATEINTERVAL'  => __('Date range'),
-            'NUMBER'        => __('Number'),
-        );
-        $type = (string) $type;
+        $spec = osc_field_type((string) $type);
+        if ($spec !== null) {
+            return __($spec['label']);
+        }
 
-        return $labels[$type] ?? $type;
+        return (string) $type;
     }
 }
 
+if (!function_exists('cfields_render_chip')) {
+    /**
+     * A draggable field chip, shared by the palette and each form's field list. The
+     * remove (✕) button is present in every chip but shown by CSS only inside a form
+     * list, so a palette chip cloned into a form gains its remove control for free.
+     *
+     * @param array $field
+     * @param bool  $placed whether this field already belongs to a form (palette hint)
+     * @param array $looseCatNames category names a legacy loose field is attached to
+     *                             directly (empty unless this is such a field)
+     *
+     * @return void
+     */
+    function cfields_render_chip($field, $placed = false, $looseCatNames = array())
+    {
+        $type = osc_field_resolve_type($field);
+        echo '<li class="field-chip' . ($placed ? ' is-placed' : '') . '" data-field-id="' . (int)$field['pk_i_id']
+            . '" data-type="' . osc_esc_html($type) . '">';
+        echo '<div class="field-chip-row">';
+        // A real button so the row can be reordered from the keyboard (arrow keys)
+        // as well as dragged. Only tabbable inside a form — see refreshGripTabIndex.
+        echo '<button type="button" class="chip-grip" tabindex="-1" title="'
+            . osc_esc_html(__('Drag to reorder, or focus and use the arrow keys')) . '" aria-label="'
+            . osc_esc_html(__('Reorder field: use the arrow keys')) . '"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>';
+        echo '<span class="chip-name">' . osc_esc_html($field['s_name']) . '</span>';
+        // A legacy field attached straight to categories but in no form: it is live
+        // on those listings, invisibly. Flag it so the admin can move it into a form.
+        // Hidden by CSS once the chip is inside a form (it no longer resolves loosely).
+        if (!empty($looseCatNames)) {
+            $count = count($looseCatNames);
+            $tip   = sprintf(
+                __('Attached directly to %d categories, outside any form: %s. Drag it into a form to manage it here.'),
+                $count,
+                implode(', ', array_slice($looseCatNames, 0, 8)) . ($count > 8 ? '…' : '')
+            );
+            echo '<span class="chip-legacy" title="' . osc_esc_html($tip) . '">'
+                . '<i class="bi bi-exclamation-circle" aria-hidden="true"></i> '
+                . osc_esc_html(sprintf(__('%d cats · no form'), $count))
+                . '</span>';
+        }
+        echo '<span class="chip-type">' . osc_esc_html(cfields_type_label($type)) . '</span>';
+        echo '<span class="chip-actions">';
+        echo '<button type="button" class="chip-btn chip-edit" onclick="edit_field(' . (int)$field['pk_i_id']
+            . '); return false;" title="' . osc_esc_html(__('Edit field')) . '"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>';
+        echo '<button type="button" class="chip-btn chip-remove" title="' . osc_esc_html(__('Remove from form'))
+            . '"><i class="bi bi-x-lg" aria-hidden="true"></i></button>';
+        echo '</span>';
+        echo '</div>';
+        // Where this field's editor expands inline (palette chips only in practice).
+        echo '<div class="field-chip-editor edit" hidden></div>';
+        echo '</li>';
+    }
+}
+
+if (!function_exists('cfields_form_cat_summary')) {
+    /**
+     * The "Applies to: …" line under a form's title. A form with no categories is
+     * shown as unattached — it renders on no listing until it is given at least one.
+     *
+     * @param array $categoryIds
+     * @param array $catNames id => localised name
+     *
+     * @return string
+     */
+    function cfields_form_cat_summary($categoryIds, $catNames)
+    {
+        $names = array();
+        foreach ((array)$categoryIds as $cid) {
+            if (isset($catNames[(int)$cid])) {
+                $names[] = $catNames[(int)$cid];
+            }
+        }
+        if (empty($names)) {
+            return '<span class="form-card-cats is-unattached"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> '
+                . osc_esc_html(__('Not attached to a category — it won\'t appear on listings yet'))
+                . '</span>';
+        }
+        $shown = array_slice($names, 0, 3);
+        $extra = count($names) - count($shown);
+        $label = '<span class="cats-label">' . osc_esc_html(__('Applies to')) . ':</span> '
+            . osc_esc_html(implode(', ', $shown));
+        if ($extra > 0) {
+            $label .= ' <span class="cats-more">+' . $extra . '</span>';
+        }
+
+        return '<span class="form-card-cats">' . $label . '</span>';
+    }
+}
 
 osc_add_hook('admin_page_header', 'customPageHeader');
-//customize Head
+
 function customHead()
 {
     $csrf_token = osc_csrf_token_url(); ?>
     <script type="text/javascript">
-
-        // Inject fetched HTML and run any <script> it carries (innerHTML alone
-        // does not execute scripts; the edit iframe wires itself in one).
+        // Inject fetched HTML and run any <script> it carries (innerHTML alone does
+        // not execute scripts; the editors wire themselves up in one).
         function oscInjectHtml(container, html) {
             container.innerHTML = html;
             container.querySelectorAll('script').forEach(function (old) {
@@ -91,233 +189,702 @@ function customHead()
             });
         }
 
-        function show_iframe(class_name, id) {
-            var container = document.querySelector('.' + class_name);
-            if (!document.querySelector('.content_list_' + id + ' .custom-field-frame')) {
-                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
-                var url = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&<?php echo $csrf_token; ?>&id=' + id;
-                fetch(url, { credentials: 'same-origin' })
-                    .then(function (r) { return r.text(); })
-                    .then(function (html) { if (container) { oscInjectHtml(container, html); } });
-            } else {
-                document.querySelectorAll('.custom-field-frame').forEach(function (el) { el.remove(); });
-            }
+        // ---- Inline editors -------------------------------------------------
+        // Editing happens where the control is: a field's editor expands inside its
+        // row in the Fields library; a form's editor expands inside its card. One
+        // editor is open at a time.
+        var LOADING = '<p class="cf-editor-loading"><?php echo osc_esc_js(__('Loading…')); ?></p>';
+
+        // Collapse whichever editor is open. Kept as window.cfCloseDrawer because the
+        // injected editors call that name on save/cancel.
+        window.cfCloseDrawer = function () {
+            document.querySelectorAll('.field-chip.is-editing').forEach(function (chip) {
+                chip.classList.remove('is-editing');
+                var slot = chip.querySelector('.field-chip-editor');
+                if (slot) { slot.hidden = true; slot.innerHTML = ''; }
+            });
+            document.querySelectorAll('.form-card.is-editing').forEach(function (card) {
+                card.classList.remove('is-editing');
+                var slot = card.querySelector('.form-card-editor');
+                if (slot) { slot.innerHTML = ''; }
+            });
+        };
+
+        function injectAndFocus(slot, url) {
+            slot.innerHTML = LOADING;
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    oscInjectHtml(slot, html);
+                    slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    var first = slot.querySelector('input:not([type=hidden]), select, textarea');
+                    if (first) { first.focus({ preventScroll: true }); }
+                });
+        }
+
+        // Field-definition editor. Always expands the field's row in the Fields
+        // library (which has the room); a click from a form chip routes here and
+        // scrolls the library row into view. builder=1 saves the definition only.
+        function edit_field(id) {
+            var chip = document.querySelector('#palette-list > .field-chip[data-field-id="' + id + '"]');
+            if (!chip) { return false; }
+            var already = chip.classList.contains('is-editing');
+            window.cfCloseDrawer();
+            if (already) { return false; }
+            chip.classList.add('is-editing');
+            var slot = chip.querySelector('.field-chip-editor');
+            slot.hidden = false;
+            injectAndFocus(
+                slot,
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=field_categories_iframe&builder=1&<?php echo $csrf_token; ?>&id=' + id
+            );
             return false;
         }
 
-        // check all the categories in a subtree
+        // Form editor (name + category assignment), expanded inside the form card.
+        function show_group_iframe(id) {
+            var card = document.querySelector('.form-card[data-form-id="' + id + '"]');
+            if (!card) { return false; }
+            var already = card.classList.contains('is-editing');
+            window.cfCloseDrawer();
+            if (already) { return false; }
+            card.classList.add('is-editing');
+            injectAndFocus(
+                card.querySelector('.form-card-editor'),
+                '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=group_categories_iframe&<?php echo $csrf_token; ?>&id=' + id
+            );
+            return false;
+        }
+
         function checkAll(id, check) {
             var root = document.getElementById(id);
-            if (root) {
-                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
+            if (root) { root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; }); }
+        }
+        function checkCat(id, check) {
+            var root = document.getElementById('cat' + id);
+            if (root) { root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; }); }
+        }
+
+        function delete_group(id) {
+            var modal = document.getElementById('deleteGroupModal');
+            modal.setAttribute('data-group-id', id);
+            modal.showModal();
+            return false;
+        }
+        function delete_field(id) {
+            var modal = document.getElementById('deleteModal');
+            modal.setAttribute('data-field-id', id);
+            modal.showModal();
+            return false;
+        }
+
+        // ---- The builder ----------------------------------------------------
+        var BASE = '<?php echo osc_admin_base_url(true); ?>';
+        var CSRF = '<?php echo $csrf_token; ?>';
+        var CF_CAT_NAMES = <?php echo json_encode((object)$catNames); ?>;
+        var CF_TXT = {
+            saving:     '<?php echo osc_esc_js(__('Saving…')); ?>',
+            saved:      '<?php echo osc_esc_js(__('Saved')); ?>',
+            inForms:    '<?php echo osc_esc_js(__('In %d forms')); ?>',
+            inFormsTip: '<?php echo osc_esc_js(__('Editing this field changes it in every form that uses it.')); ?>',
+            applies:    '<?php echo osc_esc_js(__('Applies to')); ?>',
+            unattached: '<?php echo osc_esc_js(__('Not attached to a category — it won\'t appear on listings yet')); ?>',
+            allAdded:   '<?php echo osc_esc_js(__('Every field is already in this form.')); ?>',
+            moved:      '<?php echo osc_esc_js(__('Moved to position %1$d of %2$d.')); ?>'
+        };
+
+        function cfAnnounce(msg) {
+            var live = document.getElementById('cf-live');
+            if (live) { live.textContent = msg; }
+        }
+
+        // The grip is only a reorder control inside a form, so only those are tab
+        // stops; a palette grip is drag-only and stays out of the tab order.
+        function refreshGripTabIndex() {
+            document.querySelectorAll('.field-chip .chip-grip').forEach(function (g) {
+                g.tabIndex = g.closest('.form-fieldlist') ? 0 : -1;
+            });
+        }
+
+        function cfEsc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // A brief per-form "Saving… / Saved" note, so a silent autosave reads as done.
+        function setCardStatus(el, state) {
+            if (!el) { return; }
+            if (el._t) { clearTimeout(el._t); el._t = null; }
+            el.classList.remove('is-saving', 'is-saved');
+            if (state === 'saving') {
+                el.textContent = CF_TXT.saving;
+                el.classList.add('is-saving');
+            } else if (state === 'saved') {
+                el.textContent = CF_TXT.saved;
+                el.classList.add('is-saved');
+                el._t = setTimeout(function () { el.classList.remove('is-saved'); el.textContent = ''; }, 2500);
+            } else {
+                el.textContent = '';
             }
         }
 
-        function checkCat(id, check) {
-            var root = document.getElementById('cat' + id);
-            if (root) {
-                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
+        // Mark each palette chip with the number of forms it is placed in, so the
+        // shared nature of a field definition is visible before it is edited.
+        function refreshSharedBadges() {
+            var lists = document.querySelectorAll('.form-fieldlist');
+            document.querySelectorAll('#palette-list > .field-chip').forEach(function (chip) {
+                var id = chip.getAttribute('data-field-id');
+                var n = 0;
+                lists.forEach(function (list) {
+                    if (list.querySelector(':scope > .field-chip[data-field-id="' + id + '"]')) { n++; }
+                });
+                var row = chip.querySelector('.field-chip-row') || chip;
+                var badge = row.querySelector('.chip-shared');
+                if (n >= 2) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'chip-shared';
+                        badge.title = CF_TXT.inFormsTip;
+                        row.insertBefore(badge, row.querySelector('.chip-type'));
+                    }
+                    badge.textContent = CF_TXT.inForms.replace('%d', n);
+                } else if (badge) {
+                    badge.remove();
+                }
+            });
+        }
+
+        // ---- Collapse / expand a form card (persisted per form) --------------
+        var CF_COLLAPSE_KEY = 'cf_collapsed_forms';
+        function getCollapsedSet() {
+            try { return new Set(JSON.parse(localStorage.getItem(CF_COLLAPSE_KEY) || '[]')); }
+            catch (e) { return new Set(); }
+        }
+        function saveCollapsedSet(set) {
+            try { localStorage.setItem(CF_COLLAPSE_KEY, JSON.stringify(Array.from(set))); } catch (e) {}
+        }
+        function setCardCollapsed(card, collapsed) {
+            card.classList.toggle('is-collapsed', collapsed);
+            var btn = card.querySelector('.form-card-toggle');
+            if (btn) { btn.setAttribute('aria-expanded', String(!collapsed)); }
+        }
+        function applyCollapsedState() {
+            var set = getCollapsedSet();
+            document.querySelectorAll('.form-card').forEach(function (card) {
+                setCardCollapsed(card, set.has(card.getAttribute('data-form-id')));
+            });
+        }
+
+        // ---- Add a field without dragging (keyboard / touch path) ------------
+        function closeAddMenu(except) {
+            document.querySelectorAll('.form-card-add').forEach(function (wrap) {
+                if (wrap === except) { return; }
+                var menu = wrap.querySelector('.cf-add-menu');
+                var btn = wrap.querySelector('.form-add-field');
+                if (menu) { menu.hidden = true; }
+                if (btn) { btn.setAttribute('aria-expanded', 'false'); }
+            });
+        }
+
+        // Append a field's chip to a form (mirrors a drag from the palette).
+        function addFieldToForm(card, id) {
+            var src = document.querySelector('#palette-list > .field-chip[data-field-id="' + id + '"]');
+            var list = card ? card.querySelector('.form-fieldlist') : null;
+            if (!src || !list) { return; }
+            var clone = src.cloneNode(true);
+            clone.classList.remove('is-editing', 'is-placed');
+            var badge = clone.querySelector('.chip-shared');
+            if (badge) { badge.remove(); }
+            list.appendChild(clone);
+            saveForm(list);
+        }
+
+        // Build the menu of fields not already in this form.
+        function openAddMenu(wrap) {
+            var card = wrap.closest('.form-card');
+            var list = card.querySelector('.form-fieldlist');
+            var menu = wrap.querySelector('.cf-add-menu');
+            var btn = wrap.querySelector('.form-add-field');
+            var present = {};
+            list.querySelectorAll(':scope > .field-chip').forEach(function (c) { present[c.getAttribute('data-field-id')] = true; });
+            menu.innerHTML = '';
+            var any = false;
+            document.querySelectorAll('#palette-list > .field-chip').forEach(function (src) {
+                var id = src.getAttribute('data-field-id');
+                if (present[id]) { return; }
+                any = true;
+                var item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'cf-add-item';
+                item.setAttribute('role', 'menuitem');
+                item.setAttribute('data-field-id', id);
+                var nameEl = src.querySelector('.chip-name');
+                var typeEl = src.querySelector('.chip-type');
+                item.innerHTML = '<span class="cf-add-name"></span>' + (typeEl ? '<span class="chip-type"></span>' : '');
+                item.querySelector('.cf-add-name').textContent = nameEl ? nameEl.textContent : '';
+                if (typeEl) { item.querySelector('.chip-type').textContent = typeEl.textContent; }
+                item.addEventListener('click', function () { addFieldToForm(card, id); closeAddMenu(); btn.focus(); });
+                menu.appendChild(item);
+            });
+            if (!any) {
+                var empty = document.createElement('div');
+                empty.className = 'cf-add-empty';
+                empty.textContent = CF_TXT.allAdded;
+                menu.appendChild(empty);
             }
+            closeAddMenu(wrap);
+            menu.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+            var first = menu.querySelector('.cf-add-item');
+            if (first) { first.focus(); }
+        }
+
+        // Rewrite a form card's "Applies to: …" line after its categories are saved.
+        window.cfSetCardCats = function (formId, catIds) {
+            var card = document.querySelector('.form-card[data-form-id="' + formId + '"]');
+            var el = card ? card.querySelector('.form-card-cats') : null;
+            if (!el) { return; }
+            var names = catIds.map(function (id) { return CF_CAT_NAMES[id]; }).filter(Boolean);
+            if (!names.length) {
+                el.className = 'form-card-cats is-unattached';
+                el.innerHTML = '<i class="bi bi-exclamation-circle" aria-hidden="true"></i> ' + cfEsc(CF_TXT.unattached);
+                return;
+            }
+            el.className = 'form-card-cats';
+            var shown = names.slice(0, 3);
+            var extra = names.length - shown.length;
+            var html = '<span class="cats-label">' + cfEsc(CF_TXT.applies) + ':</span> ' + shown.map(cfEsc).join(', ');
+            if (extra > 0) { html += ' <span class="cats-more">+' + extra + '</span>'; }
+            el.innerHTML = html;
+        };
+
+        // Persist a form's whole ordered field list (add/remove/reorder in one call).
+        var saveTimers = {};
+        function saveForm(listEl) {
+            if (!listEl) { return; }
+            var formId = listEl.getAttribute('data-form-id');
+            var card = listEl.closest('.form-card');
+            var status = card ? card.querySelector('.form-card-status') : null;
+            var ids = Array.prototype.map.call(listEl.querySelectorAll(':scope > .field-chip'),
+                function (li) { return li.getAttribute('data-field-id'); });
+            // Membership just changed in the DOM — reflect it on the palette at once.
+            refreshSharedBadges();
+            refreshGripTabIndex();
+            setCardStatus(status, 'saving');
+            clearTimeout(saveTimers[formId]);
+            saveTimers[formId] = setTimeout(function () {
+                var body = new URLSearchParams();
+                body.set('form_id', formId);
+                body.set('fields', JSON.stringify(ids));
+                fetch(BASE + '?page=ajax&action=form_set_fields&' + CSRF, {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: body
+                }).then(function (r) { return r.json(); }).then(function (ret) {
+                    if (ret.error) { setJsMessage('error', ret.error); setCardStatus(status, ''); }
+                    else { setCardStatus(status, 'saved'); }
+                }).catch(function () {
+                    setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                    setCardStatus(status, '');
+                });
+                refreshEmptyStates();
+            }, 250);
+        }
+
+        function refreshEmptyStates() {
+            document.querySelectorAll('.form-fieldlist').forEach(function (list) {
+                var has = list.querySelector(':scope > .field-chip');
+                var ph = list.parentNode.querySelector('.form-empty');
+                if (ph) { ph.style.display = has ? 'none' : ''; }
+            });
+        }
+
+        function initFormSortable(listEl) {
+            if (typeof Sortable === 'undefined' || !listEl || listEl._sortable) { return; }
+            listEl._sortable = new Sortable(listEl, {
+                group: 'fields', handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
+                onAdd: function (evt) { saveForm(evt.to); },
+                onRemove: function (evt) { saveForm(evt.from); },
+                onUpdate: function (evt) { saveForm(evt.to); }
+            });
+        }
+
+        function buildFormCard(id, name) {
+            var card = document.createElement('div');
+            card.className = 'form-card';
+            card.setAttribute('data-form-id', id);
+            card.innerHTML = ''
+                + '<div class="form-card-head">'
+                + '  <button type="button" class="form-card-toggle" aria-expanded="true" aria-label="<?php echo osc_esc_js(__('Collapse or expand this form')); ?>"><i class="bi bi-chevron-down"></i></button>'
+                + '  <div class="form-card-heading">'
+                + '    <span class="form-card-title" id="group_name_' + id + '"></span>'
+                + '    <span class="form-card-cats is-unattached"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> ' + cfEsc(CF_TXT.unattached) + '</span>'
+                + '  </div>'
+                + '  <span class="form-card-actions">'
+                + '    <span class="form-card-status" role="status" aria-live="polite"></span>'
+                + '    <button type="button" class="chip-btn" onclick="show_group_iframe(\'' + id + '\'); return false;" title="<?php echo osc_esc_js(__('Categories & name')); ?>"><i class="bi bi-gear-fill"></i></button>'
+                + '    <button type="button" class="chip-btn chip-danger" onclick="delete_group(\'' + id + '\'); return false;" title="<?php echo osc_esc_js(__('Delete form')); ?>"><i class="bi bi-trash-fill"></i></button>'
+                + '  </span>'
+                + '</div>'
+                + '<ul class="form-fieldlist" data-form-id="' + id + '"></ul>'
+                + '<div class="form-empty"><?php echo osc_esc_js(__('Drag a field here, or use “Add field”.')); ?></div>'
+                + '<div class="form-card-add">'
+                + '  <button type="button" class="btn btn-outline-primary btn-sm form-add-field" aria-haspopup="true" aria-expanded="false"><i class="bi bi-plus-lg"></i> <?php echo osc_esc_js(__('Add field')); ?></button>'
+                + '  <div class="cf-add-menu" role="menu" hidden></div>'
+                + '</div>'
+                + '<div class="form-card-editor edit"></div>';
+            card.querySelector('.form-card-title').textContent = name;
+            document.getElementById('forms-list').appendChild(card);
+            initFormSortable(card.querySelector('.form-fieldlist'));
+            return card;
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('#add-button, .add-button').forEach(function (btn) {
-                btn.addEventListener('click', function (e) {
+            // palette is a clone source only
+            var palette = document.getElementById('palette-list');
+            if (typeof Sortable !== 'undefined' && palette) {
+                new Sortable(palette, {
+                    group: { name: 'fields', pull: 'clone', put: false },
+                    sort: false, handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost'
+                });
+            }
+            document.querySelectorAll('.form-fieldlist').forEach(initFormSortable);
+            refreshEmptyStates();
+            refreshSharedBadges();
+            refreshGripTabIndex();
+            applyCollapsedState();
+
+            // Keyboard reordering: focus a field's grip inside a form and use the
+            // arrow keys (Home/End jump to the ends). Mirrors what dragging does,
+            // and saves through the same path.
+            document.addEventListener('keydown', function (e) {
+                var grip = e.target.closest('.chip-grip');
+                if (!grip) { return; }
+                var chip = grip.closest('.field-chip');
+                var list = chip ? chip.closest('.form-fieldlist') : null;
+                if (!list) { return; }
+                var moved = false;
+                if (e.key === 'ArrowUp') {
+                    var prev = chip.previousElementSibling;
+                    if (prev) { list.insertBefore(chip, prev); moved = true; }
+                } else if (e.key === 'ArrowDown') {
+                    var next = chip.nextElementSibling;
+                    if (next) { list.insertBefore(next, chip); moved = true; }
+                } else if (e.key === 'Home') {
+                    if (chip !== list.firstElementChild) { list.insertBefore(chip, list.firstElementChild); moved = true; }
+                } else if (e.key === 'End') {
+                    if (chip !== list.lastElementChild) { list.appendChild(chip); moved = true; }
+                } else {
+                    return;
+                }
+                e.preventDefault();
+                if (!moved) { return; }
+                grip.focus();
+                var chips = list.querySelectorAll(':scope > .field-chip');
+                var pos = Array.prototype.indexOf.call(chips, chip) + 1;
+                cfAnnounce(CF_TXT.moved.replace('%1$d', pos).replace('%2$d', chips.length));
+                saveForm(list);
+            });
+
+            // Collapse / expand a form via its caret (state persists across reloads).
+            document.addEventListener('click', function (e) {
+                var tg = e.target.closest('.form-card-toggle');
+                if (!tg) { return; }
+                var card = tg.closest('.form-card');
+                if (!card) { return; }
+                var id = card.getAttribute('data-form-id');
+                var collapsed = !card.classList.contains('is-collapsed');
+                setCardCollapsed(card, collapsed);
+                var set = getCollapsedSet();
+                if (collapsed) { set.add(id); } else { set.delete(id); }
+                saveCollapsedSet(set);
+            });
+
+            // ✕ removes a chip from its form
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.chip-remove');
+                if (!btn) { return; }
+                var chip = btn.closest('.field-chip');
+                var list = chip ? chip.closest('.form-fieldlist') : null;
+                if (chip && list) { chip.remove(); saveForm(list); }
+            });
+
+            // Escape closes the open inline editor, else the add-field menu.
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    if (document.querySelector('.field-chip.is-editing, .form-card.is-editing')) {
+                        window.cfCloseDrawer(); return;
+                    }
+                    closeAddMenu();
+                }
+            });
+
+            // Add-field menu: toggle on the button, close on any outside click.
+            document.addEventListener('click', function (e) {
+                var addBtn = e.target.closest('.form-add-field');
+                if (addBtn) {
                     e.preventDefault();
-                    fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=add_field&<?php echo $csrf_token; ?>', { credentials: 'same-origin' })
-                        .then(function (r) { return r.text(); })
-                        .then(function (res) {
-                            var ret;
-                            try { ret = JSON.parse(res); } catch (err) { ret = (new Function('return (' + res + ')'))(); }
+                    var wrap = addBtn.closest('.form-card-add');
+                    var menu = wrap.querySelector('.cf-add-menu');
+                    if (menu.hidden) { openAddMenu(wrap); } else { closeAddMenu(); }
+                    return;
+                }
+                if (!e.target.closest('.cf-add-menu')) { closeAddMenu(); }
+            });
+
+            // Move legacy loose fields into forms (grouped by shared categories).
+            // A one-shot upgrade: reload afterwards so both panes reflect the new
+            // forms and the fields lose their "no form" flag.
+            var migrateBtn = document.getElementById('migrate-legacy-button');
+            if (migrateBtn) {
+                migrateBtn.addEventListener('click', function () {
+                    migrateBtn.disabled = true;
+                    migrateBtn.classList.add('is-busy');
+                    fetch(BASE + '?page=ajax&action=migrate_loose_fields&' + CSRF, {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function (r) { return r.json(); }).then(function (ret) {
+                        if (ret && ret.ok) {
+                            setJsMessage('ok', ret.ok);
+                            window.setTimeout(function () { window.location.reload(); }, 600);
+                        } else {
+                            setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                            migrateBtn.disabled = false;
+                            migrateBtn.classList.remove('is-busy');
+                        }
+                    }).catch(function () {
+                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                        migrateBtn.disabled = false;
+                        migrateBtn.classList.remove('is-busy');
+                    });
+                });
+            }
+
+            // + New form
+            var addFormBtn = document.getElementById('add-form-button');
+            if (addFormBtn) {
+                addFormBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fetch(BASE + '?page=ajax&action=add_group&' + CSRF, { credentials: 'same-origin' })
+                        .then(function (r) { return r.json(); }).then(function (ret) {
                             if (ret && ret.error == 0) {
-                                // Build the row as DOM so the server field name is set via
-                                // textContent and can never inject markup.
-                                var li = document.createElement('li');
-                                li.id = 'list_' + ret.field_id;
-                                li.className = 'field_li';
-                                li.setAttribute('data-field-id', ret.field_id);
-                                li.innerHTML = `
-                                <div class="cfield-div">
-                                    <span class="cfield-handle handle" title="<?php echo osc_esc_js(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
-                                    <span class="cfield-name" id="quick_edit_${ret.field_id}"></span>
-                                    <span class="cfield-type"><?php echo osc_esc_js(__('Text')); ?></span>
-                                    <div class="cfield-actions ms-auto">
-                                        <button type="button" class="cfield-action"
-                                           onclick="show_iframe('content_list_${ret.field_id}','${ret.field_id}'); return false;"
-                                           title="<?php echo osc_esc_js(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-                                        <button type="button" class="cfield-action cfield-action-danger"
-                                           onclick="delete_field('${ret.field_id}'); return false;" title="<?php echo osc_esc_js(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
-                                    </div>
-                                </div>
-                                <div class="edit content_list_${ret.field_id}"></div>`;
-                                li.querySelector('.cfield-name').textContent = ret.field_name;
-                                var empty = document.getElementById('fields-empty');
+                                var empty = document.getElementById('forms-empty');
                                 if (empty) { empty.remove(); }
-                                document.getElementById('ul_fields').appendChild(li);
-                                show_iframe('content_list_' + ret.field_id, ret.field_id);
-                            } else {
-                                setJsMessage('error', '<?php echo osc_esc_js(__('Custom field could not be added')); ?>');
-                            }
+                                buildFormCard(ret.group_id, ret.group_name);
+                                show_group_iframe(ret.group_id);
+                            } else { setJsMessage('error', '<?php echo osc_esc_js(__('Form could not be created')); ?>'); }
                         });
                 });
-            });
+            }
+
+            // + New field (appends a palette chip and opens its editor)
+            var addFieldBtn = document.getElementById('add-field-button');
+            if (addFieldBtn) {
+                addFieldBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fetch(BASE + '?page=ajax&action=add_field&' + CSRF, { credentials: 'same-origin' })
+                        .then(function (r) { return r.text(); }).then(function (res) {
+                            var ret; try { ret = JSON.parse(res); } catch (err) { ret = null; }
+                            if (ret && ret.error == 0) {
+                                var li = document.createElement('li');
+                                li.className = 'field-chip';
+                                li.setAttribute('data-field-id', ret.field_id);
+                                li.setAttribute('data-type', 'TEXT');
+                                li.innerHTML = ''
+                                    + '<div class="field-chip-row">'
+                                    + '  <button type="button" class="chip-grip" tabindex="-1" title="<?php echo osc_esc_js(__('Drag to reorder, or focus and use the arrow keys')); ?>" aria-label="<?php echo osc_esc_js(__('Reorder field: use the arrow keys')); ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>'
+                                    + '  <span class="chip-name"></span>'
+                                    + '  <span class="chip-type"><?php echo osc_esc_js(__('Text')); ?></span>'
+                                    + '  <span class="chip-actions">'
+                                    + '    <button type="button" class="chip-btn chip-edit" onclick="edit_field(' + ret.field_id + '); return false;" title="<?php echo osc_esc_js(__('Edit field')); ?>"><i class="bi bi-pencil-fill"></i></button>'
+                                    + '    <button type="button" class="chip-btn chip-remove" title="<?php echo osc_esc_js(__('Remove from form')); ?>"><i class="bi bi-x-lg"></i></button>'
+                                    + '  </span>'
+                                    + '</div>'
+                                    + '<div class="field-chip-editor edit" hidden></div>';
+                                li.querySelector('.chip-name').textContent = ret.field_name;
+                                var pEmpty = document.getElementById('palette-empty');
+                                if (pEmpty) { pEmpty.remove(); }
+                                palette.appendChild(li);
+                                edit_field(ret.field_id);
+                            } else { setJsMessage('error', '<?php echo osc_esc_js(__('Field could not be added')); ?>'); }
+                        });
+                });
+            }
         });
     </script>
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
-/**
- * @param $string
- *
- * @return string
- */
 function customPageTitle($string)
 {
-    return sprintf(__('Custom fields &raquo; %s'), $string);
+    return sprintf(__('Custom forms &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <!-- custom fields -->
-    <div class="custom-fields">
-        <!-- list fields -->
-        <div class="list-fields">
-            <?php if (count($fields) === 0) { ?>
-                <div id="fields-empty" class="cfield-empty">
-                    <i class="bi bi-input-cursor-text" aria-hidden="true"></i>
-                    <p class="cfield-empty-title"><?php _e('No custom fields yet'); ?></p>
-                    <p class="cfield-empty-hint"><?php _e('Add a field to collect extra details when a listing is published — number of bedrooms, fuel type, and so on.'); ?></p>
-                    <button type="button" class="btn btn-primary btn-sm add-button"><i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add custom field'); ?></button>
-                </div>
-            <?php } ?>
-            <ul id="ul_fields" class="sortable">
-                <?php foreach ($fields as $field) { ?>
-                    <li id="list_<?php echo $field['pk_i_id']; ?>"
-                        class="field_li"
-                        data-field-id="<?php echo $field['pk_i_id']; ?>">
-                        <div class="cfield-div">
-                            <span class="cfield-handle handle" title="<?php echo osc_esc_html(__('Drag to reorder')); ?>" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
-                            <span class="cfield-name" id="<?php echo 'quick_edit_' . $field['pk_i_id']; ?>"><?php echo osc_esc_html($field['s_name']); ?></span>
-                            <span class="cfield-type"><?php echo osc_esc_html(cfields_type_label($field['e_type'])); ?></span>
-                            <?php if (!empty($field['b_required'])) { ?>
-                                <span class="cfield-flag"><?php _e('Required'); ?></span>
-                            <?php } ?>
-                            <div class="cfield-actions ms-auto">
-                                <button type="button" class="cfield-action"
-                                        onclick="show_iframe('content_list_<?php echo $field['pk_i_id']; ?>','<?php echo $field['pk_i_id']; ?>'); return false;"
-                                        aria-label="<?php echo osc_esc_html(sprintf(__('Edit %s'), $field['s_name'])); ?>"
-                                        title="<?php echo osc_esc_html(__('Edit')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-                                <button type="button" class="cfield-action cfield-action-danger"
-                                        onclick="delete_field('<?php echo $field['pk_i_id']; ?>'); return false;"
-                                        aria-label="<?php echo osc_esc_html(sprintf(__('Delete %s'), $field['s_name'])); ?>"
-                                        title="<?php echo osc_esc_html(__('Delete')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
-                            </div>
-                        </div>
-                        <div class="edit content_list_<?php echo $field['pk_i_id']; ?>"></div>
-                    </li>
-                <?php } ?>
-            </ul>
+    <h2 class="render-title"><?php _e('Custom forms'); ?></h2>
+
+    <?php
+    // A one-click bridge for installs upgraded from before the forms builder: their
+    // fields sit directly on categories (t_meta_categories) and render on those
+    // listings, but appear here only as bare palette chips. Offer to gather them
+    // into forms — grouped by the exact categories they share — so they become
+    // visible and editable without changing where a single one renders.
+    $looseCount = count($looseCats);
+    if ($looseCount > 0) { ?>
+        <div class="cf-legacy-banner" role="status">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <div class="cf-legacy-text">
+                <strong><?php echo osc_esc_html(sprintf(
+                    __('%d fields from before Forms are attached straight to categories.'),
+                    $looseCount
+                )); ?></strong>
+                <span><?php _e('They still show on those listings, but you can only manage them once they are in a form. Move them in — grouped by the categories they share — without changing where any of them appears.'); ?></span>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="migrate-legacy-button">
+                <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> <?php _e('Move into forms'); ?>
+            </button>
         </div>
-        <!-- /list fields -->
+    <?php } ?>
+
+    <div class="forms-builder">
+        <div class="forms-builder-grid">
+
+            <!-- LEFT: forms -->
+            <div class="forms-col">
+                <div class="col-head">
+                    <h3 class="col-title"><?php _e('Forms'); ?></h3>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-form-button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New form'); ?>
+                    </button>
+                </div>
+                <p class="col-hint"><?php _e('A form is a set of fields shown together on the listing form, for the categories you choose.'); ?></p>
+                <div id="forms-list">
+                    <?php if (count($forms) === 0) { ?>
+                        <div id="forms-empty" class="builder-empty">
+                            <?php _e('No forms yet. Create one, then drag fields into it from the palette.'); ?>
+                        </div>
+                    <?php } ?>
+                    <?php foreach ($forms as $form) {
+                        $fid = (int)$form['pk_i_id']; ?>
+                        <div class="form-card" data-form-id="<?php echo $fid; ?>">
+                            <div class="form-card-head">
+                                <button type="button" class="form-card-toggle" aria-expanded="true"
+                                        aria-label="<?php echo osc_esc_html(__('Collapse or expand this form')); ?>"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+                                <div class="form-card-heading">
+                                    <span class="form-card-title" id="group_name_<?php echo $fid; ?>"><?php echo osc_esc_html($form['s_name']); ?></span>
+                                    <?php echo cfields_form_cat_summary($form['category_ids'] ?? array(), $catNames); ?>
+                                </div>
+                                <span class="form-card-actions">
+                                    <span class="form-card-status" role="status" aria-live="polite"></span>
+                                    <button type="button" class="chip-btn" onclick="show_group_iframe('<?php echo $fid; ?>'); return false;"
+                                            title="<?php echo osc_esc_html(__('Categories & name')); ?>"><i class="bi bi-gear-fill" aria-hidden="true"></i></button>
+                                    <button type="button" class="chip-btn chip-danger" onclick="delete_group('<?php echo $fid; ?>'); return false;"
+                                            title="<?php echo osc_esc_html(__('Delete form')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+                                </span>
+                            </div>
+                            <ul class="form-fieldlist" data-form-id="<?php echo $fid; ?>">
+                                <?php foreach ($form['field_ids'] as $fieldId) {
+                                    if (isset($fieldsById[(int)$fieldId])) {
+                                        cfields_render_chip($fieldsById[(int)$fieldId]);
+                                    }
+                                } ?>
+                            </ul>
+                            <div class="form-empty"><?php _e('Drag a field here, or use “Add field”.'); ?></div>
+                            <div class="form-card-add">
+                                <button type="button" class="btn btn-outline-primary btn-sm form-add-field" aria-haspopup="true" aria-expanded="false">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add field'); ?>
+                                </button>
+                                <div class="cf-add-menu" role="menu" hidden></div>
+                            </div>
+                            <div class="form-card-editor edit"></div>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+
+            <!-- RIGHT: field palette -->
+            <div class="palette-col">
+                <div class="col-head">
+                    <h3 class="col-title"><?php _e('Fields'); ?></h3>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-field-button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New field'); ?>
+                    </button>
+                </div>
+                <p class="col-hint"><?php _e('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
+                <ul id="palette-list" class="palette-list">
+                    <?php if (count($fields) === 0) { ?>
+                        <li id="palette-empty" class="builder-empty"><?php _e('No fields yet. Create one to get started.'); ?></li>
+                    <?php } ?>
+                    <?php foreach ($fields as $field) {
+                        $fid = (int)$field['pk_i_id'];
+                        cfields_render_chip($field, in_array($fid, $placedIds, true), $looseCats[$fid] ?? array());
+                    } ?>
+                </ul>
+            </div>
+
+        </div>
     </div>
-    <!-- /custom fields -->
-    <div class="clear"></div>
+
+    <!-- Announces keyboard reordering to assistive tech. -->
+    <div id="cf-live" class="visually-hidden" role="status" aria-live="polite"></div>
+
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
         <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php echo __('Delete custom field'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this custom field?'); ?></p>
+            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete field'); ?></p>
+            <p class="osc-dialog-text"><?php _e('This deletes the field definition and removes it from every form. Continue?'); ?></p>
         </div>
         <div class="osc-dialog-actions">
             <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
             <button id="deleteSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
         </div>
     </dialog>
+    <dialog id="deleteGroupModal" class="osc-dialog osc-dialog-danger" data-group-id="">
+        <div class="osc-dialog-body">
+            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete form'); ?></p>
+            <p class="osc-dialog-text"><?php _e('Deleting the form keeps its fields (they return to the palette) but removes the form and its category assignment. Continue?'); ?></p>
+        </div>
+        <div class="osc-dialog-actions">
+            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+            <button id="deleteGroupSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
+        </div>
+    </dialog>
     <script>
-        document.getElementById("deleteSubmit").onclick = function() {
-            let deleteModal = document.getElementById("deleteModal");
-            let fieldId = deleteModal.dataset.fieldId;
-            deleteModal.close();
-            let url = "<?php
-                echo osc_admin_base_url(true); ?>?page=ajax&action=delete_field&<?php echo osc_csrf_token_url();
-?>&id=" + fieldId;
-            fetch(url, {
-                credentials: "same-origin"
-            }).then(function(response) {
-                    if (!response.ok) {
-                        setJsMessage("error", response.statusText);
+        document.getElementById('deleteSubmit').onclick = function () {
+            var modal = document.getElementById('deleteModal');
+            var fieldId = modal.dataset.fieldId;
+            modal.close();
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=delete_field&<?php echo osc_csrf_token_url(); ?>&id=' + fieldId, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); }).then(function (o) {
+                    if (o.error) { setJsMessage('error', o.error); }
+                    if (o.ok) {
+                        setJsMessage('ok', o.ok);
+                        document.querySelectorAll('.field-chip[data-field-id="' + fieldId + '"]').forEach(function (el) {
+                            var list = el.closest('.form-fieldlist');
+                            el.remove();
+                            if (list) { /* server already removed links via delete */ }
+                        });
+                        if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
                     }
-                    return response.json()
-                })
-                .then(function(jsonObj) {
-                    if (jsonObj.error) {
-                        setJsMessage("error", jsonObj.error);
-                    }
-                    if (jsonObj.ok) {
-                        setJsMessage("ok", jsonObj.ok);
-                        document.getElementById('list_' + fieldId).remove()
-                    }
-                }).catch(function(error) {
-                setJsMessage("error", "<?php echo osc_esc_js(__("Ajax error, try again.")); ?>:" + error);
-            });
+                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
         };
-
-        function delete_field(id) {
-            var deleteModal = document.getElementById("deleteModal");
-            deleteModal.setAttribute("data-field-id", id);
-            deleteModal.showModal();
-            return false;
-        }
-
-        function orderArray(rootElement) {
-            var serialized = [];
-            var children = [].slice.call(rootElement.children);
-            for (let i = 0; i < children.length; i++) {
-                serialized.push(children[i].dataset['fieldId']);
-            }
-            return serialized
-        }
-
-        var orderRoot = document.querySelector('.sortable');
-        var oldOrder = orderArray(orderRoot);
-
-        var sortable = new Sortable(document.querySelector('.sortable'), {
-            sort: true,
-            handle: '.handle',
-            ghostClass: 'drag-ghost',
-            animation: 150,
-            fallbackOnBody: true,
-            swapThreshold: 0.10,
-            onEnd: function () {
-                var newOrder = orderArray(orderRoot);
-                if (oldOrder !== newOrder) {
-                    var body = new URLSearchParams();
-                    body.set('list', JSON.stringify(newOrder));
-                    fetch("<?php echo osc_admin_base_url(true) . '?page=ajax&action=fields_order&' . osc_csrf_token_url(); ?>", {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: body
-                    }).then(function (r) {
-                        return r.text();
-                    }).then(function (res) {
-                        var ret = JSON.parse(res);
-                        if (ret.error) { setJsMessage('error', ret.error); }
-                        if (ret.ok) { setJsMessage('ok', ret.ok); }
-                    }).catch(function () {
-                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
-                    });
-                    oldOrder = newOrder;
-                }
-            }
-        });
+        document.getElementById('deleteGroupSubmit').onclick = function () {
+            var modal = document.getElementById('deleteGroupModal');
+            var groupId = modal.dataset.groupId;
+            modal.close();
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=delete_group&<?php echo osc_csrf_token_url(); ?>&id=' + groupId, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); }).then(function (o) {
+                    if (o.error) { setJsMessage('error', o.error); }
+                    if (o.ok) {
+                        setJsMessage('ok', o.ok);
+                        var card = document.querySelector('.form-card[data-form-id="' + groupId + '"]');
+                        if (card) { card.remove(); }
+                        if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
+                    }
+                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+        };
     </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

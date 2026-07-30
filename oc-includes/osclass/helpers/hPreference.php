@@ -1014,6 +1014,164 @@ function osc_purge_latest_searches()
 
 
 /**
+ * Whether admin activity logging (t_log) is enabled. Defaults to on when the
+ * preference has never been set, so existing installs keep logging as before.
+ *
+ * @return bool
+ */
+function osc_is_admin_log_enabled()
+{
+    $v = osc_get_preference('admin_log_enabled', 'log');
+
+    return $v === '' ? true : ((int) $v === 1);
+}
+
+
+/**
+ * Retention window for admin activity logs, in days. 0 keeps rows forever.
+ * Defaults to 90 days when unset, so the log cannot grow without bound.
+ *
+ * @return int
+ */
+function osc_admin_log_retention_days()
+{
+    $v = osc_get_preference('admin_log_retention_days', 'log');
+    if ($v === '' || $v === null) {
+        return 90;
+    }
+
+    return max(0, (int) $v);
+}
+
+
+/**
+ * Whether listing view counting is enabled. Defaults to on when the preference
+ * has never been set, so existing installs keep counting as before.
+ *
+ * This covers only the two traffic counters (listing views and premium-block
+ * views), which are written on every render. The moderation counters are always
+ * recorded: they drive the reported-listings screen and the report threshold,
+ * so switching them off would break moderation rather than save space.
+ *
+ * @return bool
+ */
+function osc_item_views_enabled()
+{
+    $v = osc_get_preference('item_views_enabled', 'stats');
+
+    return $v === '' ? true : ((int) $v === 1);
+}
+
+
+/**
+ * Whether requests from crawlers count as listing views. Defaults to off — a
+ * crawler is not a reader, and on a well-indexed site bots are the majority of
+ * traffic, so counting them both inflates the numbers and multiplies the writes.
+ *
+ * @return bool
+ */
+function osc_count_bot_views()
+{
+    $v = osc_get_preference('count_bot_views', 'stats');
+
+    return $v === '' ? false : ((int) $v === 1);
+}
+
+
+/**
+ * Retention window for the site-wide daily stats rollup, in days. 0 keeps rows
+ * forever, which is the default: the rollup is a handful of rows per day for the
+ * whole site regardless of its size, and the admin reports chart looks back as
+ * far as ten months.
+ *
+ * @return int
+ */
+function osc_item_stats_retention_days()
+{
+    $v = osc_get_preference('item_stats_retention_days', 'stats');
+    if ($v === '' || $v === null) {
+        return 0;
+    }
+
+    return max(0, (int) $v);
+}
+
+
+/**
+ * Whether failed sign-ins are counted and limited. On unless turned off.
+ *
+ * @return bool
+ */
+function osc_login_throttle_enabled()
+{
+    $v = osc_get_preference('login_throttle_enabled', 'security');
+
+    return $v === '' || $v === null ? true : (bool)(int)$v;
+}
+
+
+/**
+ * How far back failures are counted, in minutes. Doubles as how long a block
+ * lasts, since a block lifts once enough attempts have aged past the window.
+ *
+ * @return int
+ */
+function osc_login_throttle_window()
+{
+    $v = (int)osc_get_preference('login_throttle_window', 'security');
+
+    return $v > 0 ? $v : 15;
+}
+
+
+/**
+ * Failures from one address within the window before it is blocked. Counts
+ * every account the address tried, so it is the looser of the two limits --
+ * a shared office or NAT address is several people behind one IP.
+ *
+ * @return int
+ */
+function osc_login_throttle_max_ip()
+{
+    $v = (int)osc_get_preference('login_throttle_max_ip', 'security');
+
+    return $v > 0 ? $v : 20;
+}
+
+
+/**
+ * Failures against one account within the window before it needs a captcha,
+ * or is blocked where no captcha can be shown.
+ *
+ * @return int
+ */
+function osc_login_throttle_max_account()
+{
+    $v = (int)osc_get_preference('login_throttle_max_account', 'security');
+
+    return $v > 0 ? $v : 10;
+}
+
+
+/**
+ * How long recorded attempts are kept, in days, before the daily cron drops
+ * them. Only the window matters to the limiter; the rest is history. 0 keeps
+ * them forever.
+ *
+ * @return int
+ */
+function osc_login_attempt_retention_days()
+{
+    $v = osc_get_preference('login_attempt_retention_days', 'security');
+    if ($v === '' || $v === null) {
+        return 7;
+    }
+
+    return max(0, (int)$v);
+}
+
+
+/**
  * Gets how many seconds between item post to not consider it SPAM
  *
  * @return int
@@ -1235,6 +1393,46 @@ function osc_subdomain_host()
 function osc_recaptcha_version()
 {
     return getPreference('recaptcha_version');
+}
+
+
+/**
+ * Gets the configured captcha provider preference.
+ *
+ * Raw stored value, one of 'auto' | 'recaptcha' | 'turnstile' | 'none'. An
+ * unset preference reads as '', which is treated as 'auto' by
+ * osc_captcha_provider().
+ *
+ * @return string
+ */
+function osc_captcha_provider_pref()
+{
+    return getPreference('captchaProvider');
+}
+
+
+/**
+ * Gets the Cloudflare Turnstile site key (public, safe for markup).
+ *
+ * @return string
+ */
+function osc_turnstile_site_key()
+{
+    return getPreference('turnstileSiteKey');
+}
+
+
+/**
+ * Gets the Cloudflare Turnstile secret key.
+ *
+ * Secret: read only server-side inside the captcha verification path, never
+ * emitted to markup or JavaScript.
+ *
+ * @return string
+ */
+function osc_turnstile_secret_key()
+{
+    return getPreference('turnstileSecretKey');
 }
 
 

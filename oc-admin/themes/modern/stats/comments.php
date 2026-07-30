@@ -52,7 +52,7 @@ function customPageHeader()
 {
     ?>
     <h1><?php _e('Statistics'); ?>
-        <a class="ms-1 bi bi-question-circle-fill float-right" data-bs-target="#help-box" data-bs-toggle="collapse"
+        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
            href="#help-box"></a>
     </h1>
     <?php
@@ -201,7 +201,7 @@ osc_add_hook('admin_header', 'customHead', 10);
                             </tbody>
                         </table>
                     <?php } else { ?>
-                        <p><?php _e("There're no statistics yet"); ?></p>
+                        <p><?php _e("There are no statistics yet"); ?></p>
                     <?php } ?>
 
 
