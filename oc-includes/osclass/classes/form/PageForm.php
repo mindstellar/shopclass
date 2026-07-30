@@ -220,7 +220,7 @@ class PageForm extends Form
      * @param                                   $locale
      * @param array                             $item
      */
-    private static function printPageDescriptionInput($locale, array $page = null)
+    private static function printPageDescriptionInput($locale, ?array $page = null)
     {
         $description = '';
         $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');

@@ -76,7 +76,7 @@ class FormInputs implements InputInterface
      * @param \mindstellar\utility\Escape   $escape
      * @param \mindstellar\utility\Sanitize $sanitize
      */
-    public function __construct(Escape $escape = null, Sanitize $sanitize = null)
+    public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         if ($escape === null) {
             $this->escape = new Escape();
@@ -395,7 +395,7 @@ class FormInputs implements InputInterface
      *
      * @return mixed
      */
-    private function sanitizeByType($values, string $sanitizeType = null)
+    private function sanitizeByType($values, ?string $sanitizeType = null)
     {
         if ($sanitizeType === null) {
             return $values;
@@ -420,7 +420,7 @@ class FormInputs implements InputInterface
      *
      * @return string
      */
-    private function label(string $label, string $for, string $class = null)
+    private function label(string $label, string $for, ?string $class = null)
     : string
     {
         if ($class === null) {

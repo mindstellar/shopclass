@@ -85,7 +85,7 @@ class FormBuilder
      * inputSchema is a array list of inputs with it's own properties
      * Please See mindstellar\form\base\formInputs for more information and available inputs.
      */
-    public function __construct(FormInputs $formInputs = null, array $formSchema = [])
+    public function __construct(?FormInputs $formInputs = null, array $formSchema = [])
     {
         if ($formInputs === null) {
             $this->formInputs = new FormInputs();

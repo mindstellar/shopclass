@@ -522,7 +522,7 @@ function osc_item_address()
  */
 function osc_item_show_email()
 {
-    return (boolean)osc_item_field('b_show_email');
+    return (bool)osc_item_field('b_show_email');
 }
 
 
@@ -631,7 +631,7 @@ function osc_item_is_expired()
  */
 function osc_item_status()
 {
-    return (boolean)osc_item_field('b_active');
+    return (bool)osc_item_field('b_active');
 }
 
 
