@@ -89,8 +89,8 @@ class Osclass extends UpgradePackage
                 $message      .= __('These errors could be false-positive errors.');
                 $message      .= __(" If you're sure that is the case, you can continue with the upgrade.");
                 $message      .= '<a class="btn btn-sm btn-primary" href="' . $skip_db_link . '">' . __('Continue with upgrade') . '</a>';
-                $message      .= __(" Or you can ask help in our support forum");
-                $message      .= ': <a class="btn btn-sm btn-info" href="https://osclass.discourse.group">' . __('Support Forum') . '</a>';
+                $message      .= __(" Or you can ask for help in our community discussions");
+                $message      .= ': <a class="btn btn-sm btn-info" href="https://github.com/mindstellar/shopclass/discussions">' . __('Community discussions') . '</a>';
 
                 return json_encode(['error' => 2, 'message' => $message]);
             }
