@@ -118,35 +118,25 @@ function osc_show_widgets_by_description($description)
 /**
  * Print recaptcha html.
  *
- * The 'recover_password' section only shows a captcha when a recovery attempt was made in
- * the last 20 minutes; otherwise it records that none was rendered, so
- * UserActions::recover_password() knows not to validate one. A first visit to the form
- * therefore gets no captcha.
+ * Every form gets the same widget. `$section` is only a per-form label kept for the
+ * documented signature, so a theme passing one still works.
  *
- * @param string $section
+ * It used to select a 'recover_password' branch that rendered a captcha only when a reset
+ * had been requested in the last 20 minutes, recording in the session when it had not so
+ * the reset action would skip validating one. Both values were session-scoped, so a client
+ * discarding cookies was always on its first attempt and never saw a captcha at all — and
+ * because LoginThrottle drops its per-account limit whenever a provider is configured, the
+ * reset form ended up with neither. The window bought nothing a cookie jar could not
+ * sidestep, so it is gone.
+ *
+ * @param string $section per-form label; does not change what is rendered
  *
  * @return void
  */
 function osc_show_recaptcha($section = '')
 {
     if (osc_recaptcha_public_key()) {
-        switch ($section) {
-            case ('recover_password'):
-                Session::newInstance()->_set('recover_captcha_not_set', 0);
-                // Cast: 'recover_time' is only set by the POST action, and Session::_get()
-                // returns '' for a missing key — subtracting that is a TypeError on PHP 8.
-                $time = (int)Session::newInstance()->_get('recover_time');
-                if ((time() - $time) <= 1200) {
-                    echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
-                } else {
-                    Session::newInstance()->_set('recover_captcha_not_set', 1);
-                }
-                break;
-
-            default:
-                echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
-                break;
-        }
+        echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
     }
 }
 

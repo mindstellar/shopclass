@@ -252,6 +252,16 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_recover_user_password_url());
                 }
 
+                // Before the account is looked up, so it cannot only fail for
+                // addresses that exist -- that would hand back the answer the
+                // shared message below withholds. It also has to precede the
+                // throttle, which relaxes its per-account limit on the strength
+                // of a solved captcha.
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_recover_user_password_url());
+                }
+
                 // Counted on its own, so that reset requests cannot lock anyone
                 // out of signing in. Every request counts, not only the ones
                 // that match an account: sending mail to an address someone else
@@ -276,10 +286,6 @@ class CWebLogin extends BaseModel
                     case (1): // no account for that address
                         osc_add_flash_ok_message(_m('If that email address belongs to an account, we have sent it instructions to reset the password'));
                         $this->redirectTo(osc_base_url());
-                        break;
-                    case (2): // captcha wrong
-                        osc_add_flash_error_message(_m('Please complete the security check.'));
-                        $this->redirectTo(osc_recover_user_password_url());
                         break;
                 }
                 break;

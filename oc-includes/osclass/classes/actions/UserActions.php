@@ -395,18 +395,16 @@ class UserActions
 
     /**
      * Recover user password
+     *
+     * The caller owns the captcha check, which has to happen before the throttle is
+     * consulted — and a captcha token verifies exactly once, so there is only ever one
+     * place to do it. CWebLogin's 'recover_post' does it, mirroring CAdminLogin.
+     *
      * @return int
      */
     public function recover_password()
     {
         $user = User::newInstance()->findByEmail(Params::getParam('s_email'));
-        Session::newInstance()->_set('recover_time', time());
-
-        if (osc_captcha_enabled() && Session::newInstance()->_get('recover_captcha_not_set') != 1
-            && !osc_check_captcha()
-        ) {
-            return 2; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
-        }
 
         if (!$user || ($user['b_enabled'] == 0)) {
             return 1;
