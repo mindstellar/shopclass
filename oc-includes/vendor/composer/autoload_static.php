@@ -786,7 +786,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'MediaDataTable' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/datatables/MediaDataTable.php',
         'OSCLocale' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/OSCLocale.php',
         'Object_Cache_Factory' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/Object_Cache_Factory.php',
-        'Object_Cache_apc' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_apc.php',
         'Object_Cache_apcu' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_apcu.php',
         'Object_Cache_default' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_default.php',
         'Object_Cache_memcache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php',

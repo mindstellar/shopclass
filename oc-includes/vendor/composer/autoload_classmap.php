@@ -651,7 +651,6 @@ return array(
     'MediaDataTable' => $baseDir . '/oc-includes/osclass/classes/datatables/MediaDataTable.php',
     'OSCLocale' => $baseDir . '/oc-includes/osclass/classes/model/OSCLocale.php',
     'Object_Cache_Factory' => $baseDir . '/oc-includes/osclass/classes/cache/Object_Cache_Factory.php',
-    'Object_Cache_apc' => $baseDir . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_apc.php',
     'Object_Cache_apcu' => $baseDir . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_apcu.php',
     'Object_Cache_default' => $baseDir . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_default.php',
     'Object_Cache_memcache' => $baseDir . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php',

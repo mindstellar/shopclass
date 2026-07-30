@@ -25,11 +25,6 @@ $drivers = array(
         'persists'  => true,
         'note'      => __('Keeps values in shared memory between requests. Fast, and local to this server.'),
     ),
-    'apc'        => array(
-        'label'     => 'APC',
-        'persists'  => true,
-        'note'      => __('The predecessor to APCu, on older PHP builds.'),
-    ),
     'memcached'  => array(
         'label'     => 'Memcached',
         'persists'  => true,
