@@ -3,7 +3,7 @@
   "devDependencies": {
     "@popperjs/core": "^2.11.8",
     "esbuild": "^0.28.1",
-    "eslint": "^9.21.0",
+    "eslint": "^9.39.5",
     "sass-embedded": "^1.100.0"
   },
   "description": "Shopclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/mindstellar/shopclass#readme",
   "dependencies": {
-    "bootstrap": "^5.3.3",
+    "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^3.9.1",
     "jquery": "^3.7.1",
@@ -37,6 +37,6 @@
     "npm-font-open-sans": "^1.1.0",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
     "sortablejs": "^1.15.7",
-    "tinymce": "^7.7.0"
+    "tinymce": "^7.9.3"
   }
 }
