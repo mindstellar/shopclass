@@ -295,12 +295,14 @@ class StorageWorker
             return null;
         }
 
-        if (!empty($snapshot['s_owner_type'])) {
-            return Resource::newInstance()->findByPrimaryKey($pk);
-        }
+        $model = !empty($snapshot['s_owner_type'])
+            ? Resource::newInstance()
+            : ItemResource::newInstance();
 
-        $row = ItemResource::newInstance()->findByPrimaryKey($pk);
+        $row = $model->findByPrimaryKey($pk);
 
+        // Both models inherit DAO::findByPrimaryKey, which returns false (not null)
+        // for a missing row; normalise so callers only have to guard one shape.
         return $row === false ? null : $row;
     }
 
