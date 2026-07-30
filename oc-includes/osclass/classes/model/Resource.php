@@ -120,19 +120,23 @@ class Resource
         $key   = $this->ownerCacheKey($ownerType, $ownerId);
         $found = null;
         $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            $rows = $this->table()
-                ->where('s_owner_type', $ownerType)
-                ->where('i_owner_id', $ownerId)
-                ->orderBy('pk_i_id', 'ASC')
-                ->get();
-
-            osc_cache_set($key, $rows, OSC_CACHE_TTL);
-
-            return $rows;
+        if (is_array($cache)) {
+            return $cache;
         }
 
-        return $cache;
+        // A cache MISS returns false, but a poisoned non-array entry can also land here
+        // (e.g. a value written under a colliding key, or a backend that hands back a
+        // scalar); returning it straight into this method's array return type fatals.
+        // Treat anything that is not an array as a miss: read fresh and re-cache.
+        $rows = $this->table()
+            ->where('s_owner_type', $ownerType)
+            ->where('i_owner_id', $ownerId)
+            ->orderBy('pk_i_id', 'ASC')
+            ->get();
+
+        osc_cache_set($key, $rows, OSC_CACHE_TTL);
+
+        return $rows;
     }
 
     /**
