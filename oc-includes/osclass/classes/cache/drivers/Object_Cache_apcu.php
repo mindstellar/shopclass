@@ -101,6 +101,40 @@ class Object_Cache_apcu implements iObject_Cache
     }
 
     /**
+     * Atomically increment a numeric key, creating it at $initial on first sighting.
+     *
+     * apcu_add is create-only, so it seeds the counter at $initial exactly once; a
+     * racing caller makes our add() fail and we fall through to the atomic apcu_inc,
+     * so no count is lost. (apcu_inc alone would create a missing key at $by, not at
+     * the caller's $initial — hence the add-then-inc.)
+     *
+     * @param int|string $key
+     * @param int        $by
+     * @param int        $initial value to create the key at on first sighting
+     * @param int        $expire
+     *
+     * @return int the new counter value
+     */
+    public function increment($key, $by = 1, $initial = 0, $expire = 0)
+    {
+        $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $id     = $this->_key($key);
+
+        if (apcu_add($id, $initial, $expire)) {
+            $value = $initial;
+        } else {
+            $value = apcu_inc($id, $by);
+            if (false === $value) {
+                $value = $initial;
+            }
+        }
+
+        $this->cache[$key] = $value;
+
+        return $value;
+    }
+
+    /**
      * Remove the contents of the cache key in the group
      *
      * @param int|string $key What the contents in the cache are called
