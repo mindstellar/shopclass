@@ -1011,6 +1011,152 @@ function osc_resource_url()
 
 
 /**
+ * A human title for whatever a resource belongs to, used to build a friendly
+ * download name: the listing title for an item image, the page title for a page
+ * image, the display name for a user avatar. Empty string when the owner has no
+ * title, or the resource is ownerless.
+ *
+ * @param array $resource a resource row (legacy item resource, or polymorphic)
+ *
+ * @return string
+ */
+function osc_resource_owner_title($resource)
+{
+    if (!is_array($resource)) {
+        return '';
+    }
+
+    $ownerType  = (string)($resource['s_owner_type'] ?? '');
+    $prefLocale = (defined('OC_ADMIN') && OC_ADMIN) ? osc_current_admin_locale() : osc_current_user_locale();
+
+    // Pick a non-empty s_title from a *_description table, preferring the current locale.
+    $localizedTitle = static function ($table, $fkColumn, $id) use ($prefLocale) {
+        $id = (int)$id;
+        if ($id <= 0) {
+            return '';
+        }
+        try {
+            $rows = osc_db_table(DB_TABLE_PREFIX . $table)->where($fkColumn, $id)->get();
+        } catch (\Throwable $e) {
+            return '';
+        }
+        $fallback = '';
+        foreach ((array)$rows as $row) {
+            $title = trim((string)($row['s_title'] ?? ''));
+            if ($title === '') {
+                continue;
+            }
+            if (($row['fk_c_locale_code'] ?? '') === $prefLocale) {
+                return $title;
+            }
+            if ($fallback === '') {
+                $fallback = $title;
+            }
+        }
+
+        return $fallback;
+    };
+
+    if ($ownerType === '' && !empty($resource['fk_i_item_id'])) {
+        return $localizedTitle('t_item_description', 'fk_i_item_id', $resource['fk_i_item_id']);
+    }
+    if ($ownerType === 'user') {
+        $user = User::newInstance()->findByPrimaryKey((int)($resource['i_owner_id'] ?? 0));
+        if (is_array($user)) {
+            $name = trim((string)($user['s_name'] ?? ''));
+
+            return $name !== '' ? $name : trim((string)($user['s_username'] ?? ''));
+        }
+
+        return '';
+    }
+    if ($ownerType === 'page') {
+        return $localizedTitle('t_pages_description', 'fk_i_pages_id', $resource['i_owner_id'] ?? 0);
+    }
+
+    return '';
+}
+
+
+/**
+ * A human-friendly download filename for a resource: a slug of its owner's title
+ * plus the resource id and variant, e.g. "red-toyota-corolla-4831.jpg" or
+ * "jane-doe-12-thumbnail.png". Falls back to the owner type, then "file", so the
+ * result is always a valid, unique name — the id keeps it collision-free and the
+ * extension is the stored one. The slug is hard-limited to [a-z0-9-] so the value
+ * is safe to place in a Content-Disposition header.
+ *
+ * Filter: resource_download_filename (name, resource, variant).
+ *
+ * @param array  $resource
+ * @param string $variant  one of ResourceLocator::variants()
+ *
+ * @return string
+ */
+function osc_resource_download_filename($resource, $variant = '')
+{
+    $id  = (int)($resource['pk_i_id'] ?? 0);
+    $ext = strtolower(preg_replace('/[^a-z0-9]/i', '', (string)($resource['s_extension'] ?? '')));
+    if ($ext === '') {
+        $ext = 'bin';
+    }
+
+    $label = osc_resource_owner_title($resource);
+    if (trim((string)$label) === '') {
+        $ownerType = (string)($resource['s_owner_type'] ?? '');
+        $label     = $ownerType !== '' ? $ownerType : 'file';
+    }
+
+    // Hard whitelist to [a-z0-9-]: independent of osc_sanitizeString's quirks this
+    // guarantees no quotes, CR/LF or other header-unsafe bytes reach the header.
+    $slug = strtolower((string)osc_sanitizeString($label));
+    $slug = trim(preg_replace('/-+/', '-', preg_replace('/[^a-z0-9-]+/', '-', $slug)), '-');
+    if ($slug === '') {
+        $slug = 'file';
+    }
+    if (strlen($slug) > 60) {
+        $slug = rtrim(substr($slug, 0, 60), '-');
+    }
+
+    $variantLabel = $variant !== '' ? '-' . ltrim($variant, '_') : '';
+    $name         = $slug . '-' . $id . $variantLabel . '.' . $ext;
+
+    return (string)osc_apply_filter('resource_download_filename', $name, $resource, $variant);
+}
+
+
+/**
+ * Download URL for the current resource in the loop, routed through the resource
+ * controller so the file is delivered with a friendly Content-Disposition name.
+ * Inline display should keep using osc_resource_url() (direct static/CDN); this
+ * is for an explicit "Download" link. $variant is one of ResourceLocator::variants().
+ *
+ * Filter: resource_download_url (url, resource, variant).
+ *
+ * @param string $variant
+ *
+ * @return string
+ */
+function osc_resource_download_url($variant = '')
+{
+    $resource = osc_resource();
+    $id       = (int)osc_resource_id();
+    $type     = (is_array($resource) && !empty($resource['s_owner_type']))
+        ? (string)$resource['s_owner_type']
+        : 'item';
+
+    $params = array('page' => 'resource', 'action' => 'download', 'id' => $id, 'type' => $type);
+    if ($variant !== '') {
+        $params['variant'] = $variant;
+    }
+
+    $url = osc_base_url(true) . '?' . http_build_query($params);
+
+    return (string)osc_apply_filter('resource_download_url', $url, $resource, $variant);
+}
+
+
+/**
  * Gets thumbnail url of current resource
  *
  * @return string

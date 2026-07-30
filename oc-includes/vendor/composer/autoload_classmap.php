@@ -298,6 +298,7 @@ return array(
     'CWebMain' => $baseDir . '/oc-includes/osclass/classes/controller/CWebMain.php',
     'CWebPage' => $baseDir . '/oc-includes/osclass/classes/controller/CWebPage.php',
     'CWebRegister' => $baseDir . '/oc-includes/osclass/classes/controller/CWebRegister.php',
+    'CWebResource' => $baseDir . '/oc-includes/osclass/classes/controller/CWebResource.php',
     'CWebSearch' => $baseDir . '/oc-includes/osclass/classes/controller/CWebSearch.php',
     'CWebUser' => $baseDir . '/oc-includes/osclass/classes/controller/CWebUser.php',
     'CWebUserNonSecure' => $baseDir . '/oc-includes/osclass/classes/controller/CWebUserNonSecure.php',

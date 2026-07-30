@@ -433,6 +433,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'CWebMain' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebMain.php',
         'CWebPage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebPage.php',
         'CWebRegister' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebRegister.php',
+        'CWebResource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebResource.php',
         'CWebSearch' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebSearch.php',
         'CWebUser' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebUser.php',
         'CWebUserNonSecure' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebUserNonSecure.php',
