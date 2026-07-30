@@ -46,7 +46,10 @@ $storage_js = static function () use ($providers) {
                 }
                 if (regionField) {
                     regionField.value = preset.region;
-                    regionField.disabled = !!preset.region_locked;
+                    // readOnly (not disabled): a disabled field is never submitted, so a
+                    // locked region (e.g. Cloudflare R2's "auto") would save blank. readOnly
+                    // keeps the value fixed in the UI while still POSTing it.
+                    regionField.readOnly = !!preset.region_locked;
                 }
                 if (pathStyleField) {
                     pathStyleField.checked = !!preset.path_style;
@@ -55,6 +58,16 @@ $storage_js = static function () use ($providers) {
                     publicUrlHint.textContent = preset.public_url_hint;
                 }
             });
+
+            // Reflect the saved provider's locked state on load without clobbering the
+            // saved connection values (only a provider change rewrites the fields).
+            var current = presets[providerSelect.value];
+            if (current && regionField) {
+                regionField.readOnly = !!current.region_locked;
+                if (publicUrlHint && current.public_url_hint) {
+                    publicUrlHint.textContent = current.public_url_hint;
+                }
+            }
         });
     </script>
     <?php
@@ -125,9 +138,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Provider'); ?></div>
                         <div class="form-controls">
-                            <select class="form-select form-select-sm" id="storage_provider">
+                            <select class="form-select form-select-sm" id="storage_provider" name="storage_s3_provider">
                                 <?php foreach ($providers as $id => $preset) { ?>
-                                    <option value="<?php echo osc_esc_html($id); ?>">
+                                    <option value="<?php echo osc_esc_html($id); ?>"
+                                        <?php echo ($prefs['storage_s3_provider'] === $id) ? 'selected="selected"' : ''; ?>>
                                         <?php echo osc_esc_html($preset['label']); ?>
                                     </option>
                                 <?php } ?>

@@ -34,6 +34,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
             case ('storage'):
                 $prefs = array(
                     'storage_active' => osc_get_preference('storage_active', 'osclass'),
+                    'storage_s3_provider' => osc_get_preference('storage_s3_provider', 'osclass') ?: 'custom',
                     'storage_s3_endpoint' => osc_get_preference('storage_s3_endpoint', 'osclass'),
                     'storage_s3_region' => osc_get_preference('storage_s3_region', 'osclass'),
                     'storage_s3_bucket' => osc_get_preference('storage_s3_bucket', 'osclass'),
@@ -89,9 +90,26 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 $signedTtl = Params::getParamInt('storage_s3_signed_ttl');
                 $signedTtl = $signedTtl > 0 ? max(60, min(604800, $signedTtl)) : 900;
 
+                // Persist the chosen provider (a known preset id, else 'custom') so the form
+                // reopens on it instead of falling back to the first option.
+                $presets  = ProviderPresets::PRESETS;
+                $provider = Params::getParam('storage_s3_provider');
+                if (!is_string($provider) || !isset($presets[$provider])) {
+                    $provider = 'custom';
+                }
+
+                // A provider that locks its region (e.g. R2's "auto") renders the field
+                // read-only; if it still arrives empty, fall back to the preset's region so
+                // the saved config stays valid for request signing.
+                $region = (string) Params::getParam('storage_s3_region');
+                if ($region === '' && !empty($presets[$provider]['region_locked'])) {
+                    $region = (string) $presets[$provider]['region'];
+                }
+
                 osc_set_preference('storage_active', Params::getParam('storage_active') === 's3' ? 's3' : 'local');
+                osc_set_preference('storage_s3_provider', $provider);
                 osc_set_preference('storage_s3_endpoint', $endpoint);
-                osc_set_preference('storage_s3_region', Params::getParam('storage_s3_region'));
+                osc_set_preference('storage_s3_region', $region);
                 osc_set_preference('storage_s3_bucket', Params::getParam('storage_s3_bucket'));
                 osc_set_preference('storage_s3_access_key', Params::getParam('storage_s3_access_key'));
                 osc_set_preference('storage_s3_path_style', Params::getParam('storage_s3_path_style') != '');
@@ -198,6 +216,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                         osc_set_preference('storage_s3_access_key', $accessKey);
                         osc_set_preference('storage_s3_secret_key', $secretKey);
                         osc_set_preference('storage_s3_region', 'auto');
+                        osc_set_preference('storage_s3_provider', 'r2');
                         osc_set_preference('storage_s3_path_style', true);
                         osc_set_preference('storage_s3_public_url', $cdnPath ? $this->_httpUrlOrEmpty('https://' . $cdnPath) : '');
                         osc_set_preference('storage_active', 's3');
