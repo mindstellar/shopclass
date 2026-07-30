@@ -1,78 +1,197 @@
-## Update changelog for Shopclass 5.3.0 Release Notes {#release-notes-5-3-0}
-* Fixed: Shopclass no longer emits deprecation notices on PHP 8.4 or 8.5. Sixteen method signatures relied on a parameter being implicitly nullable because its default was null, which PHP 8.4 deprecated in favour of writing the `?` out, and seven casts used the old `(boolean)` and `(double)` spellings that PHP 8.5 deprecated in favour of `(bool)` and `(float)`. On a site with error logging on, each of those was a notice written every time the file loaded. Nothing behaves differently: the nullable types accept exactly what they accepted before, and the old cast spellings were aliases of the new ones.
-* New: Install smoke test in CI — a release zip is now unpacked, installed against a real database through the actual installer, and signed into before it is allowed to become a release. Every other check runs against the repository, but a release is not the repository: it is an archive of one ref with the built CSS and JavaScript overlaid and a theme dropped in from another repository. A file the archive missed, a build artefact that was never committed, or an installer step that only fails on a clean database was invisible to all of them, and the first person to hit it was whoever downloaded the zip.
-* Security: Sign-in attempts are now rate limited. Nothing had ever bounded password guessing — no counter, no delay, no lockout anywhere in core — so a stolen credential list could be tried against the site one guess at a time for as long as anyone cared to keep going, limited only by how fast the server would hash. Failed sign-ins and password-reset requests are now counted per visitor address and per account name over a rolling window (by default 20 and 10 within 15 minutes), and further attempts are refused until the older ones age out. A refusal is answered before any password is hashed, so an attempt that is turned away costs the server almost nothing, where before every guess bought a bcrypt hash of CPU. Attempts are recorded against the name as typed whether or not it belongs to anyone, so the limiter cannot be used to work out which accounts exist. A correct password does not lift a refusal, and signing in successfully clears the count. Where a captcha provider is configured the per-account limit is skipped, because every attempt already has to solve one and blocking as well would let an attacker hold someone else's account shut without getting past the captcha themselves. All of it is configurable under Settings → Spam and bots → Sign-in protection, including a switch to turn it off, a retention window for the recorded attempts (pruned by the daily cron) and a button to clear them all if you lock yourself out. Upgrades add a `t_login_attempt` table.
-* Fixed: The "Search alerts" setting under Settings → Spam and bots could not be saved — the form posted an action the settings page did not route, so the request fell through and the preference never changed.
-* Security: The sign-in and password-reset forms no longer disclose which usernames and e-mail addresses have an account. Signing in under a name that did not exist answered "The user doesn't exist" while a real name with the wrong password answered "The password is incorrect", and because the first case gave up before checking any password it also answered around thirty times faster — so either the message or a stopwatch told anyone who asked whether an address was registered. Both forms now give the same answer and spend the same work whichever it was, including for accounts still on a pre-3.3 sha1 password, which used to be quicker to check than the rest. The admin password-reset form's security check now runs before the account is looked up, instead of only for names that turned out to exist. One visible change: the reset form now says it has sent instructions if the address belongs to an account, rather than confirming that the address was recognised.
-* Performance: Logging in was taking about 1.4 seconds, almost all of it a single password check. The bcrypt work factor had been 15 since 2014, and on modern hardware that is roughly 1.4s of CPU per attempt — paid on failed logins too, so a handful of concurrent wrong-password requests could saturate a small PHP-FPM pool and slow the whole site. It is now 12 (about 175ms), still comfortably above the recommended floor. Existing passwords keep working unchanged — bcrypt records the cost it was hashed with, so each account is verified at its own cost and quietly re-hashed to the new one the next time its owner logs in. Sites on hardware that can afford a higher factor (or slower hosting that needs a lower one) can set `define('BCRYPT_COST', 14);` in `config.php`.
-* Performance: Listing statistics no longer grow without bound. `t_item_stats` held one row per listing **per day it saw any traffic**, carried seven secondary indexes and was never pruned, so on a busy site it became the largest and hottest-written table in the database — and because every reader had to sum a listing's whole history back into one number, it also made every search and category page more expensive as the site aged. It now holds one row per listing (running totals, so reads are a plain lookup), with the time series moved to a small site-wide daily rollup that the statistics charts read. Six of the seven indexes are gone. An upgrade migrates existing data across, so per-listing view counts and the charts read the same afterwards as before. As a side effect the admin "reported listings" counts are now correct: a listing reported on several different days was previously counted, and offered for deletion, once per day.
-* Changed: Crawlers no longer count as listing views, so **view counts will be lower after upgrading** — this is the numbers becoming accurate, not a regression. Views were gated on a list of known browsers, which could not work: a crawler identifies itself by appending to an ordinary browser string, so modern Googlebot, Bingbot and GPTBot user agents all matched it and were counted as readers. The premium-listing block had no check at all. Both now use a crawler denylist, extensible from a plugin through the new `bot_user_agents` filter, and both can be reverted to counting bots under Tools → Cleanup → Listing statistics, which also gains a switch to turn view counting off entirely and a retention window for the daily rollup.
-* Fixed: The "most viewed" listing list ignored whether a listing was visible, so blocked, unactivated, spam and expired listings could be advertised as the site's most popular. It also ordered by an arbitrary single day's view count rather than the total, which only ran at all because the strict `ONLY_FULL_GROUP_BY` SQL mode is disabled for the connection.
-* Fixed: The General Settings page fataled under PHP 8 (`date(): Argument #2 must be of type ?int, string given`) when the site had never checked for updates (`last_version_check` unset); the "Last checked on" value is now cast safely and shows "never" when unset.
-* Fixed: The sitemap's XSL stylesheets are now served with the `text/xsl` content type so a browser renders the human-readable sitemap view instead of offering the file as a download — the generated `.htaccess` gains an `AddType` (Apache) and the bundled nginx dev config a matching `location`.
-* New: Built-in XML sitemap — Shopclass now generates a search-engine sitemap at `/sitemapindex.xml` (paginated item sitemaps plus category, static-page and optional city/region/country and category×location sitemaps), served on demand, cached, and rendered with a human-readable stylesheet. Configure it under Settings → Sitemap: URLs per file, which sitemaps to include (pages, categories, and each location type), custom URLs the crawler wouldn't otherwise find, and a robots.txt editor; a daily cron warms the cache and a Regenerate button clears it. The item source is hookable (`sitemap_items_source`, `sitemap_items_total` and `sitemap_url_entry` filters) so a search backend such as Manticore can power the sitemap from a plugin. A site already running a third-party sitemap plugin on these URLs is unaffected — core serves the sitemap only when no plugin route claims the path.
-* New: Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was flagged. Admins manage the blocklist under Settings → Keyword blocklist: per-keyword scope (title, description, both, or custom fields), whole-word matching by default with an opt-in substring mode, and a bulk comma-list import. A new or edited listing that matches a keyword is quarantined (flagged as spam and hidden for review, fully reversible) — or optionally rejected before it is saved — and the matched keyword is stored, so the admin can see the reason on the listings and reported screens rather than guessing. Visitor reports are de-duplicated to one vote per person and can auto-hide a listing once a configurable number of distinct people report it; the reporter count, reason breakdown and a Clear-reports action are surfaced in the admin. Blocked, spammed or edited listings now leave the search cache immediately — the object cache gained a search-generation invalidation that was previously missing.
-* Changed: The RSS feed was modernised — it now emits a spec-correct image `<enclosure>` (instead of an `<img>` buried in the description), a stable `<guid isPermaLink="true">`, and correctly single-escaped URLs. The serializer was rebuilt on `DOMDocument` with a reusable return-string API, and a new `rss_feed_item` filter lets a plugin adjust each entry; the feed and the sitemap are now two serializers over the same live-listing set. This also fixes a stored-injection bug where a listing whose description contained the literal sequence `]]>` could break out of the feed's CDATA. Note for plugin authors: if you build RSS items yourself and call `RSSFeed::addItem()`, stop pre-escaping the `link`/image URL — `RSSFeed` now escapes every value itself, so pre-escaping would double-encode it.
-* Changed: The captcha verification request now uses an 8-second timeout so a stalled provider can no longer hang a login or post, and the admin Spam and bots page warns when a captcha provider is selected but its keys are empty (which would silently leave captcha off).
-* Fixed: The final step of an environment-only install could fail with a 503 ("database unavailable") because the location/finish AJAX endpoint (`install-location.php`) loaded `config.php` directly instead of resolving the database configuration from the environment; it now uses the same env-aware loader as the rest of the app.
-* Fixed: An environment-only install (no `config.php`) could fail to boot with an "Undefined constant WEB_PATH" error because the site URL was never defined; when configuration comes from the environment and `WEB_PATH` / `REL_WEB_URL` are not set, they are now derived from the request as a fallback (setting them explicitly is still recommended in production).
-* New: Captcha is now provider-agnostic — Cloudflare Turnstile is supported as a native alternative to Google reCAPTCHA, chosen under Settings → Spam and bots (auto / reCAPTCHA / Turnstile / none). The Turnstile response is verified server-side over TLS and fails closed on any error. Captcha is now also enforced on the admin login. Existing reCAPTCHA installs are unaffected — auto mode keeps using reCAPTCHA while its keys are set, and `osc_show_recaptcha()` / `osc_check_recaptcha()` stay for backward compatibility while new `osc_show_captcha()` / `osc_check_captcha()` helpers dispatch to the active provider.
-* Changed: Rebranded from Osclass to Shopclass — a new product name, a teal brand identity (logos, favicons, colour palette) and a rewritten README.
-* Changed: Relicensed the source to GPL-3.0-or-later — file headers now carry a GPLv3 notice and dual copyright, while retaining the original Apache-2.0 notice for the Osclass-derived code.
-* New: Admin frontend modernisation — the "Workshop Bench" design system on Bootstrap 5.3, a rebuilt collapsible sidebar app shell, a unified content header, and restyled settings, footer, tables, callouts and flash messages.
-* New: Rebuilt the first-run installer — a calm four-step flow (check server → connect database → your site → done) on the admin design system, with a live "Test connection" check before you commit, plain-language database-error messages instead of raw error numbers, a real progress rail, and password reveal/copy on the finish screen. It no longer loads jQuery, jQuery-UI, Bootstrap or vtip (rebuilt as a self-contained stylesheet and vanilla JS). The installer now writes its own preference, locale and admin rows through the parameterised query API inside transactions, so a failed install rolls back cleanly instead of leaving a half-built database.
-* New: Database connections accept a port — type the host as `host:port` in the installer, pass a fifth argument to the connection, or define `DB_PORT` in `config.php`. Connections also use a 10-second connect timeout so an unreachable database host can no longer hang a request.
-* Security: The installer carries a per-session nonce on every state-changing step (including the final finish step, closing a CSRF hole that could finalise an install with no admin account), re-validates the admin e-mail and username server-side, escapes every echoed value, no longer reflects the database or admin password back into the page source, and rejects an unsafe table prefix.
-* Fixed: The installer created the database as `utf8` while the rest of the schema is `utf8mb4`; new databases are now created `utf8mb4`.
-* Fixed: The installer could fail to render when the object-cache helper registered its hooks before the plugin API had loaded; the installer now loads its helpers in dependency order.
-* New: Configuration can come entirely from the environment — `config.php` is now optional. When it is absent, the database settings are read from the `DB_HOST` (accepts `host:port`), `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` and `DB_TABLE_PREFIX` environment variables; when `config.php` is present, an environment variable still overrides the matching value (generated config uses `getenv('X') ?: 'default'`). Set `OSC_IGNORE_CONFIG_FILE=1` to ignore a `config.php` entirely (useful in containers with a bind mount), or `OSC_CONFIG_FILE=/path` to load it from outside the web root. The installer detects an environment-configured deploy and does not write a `config.php`.
-* New: A single calm, on-brand system page now stands behind every full-page system message — fatal errors, "database unavailable", "not installed", "not configured" and maintenance mode — replacing raw PHP stack traces, blank pages and the old Bootstrap error screens. It is self-contained (renders even when the app can't boot), production-safe (a plain message and a log reference, no leaked internals; the type/location/stack trace appear only with `OSC_DEBUG`), and shows the site's own name where that is available (maintenance mode). A database outage renders an actionable "can't reach the database" page (HTTP 503); raw error display is turned off in production.
-* Breaking: The admin frontend is now vanilla JavaScript and no longer loads jQuery, jQuery-UI, jQuery-validate, jQuery-treeview or jQuery-uniform. Every widget was rewritten with native browser APIs — tabs (ARIA), modals (native `<dialog>`), autocomplete (ARIA combobox), the datepicker (`<input type="date">`), the category treeview, tooltips and form validation. These scripts stay *registered*, so a plugin that still relies on them must now enqueue them itself (e.g. `osc_enqueue_script('jquery')`); previously the admin loaded jQuery on every page. This now includes the item add/edit and listing pages: the core `ItemForm` category cascade, location fields and photo-field JavaScript are vanilla, driven by a shared jQuery-free `oscAutocomplete` combobox asset. (The public theme's own scripts remain a separate, later effort.)
-* Breaking: The admin theme's legacy float-grid classes (`.grid-system`, `.grid-row`, `.grid-10`…`.grid-100`) were removed; every admin template now uses Bootstrap 5's `.row`/`.col-*` grid. A plugin that rendered its own admin markup with these classes must migrate to Bootstrap's grid.
-* New: Rebuilt the admin Categories manager — a proper tree with drag-to-reorder and drag-to-nest, inline subcategory and listing counts, an Enabled/Disabled status pill, a slide-over drawer editor, and a delete confirmation that spells out how many subcategories and listings will be removed. Rewritten in modern vanilla JS (no jQuery).
-* Changed: Listings row actions restyled — the "Show more" link became a compact overflow (meatball) menu, and the "opens in a new tab" indicator now reveals on hover or focus.
-* Changed: The statistics charts and the login screen are now on-brand and theme-aware, following dark mode.
-* Fixed: Friendly URLs (permalinks) — item, category, contact and search URLs no longer fall through to the home page.
-* Security: Escaped remaining user-controlled output across the admin datatables (listings, users, comments, ban rules), the statistics widgets and the comment editor, and markup is stripped when saving an edited comment.
-* New: Per-admin dark/light theme toggle, persisted server-side, with colour routed through design tokens so the theme can move. Dark mode is now complete — every admin component reads a token and flips with `data-bs-theme`.
-* New: The admin mirrors under `dir="rtl"` — all component CSS uses logical properties (`inline-start/end`, logical corner radii) and Bootstrap's directional utilities are redefined logically, so RTL locales get a correct layout without a separate stylesheet.
-* New: Versioned database migration system — an ordered, ledger-backed (`t_migration`) runner for schema and data changes the existing struct.sql reconciler cannot express (column/table drops, renames, data backfills). Runs forward-only and fail-fast, after the reconcile, on upgrade.
-* New: Schema-drift CI check that proves a fresh install and an upgraded install converge to the same database schema.
-* Changed: Retired the unused `t_keywords` table — a legacy search-keyword index nothing populated or read (search uses `t_latest_searches`). It is gone from a fresh install's schema, and a migration drops it on upgrade.
-* Changed: Build toolchain moved from Grunt to `sass-embedded` + `esbuild` (`npm run build`).
-* Changed: Minimum PHP raised to 8.0.
-* Fixed: Added a missing CSRF check to the `upgrade_db` admin action.
-* Fixed: Item title sanitisation (HTML-entity handling and allowed punctuation) and locale handling in the Item model.
-* Performance: Anonymous browse and search pages are now cacheable — sessions and CSRF tokens are created lazily (only on the first write, or when a page renders a protected form), so a first-time visitor receives no session cookie and no no-cache headers. Search alerts were made stateless (a persistent per-install key) so search-result pages no longer need a session either.
-* Performance: Listing search uses an exact, cheap `COUNT(*)`; the per-item resource N+1 on listing pages is batched away; `User::findByPrimaryKey` is cached and query logging is gated behind `OSC_DEBUG_DB`.
-* New: `memcached` object-cache driver (the legacy `memcache` driver is now deprecated); item caches are invalidated on edits, uploads and deletes.
-* Changed: The persistent object-cache backend can now be selected from the environment, matching the env-only database configuration — a containerised deploy can enable memcached without editing `config.php`.
-* New: Item reporting is gate-able — an `item_mark` filter can veto a report (for per-reporter dedup, rate-limiting or a captcha) and an `item_marked` action fires after it counts. The stale user-agent allowlist that silently dropped reports from browsers such as Firefox was removed. Bulk enable/disable-by-category and location-cascade deletes now fire item-lifecycle hooks.
-* New: `osc_csrf_token_form()` helper to emit CSRF token fields explicitly, complementing `osc_csrf_token_url()`.
-* Security: Hardened CSRF — cryptographically secure token generation (`random_bytes` / `hash_equals`) and `SameSite=Lax` on the session cookie.
-* Security: The database access layer was moved onto a parameterized query API. The DAO CRUD primitives, the schema reconciler and every core model (items, users, categories, custom fields, search, locations, stats, resources, reports and the backup export) now bind their values instead of interpolating them into SQL. An audit during the migration found and fixed several SQL-injection vectors — including one reachable from anonymous public search — and corrected a number of latent query bugs surfaced along the way.
-* Security: CSRF protection and remember-me logins were rebuilt as stateless HMAC-signed tokens backed by a persistent per-install signing key rather than the PHP session, so anonymous pages stay cacheable and remember-me is no longer tied to the session secret. Password-reset and account-activation codes are now single-use and stored hashed; the remember-me cookie is HttpOnly, Secure over HTTPS and SameSite, and is cleared on logout; and changing a password immediately revokes remember-me everywhere.
-* Security: Fixed a stored XSS in the admin search-alerts list — the attacker-controlled report email and search pattern are now escaped.
-* Security: Watermark uploads are validated by content (`getimagesize` MIME) rather than a client-supplied filename.
-* Security: Search-alert subscription can optionally require a logged-in user, to curb anonymous e-mail harvesting.
-* New: Built-in S3-compatible object storage — offload listing images to Amazon S3, Cloudflare R2, DigitalOcean Spaces, Wasabi, Backblaze B2, MinIO or a custom endpoint, configured under Settings → Storage with provider presets, public or presigned (private-bucket) URLs, and an optional CDN base. Offload, deletion, regeneration and migration all run through a background queue drained by cron, so posting an ad stays fast and an object-store outage is non-fatal. Each image records where it lives (`t_item_resource.s_storage`), so local and remote coexist and migration is gradual and reversible: one-click actions backfill existing images to the bucket, bring them all back to local (offline copy), or adopt an existing Better S3 install with no re-upload. This supersedes the bundled `better-s3` plugin (which keeps working), and is pluggable through a `StorageAdapter` interface and the `register_storage_adapters` hook.
-* Fixed: Image compression — saved variants are encoded properly now. PNG/GIF use a real zlib compression level (default 6, filter `image_png_compression`) instead of level 0 (uncompressed); JPEG quality is unified across GD and ImageMagick (default 82, filter `image_jpeg_quality`) rather than depending on which library is installed (previously GD's 75 vs ImageMagick's ~92); and ImageMagick output is stripped of EXIF/profile metadata.
-* Fixed: Corrected an invalid `version` string in `composer.json` (`5.3.0-dev3`) that failed Composer's schema validation and broke every Composer command on the repository.
-* New: Native "Cleanup" tool under Tools — removes expired, unactivated, spam and orphaned content from the admin, superseding the third-party Butler plugin.
-* New: Admin activity log management (Tools &raquo; Activity log). The activity log (t_log) was written from all over the admin but never surfaced, never pruned and could not be turned off, so it grew without bound. It now has a filterable viewer (by section and free text), an on/off toggle, and a retention window the daily cron prunes automatically (default 90 days; 0 keeps entries forever), plus a one-click "Clear log". Logging honours the toggle at the point of write, so turning it off stops new entries immediately.
-* Breaking: The front-end photo uploader on the item add/edit form was rewritten from jQuery Fine Uploader to a vanilla `osc-uploader`, and the last core inline jQuery scripts were removed; enqueued scripts are now deferred by default (controllable via a filter). A theme or plugin that hooked Fine Uploader must move to the new uploader.
-* Fixed: `Item::updateExpirationDate()` emitted a malformed UPDATE and silently never changed a listing's expiration date.
-* Fixed: A user's listing count (`i_items`) was not incremented when items were reassigned to them after an email change, in both the edit and activation flows.
-* Fixed: A 500 error on the update check (`check_version`).
-* For more details, please check the commit history
+# Changelog
+
+## Shopclass 5.3.0
+
+The first release under the Shopclass name. The admin has been rebuilt, jQuery is gone from
+core, sitemaps and S3 storage are now built in, and a long list of security holes is closed.
+
+### Breaking
+
+- The admin is now vanilla JavaScript. jQuery, jQuery-UI, jQuery-validate, jQuery-treeview and
+  jQuery-uniform are no longer loaded on any admin page — tabs, modals, autocomplete, the
+  datepicker, the category tree, tooltips and form validation were all rewritten with native
+  browser APIs. This covers the item add/edit and listing pages too: the `ItemForm` category
+  cascade, location fields and photo JavaScript now run on a shared jQuery-free `oscAutocomplete`
+  combobox. A plugin that still needs one of those libraries must enqueue it itself, e.g.
+  `osc_enqueue_script('jquery')`. The public theme's own scripts are a separate, later effort.
+- Core no longer contains any jQuery at all. The admin login screen was the last page pulling it
+  in. The unused `jquery-migrate`, `jquery-treeview`, `jquery-nested`, `jquery-validate-additional`,
+  `tabber` and `colorpicker` registrations are gone, along with about 260 KB of vendor assets
+  nothing referenced. `jquery`, `jquery-ui` and `jquery-validate` stay registered for themes that
+  ask for them.
+- The photo uploader on the item form was rewritten from jQuery Fine Uploader to a vanilla
+  `osc-uploader`. A theme or plugin that hooked Fine Uploader must move to the new one. Enqueued
+  scripts are now deferred by default, controllable with a filter.
+- The admin theme's legacy float-grid classes (`.grid-system`, `.grid-row`, `.grid-10`…`.grid-100`)
+  were removed in favour of Bootstrap 5's `.row`/`.col-*`.
+- Minimum PHP is now 8.0.
+- `RSSFeed::addItem()` escapes every value itself now. If you build feed items in a plugin, stop
+  pre-escaping the link and image URLs or they will be double-encoded.
+
+### New
+
+- Built-in XML sitemap at `/sitemapindex.xml` — paginated item sitemaps plus category, static-page
+  and optional location sitemaps. Configure under Settings → Sitemap. The item source is hookable,
+  so a search backend like Manticore can drive it from a plugin. Sites already running a sitemap
+  plugin are unaffected: core only serves the path when no plugin claims it.
+- Built-in S3-compatible storage — offload listing images to S3, R2, Spaces, Wasabi, B2, MinIO or a
+  custom endpoint, with public or presigned URLs and an optional CDN base. Uploads, deletes and
+  migrations run through a cron-drained queue, so posting stays fast and an outage is not fatal.
+  Each image records where it lives, so local and remote coexist and migration is reversible.
+  Supersedes the `better-s3` plugin, which keeps working.
+- Core spam moderation — a keyword blocklist and visitor reporting that record *why* a listing was
+  flagged. Matching listings are quarantined for review (or rejected outright), and the matched
+  keyword is shown in the admin instead of leaving you to guess. Reports are one vote per person
+  and can auto-hide a listing past a threshold.
+- Captcha is provider-agnostic. Cloudflare Turnstile is supported alongside reCAPTCHA, chosen under
+  Settings → Spam and bots, verified server-side and failing closed. Captcha now also applies to the
+  admin login. Existing reCAPTCHA installs are unaffected.
+- Rebuilt the first-run installer — a four-step flow with a live "Test connection" check, plain
+  database-error messages instead of raw error numbers, and a real progress rail. It loads no
+  jQuery, jQuery-UI, Bootstrap or vtip, and writes its rows in transactions so a failed install
+  rolls back instead of leaving a half-built database.
+- Configuration can come entirely from the environment; `config.php` is now optional. Set
+  `OSC_IGNORE_CONFIG_FILE=1` to ignore one entirely, or `OSC_CONFIG_FILE=/path` to load it from
+  outside the web root.
+- Database connections accept a port — `host:port` in the installer, a fifth connection argument, or
+  `DB_PORT` in `config.php`. Connections also use a 10-second connect timeout.
+- Versioned database migrations — an ordered runner with a `t_migration` ledger for the schema and
+  data changes the struct.sql reconciler cannot express (drops, renames, backfills), plus a CI check
+  proving a fresh install and an upgraded install end up with the same schema.
+- One calm system page now stands behind every full-page message: fatal errors, database
+  unavailable, not installed, not configured and maintenance mode. It renders even when the app
+  cannot boot, and shows internals only under `OSC_DEBUG`.
+- Native Cleanup tool under Tools, removing expired, unactivated, spam and orphaned content.
+  Supersedes the Butler plugin.
+- Activity log management under Tools → Activity log. The log was written from all over the admin
+  but never surfaced, never pruned and could not be turned off. It now has a filterable viewer, an
+  on/off switch, a retention window the daily cron enforces, and a Clear log button.
+- Rebuilt the admin Categories manager — a real tree with drag-to-reorder and drag-to-nest, inline
+  counts, a status pill, a drawer editor, and a delete confirmation that spells out what goes with it.
+- Per-admin dark/light theme toggle, persisted server-side. Dark mode is complete: every component
+  reads a design token and flips with `data-bs-theme`.
+- The admin mirrors correctly under `dir="rtl"` using logical CSS properties, with no separate
+  stylesheet.
+- `memcached` object-cache driver; the old `memcache` driver is deprecated. The cache backend can
+  also be selected from the environment.
+- Install smoke test in CI — a release zip is unpacked, installed against a real database through
+  the actual installer, and signed into before it can become a release.
+- Item reporting is gate-able: an `item_mark` filter can veto a report and an `item_marked` action
+  fires after it counts.
+- `osc_csrf_token_form()` helper, complementing `osc_csrf_token_url()`.
+
+### Security
+
+- Sign-in attempts are rate limited. Nothing had ever bounded password guessing — no counter, no
+  delay, no lockout. Failed sign-ins and reset requests are now counted per address and per account
+  over a rolling window (20 and 10 per 15 minutes by default) and refused before any password is
+  hashed, so a rejected attempt costs almost nothing where it used to buy a bcrypt hash. Attempts
+  are recorded against the name as typed, so the limiter cannot be used to discover which accounts
+  exist. Configurable under Settings → Spam and bots, including an off switch and a reset button.
+  Adds a `t_login_attempt` table on upgrade.
+- The sign-in and reset forms no longer reveal which usernames and e-mail addresses are registered.
+  "The user doesn't exist" and "The password is incorrect" have become one answer, and both paths
+  now do the same work — the missing-user case used to return about thirty times faster, so a
+  stopwatch answered what the message didn't.
+- The database layer moved onto a parameterised query API. Every core model binds its values
+  instead of interpolating them. The audit behind that migration found and fixed several SQL
+  injection vectors, including one reachable from anonymous public search.
+- CSRF and remember-me were rebuilt as stateless HMAC-signed tokens backed by a per-install key
+  rather than the session, so anonymous pages stay cacheable. Reset and activation codes are
+  single-use and stored hashed; the remember-me cookie is HttpOnly, Secure over HTTPS and SameSite,
+  and changing a password revokes it everywhere.
+- The installer carries a nonce on every state-changing step, closing a hole that could finalise an
+  install with no admin account. It also re-validates the admin e-mail and username server-side,
+  escapes everything it echoes, and no longer reflects passwords back into the page source.
+- Fixed a stored XSS in the admin search-alerts list, and escaped remaining user-controlled output
+  across the admin datatables, the statistics widgets and the comment editor.
+- Watermark uploads are validated by content rather than by the filename the client sent.
+- Added the missing CSRF check on the `upgrade_db` action.
+- Search-alert subscription can require a logged-in user, to curb anonymous e-mail harvesting.
+
+### Performance
+
+- Logging in took about 1.4 seconds, nearly all of it one password check: the bcrypt cost had been
+  15 since 2014. It is now 12, about 175ms, still well above the recommended floor. Existing
+  passwords keep working and are re-hashed on next login. Override with
+  `define('BCRYPT_COST', 14);`.
+- Listing statistics no longer grow without bound. `t_item_stats` kept a row per listing per active
+  day, carried seven indexes and was never pruned, so it became the largest and hottest table on a
+  busy site — and every reader had to sum a listing's whole history to get one number. It now keeps
+  one row per listing with a small site-wide daily rollup for the charts. Six indexes are gone and
+  existing data is migrated across.
+- Anonymous browse and search pages are cacheable. Sessions and CSRF tokens are created lazily, so
+  a first-time visitor gets no session cookie and no no-cache headers. Search alerts were made
+  stateless so result pages don't need a session either.
+- Listing search uses an exact, cheap `COUNT(*)`, the per-item resource N+1 on listing pages is
+  batched, `User::findByPrimaryKey` is cached, and query logging is gated behind `OSC_DEBUG_DB`.
+
+### Changed
+
+- Rebranded from Osclass to Shopclass, with a new teal identity and a rewritten README.
+- Relicensed to GPL-3.0-or-later. Headers carry a GPLv3 notice and dual copyright, retaining the
+  Apache-2.0 notice for the Osclass-derived code.
+- The admin was rebuilt on a design system ("Workshop Bench") over Bootstrap 5.3 — a collapsible
+  sidebar shell, a unified content header, and restyled settings, tables, callouts and messages.
+- Crawlers no longer count as listing views, so **view counts will be lower after upgrading**. This
+  is the numbers becoming accurate. Views were gated on a list of known browsers, which cannot work:
+  a crawler appends to an ordinary browser string, so Googlebot, Bingbot and GPTBot all matched.
+  Both counters now use a denylist, extensible via the new `bot_user_agents` filter, and both can be
+  reverted under Tools → Cleanup.
+- The RSS feed was modernised — a spec-correct image `<enclosure>`, a stable `<guid>`, and correctly
+  single-escaped URLs, rebuilt on `DOMDocument` with a new `rss_feed_item` filter. This also fixes a
+  stored-injection bug where a description containing `]]>` could break out of the feed's CDATA.
+- Captcha verification now uses an 8-second timeout so a stalled provider cannot hang a login, and
+  the admin warns when a provider is selected but its keys are empty.
+- Listings row actions restyled: "Show more" became a compact overflow menu, and the
+  "opens in a new tab" hint reveals on hover or focus.
+- The statistics charts and the login screen are on-brand and follow dark mode.
+- Retired the unused `t_keywords` table, a legacy search index nothing populated or read. A
+  migration drops it on upgrade.
+- Build toolchain moved from Grunt to `sass-embedded` + `esbuild` (`npm run build`).
+
+### Fixed
+
+- No more deprecation notices on PHP 8.4 or 8.5. Sixteen signatures relied on implicitly nullable
+  parameters and seven casts used the old `(boolean)`/`(double)` spellings. Nothing behaves
+  differently; on a site with error logging on, each was a notice per file load.
+- The "Search alerts" setting under Settings → Spam and bots could not be saved — the form posted an
+  action the page never routed.
+- The "most viewed" list ignored whether a listing was visible, so blocked, unactivated, spam and
+  expired listings could be advertised as the site's most popular. It also ordered by an arbitrary
+  single day's views rather than the total.
+- The General Settings page fataled under PHP 8 when the site had never checked for updates.
+  "Last checked on" now shows "never".
+- Sitemap XSL stylesheets are served as `text/xsl`, so browsers render the readable sitemap view
+  instead of downloading the file.
+- The admin "reported listings" counts are correct now — a listing reported on several days used to
+  be counted, and offered for deletion, once per day.
+- Image compression actually compresses. PNG/GIF used level 0 (uncompressed) and JPEG quality
+  depended on whether GD or ImageMagick was installed. Both are now unified and tunable via the
+  `image_png_compression` and `image_jpeg_quality` filters, and ImageMagick output is stripped of
+  metadata.
+- The final step of an environment-only install could 503 because the location endpoint loaded
+  `config.php` directly instead of resolving the database from the environment.
+- An environment-only install could fail to boot with "Undefined constant WEB_PATH"; the site URL is
+  now derived from the request as a fallback.
+- The installer created the database as `utf8` while the rest of the schema is `utf8mb4`.
+- The installer could fail to render when the object-cache helper registered hooks before the plugin
+  API had loaded.
+- Friendly URLs no longer fall through to the home page for item, category, contact and search URLs.
+- `Item::updateExpirationDate()` emitted a malformed UPDATE and silently never changed the date.
+- A user's listing count was not incremented when items were reassigned after an e-mail change.
+- Corrected an invalid `version` string in `composer.json` that broke every Composer command.
+- Item title sanitisation and locale handling in the Item model.
+- A 500 error on the update check (`check_version`).
+
 Source: https://github.com/mindstellar/shopclass
 
-## Update changelog for Osclass 5.2.0 Release Notes {#release-notes-5-2-0}
-* New: Added support for PHP 8.0+ to 8.3
-* New: Mysql8 support 
-* Fixed: [#462](https://github.com/mindstellar/Osclass/issues/462)
-* Fixed: Multiple security issues as reported
-* Fixed: Other Multiple bug fixes
-* Fixed: Multiple performance improvements
-* For more details, please check the commit history
+## Osclass 5.2.0
+
+- New: Added support for PHP 8.0+ to 8.3
+- New: MySQL 8 support
+- Fixed: [#462](https://github.com/mindstellar/Osclass/issues/462)
+- Fixed: Multiple reported security issues
+- Fixed: Assorted bug fixes and performance improvements
+
 Source: https://github.com/mindstellar/Osclass

@@ -88,20 +88,33 @@ function upgradeReleaseNotes()
     $label   = $fallbackLabel;
     $entries = array();
     $inFirst = false;
+    $cat     = '';
     foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) {
-        if (strpos($line, '## ') === 0) {
+        // "## Shopclass 5.3.0" opens a release; the next one ends the newest section.
+        if (preg_match('/^##\s+(?!#)(.+?)\s*$/', $line, $m)) {
             if ($inFirst) {
                 break; // reached the previous release
             }
-            $inFirst = true; // newest release heading
-            // "## Update changelog for Shopclass 5.3.0 Release Notes {#...}" => "Shopclass 5.3.0"
-            if (preg_match('/for\s+(.+?)\s+Release Notes/i', $line, $m)) {
-                $label = trim($m[1]);
-            }
+            $inFirst = true;
+            $label   = trim($m[1]);
             continue;
         }
-        if ($inFirst && preg_match('/^\*\s*([A-Za-z]+):\s*(.+)$/', $line, $m)) {
-            $entries[] = array('cat' => $m[1], 'text' => trim(str_replace('`', '', $m[2])));
+        if (!$inFirst) {
+            continue;
+        }
+        // "### Security" names the category the following bullets belong to.
+        if (preg_match('/^###\s+(.+?)\s*$/', $line, $m)) {
+            $cat = trim($m[1]);
+            continue;
+        }
+        if (preg_match('/^-\s+(.+)$/', $line, $m)) {
+            $entries[] = array('cat' => $cat, 'text' => trim(str_replace('`', '', $m[1])));
+            continue;
+        }
+        // Entries are hard-wrapped, so an indented line continues the previous bullet.
+        if ($entries !== array() && preg_match('/^\s+(\S.*)$/', $line, $m)) {
+            $last                     = count($entries) - 1;
+            $entries[$last]['text'] .= ' ' . trim(str_replace('`', '', $m[1]));
         }
     }
 

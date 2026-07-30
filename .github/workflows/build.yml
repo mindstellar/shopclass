@@ -149,8 +149,9 @@ jobs:
 
       - name: Extract release notes from CHANGELOG
         run: |
-          # Use the top-most CHANGELOG section (up to the next one) as the release body.
-          awk 'BEGIN{n=0} /^## Update changelog/{n++; if (n==2) exit} n>=1{print}' CHANGELOG.md > release_notes.md
+          # Use the top-most CHANGELOG release section (up to the next one) as the release body.
+          # Matches "## <version>" only — "### <group>" headings inside a section must not count.
+          awk 'BEGIN{n=0} /^## [^#]/{n++; if (n==2) exit} n>=1{print}' CHANGELOG.md > release_notes.md
           if [ ! -s release_notes.md ]; then
             echo "See the commit history for changes in this release." > release_notes.md
           fi
