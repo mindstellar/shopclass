@@ -130,18 +130,14 @@ Scripts::init();
 Styles::init();
 
 // register scripts
+//
+// jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
+// These three stay registered because the bundled `bender` front theme still enqueues
+// them (it lives in its own repository, so it migrates separately). Nothing in core
+// enqueues them, so they cost nothing until a theme asks for them.
 osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
-osc_register_script('jquery-migrate', osc_assets_url('jquery-migrate/jquery-migrate.min.js'), 'jquery');
 osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
-
-//osc_register_script('jquery-json', osc_assets_url('js/jquery.json.js'), 'jquery');
-//Not used in osclass core, removed.
-//osc_register_script('fancybox', osc_assets_url('js/fancybox/jquery.fancybox.pack.js'), array('jquery'));
-
-osc_register_script('jquery-treeview', osc_assets_url('jquery-treeview/jquery.treeview.js'), 'jquery');
-osc_register_script('jquery-nested', osc_assets_url('jquery-ui-nested/jquery-ui-nested.js'), 'jquery-ui');
 osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');
-osc_register_script('jquery-validate-additional', osc_assets_url('jquery-validation/additional-methods.min.js'), 'jquery-validate');
 
 osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
 
@@ -155,8 +151,6 @@ osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('oscl
 osc_register_style('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.css')));
 
 //Legacy js libraries
-osc_register_script('tabber', osc_assets_url('osclass-legacy/js/tabber-minimized.js'), 'jquery');
-osc_register_script('colorpicker', osc_assets_url('osclass-legacy/js/colorpicker/js/colorpicker.js'));
 osc_register_script('php-date', osc_assets_url('osclass-legacy/js/date.js'));
 
 Plugins::init();

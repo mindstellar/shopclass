@@ -19,10 +19,8 @@ if (file_exists(ABS_PATH . '.maintenance')) {
     define('__OSC_MAINTENANCE__', true);
 }
 
-// register admin scripts. The admin frontend is jQuery-free — osc.js/ui-osc.js
-// are vanilla, so they no longer depend on (and no longer pull in) jquery or
-// jquery-ui. Those scripts remain registered (see oc-load.php); a legacy plugin
-// that still needs them must enqueue them itself.
+// register admin scripts. The admin frontend is jQuery-free: osc.js/ui-osc.js are vanilla,
+// and nothing here loads jquery or jquery-ui.
 osc_register_script('admin-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('osc.js')));
 osc_register_script('admin-ui-osc', osc_asset_url_versioned(osc_current_admin_theme_js_url('ui-osc.js')), array('admin-osc', 'osc-ui-common'));
 osc_register_script('admin-location', osc_asset_url_versioned(osc_current_admin_theme_js_url('location.min.js')), 'bootstrap5');
@@ -36,12 +34,10 @@ osc_enqueue_script('admin-osc');
 osc_enqueue_script('admin-ui-osc');
 
 // register css styles
-osc_register_style('jquery-ui', osc_asset_url_versioned(osc_assets_url('jquery-ui/jquery-ui.min.css')));
 osc_register_style('admin-css', osc_asset_url_versioned(osc_current_admin_theme_styles_url('main.css')));
 osc_register_style('bootstrap-icons', osc_asset_url_versioned(osc_assets_url('bootstrap-icons/bootstrap-icons.css')));
 
-// enqueue css styles. jquery-ui CSS is not enqueued — no jQuery-UI widgets are
-// used; it stays registered for any plugin that still needs it.
+// enqueue css styles
 osc_enqueue_style('admin-css');
 osc_enqueue_style('bootstrap-icons');
 
