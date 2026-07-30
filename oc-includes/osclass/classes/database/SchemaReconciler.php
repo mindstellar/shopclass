@@ -409,14 +409,62 @@ class SchemaReconciler
             }
         }
 
+        // Names of indexes already on the live table. An additive reconcile can
+        // only ADD; it never redefines an existing index (a DROP + ADD is a
+        // migration's job). So a name that already exists is already satisfied
+        // and must not be re-added: ADD INDEX/FULLTEXT/UNIQUE on an existing name
+        // fails with "Duplicate key name", which the string diff above can miss
+        // when the two canonical forms differ only in formatting (a sub-part
+        // length, fulltext column order). Skipping by name keeps the reconcile
+        // clean where before it surfaced a false-positive error.
+        $existingNames = array();
+        if ($tbl_indexes) {
+            foreach ($tbl_indexes as $tbl_index) {
+                $existingNames[strtolower($tbl_index['Key_name'])] = true;
+            }
+        }
+
         // alter table
         foreach ($indexes as $v) {
             if (preg_match('/primary key/i', $v, $coincidencias) > 0) {
                 $struct_queries[] = 'ALTER TABLE ' . $table . ' DROP PRIMARY KEY, ADD ' . $v;
-            } else {
-                $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $v;
+                continue;
             }
+            $name = self::indexDefName($v);
+            if ($name !== '' && isset($existingNames[strtolower($name)])) {
+                // Already present under this name — nothing additive to do. A
+                // genuine definition change is carried by a migration, not here.
+                continue;
+            }
+            $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $v;
         }
+    }
+
+    /**
+     * Extract the index name from a struct.sql index definition line:
+     * "INDEX idx_foo (a, b)" -> "idx_foo", "FULLTEXT s_description
+     * (s_description, s_title)" -> "s_description", "UNIQUE KEY uk (x)" -> "uk".
+     * Returns 'PRIMARY' for a primary key, and '' for an unnamed index (MySQL
+     * names those itself, so there is nothing to match on).
+     *
+     * @param string $def
+     *
+     * @return string
+     */
+    private static function indexDefName($def)
+    {
+        $def = trim($def);
+        if (preg_match('/^PRIMARY\b/i', $def)) {
+            return 'PRIMARY';
+        }
+        // Everything before the first '(' is "<type keywords> <optional name>".
+        $head = preg_split('/\(/', $def, 2)[0];
+        // Strip the leading index-type keywords (UNIQUE/FULLTEXT/SPATIAL, then
+        // KEY/INDEX, in either order); whatever remains is the optional name.
+        $head = preg_replace('/^\s*(UNIQUE|FULLTEXT|SPATIAL)\b/i', '', $head);
+        $head = preg_replace('/^\s*(INDEX|KEY)\b/i', '', $head);
+
+        return trim($head, " `\t\n");
     }
 
     /**
