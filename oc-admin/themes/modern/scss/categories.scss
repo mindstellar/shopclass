@@ -278,6 +278,46 @@
 // same field can live in several forms. Workshop Bench: white surfaces, bronze
 // only for the active/edited chip, hairline structure, no jQuery (SortableJS).
 // =============================================================================
+// Upgrade prompt for installs with fields predating the builder — attached to
+// categories directly, live on listings, but shown here only as bare chips. One
+// click gathers them into forms so they become manageable.
+.cf-legacy-banner {
+  align-items: center;
+  background-color: var(--osc-warning-tint);
+  border: 1px solid var(--osc-warning);
+  border-radius: $border-radius-lg;
+  color: var(--osc-warning-deep);
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+  padding: .75rem 1rem;
+
+  > .bi {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+  }
+
+  .cf-legacy-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    font-size: .8125rem;
+    gap: .1rem;
+    line-height: 1.4;
+    min-width: 0;
+  }
+
+  .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .forms-builder-grid {
   align-items: start;
   display: grid;
@@ -602,6 +642,30 @@
   font-weight: 500;
   padding: .05rem .45rem;
   white-space: nowrap;
+}
+
+// "N cats · no form" — a legacy field attached straight to categories but in no
+// form. It is live on those listings yet invisible in the form-centric builder,
+// so it is flagged (warning tint) as needing a home. Only meaningful in the
+// palette: dragging the chip into a form makes it resolve via the form instead,
+// so the flag is hidden there.
+.chip-legacy {
+  background-color: var(--osc-warning-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-warning-deep);
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: .05rem .45rem;
+  white-space: nowrap;
+
+  .bi {
+    margin-inline-end: .1rem;
+  }
+}
+
+.form-fieldlist .chip-legacy {
+  display: none;
 }
 
 .chip-actions {

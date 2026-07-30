@@ -547,6 +547,23 @@ class CAdminAjax extends AdminSecBaseModel
                     echo json_encode(array('error' => __('An error occurred while saving the form')));
                 }
                 break;
+            case 'migrate_loose_fields':
+                // Bridge legacy loose fields into the forms model: gather fields that
+                // sit directly on categories but in no form into forms (one per
+                // distinct category set), so the builder can manage them. Reversible —
+                // see FormService::migrateLooseFields().
+                osc_csrf_check();
+                $result = (new \mindstellar\forms\FormService())->migrateLooseFields();
+                if ($result['forms'] === 0) {
+                    echo json_encode(array('ok' => __('There were no fields to move.')));
+                } else {
+                    echo json_encode(array('ok' => sprintf(
+                        __('Moved %1$d fields into %2$d forms.'),
+                        $result['fields'],
+                        $result['forms']
+                    )));
+                }
+                break;
             case 'form_submission_status':
                 osc_csrf_check();
                 $ok = \mindstellar\model\FormSubmission::newInstance()

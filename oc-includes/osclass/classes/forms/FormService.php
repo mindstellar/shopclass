@@ -115,6 +115,74 @@ final class FormService
     }
 
     /**
+     * Move legacy "loose" fields into forms so the builder can manage them.
+     *
+     * A field created before the builder is assigned straight to categories
+     * (t_meta_categories) and belongs to no form; it renders on those listings via
+     * the loose branch of Field::findByCategoryItem(). This gathers every such field
+     * into forms — one form per DISTINCT category set — and links them through the
+     * link table, so each field keeps rendering on exactly the categories it had.
+     *
+     * The old t_meta_categories rows are left in place: once a field is in a form
+     * they lie dormant (the resolver's NOT EXISTS guard skips them), so the move is
+     * reversible — delete the form and the field is loose on its categories again.
+     * Fields already in a form, and loose fields with no category, are skipped.
+     *
+     * @return array{forms:int, fields:int} how many forms were created and fields moved.
+     */
+    public function migrateLooseFields(): array
+    {
+        $fieldManager = \Field::newInstance();
+        $groupManager = \FieldGroup::newInstance();
+
+        $placed = array_fill_keys(array_map('intval', $this->placedFieldIds()), true);
+
+        // Bucket loose fields by their exact category set. listAll() is ordered by
+        // i_position, so each bucket preserves the fields' existing order.
+        $buckets    = array();
+        $bucketCats = array();
+        foreach ($fieldManager->listAll() as $field) {
+            $fid = (int) $field['pk_i_id'];
+            if (isset($placed[$fid])) {
+                continue;
+            }
+            $catIds = array_map('intval', $fieldManager->categories($fid));
+            if (empty($catIds)) {
+                continue;
+            }
+            sort($catIds);
+            $key = implode(',', $catIds);
+            if (!isset($buckets[$key])) {
+                $buckets[$key]    = array();
+                $bucketCats[$key] = $catIds;
+            }
+            $buckets[$key][] = $fid;
+        }
+
+        $formsCreated = 0;
+        $fieldsMoved  = 0;
+        $index        = 0;
+        $multiple     = count($buckets) > 1;
+        foreach ($buckets as $key => $fieldIds) {
+            $index++;
+            $name = $multiple
+                ? sprintf(__('Imported fields %d'), $index)
+                : __('Imported fields');
+            $groupId = $groupManager->insertGroup($name);
+            if ($groupId === false) {
+                continue;
+            }
+            $groupManager->insertCategories($groupId, $bucketCats[$key]);
+            if ($this->setFormFields((int) $groupId, $fieldIds)) {
+                $formsCreated++;
+                $fieldsMoved += count($fieldIds);
+            }
+        }
+
+        return array('forms' => $formsCreated, 'fields' => $fieldsMoved);
+    }
+
+    /**
      * How many forms a field belongs to. Used to warn, when editing a field, that
      * the change is shared: a field definition is edited once and takes effect in
      * every form that placed it.

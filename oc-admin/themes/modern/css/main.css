@@ -15874,6 +15874,41 @@ code {
   width: auto;
 }
 
+.cf-legacy-banner {
+  align-items: center;
+  background-color: var(--osc-warning-tint);
+  border: 1px solid var(--osc-warning);
+  border-radius: 6px;
+  color: var(--osc-warning-deep);
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+}
+.cf-legacy-banner > .bi {
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+}
+.cf-legacy-banner .cf-legacy-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  font-size: 0.8125rem;
+  gap: 0.1rem;
+  line-height: 1.4;
+  min-width: 0;
+}
+.cf-legacy-banner .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .cf-legacy-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .forms-builder-grid {
   align-items: start;
   display: grid;
@@ -16153,6 +16188,24 @@ code {
   font-weight: 500;
   padding: 0.05rem 0.45rem;
   white-space: nowrap;
+}
+
+.chip-legacy {
+  background-color: var(--osc-warning-tint);
+  border-radius: 999px;
+  color: var(--osc-warning-deep);
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.05rem 0.45rem;
+  white-space: nowrap;
+}
+.chip-legacy .bi {
+  margin-inline-end: 0.1rem;
+}
+
+.form-fieldlist .chip-legacy {
+  display: none;
 }
 
 .chip-actions {

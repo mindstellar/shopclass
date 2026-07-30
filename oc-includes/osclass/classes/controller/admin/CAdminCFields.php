@@ -81,10 +81,37 @@ class CAdminCFields extends AdminSecBaseModel
                 };
                 $flatten($categories);
 
+                // Legacy "loose" fields: created before the forms builder, assigned
+                // straight to categories (t_meta_categories) and never placed in a
+                // form. They still render on those listings via the loose branch of
+                // findByCategoryItem, but the form-centric builder gives no sign of
+                // that — so surface, per such field, the categories it is attached to.
+                // A field that lives in a form ignores its loose rows (the resolver's
+                // NOT EXISTS guard), so those are deliberately excluded here.
+                $placedIds     = $service->placedFieldIds();
+                $placedLookup  = array_fill_keys(array_map('intval', $placedIds), true);
+                $looseCategories = array();
+                foreach ($allFields as $field) {
+                    $fid = (int)$field['pk_i_id'];
+                    if (isset($placedLookup[$fid])) {
+                        continue;
+                    }
+                    $names = array();
+                    foreach ($this->fieldManager->categories($fid) as $cid) {
+                        if (isset($categoryNames[(int)$cid])) {
+                            $names[] = $categoryNames[(int)$cid];
+                        }
+                    }
+                    if (!empty($names)) {
+                        $looseCategories[$fid] = $names;
+                    }
+                }
+
                 $this->_exportVariableToView('fields', $allFields);
                 $this->_exportVariableToView('groups', $forms);
                 $this->_exportVariableToView('category_names', $categoryNames);
-                $this->_exportVariableToView('placed_field_ids', $service->placedFieldIds());
+                $this->_exportVariableToView('placed_field_ids', $placedIds);
+                $this->_exportVariableToView('loose_field_categories', $looseCategories);
                 $this->doView('fields/index.php');
                 break;
         }

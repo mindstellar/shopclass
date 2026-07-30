@@ -19,6 +19,7 @@ $fields    = __get('fields');
 $forms     = __get('groups');
 $placedIds = __get('placed_field_ids');
 $catNames  = __get('category_names');
+$looseCats = __get('loose_field_categories');
 if (!is_array($fields)) {
     $fields = array();
 }
@@ -30,6 +31,9 @@ if (!is_array($placedIds)) {
 }
 if (!is_array($catNames)) {
     $catNames = array();
+}
+if (!is_array($looseCats)) {
+    $looseCats = array();
 }
 $placedIds = array_map('intval', $placedIds);
 
@@ -87,10 +91,12 @@ if (!function_exists('cfields_render_chip')) {
      *
      * @param array $field
      * @param bool  $placed whether this field already belongs to a form (palette hint)
+     * @param array $looseCatNames category names a legacy loose field is attached to
+     *                             directly (empty unless this is such a field)
      *
      * @return void
      */
-    function cfields_render_chip($field, $placed = false)
+    function cfields_render_chip($field, $placed = false, $looseCatNames = array())
     {
         $type = osc_field_resolve_type($field);
         echo '<li class="field-chip' . ($placed ? ' is-placed' : '') . '" data-field-id="' . (int)$field['pk_i_id']
@@ -102,6 +108,21 @@ if (!function_exists('cfields_render_chip')) {
             . osc_esc_html(__('Drag to reorder, or focus and use the arrow keys')) . '" aria-label="'
             . osc_esc_html(__('Reorder field: use the arrow keys')) . '"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>';
         echo '<span class="chip-name">' . osc_esc_html($field['s_name']) . '</span>';
+        // A legacy field attached straight to categories but in no form: it is live
+        // on those listings, invisibly. Flag it so the admin can move it into a form.
+        // Hidden by CSS once the chip is inside a form (it no longer resolves loosely).
+        if (!empty($looseCatNames)) {
+            $count = count($looseCatNames);
+            $tip   = sprintf(
+                __('Attached directly to %d categories, outside any form: %s. Drag it into a form to manage it here.'),
+                $count,
+                implode(', ', array_slice($looseCatNames, 0, 8)) . ($count > 8 ? '…' : '')
+            );
+            echo '<span class="chip-legacy" title="' . osc_esc_html($tip) . '">'
+                . '<i class="bi bi-exclamation-circle" aria-hidden="true"></i> '
+                . osc_esc_html(sprintf(__('%d cats · no form'), $count))
+                . '</span>';
+        }
         echo '<span class="chip-type">' . osc_esc_html(cfields_type_label($type)) . '</span>';
         echo '<span class="chip-actions">';
         echo '<button type="button" class="chip-btn chip-edit" onclick="edit_field(' . (int)$field['pk_i_id']
@@ -610,6 +631,34 @@ function customHead()
                 if (!e.target.closest('.cf-add-menu')) { closeAddMenu(); }
             });
 
+            // Move legacy loose fields into forms (grouped by shared categories).
+            // A one-shot upgrade: reload afterwards so both panes reflect the new
+            // forms and the fields lose their "no form" flag.
+            var migrateBtn = document.getElementById('migrate-legacy-button');
+            if (migrateBtn) {
+                migrateBtn.addEventListener('click', function () {
+                    migrateBtn.disabled = true;
+                    migrateBtn.classList.add('is-busy');
+                    fetch(BASE + '?page=ajax&action=migrate_loose_fields&' + CSRF, {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function (r) { return r.json(); }).then(function (ret) {
+                        if (ret && ret.ok) {
+                            setJsMessage('ok', ret.ok);
+                            window.setTimeout(function () { window.location.reload(); }, 600);
+                        } else {
+                            setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                            migrateBtn.disabled = false;
+                            migrateBtn.classList.remove('is-busy');
+                        }
+                    }).catch(function () {
+                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                        migrateBtn.disabled = false;
+                        migrateBtn.classList.remove('is-busy');
+                    });
+                });
+            }
+
             // + New form
             var addFormBtn = document.getElementById('add-form-button');
             if (addFormBtn) {
@@ -677,6 +726,29 @@ osc_add_filter('admin_title', 'customPageTitle');
 osc_current_admin_theme_path('parts/header.php');
 ?>
     <h2 class="render-title"><?php _e('Custom forms'); ?></h2>
+
+    <?php
+    // A one-click bridge for installs upgraded from before the forms builder: their
+    // fields sit directly on categories (t_meta_categories) and render on those
+    // listings, but appear here only as bare palette chips. Offer to gather them
+    // into forms — grouped by the exact categories they share — so they become
+    // visible and editable without changing where a single one renders.
+    $looseCount = count($looseCats);
+    if ($looseCount > 0) { ?>
+        <div class="cf-legacy-banner" role="status">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <div class="cf-legacy-text">
+                <strong><?php echo osc_esc_html(sprintf(
+                    __('%d fields from before Forms are attached straight to categories.'),
+                    $looseCount
+                )); ?></strong>
+                <span><?php _e('They still show on those listings, but you can only manage them once they are in a form. Move them in — grouped by the categories they share — without changing where any of them appears.'); ?></span>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="migrate-legacy-button">
+                <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> <?php _e('Move into forms'); ?>
+            </button>
+        </div>
+    <?php } ?>
 
     <div class="forms-builder">
         <div class="forms-builder-grid">
@@ -748,7 +820,8 @@ osc_current_admin_theme_path('parts/header.php');
                         <li id="palette-empty" class="builder-empty"><?php _e('No fields yet. Create one to get started.'); ?></li>
                     <?php } ?>
                     <?php foreach ($fields as $field) {
-                        cfields_render_chip($field, in_array((int)$field['pk_i_id'], $placedIds, true));
+                        $fid = (int)$field['pk_i_id'];
+                        cfields_render_chip($field, in_array($fid, $placedIds, true), $looseCats[$fid] ?? array());
                     } ?>
                 </ul>
             </div>
