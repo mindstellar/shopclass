@@ -64,10 +64,15 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                 $this->_exportVariableToView('prefs', $prefs);
                 $this->_exportVariableToView('provider_presets', ProviderPresets::PRESETS);
                 $this->_exportVariableToView('queue_stats', $queueStats);
+                // The conflict warning must reflect real activation — whether the plugin is
+                // in Osclass's active list — not its own leftover s3_enable_plugin preference,
+                // which survives deactivation and would keep the warning up forever.
                 $this->_exportVariableToView(
                     'better_s3_active',
-                    (bool) osc_get_preference('s3_enable_plugin', 'betters3')
+                    osc_plugin_is_enabled('better-s3/index.php')
                 );
+                // Config presence stays preference-based on purpose: adoption reads the
+                // (now-disabled) plugin's saved connection settings to import them.
                 $this->_exportVariableToView(
                     'better_s3_configured',
                     osc_get_preference('s3_bucket_name', 'betters3') !== ''
