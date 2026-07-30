@@ -40,10 +40,13 @@ abstract class BaseModel
             }
             // append the domain
             $url .= parse_url(osc_base_url(), PHP_URL_HOST);
-            // append the port number if it's necessary
-            $http_port = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_PORT);
-            if ($http_port !== 80) {
-                $url .= ':' . parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_PORT);
+            // Append the port only when the request used a non-default one. A null port is the
+            // usual case (80/443 are implicit and absent from HTTP_HOST) and must NOT append a
+            // bare ":" — that produced canonical redirects to "https://host:/…".
+            $http_port    = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_PORT);
+            $default_port = Utils::isSsl() ? 443 : 80;
+            if ($http_port !== null && (int)$http_port !== $default_port) {
+                $url .= ':' . (int)$http_port;
             }
             // append the request
             $url .= Params::getServerParam('REQUEST_URI', false, false);
