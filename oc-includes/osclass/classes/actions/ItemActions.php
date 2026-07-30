@@ -2016,8 +2016,11 @@ class ItemActions
                 array('', '.'),
                 trim($aItem['price'])
             );
-            $aItem['price'] = $price * 1000000;
-            //$aItem['price'] = (float) $aItem['price'];
+            // A non-numeric price (stray currency symbol, letters, or nothing
+            // left after normalising) must not reach the multiplication: under
+            // PHP 8 that raises a TypeError and 500s the whole submission. Treat
+            // it as "no price" instead. Stored as an integer in millionths.
+            $aItem['price'] = is_numeric($price) ? (int)round((float)$price * 1000000) : null;
         }
 
         if ($aItem['catId'] == '') {
