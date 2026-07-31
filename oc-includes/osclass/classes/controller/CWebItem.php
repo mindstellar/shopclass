@@ -55,7 +55,9 @@ class CWebItem extends BaseModel
             case 'item_add': // post
                 if (osc_reg_user_post() && $this->user == null) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
-                    Session::newInstance()->_setReferer(osc_item_post_url());
+                    // Remember to bring them back to the post form after login — in a signed
+                    // cookie, not the session, so this bounce never starts a session.
+                    osc_set_login_redirect(osc_item_post_url());
                     $this->redirectTo(osc_user_login_url());
                 }
 

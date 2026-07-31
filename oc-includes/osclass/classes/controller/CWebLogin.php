@@ -342,7 +342,7 @@ class CWebLogin extends BaseModel
                 // Stash where the visitor came from in a short-lived signed cookie rather
                 // than the session, so merely opening the login page never starts a session
                 // (which would carry an osclass cookie and defeat reverse-proxy caching).
-                osc_set_login_redirect(osc_get_http_referer());
+                osc_set_login_redirect(osc_get_http_referer(), true);
                 if (osc_logged_user_id()) {
                     $this->redirectTo(osc_user_dashboard_url());
                 }

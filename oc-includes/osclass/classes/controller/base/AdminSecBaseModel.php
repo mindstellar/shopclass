@@ -115,7 +115,9 @@ class AdminSecBaseModel extends SecBaseModel
             exit;
         }
 
-        Session::newInstance()->_setReferer(
+        // Remember the protected page the admin was trying to reach, in a signed cookie
+        // rather than the session, and send them to the admin login.
+        osc_set_admin_login_redirect(
             osc_base_url()
             . Params::getRequestURI(false, false, false)
         );

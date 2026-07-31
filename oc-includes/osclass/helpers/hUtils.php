@@ -705,26 +705,16 @@ function osc_get_http_referer()
  * there is no open-redirect surface; the signature is defence in depth.
  *
  * @param string $url
+ * @param bool   $keepExisting keep an already-stored destination instead of overwriting it,
+ *                             so an explicit target (e.g. "post a listing") set before the
+ *                             redirect to login survives the ambient referer captured when
+ *                             the login page itself loads
  *
  * @return void
  */
-function osc_set_login_redirect($url)
+function osc_set_login_redirect($url, $keepExisting = false)
 {
-    if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
-        return;
-    }
-    // Don't bounce back to the login page itself.
-    if (strpos($url, 'page=login') !== false || strpos($url, osc_user_login_url()) === 0) {
-        return;
-    }
-
-    // 10 minutes: long enough to complete a login, short enough to expire promptly.
-    $expiry  = time() + 600;
-    $payload = $expiry . ':' . base64_encode($url);
-    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
-
-    osc_write_login_redirect_cookie($value, $expiry);
-    $_COOKIE['oc_login_redirect'] = $value;
+    osc_set_signed_redirect('oc_login_redirect', $url, $keepExisting);
 }
 
 
@@ -738,13 +728,100 @@ function osc_set_login_redirect($url)
  */
 function osc_pop_login_redirect()
 {
-    $value = $_COOKIE['oc_login_redirect'] ?? '';
-    if ($value !== '') {
-        // Single-use: expire it regardless of whether it validates.
-        osc_write_login_redirect_cookie('', time() - 3600);
-        unset($_COOKIE['oc_login_redirect']);
+    return osc_pop_signed_redirect('oc_login_redirect');
+}
+
+
+/**
+ * Admin counterpart of osc_set_login_redirect(), under its own cookie so the front-end and
+ * admin flows never collide. Used by the admin login page and by the admin auth gate, which
+ * remembers the protected page an unauthenticated admin was trying to reach.
+ *
+ * @param string $url
+ * @param bool   $keepExisting keep an already-stored destination instead of overwriting it
+ *
+ * @return void
+ */
+function osc_set_admin_login_redirect($url, $keepExisting = false)
+{
+    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting);
+}
+
+
+/**
+ * Admin counterpart of osc_pop_login_redirect(). Single-use.
+ *
+ * @return string
+ */
+function osc_pop_admin_login_redirect()
+{
+    return osc_pop_signed_redirect('oc_admin_login_redirect');
+}
+
+
+/**
+ * Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared
+ * core behind the login/admin-login redirect helpers. Never starts a session.
+ *
+ * @param string $cookieName
+ * @param string $url
+ * @param bool   $keepExisting skip when a valid destination is already stored under this name
+ *
+ * @return void
+ */
+function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
+{
+    if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
+        return;
     }
-    if ($value === '' || strpos($value, '.') === false) {
+    // Never store a login page — it would only bounce the visitor back to the form.
+    if (strpos($url, 'page=login') !== false) {
+        return;
+    }
+    if ($keepExisting && osc_signed_redirect_verify($_COOKIE[$cookieName] ?? '') !== '') {
+        return;
+    }
+
+    // 10 minutes: long enough to complete a login, short enough to expire promptly.
+    $expiry  = time() + 600;
+    $payload = $expiry . ':' . base64_encode($url);
+    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+
+    osc_write_signed_redirect_cookie($cookieName, $value, $expiry);
+    $_COOKIE[$cookieName] = $value;
+}
+
+
+/**
+ * Read, validate and clear a signed-redirect cookie. Always deletes it (single-use).
+ *
+ * @param string $cookieName
+ *
+ * @return string same-site destination, or '' when absent, tampered, expired or off-site
+ */
+function osc_pop_signed_redirect($cookieName)
+{
+    $value = $_COOKIE[$cookieName] ?? '';
+    if ($value !== '') {
+        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600);
+        unset($_COOKIE[$cookieName]);
+    }
+
+    return osc_signed_redirect_verify($value);
+}
+
+
+/**
+ * Verify a signed-redirect cookie value and return its same-site URL, or '' if the value is
+ * absent, tampered, expired or off-site. Does not touch the cookie.
+ *
+ * @param string $value
+ *
+ * @return string
+ */
+function osc_signed_redirect_verify($value)
+{
+    if (!is_string($value) || $value === '' || strpos($value, '.') === false) {
         return '';
     }
     $dot     = strrpos($value, '.');
@@ -767,15 +844,16 @@ function osc_pop_login_redirect()
 
 
 /**
- * Write (or, with a past expiry, delete) the standalone login-redirect cookie. Standalone
- * — not the session container — so it never starts a session.
+ * Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone —
+ * not the session container — so it never starts a session.
  *
+ * @param string $cookieName
  * @param string $value
  * @param int    $expiry
  *
  * @return void
  */
-function osc_write_login_redirect_cookie($value, $expiry)
+function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
 {
     if (headers_sent()) {
         return;
@@ -792,7 +870,7 @@ function osc_write_login_redirect_cookie($value, $expiry)
     if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
         $options['domain'] = COOKIE_DOMAIN;
     }
-    setcookie('oc_login_redirect', $value, $options);
+    setcookie($cookieName, $value, $options);
 }
 
 
