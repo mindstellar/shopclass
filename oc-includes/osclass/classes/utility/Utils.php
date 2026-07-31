@@ -479,6 +479,7 @@ class Utils
         // Carry any pending flash messages across the redirect in their signed cookie,
         // while headers can still be sent (before the Location header below).
         Session::newInstance()->_flushFlashMessages();
+        Session::newInstance()->_flushFormData();
         if (ob_get_length() > 0) {
             ob_end_flush();
         }
