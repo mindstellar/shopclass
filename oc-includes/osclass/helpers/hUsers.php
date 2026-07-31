@@ -63,37 +63,141 @@ function osc_user()
  */
 function osc_is_web_user_logged_in()
 {
-    if (View::newInstance()->_exists('_loggedUser')) {
-        $user = View::newInstance()->_get('_loggedUser');
-    } elseif (Session::newInstance()->_get('userId') != '') {
-        $user = User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
-        View::newInstance()->_exportVariableToView('_loggedUser', $user);
-    } elseif (Cookie::newInstance()->get_value('oc_userId') != '' && Cookie::newInstance()->get_value('oc_userSecret') != '') {
-        $userId    = Cookie::newInstance()->get_value('oc_userId');
-        $candidate = User::newInstance()->findByPrimaryKey($userId);
-        if (isset($candidate['pk_i_id'])
-            && \mindstellar\security\RememberMe::verify(
-                'web',
-                $userId,
-                Cookie::newInstance()->get_value('oc_userSecret'),
-                $candidate['s_password']
-            )
-        ) {
-            $user = $candidate;
-            View::newInstance()->_exportVariableToView('_loggedUser', $user);
-        }
-    }
+    $user = osc_resolve_web_user();
     if (isset($user['b_enabled'], $user['b_active']) && $user['b_enabled'] == 1 && $user['b_active'] == 1) {
-        Session::newInstance()->_set('userId', $user['pk_i_id']);
-        Session::newInstance()->_set('userName', $user['s_name']);
-        Session::newInstance()->_set('userEmail', $user['s_email']);
-        $phone = $user['s_phone_mobile'] ?: $user['s_phone_land'];
-        Session::newInstance()->_set('userPhone', $phone);
+        // Expose the identity through the historical Session::_get('userId') readers, but
+        // request-scoped only — no physical session is written, so the visitor stays
+        // session-free and cacheable. Identity persists across requests via the signed cookie.
+        osc_web_user_apply_identity($user);
 
         return true;
     }
 
     return false;
+}
+
+
+/**
+ * Resolve the current front-end user for this request, or null.
+ *
+ * Preference order: the request cache, then the signed identity cookie (the primary,
+ * session-free source), then — transitionally — a physical session left behind by a login
+ * that predates the cookie mechanism. The resolved row is cached in the View for the rest
+ * of the request. Read-only: never starts a session for an anonymous, cookieless visitor.
+ *
+ * @return array|null
+ */
+function osc_resolve_web_user()
+{
+    if (View::newInstance()->_exists('_loggedUser')) {
+        return View::newInstance()->_get('_loggedUser');
+    }
+
+    $cookieId     = Cookie::newInstance()->get_value('oc_userId');
+    $cookieSecret = Cookie::newInstance()->get_value('oc_userSecret');
+    if ($cookieId != '' && $cookieSecret != '') {
+        $candidate = User::newInstance()->findByPrimaryKey($cookieId);
+        if (isset($candidate['pk_i_id'])
+            && \mindstellar\security\RememberMe::verify('web', $cookieId, $cookieSecret, $candidate['s_password'])
+        ) {
+            View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
+
+            return $candidate;
+        }
+    }
+
+    // Transitional: honour identity still held in a physical session from before the cookie
+    // mechanism shipped, so upgrading does not log anyone out.
+    $sessionId = Session::newInstance()->_get('userId');
+    if ($sessionId != '') {
+        $candidate = User::newInstance()->findByPrimaryKey($sessionId);
+        if (isset($candidate['pk_i_id'])) {
+            View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
+
+            return $candidate;
+        }
+    }
+
+    return null;
+}
+
+
+/**
+ * Populate the request-scoped identity for the given user.
+ *
+ * Uses Session::_setEphemeral so the historical Session::_get('userId'|'userName'|...)
+ * readers keep working without a physical session being started or written.
+ *
+ * @param array $user
+ *
+ * @return void
+ */
+function osc_web_user_apply_identity($user)
+{
+    $session = Session::newInstance();
+    $session->_setEphemeral('userId', $user['pk_i_id']);
+    $session->_setEphemeral('userName', $user['s_name']);
+    $session->_setEphemeral('userEmail', $user['s_email']);
+    $session->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
+    View::newInstance()->_exportVariableToView('_loggedUser', $user);
+}
+
+
+/**
+ * Log a front-end user in by issuing the signed identity cookie.
+ *
+ * Every login (remember or not) goes through here, so identity lives in an HMAC-signed
+ * cookie ({@see \mindstellar\security\RememberMe}) rather than the session — logged-in
+ * requests need no server session, enabling reverse-proxy caching and multi-server
+ * deployment without sticky sessions. "Remember me" only controls the cookie lifetime
+ * (persistent vs browser-session); the signed token binds the account's password hash, so
+ * a password change still invalidates every outstanding cookie.
+ *
+ * @param array $user     the authenticated user row (needs pk_i_id, s_password, s_name, …)
+ * @param bool  $remember persist across browser restarts when true
+ *
+ * @return void
+ */
+function osc_web_user_login($user, $remember = false)
+{
+    $cookie = Cookie::newInstance();
+    $cookie->set_expires($remember ? osc_time_cookie() : 0);
+    $cookie->push('oc_userId', $user['pk_i_id']);
+    $cookie->push('oc_userSecret', \mindstellar\security\RememberMe::issue(
+        'web',
+        $user['pk_i_id'],
+        $user['s_password'],
+        osc_time_cookie()
+    ));
+    $cookie->set();
+
+    // Make the identity live for the remainder of this request without a session.
+    osc_web_user_apply_identity($user);
+}
+
+
+/**
+ * Resolve front-end identity early in the bootstrap so the historical
+ * Session::_get('userId') readers see a cookie-authenticated user even before any
+ * osc_is_web_user_logged_in() call. No-op — and no session, no DB query — for an
+ * anonymous, cookieless visitor, which keeps such requests cacheable.
+ *
+ * @return void
+ */
+function osc_run_web_user_identity()
+{
+    if (View::newInstance()->_exists('_loggedUser')) {
+        return;
+    }
+    // A physical session already carrying identity (transitional pre-upgrade login)
+    // already satisfies the readers — leave it alone.
+    if (Session::newInstance()->_get('userId') != '') {
+        return;
+    }
+    if (Cookie::newInstance()->get_value('oc_userId') == '') {
+        return;
+    }
+    osc_is_web_user_logged_in();
 }
 
 

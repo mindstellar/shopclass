@@ -170,19 +170,10 @@ class CWebLogin extends BaseModel
                 } elseif ($logged == 2) {
                     osc_add_flash_error_message(_m('The user has been suspended'));
                 } elseif ($logged == 3) {
+                    // bootstrap_login() already issued a browser-session identity cookie;
+                    // upgrade it to a persistent one when "remember me" is ticked.
                     if (Params::getParam('remember') == 1) {
-                        Cookie::newInstance()->set_expires(osc_time_cookie());
-                        Cookie::newInstance()->push('oc_userId', $user['pk_i_id']);
-                        Cookie::newInstance()->push(
-                            'oc_userSecret',
-                            \mindstellar\security\RememberMe::issue(
-                                'web',
-                                $user['pk_i_id'],
-                                $user['s_password'],
-                                osc_time_cookie()
-                            )
-                        );
-                        Cookie::newInstance()->set();
+                        osc_web_user_login($user, true);
                     }
 
                     if ($url_redirect == '') {

@@ -358,9 +358,12 @@ class UserActions
         }
 
         if (!$this->is_admin) {
-            Session::newInstance()->_set('userName', $input['s_name']);
+            // Refresh the request-scoped identity after a self-service edit — no physical
+            // session write, so a logged-in user stays session-free. The next request
+            // re-resolves these from the database via the signed identity cookie.
+            Session::newInstance()->_setEphemeral('userName', $input['s_name']);
             $phone = $input['s_phone_mobile'] ?: $input['s_phone_land'];
-            Session::newInstance()->_set('userPhone', $phone);
+            Session::newInstance()->_setEphemeral('userPhone', $phone);
         }
 
         if (is_array(Params::getParam('s_info'))) {
@@ -643,11 +646,10 @@ class UserActions
         }
 
         //we are logged in... let's go!
-        Session::newInstance()->_set('userId', $user['pk_i_id']);
-        Session::newInstance()->_set('userName', $user['s_name']);
-        Session::newInstance()->_set('userEmail', $user['s_email']);
-        $phone = $user['s_phone_mobile'] ?: $user['s_phone_land'];
-        Session::newInstance()->_set('userPhone', $phone);
+        // Identity now lives in a signed, session-free cookie. Default to a browser-session
+        // lifetime here; the login controller upgrades it to persistent when "remember me"
+        // is ticked.
+        osc_web_user_login($user);
 
         return 3;
     }

@@ -825,8 +825,9 @@ class ItemForm extends Form
      */
     public static function user_data_hidden()
     {
-        if (isset($_SESSION['userId']) && $_SESSION['userId'] != null) {
-            $user = User::newInstance()->findByPrimaryKey($_SESSION['userId']);
+        $loggedUserId = osc_logged_user_id();
+        if ($loggedUserId) {
+            $user = User::newInstance()->findByPrimaryKey($loggedUserId);
             parent::generic_input_hidden('contactName', $user['s_name']);
             parent::generic_input_hidden('contactEmail', $user['s_email']);
 

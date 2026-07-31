@@ -103,12 +103,8 @@ class CWebRegister extends BaseModel
                 );
 
                 if ($success) {
-                    // Auto-login
-                    Session::newInstance()->_set('userId', $user['pk_i_id']);
-                    Session::newInstance()->_set('userName', $user['s_name']);
-                    Session::newInstance()->_set('userEmail', $user['s_email']);
-                    $phone = $user['s_phone_mobile'] ?: $user['s_phone_land'];
-                    Session::newInstance()->_set('userPhone', $phone);
+                    // Auto-login via the signed, session-free identity cookie.
+                    osc_web_user_login($user);
 
                     osc_run_hook('hook_email_user_registration', $user);
                     osc_run_hook('validate_user', $user);

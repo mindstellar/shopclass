@@ -120,6 +120,10 @@ osc_cache_init();
 define('__OSC_LOADED__', true);
 Params::init();
 Session::newInstance()->session_resume();
+// Resolve a cookie-authenticated front-end identity into the request scope so the
+// historical Session::_get('userId') readers work without a server session. No-op for
+// anonymous, cookieless visitors, so their requests stay session-free and cacheable.
+osc_run_web_user_identity();
 
 if (osc_timezone()) {
     date_default_timezone_set(osc_timezone());

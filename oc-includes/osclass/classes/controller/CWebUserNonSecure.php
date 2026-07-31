@@ -69,7 +69,10 @@ class CWebUserNonSecure extends BaseModel
                                 array('s_email' => $userEmailTmp['s_new_email']),
                                 array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
                             );
-                        Session::newInstance()->_set('userEmail', $userEmailTmp['s_new_email']);
+                        // Request-scoped refresh only — the next request re-resolves the
+                        // email from the database via the signed identity cookie, so no
+                        // physical session is started for this logged-in user.
+                        Session::newInstance()->_setEphemeral('userEmail', $userEmailTmp['s_new_email']);
                         UserEmailTmp::newInstance()
                             ->delete(array('s_new_email' => $userEmailTmp['s_new_email']));
 

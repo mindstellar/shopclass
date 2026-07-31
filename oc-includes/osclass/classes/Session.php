@@ -20,6 +20,7 @@ class Session
     //attributes
     private static $instance;
     private $session = array();
+    private $ephemeral = array();
     private $started = false;
 
     /**
@@ -175,7 +176,10 @@ class Session
     {
         $this->maybeResume();
 
-        return $this->session[$key] ?? '';
+        // A physical session value wins; otherwise fall back to a request-scoped
+        // ephemeral value (see _setEphemeral) so cookie-authenticated identity is
+        // readable through the same API without a session having been started.
+        return $this->session[$key] ?? $this->ephemeral[$key] ?? '';
     }
 
     /**
@@ -188,7 +192,7 @@ class Session
     {
         $this->maybeResume();
 
-        return isset($this->session[$key]);
+        return isset($this->session[$key]) || isset($this->ephemeral[$key]);
     }
     /**
      * @param $key
@@ -199,6 +203,32 @@ class Session
         $this->ensureStarted();
         $_SESSION[$key]      = $value;
         $this->session[$key] = $value;
+    }
+
+    /**
+     * Set a request-scoped value that is readable via _get()/_has() but never persisted.
+     *
+     * Unlike _set(), this touches neither $_SESSION nor starts a physical session, and it
+     * is deliberately excluded from the pending-write merge in ensureStarted(). It exists so
+     * identity resolved from a signed cookie can be exposed through the historical
+     * Session::_get('userId') API while the visitor stays session-free and cacheable.
+     *
+     * @param $key
+     * @param $value
+     */
+    public function _setEphemeral($key, $value)
+    {
+        $this->ephemeral[$key] = $value;
+    }
+
+    /**
+     * Drop a request-scoped ephemeral value (e.g. on logout).
+     *
+     * @param $key
+     */
+    public function _dropEphemeral($key)
+    {
+        unset($this->ephemeral[$key]);
     }
 
     public function session_destroy()

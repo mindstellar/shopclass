@@ -646,11 +646,7 @@ class CAdminUsers extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 }
 
-                Session::newInstance()->_set('userId', $aUser['pk_i_id']);
-                Session::newInstance()->_set('userName', $aUser['s_name']);
-                Session::newInstance()->_set('userEmail', $aUser['s_email']);
-                $phone = $aUser['s_phone_mobile'] ?: $aUser['s_phone_land'];
-                Session::newInstance()->_set('userPhone', $phone);
+                osc_web_user_login($aUser);
 
                 osc_run_hook('after_login', $aUser, osc_user_dashboard_url());
                 osc_add_flash_ok_message(sprintf(_m('Logged in as %s successfully'), $aUser['s_name']));

@@ -36,6 +36,13 @@ class WebSecBaseModel extends SecBaseModel
         Session::newInstance()->_drop('userName');
         Session::newInstance()->_drop('userEmail');
         Session::newInstance()->_drop('userPhone');
+        // Identity is now cookie-backed and mirrored into a request-scoped ephemeral store;
+        // clear both so nothing this request still reads as logged in.
+        Session::newInstance()->_dropEphemeral('userId');
+        Session::newInstance()->_dropEphemeral('userName');
+        Session::newInstance()->_dropEphemeral('userEmail');
+        Session::newInstance()->_dropEphemeral('userPhone');
+        View::newInstance()->_erase('_loggedUser');
 
         Cookie::newInstance()->pop('oc_userId');
         Cookie::newInstance()->pop('oc_userSecret');
