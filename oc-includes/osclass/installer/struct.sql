@@ -658,3 +658,15 @@ CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
         INDEX idx_account (s_context, s_account(64), dt_date),
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_token VARCHAR(64) NOT NULL DEFAULT '',
+    s_uuid VARCHAR(191) NOT NULL DEFAULT '',
+    s_file VARCHAR(191) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_token (s_token),
+        INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

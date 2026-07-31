@@ -694,6 +694,54 @@ function osc_get_http_referer()
 
 
 /**
+ * The unguessable token that ties temp photo uploads on a listing form to the browser that
+ * made them, without a session. Read from (or minted into) the `oc_upload` cookie once per
+ * request; it is the capability {@see ItemTmpUpload} checks so a visitor can only delete the
+ * photos they uploaded.
+ *
+ * @return string 32 hex characters
+ */
+function osc_upload_token()
+{
+    static $token = null;
+    if ($token !== null) {
+        return $token;
+    }
+
+    $existing = $_COOKIE['oc_upload'] ?? '';
+    if (is_string($existing) && preg_match('/^[a-f0-9]{32}$/', $existing)) {
+        return $token = $existing;
+    }
+
+    try {
+        $token = bin2hex(random_bytes(16));
+    } catch (\Exception $e) {
+        $token = md5(uniqid('', true));
+    }
+
+    if (!headers_sent()) {
+        $options = array(
+            // A posting session — long enough to fill out a listing, short enough to expire.
+            'expires'  => time() + (4 * 3600),
+            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        );
+        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+            $options['secure'] = true;
+        }
+        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+            $options['domain'] = COOKIE_DOMAIN;
+        }
+        setcookie('oc_upload', $token, $options);
+    }
+    $_COOKIE['oc_upload'] = $token;
+
+    return $token;
+}
+
+
+/**
  * Remember where a visitor came from across the login POST without a session.
  *
  * The login form used to stash the referer in $_SESSION so it could send the user back

@@ -769,6 +769,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'ItemResource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/ItemResource.php',
         'ItemSpamFilter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/ItemSpamFilter.php',
         'ItemStats' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/ItemStats.php',
+        'ItemTmpUpload' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/ItemTmpUpload.php',
         'ItemsDataTable' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/datatables/ItemsDataTable.php',
         'JsonException' => __DIR__ . '/..' . '/symfony/polyfill-php73/Resources/stubs/JsonException.php',
         'KeywordBlock' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/KeywordBlock.php',

@@ -95,12 +95,13 @@ class AjaxUploader
                     $this->allowedExtensions
                 ));
             }
-            $files = Session::newInstance()->_get('ajax_files');
-            if (!is_array($files)) {
-                $files = array();
-            }
-            $files[Params::getParam('qquuid')] = $uuid['basename'];
-            Session::newInstance()->_set('ajax_files', $files);
+            // Track the temp upload against the form's upload token (a cookie), not the
+            // session, so uploading a photo never starts one.
+            ItemTmpUpload::newInstance()->add(
+                osc_upload_token(),
+                Params::getParam('qquuid'),
+                $uuid['basename']
+            );
 
             return array('success' => true);
         }

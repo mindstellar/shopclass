@@ -73,17 +73,14 @@ class CWebAjax extends BaseModel
                 $json       = array();
 
                 if ($ajax_photo != '') {
-                    $files   = Session::newInstance()->_get('ajax_files');
                     $success = false;
 
-                    foreach ($files as $uuid => $file) {
-                        if ($file == $ajax_photo) {
-                            $filename = $file;
-                            unset($files[$uuid]);
-                            Session::newInstance()->_set('ajax_files', $files);
-                            $success = @unlink(osc_content_path() . 'uploads/temp/' . $filename);
-                            break;
-                        }
+                    // deleteByTokenFile is the authorisation: a positive count means this
+                    // browser's upload token really staged that file, so it may be removed.
+                    // Anything else (a forged or foreign filename) matches no row and is left
+                    // untouched, which also keeps the unlink below to real staged basenames.
+                    if (ItemTmpUpload::newInstance()->deleteByTokenFile(osc_upload_token(), $ajax_photo) > 0) {
+                        $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
                     }
 
                     echo json_encode(array(

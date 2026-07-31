@@ -89,6 +89,25 @@ class LoginAttempt extends DAO
     }
 
     /**
+     * Events of one context from one address since a moment. Used by the item-post flood
+     * wait, which is a per-address rate limit rather than a per-account one.
+     *
+     * @param string $context
+     * @param string $ip
+     * @param string $since 'Y-m-d H:i:s'
+     *
+     * @return int
+     */
+    public function countByIpContext($context, $ip, $since)
+    {
+        return (int)osc_db_scalar(
+            'SELECT COUNT(*) FROM ' . $this->getTableName()
+            . ' WHERE s_context = ? AND s_ip = ? AND dt_date > ?',
+            array((string)$context, (string)$ip, $since)
+        );
+    }
+
+    /**
      * Attempts against one account since a moment, from every address.
      *
      * @param string $context

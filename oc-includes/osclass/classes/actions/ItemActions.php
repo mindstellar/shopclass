@@ -187,8 +187,13 @@ class ItemActions
 
         $flash_error .= $this->validateCommonInput($flash_error, $aItem);
 
-        $flash_error .= ((((time() - (int)Session::newInstance()->_get('last_submit_item')) < osc_items_wait_time())
-            && !$this->is_admin)
+        $flash_error .= ((!$this->is_admin
+            && osc_items_wait_time() > 0
+            && LoginAttempt::newInstance()->countByIpContext(
+                'item_post',
+                (string)Params::getServerParam('REMOTE_ADDR'),
+                date('Y-m-d H:i:s', time() - osc_items_wait_time())
+            ) > 0)
             ? _m('Too fast. You should wait a little to publish your ad.')
             . PHP_EOL : '');
 
@@ -230,12 +235,15 @@ class ItemActions
             ));
 
             if (!$this->is_admin) {
-                // Track spam delay: Session
-                Session::newInstance()->_set('last_submit_item', time());
-                // Track spam delay: Cookie
-                Cookie::newInstance()->set_expires(osc_time_cookie());
-                Cookie::newInstance()->push('last_submit_item', time());
-                Cookie::newInstance()->set();
+                // Record the publish so the flood wait is enforced server-side (see the
+                // countByIpContext check above): durable, correct across app servers, and
+                // not resettable by clearing cookies the way the old session/cookie was.
+                LoginAttempt::newInstance()->record(
+                    'item_post',
+                    (string)$aItem['contactEmail'],
+                    (string)Params::getServerParam('REMOTE_ADDR'),
+                    date('Y-m-d H:i:s')
+                );
             }
 
             $itemId = $this->manager->dao->insertedId();
@@ -298,8 +306,6 @@ class ItemActions
             $item          = $this->manager->findByPrimaryKey($itemId);
             $aItem['item'] = $item;
 
-
-            Session::newInstance()->_set('last_publish_time', time());
             if (!$this->is_admin) {
                 $this->sendEmails($aItem);
             }

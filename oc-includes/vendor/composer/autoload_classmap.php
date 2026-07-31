@@ -634,6 +634,7 @@ return array(
     'ItemResource' => $baseDir . '/oc-includes/osclass/classes/model/ItemResource.php',
     'ItemSpamFilter' => $baseDir . '/oc-includes/osclass/classes/ItemSpamFilter.php',
     'ItemStats' => $baseDir . '/oc-includes/osclass/classes/model/ItemStats.php',
+    'ItemTmpUpload' => $baseDir . '/oc-includes/osclass/classes/model/ItemTmpUpload.php',
     'ItemsDataTable' => $baseDir . '/oc-includes/osclass/classes/datatables/ItemsDataTable.php',
     'JsonException' => $vendorDir . '/symfony/polyfill-php73/Resources/stubs/JsonException.php',
     'KeywordBlock' => $baseDir . '/oc-includes/osclass/classes/model/KeywordBlock.php',
