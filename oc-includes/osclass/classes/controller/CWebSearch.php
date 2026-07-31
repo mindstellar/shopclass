@@ -677,6 +677,8 @@ class CWebSearch extends BaseModel
                 osc_run_hook('feed_' . $p_sFeed, $aItems);
             }
         } else {
+            // Public search / category results: cacheable for anonymous visitors.
+            osc_mark_response_cacheable();
             $this->doView('search.php');
         }
     }

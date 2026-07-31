@@ -207,6 +207,9 @@ class CWebUserNonSecure extends BaseModel
                 $this->_exportVariableToView('search_page', $page);
                 $this->_exportVariableToView('canonical', osc_user_public_profile_url());
 
+                // Public seller profile (a user's public listings): cacheable for anonymous
+                // visitors. Sibling `/user` routes (dashboard, account) stay private by default.
+                osc_mark_response_cacheable();
                 $this->doView('user-public-profile.php');
                 break;
             case 'contact_post':
