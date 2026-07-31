@@ -181,6 +181,7 @@ $expectedSurface = array(
     'getTableName'       => 'public getTableName()',
     'getTablePrefix'     => 'public getTablePrefix()',
     'insert'             => 'public insert($values)',
+    'insertGetId'        => 'public insertGetId($values)',
     'listAll'            => 'public listAll()',
     'newInstance'        => 'public static newInstance()',
     'populateCities'     => 'public populateCities(): bool',

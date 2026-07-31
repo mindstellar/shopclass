@@ -42,9 +42,10 @@
  *  - categories() returns the raw string ids every legacy read produced (NOT the
  *    int[] its FieldGroup sibling returns); findIDSearchableByCategories likewise
  *    returns string ids.
- *  - insertField() writes the field and then, because an external caller reads
- *    $model->dao->insertedId() straight after it (CAdminAjax), the new insert id
- *    still has to be readable off the shared handle (trap 2.2 propagation).
+ *  - insertField() writes the field and returns its new id (a positive int) on
+ *    success, or 0 when a category link fails — the caller (CAdminAjax) uses that
+ *    return value directly instead of a later $model->dao->insertedId() read of
+ *    the shared handle, which any following statement could reset (trap 2.2).
  *  - insertCategories(id, array()) returns bool false — an empty array is loosely
  *    equal to null, so it never enters the write loop (differs from FieldGroup).
  *  - cleanCategoriesFromField(null) / a null id in a write where-clause reports
@@ -665,14 +666,15 @@ harness_section('Field::insertField — a fresh field');
 
 scratchdb_truncate_all($admin);
 $okName = $model->insertField('Warranty', 'TEXT', 'warranty', 0, '', array());
-pin('a successful insert with no categories returns bool true', true, $okName);
-// Trap 2.2: an external caller (CAdminAjax) reads $model->dao->insertedId()
-// straight after insertField(); with no category writes the field insert is the
-// last statement, so the new id must still be readable off the shared handle.
+check('a successful insert with no categories returns the new field id (a positive int)', is_int($okName) && $okName > 0, describe($okName));
+// The id now comes from the write itself (the return value), so the caller no
+// longer depends on a $model->dao->insertedId() read of the shared handle. That
+// read still works right after the call (the field insert is the last statement
+// when no categories are linked), and must agree with the returned id.
 $insertedId = (int)$model->dao->insertedId();
-check('the new field id is readable via dao->insertedId() after the call (trap 2.2)', $insertedId > 0, describe($insertedId));
+pin('the returned id matches a dao->insertedId() read after the call', $okName, $insertedId);
 $stored = $model->findBySlug('warranty');
-pin('the field id from insertedId matches the stored row', (string)$insertedId, $stored['pk_i_id']);
+pin('the returned field id matches the stored row', (string)$okName, $stored['pk_i_id']);
 pin('s_name is stored', 'Warranty', $stored['s_name']);
 pin('e_type is stored', 'TEXT', $stored['e_type']);
 
@@ -692,8 +694,9 @@ scratchdb_truncate_all($admin);
 $icA = seed_category($admin, 'Motors');
 $icB = seed_category($admin, 'Boats');
 $res = $model->insertField('Linked', 'TEXT', 'linked', 0, '', array($icA, $icB));
-pin('inserting with valid categories returns bool true', true, $res);
+check('inserting with valid categories returns the new field id (a positive int)', is_int($res) && $res > 0, describe($res));
 $fid = $model->findBySlug('linked')['pk_i_id'];
+pin('the returned id matches the linked field row', (string)$res, $fid);
 $linked = array_column($rawAll("SELECT fk_i_category_id FROM $metaCat WHERE fk_i_field_id = $fid"), 'fk_i_category_id');
 sort($linked);
 pin('both categories are linked to the new field', array((string)$icA, (string)$icB), $linked);
