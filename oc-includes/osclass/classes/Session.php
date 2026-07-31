@@ -21,6 +21,7 @@ class Session
     private static $instance;
     private $session = array();
     private $ephemeral = array();
+    private $messages = array();
     private $started = false;
 
     /**
@@ -139,7 +140,7 @@ class Session
      */
     private function seedDefaults()
     {
-        foreach (array('messages', 'keepForm', 'form') as $key) {
+        foreach (array('keepForm', 'form') as $key) {
             if (!isset($this->session[$key])) {
                 $this->session[$key] = array();
             }
@@ -282,9 +283,10 @@ class Session
      */
     public function _setMessage($key, $value, $type)
     {
-        $messages         = $this->_get('messages');
-        $messages[$key][] = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
-        $this->_set('messages', $messages);
+        // Flash messages live in a request-scoped store (see below), never $_SESSION, so
+        // adding one does not start a session. They are carried across the following
+        // redirect in a short-lived, HMAC-signed cookie by _flushFlashMessages().
+        $this->messages[$key][] = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
     }
 
     /**
@@ -294,9 +296,7 @@ class Session
      */
     public function _getMessage($key)
     {
-        $messages = $this->_get('messages');
-
-        return $messages[$key] ?? '';
+        return $this->messages[$key] ?? '';
     }
 
     /**
@@ -304,14 +304,112 @@ class Session
      */
     public function _dropMessage($key)
     {
-        $messages = $this->_get('messages');
-        if (!isset($messages[$key])) {
-            // Nothing to drop — avoid a write that would needlessly start a session.
-            // osc_show_flash_message() calls this on every page render.
+        unset($this->messages[$key]);
+    }
+
+    /**
+     * Load flash messages left by the previous request from the signed cookie into the
+     * request-scoped store, then clear the cookie (single-use). Call once, early in the
+     * bootstrap — before any output — so clearing the cookie can still emit a header and a
+     * mere GET that only *reads* flash messages never starts a session.
+     *
+     * @return void
+     */
+    public function _loadFlashMessages()
+    {
+        $value = $_COOKIE['oc_flash'] ?? '';
+        if ($value === '') {
             return;
         }
-        unset($messages[$key]);
-        $this->_set('messages', $messages);
+        $this->writeFlashCookie('', time() - 3600);
+        unset($_COOKIE['oc_flash']);
+
+        $messages = $this->decodeFlash($value);
+        if (!empty($messages)) {
+            $this->messages = $messages;
+        }
+    }
+
+    /**
+     * Persist any pending flash messages into the signed cookie so the next request can show
+     * them. Called right before a redirect (the moment a flash needs to survive), while
+     * headers can still be sent. Messages already rendered — and dropped — this request are
+     * simply not present, so they are not carried over.
+     *
+     * @return void
+     */
+    public function _flushFlashMessages()
+    {
+        if (empty($this->messages)) {
+            return;
+        }
+        $this->writeFlashCookie($this->encodeFlash($this->messages), time() + 300);
+    }
+
+    /**
+     * @param array $messages
+     *
+     * @return string
+     */
+    private function encodeFlash($messages)
+    {
+        $payload = base64_encode(json_encode($messages));
+
+        return $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+    }
+
+    /**
+     * Verify and decode a flash cookie value. Returns an empty array unless the signature is
+     * valid, so a visitor cannot forge flash content (which is echoed as raw HTML).
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private function decodeFlash($value)
+    {
+        if (!is_string($value) || strpos($value, '.') === false) {
+            return array();
+        }
+        $dot     = strrpos($value, '.');
+        $payload = substr($value, 0, $dot);
+        $sig     = substr($value, $dot + 1);
+        if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
+            return array();
+        }
+        $json = base64_decode($payload, true);
+        if ($json === false) {
+            return array();
+        }
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : array();
+    }
+
+    /**
+     * @param string $value
+     * @param int    $expiry
+     *
+     * @return void
+     */
+    private function writeFlashCookie($value, $expiry)
+    {
+        if (headers_sent()) {
+            return;
+        }
+        $options = array(
+            'expires'  => $expiry,
+            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        );
+        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+            $options['secure'] = true;
+        }
+        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+            $options['domain'] = COOKIE_DOMAIN;
+        }
+        setcookie('oc_flash', $value, $options);
     }
 
     /**
@@ -374,7 +472,7 @@ class Session
 
     public function _viewMessage()
     {
-        print_r($this->session['messages']);
+        print_r($this->messages);
     }
 
     public function _viewForm()

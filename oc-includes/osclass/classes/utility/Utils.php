@@ -476,6 +476,9 @@ class Utils
      */
     public static function redirectTo($url, $http_response_code = null)
     {
+        // Carry any pending flash messages across the redirect in their signed cookie,
+        // while headers can still be sent (before the Location header below).
+        Session::newInstance()->_flushFlashMessages();
         if (ob_get_length() > 0) {
             ob_end_flush();
         }
