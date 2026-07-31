@@ -174,6 +174,10 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   sessions; "remember me" only controls how long the cookie lives (a non-persistent login gets a
   short-lived, browser-session cookie). Existing sessions and remember-me cookies keep working across
   the upgrade, and admin sessions are unchanged.
+- Flash messages are carried in a short-lived, signed cookie instead of the session, so setting or
+  showing one no longer starts a session — post-action pages stay reverse-proxy cacheable. The cookie
+  is HMAC-signed because a flash is echoed as HTML; a tampered value renders nothing. This was the
+  last thing on the front end that forced a session.
 
 ### Fixed
 
@@ -230,6 +234,10 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   short-lived, HMAC-signed, same-site cookie set only when there is somewhere to return to.
 - Posting a listing no longer throws a PHP 8 `TypeError` when the price is non-numeric; the value is
   guarded before it is scaled.
+- The admin login page, the admin auth gate (which remembers the page an unauthenticated admin was
+  heading to) and the "only registered users can post" bounce no longer start a session to remember
+  where to return — the destination rides the same short-lived, signed, same-site cookie the
+  front-end login page already uses.
 
 Source: https://github.com/mindstellar/shopclass
 
