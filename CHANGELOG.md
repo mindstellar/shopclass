@@ -249,6 +249,11 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - The "remove photo" button on the listing form now unlinks the temporary upload immediately instead
   of leaving it for the hourly cron — it had recorded the file under its pre-rotate name while the
   uploader deletes by the rotated one.
+- Publishing a listing no longer cascades into a burst of foreign-key errors and an empty
+  `posted_item` hook when the parent insert produces no row. `ItemActions::add()` now checks the new
+  id immediately after the insert and, if it is missing, logs the failure and returns a clean "could
+  not be saved" message before any of the child inserts (locales, location, resources, meta, stats)
+  run, instead of FK-failing all five against a non-existent item.
 
 Source: https://github.com/mindstellar/shopclass
 

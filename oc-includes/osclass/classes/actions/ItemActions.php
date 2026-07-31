@@ -234,6 +234,23 @@ class ItemActions
                 's_ip'               => $aItem['s_ip']
             ));
 
+            $itemId = $this->manager->dao->insertedId();
+
+            // The parent insert must have produced a row before any of the child inserts
+            // below run. On production the parent has been seen to leave no durable row while
+            // insertedId() returns 0 and nothing logs a failure; carrying on then FK-fails all
+            // five child inserts (locales, location, resources, meta, stats) against a
+            // non-existent item and fires posted_item with an empty payload. Abort cleanly with
+            // an error the caller shows and redirects on, and make the silent failure visible.
+            if (!$itemId) {
+                trigger_error(
+                    'Item insert produced no row (insertedId=0); aborting before child inserts.',
+                    E_USER_WARNING
+                );
+
+                return _m('Your listing could not be saved. Please try again.');
+            }
+
             if (!$this->is_admin) {
                 // Record the publish so the flood wait is enforced server-side (see the
                 // countByIpContext check above): durable, correct across app servers, and
@@ -246,7 +263,6 @@ class ItemActions
                 );
             }
 
-            $itemId = $this->manager->dao->insertedId();
             Log::newInstance()->insertLog(
                 'item',
                 'add',
