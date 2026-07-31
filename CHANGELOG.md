@@ -1,5 +1,31 @@
 # Changelog
 
+## Shopclass 5.4.0
+
+Public pages are now reverse-proxy and CDN cacheable. The application decides whether each
+response may be shared-cached and says so in a standard Cache-Control header, so a proxy can hold
+the homepage, search, listings and public profiles briefly — absorbing crawler and traffic load —
+without ever storing or serving a personalized page, and without being defeated by analytics or
+consent cookies.
+
+### New
+
+- Core-owned HTTP caching. Public read pages — homepage, search and category results, listing
+  detail, static pages and the public seller profile — declare themselves cacheable and emit
+  `public, s-maxage=30, max-age=0, must-revalidate`; every other response is `private, no-store`.
+  A reverse proxy or CDN can now hold public pages for a short window while browsers always
+  revalidate, so a full-page cache needs no plugin. The shared-cache window is filterable
+  (`public_cache_max_age`), and the whole header via `response_cache_control`.
+- The cache decision keys on Shopclass's own login, session and locale cookies only, so
+  third-party analytics and advertising cookies (Google Analytics, AdSense, the cookie-consent
+  banner, and the like) no longer defeat the cache — and a logged-in or otherwise personalized
+  page is never stored or shared.
+- A reference nginx micro-cache config ships in `.docker/nginx/microcache.conf`. It bypasses the
+  cache on Shopclass's cookies and respects the app's own Cache-Control, with no hardcoded domain
+  hashes and no per-route allow/deny lists to drift out of date.
+
+Source: https://github.com/mindstellar/shopclass
+
 ## Shopclass 5.3.0
 
 The first release under the Shopclass name. The admin has been rebuilt, jQuery is gone from
