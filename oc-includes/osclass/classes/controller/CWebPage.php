@@ -72,6 +72,9 @@ class CWebPage extends BaseModel
             osc_set_current_user_locale(Params::getParam('lang'));
         }
 
+        // Public static page: cacheable for anonymous visitors.
+        osc_mark_response_cacheable();
+
         $meta       = json_decode($page['s_meta'], true);
         $templateId = isset($meta['template']) ? (string)$meta['template'] : '';
         $registered = ($templateId !== '') ? osc_page_template($templateId) : null;

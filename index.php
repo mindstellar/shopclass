@@ -170,6 +170,11 @@ switch (Params::getParam('page')) {
         break;
 }
 
+// Stamp the response's Cache-Control now that the page is built and identity/session state is
+// final. Output is buffered (Csrf::init), so headers are not yet sent; a controller that streamed
+// a file, redirected, or exited never reaches here and keeps its own headers.
+osc_send_response_cache_headers();
+
 if (!defined('__FROM_CRON__') && osc_auto_cron()) {
     \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
 }

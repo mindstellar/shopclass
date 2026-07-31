@@ -102,6 +102,7 @@ require_once LIB_PATH . 'osclass/alerts.php';
 require_once LIB_PATH . 'osclass/functions.php';
 require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
+require_once LIB_PATH . 'osclass/helpers/hHttpCache.php';
 require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
 require_once LIB_PATH . 'osclass/helpers/hSpam.php';
 require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
@@ -119,6 +120,13 @@ osc_cache_init();
 
 define('__OSC_LOADED__', true);
 Params::init();
+// Core owns Cache-Control on the front end (see hHttpCache.php). Silence PHP's session module so
+// it never injects its own no-store/no-cache headers when a session starts — those would fight the
+// app's public/private decision. Admin keeps PHP's default limiter: it is never cached, and its
+// implicit no-cache stays its safety net.
+if (!defined('OC_ADMIN') || OC_ADMIN !== true) {
+    session_cache_limiter('');
+}
 Session::newInstance()->session_resume();
 // Consume flash messages left by the previous request from their signed cookie (and clear
 // it) before any output — so a page that only shows a flash never starts a session.
