@@ -48,6 +48,14 @@ class CWebItem extends BaseModel
     {
         //calling the view...
 
+        // The view beacon is a lightweight POST endpoint the listing page's client script hits on
+        // load; short-circuit before the page-render setup below so it stays cheap.
+        if ($this->action === 'view_beacon') {
+            $this->countItemViewBeacon();
+
+            return;
+        }
+
         $locales = OSCLocale::newInstance()->listAllEnabled();
         $this->_exportVariableToView('locales', $locales);
 
@@ -741,6 +749,13 @@ class CWebItem extends BaseModel
                     ItemStats::newInstance()->increase('i_num_views', $item['pk_i_id']);
                 }
 
+                // When the client beacon owns counting (default), remember this listing id so the
+                // page footer can emit the beacon script — the only way a view is counted when the
+                // page is served from a full-page cache and PHP never runs on the render.
+                if (osc_item_view_beacon_enabled()) {
+                    $GLOBALS['osc_view_beacon_item_id'] = (int)$item['pk_i_id'];
+                }
+
                 foreach ($item['locale'] as $k => $v) {
                     if (isset($item['locale'][$k]['s_title'])) {
                         $item['locale'][$k]['s_title'] =
@@ -796,6 +811,37 @@ class CWebItem extends BaseModel
                 $this->doView('item.php');
                 break;
         }
+    }
+
+    /**
+     * Record one view for a listing from the client beacon (a POST fired by the listing page's
+     * footer script). Runs on every request — never cached — so it counts even when the page
+     * itself was served from a full-page cache. Applies the same gate as the render-time count:
+     * views enabled, not a bot (unless bot views are counted), and never the admin or the
+     * listing's own owner. Answers 204 with no body.
+     *
+     * @return void
+     */
+    private function countItemViewBeacon()
+    {
+        if (strtoupper((string)Params::getServerParam('REQUEST_METHOD')) !== 'POST') {
+            header('HTTP/1.1 405 Method Not Allowed');
+
+            return;
+        }
+
+        $id = Params::getParamInt('id');
+        if ($id > 0 && osc_apply_filter('count_view_on_beacon', osc_request_counts_as_view(), $id)) {
+            $item = $this->itemManager->findByPrimaryKey($id);
+            if (!empty($item)
+                && !osc_is_admin_user_logged_in()
+                && !($item['fk_i_user_id'] != '' && $item['fk_i_user_id'] == osc_logged_user_id())
+            ) {
+                ItemStats::newInstance()->increase('i_num_views', $id);
+            }
+        }
+
+        header('HTTP/1.1 204 No Content');
     }
 
     //hopefully generic...

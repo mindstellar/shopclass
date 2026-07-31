@@ -10,6 +10,12 @@ consent cookies.
 
 ### New
 
+- Cache-safe listing view counts. A cached listing page never re-runs PHP, so views were
+  under-counting; they are now counted by a small client beacon — a POST fired on page load,
+  itself never cached — instead of at render time, so the count stays accurate behind a full-page
+  cache. Because it is JavaScript-gated, crawlers that do not run JS no longer inflate views. On by
+  default; a theme with its own beacon, or a site that prefers render-time counting, turns it off
+  with the `item_view_beacon` preference (set to `0`) or the `item_view_beacon_enabled` filter.
 - Core-owned HTTP caching. Public read pages — homepage, search and category results, listing
   detail, static pages and the public seller profile — declare themselves cacheable and emit
   `public, s-maxage=30, max-age=0, must-revalidate`; every other response is `private, no-store`.

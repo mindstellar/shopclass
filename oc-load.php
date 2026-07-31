@@ -103,6 +103,7 @@ require_once LIB_PATH . 'osclass/functions.php';
 require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
 require_once LIB_PATH . 'osclass/helpers/hHttpCache.php';
+require_once LIB_PATH . 'osclass/helpers/hViews.php';
 require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
 require_once LIB_PATH . 'osclass/helpers/hSpam.php';
 require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
