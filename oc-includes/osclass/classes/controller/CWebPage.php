@@ -69,7 +69,7 @@ class CWebPage extends BaseModel
         // export $page content to View
         $this->_exportVariableToView('page', $page);
         if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-            Session::newInstance()->_set('userLocale', Params::getParam('lang'));
+            osc_set_current_user_locale(Params::getParam('lang'));
         }
 
         $meta       = json_decode($page['s_meta'], true);

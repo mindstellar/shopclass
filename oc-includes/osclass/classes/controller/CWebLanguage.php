@@ -30,7 +30,7 @@ class CWebLanguage extends BaseModel
     {
         $locale = Params::getParam('locale');
         if ($locale && (new Validate())->localeCode($locale)) {
-            Session::newInstance()->_set('userLocale', $locale);
+            osc_set_current_user_locale($locale);
         }
 
         $redirect_url = '';

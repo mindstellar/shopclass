@@ -682,7 +682,7 @@ class CWebItem extends BaseModel
                 }
 
                 if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-                    Session::newInstance()->_set('userLocale', Params::getParam('lang'));
+                    osc_set_current_user_locale(Params::getParam('lang'));
                 }
 
                 $item = osc_apply_filter(
