@@ -656,12 +656,10 @@ class Field extends DAO
             $slug_k++;
             $slug = $slug_tmp . '_' . $slug_k;
         }
-        // The field insert had no failure branch (its return was discarded); it
-        // stays assumed-success and a DbException would propagate. The new id is
-        // taken from the write for the category links below, and — because it is
-        // the last statement when no categories are given — it also stays readable
-        // through $model->dao->insertedId() on the shared handle, which an
-        // external caller (CAdminAjax) reads straight after this returns.
+        // The new id comes from the write itself (osc_db_table()->insert returns it) and is
+        // returned below, so the caller uses that id instead of a $model->dao->insertedId()
+        // read of the shared connection after this returns — which the category-link inserts
+        // below would have overwritten, and which any statement on the shared handle can zero.
         $id = osc_db_table($this->getTableName())->insert(array(
             's_name'     => $name,
             'e_type'     => $type,
@@ -683,7 +681,9 @@ class Field extends DAO
             }
         }
 
-        return $return;
+        // Return the new field id on success (0 if a category link failed), so the caller
+        // never has to read it back off the shared connection.
+        return $return ? (int) $id : 0;
     }
 
     /**

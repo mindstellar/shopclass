@@ -254,6 +254,12 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   id immediately after the insert and, if it is missing, logs the failure and returns a clean "could
   not be saved" message before any of the child inserts (locales, location, resources, meta, stats)
   run, instead of FK-failing all five against a non-existent item.
+- The intermittent cause of that is fixed at the source: a new row's id is now captured from the
+  insert statement itself (new `DAO::insertGetId()`) instead of a later, decoupled read of the shared
+  connection's `insert_id`, which any other statement on the handle (transaction control, a form or
+  widget save, a plugin query) could reset to 0. This covers listing, comment, resource and user
+  creation and the admin location/field forms — each now attaches its child rows to the real id
+  rather than to 0.
 
 Source: https://github.com/mindstellar/shopclass
 

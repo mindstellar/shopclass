@@ -130,8 +130,7 @@ class UserActions
             $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
         }
 
-        $this->manager->insert($input);
-        $userId = $this->manager->dao->insertedId();
+        $userId = $this->manager->insertGetId($input);
 
         if ($input['s_username'] == '') {
             $this->manager->update(

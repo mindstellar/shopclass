@@ -435,11 +435,11 @@ class CAdminAjax extends AdminSecBaseModel
                     $slug = $slug_tmp . '_' . $slug_k;
                 }
                 $fieldManager = Field::newInstance();
-                $result       = $fieldManager->insertField($s_name, 'TEXT', $slug, 0, '', array());
-                if ($result) {
+                $fieldId      = $fieldManager->insertField($s_name, 'TEXT', $slug, 0, '', array());
+                if ($fieldId) {
                     echo json_encode(array(
                         'error'      => 0,
-                        'field_id'   => $fieldManager->dao->insertedId(),
+                        'field_id'   => $fieldId,
                         'field_name' => $s_name
                     ));
                 } else {

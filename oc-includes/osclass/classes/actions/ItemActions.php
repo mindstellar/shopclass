@@ -217,7 +217,10 @@ class ItemActions
                 $aItem['currency'] = null;
             }
 
-            $this->manager->insert(array(
+            // Capture the new id from the insert itself (see DAO::insertGetId), not a later
+            // decoupled read of the shared connection's insert_id, which intermittently came
+            // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
+            $itemId = $this->manager->insertGetId(array(
                 'fk_i_user_id'       => $aItem['userId'],
                 'dt_pub_date'        => date('Y-m-d H:i:s'),
                 'fk_i_category_id'   => $aItem['catId'],
@@ -233,8 +236,6 @@ class ItemActions
                 'b_spam'             => $is_spam,
                 's_ip'               => $aItem['s_ip']
             ));
-
-            $itemId = $this->manager->dao->insertedId();
 
             // The parent insert must have produced a row before any of the child inserts
             // below run. On production the parent has been seen to leave no durable row while
@@ -900,10 +901,9 @@ class ItemActions
 
                         $totalItemImages++;
 
-                        $itemResourceManager->insert(array(
+                        $resourceId = $itemResourceManager->insertGetId(array(
                             'fk_i_item_id' => $itemId
                         ));
-                        $resourceId = $itemResourceManager->dao->insertedId();
 
                         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                             return 3; // PATH CAN NOT BE CREATED
@@ -1773,8 +1773,8 @@ class ItemActions
 
         osc_run_hook('before_add_comment', $aComment);
 
-        if ($mComments->insert($aComment)) {
-            $commentID = $mComments->dao->insertedId();
+        $commentID = $mComments->insertGetId($aComment);
+        if ($commentID) {
             if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
                 $user = User::newInstance()->findByPrimaryKey($userId);
                 if ($user) {
