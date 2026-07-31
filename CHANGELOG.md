@@ -164,6 +164,16 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - The render-time item view increment is wrapped in a `count_view_on_render` filter (default
   unchanged), so a theme that counts views client-side (a beacon) can turn off render-time counting
   without disabling the counter.
+- The chosen interface language is kept in its own cookie instead of the session, so switching
+  language no longer starts a session and a language-switched anonymous page stays cacheable.
+- Signing in no longer needs a server-side session. Front-end login carries identity in an
+  HMAC-signed cookie — bound to the account's password hash, so a password change still invalidates
+  every outstanding login — rather than `$_SESSION`, while the historical `Session::_get('userId')`
+  readers keep working through a request-scoped shim. A logged-in request now holds no session, so
+  pages stay reverse-proxy cacheable and the site runs across several app servers without sticky
+  sessions; "remember me" only controls how long the cookie lives (a non-persistent login gets a
+  short-lived, browser-session cookie). Existing sessions and remember-me cookies keep working across
+  the upgrade, and admin sessions are unchanged.
 
 ### Fixed
 
@@ -214,6 +224,12 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
 - The canonical-host redirect (e.g. www → apex) no longer emits a malformed `Location: https://host:/…`
   — a bare `:` with no port — on default-port requests. The port is appended only when it is a real,
   non-default port for the scheme.
+- Opening the login page no longer starts a session. It stashed the referer in `$_SESSION` so it
+  could return you to the page you came from after signing in, which left even a visitor who never
+  logs in carrying a session cookie that defeats reverse-proxy caching; the destination now rides a
+  short-lived, HMAC-signed, same-site cookie set only when there is somewhere to return to.
+- Posting a listing no longer throws a PHP 8 `TypeError` when the price is non-numeric; the value is
+  guarded before it is scaled.
 
 Source: https://github.com/mindstellar/shopclass
 
