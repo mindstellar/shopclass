@@ -122,7 +122,7 @@ class CWebLogin extends BaseModel
 
                 osc_run_hook('before_login');
 
-                $url_redirect = osc_get_http_referer();
+                $url_redirect = osc_pop_login_redirect();
                 if (osc_rewrite_enabled() && $url_redirect != '') {
                     // if comes from oc-admin/
                     if (strpos($url_redirect, 'oc-admin') !== false) {
@@ -339,7 +339,10 @@ class CWebLogin extends BaseModel
                 $this->redirectTo(osc_base_url());
                 break;
             default:                //login
-                Session::newInstance()->_setReferer(osc_get_http_referer());
+                // Stash where the visitor came from in a short-lived signed cookie rather
+                // than the session, so merely opening the login page never starts a session
+                // (which would carry an osclass cookie and defeat reverse-proxy caching).
+                osc_set_login_redirect(osc_get_http_referer());
                 if (osc_logged_user_id()) {
                     $this->redirectTo(osc_user_dashboard_url());
                 }

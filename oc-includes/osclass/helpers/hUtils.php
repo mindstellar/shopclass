@@ -694,6 +694,109 @@ function osc_get_http_referer()
 
 
 /**
+ * Remember where a visitor came from across the login POST without a session.
+ *
+ * The login form used to stash the referer in $_SESSION so it could send the user back
+ * after signing in — but that started a physical session on a mere GET of the login page,
+ * leaving even a visitor who never logs in carrying an osclass cookie that defeats
+ * reverse-proxy caching. Instead, carry the destination in a short-lived, HMAC-signed
+ * cookie: set here on the login page, consumed and cleared by osc_pop_login_redirect() on
+ * the login POST. Only a same-site URL (and never the login page itself) is stored, so
+ * there is no open-redirect surface; the signature is defence in depth.
+ *
+ * @param string $url
+ *
+ * @return void
+ */
+function osc_set_login_redirect($url)
+{
+    if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
+        return;
+    }
+    // Don't bounce back to the login page itself.
+    if (strpos($url, 'page=login') !== false || strpos($url, osc_user_login_url()) === 0) {
+        return;
+    }
+
+    // 10 minutes: long enough to complete a login, short enough to expire promptly.
+    $expiry  = time() + 600;
+    $payload = $expiry . ':' . base64_encode($url);
+    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+
+    osc_write_login_redirect_cookie($value, $expiry);
+    $_COOKIE['oc_login_redirect'] = $value;
+}
+
+
+/**
+ * Read, validate and clear the login-redirect cookie set by osc_set_login_redirect().
+ *
+ * Returns the stored same-site destination, or '' when absent, tampered, expired or
+ * off-site. The cookie is always deleted so it is single-use.
+ *
+ * @return string
+ */
+function osc_pop_login_redirect()
+{
+    $value = $_COOKIE['oc_login_redirect'] ?? '';
+    if ($value !== '') {
+        // Single-use: expire it regardless of whether it validates.
+        osc_write_login_redirect_cookie('', time() - 3600);
+        unset($_COOKIE['oc_login_redirect']);
+    }
+    if ($value === '' || strpos($value, '.') === false) {
+        return '';
+    }
+    $dot     = strrpos($value, '.');
+    $payload = substr($value, 0, $dot);
+    $sig     = substr($value, $dot + 1);
+    if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
+        return '';
+    }
+    $parts = explode(':', $payload, 2);
+    if (count($parts) !== 2 || !ctype_digit($parts[0]) || (int)$parts[0] < time()) {
+        return '';
+    }
+    $url = base64_decode($parts[1], true);
+    if ($url === false || strpos($url, osc_base_url()) !== 0) {
+        return '';
+    }
+
+    return $url;
+}
+
+
+/**
+ * Write (or, with a past expiry, delete) the standalone login-redirect cookie. Standalone
+ * — not the session container — so it never starts a session.
+ *
+ * @param string $value
+ * @param int    $expiry
+ *
+ * @return void
+ */
+function osc_write_login_redirect_cookie($value, $expiry)
+{
+    if (headers_sent()) {
+        return;
+    }
+    $options = array(
+        'expires'  => $expiry,
+        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    );
+    if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+        $options['secure'] = true;
+    }
+    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+        $options['domain'] = COOKIE_DOMAIN;
+    }
+    setcookie('oc_login_redirect', $value, $options);
+}
+
+
+/**
  * @param        $id
  * @param        $regexp
  * @param        $url
