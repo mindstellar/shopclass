@@ -380,6 +380,14 @@ class CWebAjax extends BaseModel
                 }
 
                 $result['uploadName'] = 'auto_' . $filename;
+                // Stage the file against the form's upload token (a cookie, not the session).
+                // Record the name the client attaches and deletes by (uploadName), so the
+                // "remove photo" action authorises against — and unlinks — the right file.
+                ItemTmpUpload::newInstance()->add(
+                    osc_upload_token(),
+                    Params::getParam('qquuid'),
+                    $result['uploadName']
+                );
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
             default:
