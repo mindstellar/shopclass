@@ -849,8 +849,10 @@ class CAdminAjax extends AdminSecBaseModel
                 // a plain "couldn't check" instead. \Throwable, not Exception: a missing class
                 // or type error is an Error, and Error is not an Exception.
                 try {
-                    $package_json = Osclass::getPackageInfo(true);
-                    if (is_array($package_json) && !empty($package_json)) {
+                    $isFresh      = false;
+                    $package_json = Osclass::getPackageInfo(true, $isFresh);
+                    if ($isFresh && is_array($package_json) && !empty($package_json)) {
+                        // A live fetch succeeded: record the result and reset the once-a-day clock.
                         $upgradeOsclass    = new Osclass($package_json);
                         $upgrade_available = $upgradeOsclass->isUpgradable();
                         osc_set_preference('update_core_available', $upgrade_available ? '1' : '');
@@ -861,9 +863,17 @@ class CAdminAjax extends AdminSecBaseModel
                             'msg'   => $upgrade_available ? __('Update available') : __('No update available'),
                         ));
                     } else {
+                        // The fetch produced nothing and getPackageInfo() served the stale cache
+                        // (or nothing). Do NOT reset the full-day clock — that would freeze the
+                        // badge on last-known-good data for 24h and hide a release published during
+                        // the outage — and do NOT touch update_core_available/json. Instead schedule
+                        // the next attempt one hour out, so the admin footer retries soon without
+                        // re-hitting GitHub on every page load (its throttle keys off this stamp).
+                        self::scheduleUpdateCheckRetry();
                         echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
                     }
                 } catch (\Throwable $e) {
+                    self::scheduleUpdateCheckRetry();
                     echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
                 }
 
@@ -1069,6 +1079,22 @@ class CAdminAjax extends AdminSecBaseModel
             $field->updateJsonMeta($fieldId, 'cascade_parent', '');
             $field->updateJsonMeta($fieldId, 'cascade_map', '');
         }
+    }
+
+    /**
+     * Back-date the core update-check timestamp so the next attempt is due in about an
+     * hour instead of a full day, used when a check could not reach GitHub. The admin
+     * footer poll and getPackageInfo()'s own throttle both fire when
+     * now - last_version_check exceeds 24h, so leaving one hour on that clock retries
+     * soon without re-hitting GitHub on every admin page load during an outage.
+     *
+     * @return void
+     */
+    private static function scheduleUpdateCheckRetry()
+    {
+        $dayInSeconds   = 24 * 3600;
+        $retryInSeconds = 3600;
+        osc_set_preference('last_version_check', time() - ($dayInSeconds - $retryInSeconds));
     }
 
     /**

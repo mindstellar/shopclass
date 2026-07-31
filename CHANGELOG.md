@@ -270,6 +270,10 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   the feed is not ordered that way, so a newer release listed lower down was never offered. It now
   picks the highest version across the whole feed, so the newest available build is always the one
   offered.
+- A failed update check (GitHub unreachable or rate-limited) no longer counts as a check: previously
+  the error response was mistaken for a valid release, which reset the once-a-day timer and could
+  hold the "last checked" time and notice on stale data for a full day. A failed check now keeps the
+  last known-good result untouched and simply retries about an hour later.
 
 Source: https://github.com/mindstellar/shopclass
 

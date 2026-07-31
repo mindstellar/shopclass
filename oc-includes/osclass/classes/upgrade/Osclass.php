@@ -145,8 +145,13 @@ class Osclass extends UpgradePackage
      *                           's_prerelease' => true or false (Optional)
      *                           ]
      */
-    public static function getPackageInfo($force = true)
+    public static function getPackageInfo($force = true, &$isFresh = null)
     {
+        // Signals to the caller whether the returned payload came from a live GitHub
+        // fetch this call ($isFresh = true) or is the last-known-good cache served
+        // because the fetch produced nothing (rate limit, outage). Only a fresh result
+        // should be allowed to reset the once-a-day check clock or claim "checked now".
+        $isFresh    = false;
         $preference = Preference::newInstance();
         if ($force === true
             || (!$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
@@ -165,7 +170,10 @@ class Osclass extends UpgradePackage
                         // version_compare (drafts skipped; prereleases kept, since this branch
                         // only runs when prerelease updates are opted in).
                         foreach ($releases as $release) {
-                            if (!empty($release['draft']) || empty($release['tag_name'])) {
+                            // A GitHub error body (404, rate limit) decodes to an associative
+                            // array of strings, not a list of release objects — is_array()
+                            // guards the offset reads below against those non-array entries.
+                            if (!is_array($release) || !empty($release['draft']) || empty($release['tag_name'])) {
                                 continue;
                             }
                             if (
@@ -189,7 +197,10 @@ class Osclass extends UpgradePackage
                 }
             }
 
-            if (!empty($aSelfPackage) && !$aSelfPackage['draft']) {
+            // Require a real release payload: a GitHub error body (404 "Not Found", a rate-limit
+            // message) is a non-empty array too, but carries no tag_name. Treating it as a release
+            // would build a versionless package and, worse, flag the check as a fresh success.
+            if (!empty($aSelfPackage['tag_name']) && empty($aSelfPackage['draft'])) {
                 if (isset($aSelfPackage['name'])) {
                     $package_info['s_title'] = $aSelfPackage['name'];
                 }
@@ -204,7 +215,8 @@ class Osclass extends UpgradePackage
                 $package_info['s_short_name']        = 'osclass';
                 $package_info['s_target_directory']  = ABS_PATH;
                 $package_info['a_filtered_files']    = ['oc-content', 'config.php'];
-                $package_info['s_prerelease']        = $aSelfPackage['prerelease'];
+                $package_info['s_prerelease']        = $aSelfPackage['prerelease'] ?? false;
+                $isFresh                             = true;
             }
         }
         if (!isset($package_info) || empty($package_info)) {
