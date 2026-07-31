@@ -260,6 +260,11 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   widget save, a plugin query) could reset to 0. This covers listing, comment, resource and user
   creation and the admin location/field forms — each now attaches its child rows to the real id
   rather than to 0.
+- A database transaction left open at the end of a request — a `begin()` with no matching
+  `commit()`/`rollBack()` (an escaped exception, a plugin's raw `osc_db_begin`, or mismatched
+  nesting) — is now rolled back explicitly and logged, instead of being discarded silently when the
+  connection closes and taking every write since the `begin` with it, unlogged. Connections also
+  start in a known autocommit state so no request can inherit a stray transaction from another.
 
 Source: https://github.com/mindstellar/shopclass
 
