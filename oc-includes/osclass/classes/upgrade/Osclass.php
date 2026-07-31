@@ -158,10 +158,25 @@ class Osclass extends UpgradePackage
                 if ($osclass_package_info_json) {
                     $releases = json_decode($osclass_package_info_json, true);
                     if (is_array($releases)) {
+                        // GitHub's /releases list is NOT guaranteed newest-first — it has
+                        // returned e.g. beta10 *below* beta9 — so taking the first non-draft
+                        // could pin an older release than one further down the list and never
+                        // offer the real newest. Scan them all and keep the highest version by
+                        // version_compare (drafts skipped; prereleases kept, since this branch
+                        // only runs when prerelease updates are opted in).
                         foreach ($releases as $release) {
-                            if (empty($release['draft'])) {
+                            if (!empty($release['draft']) || empty($release['tag_name'])) {
+                                continue;
+                            }
+                            if (
+                                !isset($aSelfPackage)
+                                || version_compare(
+                                    ltrim(trim($release['tag_name']), 'v'),
+                                    ltrim(trim($aSelfPackage['tag_name']), 'v'),
+                                    'gt'
+                                )
+                            ) {
                                 $aSelfPackage = $release;
-                                break;
                             }
                         }
                     }

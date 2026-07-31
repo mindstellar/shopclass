@@ -265,6 +265,11 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   nesting) — is now rolled back explicitly and logged, instead of being discarded silently when the
   connection closes and taking every write since the `begin` with it, unlogged. Connections also
   start in a known autocommit state so no request can inherit a stray transaction from another.
+- The "a new version is available" admin notice could get stuck on an older release when prerelease
+  updates are enabled. The check assumed the releases feed was newest-first and took the first entry;
+  the feed is not ordered that way, so a newer release listed lower down was never offered. It now
+  picks the highest version across the whole feed, so the newest available build is always the one
+  offered.
 
 Source: https://github.com/mindstellar/shopclass
 
