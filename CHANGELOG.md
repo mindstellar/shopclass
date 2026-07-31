@@ -176,8 +176,16 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   the upgrade, and admin sessions are unchanged.
 - Flash messages are carried in a short-lived, signed cookie instead of the session, so setting or
   showing one no longer starts a session — post-action pages stay reverse-proxy cacheable. The cookie
-  is HMAC-signed because a flash is echoed as HTML; a tampered value renders nothing. This was the
-  last thing on the front end that forced a session.
+  is HMAC-signed because a flash is echoed as HTML; a tampered value renders nothing.
+- Form values typed into a listing, contact, register or profile form survive a validation error in a
+  short-lived signed cookie instead of the session, so a form that fails validation no longer starts
+  one. The `_setForm`/`_getForm` API is unchanged, so no theme needs updating.
+- The item-post flood wait and photo-upload staging moved off the session into the database. The
+  "wait a moment before posting again" limit is recorded per address in the login-throttle ledger,
+  which — unlike the old session/cookie counter a visitor could reset by clearing cookies — is
+  enforceable and correct across app servers. Photos uploaded to a listing form before it is saved
+  are tracked in a new table keyed by an unguessable per-form cookie. With these, the front end now
+  holds no session for browsing, forms or posting; only the admin and the installer still use one.
 
 ### Fixed
 
@@ -238,6 +246,9 @@ core, sitemaps and S3 storage are now built in, and a long list of security hole
   heading to) and the "only registered users can post" bounce no longer start a session to remember
   where to return — the destination rides the same short-lived, signed, same-site cookie the
   front-end login page already uses.
+- The "remove photo" button on the listing form now unlinks the temporary upload immediately instead
+  of leaving it for the hourly cron — it had recorded the file under its pre-rotate name while the
+  uploader deletes by the rotated one.
 
 Source: https://github.com/mindstellar/shopclass
 
