@@ -161,13 +161,24 @@ function osc_web_user_apply_identity($user)
 function osc_web_user_login($user, $remember = false)
 {
     $cookie = Cookie::newInstance();
-    $cookie->set_expires($remember ? osc_time_cookie() : 0);
+    if ($remember) {
+        // Persistent: the cookie and its signed token both last a year.
+        $tokenTtl = osc_time_cookie();
+        $cookie->set_expires($tokenTtl);
+    } else {
+        // Browser-session cookie (dropped when the browser closes). The signed token
+        // also carries a short absolute TTL so a stolen non-remember cookie value can
+        // only be replayed for a brief window rather than a year. Filterable for sites
+        // that want longer-lived non-persistent logins.
+        $tokenTtl = (int)osc_apply_filter('non_remember_login_ttl', 2 * 3600);
+        $cookie->set_expires(0);
+    }
     $cookie->push('oc_userId', $user['pk_i_id']);
     $cookie->push('oc_userSecret', \mindstellar\security\RememberMe::issue(
         'web',
         $user['pk_i_id'],
         $user['s_password'],
-        osc_time_cookie()
+        $tokenTtl
     ));
     $cookie->set();
 
