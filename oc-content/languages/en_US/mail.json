@@ -44,12 +44,6 @@
             "s_description": "<p>Hi {USER_NAME},<\/p><p>New listings have been published in the last week. Take a look at them:<\/p><p>{ADS}<\/p><p>-------------<\/p><p>To unsubscribe from this alert, click on: {UNSUB_LINK}<\/p><p>{WEB_LINK}<\/p>"
         },
         {
-            "fk_i_page_id": 8,
-            "s_internal_name": "alert_email_instant",
-            "s_title": "{WEB_TITLE} - New listings",
-            "s_description": "<p>Hi {USER_NAME},<\/p><p>A new listing has been published, check it out!<\/p><p>{ADS}<\/p><p>-------------<\/p><p>To unsubscribe from this alert, click on: {UNSUB_LINK}<\/p><p>{WEB_LINK}<\/p>"
-        },
-        {
             "fk_i_page_id": 9,
             "s_internal_name": "email_new_comment_admin",
             "s_title": "{WEB_TITLE} - New comment",

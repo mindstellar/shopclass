@@ -18,7 +18,7 @@
 function osc_runAlert($type = null, $last_exec = null)
 {
     $mUser = User::newInstance();
-    if (!in_array($type, array('HOURLY', 'DAILY', 'WEEKLY', 'INSTANT'))) {
+    if (!in_array($type, array('HOURLY', 'DAILY', 'WEEKLY'))) {
         return;
     }
 
@@ -40,9 +40,6 @@ function osc_runAlert($type = null, $last_exec = null)
             break;
         case 'WEEKLY':
             $internal_name = 'alert_email_weekly';
-            break;
-        case 'INSTANT':
-            $internal_name = 'alert_email_instant';
             break;
     }
 

@@ -65,7 +65,37 @@ consent cookies.
   and `osc_search()` run against the backend instead of falling back to a fresh MySQL `Search`. The
   search model is now exported on every search page, not only under `OSC_DEBUG`.
 
+### Breaking
+
+- The unused `INSTANT` alert frequency is gone. Core never dispatched it — the cron only ran
+  hourly, daily and weekly alerts — so its mail builder, the `hook_alert_email_instant` hook and
+  the seeded `alert_email_instant` email template have been removed, and an upgrade deletes the
+  dead template from the database. `osc_runAlert('INSTANT')` is now a no-op. A plugin that drove
+  instant alerts itself (creating `e_type = 'INSTANT'` rows or listening on the hook) must move to
+  its own delivery.
+
+### Security
+
+- Core HTTP fetches now verify the peer's TLS certificate by default. `osc_file_get_contents()`
+  defaulted `verify_ssl` to `false`, overriding the safe default of the method it wraps, so every
+  core caller — language and location downloads, geocoding, and `install_locations()`, which
+  executes the SQL it fetches — ran over an unauthenticated channel. The wrapper now defaults to
+  `true`; the fetch also caps redirects, pins the protocol lists to HTTP(S) so a redirect cannot
+  pivot to `file://`, and aborts a stalled transfer. A caller that genuinely needs a bad
+  certificate opts out at its own call site.
+- The saved-search alert endpoint no longer trusts a caller-supplied `userid`. An anonymous
+  request could name any live user id, and the alert was then activated immediately — skipping the
+  confirmation email, delivering recurring mail to an unconfirmed address and attaching the
+  subscription to a stranger's account. The owner is now taken from the session only; an anonymous
+  subscription always goes through the confirmation email.
+
 ### Fixed
+
+- Saved-search alerts no longer stop firing partway through a cron run. The alert cron reuses one
+  `Search` instance per alert, and restoring an alert from its stored JSON never cleared the search
+  pattern — so the first alert carrying a keyword poisoned every keyword-less alert after it, which
+  then silently matched nothing. The restore now resets the pattern state, so each alert matches on
+  its own criteria regardless of order.
 
 - Saved-search alerts now match the same listings on replay as when they were saved. `toJson()`
   serialised the search pattern already escaped, and replaying the alert escaped it again, so the
