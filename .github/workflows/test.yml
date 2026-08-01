@@ -103,6 +103,8 @@ jobs:
         run: php tests/rewrite-route-match.php
       - name: Rewrite resolve rewrite
         run: php tests/rewrite-resolve-rewrite.php
+      - name: Item URL characterization
+        run: php tests/item-url-characterization.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
