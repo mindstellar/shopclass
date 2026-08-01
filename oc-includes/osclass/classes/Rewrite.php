@@ -732,9 +732,13 @@ class Rewrite
         $uri_array = explode('?', $uri);
         $length_i  = count($uri_array);
         for ($var_i = 1; $var_i < $length_i; $var_i++) {
+            // parse_str already url-decodes each value; a second urldecode() here
+            // decoded twice, so a captured segment like a%2Bb became "a b" instead
+            // of "a+b". Set the parse_str result verbatim to match how PHP
+            // populates $_GET for a native (non-rewritten) query string.
             parse_str($uri_array[$var_i], $parsedVars);
             foreach ($parsedVars as $k => $v) {
-                Params::setParam($k, urldecode($v));
+                Params::setParam($k, $v);
             }
         }
     }

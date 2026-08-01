@@ -95,6 +95,10 @@ jobs:
           extensions: mysqli
       # oc-includes/vendor/ is committed (releases are cut with git archive and
       # run no build step), so the autoloader is present straight from checkout.
+      - name: Params typed accessors
+        run: php tests/params-typed-accessors.php
+      - name: Rewrite param decode
+        run: php tests/rewrite-param-decode.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
