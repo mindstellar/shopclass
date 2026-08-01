@@ -56,6 +56,14 @@ consent cookies.
 - `osc_add_route_hook($id, $regexp, $url)` registers a route dispatched by controller instead of by
   file — for an endpoint that acts and redirects rather than rendering, which a file-backed
   `osc_add_route()` route cannot do without first emitting the theme's page chrome.
+- `Search::fromPrimaryKeys(array $ids)` hydrates a match set produced elsewhere — an external
+  search engine, a plugin's own query — through core's row fetch. It pages to the id count so the
+  default page size can no longer silently truncate the result to ten rows, and preserves the
+  caller's ranking as the result order.
+- A `search_results` backend can own the whole page, not just the result list: return a `model`
+  key and core exports it as the page's `search` object, so the premium rail (`osc_get_premiums()`)
+  and `osc_search()` run against the backend instead of falling back to a fresh MySQL `Search`. The
+  search model is now exported on every search page, not only under `OSC_DEBUG`.
 
 ### Fixed
 

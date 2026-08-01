@@ -476,6 +476,49 @@ check('includeHidden(false) restores the visibility filter', !in_array($hidden, 
 $s = new Search(true);
 check('new Search(true) surfaces it too — parity with includeHidden', in_array($hidden, $ids($s->doSearch()), true));
 
+/* ----------------------------------------------------------------------------
+ * fromPrimaryKeys — hydrate a match set produced elsewhere, paged to its length.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: fromPrimaryKeys (id hydration)');
+
+pin(
+    'fromPrimaryKeys signature is unchanged',
+    'public fromPrimaryKeys(array $ids, $preserveOrder = true)',
+    harness_method_signature('Search', 'fromPrimaryKeys')
+);
+
+// Seed more than the constructor's default page size (10) so a truncation shows.
+$hydIds = array();
+for ($i = 1; $i <= 12; $i++) {
+    $hydIds[] = $mkItem('Hydrate ' . $i, $catCars, 100.0 + $i, 0, $regionA, $cityA, 'Alpha', 'Aville');
+}
+
+// The trap: a raw id-constrained search still carries the default page size of 10.
+$listSql = implode(',', array_map('intval', $hydIds));
+$s = new Search();
+$s->dao->where($prefix . 't_item.pk_i_id IN (' . $listSql . ')');
+pin('a plain id-constrained search truncates to the default 10', 10, count($ids($s->doSearch())));
+
+// fromPrimaryKeys pages to the id count, so every hydrated row comes back.
+$s = new Search();
+$got = $ids($s->fromPrimaryKeys($hydIds)->doSearch());
+pin('fromPrimaryKeys returns every hydrated row, not just 10', 12, count($got));
+pin('...and drops none of them', $sorted($hydIds), $sorted($got));
+
+// The caller's ranking is preserved as the result order.
+$ranked = array($hydIds[4], $hydIds[0], $hydIds[9], $hydIds[2]);
+$s = new Search();
+pin('fromPrimaryKeys preserves the caller order', $ranked, $ids($s->fromPrimaryKeys($ranked)->doSearch()));
+
+// Empty and non-int input yield a deterministic empty set, never "everything".
+$s = new Search();
+pin('an empty id set returns no rows', array(), $ids($s->fromPrimaryKeys(array())->doSearch()));
+$s = new Search();
+pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s->fromPrimaryKeys(array('x', 0, null, $hydIds[0]))->doSearch()));
+
+$s = new Search();
+check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

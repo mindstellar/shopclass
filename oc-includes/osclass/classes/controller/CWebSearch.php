@@ -519,13 +519,18 @@ class CWebSearch extends BaseModel
         // in charge. This lets a plugin or theme delegate to an external engine (Manticore,
         // Elasticsearch, …) while core keeps ownership of URL parsing, the view export and the
         // feeds. A backend owns its own caching, so core's result cache is bypassed when one
-        // responds.
+        // responds. It may also return a 'model' — its own query object — which core exports as
+        // the page's 'search' so the premium rail and osc_search() run against the same engine.
         $backend     = osc_apply_filter('search_results', null, $this->mSearch, Params::getParamsAsArray());
         $aItems      = null;
         $iTotalItems = null;
+        $searchModel = $this->mSearch;
         if (is_array($backend) && isset($backend['items'])) {
             $aItems      = $backend['items'];
             $iTotalItems = (int)($backend['total'] ?? count($aItems));
+            if (isset($backend['model']) && $backend['model'] instanceof Search) {
+                $searchModel = $backend['model'];
+            }
         } else {
             // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
             // enable/spam/delete) that bumps it makes every stored search result unreachable at
@@ -602,9 +607,10 @@ class CWebSearch extends BaseModel
         $this->_exportVariableToView('items', $aItems);
         $this->_exportVariableToView('search_show_as', $p_sShowAs);
 
-        if (OSC_DEBUG) {
-            $this->_exportVariableToView('search', $this->mSearch);
-        }
+        // Export the search model the page was built from, always — not only under
+        // OSC_DEBUG. osc_get_premiums()/osc_search() read this 'search' key and otherwise
+        // build a fresh core Search, which on a delegated page is the wrong engine.
+        $this->_exportVariableToView('search', $searchModel);
 
         // json
         $json          = $this->mSearch->toJson();

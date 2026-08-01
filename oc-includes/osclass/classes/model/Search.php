@@ -121,6 +121,9 @@ class Search extends DAO
 
         $this->order();
         $this->limit();
+        // Default page size. A Search that is never paged carries this into doSearch(),
+        // so hydrating a known id set through this model silently truncates to 10 rows
+        // unless the caller re-pages — use fromPrimaryKeys(), which pages to the id count.
         $this->results_per_page = 10;
 
         // The visibility predicate (see Item::liveConditions) — the same rule the category
@@ -197,6 +200,47 @@ class Search extends DAO
         if ($r_p_p !== null) {
             $this->results_per_page = $r_p_p;
         }
+    }
+
+    /**
+     * Constrain the search to an explicit set of item ids and page to its length.
+     *
+     * For hydrating a match set produced elsewhere — an external search engine, a
+     * plugin's own query — back through the core row-fetch (extendData, resources,
+     * locale sub-array, the joined location/stats columns). It sizes the page to the
+     * id count so the constructor's default of 10 cannot silently truncate the result,
+     * which is the trap a manual hydration keeps rediscovering.
+     *
+     * @param array $ids           item primary keys; non-ints are dropped
+     * @param bool  $preserveOrder keep the caller's order (its ranking) via FIND_IN_SET
+     *
+     * @return Search $this
+     */
+    public function fromPrimaryKeys(array $ids, $preserveOrder = true)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+        if (empty($ids)) {
+            // No ids means an empty result set, not "everything": constrain to nothing
+            // and page to nothing so doSearch()/count() agree on zero.
+            $this->addWhere('1 = 0');
+            $this->limit(0, 0);
+
+            return $this;
+        }
+
+        $list = implode(',', $ids);
+        $this->addWhere(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $list . ')');
+
+        if ($preserveOrder) {
+            // Keep the caller's ranking. A raw dao orderBy is folded in ahead of the
+            // model's own order, so it decides the result order.
+            $this->dao->orderBy('FIND_IN_SET(' . DB_TABLE_PREFIX . "t_item.pk_i_id, '" . $list . "')");
+        }
+
+        $this->limit(0, count($ids));
+
+        return $this;
     }
 
     /**
