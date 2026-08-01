@@ -89,6 +89,38 @@ first-class maintenance/cleanup toolset built in.
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
+## Command-line interface
+
+Shopclass ships a small CLI for maintenance tasks, run from the install root with
+the PHP binary. It refuses to run over HTTP, so the commands are only reachable
+from a shell on the server.
+
+```bash
+php oc-cli.php <command> [options]
+php oc-cli.php help          # list every command
+```
+
+| Command | What it does |
+|---|---|
+| `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
+| `db:upgrade [--skip-db]` | Reconcile the schema and run pending migrations after an update. `--skip-db` continues past false-positive query errors. |
+| `cache:flush` | Flush the object cache. |
+| `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
+| `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
+| `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password — the way back in when you're locked out. |
+| `doctor` | Report on PHP version, extensions, database, writability, cron freshness, and cache. Exits non-zero if any check fails. |
+| `version` | Print the installed version. |
+
+Every command sets a proper exit code (`0` success, non-zero on failure), so they
+slot into schedulers and monitoring. A typical crontab entry:
+
+```cron
+*/5 * * * * php /path/to/site/oc-cli.php cron >/dev/null 2>&1
+```
+
+> The older `php index.php -p cron -t hourly` invocation still works for existing
+> crontabs, but new setups should use `oc-cli.php`.
+
 ## Local development
 
 The runtime needs no build tools, but the admin theme's CSS/JS are compiled from
