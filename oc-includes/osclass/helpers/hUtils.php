@@ -947,6 +947,23 @@ function osc_add_route(
 
 
 /**
+ * Register a controller route dispatched by class instead of by file.
+ *
+ * Use this for an endpoint that acts and redirects rather than rendering: unlike
+ * osc_add_route()'s file-backed routes, a hook route runs its handler without first
+ * emitting the theme's custom.php chrome. Link to it with osc_route_url($id).
+ *
+ * @param string $id
+ * @param string $regexp
+ * @param string $url
+ */
+function osc_add_route_hook($id, $regexp, $url)
+{
+    Rewrite::newInstance()->addRouteHook($id, $regexp, $url);
+}
+
+
+/**
  *
  */
 function osc_get_subdomain_params()

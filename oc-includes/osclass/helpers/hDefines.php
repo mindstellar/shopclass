@@ -1056,7 +1056,12 @@ function osc_route_url($id, $args = array())
         $params_url .= '&' . $k . '=' . $v;
     }
 
-    return osc_base_url(true) . '?page=custom&route=' . $id . $params_url;
+    // A hook route (addRouteHook) has no file and dispatches by controller, which
+    // Rewrite::init() serves under page=route; a file-backed route serves under
+    // page=custom. Mirror that split so a hook route's URL resolves with rewrite off.
+    $page = isset($routes[$id]['routeController']) ? 'route' : 'custom';
+
+    return osc_base_url(true) . '?page=' . $page . '&route=' . $id . $params_url;
 }
 
 

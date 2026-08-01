@@ -53,6 +53,23 @@ consent cookies.
   `item_expiration_updated($id, $newDate)`. A search index or cache that mirrors listing content or
   liveness can now react to a bulk expiry or title change made straight through the model, rather
   than reconciling it after the fact.
+- `osc_add_route_hook($id, $regexp, $url)` registers a route dispatched by controller instead of by
+  file — for an endpoint that acts and redirects rather than rendering, which a file-backed
+  `osc_add_route()` route cannot do without first emitting the theme's page chrome.
+
+### Fixed
+
+- Saved-search alerts now match the same listings on replay as when they were saved. `toJson()`
+  serialised the search pattern already escaped, and replaying the alert escaped it again, so the
+  stored criteria drifted from the original — visible on short keywords, which take the
+  substring-match path where the stray quotes changed the result set.
+- `osc_route_url()` builds a working URL for a controller (hook) route when rewrite is disabled. It
+  previously always emitted `page=custom`, which 404s for a route that has no file; it now emits
+  `page=route` for controller routes, matching how the dispatcher resolves them.
+- Renewing a listing with no location row no longer warns and mis-moves the listing counters.
+  `Item::updateExpirationDate()` read the row through an inner join on the location table and then
+  dereferenced it outside its own null check; the guard now covers the whole block and returns
+  false when the row is absent.
 
 Source: https://github.com/mindstellar/shopclass
 

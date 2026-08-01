@@ -1914,7 +1914,12 @@ class Search extends DAO
             $aData['countries']  = $this->countries;
             // pattern
             $aData['withPattern'] = $this->withPattern;
-            $aData['sPattern']    = $this->sPattern;
+            // Serialise the raw pattern, not the escaped/quoted sPattern: this record is
+            // search criteria, and setJsonAlert() re-escapes it through addPattern() on
+            // replay. Storing the escaped form escaped it twice each round trip, which
+            // shifted the matched set (visible on the short-term LIKE path where the stray
+            // quotes survive into LIKE '%…%').
+            $aData['sPattern']    = $this->sPatternRaw !== null ? $this->sPatternRaw : $this->sPattern;
             if ($this->withPicture) {
                 $aData['withPicture'] = $this->withPicture;
             }

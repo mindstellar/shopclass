@@ -345,6 +345,23 @@ $revived->setJsonAlert($decoded);
 $revivedIds = $sorted($ids($revived->doSearch()));
 pin('a search revived from its own serialized form returns the same items', $sorted(array($car1, $car2, $car3)), $revivedIds);
 
+/* toJson serialises the raw pattern, not the escaped/quoted sPattern: an alert is
+ * a criteria record and setJsonAlert() re-escapes on replay, so the escaped form
+ * escaped it twice and shifted the matched set. "se" routes to the LIKE fallback,
+ * where the stray quotes would otherwise survive into LIKE '%…%'. */
+$patSrc  = new Search();
+$patSrc->addPattern('se');
+$patBlob = json_decode($patSrc->toJson(), true);
+pin('toJson serialises the unescaped pattern', 'se', $patBlob['sPattern']);
+
+$patRevived = new Search();
+$patRevived->setJsonAlert($patBlob);
+pin(
+    'a replayed pattern alert matches the same items as when saved',
+    $sorted($ids($patSrc->doSearch())),
+    $sorted($ids($patRevived->doSearch()))
+);
+
 /* ----------------------------------------------------------------------------
  * Secondary execution paths that were routed off the legacy query layer.
  * ------------------------------------------------------------------------- */

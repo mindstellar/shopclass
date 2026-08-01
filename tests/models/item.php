@@ -749,6 +749,19 @@ pin('a literal datetime is written verbatim through the escaped branch', '2030-0
 $expSentinel = $model->updateExpirationDate($expItem, '00', false);
 pin('a non-falsy zero-ish numeric writes the 9999 sentinel', '9999-12-31 23:59:59', $expSentinel);
 
+// A listing with no t_item_location row: the post-update read inner-joins
+// t_item_location, so $_item is null. The method must converge on false, not
+// deref null (which warned and could move the denormalised counters the wrong way).
+$resetDao();
+$noLocItem = seed_item($admin, $cat, $user, 'Location-less');
+$admin->query("DELETE FROM $locTable WHERE fk_i_item_id = $noLocItem");
+$noLocHook = false;
+osc_add_hook('item_expiration_updated', static function ($id) use (&$noLocHook) {
+    $noLocHook = true;
+});
+pin('a location-less listing returns false instead of null-derefing', false, $model->updateExpirationDate($noLocItem, '7', true));
+check('...and fires no item_expiration_updated hook', $noLocHook === false);
+
 harness_section('Item::updateExpirationDate — the stats side effects on an expiry transition');
 
 $resetDao();

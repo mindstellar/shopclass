@@ -1014,14 +1014,19 @@ class Item extends DAO
                 } catch (\mindstellar\database\DbException $e) {
                     $_item = null;
                 }
-                $_item = $_item === null ? null : osc_db_stringify_row($_item);
+                if ($_item === null) {
+                    // The row is read with an inner join on t_item_location, so a listing
+                    // with no location row yields null here. There is nothing to announce
+                    // or re-count, and the dereferences below would fatal on it; converge
+                    // on the method's own false failure path.
+                    return false;
+                }
+                $_item = osc_db_stringify_row($_item);
 
                 // Model-level write the controller-layer events never see. Announce the new
                 // expiry so an index or cache mirroring liveness can react (an expiry change can
                 // flip a listing in or out of the "live" set).
-                if ($_item !== null) {
-                    osc_run_hook('item_expiration_updated', (int)$id, $_item['dt_expiration']);
-                }
+                osc_run_hook('item_expiration_updated', (int)$id, $_item['dt_expiration']);
 
                 if (!$do_stats) {
                     return $_item['dt_expiration'];
