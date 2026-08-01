@@ -550,115 +550,149 @@ class Rewrite
             $this->rules = $this->rebuildAndPersistRules();
         }
 
-        if (Params::existServerParam('REQUEST_URI')) {
-            $request_uri            = Params::getRequestURI(false, false, false);
-            $urldecoded_request_uri = urldecode($request_uri);
-            if (preg_match(
-                '|[?&]http_referer=(.*)$|',
-                $urldecoded_request_uri,
-                $ref_match
-            )
-            ) {
-                $this->http_referer     = $ref_match[1];
-                $_SERVER['REQUEST_URI'] = preg_replace(
-                    '|[?&]http_referer=(.*)$|',
-                    '',
-                    $urldecoded_request_uri
-                );
+        if (!Params::existServerParam('REQUEST_URI')) {
+            return;
+        }
+
+        $request_uri = Params::getRequestURI(false, false, false);
+        $this->captureHttpReferer($request_uri);
+        $this->raw_request_uri = $request_uri;
+
+        // A registered route (plugin/theme addRoute, or a controller route hook)
+        // wins outright and short-circuits the rest of dispatch.
+        if ($this->matchRoute($request_uri)) {
+            return;
+        }
+
+        // Core-native sitemap routes, served as a FALLBACK: a plugin that
+        // registered its own route on these paths (e.g. a third-party XML sitemap)
+        // already claimed them above and wins. Only when nothing else matched does
+        // core serve the sitemap — regardless of whether rewrite is enabled and
+        // without a theme having to register a route.
+        if ($this->matchSitemapRoute($request_uri)) {
+            $this->location    = 'sitemap';
+            $this->section     = 'sitemap';
+            $this->request_uri = $request_uri;
+
+            return;
+        }
+
+        if (Preference::newInstance()->get('rewriteEnabled')) {
+            $request_uri = $this->rewriteRequest($request_uri);
+        }
+        $this->request_uri = $request_uri;
+
+        if (Params::getParam('page')) {
+            $this->location = Params::getParam('page');
+        }
+        if (Params::getParam('action')) {
+            $this->section = Params::getParam('action');
+        }
+    }
+
+    /**
+     * Pull a `http_referer=` argument out of the request URI into $this->http_referer
+     * and strip it from $_SERVER['REQUEST_URI'] so it never reaches dispatch.
+     *
+     * @param string $request_uri
+     */
+    private function captureHttpReferer($request_uri)
+    {
+        $urldecoded_request_uri = urldecode($request_uri);
+        if (preg_match('|[?&]http_referer=(.*)$|', $urldecoded_request_uri, $ref_match)) {
+            $this->http_referer     = $ref_match[1];
+            $_SERVER['REQUEST_URI'] = preg_replace('|[?&]http_referer=(.*)$|', '', $urldecoded_request_uri);
+        }
+    }
+
+    /**
+     * Match the request against the registered routes ($this->routes). On a hit,
+     * inject the captured params (named via {…} placeholders in the route url, or
+     * route_param_N otherwise), set the dispatch page, and — for a non-controller
+     * route — the location/section/title. First match wins.
+     *
+     * @param string $request_uri
+     *
+     * @return bool true when a route matched and dispatch is resolved
+     */
+    private function matchRoute($request_uri)
+    {
+        foreach ($this->routes as $id => $route) {
+            if (!preg_match('#^' . $route['regexp'] . '#', $request_uri, $m)) {
+                continue;
+            }
+            if (!preg_match_all('#{([^}]+)}#', $route['url'], $args)) {
+                $args[1] = array();
+            }
+            $l = count($m);
+            for ($p = 1; $p < $l; $p++) {
+                if (isset($args[1][$p - 1])) {
+                    Params::setParam($args[1][$p - 1], $m[$p]);
+                } else {
+                    Params::setParam('route_param_' . $p, $m[$p]);
+                }
+            }
+            Params::setParam('route', $id);
+            if (isset($route['routeController'])) {
+                Params::setParam('page', 'route');
+            } else {
+                Params::setParam('page', 'custom');
+                $this->location = $route['location'];
+                $this->section  = $route['section'];
+                $this->title    = $route['title'];
             }
 
-            $this->raw_request_uri = $request_uri;
+            return true;
+        }
 
-            $route_used            = false;
-            foreach ($this->routes as $id => $route) {
-                // UNCOMMENT TO DEBUG
-                //echo 'Request URI: '.$request_uri." # Match : ".$route['regexp']."
-                // # URI to go : ".$route['url']." <br />";
-                if (preg_match('#^' . $route['regexp'] . '#', $request_uri, $m)) {
-                    if (!preg_match_all('#{([^}]+)}#', $route['url'], $args)) {
-                        $args[1] = array();
-                    }
-                    $l = count($m);
-                    for ($p = 1; $p < $l; $p++) {
-                        if (isset($args[1][$p - 1])) {
-                            Params::setParam($args[1][$p - 1], $m[$p]);
-                        } else {
-                            Params::setParam('route_param_' . $p, $m[$p]);
-                        }
-                    }
-                    Params::setParam('route', $id);
-                    $route_used = true;
-                    if (isset($route['routeController'])) {
-                        Params::setParam('page', 'route');
-                    } else {
-                        Params::setParam('page', 'custom');
-                        $this->location = $route['location'];
-                        $this->section  = $route['section'];
-                        $this->title    = $route['title'];
-                    }
+        return false;
+    }
+
+    /**
+     * Apply the friendly-URL rewrite rules to a request that no route claimed.
+     * 404s a direct request for a missing .php file, then (public front controller
+     * only) rewrites the URI through the first matching rule and extracts its query
+     * params.
+     *
+     * @param string $request_uri
+     *
+     * @return string the rewritten install-relative URI
+     */
+    private function rewriteRequest($request_uri)
+    {
+        $tmp_ar      = explode('?', $request_uri);
+        $request_uri = $tmp_ar[0];
+
+        // if try to access directly to a php file
+        if (preg_match('#^(.+?)\.php(.*)$#', $request_uri)) {
+            $file = explode('?', $request_uri);
+            if (!file_exists(ABS_PATH . $file[0])) {
+                self::newInstance()->set_location('error');
+                header('HTTP/1.1 404 Not Found');
+                osc_current_web_theme_path('404.php');
+                exit;
+            }
+        }
+
+        // Admin requests have their own front controller (oc-admin/index.php) and
+        // must not pass through the public friendly-URL rules. The greedy category
+        // catch-all (^(.+)/?$ -> page=search&sCategory=$1) would otherwise rewrite
+        // the bare admin URL and inject page=search into the admin request,
+        // polluting every getParam('page') consumer there. OC_ADMIN is ALWAYS
+        // defined (false on the public front controller, true in oc-admin) — so
+        // test its value, not defined(): the latter is always true and would
+        // disable friendly URLs everywhere.
+        if (!OC_ADMIN) {
+            foreach ($this->rules as $match => $uri) {
+                if (preg_match('#^' . $match . '#', $request_uri, $m)) {
+                    $request_uri = preg_replace('#' . $match . '#', $uri, $request_uri);
                     break;
                 }
             }
-            if (!$route_used) {
-                // Core-native sitemap routes, served as a FALLBACK: a plugin that
-                // registered its own route on these paths (e.g. a third-party XML
-                // sitemap) already claimed them in the loop above and wins. Only
-                // when nothing else matched does core serve the sitemap — and it
-                // does so regardless of whether rewrite is enabled and without a
-                // theme having to register a route.
-                if ($this->matchSitemapRoute($request_uri)) {
-                    $this->location    = 'sitemap';
-                    $this->section     = 'sitemap';
-                    $this->request_uri = $request_uri;
-
-                    return;
-                }
-
-                if (Preference::newInstance()->get('rewriteEnabled')) {
-                    $tmp_ar      = explode('?', $request_uri);
-                    $request_uri = $tmp_ar[0];
-
-                    // if try to access directly to a php file
-                    if (preg_match('#^(.+?)\.php(.*)$#', $request_uri)) {
-                        $file = explode('?', $request_uri);
-                        if (!file_exists(ABS_PATH . $file[0])) {
-                            self::newInstance()->set_location('error');
-                            header('HTTP/1.1 404 Not Found');
-                            osc_current_web_theme_path('404.php');
-                            exit;
-                        }
-                    }
-
-                    // Admin requests have their own front controller (oc-admin/index.php)
-                    // and must not pass through the public friendly-URL rules. The greedy
-                    // category catch-all (^(.+)/?$ -> page=search&sCategory=$1) would
-                    // otherwise rewrite the bare admin URL and inject page=search into the
-                    // admin request, polluting every getParam('page') consumer there.
-                    // OC_ADMIN is ALWAYS defined (false on the public front controller,
-                    // true in oc-admin) — so test its value, not defined(): the latter is
-                    // always true and would disable friendly URLs everywhere.
-                    if (!OC_ADMIN) {
-                        foreach ($this->rules as $match => $uri) {
-                            // UNCOMMENT TO DEBUG
-                            // echo 'Request URI: '.$request_uri." # Match : ".$match." # URI to go : ".$uri." <br />";
-                            if (preg_match('#^' . $match . '#', $request_uri, $m)) {
-                                $request_uri = preg_replace('#' . $match . '#', $uri, $request_uri);
-                                break;
-                            }
-                        }
-                        $this->extractParams($request_uri);
-                    }
-                }
-                $this->request_uri = $request_uri;
-
-                if (Params::getParam('page')) {
-                    $this->location = Params::getParam('page');
-                }
-                if (Params::getParam('action')) {
-                    $this->section = Params::getParam('action');
-                }
-            }
+            $this->extractParams($request_uri);
         }
+
+        return $request_uri;
     }
 
     /**
