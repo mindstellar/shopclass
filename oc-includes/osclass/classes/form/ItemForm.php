@@ -41,7 +41,8 @@ class ItemForm extends Form
         $categories = null,
         $item = null,
         $default_item = null,
-        $parent_selectable = false
+        $parent_selectable = false,
+        $attributes = []
     ) {
         // Did user select a specific category to post in?
         $catId = Params::getParam('catId');
@@ -61,7 +62,13 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        echo '<select name="catId" id="catId">';
+        $extra = '';
+        foreach ($attributes as $attrName => $attrValue) {
+            // Attribute names are developer-supplied keys; values are escaped so a caller
+            // can pass required/data-* without hand-injecting markup into the <select>.
+            $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
+        }
+        echo '<select name="catId" id="catId"' . $extra . '>';
         if (isset($default_item)) {
             echo '<option value="">' . $default_item . '</option>';
         } else {
