@@ -953,6 +953,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'Widget' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Widget.php',
         'iObject_Cache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/interface/iObject_Cache.php',
         'mindstellar\\Csrf' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/Csrf.php',
+        'mindstellar\\cli\\Cli' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cli/Cli.php',
         'mindstellar\\database\\Connection' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Connection.php',
         'mindstellar\\database\\ConnectionManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/ConnectionManager.php',
         'mindstellar\\database\\Db' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Db.php',

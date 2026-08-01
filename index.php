@@ -20,16 +20,23 @@ if (PHP_SAPI === 'cli') {
 require_once __DIR__ . '/oc-load.php';
 
 if (CLI) {
-    //Example: php index.php -p cron -t hourly
+    // Legacy entry: `php index.php -p cron -t hourly`. Richer maintenance
+    // commands live in oc-cli.php.
     $cli_params = getopt('p:t:');
     if ($cli_params) {
-        Params::setParam('page', $cli_params['p']);
-        Params::setParam('cron-type', $cli_params['t']);
+        if (isset($cli_params['p'])) {
+            Params::setParam('page', $cli_params['p']);
+        }
+        if (isset($cli_params['t'])) {
+            Params::setParam('cron-type', $cli_params['t']);
+        }
     }
     if (Params::getParam('page') === 'upgrade') {
-        echo \mindstellar\upgrade\Osclass::upgradeDB();
+        $result  = \mindstellar\upgrade\Osclass::upgradeDB();
+        $decoded = json_decode((string) $result, true);
+        echo $result, PHP_EOL;
 
-        exit(1);
+        exit(is_array($decoded) && (int) ($decoded['error'] ?? 1) === 0 ? 0 : 1);
     }
 
     if (Params::getParam('page') !== 'cron'

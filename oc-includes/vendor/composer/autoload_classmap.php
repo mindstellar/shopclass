@@ -818,6 +818,7 @@ return array(
     'Widget' => $baseDir . '/oc-includes/osclass/classes/model/Widget.php',
     'iObject_Cache' => $baseDir . '/oc-includes/osclass/classes/cache/interface/iObject_Cache.php',
     'mindstellar\\Csrf' => $baseDir . '/oc-includes/osclass/classes/Csrf.php',
+    'mindstellar\\cli\\Cli' => $baseDir . '/oc-includes/osclass/classes/cli/Cli.php',
     'mindstellar\\database\\Connection' => $baseDir . '/oc-includes/osclass/classes/database/Connection.php',
     'mindstellar\\database\\ConnectionManager' => $baseDir . '/oc-includes/osclass/classes/database/ConnectionManager.php',
     'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',
