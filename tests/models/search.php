@@ -375,6 +375,28 @@ pin(
     $sorted($ids($legacyPatRevived->doSearch()))
 );
 
+/* C1: the alert cron reuses ONE Search (newInstance is a singleton) and replays each
+ * stored alert through setJsonAlert(). A keyword-less alert restored after a keyword
+ * one must not inherit its pattern — otherwise it silently matches nothing. */
+$kwSrc = new Search();
+$kwSrc->addPattern('zzz-no-such-keyword');
+$kwBlob = json_decode($kwSrc->toJson(), true);
+
+$catSrc = new Search();
+$catSrc->addCategory($catCars);
+$catBlob = json_decode($catSrc->toJson(), true);
+pin('a category-only alert serialises a null pattern', null, $catBlob['sPattern']);
+
+$shared = new Search();
+$shared->setJsonAlert($kwBlob);
+$shared->doSearch();
+$shared->setJsonAlert($catBlob);
+pin(
+    'a keyword-less alert replayed after a keyword alert on the same Search is not poisoned',
+    $sorted(array($car1, $car2, $car3)),
+    $sorted($ids($shared->doSearch()))
+);
+
 /* ----------------------------------------------------------------------------
  * Secondary execution paths that were routed off the legacy query layer.
  * ------------------------------------------------------------------------- */

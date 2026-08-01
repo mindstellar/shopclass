@@ -2183,6 +2183,15 @@ class Search extends DAO
      */
     public function setJsonAlert($aData)
     {
+        // Restore a whole search from JSON, so clear any pattern left by a previous
+        // restore first: newInstance() hands back one shared Search, and the alert cron
+        // reuses it per alert. addPattern() only runs when a keyword is present, so
+        // without this reset a keyword-less alert keeps the prior alert's pattern and
+        // silently matches nothing.
+        $this->withPattern = false;
+        $this->sPattern    = null;
+        $this->sPatternRaw = null;
+
         $this->priceRange($aData['price_min'], $aData['price_max']);
 
         $this->categories = $aData['aCategories'];
