@@ -247,6 +247,26 @@ pin('clearStat signature is unchanged', 'public clearStat($id, $stat)', harness_
 pin('enableByCategory signature is unchanged', 'public enableByCategory($enable, $aIds)', harness_method_signature('Item', 'enableByCategory'));
 pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id)', harness_method_signature('Item', 'deleteByPrimaryKey'));
 pin('metaFields signature is unchanged', 'public metaFields($id)', harness_method_signature('Item', 'metaFields'));
+pin('liveConditions signature is unchanged', 'public static liveConditions($alias = \'\')', harness_method_signature('Item', 'liveConditions'));
+
+// Item::liveConditions — the single source of the "publicly live" predicate. Assert the exact
+// fragments (aliased) so a drift here, which would desync search from the category counts, fails
+// loudly. The expiry bound carries PHP's clock as a quoted literal.
+$lc = Item::liveConditions('i.');
+pin('liveConditions yields four AND fragments', '4', (string)count($lc));
+pin(
+    'liveConditions: enabled, active, non-spam fragments are exact',
+    'i.b_enabled = 1|i.b_active = 1|i.b_spam = 0',
+    implode('|', array_slice($lc, 0, 3))
+);
+pin(
+    'liveConditions: premium-or-unexpired fragment shape',
+    '1',
+    (string)preg_match(
+        "/^\\(i\\.b_premium = 1 \\|\\| i\\.dt_expiration >= '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'\\)$/",
+        $lc[3]
+    )
+);
 
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
@@ -257,7 +277,8 @@ pin(
         'extendData', 'extendDataSingle', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
         'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
         'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
-        'listAllWithCategories', 'listLatest', 'listWhere', 'metaFields', 'mostViewed', 'newInstance',
+        'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
+        'newInstance',
         'numItems', 'totalItems', 'updateExpirationDate', 'updateLocaleForce',
     ),
     (static function () {

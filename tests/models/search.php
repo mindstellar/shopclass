@@ -391,6 +391,42 @@ pin(
     $ids($s->doSearch())
 );
 
+/*
+ * includeHidden() — the supported switch for an admin/owner view to see listings
+ * the public cannot. Added last so the extra disabled item does not disturb the
+ * "5 live items" pins above.
+ */
+harness_section('Search: includeHidden');
+
+pin(
+    'includeHidden signature is unchanged',
+    'public includeHidden($include = true)',
+    harness_method_signature('Search', 'includeHidden')
+);
+
+$hidden = $mkItem('Hidden Wagon', $catCars, 3000.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$admin->query("UPDATE {$prefix}t_item SET b_enabled = 0 WHERE pk_i_id = " . (int)$hidden);
+
+$s = new Search();
+check('a disabled listing is hidden from a default search', !in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search();
+$s->includeHidden();
+check('includeHidden() surfaces the disabled listing', in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search();
+$s->includeHidden();
+$s->doSearch();
+pin('includeHidden() count includes the hidden listing', 6, (int)$s->count());
+
+$s = new Search();
+$s->includeHidden();
+$s->includeHidden(false);
+check('includeHidden(false) restores the visibility filter', !in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search(true);
+check('new Search(true) surfaces it too — parity with includeHidden', in_array($hidden, $ids($s->doSearch()), true));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

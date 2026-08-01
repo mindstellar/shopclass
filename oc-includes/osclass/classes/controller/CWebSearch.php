@@ -513,25 +513,38 @@ class CWebSearch extends BaseModel
         osc_run_hook('search_conditions', Params::getParamsAsArray());
 
         // RETRIEVE ITEMS AND TOTAL
-        // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
-        // enable/spam/delete) that bumps it makes every stored search result unreachable at
-        // once — the same immediate invalidation getLatestItems() already gets. Without it a
-        // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
-        $key         = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
-        $found       = null;
-        $cache       = osc_cache_get($key, $found);
+        // A search backend may answer the query itself: a listener on 'search_results' receives
+        // the fully-parsed Search model and the request params and returns
+        // ['items' => array, 'total' => int] to take over — or null to leave core's MySQL search
+        // in charge. This lets a plugin or theme delegate to an external engine (Manticore,
+        // Elasticsearch, …) while core keeps ownership of URL parsing, the view export and the
+        // feeds. A backend owns its own caching, so core's result cache is bypassed when one
+        // responds.
+        $backend     = osc_apply_filter('search_results', null, $this->mSearch, Params::getParamsAsArray());
         $aItems      = null;
         $iTotalItems = null;
-        if ($cache) {
-            $aItems      = $cache['aItems'];
-            $iTotalItems = $cache['iTotalItems'];
+        if (is_array($backend) && isset($backend['items'])) {
+            $aItems      = $backend['items'];
+            $iTotalItems = (int)($backend['total'] ?? count($aItems));
         } else {
-            $aItems                = $this->mSearch->doSearch();
-            $iTotalItems           = $this->mSearch->count();
-            $_cache['aItems']      = $aItems;
-            $_cache['iTotalItems'] = $iTotalItems;
+            // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
+            // enable/spam/delete) that bumps it makes every stored search result unreachable at
+            // once — the same immediate invalidation getLatestItems() already gets. Without it a
+            // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
+            $key   = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
+            $found = null;
+            $cache = osc_cache_get($key, $found);
+            if ($cache) {
+                $aItems      = $cache['aItems'];
+                $iTotalItems = $cache['iTotalItems'];
+            } else {
+                $aItems                = $this->mSearch->doSearch();
+                $iTotalItems           = $this->mSearch->count();
+                $_cache['aItems']      = $aItems;
+                $_cache['iTotalItems'] = $iTotalItems;
 
-            osc_cache_set($key, $_cache, OSC_CACHE_TTL);
+                osc_cache_set($key, $_cache, OSC_CACHE_TTL);
+            }
         }
 
         $aItems = osc_apply_filter('pre_show_items', $aItems);

@@ -483,6 +483,30 @@ class Item extends DAO
      *
      * @return int
      */
+    /**
+     * SQL predicate for "this listing is publicly live": enabled, active, not flagged spam, and
+     * either premium or not yet expired. Single source of truth for the visibility rule that
+     * search, category counts and any integrator must agree on — copy it by hand and the copies
+     * drift, which is exactly what makes search disagree with the counts about what is live.
+     *
+     * Returns an array of SQL fragments to join with AND. The expiry bound carries PHP's clock
+     * as a quoted literal (matching how the search builder consumes it). Pass an $alias ending
+     * in a dot (e.g. 'i.' or DB_TABLE_PREFIX . 't_item.') to qualify the columns.
+     *
+     * @param string $alias column qualifier ending in a dot, or '' for none
+     *
+     * @return string[]
+     */
+    public static function liveConditions($alias = '')
+    {
+        return array(
+            $alias . 'b_enabled = 1',
+            $alias . 'b_active = 1',
+            $alias . 'b_spam = 0',
+            sprintf("(%sb_premium = 1 || %sdt_expiration >= '%s')", $alias, $alias, date('Y-m-d H:i:s')),
+        );
+    }
+
     public function numItems($category, $enabled = true, $active = true)
     {
         $conditions = array();

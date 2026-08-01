@@ -29,6 +29,14 @@ consent cookies.
 - A reference nginx micro-cache config ships in `.docker/nginx/microcache.conf`. It bypasses the
   cache on Shopclass's cookies and respects the app's own Cache-Control, with no hardcoded domain
   hashes and no per-route allow/deny lists to drift out of date.
+- Pluggable search backend. A `search_results` filter lets a plugin or theme answer a search from
+  an external engine (Manticore, Elasticsearch, …) by returning `['items' => …, 'total' => …]`,
+  while core keeps ownership of URL parsing, the view export and the feeds. Return `null` and
+  core's MySQL search runs unchanged, so existing sites are unaffected. Alongside it:
+  `Search::includeHidden()` surfaces disabled/expired listings for an admin or owner view without
+  reaching for `new Search(true)`, `Item::liveConditions()` exposes the "publicly live" predicate
+  as one source of truth, and `ItemStats::sumByUser()` sums a counter across a user's listings in
+  one aggregate instead of walking the catalogue.
 
 Source: https://github.com/mindstellar/shopclass
 
