@@ -28,6 +28,7 @@ class CWebCustom extends BaseModel
     public function doModel()
     {
         $user_menu = false;
+        $fromRoute = false;
         if (Params::existParam('route')) {
             $routes = Rewrite::newInstance()->getRoutes();
             $rid    = Params::getParam('route');
@@ -35,6 +36,7 @@ class CWebCustom extends BaseModel
             if (isset($routes[$rid]['file'])) {
                 $file      = $routes[$rid]['file'];
                 $user_menu = $routes[$rid]['user_menu'];
+                $fromRoute = true;
             }
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
@@ -51,9 +53,15 @@ class CWebCustom extends BaseModel
             return;
         }
 
-        // check if the file exists
+        // check if the file exists — a route may point at a plugin file or a file in the theme's
+        // plugins/ folder. A route registered via osc_add_route() (trusted, PHP-level) may ALSO
+        // point at a file in the theme root, so a theme can serve its own controllers without a
+        // parallel router; the deprecated, request-controlled ?file= param is NOT granted the
+        // theme-root path and stays limited to the plugins directories as before. The traversal /
+        // admin-folder guard above applies to every branch.
         if (!file_exists(osc_plugins_path() . $file)
             && !file_exists(osc_themes_path() . osc_theme() . '/plugins/' . $file)
+            && !($fromRoute && file_exists(osc_themes_path() . osc_theme() . '/' . $file))
         ) {
             $this->do404();
 

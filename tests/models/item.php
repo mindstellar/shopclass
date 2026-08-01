@@ -691,6 +691,13 @@ pin('...and the REPLACE overwrote the title', 'FR titre 2', (static function () 
 
     return $v;
 })());
+$localeHook = array();
+osc_add_hook('item_content_updated', static function ($id, $loc) use (&$localeHook) {
+    $localeHook = array('id' => $id, 'locale' => $loc);
+});
+$model->updateLocaleForce($writeItem, 'fr_FR', 'FR titre 3', 'FR corps 3');
+pin('updateLocaleForce fires item_content_updated with the int id', (int) $writeItem, $localeHook['id']);
+pin('...and the locale that changed', 'fr_FR', $localeHook['locale']);
 
 harness_section('Item::clearStat');
 
@@ -716,8 +723,13 @@ harness_section('Item::updateExpirationDate — the guard and the two write bran
 
 $resetDao();
 $expItem = seed_item($admin, $cat, $user, 'Expiration target');
+$expHook = array();
+osc_add_hook('item_expiration_updated', static function ($id, $date) use (&$expHook) {
+    $expHook = array('id' => $id, 'date' => $date);
+});
 pin('a falsy expiration_time returns false without touching the row', false, $model->updateExpirationDate($expItem, false));
 pin('a "0" expiration_time is falsy too and returns false', false, $model->updateExpirationDate($expItem, '0'));
+check('a rejected update fires no item_expiration_updated hook', $expHook === array());
 
 // Numeric string > 0: the DATE_ADD(dt_pub_date, INTERVAL n DAY) expression branch,
 // written UNescaped. Returns the freshly computed dt_expiration string.
@@ -726,6 +738,8 @@ check('the DATE_ADD branch returns a datetime string', is_string($expDays) && st
 pin('...and the row now holds it', $expDays, (static function () use ($admin, $itemTable, $expItem) {
     return $admin->query("SELECT dt_expiration FROM $itemTable WHERE pk_i_id = $expItem")->fetch_assoc()['dt_expiration'];
 })());
+pin('a successful update fires item_expiration_updated with the int id', (int) $expItem, $expHook['id']);
+pin('...carrying the new dt_expiration', $expDays, $expHook['date']);
 
 // A literal datetime: the escaped/bound branch.
 $expLiteral = $model->updateExpirationDate($expItem, '2030-06-15 12:00:00', false);

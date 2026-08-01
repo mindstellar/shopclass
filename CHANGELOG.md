@@ -37,6 +37,15 @@ consent cookies.
   reaching for `new Search(true)`, `Item::liveConditions()` exposes the "publicly live" predicate
   as one source of truth, and `ItemStats::sumByUser()` sums a counter across a user's listings in
   one aggregate instead of walking the catalogue.
+- Themes can register routes to their own controllers. `osc_add_route()` pointing at a file in the
+  theme root now resolves instead of 404ing — core's custom-route dispatcher searches the theme
+  root alongside the plugins directory (the existing traversal / admin-folder guard still applies).
+  A theme no longer needs a parallel router to serve its own pages.
+- The `Item` model announces writes the controller-layer item events never saw: `updateLocaleForce()`
+  fires `item_content_updated($id, $locale)` and `updateExpirationDate()` fires
+  `item_expiration_updated($id, $newDate)`. A search index or cache that mirrors listing content or
+  liveness can now react to a bulk expiry or title change made straight through the model, rather
+  than reconciling it after the fact.
 
 Source: https://github.com/mindstellar/shopclass
 
