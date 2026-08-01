@@ -489,6 +489,37 @@ error_reporting($prevLevel);
 pin('a duplicate insert for the same listing returns bool false (PK collision)', false, $ret);
 pin('still exactly one row — the duplicate did not land', 1, $rowCount());
 
+/* ----------------------------------------------------------------------------
+ * sumByUser() — one aggregate over a user's listings, replacing the walk-and-
+ * hydrate-every-item pattern a dashboard would otherwise need.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemStats::sumByUser');
+
+pin(
+    'sumByUser signature is unchanged',
+    'public sumByUser($column, $userId, $liveOnly = true)',
+    harness_method_signature('ItemStats', 'sumByUser')
+);
+
+$truncate();
+$seller  = seed_user($admin, 'seller', 'seller@example.test');
+$other   = seed_user($admin, 'other', 'other@example.test');
+$live1   = seed_item($admin, $catId, $seller, 'Seller live 1');
+$live2   = seed_item($admin, $catId, $seller, 'Seller live 2');
+$hidden  = seed_item($admin, $catId, $seller, 'Seller hidden');
+$foreign = seed_item($admin, $catId, $other, 'Other seller');
+// Hide one of the seller's listings; give each listing a distinct view count.
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_enabled = 0 WHERE pk_i_id = ' . (int)$hidden);
+foreach (array($live1 => 10, $live2 => 7, $hidden => 100, $foreign => 5) as $id => $views) {
+    $admin->query('UPDATE ' . $table . ' SET i_num_views = ' . (int)$views . ' WHERE fk_i_item_id = ' . (int)$id);
+}
+
+pin('sumByUser: live-only sums the seller\'s visible listings', 17, $model->sumByUser('i_num_views', $seller));
+pin('sumByUser: liveOnly=false includes the hidden listing', 117, $model->sumByUser('i_num_views', $seller, false));
+pin('sumByUser: a different user is counted separately', 5, $model->sumByUser('i_num_views', $other));
+pin('sumByUser: a user with no listings sums to 0', 0, $model->sumByUser('i_num_views', 999999));
+pin('sumByUser: a non-whitelisted column is rejected as 0', 0, $model->sumByUser('i_num_views); DROP', $seller));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

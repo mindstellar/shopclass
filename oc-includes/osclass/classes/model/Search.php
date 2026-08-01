@@ -21,6 +21,7 @@ class Search extends DAO
     private static $instance;
     private $conditions;
     private $itemConditions;
+    private $liveConditions = array();
     private $tables; // ?
     private $tables_join;
     private $sql;
@@ -121,17 +122,12 @@ class Search extends DAO
         $this->limit();
         $this->results_per_page = 10;
 
+        // The visibility predicate (see Item::liveConditions) — the same rule the category
+        // counts use, sourced from one place so the two cannot drift about what is "live".
+        // Held on the instance so includeHidden() can lift it for an admin or owner view.
+        $this->liveConditions = Item::liveConditions(DB_TABLE_PREFIX . 't_item.');
         if (!$expired) {
-            // t_item
-            $this->addItemConditions(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf(
-                                         "(%st_item.b_premium = 1 || %st_item.dt_expiration >= '%s')",
-                                         DB_TABLE_PREFIX,
-                                         DB_TABLE_PREFIX,
-                                         date('Y-m-d H:i:s')
-                                     ));
+            $this->addItemConditions($this->liveConditions);
         }
         $this->total_results       = null;
         $this->total_results_table = null;
@@ -200,6 +196,27 @@ class Search extends DAO
         if ($r_p_p !== null) {
             $this->results_per_page = $r_p_p;
         }
+    }
+
+    /**
+     * Include listings the public cannot see — disabled, deactivated, spam or expired — in the
+     * results. A default Search hides them; an admin table or an owner-facing view needs them.
+     * This is the supported switch for that, instead of `new Search(true)` (which cannot be
+     * undone, and which the newInstance() singleton can never be).
+     *
+     * @param bool $include
+     *
+     * @return $this
+     */
+    public function includeHidden($include = true)
+    {
+        if ($include) {
+            $this->itemConditions = array_values(array_diff($this->itemConditions, $this->liveConditions));
+        } else {
+            $this->addItemConditions($this->liveConditions);
+        }
+
+        return $this;
     }
 
     /**
