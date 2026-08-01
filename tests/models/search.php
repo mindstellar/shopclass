@@ -252,6 +252,38 @@ $s = new Search();
 $s->addPattern('%wild_card%');
 check('a pattern with SQL wildcard characters is safe', is_array($s->doSearch()));
 
+/* The pattern path joins t_item_description and filters on the current user
+ * locale; the fixtures are en_US, so pin that locale for the content assertions
+ * below (osc_current_user_locale() reads this cookie). */
+$_COOKIE['oc_userLocale'] = 'en_US';
+
+/* Query preprocessing: a multi-word pattern requires every term (AND), not any
+ * term (MySQL's default OR). "Mountain Bike" must not drag in "Racing Bike". */
+$s = new Search();
+$s->addPattern('Mountain Bike');
+pin('a multi-word pattern requires all terms', array($bike1), $sorted($ids($s->doSearch())));
+
+/* Prefix recall: a partial word matches by prefix (+word*). */
+$s = new Search();
+$s->addPattern('Roadst');
+pin('a partial word matches by prefix', array($car1), $sorted($ids($s->doSearch())));
+
+/* Exclusion: a -term removes matches. */
+$s = new Search();
+$s->addPattern('Bike -Racing');
+pin('a -term excludes its matches', array($bike1), $sorted($ids($s->doSearch())));
+
+/* Quoted phrase: "two words" matches the phrase, not the two words apart. */
+$s = new Search();
+$s->addPattern('"Racing Bike"');
+pin('a quoted phrase matches the phrase', array($bike2), $sorted($ids($s->doSearch())));
+
+/* Short-term fallback: a term below the FULLTEXT min token size (3) would match
+ * nothing in InnoDB, so it routes to a substring LIKE — "se" finds "Sedan". */
+$s = new Search();
+$s->addPattern('se');
+pin('a below-min-length term falls back to substring match', array($car2), $sorted($ids($s->doSearch())));
+
 /* ----------------------------------------------------------------------------
  * Premium only.
  * ------------------------------------------------------------------------- */

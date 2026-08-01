@@ -252,7 +252,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     s_title VARCHAR(100) NOT NULL,
     s_description MEDIUMTEXT NOT NULL,
         PRIMARY KEY (fk_i_item_id, fk_c_locale_code),
-        FULLTEXT s_description (s_description, s_title)
+        FULLTEXT s_description (s_description, s_title),
+        FULLTEXT s_title (s_title)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 

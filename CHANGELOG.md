@@ -37,6 +37,13 @@ consent cookies.
   reaching for `new Search(true)`, `Item::liveConditions()` exposes the "publicly live" predicate
   as one source of truth, and `ItemStats::sumByUser()` sums a counter across a user's listings in
   one aggregate instead of walking the catalogue.
+- Sharper built-in search. The default MySQL search now requires every word a visitor types
+  rather than matching any one of them, matches partial words by prefix, and honours
+  `"quoted phrases"` and `-excluded` terms — so a two-word query stops returning everything that
+  merely shares one common word. Results are ranked with a title match weighted above a
+  description-only match, and a query too short for the full-text index (below three letters) falls
+  back to a substring match instead of returning nothing. Upgrading adds a title `FULLTEXT` index
+  to `t_item_description` (a one-time `ALTER TABLE`).
 - Themes can register routes to their own controllers. `osc_add_route()` pointing at a file in the
   theme root now resolves instead of 404ing — core's custom-route dispatcher searches the theme
   root alongside the plugins directory (the existing traversal / admin-folder guard still applies).
