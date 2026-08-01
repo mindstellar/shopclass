@@ -70,7 +70,9 @@ consent cookies.
 - Saved-search alerts now match the same listings on replay as when they were saved. `toJson()`
   serialised the search pattern already escaped, and replaying the alert escaped it again, so the
   stored criteria drifted from the original — visible on short keywords, which take the
-  substring-match path where the stray quotes changed the result set.
+  substring-match path where the stray quotes changed the result set. Alerts saved before the fix
+  are repaired on replay too: the revive path strips the legacy escaped wrapper, so old and new
+  alerts behave identically.
 - `osc_route_url()` builds a working URL for a controller (hook) route when rewrite is disabled. It
   previously always emitted `page=custom`, which 404s for a route that has no file; it now emits
   `page=route` for controller routes, matching how the dispatcher resolves them.

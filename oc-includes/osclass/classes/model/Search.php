@@ -2206,7 +2206,7 @@ class Search extends DAO
 
         // pattern
         if (isset($aData['sPattern'])) {
-            $this->addPattern($aData['sPattern']);
+            $this->addPattern($this->unescapeLegacyAlertPattern($aData['sPattern']));
         }
         if (isset($aData['withPicture'])) {
             $this->withPicture(true);
@@ -2214,6 +2214,31 @@ class Search extends DAO
         if (isset($aData['onlyPremium'])) {
             $this->onlyPremium(true);
         }
+    }
+
+    /**
+     * Normalise a stored alert's pattern on the way back in.
+     *
+     * Alerts saved before toJson() switched to the raw pattern hold the escaped form
+     * (the old escapeValue() output: driver-escaped, wrapped in single quotes). Replaying
+     * that through addPattern() escapes it a second time, and the stray quotes shift the
+     * matched set on the short-term LIKE path. Strip one legacy layer when the value is
+     * quote-wrapped; a pattern saved raw (the current form) is not wrapped and passes
+     * through unchanged, so old and new alerts converge and the call is idempotent.
+     *
+     * @param string $pattern
+     *
+     * @return string
+     */
+    private function unescapeLegacyAlertPattern($pattern)
+    {
+        $pattern = (string)$pattern;
+        $len     = strlen($pattern);
+        if ($len >= 2 && $pattern[0] === "'" && $pattern[$len - 1] === "'") {
+            return stripslashes(substr($pattern, 1, -1));
+        }
+
+        return $pattern;
     }
 
     /**

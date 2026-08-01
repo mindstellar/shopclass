@@ -362,6 +362,19 @@ pin(
     $sorted($ids($patRevived->doSearch()))
 );
 
+// A pre-fix alert stored its pattern escaped ("'se'"); reviving it must strip the
+// legacy layer instead of double-escaping, so it matches the same items as the raw
+// pattern. Same blob, only sPattern swapped to the old escaped form.
+$legacyPatBlob             = $patBlob;
+$legacyPatBlob['sPattern'] = "'se'";
+$legacyPatRevived          = new Search();
+$legacyPatRevived->setJsonAlert($legacyPatBlob);
+pin(
+    'a legacy escaped alert pattern revives to the same items as the raw pattern',
+    $sorted($ids($patSrc->doSearch())),
+    $sorted($ids($legacyPatRevived->doSearch()))
+);
+
 /* ----------------------------------------------------------------------------
  * Secondary execution paths that were routed off the legacy query layer.
  * ------------------------------------------------------------------------- */
