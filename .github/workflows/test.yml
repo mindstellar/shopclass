@@ -101,6 +101,8 @@ jobs:
         run: php tests/rewrite-param-decode.php
       - name: Rewrite route match
         run: php tests/rewrite-route-match.php
+      - name: Rewrite resolve rewrite
+        run: php tests/rewrite-resolve-rewrite.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

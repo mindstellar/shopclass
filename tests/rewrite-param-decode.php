@@ -9,21 +9,17 @@
  */
 
 /**
- * Pins that Rewrite::extractParams() url-decodes a rewritten URL's query exactly
- * once — the same as PHP's native $_GET parsing.
+ * Pins Rewrite::parseParams() — it url-decodes a rewritten URL's query exactly
+ * once, the same as PHP's native $_GET parsing.
  *
- * The friendly-URL path feeds parse_str() (which already decodes) and used to
- * urldecode() the result a second time, so a captured segment like "a%2Bb"
- * resolved to "a b" instead of "a+b", and a double-encoded "%2520" collapsed to a
- * space. These pin the single-decode contract so the double-decode cannot return.
- *
- * DB-free (the private method is driven via reflection on an unconstructed
- * instance, so no Preference/DB access is triggered).  Usage:
- *   php tests/rewrite-param-decode.php
+ * The friendly-URL path feeds parse_str() (which already decodes) and once
+ * urldecode()'d the result a second time, so a captured segment like "a%2Bb"
+ * resolved to "a b" instead of "a+b" and a double-encoded "%2520" collapsed to a
+ * space. parseParams() is pure (returns the map, sets nothing), so these assert
+ * the returned array directly.  Usage:  php tests/rewrite-param-decode.php
  */
 
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/Params.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/Rewrite.php';
 require_once __DIR__ . '/lib/harness.php';
 
@@ -31,38 +27,29 @@ $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-/**
- * Run extractParams() against a rewrite target and return one decoded param.
- *
- * @param string $uri   the internal target, e.g. index.php?page=search&sParams=...
- * @param string $param the param name to read back
- *
- * @return mixed
- */
-function extract_param(string $uri, string $param)
+/** Invoke the private, pure parseParams() on an unconstructed instance (DB-free). */
+function parse_params(string $uri): array
 {
-    $_GET  = array();
-    $_POST = array();
-    Params::init();
-
     $ref  = new ReflectionClass('Rewrite');
     $rw   = $ref->newInstanceWithoutConstructor();
-    $meth = $ref->getMethod('extractParams');
+    $meth = $ref->getMethod('parseParams');
     $meth->setAccessible(true);
-    $meth->invoke($rw, $uri);
 
-    return Params::getParam($param);
+    return $meth->invoke($rw, $uri);
 }
 
-harness_section('extractParams — decodes exactly once');
-pin('%2B stays a literal plus, not a space', 'a+b', extract_param('index.php?page=search&sParams=a%2Bb', 'sParams'));
-pin('double-encoded space stays %20',        '%20', extract_param('index.php?page=search&q=%2520', 'q'));
-pin('%20 decodes to a single space',   'hello world', extract_param('index.php?page=search&q=hello%20world', 'q'));
-pin('numeric id is untouched',                 '42', extract_param('index.php?page=item&id=42', 'id'));
-pin('the page param itself survives',      'search', extract_param('index.php?page=search&id=42', 'page'));
+harness_section('parseParams — decodes exactly once');
+$p = parse_params('index.php?page=search&sParams=a%2Bb');
+pin('%2B stays a literal plus, not a space', 'a+b', $p['sParams'] ?? null);
+pin('page param preserved',              'search', $p['page'] ?? null);
+pin('double-encoded space stays %20', '%20', parse_params('index.php?q=%2520')['q'] ?? null);
+pin('%20 decodes to one space', 'hello world', parse_params('index.php?q=hello%20world')['q'] ?? null);
+pin('numeric id untouched',        '42', parse_params('index.php?id=42')['id'] ?? null);
+pin('trailing %25 kept as %',     '10%', parse_params('index.php?n=10%25')['n'] ?? null);
 
-harness_section('extractParams — edge cases');
-pin('no query string sets nothing',              '', extract_param('index.php', 'page'));
-pin('trailing %25 (invalid escape) kept as %', '10%', extract_param('index.php?page=search&n=10%25', 'n'));
+harness_section('parseParams — edge cases');
+pin('no query string -> empty map', array(), parse_params('index.php'));
+$multi = parse_params('index.php?a=1&b=2');
+check('multiple params parsed', ($multi['a'] ?? null) === '1' && ($multi['b'] ?? null) === '2');
 
 exit(harness_result());

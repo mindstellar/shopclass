@@ -9,14 +9,14 @@
  */
 
 /**
- * Pins Rewrite::matchRoute() — the registered-route matching extracted out of
- * init(). Covers the three param-binding modes (named {…} placeholders, the
- * route_param_N fallback, controller routes) plus the no-match case, so the
- * init() decomposition cannot silently change route dispatch.
+ * Pins the pure dispatch resolvers extracted from init():
+ *   - resolveRoute()   registered-route matching + param binding
+ *   - resolveSitemap() core sitemap/robots fallback
+ *   - applyMatch()     the sink that writes a resolved route into Params
  *
- * DB-free: matchRoute touches only preg_match, Params and the private $routes
- * array (set here via reflection), so no Preference/DB access is triggered.
- * Usage:  php tests/rewrite-route-match.php
+ * resolveRoute/resolveSitemap return a plain description and touch nothing, so the
+ * matching contract is asserted on the returned array; one applyMatch() case
+ * covers the Params/instance write-through.  Usage:  php tests/rewrite-route-match.php
  */
 
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
@@ -28,80 +28,92 @@ $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-/**
- * Drive matchRoute() with a fixed routes table against a request URI.
- *
- * @param array  $routes      the private $routes value to inject
- * @param string $request_uri
- *
- * @return array{matched: bool, rewrite: Rewrite}
- */
-function run_match(array $routes, string $request_uri): array
+$REF = new ReflectionClass('Rewrite');
+
+/** Unconstructed instance with $routes injected (DB-free). */
+function rw_with_routes(array $routes)
 {
-    $_GET  = array();
-    $_POST = array();
-    Params::init();
-
-    $ref = new ReflectionClass('Rewrite');
-    $rw  = $ref->newInstanceWithoutConstructor();
-
-    $prop = $ref->getProperty('routes');
+    global $REF;
+    $rw   = $REF->newInstanceWithoutConstructor();
+    $prop = $REF->getProperty('routes');
     $prop->setAccessible(true);
     $prop->setValue($rw, $routes);
 
-    $meth = $ref->getMethod('matchRoute');
-    $meth->setAccessible(true);
-    $matched = $meth->invoke($rw, $request_uri);
+    return $rw;
+}
 
-    return array('matched' => $matched, 'rewrite' => $rw);
+/** Invoke a private method on a Rewrite instance. */
+function rw_invoke($rw, string $method, ...$args)
+{
+    global $REF;
+    $m = $REF->getMethod($method);
+    $m->setAccessible(true);
+
+    return $m->invoke($rw, ...$args);
 }
 
 /** Read a private Rewrite property. */
-function rw_prop(Rewrite $rw, string $name)
+function rw_prop($rw, string $name)
 {
-    $p = (new ReflectionClass('Rewrite'))->getProperty($name);
+    global $REF;
+    $p = $REF->getProperty($name);
     $p->setAccessible(true);
 
     return $p->getValue($rw);
 }
 
-harness_section('matchRoute — named {…} placeholders');
 $named = array('blog' => array(
     'regexp'   => 'blog/([0-9]+)/([^/]+)',
     'url'      => 'index.php?page=custom&post_id={post_id}&slug={slug}',
     'location' => 'blog', 'section' => 'single', 'title' => 'Blog',
 ));
-$r = run_match($named, 'blog/42/hello-world');
-check('matched', $r['matched'] === true);
-pin('capture 1 bound to {post_id}', '42',          Params::getParam('post_id'));
-pin('capture 2 bound to {slug}',    'hello-world',  Params::getParam('slug'));
-pin('route id recorded',            'blog',         Params::getParam('route'));
-pin('page set to custom',           'custom',       Params::getParam('page'));
-pin('location from route',          'blog',         rw_prop($r['rewrite'], 'location'));
-pin('section from route',           'single',       rw_prop($r['rewrite'], 'section'));
-pin('title from route',             'Blog',         rw_prop($r['rewrite'], 'title'));
 
-harness_section('matchRoute — route_param_N fallback (no placeholders)');
+harness_section('resolveRoute — named {…} placeholders (pure)');
+$r = rw_invoke(rw_with_routes($named), 'resolveRoute', 'blog/42/hello-world');
+check('returns a match', is_array($r));
+pin('capture 1 bound to {post_id}', '42',          $r['params']['post_id'] ?? null);
+pin('capture 2 bound to {slug}',    'hello-world', $r['params']['slug'] ?? null);
+pin('route id recorded',            'blog',        $r['params']['route'] ?? null);
+pin('page set to custom',           'custom',      $r['params']['page'] ?? null);
+pin('location carried',             'blog',        $r['location']);
+pin('section carried',              'single',      $r['section']);
+pin('title carried',                'Blog',        $r['title']);
+
+harness_section('resolveRoute — route_param_N fallback + controller + miss');
 $fallback = array('foo' => array(
     'regexp' => 'foo/([0-9]+)', 'url' => 'index.php?page=custom',
     'location' => 'custom', 'section' => 'custom', 'title' => 'Custom',
 ));
-$r = run_match($fallback, 'foo/7');
-check('matched', $r['matched'] === true);
-pin('unnamed capture -> route_param_1', '7', Params::getParam('route_param_1'));
+$r = rw_invoke(rw_with_routes($fallback), 'resolveRoute', 'foo/7');
+pin('unnamed capture -> route_param_1', '7', $r['params']['route_param_1'] ?? null);
 
-harness_section('matchRoute — controller route');
 $controller = array('api' => array(
     'regexp' => 'api/([a-z]+)', 'url' => 'index.php', 'routeController' => true,
 ));
-$r = run_match($controller, 'api/status');
-check('matched', $r['matched'] === true);
-pin('page set to route',   'route',  Params::getParam('page'));
-pin('route id recorded',   'api',    Params::getParam('route'));
+$r = rw_invoke(rw_with_routes($controller), 'resolveRoute', 'api/status');
+pin('controller route -> page=route', 'route', $r['params']['page'] ?? null);
+pin('controller route location null', null,     $r['location']);
 
-harness_section('matchRoute — no match');
-$r = run_match($named, 'nothing/here');
-check('returns false', $r['matched'] === false);
-check('no page set', Params::getParam('page') === '');
+pin('no match -> null', null, rw_invoke(rw_with_routes($named), 'resolveRoute', 'nothing/here'));
+
+harness_section('applyMatch — writes the resolved route through to Params/instance');
+$_GET = array();
+$_POST = array();
+Params::init();
+$rw    = rw_with_routes($named);
+$match = rw_invoke($rw, 'resolveRoute', 'blog/42/hello-world');
+rw_invoke($rw, 'applyMatch', $match);
+pin('Params.post_id set', '42',    Params::getParam('post_id'));
+pin('Params.page set',    'custom', Params::getParam('page'));
+pin('instance location set', 'blog', rw_prop($rw, 'location'));
+
+harness_section('resolveSitemap — core fallback (pure)');
+$s = rw_invoke($REF->newInstanceWithoutConstructor(), 'resolveSitemap', 'sitemap.xml');
+pin('sitemap.xml -> index doc', 'index', $s['sitemap_doc'] ?? null);
+pin('sitemap.xml -> page=sitemap', 'sitemap', $s['page'] ?? null);
+$s = rw_invoke($REF->newInstanceWithoutConstructor(), 'resolveSitemap', 'sitemap/item-sitemap_s3.xml');
+pin('paginated item sitemap page', '3', $s['sitemap_page'] ?? null);
+pin('robots.txt -> robots doc', 'robots', rw_invoke($REF->newInstanceWithoutConstructor(), 'resolveSitemap', 'robots.txt')['sitemap_doc'] ?? null);
+pin('non-sitemap -> null', null, rw_invoke($REF->newInstanceWithoutConstructor(), 'resolveSitemap', 'search/cars'));
 
 exit(harness_result());

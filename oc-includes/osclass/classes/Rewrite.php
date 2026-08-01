@@ -558,9 +558,17 @@ class Rewrite
         $this->captureHttpReferer($request_uri);
         $this->raw_request_uri = $request_uri;
 
+        // Dispatch is decided by pure resolve*() methods that return a plain
+        // description of the match (or null) and never touch Params; init() is the
+        // one place those descriptions are applied to Params/instance state. That
+        // split is what lets the resolvers be unit-tested without a request.
+
         // A registered route (plugin/theme addRoute, or a controller route hook)
         // wins outright and short-circuits the rest of dispatch.
-        if ($this->matchRoute($request_uri)) {
+        $route = $this->resolveRoute($request_uri);
+        if ($route !== null) {
+            $this->applyMatch($route);
+
             return;
         }
 
@@ -569,7 +577,9 @@ class Rewrite
         // already claimed them above and wins. Only when nothing else matched does
         // core serve the sitemap — regardless of whether rewrite is enabled and
         // without a theme having to register a route.
-        if ($this->matchSitemapRoute($request_uri)) {
+        $sitemap = $this->resolveSitemap($request_uri);
+        if ($sitemap !== null) {
+            $this->applyParams($sitemap);
             $this->location    = 'sitemap';
             $this->section     = 'sitemap';
             $this->request_uri = $request_uri;
@@ -578,7 +588,15 @@ class Rewrite
         }
 
         if (Preference::newInstance()->get('rewriteEnabled')) {
-            $request_uri = $this->rewriteRequest($request_uri);
+            $rewrite = $this->resolveRewrite($request_uri);
+            if ($rewrite['not_found']) {
+                $this->set_location('error');
+                header('HTTP/1.1 404 Not Found');
+                osc_current_web_theme_path('404.php');
+                exit;
+            }
+            $request_uri = $rewrite['uri'];
+            $this->applyParams($rewrite['params']);
         }
         $this->request_uri = $request_uri;
 
@@ -587,6 +605,39 @@ class Rewrite
         }
         if (Params::getParam('action')) {
             $this->section = Params::getParam('action');
+        }
+    }
+
+    /**
+     * Write a resolved param map into Params. The single sink through which every
+     * resolve*() result reaches request state.
+     *
+     * @param array $params key => value pairs to set
+     */
+    private function applyParams(array $params)
+    {
+        foreach ($params as $k => $v) {
+            Params::setParam($k, $v);
+        }
+    }
+
+    /**
+     * Apply a resolveRoute() result: its params, plus location/section/title when
+     * the route carried them (a controller route leaves those null).
+     *
+     * @param array $match
+     */
+    private function applyMatch(array $match)
+    {
+        $this->applyParams($match['params']);
+        if ($match['location'] !== null) {
+            $this->location = $match['location'];
+        }
+        if ($match['section'] !== null) {
+            $this->section = $match['section'];
+        }
+        if ($match['title'] !== null) {
+            $this->title = $match['title'];
         }
     }
 
@@ -606,16 +657,17 @@ class Rewrite
     }
 
     /**
-     * Match the request against the registered routes ($this->routes). On a hit,
-     * inject the captured params (named via {…} placeholders in the route url, or
-     * route_param_N otherwise), set the dispatch page, and — for a non-controller
-     * route — the location/section/title. First match wins.
+     * Match the request against the registered routes ($this->routes) without side
+     * effects. Returns a dispatch description — the params to set (captures named
+     * via {…} placeholders in the route url, or route_param_N otherwise, plus
+     * `route` and `page`) and, for a non-controller route, location/section/title —
+     * or null when nothing matches. First match wins. See applyMatch() for the sink.
      *
      * @param string $request_uri
      *
-     * @return bool true when a route matched and dispatch is resolved
+     * @return array|null
      */
-    private function matchRoute($request_uri)
+    private function resolveRoute($request_uri)
     {
         foreach ($this->routes as $id => $route) {
             if (!preg_match('#^' . $route['regexp'] . '#', $request_uri, $m)) {
@@ -624,41 +676,42 @@ class Rewrite
             if (!preg_match_all('#{([^}]+)}#', $route['url'], $args)) {
                 $args[1] = array();
             }
-            $l = count($m);
+            $params = array();
+            $l      = count($m);
             for ($p = 1; $p < $l; $p++) {
-                if (isset($args[1][$p - 1])) {
-                    Params::setParam($args[1][$p - 1], $m[$p]);
-                } else {
-                    Params::setParam('route_param_' . $p, $m[$p]);
-                }
+                $key          = $args[1][$p - 1] ?? ('route_param_' . $p);
+                $params[$key] = $m[$p];
             }
-            Params::setParam('route', $id);
+            $params['route'] = $id;
+
+            $result = array('params' => $params, 'location' => null, 'section' => null, 'title' => null);
             if (isset($route['routeController'])) {
-                Params::setParam('page', 'route');
+                $result['params']['page'] = 'route';
             } else {
-                Params::setParam('page', 'custom');
-                $this->location = $route['location'];
-                $this->section  = $route['section'];
-                $this->title    = $route['title'];
+                $result['params']['page'] = 'custom';
+                $result['location']       = $route['location'];
+                $result['section']        = $route['section'];
+                $result['title']          = $route['title'];
             }
 
-            return true;
+            return $result;
         }
 
-        return false;
+        return null;
     }
 
     /**
-     * Apply the friendly-URL rewrite rules to a request that no route claimed.
-     * 404s a direct request for a missing .php file, then (public front controller
-     * only) rewrites the URI through the first matching rule and extracts its query
-     * params.
+     * Resolve a request that no route claimed against the friendly-URL rewrite
+     * rules, without side effects. Returns ['uri' => rewritten URI, 'params' =>
+     * extracted query params, 'not_found' => bool]. `not_found` flags a direct
+     * request for a missing .php file — init() turns that into the 404 (a pure
+     * resolver never sends headers or exits).
      *
      * @param string $request_uri
      *
-     * @return string the rewritten install-relative URI
+     * @return array{uri: string, params: array, not_found: bool}
      */
-    private function rewriteRequest($request_uri)
+    private function resolveRewrite($request_uri)
     {
         $tmp_ar      = explode('?', $request_uri);
         $request_uri = $tmp_ar[0];
@@ -667,10 +720,7 @@ class Rewrite
         if (preg_match('#^(.+?)\.php(.*)$#', $request_uri)) {
             $file = explode('?', $request_uri);
             if (!file_exists(ABS_PATH . $file[0])) {
-                self::newInstance()->set_location('error');
-                header('HTTP/1.1 404 Not Found');
-                osc_current_web_theme_path('404.php');
-                exit;
+                return array('uri' => $request_uri, 'params' => array(), 'not_found' => true);
             }
         }
 
@@ -682,6 +732,7 @@ class Rewrite
         // defined (false on the public front controller, true in oc-admin) — so
         // test its value, not defined(): the latter is always true and would
         // disable friendly URLs everywhere.
+        $params = array();
         if (!OC_ADMIN) {
             foreach ($this->rules as $match => $uri) {
                 if (preg_match('#^' . $match . '#', $request_uri, $m)) {
@@ -689,10 +740,10 @@ class Rewrite
                     break;
                 }
             }
-            $this->extractParams($request_uri);
+            $params = $this->parseParams($request_uri);
         }
 
-        return $request_uri;
+        return array('uri' => $request_uri, 'params' => $params, 'not_found' => false);
     }
 
     /**
@@ -717,9 +768,9 @@ class Rewrite
      *
      * @param string $request_uri the install-relative request URI
      *
-     * @return bool true when a sitemap route matched
+     * @return array|null the sitemap dispatch params, or null when no match
      */
-    private function matchSitemapRoute($request_uri)
+    private function resolveSitemap($request_uri)
     {
         $path = explode('?', $request_uri, 2)[0];
         $path = ltrim($path, '/');
@@ -741,40 +792,38 @@ class Rewrite
         );
 
         if (isset($fixed[$path])) {
-            Params::setParam('page', 'sitemap');
-            Params::setParam('sitemap_doc', $fixed[$path]);
-
-            return true;
+            return array('page' => 'sitemap', 'sitemap_doc' => $fixed[$path]);
         }
 
         if (preg_match('#^sitemap/item-sitemap_s([0-9]+)\.xml$#i', $path, $m)) {
-            Params::setParam('page', 'sitemap');
-            Params::setParam('sitemap_doc', 'item');
-            Params::setParam('sitemap_page', $m[1]);
-
-            return true;
+            return array('page' => 'sitemap', 'sitemap_doc' => 'item', 'sitemap_page' => $m[1]);
         }
 
-        return false;
+        return null;
     }
 
     /**
+     * Parse a rewritten URI's query string into a param map, decoding each value
+     * exactly once (parse_str already url-decodes; a second pass double-decoded, so
+     * a%2Bb became "a b" instead of "a+b"). Pure — the caller writes the result.
+     *
      * @param string $uri
+     *
+     * @return array
      */
-    private function extractParams($uri = '')
+    private function parseParams($uri = '')
     {
+        $params    = array();
         $uri_array = explode('?', $uri);
         $length_i  = count($uri_array);
         for ($var_i = 1; $var_i < $length_i; $var_i++) {
-            // parse_str already url-decodes each value; a second urldecode() here
-            // decoded twice, so a captured segment like a%2Bb became "a b" instead
-            // of "a+b". Set the parse_str result verbatim to match how PHP
-            // populates $_GET for a native (non-rewritten) query string.
             parse_str($uri_array[$var_i], $parsedVars);
             foreach ($parsedVars as $k => $v) {
-                Params::setParam($k, $v);
+                $params[$k] = $v;
             }
         }
+
+        return $params;
     }
 
     /**
