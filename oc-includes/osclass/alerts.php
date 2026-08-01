@@ -48,46 +48,58 @@ function osc_runAlert($type = null, $last_exec = null)
 
 
     foreach ($searches as $s_search) {
-        // Get if there're new ads on this search
-        $json             = $s_search['s_search'];
-        $array_conditions = json_decode($json, true);
+        // Isolate each saved search: the cron already moved d_last_exec forward before
+        // calling this, so an uncaught throw here would drop every remaining subscriber's
+        // alert for good. One bad search should cost one alert, not the rest of the run.
+        try {
+            // Get if there're new ads on this search
+            $json             = $s_search['s_search'];
+            $array_conditions = json_decode($json, true);
 
-        $new_search = Search::newInstance();
-        $new_search->setJsonAlert($array_conditions);
+            $new_search = Search::newInstance();
+            $new_search->setJsonAlert($array_conditions);
 
-        $new_search->addConditions(sprintf(" %st_item.dt_pub_date > '%s' ", DB_TABLE_PREFIX, $last_exec));
+            $new_search->addConditions(sprintf(" %st_item.dt_pub_date > '%s' ", DB_TABLE_PREFIX, $last_exec));
 
-        $items      = $new_search->doSearch();
-        $totalItems = $new_search->count();
+            $items      = $new_search->doSearch();
+            $totalItems = $new_search->count();
 
-        if (count($items) > 0) {
-            // If we have new items from last check
-            // Catch the user subscribed to this search
-            $alerts = Alerts::newInstance()->findUsersBySearchAndType($s_search['s_search'], $type, $active);
+            if (count($items) > 0) {
+                // If we have new items from last check
+                // Catch the user subscribed to this search
+                $alerts = Alerts::newInstance()->findUsersBySearchAndType($s_search['s_search'], $type, $active);
 
-            if (count($alerts) > 0) {
-                $ads = '';
-                foreach ($items as $item) {
-                    $ads .= '<a href="' . osc_item_url_ns($item['pk_i_id']) . '">' . $item['s_title'] . '</a><br/>';
-                }
-
-                foreach ($alerts as $alert) {
-                    $user = array();
-                    if ($alert['fk_i_user_id'] != 0) {
-                        $user = $mUser->findByPrimaryKey($alert['fk_i_user_id']);
+                if (count($alerts) > 0) {
+                    $ads = '';
+                    foreach ($items as $item) {
+                        $ads .= '<a href="' . osc_item_url_ns($item['pk_i_id']) . '">' . $item['s_title'] . '</a><br/>';
                     }
-                    if (!isset($user['s_name'])) {
-                        $user = array(
-                            's_name'  => $alert['s_email'],
-                            's_email' => $alert['s_email']
-                        );
-                    }
-                    if (count($alert) > 0) {
-                        osc_run_hook('hook_' . $internal_name, $user, $ads, $alert, $items, $totalItems);
-                        AlertsStats::newInstance()->increase(date('Y-m-d'));
+
+                    foreach ($alerts as $alert) {
+                        $user = array();
+                        if ($alert['fk_i_user_id'] != 0) {
+                            $user = $mUser->findByPrimaryKey($alert['fk_i_user_id']);
+                        }
+                        if (!isset($user['s_name'])) {
+                            $user = array(
+                                's_name'  => $alert['s_email'],
+                                's_email' => $alert['s_email']
+                            );
+                        }
+                        if (count($alert) > 0) {
+                            osc_run_hook('hook_' . $internal_name, $user, $ads, $alert, $items, $totalItems);
+                            AlertsStats::newInstance()->increase(date('Y-m-d'));
+                        }
                     }
                 }
             }
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                'osc_runAlert(%s): skipped saved search #%s: %s',
+                $type,
+                $s_search['pk_i_id'] ?? '?',
+                $e->getMessage()
+            ));
         }
     }
 }
