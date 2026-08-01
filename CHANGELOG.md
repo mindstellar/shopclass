@@ -2,85 +2,182 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 5.4.0
+## Shopclass 6.0.0
 
-First release candidate for the 5.4.0 line, after an extended run on production. Public read pages
-are now reverse-proxy/CDN cacheable out of the box, search gains a pluggable backend and a sharper
-built-in matcher, a new command-line interface covers maintenance tasks, and a round of hardening
-closes gaps in core's network fetches and saved-search alerts.
+The first stable release under the Shopclass name — the culmination of the Osclass modernization.
+Since the last stable (Osclass 5.2.0) the admin has been rebuilt on Bootstrap 5 and stripped of
+jQuery, the front end made sessionless so public pages are reverse-proxy/CDN cacheable, sitemaps and
+S3 storage brought into core, search made pluggable and sharper, and a long list of security holes
+closed. PHP 8.0 is now the floor.
 
 ### New
 
-- Cache-safe listing view counts. A JS beacon (an uncached POST) now counts views instead of
-  render time, so counts stay accurate behind a full-page cache and non-JS crawlers stop inflating
-  them. Toggle via the `item_view_beacon` preference or `item_view_beacon_enabled` filter.
-- Core-owned HTTP caching. Public read pages emit `public, s-maxage=30, must-revalidate` (all else
-  `private, no-store`), so a reverse proxy or CDN can cache them with no plugin. Filterable via
-  `public_cache_max_age` and `response_cache_control`.
-- The cache decision ignores third-party analytics/ad cookies, keying only on Shopclass's own
-  login, session and locale cookies; a personalized page is never stored or shared.
-- Reference nginx micro-cache config in `.docker/nginx/microcache.conf` — bypasses on Shopclass's
-  cookies, respects the app's Cache-Control, with no hardcoded route lists to drift.
-- Pluggable search backend. A `search_results` filter lets a plugin answer a search from an
-  external engine (Manticore, Elasticsearch, …); return `null` and core's MySQL search runs
-  unchanged.
-- Sharper built-in search. MySQL search now requires every word, matches prefixes, and honours
-  `"quoted phrases"` and `-excluded` terms, ranks title matches above description, and falls back to
-  substring for short queries. Adds a title `FULLTEXT` index (one-time `ALTER TABLE`).
+- Cache-safe listing view counts via a JS beacon (an uncached POST), so counts stay accurate behind
+  a full-page cache and non-JS crawlers stop inflating them. Toggle via the `item_view_beacon`
+  preference or `item_view_beacon_enabled` filter.
+- Core-owned HTTP caching: public read pages emit `public, s-maxage=30, must-revalidate` (all else
+  `private, no-store`), keyed only on Shopclass's own login/session/locale cookies, so a reverse
+  proxy or CDN can cache them with no plugin and third-party analytics/ad cookies don't defeat it.
+  Filterable via `public_cache_max_age` and `response_cache_control`; reference nginx micro-cache
+  config in `.docker/nginx/microcache.conf`.
+- Built-in XML sitemap at `/sitemapindex.xml` — paginated item, category, static-page and optional
+  location sitemaps, configurable under Settings → Sitemap and hookable for a search backend. Core
+  only serves it when no sitemap plugin claims the path.
+- Built-in S3-compatible storage — offload images to S3, R2, Spaces, Wasabi, B2 or MinIO with public
+  or presigned URLs and an optional CDN base. Uploads/deletes/migrations run through a cron-drained
+  queue and each image records its location, so local and remote coexist. Supersedes the `better-s3`
+  plugin.
+- Pluggable search backend: a `search_results` filter lets a plugin answer searches from an external
+  engine (Manticore, Elasticsearch), and returning a `model` key hands it the whole page (premiums,
+  `osc_search()`). Return `null` and core's MySQL search runs unchanged.
+- Sharper built-in search — requires every word, matches prefixes, honours `"quoted phrases"` and
+  `-excluded` terms, ranks title above description, and falls back to substring for short queries.
+  Adds a title `FULLTEXT` index (one-time `ALTER TABLE`). `Search::fromPrimaryKeys(array $ids)`
+  hydrates an externally-produced match set, paging to the id count and preserving caller ranking.
 - Command-line interface (`oc-cli.php`) for maintenance: `cron`, `db:upgrade`, `cache:flush`,
-  `sitemap:warm`, `user:create-admin`, `user:reset-password`, and a `doctor` health check. Refuses
-  non-CLI access; the legacy `php index.php -p cron -t hourly` still works.
-- Themes can register routes to their own controllers — `osc_add_route()` now resolves a file in the
-  theme root, not just the plugins directory.
-- New model events: `updateLocaleForce()` fires `item_content_updated` and `updateExpirationDate()`
-  fires `item_expiration_updated`, so a cache or index can react to direct-model writes.
-- `osc_add_route_hook($id, $regexp, $url)` registers a controller-dispatched route — for an endpoint
-  that acts and redirects rather than rendering.
-- `Search::fromPrimaryKeys(array $ids)` hydrates an externally-produced match set through core's row
-  fetch, paging to the id count (no silent 10-row truncation) and preserving the caller's ranking.
-- A `search_results` backend can own the whole page by returning a `model` key, so premiums and
-  `osc_search()` run against it; the search model is now exported on every search page.
-- The post-publish redirect is filterable via `item_post_redirect_url` (passed the new listing's id
-  and category).
-- `ItemForm::category_select()` accepts an optional `$attributes` array (values escaped) for
-  `required` / `data-*` without string-injecting core markup.
+  `sitemap:warm`, `user:create-admin`, `user:reset-password`, and a `doctor` health check.
+- Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
+  flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
+  `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
+- Provider-agnostic captcha — Cloudflare Turnstile alongside reCAPTCHA, verified server-side, failing
+  closed, now also on admin login.
+- Rebuilt first-run installer — four steps with a live "Test connection" check, plain error messages,
+  transactional writes, and no jQuery/Bootstrap.
+- Configuration can come entirely from the environment; `config.php` is optional
+  (`OSC_IGNORE_CONFIG_FILE`, `OSC_CONFIG_FILE`). DB connections accept `host:port` / `DB_PORT` and a
+  10-second connect timeout.
+- Versioned database migrations — an ordered runner with a `t_migration` ledger, plus a CI check that
+  a fresh and an upgraded install reach the same schema.
+- Native Cleanup tool (expired/unactivated/spam/orphaned content) and Activity log management
+  (filterable viewer, on/off switch, cron-enforced retention) under Tools.
+- Rebuilt admin Categories manager — a real tree with drag-to-reorder/nest, inline counts, and a
+  drawer editor.
+- Per-admin dark/light theme toggle (persisted server-side) and correct RTL mirroring via logical
+  CSS, with no separate stylesheet.
+- `memcached` object-cache driver, selectable from the environment; the old `memcache` driver is
+  deprecated.
+- Friendly-named image downloads — a resource endpoint serves `<owner-slug>-<id>.<ext>`, linked via
+  `osc_resource_download_url()`; a private bucket redirects to a short-lived signed URL.
+- Themes can register routes to their own controllers: `osc_add_route()` now resolves a file in the
+  theme root, and `osc_add_route_hook($id, $regexp, $url)` registers a controller-dispatched route
+  that can act and redirect.
+- New model events `item_content_updated` and `item_expiration_updated` fire on direct-model writes;
+  `item_post_redirect_url` filters the post-publish redirect; `ItemForm::category_select()` accepts
+  an `$attributes` array; `osc_csrf_token_form()` complements `osc_csrf_token_url()`.
+- Install smoke test in CI — a release zip is unpacked, installed against a real database, and signed
+  into before it can become a release.
 
 ### Breaking
 
-- Removed the unused `INSTANT` alert frequency — core never dispatched it. Its mail builder, the
-  `hook_alert_email_instant` hook and the `alert_email_instant` template are gone (an upgrade
-  deletes the dead template); `osc_runAlert('INSTANT')` is now a no-op.
+- Minimum PHP is now 8.0.
+- The admin is vanilla JavaScript — jQuery and its plugins are no longer loaded on any admin page
+  (tabs, modals, autocomplete, datepicker, category tree, validation all rewritten natively), and
+  core ships no jQuery at all. `jquery`/`jquery-ui`/`jquery-validate` stay registered for themes that
+  enqueue them; a plugin needing one must enqueue it itself.
+- The item-form photo uploader moved from jQuery Fine Uploader to a vanilla `osc-uploader`, and
+  enqueued scripts are now deferred by default (filter-controllable). A theme/plugin that hooked Fine
+  Uploader must migrate.
+- Removed the admin's legacy float-grid classes (`.grid-system`, `.grid-row`, `.grid-10`…`.grid-100`)
+  in favour of Bootstrap 5's `.row`/`.col-*`.
+- `RSSFeed::addItem()` now escapes values itself — stop pre-escaping link/image URLs in plugins or
+  they double-encode.
+- Removed the unused `INSTANT` alert frequency — core never dispatched it. Its mail builder,
+  `hook_alert_email_instant` hook and `alert_email_instant` template are gone (an upgrade deletes the
+  dead template); `osc_runAlert('INSTANT')` is now a no-op.
 
 ### Security
 
+- Sign-in attempts are rate limited — failed sign-ins and reset requests counted per address and per
+  account over a rolling window (20/10 per 15 min), refused before any password is hashed, and
+  recorded against the name as typed so the limiter can't enumerate accounts. Adds `t_login_attempt`.
+- Sign-in and reset forms no longer reveal which usernames/emails are registered — one answer for
+  both cases, doing equal work so timing can't tell them apart.
+- The database layer moved onto a parameterised query API; the audit behind it found and fixed
+  several SQL injection vectors, including one reachable from anonymous public search.
+- CSRF and remember-me rebuilt as stateless HMAC-signed tokens backed by a per-install key, not the
+  session, so anonymous pages stay cacheable. Reset/activation codes are single-use and stored
+  hashed; the remember-me cookie is HttpOnly/Secure/SameSite and a password change revokes it
+  everywhere.
 - Core HTTP fetches now verify the peer's TLS certificate by default. `osc_file_get_contents()` had
   forced `verify_ssl=false`, so every core fetch — including `install_locations()`, which runs the
-  SQL it downloads — ran unauthenticated. It now defaults to `true`, caps redirects, pins to
-  HTTP(S), and aborts stalled transfers.
-- The saved-search alert endpoint no longer trusts a caller-supplied `userid`. An anonymous request
-  could activate a recurring alert on any user's account, skipping confirmation; the owner now comes
-  from the session only.
+  SQL it downloads — ran unauthenticated. It now defaults to `true`, caps redirects, pins to HTTP(S),
+  and aborts stalled transfers.
+- The saved-search alert endpoint no longer trusts a caller-supplied `userid` — an anonymous request
+  could activate a recurring alert on any account, skipping confirmation; the owner now comes from
+  the session.
+- The installer carries a CSRF nonce on every state-changing step (closing a hole that could finalise
+  an install with no admin), re-validates admin email/username server-side, and never reflects
+  passwords into the page.
+- Fixed a stored XSS in the admin search-alerts list and escaped remaining user-controlled output
+  across admin datatables, statistics widgets and the comment editor. Watermark uploads are validated
+  by content, not filename; added the missing CSRF check on `upgrade_db`; search-alert subscription
+  can require a logged-in user.
+
+### Changed
+
+- Rebranded from Osclass to Shopclass (new teal identity, rewritten README) and relicensed to
+  GPL-3.0-or-later, retaining the Apache-2.0 notice for Osclass-derived code.
+- The admin was rebuilt on a Bootstrap 5.3 design system — collapsible sidebar shell, unified content
+  header, restyled settings/tables/callouts/messages, and on-brand dark-mode charts and login.
+- Crawlers no longer count as listing views (a denylist, extensible via the `bot_user_agents`
+  filter), so **view counts drop after upgrading** — that's them becoming accurate; revertible under
+  Tools → Cleanup. Render-time counting is wrapped in a `count_view_on_render` filter for themes that
+  count client-side.
+- The front end is now sessionless: login identity, flash messages, form-repopulation values, the
+  interface language, the post-flood wait and pre-save photo staging all moved off `$_SESSION` (into
+  signed cookies or the database), so browsing, forms and posting hold no session and stay
+  reverse-proxy cacheable across app servers. Existing sessions/remember-me survive the upgrade; only
+  the admin and installer still use a session, and the `_setForm`/`_getForm` and
+  `Session::_get('userId')` APIs keep working through shims.
+- The RSS feed was modernised on `DOMDocument` — image `<enclosure>`, stable `<guid>`, single-escaped
+  URLs, `rss_feed_item` filter — fixing a CDATA-breakout injection.
+- Object cache gained an atomic `osc_cache_increment()`; the retired APC driver was removed (an
+  unknown `OSC_CACHE` now falls back to the default); captcha verification uses an 8s timeout.
+- Retired the unused `t_keywords` table (a migration drops it) and moved the build toolchain from
+  Grunt to `sass-embedded` + `esbuild`.
 
 ### Performance
 
-- Auto-cron self-requests are throttled to at most once per 5 minutes instead of firing on every
-  page view, so a busy site no longer spawns an FPM worker per hit.
+- Login went from ~1.4s to ~175ms — the bcrypt cost had been 15 since 2014 and is now 12, still above
+  the recommended floor; existing passwords re-hash on next login, overridable with `BCRYPT_COST`.
+- Listing statistics no longer grow without bound — `t_item_stats` kept a row per listing per day
+  with seven indexes and was never pruned; it now keeps one row per listing plus a small site-wide
+  daily rollup, six indexes gone, data migrated across.
+- Anonymous browse/search pages are cacheable (lazy sessions/CSRF, stateless alerts); listing search
+  uses an exact cheap `COUNT(*)`, the per-item resource N+1 is batched, `User::findByPrimaryKey` is
+  cached, and query logging is gated behind `OSC_DEBUG_DB`.
+- Auto-cron self-requests are throttled to at most once per 5 minutes instead of firing on every page
+  view, so a busy site no longer spawns an FPM worker per hit.
 
 ### Fixed
 
-- `Plugins::hasHook()` now reports whether a hook still has a listener, not merely whether one was
-  ever registered — an emptied priority bucket used to read as true forever.
-- Saved-search alerts no longer stop firing mid-cron. The reused `Search` instance never cleared its
-  keyword pattern, so the first keyword alert poisoned every keyword-less alert after it; restore now
-  resets the pattern state.
-- The alert cron isolates each saved search in a try/catch. `d_last_exec` is advanced before alerts
-  are sent, so an uncaught error mid-run used to drop every remaining subscriber permanently; one bad
-  search now costs one alert, not the rest of the run.
-- Saved-search alerts match the same listings on replay as when saved — `toJson()` double-escaped the
-  pattern, drifting short-keyword results. Alerts saved before the fix are repaired on replay.
+- No more deprecation notices on PHP 8.4 or 8.5 (implicitly-nullable params and old cast spellings).
+- `Plugins::hasHook()` reports whether a hook still has a listener, not merely whether one was ever
+  registered — an emptied priority bucket used to read as true forever.
+- Saved-search alerts: no longer stop firing mid-cron (the reused `Search` never cleared its keyword
+  pattern, poisoning later alerts; restore resets it), each search is isolated in a try/catch so one
+  error doesn't drop the rest of the run, and they match the same listings on replay as when saved
+  (`toJson()` double-escaping fixed; old alerts repaired on replay).
 - `osc_route_url()` emits `page=route` (not `page=custom`) for controller routes, so a fileless route
   no longer 404s when rewrite is disabled.
-- Renewing a listing with no location row no longer warns and mis-moves the counters —
-  `Item::updateExpirationDate()`'s null guard now covers the whole block.
+- `Item::updateExpirationDate()` — fixed a malformed UPDATE that silently never changed the date, and
+  a null-deref that warned and mis-moved the counters when a listing had no location row.
+- Storage settings persist the selected S3 provider and a locked region (R2's `auto`), reflect
+  Better-S3's real activation state, and reliably queue new uploads for offload.
+- Publishing a listing no longer cascades into foreign-key errors when the parent insert returns no
+  row — `ItemActions::add()` checks the new id first, and ids are captured from the insert itself
+  (`DAO::insertGetId()`) rather than a shared `insert_id` another statement could reset. A
+  transaction left open at end of request is rolled back and logged.
+- The "new version available" notice no longer sticks on an older release (the releases feed isn't
+  newest-first; it now picks the highest version), and a failed update check no longer counts as a
+  check or resets the daily timer.
+- Assorted: unsaveable "Search alerts" setting; "most viewed" ignoring visibility/ordering; General
+  Settings fatal when the update check had never run; sitemap XSL served as `text/xsl`;
+  reported-listing double counting; real image compression (`image_png_compression` /
+  `image_jpeg_quality` filters); env-only install 503 / WEB_PATH / utf8 bugs; friendly-URL
+  fall-through to the home page; listing count not incremented on an email-change reassign; invalid
+  `composer.json` version; non-numeric price TypeError on post; canonical-host redirect emitting a
+  bare `:` port; login/admin-auth pages starting a session just to remember a return URL; "remove
+  photo" leaving temp files; `Resource::findByOwner()` fataling on a poisoned cache entry.
 
 Source: https://github.com/mindstellar/shopclass
