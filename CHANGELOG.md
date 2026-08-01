@@ -2,11 +2,13 @@
 
 ## Shopclass 5.4.0
 
-Public pages are now reverse-proxy and CDN cacheable. The application decides whether each
-response may be shared-cached and says so in a standard Cache-Control header, so a proxy can hold
-the homepage, search, listings and public profiles briefly — absorbing crawler and traffic load —
-without ever storing or serving a personalized page, and without being defeated by analytics or
-consent cookies.
+Security and correctness hardening for core's network and alert surface. HTTP fetches now verify
+the peer's TLS certificate by default — every core caller previously fetched over an
+unauthenticated channel, one of them executing the SQL it downloaded — the saved-search alert
+endpoint no longer trusts a caller-supplied user id (which skipped email confirmation and could
+sign a stranger up), and the alert cron no longer drops subscribers partway through a run. This
+builds on the 5.4.0 line: reverse-proxy and CDN cacheable public pages, a pluggable search
+backend, and sharper built-in search.
 
 ### New
 
