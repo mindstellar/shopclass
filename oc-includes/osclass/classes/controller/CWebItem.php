@@ -201,7 +201,11 @@ class CWebItem extends BaseModel
                     $category =
                         Category::newInstance()->findByPrimaryKey(Params::getParam('catId'));
                     View::newInstance()->_exportVariableToView('category', $category);
-                    $this->redirectTo(osc_search_category_url());
+                    // Let a theme or plugin send the seller somewhere other than the category
+                    // search page after publishing — e.g. straight to the new listing.
+                    $this->redirectTo(
+                        osc_apply_filter('item_post_redirect_url', osc_search_category_url(), $itemId, $category)
+                    );
                 }
                 break;
             case 'item_edit':   // edit item
