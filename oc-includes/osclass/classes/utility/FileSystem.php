@@ -634,6 +634,11 @@ class FileSystem
             if ($timeout > 0) {
                 @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
             }
+            // Abort a connection that stalls (under 1 byte/s for 30s) even when no
+            // overall timeout is set, so a slow peer cannot hold the request open
+            // indefinitely without capping a large-but-progressing download.
+            @curl_setopt($ch, CURLOPT_LOW_SPEED_LIMIT, 1);
+            @curl_setopt($ch, CURLOPT_LOW_SPEED_TIME, 30);
             curl_setopt(
                 $ch,
                 CURLOPT_USERAGENT,
@@ -643,6 +648,13 @@ class FileSystem
                 define('CURLOPT_RETURNTRANSFER', 1);
             }
             @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
+            // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
+            @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+            if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+                @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+                @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+            }
             curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             if (stripos($url, 'https') !== false) {

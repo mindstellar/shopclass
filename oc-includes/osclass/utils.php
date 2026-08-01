@@ -868,15 +868,15 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  *
  * @param      $url
  * @param null $post_data
- * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to false
- *                         for backward compatibility; pass true for requests
- *                         carrying secrets.
- * @param int  $timeout    total transfer timeout in seconds; 0 (default) leaves
- *                         no overall limit, so existing callers are unaffected.
+ * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to true so
+ *                         every caller authenticates the peer; pass false only at
+ *                         a call site that genuinely must talk to a bad cert.
+ * @param int  $timeout    total transfer timeout in seconds; 0 leaves no overall
+ *                         limit, but getContents() still aborts a stalled transfer.
  *
  * @return bool|string|null
  */
-function osc_file_get_contents($url, $post_data = null, $verify_ssl = false, $timeout = 0)
+function osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $timeout = 0)
 {
     try {
         return (new FileSystem())->getContents($url, $post_data, $verify_ssl, (int)$timeout);
