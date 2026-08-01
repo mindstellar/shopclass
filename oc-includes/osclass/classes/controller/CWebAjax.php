@@ -218,7 +218,11 @@ class CWebAjax extends BaseModel
                 }
 
                 $email  = Params::getParam('email');
-                $userid = Params::getParam('userid');
+                // Owner id comes from the session, never the request: a caller-supplied
+                // userid would let an anonymous request attach the alert to a live user,
+                // whose active/enabled state then activates it immediately and skips the
+                // confirmation email. Anonymous always means 0 -> the double-opt-in path.
+                $userid = 0;
 
                 if (osc_is_web_user_logged_in()) {
                     $userid = osc_logged_user_id();
