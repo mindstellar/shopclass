@@ -941,6 +941,10 @@ class Item extends DAO
             return false;
         }
 
+        // Model-level write, so it is invisible to the controller-layer item events. Announce it
+        // for anything mirroring item content (a search index, a cache): title/description changed.
+        osc_run_hook('item_content_updated', (int)$id, $locale);
+
         return true;
     }
 
@@ -1011,6 +1015,13 @@ class Item extends DAO
                     $_item = null;
                 }
                 $_item = $_item === null ? null : osc_db_stringify_row($_item);
+
+                // Model-level write the controller-layer events never see. Announce the new
+                // expiry so an index or cache mirroring liveness can react (an expiry change can
+                // flip a listing in or out of the "live" set).
+                if ($_item !== null) {
+                    osc_run_hook('item_expiration_updated', (int)$id, $_item['dt_expiration']);
+                }
 
                 if (!$do_stats) {
                     return $_item['dt_expiration'];
