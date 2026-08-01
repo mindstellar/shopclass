@@ -64,6 +64,12 @@ consent cookies.
   key and core exports it as the page's `search` object, so the premium rail (`osc_get_premiums()`)
   and `osc_search()` run against the backend instead of falling back to a fresh MySQL `Search`. The
   search model is now exported on every search page, not only under `OSC_DEBUG`.
+- The post-publish redirect is filterable. After a listing is created, core redirects the seller to
+  the category search page; an `item_post_redirect_url` filter now wraps that target (passed the new
+  listing's id and category), so a theme can send them straight to the listing they just made instead.
+- `ItemForm::category_select()` takes an optional `$attributes` array, rendered onto the `<select>`
+  (values escaped). A theme can mark the field `required` or attach `data-*` hooks without
+  string-injecting into core's markup.
 
 ### Breaking
 
@@ -91,6 +97,9 @@ consent cookies.
 
 ### Fixed
 
+- `Plugins::hasHook()` reports whether a hook still has a listener, not merely whether one was ever
+  registered. `removeHook()` left an empty priority bucket behind, so the check answered true forever
+  once a hook had been used; it now returns false when nothing is listening.
 - Saved-search alerts no longer stop firing partway through a cron run. The alert cron reuses one
   `Search` instance per alert, and restoring an alert from its stored JSON never cleared the search
   pattern — so the first alert carrying a keyword poisoned every keyword-less alert after it, which
