@@ -168,6 +168,10 @@ closed. PHP 8.0 is now the floor.
   validating the recipient, so an empty/bad address reached PHPMailer and threw. It now validates
   the sender/recipient names and emails up front (like the contact-seller form) and returns a
   field-level error instead.
+- `osc_sendMail()` no longer lets a bad address or dead mailserver 500 the page: a malformed
+  recipient/BCC/reply-to threw from `addAddress()` before the existing `send()` guard was reached.
+  The whole dispatch is now guarded, so any mail failure degrades to a logged warning and a
+  `false` return for every caller.
 - The database debug panel (`OSC_DEBUG_DB`) now counts queries issued through the new
   `mindstellar\database\Connection` API, which previously bypassed the log and left the panel
   reading zero — including `OSC_DEBUG_DB_EXPLAIN` plans for its SELECTs. Parameterised queries are

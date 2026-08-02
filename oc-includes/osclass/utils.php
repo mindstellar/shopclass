@@ -330,68 +330,72 @@ function osc_sendMail($params)
     $mail->From     = osc_apply_filter('mail_from', $from, $params);
     $mail->FromName = osc_apply_filter('mail_from_name', $from_name, $params);
 
-    $to      = $params['to'];
-    $to_name = '';
-    if (array_key_exists('to_name', $params)) {
-        $to_name = $params['to_name'];
-    }
-
-    if (!is_array($to)) {
-        $to = array($to => $to_name);
-    }
-
-    foreach ($to as $to_email => $to_name) {
-        $mail->addAddress($to_email, $to_name);
-    }
-
-    if (array_key_exists('add_bcc', $params)) {
-        if (!is_array($params['add_bcc']) && $params['add_bcc'] != '') {
-            $params['add_bcc'] = array($params['add_bcc']);
+    // With exceptions enabled (new PHPMailer(true)) a malformed recipient throws from
+    // addAddress()/addBCC()/addReplyTo() before send() is reached, and send() itself
+    // throws on a transport failure. Guard the whole dispatch so a bad address or a
+    // dead mailserver degrades to a logged warning and a false return, never a 500.
+    try {
+        $to      = $params['to'];
+        $to_name = '';
+        if (array_key_exists('to_name', $params)) {
+            $to_name = $params['to_name'];
         }
 
-        foreach ($params['add_bcc'] as $bcc) {
-            $mail->addBCC($bcc);
-        }
-    }
-
-    if (array_key_exists('reply_to', $params)) {
-        $mail->addReplyTo($params['reply_to']);
-    }
-
-    $mail->Subject = $params['subject'];
-    $mail->Body    = $params['body'];
-
-    if (array_key_exists('attachment', $params)) {
-        if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
-            $params['attachment'] = array($params['attachment']);
+        if (!is_array($to)) {
+            $to = array($to => $to_name);
         }
 
-        foreach ($params['attachment'] as $attachment) {
-            if (is_array($attachment)) {
-                if (isset($attachment['path']) && isset($attachment['name'])) {
+        foreach ($to as $to_email => $to_name) {
+            $mail->addAddress($to_email, $to_name);
+        }
+
+        if (array_key_exists('add_bcc', $params)) {
+            if (!is_array($params['add_bcc']) && $params['add_bcc'] != '') {
+                $params['add_bcc'] = array($params['add_bcc']);
+            }
+
+            foreach ($params['add_bcc'] as $bcc) {
+                $mail->addBCC($bcc);
+            }
+        }
+
+        if (array_key_exists('reply_to', $params)) {
+            $mail->addReplyTo($params['reply_to']);
+        }
+
+        $mail->Subject = $params['subject'];
+        $mail->Body    = $params['body'];
+
+        if (array_key_exists('attachment', $params)) {
+            if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
+                $params['attachment'] = array($params['attachment']);
+            }
+
+            foreach ($params['attachment'] as $attachment) {
+                if (is_array($attachment)) {
+                    if (isset($attachment['path']) && isset($attachment['name'])) {
+                        try {
+                            $mail->addAttachment($attachment['path'], $attachment['name']);
+                        } catch (\PHPMailer\PHPMailer\Exception $e) {
+                            continue;
+                        }
+                    }
+                } else {
                     try {
-                        $mail->addAttachment($attachment['path'], $attachment['name']);
+                        $mail->addAttachment($attachment);
                     } catch (\PHPMailer\PHPMailer\Exception $e) {
                         continue;
                     }
                 }
-            } else {
-                try {
-                    $mail->addAttachment($attachment);
-                } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    continue;
-                }
             }
         }
-    }
 
-    $mail->CharSet = 'utf-8';
-    $mail->isHTML();
+        $mail->CharSet = 'utf-8';
+        $mail->isHTML();
 
-    $mail = osc_apply_filter('pre_send_mail', $mail, $params);
+        $mail = osc_apply_filter('pre_send_mail', $mail, $params);
 
-    // send email!
-    try {
+        // send email!
         $mail->send();
     } catch (\PHPMailer\PHPMailer\Exception $e) {
         trigger_error($e->errorMessage(), E_USER_WARNING);
