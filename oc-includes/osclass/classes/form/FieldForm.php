@@ -599,7 +599,7 @@ class FieldForm extends Form
      *
      * @return void
      */
-    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list')
+    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list', $enqueueJs = false)
     {
         if (count($fields) === 0) {
             return;
@@ -632,7 +632,7 @@ class FieldForm extends Form
             }
         }
         echo '</div>';
-        self::conditionalLogicScript();
+        self::conditionalLogicScript($enqueueJs);
     }
 
     /**
@@ -642,13 +642,14 @@ class FieldForm extends Form
      * of a sibling field changes. Vanilla JS, no jQuery. The server re-evaluates the
      * same rules on save, so this is UX only and never gates data integrity.
      */
-    public static function conditionalLogicScript()
+    public static function conditionalLogicScript($enqueue = false)
     {
         static $printed = false;
         if ($printed) {
             return;
         }
         $printed = true;
+        if ($enqueue) { ob_start(); }
         ?>
         <script type="text/javascript">
             (function () {
@@ -770,6 +771,9 @@ class FieldForm extends Form
             })();
         </script>
         <?php
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, defined('OC_ADMIN') && OC_ADMIN, 'field_conditional_logic_js');
+        }
     }
     /**
      * Generate MultiLanguage Title Description Fields for Item

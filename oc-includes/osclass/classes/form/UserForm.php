@@ -393,10 +393,11 @@ class UserForm extends Form
         Form::generic_select('userId', $users, 'pk_i_id', 's_name', __('All'), null);
     }
 
-    public static function js_validation()
+    public static function js_validation($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery). Renders on the public register
         // form and the admin add-user form, so it depends on no external helper.
+        if ($enqueue) { ob_start(); }
         ?>
         <script type="text/javascript">
             (function () {
@@ -438,12 +439,14 @@ class UserForm extends Form
             })();
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_register_form_js'); }
     }
 
-    public static function js_validation_edit()
+    public static function js_validation_edit($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery). Editing a user: the password
         // fields are optional, but if filled they must be >= 5 chars and match.
+        if ($enqueue) { ob_start(); }
         ?>
         <script>
             (function () {
@@ -483,6 +486,7 @@ class UserForm extends Form
             })();
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_edit_form_js'); }
     }
 
     /**

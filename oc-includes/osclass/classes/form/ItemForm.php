@@ -869,8 +869,9 @@ class ItemForm extends Form
     /**
      * @param string $path
      */
-    public static function location_javascript_new($path = 'front')
+    public static function location_javascript_new($path = 'front', $enqueue = false)
     {
+        if ($enqueue) { ob_start(); }
         ?>
         <script>
             (function () {
@@ -1060,14 +1061,16 @@ class ItemForm extends Form
             }
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), array('osc-ui-common'), ($path === 'admin'), 'item_location_js'); }
     }
 
 
     /**
      * @param string $path
      */
-    public static function location_javascript($path = 'front')
+    public static function location_javascript($path = 'front', $enqueue = false)
     {
+        if ($enqueue) { ob_start(); }
         ?>
         <script>
             (function () {
@@ -1276,6 +1279,7 @@ class ItemForm extends Form
             }
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, ($path === 'admin'), 'item_location_cascade_js'); }
     }
 
 

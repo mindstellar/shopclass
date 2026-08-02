@@ -105,6 +105,20 @@ function osc_enqueue_script($id)
 
 
 /**
+ * Enqueue a block of inline JavaScript into the footer, after the file scripts.
+ * The admin/front target is detected from the current request.
+ *
+ * @param string      $code         JavaScript wrapped in its own <script> tag
+ * @param array|null  $dependencies registered script ids to enqueue alongside it
+ * @param string|null $id           optional id; a repeated id is enqueued only once
+ */
+function osc_enqueue_script_code($code, $dependencies = null, $id = null)
+{
+    Scripts::enqueueScriptCode($code, $dependencies, defined('OC_ADMIN') && OC_ADMIN, $id);
+}
+
+
+/**
  * Remove script from the queue, so it will not be loaded
  *
  * @param string $id

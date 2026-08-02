@@ -99,10 +99,11 @@ class SendFriendForm extends Form
         return true;
     }
 
-    public static function js_validation()
+    public static function js_validation($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
         // external helper so it runs on any public theme.
+        if ($enqueue) { ob_start(); }
         ?>
         <script type="text/javascript">
             (function () {
@@ -151,5 +152,6 @@ class SendFriendForm extends Form
             })();
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'send_friend_form_js'); }
     }
 }

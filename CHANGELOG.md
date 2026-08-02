@@ -66,6 +66,13 @@ closed. PHP 8.0 is now the floor.
 - New model events `item_content_updated` and `item_expiration_updated` fire on direct-model writes;
   `item_post_redirect_url` filters the post-publish redirect; `ItemForm::category_select()` accepts
   an `$attributes` array; `osc_csrf_token_form()` complements `osc_csrf_token_url()`.
+- Public form JavaScript can defer to the footer: the form validation and location-picker
+  methods (`CommentForm`/`ContactForm`/`SendFriendForm`/`UserForm::js_validation()`,
+  `ItemForm::location_javascript_new()`/`location_javascript()`) and `osc_render_form()` take an
+  opt-in flag that enqueues their inline `<script>` after the file scripts instead of echoing it in
+  place, wiring dependencies (e.g. the autocomplete lib) automatically. Off by default, so themes
+  that call these in-place are unchanged. New helper `osc_enqueue_script_code($code, $deps, $id)`
+  exposes the underlying footer inline-script queue, now id-deduplicated.
 - Install smoke test in CI — a release zip is unpacked, installed against a real database, and signed
   into before it can become a release.
 
