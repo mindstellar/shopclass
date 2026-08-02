@@ -93,30 +93,35 @@ class Connection
      */
     public function select(string $sql, array $params = []): array
     {
-        if ($params === []) {
-            $result = $this->run(function () use ($sql) {
-                return $this->conn->query($sql);
-            }, $sql);
-            if (!$result instanceof \mysqli_result) {
-                throw new DbException('Database query failed');
+        $start = microtime(true);
+        try {
+            if ($params === []) {
+                $result = $this->run(function () use ($sql) {
+                    return $this->conn->query($sql);
+                }, $sql);
+                if (!$result instanceof \mysqli_result) {
+                    throw new DbException('Database query failed');
+                }
+
+                $rows = $result->fetch_all(MYSQLI_ASSOC);
+                $result->free();
+
+                return $rows;
             }
 
-            $rows = $result->fetch_all(MYSQLI_ASSOC);
-            $result->free();
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): array {
+                $result = $stmt->get_result();
+                if (!$result instanceof \mysqli_result) {
+                    throw new DbException('Database query failed');
+                }
+                $rows = $result->fetch_all(MYSQLI_ASSOC);
+                $result->free();
 
-            return $rows;
+                return $rows;
+            });
+        } finally {
+            $this->logQuery($sql, $start);
         }
-
-        return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): array {
-            $result = $stmt->get_result();
-            if (!$result instanceof \mysqli_result) {
-                throw new DbException('Database query failed');
-            }
-            $rows = $result->fetch_all(MYSQLI_ASSOC);
-            $result->free();
-
-            return $rows;
-        });
     }
 
     /**
@@ -169,17 +174,22 @@ class Connection
      */
     public function execute(string $sql, array $params = []): int
     {
-        if ($params === []) {
-            $this->run(function () use ($sql) {
-                return $this->conn->query($sql);
-            }, $sql);
+        $start = microtime(true);
+        try {
+            if ($params === []) {
+                $this->run(function () use ($sql) {
+                    return $this->conn->query($sql);
+                }, $sql);
 
-            return (int) $this->conn->affected_rows;
+                return (int) $this->conn->affected_rows;
+            }
+
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): int {
+                return (int) $stmt->affected_rows;
+            });
+        } finally {
+            $this->logQuery($sql, $start);
         }
-
-        return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): int {
-            return (int) $stmt->affected_rows;
-        });
     }
 
     /**
@@ -218,19 +228,24 @@ class Connection
      */
     public function insertGetId(string $sql, array $params = []): int
     {
-        if ($params === []) {
-            $this->run(function () use ($sql) {
-                return $this->conn->query($sql);
-            }, $sql);
+        $start = microtime(true);
+        try {
+            if ($params === []) {
+                $this->run(function () use ($sql) {
+                    return $this->conn->query($sql);
+                }, $sql);
 
-            return (int) $this->conn->insert_id;
+                return (int) $this->conn->insert_id;
+            }
+
+            $conn = $this->conn;
+
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt) use ($conn): int {
+                return (int) $conn->insert_id;
+            });
+        } finally {
+            $this->logQuery($sql, $start);
         }
-
-        $conn = $this->conn;
-
-        return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt) use ($conn): int {
-            return (int) $conn->insert_id;
-        });
     }
 
     /**
@@ -442,6 +457,30 @@ class Connection
             // wording ("cannot reach the server", "access denied", ...).
             throw new DbException('Database query failed', (int) $e->getCode());
         }
+    }
+
+    /**
+     * Record a query in the shared debug log when OSC_DEBUG_DB is on, so queries
+     * issued through this API show up in the admin debug panel alongside the legacy
+     * DAO's. Called once per logical query (select/execute/insertGetId) — the other
+     * read helpers delegate to those — so prepared statements count once, not once
+     * per prepare/bind/execute step.
+     *
+     * @param string $sql
+     * @param float  $start microtime(true) captured before the query ran
+     */
+    private function logQuery(string $sql, float $start): void
+    {
+        if (!defined('OSC_DEBUG_DB') || !OSC_DEBUG_DB || !class_exists('\\LogDatabase')) {
+            return;
+        }
+        $errno = (int) $this->conn->errno;
+        \LogDatabase::newInstance()->addMessage(
+            $sql,
+            microtime(true) - $start,
+            $errno,
+            $errno === 0 ? '' : (string) $this->conn->error
+        );
     }
 }
 

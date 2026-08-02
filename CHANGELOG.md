@@ -164,6 +164,11 @@ closed. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- The database debug panel (`OSC_DEBUG_DB`) now counts queries issued through the new
+  `mindstellar\database\Connection` API, which previously bypassed the log and left the panel
+  reading zero. The panel itself is redesigned — a docked, collapsible summary (totals, slowest
+  query, duplicate/slow/error counts) over a query list with color-coded timing, SQL highlighting,
+  and duplicate-query flags for spotting N+1s.
 - `osc_format_price()` drops the fractional part when a price is whole at the locale's precision, so
   `1,234` no longer renders as `1,234.00` while `1,234.50` keeps its decimals; the locale thousands
   separator and decimal point are unchanged.
