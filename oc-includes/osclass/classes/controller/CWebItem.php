@@ -497,16 +497,18 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('pre_item_send_friend_post', $item);
 
-                $mItem   = new ItemActions(false);
-                $success = $mItem->send_friend();
+                $mItem  = new ItemActions(false);
+                $result = $mItem->send_friend();
 
                 osc_run_hook('post_item_send_friend_post', $item);
 
-                if ($success) {
+                if (is_string($result)) {
+                    // Validation failed — keep the submitted values and show the error.
+                    osc_add_flash_error_message($result);
+                    $this->redirectTo(osc_item_send_friend_url());
+                } else {
                     Session::newInstance()->_clearVariables();
                     $this->redirectTo(osc_item_url());
-                } else {
-                    $this->redirectTo(osc_item_send_friend_url());
                 }
                 break;
             case 'contact':

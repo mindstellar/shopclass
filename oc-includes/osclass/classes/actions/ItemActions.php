@@ -1559,6 +1559,31 @@ class ItemActions
         // get data for this function
         $aItem = $this->prepareDataForFunction('send_friend');
 
+        // The listing must exist — prepareDataForFunction() returns no 'item' otherwise.
+        if (empty($aItem['item'])) {
+            return __("This listing doesn't exist");
+        }
+
+        // Validate before dispatch, mirroring contact(): an empty or malformed address
+        // otherwise reaches PHPMailer, which throws an uncaught exception and 500s the
+        // request instead of returning a field-level error.
+        $flash_error = '';
+        if (!osc_validate_text($aItem['yourName'])) {
+            $flash_error .= __('Your name: this field is required') . PHP_EOL;
+        }
+        if (!osc_validate_email($aItem['yourEmail'])) {
+            $flash_error .= __('Your email: invalid email address') . PHP_EOL;
+        }
+        if (!osc_validate_text($aItem['friendName'])) {
+            $flash_error .= __("Your friend's name: this field is required") . PHP_EOL;
+        }
+        if (!osc_validate_email($aItem['friendEmail'])) {
+            $flash_error .= __("Your friend's email: invalid email address") . PHP_EOL;
+        }
+        if ($flash_error !== '') {
+            return $flash_error;
+        }
+
         $item = $aItem['item'];
         View::newInstance()->_exportVariableToView('item', $item);
 

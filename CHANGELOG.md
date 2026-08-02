@@ -164,6 +164,10 @@ closed. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- Send-to-friend no longer 500s on an empty or malformed form. It dispatched the email without
+  validating the recipient, so an empty/bad address reached PHPMailer and threw. It now validates
+  the sender/recipient names and emails up front (like the contact-seller form) and returns a
+  field-level error instead.
 - The database debug panel (`OSC_DEBUG_DB`) now counts queries issued through the new
   `mindstellar\database\Connection` API, which previously bypassed the log and left the panel
   reading zero — including `OSC_DEBUG_DB_EXPLAIN` plans for its SELECTs. Parameterised queries are
