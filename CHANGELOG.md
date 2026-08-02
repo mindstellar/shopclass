@@ -157,6 +157,9 @@ closed. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- `osc_format_price()` drops the fractional part when a price is whole at the locale's precision, so
+  `1,234` no longer renders as `1,234.00` while `1,234.50` keeps its decimals; the locale thousands
+  separator and decimal point are unchanged.
 - No more deprecation notices on PHP 8.4 or 8.5 (implicitly-nullable params and old cast spellings).
 - `Plugins::hasHook()` reports whether a hook still has a listener, not merely whether one was ever
   registered — an emptied priority bucket used to read as true forever.

@@ -1552,10 +1552,18 @@ function osc_format_price($price, $symbol = null)
 
     $price /= 1000000;
 
+    // Drop the fractional part when the price is whole at the locale's precision,
+    // so 1234.00 renders as "1,234" while 1234.50 keeps its decimals.
+    $decimals = (int) osc_locale_num_dec();
+    $rounded  = round($price, $decimals);
+    if ($decimals > 0 && $rounded == floor($rounded)) {
+        $decimals = 0;
+    }
+
     $currencyFormat = osc_locale_currency_format();
     $currencyFormat = str_replace(
         '{NUMBER}',
-        number_format($price, osc_locale_num_dec(), osc_locale_dec_point(), osc_locale_thousands_sep()),
+        number_format($price, $decimals, osc_locale_dec_point(), osc_locale_thousands_sep()),
         $currencyFormat
     );
     $currencyFormat = str_replace('{CURRENCY}', $symbol, $currencyFormat);
