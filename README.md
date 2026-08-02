@@ -108,6 +108,11 @@ php oc-cli.php help          # list every command
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
 | `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password — the way back in when you're locked out. |
+| `plugin:list` | List plugins with their enabled/disabled status, version, and folder. |
+| `plugin:activate --plugin=<folder>` | Enable an installed plugin (accepts the folder name or `folder/index.php`). |
+| `plugin:deactivate --plugin=<folder>` | Disable an active plugin. |
+| `theme:list` | List installed public themes and mark the active one. |
+| `theme:activate --theme=<name>` | Set the active public theme. |
 | `doctor` | Report on PHP version, extensions, database, writability, cron freshness, and cache. Exits non-zero if any check fails. |
 | `version` | Print the installed version. |
 

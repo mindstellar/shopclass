@@ -35,7 +35,9 @@ closed. PHP 8.0 is now the floor.
   Adds a title `FULLTEXT` index (one-time `ALTER TABLE`). `Search::fromPrimaryKeys(array $ids)`
   hydrates an externally-produced match set, paging to the id count and preserving caller ranking.
 - Command-line interface (`oc-cli.php`) for maintenance: `cron`, `db:upgrade`, `cache:flush`,
-  `sitemap:warm`, `user:create-admin`, `user:reset-password`, and a `doctor` health check.
+  `sitemap:warm`, `user:create-admin`, `user:reset-password`, plugin management
+  (`plugin:list`/`activate`/`deactivate`), theme management (`theme:list`/`activate`), and a
+  `doctor` health check.
 - Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
   flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
   `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
@@ -81,6 +83,10 @@ closed. PHP 8.0 is now the floor.
   in favour of Bootstrap 5's `.row`/`.col-*`.
 - `RSSFeed::addItem()` now escapes values itself — stop pre-escaping link/image URLs in plugins or
   they double-encode.
+- `ItemForm::category_select()` gained a trailing `$attributes = []` parameter. A theme that
+  overrides this method (or any `Form`/`ItemForm` extension point) with the old signature becomes a
+  compile-time fatal on upgrade, since PHP requires the override to stay signature-compatible — add
+  the parameter to the override, or accept future options through the array.
 - Removed the unused `INSTANT` alert frequency — core never dispatched it. Its mail builder,
   `hook_alert_email_instant` hook and `alert_email_instant` template are gone (an upgrade deletes the
   dead template); `osc_runAlert('INSTANT')` is now a no-op.

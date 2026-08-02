@@ -15,7 +15,9 @@ use Admin;
 use Cron;
 use mindstellar\database\Connection;
 use Params;
+use Plugins;
 use Sitemap;
+use WebThemes;
 
 /**
  * Command-line router for maintenance tasks (cron, DB upgrade, cache, sitemap).
@@ -38,6 +40,11 @@ class Cli
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
+        'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
+        'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
+        'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
+        'theme:list'          => ['cmdThemeList', 'List installed public themes'],
+        'theme:activate'      => ['cmdThemeActivate', 'Set the active public theme (--theme=<name>)'],
         'doctor'              => ['cmdDoctor', 'Run environment and health checks'],
         'version'             => ['cmdVersion', 'Print the installed Shopclass version'],
         'help'                => ['cmdHelp', 'Show this help'],
@@ -300,6 +307,165 @@ class Cli
         }
 
         return [osc_genRandomPassword(12), true];
+    }
+
+    /**
+     * Normalise a plugin reference to the `folder/index.php` form the Plugins
+     * registry stores, so the CLI can accept the bare folder name.
+     */
+    private function normalisePluginPath(string $plugin): string
+    {
+        $plugin = trim($plugin, "/ \t\n\r\0\x0B");
+
+        return str_ends_with($plugin, '.php') ? $plugin : $plugin . '/index.php';
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdPluginList(array $args): int
+    {
+        $plugins = Plugins::listAll();
+        if ($plugins === array()) {
+            $this->out("No plugins found.\n");
+
+            return 0;
+        }
+
+        $this->out(sprintf("  %-8s %-30s %-10s %s\n", 'STATUS', 'PLUGIN', 'VERSION', 'FOLDER'));
+        foreach ($plugins as $path) {
+            $info   = Plugins::getInfo($path);
+            $status = Plugins::isEnabled($path) ? 'enabled'
+                : (Plugins::isInstalled($path) ? 'disabled' : '-');
+            $folder = str_replace('/index.php', '', $path);
+            $this->out(sprintf(
+                "  %-8s %-30s %-10s %s\n",
+                $status,
+                $info['plugin_name'],
+                $info['version'] !== '' ? $info['version'] : '?',
+                $folder
+            ));
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdPluginActivate(array $args): int
+    {
+        $plugin = trim((string) ($args['plugin'] ?? ''));
+        if ($plugin === '') {
+            $this->err("Usage: plugin:activate --plugin=<folder>\n");
+
+            return 2;
+        }
+
+        $path = $this->normalisePluginPath($plugin);
+        if (!Plugins::isInstalled($path)) {
+            $this->err(sprintf("Plugin '%s' is not installed. Install it from the admin first.\n", $plugin));
+
+            return 1;
+        }
+        if (Plugins::isEnabled($path)) {
+            $this->err(sprintf("Plugin '%s' is already enabled.\n", $plugin));
+
+            return 1;
+        }
+
+        if (!Plugins::activate($path)) {
+            $this->err(sprintf("Could not enable plugin '%s'.\n", $plugin));
+
+            return 1;
+        }
+
+        $this->out(sprintf("Plugin '%s' enabled.\n", $plugin));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdPluginDeactivate(array $args): int
+    {
+        $plugin = trim((string) ($args['plugin'] ?? ''));
+        if ($plugin === '') {
+            $this->err("Usage: plugin:deactivate --plugin=<folder>\n");
+
+            return 2;
+        }
+
+        $path = $this->normalisePluginPath($plugin);
+        if (!Plugins::isEnabled($path)) {
+            $this->err(sprintf("Plugin '%s' is not enabled.\n", $plugin));
+
+            return 1;
+        }
+
+        if (!Plugins::deactivate($path)) {
+            $this->err(sprintf("Could not disable plugin '%s'.\n", $plugin));
+
+            return 1;
+        }
+
+        $this->out(sprintf("Plugin '%s' disabled.\n", $plugin));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdThemeList(array $args): int
+    {
+        $themes  = WebThemes::newInstance()->getListThemes();
+        $current = osc_theme();
+        if ($themes === array()) {
+            $this->out("No themes found.\n");
+
+            return 0;
+        }
+
+        foreach ($themes as $theme) {
+            $this->out(sprintf("  %s %s\n", $theme === $current ? '*' : ' ', $theme));
+        }
+        $this->out("\n* = active theme\n");
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdThemeActivate(array $args): int
+    {
+        $theme = trim((string) ($args['theme'] ?? ''));
+        if ($theme === '') {
+            $this->err("Usage: theme:activate --theme=<name>\n");
+
+            return 2;
+        }
+
+        if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+            $this->err(sprintf("Theme '%s' is not installed. Run theme:list to see available themes.\n", $theme));
+
+            return 1;
+        }
+        if ($theme === osc_theme()) {
+            $this->out(sprintf("Theme '%s' is already active.\n", $theme));
+
+            return 0;
+        }
+
+        osc_set_preference('theme', $theme);
+        // Mirror the admin activation hook so plugins/themes can react.
+        osc_run_hook('theme_activate', $theme);
+
+        $this->out(sprintf("Theme '%s' activated.\n", $theme));
+
+        return 0;
     }
 
     /**
