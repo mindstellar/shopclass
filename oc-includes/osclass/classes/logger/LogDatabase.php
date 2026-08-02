@@ -508,16 +508,21 @@ CSS;
             fwrite($fp, $title . PHP_EOL);
             fwrite($fp, str_pad('', 211, '-', STR_PAD_BOTH) . PHP_EOL);
             foreach ($iValue['explain'] as $explain) {
-                $row = '|' . str_pad($explain['id'], 3, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['select_type'], 20, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['table'], 20, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['type'], 8, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['possible_keys'], 28, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['key'], 18, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['key_len'], 9, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['ref'], 48, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['rows'], 8, ' ', STR_PAD_BOTH) . '|';
-                $row .= str_pad($explain['Extra'], 38, ' ', STR_PAD_BOTH) . '|';
+                // EXPLAIN returns NULL for columns like possible_keys/key/ref/Extra
+                // on a full scan; str_pad() rejects null on PHP 8.1+, so coalesce.
+                $col = static function ($v) {
+                    return (string) ($v ?? 'NULL');
+                };
+                $row = '|' . str_pad($col($explain['id'] ?? null), 3, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['select_type'] ?? null), 20, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['table'] ?? null), 20, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['type'] ?? null), 8, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['possible_keys'] ?? null), 28, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['key'] ?? null), 18, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['key_len'] ?? null), 9, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['ref'] ?? null), 48, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['rows'] ?? null), 8, ' ', STR_PAD_BOTH) . '|';
+                $row .= str_pad($col($explain['Extra'] ?? null), 38, ' ', STR_PAD_BOTH) . '|';
                 fwrite($fp, $row . PHP_EOL);
                 fwrite($fp, str_pad('', 211, '-', STR_PAD_BOTH) . PHP_EOL);
             }
