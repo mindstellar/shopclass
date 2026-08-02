@@ -120,7 +120,7 @@ class Connection
                 return $rows;
             });
         } finally {
-            $this->logQuery($sql, $start);
+            $this->logQuery($sql, $params, $start);
         }
     }
 
@@ -188,7 +188,7 @@ class Connection
                 return (int) $stmt->affected_rows;
             });
         } finally {
-            $this->logQuery($sql, $start);
+            $this->logQuery($sql, $params, $start);
         }
     }
 
@@ -244,7 +244,7 @@ class Connection
                 return (int) $conn->insert_id;
             });
         } finally {
-            $this->logQuery($sql, $start);
+            $this->logQuery($sql, $params, $start);
         }
     }
 
@@ -464,23 +464,110 @@ class Connection
      * issued through this API show up in the admin debug panel alongside the legacy
      * DAO's. Called once per logical query (select/execute/insertGetId) — the other
      * read helpers delegate to those — so prepared statements count once, not once
-     * per prepare/bind/execute step.
+     * per prepare/bind/execute step. The logged SQL has $params inlined so the panel
+     * shows real values; when OSC_DEBUG_DB_EXPLAIN is on a SELECT's plan is captured
+     * too. Debug-only: the raw execution path never interpolates.
      *
      * @param string $sql
+     * @param array  $params
      * @param float  $start microtime(true) captured before the query ran
      */
-    private function logQuery(string $sql, float $start): void
+    private function logQuery(string $sql, array $params, float $start): void
     {
         if (!defined('OSC_DEBUG_DB') || !OSC_DEBUG_DB || !class_exists('\\LogDatabase')) {
             return;
         }
-        $errno = (int) $this->conn->errno;
+        $display = $params === [] ? $sql : $this->interpolate($sql, $params);
+        $errno   = (int) $this->conn->errno;
         \LogDatabase::newInstance()->addMessage(
-            $sql,
+            $display,
             microtime(true) - $start,
             $errno,
             $errno === 0 ? '' : (string) $this->conn->error
         );
+
+        if ($errno === 0
+            && defined('OSC_DEBUG_DB_EXPLAIN') && OSC_DEBUG_DB_EXPLAIN
+            && preg_match('/^\s*SELECT\b/i', $sql)
+        ) {
+            $this->explainQuery($sql, $params, $display);
+        }
+    }
+
+    /**
+     * Inline $params into $sql for DISPLAY ONLY — never for execution. Values are
+     * escaped through the live connection and quoted by type so the rendered query
+     * is valid SQL a developer can copy and run.
+     *
+     * @param string $sql
+     * @param array  $params
+     *
+     * @return string
+     */
+    private function interpolate(string $sql, array $params): string
+    {
+        $values = array_values($params);
+        $i      = 0;
+
+        return (string) preg_replace_callback('/\?/', function () use (&$i, $values) {
+            if (!array_key_exists($i, $values)) {
+                $i++;
+
+                return '?';
+            }
+            $v = $values[$i++];
+            if ($v === null) {
+                return 'NULL';
+            }
+            if (is_bool($v)) {
+                return $v ? '1' : '0';
+            }
+            if (is_int($v) || is_float($v)) {
+                return (string) $v;
+            }
+
+            return "'" . $this->conn->real_escape_string((string) $v) . "'";
+        }, $sql);
+    }
+
+    /**
+     * Run EXPLAIN for a SELECT and record its plan against the display SQL, so the
+     * debug panel can show it under the query. Uses a prepared statement for the
+     * parameterised path (never interpolation) and swallows any failure — a plan is
+     * diagnostics, not part of the request. Goes straight through prepare/execute so
+     * it is not itself logged or recursively explained.
+     *
+     * @param string $sql     the original SQL (with '?' placeholders)
+     * @param array  $params
+     * @param string $display the inlined SQL used as the log key
+     */
+    private function explainQuery(string $sql, array $params, string $display): void
+    {
+        try {
+            if ($params === []) {
+                $result = $this->conn->query('EXPLAIN ' . $sql);
+                $rows   = $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+                if ($result instanceof \mysqli_result) {
+                    $result->free();
+                }
+            } else {
+                $rows = $this->withStatement('EXPLAIN ' . $sql, $params, static function (\mysqli_stmt $stmt): array {
+                    $result = $stmt->get_result();
+                    $out    = $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+                    if ($result instanceof \mysqli_result) {
+                        $result->free();
+                    }
+
+                    return $out;
+                });
+            }
+
+            if ($rows !== []) {
+                \LogDatabase::newInstance()->addExplainMessage($display, $rows);
+            }
+        } catch (Throwable $e) {
+            // A plan we could not fetch is not worth failing (or logging) the request over.
+        }
     }
 }
 

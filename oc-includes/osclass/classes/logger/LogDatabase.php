@@ -121,6 +121,15 @@ class LogDatabase
             return $n > 1;
         }));
 
+        // Index EXPLAIN plans by their normalised query (dropping any leading
+        // EXPLAIN the legacy DAO stored) so each can be shown under its query row.
+        $explains = array();
+        foreach ($this->explain_messages as $em) {
+            $q            = preg_replace('/^\s*EXPLAIN\s+/i', '', (string) $em['query']);
+            $q            = preg_replace('/\s+/', ' ', trim($q));
+            $explains[$q] = $em['explain'];
+        }
+
         echo $this->panelStyles();
         echo '<div id="osc-qdbg" class="osc-qdbg">';
         echo '<details class="osc-qdbg__wrap">';
@@ -173,6 +182,9 @@ class LogDatabase
                         . htmlspecialchars((string) $msg['error'], ENT_QUOTES) . '</div>';
                 }
                 echo '<code>' . $this->highlightSql((string) $msg['query']) . '</code>';
+                if (isset($explains[$key]) && is_array($explains[$key]) && $explains[$key] !== array()) {
+                    echo $this->renderExplain($explains[$key]);
+                }
                 echo '</div>';
                 echo '</div>';
             }
@@ -243,6 +255,48 @@ class LogDatabase
     }
 
     /**
+     * Render an EXPLAIN plan as a collapsible table beneath its query. Full table
+     * scans (type=ALL), missing keys and filesort/temporary in Extra are flagged so
+     * the expensive rows stand out.
+     *
+     * @param array $rows EXPLAIN output rows (associative)
+     *
+     * @return string
+     */
+    private function renderExplain(array $rows)
+    {
+        $cols = array_keys($rows[0]);
+
+        $out  = '<details class="osc-qdbg__explain"><summary>EXPLAIN</summary>';
+        $out .= '<table><thead><tr>';
+        foreach ($cols as $col) {
+            $out .= '<th>' . htmlspecialchars((string) $col, ENT_QUOTES) . '</th>';
+        }
+        $out .= '</tr></thead><tbody>';
+
+        foreach ($rows as $row) {
+            $out .= '<tr>';
+            foreach ($cols as $col) {
+                $val   = $row[$col] ?? null;
+                $text  = $val === null ? 'NULL' : (string) $val;
+                $flag  = '';
+                if ($col === 'type' && strtoupper($text) === 'ALL') {
+                    $flag = ' class="osc-qdbg--err"';
+                } elseif ($col === 'key' && ($val === null || $text === '')) {
+                    $flag = ' class="osc-qdbg--warn"';
+                } elseif ($col === 'Extra' && preg_match('/Using (filesort|temporary)/i', $text)) {
+                    $flag = ' class="osc-qdbg--warn"';
+                }
+                $out .= '<td' . $flag . '>' . htmlspecialchars($text, ENT_QUOTES) . '</td>';
+            }
+            $out .= '</tr>';
+        }
+        $out .= '</tbody></table></details>';
+
+        return $out;
+    }
+
+    /**
      * The panel's inlined, namespaced stylesheet. Printed once.
      *
      * @return string
@@ -287,6 +341,15 @@ class LogDatabase
 #osc-qdbg .osc-qdbg__kw{color:#ff7b72;font-weight:600}
 #osc-qdbg .osc-qdbg__str{color:#a5d6ff}
 #osc-qdbg .osc-qdbg__num{color:#79c0ff}
+#osc-qdbg .osc-qdbg__explain{margin-top:8px}
+#osc-qdbg .osc-qdbg__explain summary{cursor:pointer;color:#8b949e;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+#osc-qdbg .osc-qdbg__explain summary:hover{color:#c8804f}
+#osc-qdbg .osc-qdbg__explain table{margin-top:6px;border-collapse:collapse;font-size:12px;width:auto}
+#osc-qdbg .osc-qdbg__explain th,#osc-qdbg .osc-qdbg__explain td{border:1px solid #21262d;padding:3px 8px;text-align:left;white-space:nowrap}
+#osc-qdbg .osc-qdbg__explain th{color:#8b949e;font-weight:600;background:#11161d}
+#osc-qdbg .osc-qdbg__explain td{color:#c9d1d9}
+#osc-qdbg .osc-qdbg__explain td.osc-qdbg--err{color:#f85149;font-weight:700}
+#osc-qdbg .osc-qdbg__explain td.osc-qdbg--warn{color:#e3b341;font-weight:600}
 @media (prefers-color-scheme:light){
 #osc-qdbg{color:#1f2328}
 #osc-qdbg .osc-qdbg__wrap{background:#fff}
@@ -300,6 +363,10 @@ class LogDatabase
 #osc-qdbg .osc-qdbg__kw{color:#cf222e}
 #osc-qdbg .osc-qdbg__str{color:#0a3069}
 #osc-qdbg .osc-qdbg__num{color:#0550ae}
+#osc-qdbg .osc-qdbg__explain summary{color:#57606a}
+#osc-qdbg .osc-qdbg__explain th,#osc-qdbg .osc-qdbg__explain td{border-color:#d0d7de}
+#osc-qdbg .osc-qdbg__explain th{color:#57606a;background:#f6f8fa}
+#osc-qdbg .osc-qdbg__explain td{color:#1f2328}
 }
 </style>
 CSS;
