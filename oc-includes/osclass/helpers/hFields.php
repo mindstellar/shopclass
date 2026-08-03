@@ -200,6 +200,18 @@ osc_register_field_type('PHONE', array(
     'config'     => array('placeholder', 'help_text'),
 ));
 
+// A text field whose suggestions come from the core custom-field autocomplete
+// endpoint (distinct existing values of the field). The field must be searchable
+// for the endpoint to expose its values. The shared oscAutocomplete widget wires
+// itself from the data- attributes FieldForm emits; themes style .osc-ac-list.
+osc_register_field_type('AUTOCOMPLETE', array(
+    'label'   => 'Autocomplete',
+    'group'   => 'Advanced',
+    'icon'       => 'search',
+    'storage'    => 'TEXT',
+    'config'     => array('placeholder', 'help_text', 'default', 'min_length'),
+));
+
 
 /*
  * ---------------------------------------------------------------------------

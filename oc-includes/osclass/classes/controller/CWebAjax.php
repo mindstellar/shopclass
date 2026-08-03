@@ -54,6 +54,12 @@ class CWebAjax extends BaseModel
                 $countries = Country::newInstance()->ajax(Params::getParam('term'));
                 echo json_encode($countries);
                 break;
+            case 'custom_field_autocomplete': // Suggestions for an AUTOCOMPLETE custom field
+                echo json_encode($this->customFieldAutocomplete(
+                    (int) Params::getParam('field'),
+                    (string) Params::getParam('term')
+                ));
+                break;
             case 'location_regions': // This is the autocomplete AJAX
                 $regions = Region::newInstance()
                     ->ajax(Params::getParam('term'), Params::getParam('country'));
@@ -412,6 +418,51 @@ class CWebAjax extends BaseModel
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Suggestions for an AUTOCOMPLETE custom field: distinct existing values of the
+     * field on live listings, prefix-matched against $term. Only SEARCHABLE fields
+     * expose their values (a non-searchable field's data is not meant to be
+     * enumerable), and the query binds every value, so it is injection-safe. Plugins
+     * can replace/augment the list via the `custom_field_autocomplete_source` filter.
+     *
+     * @param int    $fieldId t_meta_fields.pk_i_id
+     * @param string $term    the typed prefix
+     *
+     * @return array<int, array{value:string, label:string}>
+     */
+    private function customFieldAutocomplete($fieldId, $term)
+    {
+        $term = trim($term);
+        if ($fieldId <= 0 || $term === '') {
+            return array();
+        }
+
+        $field = Field::newInstance()->findByPrimaryKey($fieldId);
+        if (!is_array($field) || (int) ($field['b_searchable'] ?? 0) !== 1) {
+            return array();
+        }
+
+        // Escape LIKE wildcards in the user term so they match literally.
+        $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $term) . '%';
+        $rows = osc_db_select(
+            'SELECT DISTINCT m.s_value AS value FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_item i ON i.pk_i_id = m.fk_i_item_id'
+            . ' WHERE m.fk_i_field_id = ? AND m.s_value LIKE ?'
+            . ' AND i.b_active = 1 AND i.b_enabled = 1 AND i.b_spam = 0'
+            . ' ORDER BY m.s_value LIMIT 10',
+            array($fieldId, $like)
+        );
+
+        $results = array();
+        foreach ($rows as $r) {
+            if (isset($r['value']) && $r['value'] !== '') {
+                $results[] = array('value' => (string) $r['value'], 'label' => (string) $r['value']);
+            }
+        }
+
+        return osc_apply_filter('custom_field_autocomplete_source', $results, $fieldId, $term, $field);
     }
 }
 

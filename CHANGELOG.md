@@ -66,6 +66,11 @@ closed. PHP 8.0 is now the floor.
 - New model events `item_content_updated` and `item_expiration_updated` fire on direct-model writes;
   `item_post_redirect_url` filters the post-publish redirect; `ItemForm::category_select()` accepts
   an `$attributes` array; `osc_csrf_token_form()` complements `osc_csrf_token_url()`.
+- Autocomplete custom-field type: a text field whose suggestions come from a core AJAX endpoint —
+  the distinct existing values of that field, gated to searchable fields so nothing else is
+  enumerable — rendered through the shared vanilla `oscAutocomplete` combobox with no per-field JS
+  (FieldForm emits `data-osc-*` attributes; a static init wires the widget). Plugins can supply
+  their own source via the `custom_field_autocomplete_source` filter; themes style `.osc-ac-list`.
 - Public form JavaScript can defer to the footer: the form validation and location-picker
   methods (`CommentForm`/`ContactForm`/`SendFriendForm`/`UserForm::js_validation()`,
   `ItemForm::location_javascript_new()`/`location_javascript()`) and `osc_render_form()` take an

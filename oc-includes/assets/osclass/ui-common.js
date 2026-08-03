@@ -170,3 +170,33 @@ function oscAutocomplete(input, opts) {
     window.addEventListener('scroll', function () { if (!list.hidden) { place(); } }, true);
     window.addEventListener('resize', function () { if (!list.hidden) { place(); } });
 }
+
+// ---------------------------------------------------------------------------
+// Custom-field autocomplete: wire every input[data-osc-autocomplete] to the
+// shared combobox, sourced from its data-osc-ac-source URL (built server-side by
+// FieldForm, so this static asset needs no base-URL global). Data-attribute
+// driven — a theme/plugin only renders the input; no per-field JS. Idempotent:
+// oscAutocomplete() guards against double-init.
+// ---------------------------------------------------------------------------
+(function () {
+    function initCustomFieldAutocomplete() {
+        if (typeof oscAutocomplete !== 'function') { return; }
+        var inputs = document.querySelectorAll('input[data-osc-autocomplete]');
+        for (var i = 0; i < inputs.length; i++) {
+            (function (input) {
+                var source = input.getAttribute('data-osc-ac-source');
+                if (!source) { return; }
+                var min = parseInt(input.getAttribute('data-osc-ac-min'), 10);
+                oscAutocomplete(input, {
+                    minLength: min > 0 ? min : 2,
+                    source: source
+                });
+            })(inputs[i]);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCustomFieldAutocomplete);
+    } else {
+        initCustomFieldAutocomplete();
+    }
+})();
