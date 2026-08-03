@@ -79,7 +79,7 @@ class Category extends DAO
      */
     public function toTree(bool $empty = true)
     {
-        $key   = md5(osc_base_url() . (string)$this->language . (string)$empty);
+        $key   = md5(osc_cache_category_generation() . osc_base_url() . (string)$this->language . (string)$empty);
         $found = null;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
@@ -430,7 +430,7 @@ class Category extends DAO
         if ($categoryID == null) {
             return false;
         }
-        $key   = md5(osc_base_url() . 'Category:findByPrimaryKey:' . $categoryID . $locale);
+        $key   = md5(osc_cache_category_generation() . osc_base_url() . 'Category:findByPrimaryKey:' . $categoryID . $locale);
         $found = null;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
