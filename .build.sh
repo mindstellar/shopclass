@@ -8,7 +8,7 @@
 ## in CI (`npm ci && npm run build`) BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
 ## (so .gitattributes export-ignore stays the single source of exclusions) and
-## bundles the bender theme.
+## bundles the storefront theme.
 ##
 ## Environment:
 ##   OSCLASS_VERSION  version label + zip name (e.g. 5.3.0 or 5.3.0.dev)  [required]
@@ -56,19 +56,19 @@ rm -rf "$DIR/osclass/oc-includes/assets"
 mkdir -p "$DIR/osclass/oc-includes/assets"
 cp -R oc-includes/assets/. "$DIR/osclass/oc-includes/assets/"
 
-# Bundle the latest bender theme from its own repository.
-echo "Downloading latest bender theme"
-THEME_URL=$(curl -fsSL https://api.github.com/repos/mindstellar/theme-bender/releases/latest \
+# Bundle the latest storefront theme from its own repository.
+echo "Downloading latest storefront theme"
+THEME_URL=$(curl -fsSL https://api.github.com/repos/mindstellar/theme-storefront/releases/latest \
   | grep 'browser_download_url' \
   | grep -o 'https://[^"]*\.zip' \
   | head -1)
 if [ -z "$THEME_URL" ]; then
-  echo "could not resolve bender theme download url" >&2
+  echo "could not resolve storefront theme download url" >&2
   exit 1
 fi
-curl -fsSL -o "$DIR/bender.zip" "$THEME_URL"
-unzip -qq "$DIR/bender.zip" -d "$DIR/osclass/oc-content/themes/"
-rm -f "$DIR/bender.zip"
+curl -fsSL -o "$DIR/storefront.zip" "$THEME_URL"
+unzip -qq "$DIR/storefront.zip" -d "$DIR/osclass/oc-content/themes/"
+rm -f "$DIR/storefront.zip"
 
 # Package.
 ( cd "$DIR" && zip -qr "osclass_v${VERSION}.zip" osclass )

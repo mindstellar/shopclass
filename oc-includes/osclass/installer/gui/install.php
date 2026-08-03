@@ -215,13 +215,13 @@ $ins_i18n = array(
 
                             display_finish($password);
 
-                            // Install bender theme for first time.
-                            if (!is_dir(CONTENT_PATH . 'themes/bender')) {
+                            // Install storefront theme for first time.
+                            if (!is_dir(CONTENT_PATH . 'themes/storefront')) {
                                 $fileSystem      = new \mindstellar\utility\FileSystem();
                                 $download_path   = CONTENT_PATH . 'downloads/';
                                 if ($downloaded = $fileSystem->downloadFile(
-                                    'https://github.com/mindstellar/theme-bender/releases/download/v3.2.3/bender_3.2.3.zip',
-                                    $download_path . 'bender.zip'
+                                    'https://github.com/mindstellar/theme-storefront/releases/download/v1.0.1/storefront_1.0.1.zip',
+                                    $download_path . 'storefront.zip'
                                 )) {
                                     $zip = new \mindstellar\utility\Zip();
                                     $zip->unzipFile($downloaded, CONTENT_PATH . 'themes/');

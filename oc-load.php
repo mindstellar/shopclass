@@ -151,9 +151,8 @@ Styles::init();
 // register scripts
 //
 // jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
-// These three stay registered because the bundled `bender` front theme still enqueues
-// them (it lives in its own repository, so it migrates separately). Nothing in core
-// enqueues them, so they cost nothing until a theme asks for them.
+// These three stay registered because legacy third-party themes and plugins may still
+// enqueue them. Nothing in core enqueues them, so they cost nothing until a theme asks.
 osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
 osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
 osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');

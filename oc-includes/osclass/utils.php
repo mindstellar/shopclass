@@ -1060,7 +1060,7 @@ function osc_check_dir_writable($dir = ABS_PATH)
             if ($file !== '.' && $file !== '..') {
                 if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
                     if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'bender' || $file === 'index.php') {
+                        if ($file === 'storefront' || $file === 'index.php') {
                             $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
                             if (!$res) {
                                 return false;
