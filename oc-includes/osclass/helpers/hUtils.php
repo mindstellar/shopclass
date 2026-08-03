@@ -694,6 +694,235 @@ function osc_get_http_referer()
 
 
 /**
+ * The unguessable token that ties temp photo uploads on a listing form to the browser that
+ * made them, without a session. Read from (or minted into) the `oc_upload` cookie once per
+ * request; it is the capability {@see ItemTmpUpload} checks so a visitor can only delete the
+ * photos they uploaded.
+ *
+ * @return string 32 hex characters
+ */
+function osc_upload_token()
+{
+    static $token = null;
+    if ($token !== null) {
+        return $token;
+    }
+
+    $existing = $_COOKIE['oc_upload'] ?? '';
+    if (is_string($existing) && preg_match('/^[a-f0-9]{32}$/', $existing)) {
+        return $token = $existing;
+    }
+
+    try {
+        $token = bin2hex(random_bytes(16));
+    } catch (\Exception $e) {
+        $token = md5(uniqid('', true));
+    }
+
+    if (!headers_sent()) {
+        $options = array(
+            // A posting session — long enough to fill out a listing, short enough to expire.
+            'expires'  => time() + (4 * 3600),
+            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        );
+        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+            $options['secure'] = true;
+        }
+        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+            $options['domain'] = COOKIE_DOMAIN;
+        }
+        setcookie('oc_upload', $token, $options);
+    }
+    $_COOKIE['oc_upload'] = $token;
+
+    return $token;
+}
+
+
+/**
+ * Remember where a visitor came from across the login POST without a session.
+ *
+ * The login form used to stash the referer in $_SESSION so it could send the user back
+ * after signing in — but that started a physical session on a mere GET of the login page,
+ * leaving even a visitor who never logs in carrying an osclass cookie that defeats
+ * reverse-proxy caching. Instead, carry the destination in a short-lived, HMAC-signed
+ * cookie: set here on the login page, consumed and cleared by osc_pop_login_redirect() on
+ * the login POST. Only a same-site URL (and never the login page itself) is stored, so
+ * there is no open-redirect surface; the signature is defence in depth.
+ *
+ * @param string $url
+ * @param bool   $keepExisting keep an already-stored destination instead of overwriting it,
+ *                             so an explicit target (e.g. "post a listing") set before the
+ *                             redirect to login survives the ambient referer captured when
+ *                             the login page itself loads
+ *
+ * @return void
+ */
+function osc_set_login_redirect($url, $keepExisting = false)
+{
+    osc_set_signed_redirect('oc_login_redirect', $url, $keepExisting);
+}
+
+
+/**
+ * Read, validate and clear the login-redirect cookie set by osc_set_login_redirect().
+ *
+ * Returns the stored same-site destination, or '' when absent, tampered, expired or
+ * off-site. The cookie is always deleted so it is single-use.
+ *
+ * @return string
+ */
+function osc_pop_login_redirect()
+{
+    return osc_pop_signed_redirect('oc_login_redirect');
+}
+
+
+/**
+ * Admin counterpart of osc_set_login_redirect(), under its own cookie so the front-end and
+ * admin flows never collide. Used by the admin login page and by the admin auth gate, which
+ * remembers the protected page an unauthenticated admin was trying to reach.
+ *
+ * @param string $url
+ * @param bool   $keepExisting keep an already-stored destination instead of overwriting it
+ *
+ * @return void
+ */
+function osc_set_admin_login_redirect($url, $keepExisting = false)
+{
+    osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting);
+}
+
+
+/**
+ * Admin counterpart of osc_pop_login_redirect(). Single-use.
+ *
+ * @return string
+ */
+function osc_pop_admin_login_redirect()
+{
+    return osc_pop_signed_redirect('oc_admin_login_redirect');
+}
+
+
+/**
+ * Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared
+ * core behind the login/admin-login redirect helpers. Never starts a session.
+ *
+ * @param string $cookieName
+ * @param string $url
+ * @param bool   $keepExisting skip when a valid destination is already stored under this name
+ *
+ * @return void
+ */
+function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
+{
+    if (!is_string($url) || $url === '' || strpos($url, osc_base_url()) !== 0) {
+        return;
+    }
+    // Never store a login page — it would only bounce the visitor back to the form.
+    if (strpos($url, 'page=login') !== false) {
+        return;
+    }
+    if ($keepExisting && osc_signed_redirect_verify($_COOKIE[$cookieName] ?? '') !== '') {
+        return;
+    }
+
+    // 10 minutes: long enough to complete a login, short enough to expire promptly.
+    $expiry  = time() + 600;
+    $payload = $expiry . ':' . base64_encode($url);
+    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+
+    osc_write_signed_redirect_cookie($cookieName, $value, $expiry);
+    $_COOKIE[$cookieName] = $value;
+}
+
+
+/**
+ * Read, validate and clear a signed-redirect cookie. Always deletes it (single-use).
+ *
+ * @param string $cookieName
+ *
+ * @return string same-site destination, or '' when absent, tampered, expired or off-site
+ */
+function osc_pop_signed_redirect($cookieName)
+{
+    $value = $_COOKIE[$cookieName] ?? '';
+    if ($value !== '') {
+        osc_write_signed_redirect_cookie($cookieName, '', time() - 3600);
+        unset($_COOKIE[$cookieName]);
+    }
+
+    return osc_signed_redirect_verify($value);
+}
+
+
+/**
+ * Verify a signed-redirect cookie value and return its same-site URL, or '' if the value is
+ * absent, tampered, expired or off-site. Does not touch the cookie.
+ *
+ * @param string $value
+ *
+ * @return string
+ */
+function osc_signed_redirect_verify($value)
+{
+    if (!is_string($value) || $value === '' || strpos($value, '.') === false) {
+        return '';
+    }
+    $dot     = strrpos($value, '.');
+    $payload = substr($value, 0, $dot);
+    $sig     = substr($value, $dot + 1);
+    if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
+        return '';
+    }
+    $parts = explode(':', $payload, 2);
+    if (count($parts) !== 2 || !ctype_digit($parts[0]) || (int)$parts[0] < time()) {
+        return '';
+    }
+    $url = base64_decode($parts[1], true);
+    if ($url === false || strpos($url, osc_base_url()) !== 0) {
+        return '';
+    }
+
+    return $url;
+}
+
+
+/**
+ * Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone —
+ * not the session container — so it never starts a session.
+ *
+ * @param string $cookieName
+ * @param string $value
+ * @param int    $expiry
+ *
+ * @return void
+ */
+function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
+{
+    if (headers_sent()) {
+        return;
+    }
+    $options = array(
+        'expires'  => $expiry,
+        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    );
+    if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+        $options['secure'] = true;
+    }
+    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+        $options['domain'] = COOKIE_DOMAIN;
+    }
+    setcookie($cookieName, $value, $options);
+}
+
+
+/**
  * @param        $id
  * @param        $regexp
  * @param        $url
@@ -714,6 +943,23 @@ function osc_add_route(
     $title = 'Custom'
 ) {
     Rewrite::newInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
+}
+
+
+/**
+ * Register a controller route dispatched by class instead of by file.
+ *
+ * Use this for an endpoint that acts and redirects rather than rendering: unlike
+ * osc_add_route()'s file-backed routes, a hook route runs its handler without first
+ * emitting the theme's custom.php chrome. Link to it with osc_route_url($id).
+ *
+ * @param string $id
+ * @param string $regexp
+ * @param string $url
+ */
+function osc_add_route_hook($id, $regexp, $url)
+{
+    Rewrite::newInstance()->addRouteHook($id, $regexp, $url);
 }
 
 

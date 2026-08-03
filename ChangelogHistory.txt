@@ -1,3 +1,13 @@
+## Osclass 5.2.0
+
+- New: Added support for PHP 8.0+ to 8.3
+- New: MySQL 8 support
+- Fixed: [#462](https://github.com/mindstellar/Osclass/issues/462)
+- Fixed: Multiple reported security issues
+- Fixed: Assorted bug fixes and performance improvements
+
+Source: https://github.com/mindstellar/Osclass
+
 # Update changelog for Osclass 5.1.1 Release Notes {#release-notes-5-1-0}
 * Fixed a bug that prevented adding new custom fields in admin dashboard.
 * Fixed a potential bug which could lead to core file deletion.

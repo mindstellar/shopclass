@@ -164,6 +164,9 @@ class Cookie
      */
     public function set_expires($tm)
     {
-        $this->expires = time() + $tm;
+        // $tm === 0 marks a browser-session cookie (dropped when the browser closes);
+        // any positive value is a lifetime in seconds from now. setcookie() treats an
+        // expires of 0 as a session cookie, so the sentinel flows straight through set().
+        $this->expires = ($tm === 0) ? 0 : time() + $tm;
     }
 }

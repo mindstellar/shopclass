@@ -211,6 +211,17 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
+    fk_i_category_id INT UNSIGNED NOT NULL,
+    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
+    s_slug VARCHAR(191) NOT NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (s_slug, fk_c_locale_code),
+        INDEX idx_hist_cat (fk_i_category_id),
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_user_id INT UNSIGNED NULL,
@@ -252,7 +263,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     s_title VARCHAR(100) NOT NULL,
     s_description MEDIUMTEXT NOT NULL,
         PRIMARY KEY (fk_i_item_id, fk_c_locale_code),
-        FULLTEXT s_description (s_description, s_title)
+        FULLTEXT s_description (s_description, s_title),
+        FULLTEXT s_title (s_title)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 
@@ -656,5 +668,17 @@ CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
         PRIMARY KEY (pk_i_id),
         INDEX idx_ip (s_ip, dt_date),
         INDEX idx_account (s_context, s_account(64), dt_date),
+        INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_token VARCHAR(64) NOT NULL DEFAULT '',
+    s_uuid VARCHAR(191) NOT NULL DEFAULT '',
+    s_file VARCHAR(191) NOT NULL DEFAULT '',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_token (s_token),
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

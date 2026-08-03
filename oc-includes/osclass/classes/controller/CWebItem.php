@@ -48,6 +48,14 @@ class CWebItem extends BaseModel
     {
         //calling the view...
 
+        // The view beacon is a lightweight POST endpoint the listing page's client script hits on
+        // load; short-circuit before the page-render setup below so it stays cheap.
+        if ($this->action === 'view_beacon') {
+            $this->countItemViewBeacon();
+
+            return;
+        }
+
         $locales = OSCLocale::newInstance()->listAllEnabled();
         $this->_exportVariableToView('locales', $locales);
 
@@ -55,7 +63,9 @@ class CWebItem extends BaseModel
             case 'item_add': // post
                 if (osc_reg_user_post() && $this->user == null) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
-                    Session::newInstance()->_setReferer(osc_item_post_url());
+                    // Remember to bring them back to the post form after login — in a signed
+                    // cookie, not the session, so this bounce never starts a session.
+                    osc_set_login_redirect(osc_item_post_url());
                     $this->redirectTo(osc_user_login_url());
                 }
 
@@ -89,7 +99,7 @@ class CWebItem extends BaseModel
                     // Fresh post form (no submitted data to restore): drop any temp
                     // uploads a previous, abandoned posting left in the session so they
                     // can't silently attach to this new listing.
-                    Session::newInstance()->_drop('ajax_files');
+                    ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
                 }
 
                 if (Session::newInstance()->_getForm('countryId') != '') {
@@ -177,7 +187,7 @@ class CWebItem extends BaseModel
                     Session::newInstance()->_clearVariables();
                     // Uploads were consumed by the successful post; drop the session
                     // mapping so it can't bleed into the next listing.
-                    Session::newInstance()->_drop('ajax_files');
+                    ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
                     if ($success == 1) {
                         osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                     } else if (osc_moderate_admin_post()) {
@@ -191,7 +201,11 @@ class CWebItem extends BaseModel
                     $category =
                         Category::newInstance()->findByPrimaryKey(Params::getParam('catId'));
                     View::newInstance()->_exportVariableToView('category', $category);
-                    $this->redirectTo(osc_search_category_url());
+                    // Let a theme or plugin send the seller somewhere other than the category
+                    // search page after publishing — e.g. straight to the new listing.
+                    $this->redirectTo(
+                        osc_apply_filter('item_post_redirect_url', osc_search_category_url(), $itemId, $category)
+                    );
                 }
                 break;
             case 'item_edit':   // edit item
@@ -215,7 +229,7 @@ class CWebItem extends BaseModel
                     if ($form == 0) {
                         // Fresh edit form: drop temp uploads left by an earlier,
                         // abandoned posting so they can't attach to this item.
-                        Session::newInstance()->_drop('ajax_files');
+                        ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -285,7 +299,7 @@ class CWebItem extends BaseModel
                         Session::newInstance()->_clearVariables();
                         // Uploads were consumed by the successful edit; drop the session
                         // mapping so it can't bleed into a later listing.
-                        Session::newInstance()->_drop('ajax_files');
+                        ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {
@@ -437,6 +451,13 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_edit_url($secret, $item));
                 break;
             case 'mark':
+                // Reporting changes state, so it requires a valid CSRF token: a report must
+                // come from a real form submission on the listing page. The modern report
+                // form (a POST that carries the auto-injected token) works unchanged; the
+                // legacy tokenless GET report links (osc_item_link_*) are no longer honoured,
+                // which also removes the "a prefetch/<img> silently marks a listing" vector.
+                osc_csrf_check();
+
                 $id = Params::getParam('id');
                 $as = Params::getParam('as');
 
@@ -447,7 +468,18 @@ class CWebItem extends BaseModel
                 }
                 View::newInstance()->_exportVariableToView('item', $item);
 
-                // Any gating (per-reporter dedup, rate-limit, captcha) belongs in a listener on
+                // Optional CAPTCHA on the report, when enabled and a provider is active —
+                // the anonymous-abuse gate for installs that want it.
+                if (osc_recaptcha_reports_enabled() && osc_captcha_enabled()
+                    && !osc_check_captcha()
+                ) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_item_url());
+
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                }
+
+                // Any further gating (per-reporter dedup, rate-limit) belongs in a listener on
                 // the item_mark filter — mark() applies it. The old user-agent allowlist here was
                 // broken both ways: it silently dropped reports from browsers not on its stale
                 // list (e.g. Firefox) while letting bots that spoof a known UA straight through.
@@ -483,16 +515,18 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('pre_item_send_friend_post', $item);
 
-                $mItem   = new ItemActions(false);
-                $success = $mItem->send_friend();
+                $mItem  = new ItemActions(false);
+                $result = $mItem->send_friend();
 
                 osc_run_hook('post_item_send_friend_post', $item);
 
-                if ($success) {
+                if (is_string($result)) {
+                    // Validation failed — keep the submitted values and show the error.
+                    osc_add_flash_error_message($result);
+                    $this->redirectTo(osc_item_send_friend_url());
+                } else {
                     Session::newInstance()->_clearVariables();
                     $this->redirectTo(osc_item_url());
-                } else {
-                    $this->redirectTo(osc_item_send_friend_url());
                 }
                 break;
             case 'contact':
@@ -582,6 +616,16 @@ class CWebItem extends BaseModel
 
                 $itemId = Params::getParam('id');
                 $item   = Item::newInstance()->findByPrimaryKey($itemId);
+                $this->_exportVariableToView('item', $item);
+
+                if (osc_recaptcha_comments_enabled() && osc_captcha_enabled()
+                    && !osc_check_captcha()
+                ) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_item_url());
+
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                }
 
                 osc_run_hook('pre_item_add_comment_post', $item);
 
@@ -682,7 +726,7 @@ class CWebItem extends BaseModel
                 }
 
                 if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-                    Session::newInstance()->_set('userLocale', Params::getParam('lang'));
+                    osc_set_current_user_locale(Params::getParam('lang'));
                 }
 
                 $item = osc_apply_filter(
@@ -739,6 +783,13 @@ class CWebItem extends BaseModel
                     ItemStats::newInstance()->increase('i_num_views', $item['pk_i_id']);
                 }
 
+                // When the client beacon owns counting (default), remember this listing id so the
+                // page footer can emit the beacon script — the only way a view is counted when the
+                // page is served from a full-page cache and PHP never runs on the render.
+                if (osc_item_view_beacon_enabled()) {
+                    $GLOBALS['osc_view_beacon_item_id'] = (int)$item['pk_i_id'];
+                }
+
                 foreach ($item['locale'] as $k => $v) {
                     if (isset($item['locale'][$k]['s_title'])) {
                         $item['locale'][$k]['s_title'] =
@@ -786,9 +837,45 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_base_url() . $itemURI, 301);
                 }
 
+                // Public listing detail: cacheable for anonymous visitors. A cached hit skips
+                // the render-time view increment above; sites that need exact counts drive the
+                // counter client-side (the `count_view_on_render` filter), which stays accurate
+                // behind a full-page cache.
+                osc_mark_response_cacheable();
                 $this->doView('item.php');
                 break;
         }
+    }
+
+    /**
+     * Record one view for a listing from the client beacon (a POST fired by the listing page's
+     * footer script). Runs on every request — never cached — so it counts even when the page
+     * itself was served from a full-page cache. Applies the same gate as the render-time count:
+     * views enabled, not a bot (unless bot views are counted), and never the admin or the
+     * listing's own owner. Answers 204 with no body.
+     *
+     * @return void
+     */
+    private function countItemViewBeacon()
+    {
+        if (strtoupper((string)Params::getServerParam('REQUEST_METHOD')) !== 'POST') {
+            header('HTTP/1.1 405 Method Not Allowed');
+
+            return;
+        }
+
+        $id = Params::getParamInt('id');
+        if ($id > 0 && osc_apply_filter('count_view_on_beacon', osc_request_counts_as_view(), $id)) {
+            $item = $this->itemManager->findByPrimaryKey($id);
+            if (!empty($item)
+                && !osc_is_admin_user_logged_in()
+                && !($item['fk_i_user_id'] != '' && $item['fk_i_user_id'] == osc_logged_user_id())
+            ) {
+                ItemStats::newInstance()->increase('i_num_views', $id);
+            }
+        }
+
+        header('HTTP/1.1 204 No Content');
     }
 
     //hopefully generic...

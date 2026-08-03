@@ -40,7 +40,7 @@ class CAdminLogin extends AdminBaseModel
             case ('login_post'):     //post execution for the login
                 osc_csrf_check();
                 osc_run_hook('before_login_admin');
-                $url_redirect  = osc_get_http_referer();
+                $url_redirect  = osc_pop_admin_login_redirect();
                 $page_redirect = '';
                 $password      = Params::getParam('password', false, false);
                 if (preg_match('|[?&]page=([^&]+)|', $url_redirect . '&', $match)) {
@@ -255,7 +255,9 @@ class CAdminLogin extends AdminBaseModel
                 //osc_run_hook( 'init_admin' );
                 View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Log in'));
                 View::newInstance()->_exportVariableToView('login_admin_form', 'gui/login.php');
-                Session::newInstance()->_setReferer(osc_get_http_referer());
+                // Signed cookie instead of the session, so opening the admin login page does
+                // not start a session; keep a destination the auth gate already recorded.
+                osc_set_admin_login_redirect(osc_get_http_referer(), true);
                 $this->doView();
                 break;
         }

@@ -1552,10 +1552,18 @@ function osc_format_price($price, $symbol = null)
 
     $price /= 1000000;
 
+    // Drop the fractional part when the price is whole at the locale's precision,
+    // so 1234.00 renders as "1,234" while 1234.50 keeps its decimals.
+    $decimals = (int) osc_locale_num_dec();
+    $rounded  = round($price, $decimals);
+    if ($decimals > 0 && $rounded == floor($rounded)) {
+        $decimals = 0;
+    }
+
     $currencyFormat = osc_locale_currency_format();
     $currencyFormat = str_replace(
         '{NUMBER}',
-        number_format($price, osc_locale_num_dec(), osc_locale_dec_point(), osc_locale_thousands_sep()),
+        number_format($price, $decimals, osc_locale_dec_point(), osc_locale_thousands_sep()),
         $currencyFormat
     );
     $currencyFormat = str_replace('{CURRENCY}', $symbol, $currencyFormat);
@@ -1692,11 +1700,14 @@ function osc_item_meta_value()
             return '';
         }
     } elseif ($meta['e_type'] == 'CHECKBOX') {
-        if ($value == 1) {
-            return '<img src="' . osc_current_web_theme_url('images/tick.png') . '" alt="" title=""/>';
-        }
+        // Theme-agnostic: return translatable Yes/No text, not an <img> that assumes the
+        // active theme ships images/tick.png + cross.png (only the legacy bender theme
+        // does, so every other theme rendered a broken image). Themes/plugins wanting an
+        // icon can override via the 'item_meta_checkbox_value' filter.
+        $checked = ((string) $value === '1');
+        $label   = $checked ? __('Yes') : __('No');
 
-        return '<img src="' . osc_current_web_theme_url('images/cross.png') . '" alt="" title=""/>';
+        return osc_apply_filter('item_meta_checkbox_value', osc_esc_html($label), $checked, $meta);
     } elseif ($meta['e_type'] == 'URL') {
         if ($value != '') {
             $attributes  = 'rel="noopener nofollow"';

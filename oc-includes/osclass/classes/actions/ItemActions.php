@@ -187,8 +187,13 @@ class ItemActions
 
         $flash_error .= $this->validateCommonInput($flash_error, $aItem);
 
-        $flash_error .= ((((time() - (int)Session::newInstance()->_get('last_submit_item')) < osc_items_wait_time())
-            && !$this->is_admin)
+        $flash_error .= ((!$this->is_admin
+            && osc_items_wait_time() > 0
+            && LoginAttempt::newInstance()->countByIpContext(
+                'item_post',
+                (string)Params::getServerParam('REMOTE_ADDR'),
+                date('Y-m-d H:i:s', time() - osc_items_wait_time())
+            ) > 0)
             ? _m('Too fast. You should wait a little to publish your ad.')
             . PHP_EOL : '');
 
@@ -212,7 +217,10 @@ class ItemActions
                 $aItem['currency'] = null;
             }
 
-            $this->manager->insert(array(
+            // Capture the new id from the insert itself (see DAO::insertGetId), not a later
+            // decoupled read of the shared connection's insert_id, which intermittently came
+            // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
+            $itemId = $this->manager->insertGetId(array(
                 'fk_i_user_id'       => $aItem['userId'],
                 'dt_pub_date'        => date('Y-m-d H:i:s'),
                 'fk_i_category_id'   => $aItem['catId'],
@@ -229,16 +237,33 @@ class ItemActions
                 's_ip'               => $aItem['s_ip']
             ));
 
-            if (!$this->is_admin) {
-                // Track spam delay: Session
-                Session::newInstance()->_set('last_submit_item', time());
-                // Track spam delay: Cookie
-                Cookie::newInstance()->set_expires(osc_time_cookie());
-                Cookie::newInstance()->push('last_submit_item', time());
-                Cookie::newInstance()->set();
+            // The parent insert must have produced a row before any of the child inserts
+            // below run. On production the parent has been seen to leave no durable row while
+            // insertedId() returns 0 and nothing logs a failure; carrying on then FK-fails all
+            // five child inserts (locales, location, resources, meta, stats) against a
+            // non-existent item and fires posted_item with an empty payload. Abort cleanly with
+            // an error the caller shows and redirects on, and make the silent failure visible.
+            if (!$itemId) {
+                trigger_error(
+                    'Item insert produced no row (insertedId=0); aborting before child inserts.',
+                    E_USER_WARNING
+                );
+
+                return _m('Your listing could not be saved. Please try again.');
             }
 
-            $itemId = $this->manager->dao->insertedId();
+            if (!$this->is_admin) {
+                // Record the publish so the flood wait is enforced server-side (see the
+                // countByIpContext check above): durable, correct across app servers, and
+                // not resettable by clearing cookies the way the old session/cookie was.
+                LoginAttempt::newInstance()->record(
+                    'item_post',
+                    (string)$aItem['contactEmail'],
+                    (string)Params::getServerParam('REMOTE_ADDR'),
+                    date('Y-m-d H:i:s')
+                );
+            }
+
             Log::newInstance()->insertLog(
                 'item',
                 'add',
@@ -298,8 +323,6 @@ class ItemActions
             $item          = $this->manager->findByPrimaryKey($itemId);
             $aItem['item'] = $item;
 
-
-            Session::newInstance()->_set('last_publish_time', time());
             if (!$this->is_admin) {
                 $this->sendEmails($aItem);
             }
@@ -878,10 +901,9 @@ class ItemActions
 
                         $totalItemImages++;
 
-                        $itemResourceManager->insert(array(
+                        $resourceId = $itemResourceManager->insertGetId(array(
                             'fk_i_item_id' => $itemId
                         ));
-                        $resourceId = $itemResourceManager->dao->insertedId();
 
                         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                             return 3; // PATH CAN NOT BE CREATED
@@ -1537,6 +1559,31 @@ class ItemActions
         // get data for this function
         $aItem = $this->prepareDataForFunction('send_friend');
 
+        // The listing must exist — prepareDataForFunction() returns no 'item' otherwise.
+        if (empty($aItem['item'])) {
+            return __("This listing doesn't exist");
+        }
+
+        // Validate before dispatch, mirroring contact(): an empty or malformed address
+        // otherwise reaches PHPMailer, which throws an uncaught exception and 500s the
+        // request instead of returning a field-level error.
+        $flash_error = '';
+        if (!osc_validate_text($aItem['yourName'])) {
+            $flash_error .= __('Your name: this field is required') . PHP_EOL;
+        }
+        if (!osc_validate_email($aItem['yourEmail'])) {
+            $flash_error .= __('Your email: invalid email address') . PHP_EOL;
+        }
+        if (!osc_validate_text($aItem['friendName'])) {
+            $flash_error .= __("Your friend's name: this field is required") . PHP_EOL;
+        }
+        if (!osc_validate_email($aItem['friendEmail'])) {
+            $flash_error .= __("Your friend's email: invalid email address") . PHP_EOL;
+        }
+        if ($flash_error !== '') {
+            return $flash_error;
+        }
+
         $item = $aItem['item'];
         View::newInstance()->_exportVariableToView('item', $item);
 
@@ -1751,8 +1798,8 @@ class ItemActions
 
         osc_run_hook('before_add_comment', $aComment);
 
-        if ($mComments->insert($aComment)) {
-            $commentID = $mComments->dao->insertedId();
+        $commentID = $mComments->insertGetId($aComment);
+        if ($commentID) {
             if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
                 $user = User::newInstance()->findByPrimaryKey($userId);
                 if ($user) {
@@ -2016,8 +2063,11 @@ class ItemActions
                 array('', '.'),
                 trim($aItem['price'])
             );
-            $aItem['price'] = $price * 1000000;
-            //$aItem['price'] = (float) $aItem['price'];
+            // A non-numeric price (stray currency symbol, letters, or nothing
+            // left after normalising) must not reach the multiplication: under
+            // PHP 8 that raises a TypeError and 500s the whole submission. Treat
+            // it as "no price" instead. Stored as an integer in millionths.
+            $aItem['price'] = is_numeric($price) ? (int)round((float)$price * 1000000) : null;
         }
 
         if ($aItem['catId'] == '') {

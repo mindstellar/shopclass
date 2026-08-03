@@ -462,6 +462,46 @@ class DAO
     }
 
     /**
+     * Insert a row and return its auto-increment id in one step.
+     *
+     * The id is captured from the insert statement itself (Connection::insertGetId, read
+     * before the statement closes) rather than by a later, decoupled $this->dao->insertedId()
+     * read of the connection-level mysqli->insert_id. That connection-level value is shared
+     * and is reset to 0 by any other statement on the same handle — transaction control, a
+     * form/widget save, a plugin query — so reading it after the fact intermittently returned
+     * 0, whereupon callers wrote child rows with a 0 foreign key (FK failures) and fired hooks
+     * with an empty item. Callers that need the new id must use this, not ->dao->insertedId().
+     *
+     * @param array $values
+     *
+     * @return int the new row's id, or 0 when the insert wrote no row
+     */
+    public function insertGetId($values)
+    {
+        if (!$this->checkFieldKeys(array_keys($values)) || $values === array()) {
+            return 0;
+        }
+
+        $columns      = array_keys($values);
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+
+        try {
+            $id = osc_db_insert_id(
+                'INSERT INTO ' . $this->getTableName() . ' (' . implode(', ', $columns) . ')'
+                . ' VALUES (' . $placeholders . ')',
+                array_values($values)
+            );
+            $this->clearError();
+
+            return (int) $id;
+        } catch (\mindstellar\database\DbException $e) {
+            $this->recordError($e);
+
+            return 0;
+        }
+    }
+
+    /**
      * Get table prefix
      *
      * @access public

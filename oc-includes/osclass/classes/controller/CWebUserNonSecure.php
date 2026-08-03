@@ -69,7 +69,10 @@ class CWebUserNonSecure extends BaseModel
                                 array('s_email' => $userEmailTmp['s_new_email']),
                                 array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
                             );
-                        Session::newInstance()->_set('userEmail', $userEmailTmp['s_new_email']);
+                        // Request-scoped refresh only — the next request re-resolves the
+                        // email from the database via the signed identity cookie, so no
+                        // physical session is started for this logged-in user.
+                        Session::newInstance()->_setEphemeral('userEmail', $userEmailTmp['s_new_email']);
                         UserEmailTmp::newInstance()
                             ->delete(array('s_new_email' => $userEmailTmp['s_new_email']));
 
@@ -204,6 +207,9 @@ class CWebUserNonSecure extends BaseModel
                 $this->_exportVariableToView('search_page', $page);
                 $this->_exportVariableToView('canonical', osc_user_public_profile_url());
 
+                // Public seller profile (a user's public listings): cacheable for anonymous
+                // visitors. Sibling `/user` routes (dashboard, account) stay private by default.
+                osc_mark_response_cacheable();
                 $this->doView('user-public-profile.php');
                 break;
             case 'contact_post':

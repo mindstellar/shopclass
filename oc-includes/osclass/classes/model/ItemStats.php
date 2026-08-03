@@ -346,6 +346,41 @@ class ItemStats extends DAO
 
         return $row['i_num_views'];
     }
+
+    /**
+     * Sum a counter column across every listing a user owns — the number an account dashboard
+     * shows ("your listings have N views") in one aggregate, instead of walking and hydrating
+     * the whole catalogue to add up a single integer.
+     *
+     * @param string $column   one of the COUNTERS whitelist (e.g. 'i_num_views')
+     * @param int    $userId
+     * @param bool   $liveOnly restrict to listings the public can currently see
+     *
+     * @return int
+     */
+    public function sumByUser($column, $userId, $liveOnly = true)
+    {
+        if (!in_array($column, self::COUNTERS, true)) {
+            return 0;
+        }
+
+        $sql = 'SELECT SUM(s.' . $column . ') AS total'
+            . ' FROM ' . $this->getTableName() . ' AS s'
+            . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item AS i ON i.pk_i_id = s.fk_i_item_id'
+            . ' WHERE i.fk_i_user_id = ?';
+
+        if ($liveOnly) {
+            $sql .= ' AND ' . implode(' AND ', Item::liveConditions('i.'));
+        }
+
+        try {
+            $total = osc_db_scalar($sql, array((int)$userId));
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
+
+        return (int)$total;
+    }
 }
 
 /* file end: ./oc-includes/osclass/model/ItemStats.php */

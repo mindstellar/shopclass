@@ -41,7 +41,8 @@ class ItemForm extends Form
         $categories = null,
         $item = null,
         $default_item = null,
-        $parent_selectable = false
+        $parent_selectable = false,
+        $attributes = []
     ) {
         // Did user select a specific category to post in?
         $catId = Params::getParam('catId');
@@ -61,7 +62,13 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        echo '<select name="catId" id="catId">';
+        $extra = '';
+        foreach ($attributes as $attrName => $attrValue) {
+            // Attribute names are developer-supplied keys; values are escaped so a caller
+            // can pass required/data-* without hand-injecting markup into the <select>.
+            $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
+        }
+        echo '<select name="catId" id="catId"' . $extra . '>';
         if (isset($default_item)) {
             echo '<option value="">' . $default_item . '</option>';
         } else {
@@ -825,8 +832,9 @@ class ItemForm extends Form
      */
     public static function user_data_hidden()
     {
-        if (isset($_SESSION['userId']) && $_SESSION['userId'] != null) {
-            $user = User::newInstance()->findByPrimaryKey($_SESSION['userId']);
+        $loggedUserId = osc_logged_user_id();
+        if ($loggedUserId) {
+            $user = User::newInstance()->findByPrimaryKey($loggedUserId);
             parent::generic_input_hidden('contactName', $user['s_name']);
             parent::generic_input_hidden('contactEmail', $user['s_email']);
 
@@ -861,8 +869,9 @@ class ItemForm extends Form
     /**
      * @param string $path
      */
-    public static function location_javascript_new($path = 'front')
+    public static function location_javascript_new($path = 'front', $enqueue = false)
     {
+        if ($enqueue) { ob_start(); }
         ?>
         <script>
             (function () {
@@ -1052,14 +1061,16 @@ class ItemForm extends Form
             }
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), array('osc-ui-common'), ($path === 'admin'), 'item_location_js'); }
     }
 
 
     /**
      * @param string $path
      */
-    public static function location_javascript($path = 'front')
+    public static function location_javascript($path = 'front', $enqueue = false)
     {
+        if ($enqueue) { ob_start(); }
         ?>
         <script>
             (function () {
@@ -1268,6 +1279,7 @@ class ItemForm extends Form
             }
         </script>
         <?php
+        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, ($path === 'admin'), 'item_location_cascade_js'); }
     }
 
 

@@ -247,6 +247,26 @@ pin('clearStat signature is unchanged', 'public clearStat($id, $stat)', harness_
 pin('enableByCategory signature is unchanged', 'public enableByCategory($enable, $aIds)', harness_method_signature('Item', 'enableByCategory'));
 pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id)', harness_method_signature('Item', 'deleteByPrimaryKey'));
 pin('metaFields signature is unchanged', 'public metaFields($id)', harness_method_signature('Item', 'metaFields'));
+pin('liveConditions signature is unchanged', 'public static liveConditions($alias = \'\')', harness_method_signature('Item', 'liveConditions'));
+
+// Item::liveConditions — the single source of the "publicly live" predicate. Assert the exact
+// fragments (aliased) so a drift here, which would desync search from the category counts, fails
+// loudly. The expiry bound carries PHP's clock as a quoted literal.
+$lc = Item::liveConditions('i.');
+pin('liveConditions yields four AND fragments', '4', (string)count($lc));
+pin(
+    'liveConditions: enabled, active, non-spam fragments are exact',
+    'i.b_enabled = 1|i.b_active = 1|i.b_spam = 0',
+    implode('|', array_slice($lc, 0, 3))
+);
+pin(
+    'liveConditions: premium-or-unexpired fragment shape',
+    '1',
+    (string)preg_match(
+        "/^\\(i\\.b_premium = 1 \\|\\| i\\.dt_expiration >= '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'\\)$/",
+        $lc[3]
+    )
+);
 
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
@@ -257,7 +277,8 @@ pin(
         'extendData', 'extendDataSingle', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
         'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
         'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
-        'listAllWithCategories', 'listLatest', 'listWhere', 'metaFields', 'mostViewed', 'newInstance',
+        'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
+        'newInstance',
         'numItems', 'totalItems', 'updateExpirationDate', 'updateLocaleForce',
     ),
     (static function () {
@@ -670,6 +691,13 @@ pin('...and the REPLACE overwrote the title', 'FR titre 2', (static function () 
 
     return $v;
 })());
+$localeHook = array();
+osc_add_hook('item_content_updated', static function ($id, $loc) use (&$localeHook) {
+    $localeHook = array('id' => $id, 'locale' => $loc);
+});
+$model->updateLocaleForce($writeItem, 'fr_FR', 'FR titre 3', 'FR corps 3');
+pin('updateLocaleForce fires item_content_updated with the int id', (int) $writeItem, $localeHook['id']);
+pin('...and the locale that changed', 'fr_FR', $localeHook['locale']);
 
 harness_section('Item::clearStat');
 
@@ -695,8 +723,13 @@ harness_section('Item::updateExpirationDate — the guard and the two write bran
 
 $resetDao();
 $expItem = seed_item($admin, $cat, $user, 'Expiration target');
+$expHook = array();
+osc_add_hook('item_expiration_updated', static function ($id, $date) use (&$expHook) {
+    $expHook = array('id' => $id, 'date' => $date);
+});
 pin('a falsy expiration_time returns false without touching the row', false, $model->updateExpirationDate($expItem, false));
 pin('a "0" expiration_time is falsy too and returns false', false, $model->updateExpirationDate($expItem, '0'));
+check('a rejected update fires no item_expiration_updated hook', $expHook === array());
 
 // Numeric string > 0: the DATE_ADD(dt_pub_date, INTERVAL n DAY) expression branch,
 // written UNescaped. Returns the freshly computed dt_expiration string.
@@ -705,6 +738,8 @@ check('the DATE_ADD branch returns a datetime string', is_string($expDays) && st
 pin('...and the row now holds it', $expDays, (static function () use ($admin, $itemTable, $expItem) {
     return $admin->query("SELECT dt_expiration FROM $itemTable WHERE pk_i_id = $expItem")->fetch_assoc()['dt_expiration'];
 })());
+pin('a successful update fires item_expiration_updated with the int id', (int) $expItem, $expHook['id']);
+pin('...carrying the new dt_expiration', $expDays, $expHook['date']);
 
 // A literal datetime: the escaped/bound branch.
 $expLiteral = $model->updateExpirationDate($expItem, '2030-06-15 12:00:00', false);
@@ -713,6 +748,19 @@ pin('a literal datetime is written verbatim through the escaped branch', '2030-0
 // The <= 0 numeric branch (non-falsy '00') writes the 9999 sentinel literal.
 $expSentinel = $model->updateExpirationDate($expItem, '00', false);
 pin('a non-falsy zero-ish numeric writes the 9999 sentinel', '9999-12-31 23:59:59', $expSentinel);
+
+// A listing with no t_item_location row: the post-update read inner-joins
+// t_item_location, so $_item is null. The method must converge on false, not
+// deref null (which warned and could move the denormalised counters the wrong way).
+$resetDao();
+$noLocItem = seed_item($admin, $cat, $user, 'Location-less');
+$admin->query("DELETE FROM $locTable WHERE fk_i_item_id = $noLocItem");
+$noLocHook = false;
+osc_add_hook('item_expiration_updated', static function ($id) use (&$noLocHook) {
+    $noLocHook = true;
+});
+pin('a location-less listing returns false instead of null-derefing', false, $model->updateExpirationDate($noLocItem, '7', true));
+check('...and fires no item_expiration_updated hook', $noLocHook === false);
 
 harness_section('Item::updateExpirationDate — the stats side effects on an expiry transition');
 

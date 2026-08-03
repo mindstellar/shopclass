@@ -66,6 +66,9 @@ if (is_array($cron)) {
                 }
             }
         }
+        // Drop the tracking rows abandoned uploads leave in t_item_upload_tmp, on the same
+        // window as the temp files swept above.
+        ItemTmpUpload::newInstance()->pruneBefore(date('Y-m-d H:i:s', time() - (2 * 3600)));
 
         osc_run_hook('cron_hourly');
     }

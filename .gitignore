@@ -59,6 +59,7 @@ osclass_latest.zip
 .php_cs.cache
 robots.txt
 /scratch.php
+/seed-demo.php
 /error.log
 /.php-cs-fixer.cache
 
@@ -76,8 +77,7 @@ config.php.local
 CLAUDE.md
 DESIGN.md
 PRODUCT.md
-MODERNISATION.md
-PAGE-BUILDER.md
-CUSTOM-FIELDS.md
-FORMS.md
-DB-MODELS.md
+
+
+# Private/local docs (design, contracts) — kept out of the shipped repo
+docs/private/

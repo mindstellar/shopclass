@@ -102,6 +102,8 @@ require_once LIB_PATH . 'osclass/alerts.php';
 require_once LIB_PATH . 'osclass/functions.php';
 require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
+require_once LIB_PATH . 'osclass/helpers/hHttpCache.php';
+require_once LIB_PATH . 'osclass/helpers/hViews.php';
 require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
 require_once LIB_PATH . 'osclass/helpers/hSpam.php';
 require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
@@ -119,7 +121,24 @@ osc_cache_init();
 
 define('__OSC_LOADED__', true);
 Params::init();
+// Core owns Cache-Control on the front end (see hHttpCache.php). Silence PHP's session module so
+// it never injects its own no-store/no-cache headers when a session starts — those would fight the
+// app's public/private decision. Admin keeps PHP's default limiter: it is never cached, and its
+// implicit no-cache stays its safety net.
+if (!defined('OC_ADMIN') || OC_ADMIN !== true) {
+    session_cache_limiter('');
+}
 Session::newInstance()->session_resume();
+// Consume flash messages left by the previous request from their signed cookie (and clear
+// it) before any output — so a page that only shows a flash never starts a session.
+Session::newInstance()->_loadFlashMessages();
+// Same for form-repopulation values, so a form that refills after a validation error does
+// not need a session either.
+Session::newInstance()->_loadFormData();
+// Resolve a cookie-authenticated front-end identity into the request scope so the
+// historical Session::_get('userId') readers work without a server session. No-op for
+// anonymous, cookieless visitors, so their requests stay session-free and cacheable.
+osc_run_web_user_identity();
 
 if (osc_timezone()) {
     date_default_timezone_set(osc_timezone());
@@ -132,9 +151,8 @@ Styles::init();
 // register scripts
 //
 // jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
-// These three stay registered because the bundled `bender` front theme still enqueues
-// them (it lives in its own repository, so it migrates separately). Nothing in core
-// enqueues them, so they cost nothing until a theme asks for them.
+// These three stay registered because legacy third-party themes and plugins may still
+// enqueue them. Nothing in core enqueues them, so they cost nothing until a theme asks.
 osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
 osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
 osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');

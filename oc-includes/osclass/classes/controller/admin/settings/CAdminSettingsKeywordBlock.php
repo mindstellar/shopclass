@@ -196,6 +196,12 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     'BOOLEAN'
                 );
                 osc_set_preference('report_threshold', $threshold, 'moderation', 'INTEGER');
+                osc_set_preference(
+                    'enabled_recaptcha_reports',
+                    Params::getParam('enabled_recaptcha_reports') != '' ? 1 : 0,
+                    'osclass',
+                    'BOOLEAN'
+                );
 
                 osc_add_flash_ok_message(_m('Moderation settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
@@ -261,10 +267,11 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
     }
 
     /**
-     * The four `moderation`-section preferences the list page's settings form
-     * reads and writes.
+     * The moderation preferences the list page's settings form reads and writes.
+     * The first four live in the `moderation` section; enabled_recaptcha_reports is an
+     * `osclass`-section captcha toggle grouped here because it gates the report form.
      *
-     * @return array{keyword_spam_enabled:bool,keyword_spam_hard_block:bool,report_autoblock:bool,report_threshold:int}
+     * @return array{keyword_spam_enabled:bool,keyword_spam_hard_block:bool,report_autoblock:bool,report_threshold:int,enabled_recaptcha_reports:bool}
      */
     private function _moderationPrefs()
     {
@@ -273,6 +280,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
             'keyword_spam_hard_block' => osc_keyword_block_hard_block(),
             'report_autoblock'        => osc_report_autoblock_enabled(),
             'report_threshold'        => osc_report_threshold(),
+            'enabled_recaptcha_reports' => osc_recaptcha_reports_enabled(),
         );
     }
 }

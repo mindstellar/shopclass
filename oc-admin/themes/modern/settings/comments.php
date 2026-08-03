@@ -131,6 +131,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                         <div class="form-label-checkbox">
                             <label>
+                                <input type="checkbox" <?php echo(osc_recaptcha_comments_enabled() ? 'checked="checked"'
+                                    : ''); ?> name="enabled_recaptcha_comments"
+                                       value="1"/> <?php _e('Require a CAPTCHA to post a comment'); ?>
+                            </label>
+                            <div class="help-box"><?php _e('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.'); ?></div>
+                        </div>
+                        <div class="form-label-checkbox">
+                            <label>
                                 <input type="checkbox" <?php echo((osc_moderate_comments() == -1) ? ''
                                     : 'checked="checked"'); ?> name="moderate_comments"
                                        value="1"/> <?php _e('A comment is being held for moderation'); ?>

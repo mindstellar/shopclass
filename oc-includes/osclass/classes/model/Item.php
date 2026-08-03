@@ -483,6 +483,30 @@ class Item extends DAO
      *
      * @return int
      */
+    /**
+     * SQL predicate for "this listing is publicly live": enabled, active, not flagged spam, and
+     * either premium or not yet expired. Single source of truth for the visibility rule that
+     * search, category counts and any integrator must agree on — copy it by hand and the copies
+     * drift, which is exactly what makes search disagree with the counts about what is live.
+     *
+     * Returns an array of SQL fragments to join with AND. The expiry bound carries PHP's clock
+     * as a quoted literal (matching how the search builder consumes it). Pass an $alias ending
+     * in a dot (e.g. 'i.' or DB_TABLE_PREFIX . 't_item.') to qualify the columns.
+     *
+     * @param string $alias column qualifier ending in a dot, or '' for none
+     *
+     * @return string[]
+     */
+    public static function liveConditions($alias = '')
+    {
+        return array(
+            $alias . 'b_enabled = 1',
+            $alias . 'b_active = 1',
+            $alias . 'b_spam = 0',
+            sprintf("(%sb_premium = 1 || %sdt_expiration >= '%s')", $alias, $alias, date('Y-m-d H:i:s')),
+        );
+    }
+
     public function numItems($category, $enabled = true, $active = true)
     {
         $conditions = array();
@@ -917,6 +941,10 @@ class Item extends DAO
             return false;
         }
 
+        // Model-level write, so it is invisible to the controller-layer item events. Announce it
+        // for anything mirroring item content (a search index, a cache): title/description changed.
+        osc_run_hook('item_content_updated', (int)$id, $locale);
+
         return true;
     }
 
@@ -986,7 +1014,19 @@ class Item extends DAO
                 } catch (\mindstellar\database\DbException $e) {
                     $_item = null;
                 }
-                $_item = $_item === null ? null : osc_db_stringify_row($_item);
+                if ($_item === null) {
+                    // The row is read with an inner join on t_item_location, so a listing
+                    // with no location row yields null here. There is nothing to announce
+                    // or re-count, and the dereferences below would fatal on it; converge
+                    // on the method's own false failure path.
+                    return false;
+                }
+                $_item = osc_db_stringify_row($_item);
+
+                // Model-level write the controller-layer events never see. Announce the new
+                // expiry so an index or cache mirroring liveness can react (an expiry change can
+                // flip a listing in or out of the "live" set).
+                osc_run_hook('item_expiration_updated', (int)$id, $_item['dt_expiration']);
 
                 if (!$do_stats) {
                     return $_item['dt_expiration'];

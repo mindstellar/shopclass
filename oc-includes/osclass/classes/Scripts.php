@@ -28,6 +28,12 @@ class Scripts extends Dependencies
      * @var array
      */
     private $scriptsLoaded;
+    /**
+     * Ids of inline code blocks already enqueued this request, for dedup.
+     *
+     * @var array
+     */
+    private $inlineLoaded = array();
 
     public function __construct()
     {
@@ -36,24 +42,38 @@ class Scripts extends Dependencies
     }
 
     /**
-     * Enqueue Script Code to footer_scripts_loaded hook
+     * Enqueue a block of inline JavaScript into the footer, after the file scripts.
      *
-     * @param string $code         javascript code string with script tag
-     * @param array  $dependencies ids array of registered js libraries (not script code) this code depends on
+     * Prints on the footer hook at priority 9 — after printScripts() (priority 8) so
+     * declared dependencies are already parsed, and before the scripts_loaded event
+     * (priority 10). Footer-only by design: deferred inline code that waits for
+     * DOMContentLoaded needs its dependencies in the document first.
+     *
+     * @param string      $code         JavaScript wrapped in its own <script> tag
+     * @param array|null  $dependencies registered script ids this code needs enqueued alongside it
+     * @param bool        $admin        target the admin document instead of the front
+     * @param string|null $id           optional id; a repeated id is enqueued only once
      */
-    public static function enqueueScriptCode($code, $dependencies = null, $admin = false)
+    public static function enqueueScriptCode($code, $dependencies = null, $admin = false, $id = null)
     {
-        $prefix = '';
-        if ($admin === true) {
-            $prefix = 'admin_';
+        $self   = self::newInstance();
+        $prefix = $admin === true ? 'admin_' : '';
+
+        if ($id !== null) {
+            if (isset($self->inlineLoaded[$id])) {
+                return;
+            }
+            $self->inlineLoaded[$id] = true;
         }
+
         $print_code = static function () use ($code) {
-            echo $code;
+            echo $code . PHP_EOL;
         };
-        Plugins::addHook($prefix.'footer_scripts_loaded', $print_code, 10);
-        if ($dependencies !== null && is_array($dependencies)) {
+        Plugins::addHook($prefix . 'footer', $print_code, 9);
+
+        if (is_array($dependencies)) {
             foreach ($dependencies as $script) {
-                self::newInstance()->enqueueScript($script);
+                $self->enqueueScript($script);
             }
         }
     }

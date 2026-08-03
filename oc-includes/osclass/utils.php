@@ -330,68 +330,72 @@ function osc_sendMail($params)
     $mail->From     = osc_apply_filter('mail_from', $from, $params);
     $mail->FromName = osc_apply_filter('mail_from_name', $from_name, $params);
 
-    $to      = $params['to'];
-    $to_name = '';
-    if (array_key_exists('to_name', $params)) {
-        $to_name = $params['to_name'];
-    }
-
-    if (!is_array($to)) {
-        $to = array($to => $to_name);
-    }
-
-    foreach ($to as $to_email => $to_name) {
-        $mail->addAddress($to_email, $to_name);
-    }
-
-    if (array_key_exists('add_bcc', $params)) {
-        if (!is_array($params['add_bcc']) && $params['add_bcc'] != '') {
-            $params['add_bcc'] = array($params['add_bcc']);
+    // With exceptions enabled (new PHPMailer(true)) a malformed recipient throws from
+    // addAddress()/addBCC()/addReplyTo() before send() is reached, and send() itself
+    // throws on a transport failure. Guard the whole dispatch so a bad address or a
+    // dead mailserver degrades to a logged warning and a false return, never a 500.
+    try {
+        $to      = $params['to'];
+        $to_name = '';
+        if (array_key_exists('to_name', $params)) {
+            $to_name = $params['to_name'];
         }
 
-        foreach ($params['add_bcc'] as $bcc) {
-            $mail->addBCC($bcc);
-        }
-    }
-
-    if (array_key_exists('reply_to', $params)) {
-        $mail->addReplyTo($params['reply_to']);
-    }
-
-    $mail->Subject = $params['subject'];
-    $mail->Body    = $params['body'];
-
-    if (array_key_exists('attachment', $params)) {
-        if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
-            $params['attachment'] = array($params['attachment']);
+        if (!is_array($to)) {
+            $to = array($to => $to_name);
         }
 
-        foreach ($params['attachment'] as $attachment) {
-            if (is_array($attachment)) {
-                if (isset($attachment['path']) && isset($attachment['name'])) {
+        foreach ($to as $to_email => $to_name) {
+            $mail->addAddress($to_email, $to_name);
+        }
+
+        if (array_key_exists('add_bcc', $params)) {
+            if (!is_array($params['add_bcc']) && $params['add_bcc'] != '') {
+                $params['add_bcc'] = array($params['add_bcc']);
+            }
+
+            foreach ($params['add_bcc'] as $bcc) {
+                $mail->addBCC($bcc);
+            }
+        }
+
+        if (array_key_exists('reply_to', $params)) {
+            $mail->addReplyTo($params['reply_to']);
+        }
+
+        $mail->Subject = $params['subject'];
+        $mail->Body    = $params['body'];
+
+        if (array_key_exists('attachment', $params)) {
+            if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
+                $params['attachment'] = array($params['attachment']);
+            }
+
+            foreach ($params['attachment'] as $attachment) {
+                if (is_array($attachment)) {
+                    if (isset($attachment['path']) && isset($attachment['name'])) {
+                        try {
+                            $mail->addAttachment($attachment['path'], $attachment['name']);
+                        } catch (\PHPMailer\PHPMailer\Exception $e) {
+                            continue;
+                        }
+                    }
+                } else {
                     try {
-                        $mail->addAttachment($attachment['path'], $attachment['name']);
+                        $mail->addAttachment($attachment);
                     } catch (\PHPMailer\PHPMailer\Exception $e) {
                         continue;
                     }
                 }
-            } else {
-                try {
-                    $mail->addAttachment($attachment);
-                } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    continue;
-                }
             }
         }
-    }
 
-    $mail->CharSet = 'utf-8';
-    $mail->isHTML();
+        $mail->CharSet = 'utf-8';
+        $mail->isHTML();
 
-    $mail = osc_apply_filter('pre_send_mail', $mail, $params);
+        $mail = osc_apply_filter('pre_send_mail', $mail, $params);
 
-    // send email!
-    try {
+        // send email!
         $mail->send();
     } catch (\PHPMailer\PHPMailer\Exception $e) {
         trigger_error($e->errorMessage(), E_USER_WARNING);
@@ -868,15 +872,15 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  *
  * @param      $url
  * @param null $post_data
- * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to false
- *                         for backward compatibility; pass true for requests
- *                         carrying secrets.
- * @param int  $timeout    total transfer timeout in seconds; 0 (default) leaves
- *                         no overall limit, so existing callers are unaffected.
+ * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to true so
+ *                         every caller authenticates the peer; pass false only at
+ *                         a call site that genuinely must talk to a bad cert.
+ * @param int  $timeout    total transfer timeout in seconds; 0 leaves no overall
+ *                         limit, but getContents() still aborts a stalled transfer.
  *
  * @return bool|string|null
  */
-function osc_file_get_contents($url, $post_data = null, $verify_ssl = false, $timeout = 0)
+function osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $timeout = 0)
 {
     try {
         return (new FileSystem())->getContents($url, $post_data, $verify_ssl, (int)$timeout);
@@ -1056,7 +1060,7 @@ function osc_check_dir_writable($dir = ABS_PATH)
             if ($file !== '.' && $file !== '..') {
                 if (is_dir(osc_replace_double_slash($dir . '/' . $file))) {
                     if (osc_replace_double_slash($dir) === (ABS_PATH . 'oc-content/themes')) {
-                        if ($file === 'bender' || $file === 'index.php') {
+                        if ($file === 'storefront' || $file === 'index.php') {
                             $res = osc_check_dir_writable(osc_replace_double_slash($dir . '/' . $file));
                             if (!$res) {
                                 return false;

@@ -272,16 +272,20 @@ function osc_validate_url($value, $required = false, $get_headers = false)
 function osc_validate_spam_delay($type = 'item')
 {
     if ($type === 'item') {
-        $delay    = osc_item_spam_delay();
-        $saved_as = 'last_submit_item';
+        $delay   = osc_item_spam_delay();
+        $context = 'item_post';
     } else {
-        $delay    = osc_comment_spam_delay();
-        $saved_as = 'last_submit_comment';
+        $delay   = osc_comment_spam_delay();
+        $context = 'comment_post';
     }
 
-    // check $_SESSION
-    return !((Session::newInstance()->_get($saved_as) + $delay) > time()
-        || (Cookie::newInstance()->get_value($saved_as) + $delay) > time());
+    // Allowed when this address has not posted of this kind within the delay window. The
+    // throttle records live in the DB now (see ItemActions), not the session.
+    return LoginAttempt::newInstance()->countByIpContext(
+        $context,
+        (string)Params::getServerParam('REMOTE_ADDR'),
+        date('Y-m-d H:i:s', time() - (int)$delay)
+    ) === 0;
 }
 
 

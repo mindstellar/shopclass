@@ -252,6 +252,38 @@ $s = new Search();
 $s->addPattern('%wild_card%');
 check('a pattern with SQL wildcard characters is safe', is_array($s->doSearch()));
 
+/* The pattern path joins t_item_description and filters on the current user
+ * locale; the fixtures are en_US, so pin that locale for the content assertions
+ * below (osc_current_user_locale() reads this cookie). */
+$_COOKIE['oc_userLocale'] = 'en_US';
+
+/* Query preprocessing: a multi-word pattern requires every term (AND), not any
+ * term (MySQL's default OR). "Mountain Bike" must not drag in "Racing Bike". */
+$s = new Search();
+$s->addPattern('Mountain Bike');
+pin('a multi-word pattern requires all terms', array($bike1), $sorted($ids($s->doSearch())));
+
+/* Prefix recall: a partial word matches by prefix (+word*). */
+$s = new Search();
+$s->addPattern('Roadst');
+pin('a partial word matches by prefix', array($car1), $sorted($ids($s->doSearch())));
+
+/* Exclusion: a -term removes matches. */
+$s = new Search();
+$s->addPattern('Bike -Racing');
+pin('a -term excludes its matches', array($bike1), $sorted($ids($s->doSearch())));
+
+/* Quoted phrase: "two words" matches the phrase, not the two words apart. */
+$s = new Search();
+$s->addPattern('"Racing Bike"');
+pin('a quoted phrase matches the phrase', array($bike2), $sorted($ids($s->doSearch())));
+
+/* Short-term fallback: a term below the FULLTEXT min token size (3) would match
+ * nothing in InnoDB, so it routes to a substring LIKE — "se" finds "Sedan". */
+$s = new Search();
+$s->addPattern('se');
+pin('a below-min-length term falls back to substring match', array($car2), $sorted($ids($s->doSearch())));
+
 /* ----------------------------------------------------------------------------
  * Premium only.
  * ------------------------------------------------------------------------- */
@@ -312,6 +344,58 @@ $revived = new Search();
 $revived->setJsonAlert($decoded);
 $revivedIds = $sorted($ids($revived->doSearch()));
 pin('a search revived from its own serialized form returns the same items', $sorted(array($car1, $car2, $car3)), $revivedIds);
+
+/* toJson serialises the raw pattern, not the escaped/quoted sPattern: an alert is
+ * a criteria record and setJsonAlert() re-escapes on replay, so the escaped form
+ * escaped it twice and shifted the matched set. "se" routes to the LIKE fallback,
+ * where the stray quotes would otherwise survive into LIKE '%…%'. */
+$patSrc  = new Search();
+$patSrc->addPattern('se');
+$patBlob = json_decode($patSrc->toJson(), true);
+pin('toJson serialises the unescaped pattern', 'se', $patBlob['sPattern']);
+
+$patRevived = new Search();
+$patRevived->setJsonAlert($patBlob);
+pin(
+    'a replayed pattern alert matches the same items as when saved',
+    $sorted($ids($patSrc->doSearch())),
+    $sorted($ids($patRevived->doSearch()))
+);
+
+// A pre-fix alert stored its pattern escaped ("'se'"); reviving it must strip the
+// legacy layer instead of double-escaping, so it matches the same items as the raw
+// pattern. Same blob, only sPattern swapped to the old escaped form.
+$legacyPatBlob             = $patBlob;
+$legacyPatBlob['sPattern'] = "'se'";
+$legacyPatRevived          = new Search();
+$legacyPatRevived->setJsonAlert($legacyPatBlob);
+pin(
+    'a legacy escaped alert pattern revives to the same items as the raw pattern',
+    $sorted($ids($patSrc->doSearch())),
+    $sorted($ids($legacyPatRevived->doSearch()))
+);
+
+/* C1: the alert cron reuses ONE Search (newInstance is a singleton) and replays each
+ * stored alert through setJsonAlert(). A keyword-less alert restored after a keyword
+ * one must not inherit its pattern — otherwise it silently matches nothing. */
+$kwSrc = new Search();
+$kwSrc->addPattern('zzz-no-such-keyword');
+$kwBlob = json_decode($kwSrc->toJson(), true);
+
+$catSrc = new Search();
+$catSrc->addCategory($catCars);
+$catBlob = json_decode($catSrc->toJson(), true);
+pin('a category-only alert serialises a null pattern', null, $catBlob['sPattern']);
+
+$shared = new Search();
+$shared->setJsonAlert($kwBlob);
+$shared->doSearch();
+$shared->setJsonAlert($catBlob);
+pin(
+    'a keyword-less alert replayed after a keyword alert on the same Search is not poisoned',
+    $sorted(array($car1, $car2, $car3)),
+    $sorted($ids($shared->doSearch()))
+);
 
 /* ----------------------------------------------------------------------------
  * Secondary execution paths that were routed off the legacy query layer.
@@ -390,6 +474,85 @@ pin(
     array($car3, $car1, $car2),
     $ids($s->doSearch())
 );
+
+/*
+ * includeHidden() — the supported switch for an admin/owner view to see listings
+ * the public cannot. Added last so the extra disabled item does not disturb the
+ * "5 live items" pins above.
+ */
+harness_section('Search: includeHidden');
+
+pin(
+    'includeHidden signature is unchanged',
+    'public includeHidden($include = true)',
+    harness_method_signature('Search', 'includeHidden')
+);
+
+$hidden = $mkItem('Hidden Wagon', $catCars, 3000.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$admin->query("UPDATE {$prefix}t_item SET b_enabled = 0 WHERE pk_i_id = " . (int)$hidden);
+
+$s = new Search();
+check('a disabled listing is hidden from a default search', !in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search();
+$s->includeHidden();
+check('includeHidden() surfaces the disabled listing', in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search();
+$s->includeHidden();
+$s->doSearch();
+pin('includeHidden() count includes the hidden listing', 6, (int)$s->count());
+
+$s = new Search();
+$s->includeHidden();
+$s->includeHidden(false);
+check('includeHidden(false) restores the visibility filter', !in_array($hidden, $ids($s->doSearch()), true));
+
+$s = new Search(true);
+check('new Search(true) surfaces it too — parity with includeHidden', in_array($hidden, $ids($s->doSearch()), true));
+
+/* ----------------------------------------------------------------------------
+ * fromPrimaryKeys — hydrate a match set produced elsewhere, paged to its length.
+ * ------------------------------------------------------------------------- */
+harness_section('Search: fromPrimaryKeys (id hydration)');
+
+pin(
+    'fromPrimaryKeys signature is unchanged',
+    'public fromPrimaryKeys(array $ids, $preserveOrder = true)',
+    harness_method_signature('Search', 'fromPrimaryKeys')
+);
+
+// Seed more than the constructor's default page size (10) so a truncation shows.
+$hydIds = array();
+for ($i = 1; $i <= 12; $i++) {
+    $hydIds[] = $mkItem('Hydrate ' . $i, $catCars, 100.0 + $i, 0, $regionA, $cityA, 'Alpha', 'Aville');
+}
+
+// The trap: a raw id-constrained search still carries the default page size of 10.
+$listSql = implode(',', array_map('intval', $hydIds));
+$s = new Search();
+$s->dao->where($prefix . 't_item.pk_i_id IN (' . $listSql . ')');
+pin('a plain id-constrained search truncates to the default 10', 10, count($ids($s->doSearch())));
+
+// fromPrimaryKeys pages to the id count, so every hydrated row comes back.
+$s = new Search();
+$got = $ids($s->fromPrimaryKeys($hydIds)->doSearch());
+pin('fromPrimaryKeys returns every hydrated row, not just 10', 12, count($got));
+pin('...and drops none of them', $sorted($hydIds), $sorted($got));
+
+// The caller's ranking is preserved as the result order.
+$ranked = array($hydIds[4], $hydIds[0], $hydIds[9], $hydIds[2]);
+$s = new Search();
+pin('fromPrimaryKeys preserves the caller order', $ranked, $ids($s->fromPrimaryKeys($ranked)->doSearch()));
+
+// Empty and non-int input yield a deterministic empty set, never "everything".
+$s = new Search();
+pin('an empty id set returns no rows', array(), $ids($s->fromPrimaryKeys(array())->doSearch()));
+$s = new Search();
+pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s->fromPrimaryKeys(array('x', 0, null, $hydIds[0]))->doSearch()));
+
+$s = new Search();
+check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

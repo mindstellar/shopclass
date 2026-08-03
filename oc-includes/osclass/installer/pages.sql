@@ -5,7 +5,6 @@ INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_p
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (5, 'alert_email_hourly', 1, NOW() );
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (6, 'alert_email_daily', 1, NOW() );
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (7, 'alert_email_weekly', 1, NOW() );
-INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (8, 'alert_email_instant', 1, NOW() );
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (9, 'email_new_comment_admin', 1, NOW() );
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (10, 'email_new_item_non_register_user', 1, NOW() );
 INSERT INTO /*TABLE_PREFIX*/t_pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (11, 'email_item_validation', 1, NOW() );

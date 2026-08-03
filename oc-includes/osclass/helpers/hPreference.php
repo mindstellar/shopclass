@@ -285,6 +285,28 @@ function osc_recaptcha_items_enabled()
 
 
 /**
+ * Gets if the captcha for the comment form is enabled or not
+ *
+ * @return bool
+ */
+function osc_recaptcha_comments_enabled()
+{
+    return getBoolPreference('enabled_recaptcha_comments');
+}
+
+
+/**
+ * Gets if the captcha for the report-listing form is enabled or not
+ *
+ * @return bool
+ */
+function osc_recaptcha_reports_enabled()
+{
+    return getBoolPreference('enabled_recaptcha_reports');
+}
+
+
+/**
  * Gets how many seconds should an user wait to post a second item (0 for no waiting)
  *
  * @return int

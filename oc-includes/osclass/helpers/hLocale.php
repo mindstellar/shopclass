@@ -301,11 +301,69 @@ function osc_get_current_user_locale()
  */
 function osc_current_user_locale()
 {
-    if (Session::newInstance()->_get('userLocale') != '') {
-        return Session::newInstance()->_get('userLocale');
+    // The chosen front-end locale lives in a standalone cookie (see
+    // osc_set_current_user_locale()), not the session, so switching language never
+    // starts a session and language-switched anonymous browsing stays cacheable.
+    // Validate it: a visitor controls their own cookie and the value is concatenated
+    // into a translation .mo file path downstream, so an unchecked value would be a
+    // path-traversal vector.
+    if (isset($_COOKIE['oc_userLocale'])
+        && (new \mindstellar\utility\Validate())->localeCode($_COOKIE['oc_userLocale'])
+    ) {
+        return $_COOKIE['oc_userLocale'];
+    }
+
+    // Backward-compat during upgrade: honour a locale left in an already-active
+    // session. Read-only — Session::_get() resumes a session only when its cookie is
+    // already present, so this never starts one for an anonymous visitor.
+    $sessionLocale = Session::newInstance()->_get('userLocale');
+    if ($sessionLocale !== ''
+        && (new \mindstellar\utility\Validate())->localeCode($sessionLocale)
+    ) {
+        return $sessionLocale;
     }
 
     return osc_language();
+}
+
+
+/**
+ * Persist the visitor's chosen front-end locale in a dedicated cookie.
+ *
+ * The locale used to live in $_SESSION, which started a PHP session — and made the
+ * response uncacheable — the moment an anonymous visitor switched language. A
+ * standalone, long-lived cookie keeps the choice without a session. The value is
+ * validated against the installed locales both here and on read, because it is later
+ * concatenated into a translation .mo file path.
+ *
+ * @param string $locale
+ *
+ * @return void
+ */
+function osc_set_current_user_locale($locale)
+{
+    if (!(new \mindstellar\utility\Validate())->localeCode($locale)) {
+        return;
+    }
+
+    $options = array(
+        'expires'  => time() + (86400 * 365),
+        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    );
+    if (osc_is_ssl()) {
+        $options['secure'] = true;
+    }
+    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+        $options['domain'] = COOKIE_DOMAIN;
+    }
+    if (!headers_sent()) {
+        setcookie('oc_userLocale', $locale, $options);
+    }
+    // Reflect the choice within the current request too — an item/page rendered right
+    // after a ?lang= switch reads it back through osc_current_user_locale().
+    $_COOKIE['oc_userLocale'] = $locale;
 }
 
 

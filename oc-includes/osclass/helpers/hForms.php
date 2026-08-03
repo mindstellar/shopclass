@@ -29,10 +29,12 @@
  * @param int    $formId
  * @param string $contextType where it is placed ('page' | 'widget' | plugin type)
  * @param int    $contextId   the context's id (page id / widget row id)
+ * @param bool   $enqueueJs   defer the field JS (conditional logic/cascades) to the
+ *                            footer instead of echoing it inline after the form
  *
  * @return void
  */
-function osc_render_form($formId, $contextType = 'widget', $contextId = 0)
+function osc_render_form($formId, $contextType = 'widget', $contextId = 0, $enqueueJs = false)
 {
     $formId = (int)$formId;
     if ($formId <= 0) {
@@ -63,7 +65,7 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0)
         . '<input type="text" name="osc_hp" tabindex="-1" autocomplete="off" value="" /></label>';
     echo '</div>';
 
-    FieldForm::renderFieldList($fields, 'meta_list osc-form-fields');
+    FieldForm::renderFieldList($fields, 'meta_list osc-form-fields', $enqueueJs);
 
     echo '<div class="osc-form-actions">';
     echo '<button type="submit" class="btn btn-primary">' . osc_esc_html(__('Submit')) . '</button>';

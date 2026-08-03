@@ -243,6 +243,9 @@ class ConnectionManager
             $this->connId = null;
             return false;
         }
+        // Start every connection in a known-clean autocommit state, so no write can be
+        // silently swallowed by a transaction state carried over from anywhere else.
+        $this->connId->autocommit(true);
         $this->setSQLMode();
 
         return true;

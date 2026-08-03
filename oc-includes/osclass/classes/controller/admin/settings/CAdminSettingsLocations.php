@@ -197,8 +197,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                             ,
                             's_name'            => $regionName
                         );
-                        $mRegions->insert($data);
-                        $id = $mRegions->dao->insertedId();
+                        $id = $mRegions->insertGetId($data);
                         RegionStats::newInstance()->setNumItems($id, 0);
 
                         osc_add_flash_ok_message(sprintf(
@@ -364,14 +363,13 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                 } else {
                     $exists = $mCities->findByName($newCity, $regionId);
                     if (!isset($exists['s_name'])) {
-                        $mCities->insert(array(
+                        $id = $mCities->insertGetId(array(
                             'fk_i_region_id'    => $regionId
                             ,
                             's_name'            => $newCity
                             ,
                             'fk_c_country_code' => $countryCode
                         ));
-                        $id = $mCities->dao->insertedId();
                         CityStats::newInstance()->setNumItems($id, 0);
 
                         osc_add_flash_ok_message(sprintf(

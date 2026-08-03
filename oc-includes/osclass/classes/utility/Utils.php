@@ -476,9 +476,16 @@ class Utils
      */
     public static function redirectTo($url, $http_response_code = null)
     {
+        // Carry any pending flash messages across the redirect in their signed cookie,
+        // while headers can still be sent (before the Location header below).
+        Session::newInstance()->_flushFlashMessages();
+        Session::newInstance()->_flushFormData();
         if (ob_get_length() > 0) {
             ob_end_flush();
         }
+        // Strip CR/LF so a URL carrying a decoded newline (e.g. a search pattern
+        // with %0D%0A) cannot trip PHP's header guard and drop the redirect.
+        $url = str_replace(array("\r", "\n"), '', (string) $url);
         if ($http_response_code !== null) {
             header('Location: ' . $url, true, $http_response_code);
         } else {

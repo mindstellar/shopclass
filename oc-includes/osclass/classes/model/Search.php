@@ -21,6 +21,7 @@ class Search extends DAO
     private static $instance;
     private $conditions;
     private $itemConditions;
+    private $liveConditions = array();
     private $tables; // ?
     private $tables_join;
     private $sql;
@@ -37,6 +38,7 @@ class Search extends DAO
     private $total_results;
     private $total_results_table;
     private $sPattern;
+    private $sPatternRaw;
     private $sEmail;
     private $groupBy;
     private $having;
@@ -119,19 +121,17 @@ class Search extends DAO
 
         $this->order();
         $this->limit();
+        // Default page size. A Search that is never paged carries this into doSearch(),
+        // so hydrating a known id set through this model silently truncates to 10 rows
+        // unless the caller re-pages — use fromPrimaryKeys(), which pages to the id count.
         $this->results_per_page = 10;
 
+        // The visibility predicate (see Item::liveConditions) — the same rule the category
+        // counts use, sourced from one place so the two cannot drift about what is "live".
+        // Held on the instance so includeHidden() can lift it for an admin or owner view.
+        $this->liveConditions = Item::liveConditions(DB_TABLE_PREFIX . 't_item.');
         if (!$expired) {
-            // t_item
-            $this->addItemConditions(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
-            $this->addItemConditions(sprintf(
-                                         "(%st_item.b_premium = 1 || %st_item.dt_expiration >= '%s')",
-                                         DB_TABLE_PREFIX,
-                                         DB_TABLE_PREFIX,
-                                         date('Y-m-d H:i:s')
-                                     ));
+            $this->addItemConditions($this->liveConditions);
         }
         $this->total_results       = null;
         $this->total_results_table = null;
@@ -200,6 +200,68 @@ class Search extends DAO
         if ($r_p_p !== null) {
             $this->results_per_page = $r_p_p;
         }
+    }
+
+    /**
+     * Constrain the search to an explicit set of item ids and page to its length.
+     *
+     * For hydrating a match set produced elsewhere — an external search engine, a
+     * plugin's own query — back through the core row-fetch (extendData, resources,
+     * locale sub-array, the joined location/stats columns). It sizes the page to the
+     * id count so the constructor's default of 10 cannot silently truncate the result,
+     * which is the trap a manual hydration keeps rediscovering.
+     *
+     * @param array $ids           item primary keys; non-ints are dropped
+     * @param bool  $preserveOrder keep the caller's order (its ranking) via FIND_IN_SET
+     *
+     * @return Search $this
+     */
+    public function fromPrimaryKeys(array $ids, $preserveOrder = true)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+        if (empty($ids)) {
+            // No ids means an empty result set, not "everything": constrain to nothing
+            // and page to nothing so doSearch()/count() agree on zero.
+            $this->addWhere('1 = 0');
+            $this->limit(0, 0);
+
+            return $this;
+        }
+
+        $list = implode(',', $ids);
+        $this->addWhere(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $list . ')');
+
+        if ($preserveOrder) {
+            // Keep the caller's ranking. A raw dao orderBy is folded in ahead of the
+            // model's own order, so it decides the result order.
+            $this->dao->orderBy('FIND_IN_SET(' . DB_TABLE_PREFIX . "t_item.pk_i_id, '" . $list . "')");
+        }
+
+        $this->limit(0, count($ids));
+
+        return $this;
+    }
+
+    /**
+     * Include listings the public cannot see — disabled, deactivated, spam or expired — in the
+     * results. A default Search hides them; an admin table or an owner-facing view needs them.
+     * This is the supported switch for that, instead of `new Search(true)` (which cannot be
+     * undone, and which the newInstance() singleton can never be).
+     *
+     * @param bool $include
+     *
+     * @return $this
+     */
+    public function includeHidden($include = true)
+    {
+        if ($include) {
+            $this->itemConditions = array_values(array_diff($this->itemConditions, $this->liveConditions));
+        } else {
+            $this->addItemConditions($this->liveConditions);
+        }
+
+        return $this;
     }
 
     /**
@@ -674,17 +736,33 @@ class Search extends DAO
                     'd.fk_i_item_id = ' . DB_TABLE_PREFIX . 't_item.pk_i_id',
                     'LEFT'
                 );
-                if ($this->order_column === 'relevance') {
-                    $this->addSelect(sprintf(
-                                           "MATCH(d.s_description, d.s_title) AGAINST(%s) as relevance",
-                                           $this->sPattern
-                                       ));
-                    $this->addHavingClause(sprintf("relevance > %s", 0));
+                if ($this->ftUsable()) {
+                    $bool = $this->booleanPattern();
+                    if ($this->order_column === 'relevance') {
+                        // Rank a title hit above a description-only hit: the
+                        // combined index cannot weight columns, so add a
+                        // title-only MATCH and score it double.
+                        $this->addSelect(sprintf(
+                                               "(2 * MATCH(d.s_title) AGAINST(%s IN BOOLEAN MODE)"
+                                               . " + MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE))"
+                                               . " as relevance",
+                                               $bool,
+                                               $bool
+                                           ));
+                        $this->addHavingClause(sprintf("relevance > %s", 0));
+                    } else {
+                        $this->addWhere(sprintf(
+                                              "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
+                                              $bool
+                                          ));
+                    }
                 } else {
-                    $this->addWhere(sprintf(
-                                          "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
-                                          $this->sPattern
-                                      ));
+                    // Every term is below the FULLTEXT min token size, so MATCH
+                    // would return nothing: fall back to substring matching.
+                    $this->addWhere($this->likePattern());
+                    if ($this->order_column === 'relevance') {
+                        $this->addSelect('1 as relevance');
+                    }
                 }
                 if (empty($this->locale_code)) {
                     $this->locale_code[$this->userLocaleCode] = $this->userLocaleCode;
@@ -1325,7 +1403,7 @@ class Search extends DAO
             $this->addWhere('ti.pk_i_id = d.fk_i_item_id');
             $this->addWhere(sprintf(
                                   "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
-                                  $this->sPattern
+                                  $this->booleanPattern()
                               ));
             $this->addWhere('ti.b_premium = 1');
 
@@ -1880,7 +1958,12 @@ class Search extends DAO
             $aData['countries']  = $this->countries;
             // pattern
             $aData['withPattern'] = $this->withPattern;
-            $aData['sPattern']    = $this->sPattern;
+            // Serialise the raw pattern, not the escaped/quoted sPattern: this record is
+            // search criteria, and setJsonAlert() re-escapes it through addPattern() on
+            // replay. Storing the escaped form escaped it twice each round trip, which
+            // shifted the matched set (visible on the short-term LIKE path where the stray
+            // quotes survive into LIKE '%…%').
+            $aData['sPattern']    = $this->sPatternRaw !== null ? $this->sPatternRaw : $this->sPattern;
             if ($this->withPicture) {
                 $aData['withPicture'] = $this->withPicture;
             }
@@ -2100,6 +2183,15 @@ class Search extends DAO
      */
     public function setJsonAlert($aData)
     {
+        // Restore a whole search from JSON, so clear any pattern left by a previous
+        // restore first: newInstance() hands back one shared Search, and the alert cron
+        // reuses it per alert. addPattern() only runs when a keyword is present, so
+        // without this reset a keyword-less alert keeps the prior alert's pattern and
+        // silently matches nothing.
+        $this->withPattern = false;
+        $this->sPattern    = null;
+        $this->sPatternRaw = null;
+
         $this->priceRange($aData['price_min'], $aData['price_max']);
 
         $this->categories = $aData['aCategories'];
@@ -2123,7 +2215,7 @@ class Search extends DAO
 
         // pattern
         if (isset($aData['sPattern'])) {
-            $this->addPattern($aData['sPattern']);
+            $this->addPattern($this->unescapeLegacyAlertPattern($aData['sPattern']));
         }
         if (isset($aData['withPicture'])) {
             $this->withPicture(true);
@@ -2131,6 +2223,31 @@ class Search extends DAO
         if (isset($aData['onlyPremium'])) {
             $this->onlyPremium(true);
         }
+    }
+
+    /**
+     * Normalise a stored alert's pattern on the way back in.
+     *
+     * Alerts saved before toJson() switched to the raw pattern hold the escaped form
+     * (the old escapeValue() output: driver-escaped, wrapped in single quotes). Replaying
+     * that through addPattern() escapes it a second time, and the stray quotes shift the
+     * matched set on the short-term LIKE path. Strip one legacy layer when the value is
+     * quote-wrapped; a pattern saved raw (the current form) is not wrapped and passes
+     * through unchanged, so old and new alerts converge and the call is idempotent.
+     *
+     * @param string $pattern
+     *
+     * @return string
+     */
+    private function unescapeLegacyAlertPattern($pattern)
+    {
+        $pattern = (string)$pattern;
+        $len     = strlen($pattern);
+        if ($len >= 2 && $pattern[0] === "'" && $pattern[$len - 1] === "'") {
+            return stripslashes(substr($pattern, 1, -1));
+        }
+
+        return $pattern;
     }
 
     /**
@@ -2145,7 +2262,168 @@ class Search extends DAO
     public function addPattern($pattern)
     {
         $this->withPattern = true;
+        $this->sPatternRaw = trim((string)$pattern);
         $this->sPattern    = $this->escapeValue($pattern);
+    }
+
+    /**
+     * Minimum indexed word length. InnoDB ignores tokens shorter than
+     * innodb_ft_min_token_size (server default 3); a term below it never matches
+     * a FULLTEXT query, so the short-term LIKE fallback keys off this. Override with
+     * the OSC_FT_MIN_WORD_LEN constant when the server is tuned to a smaller value.
+     *
+     * @return int
+     */
+    private function ftMinWord()
+    {
+        return defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : 3;
+    }
+
+    /**
+     * Unicode-aware length, degrading to byte length when mbstring is absent.
+     *
+     * @param string $s
+     *
+     * @return int
+     */
+    private function uLen($s)
+    {
+        return function_exists('mb_strlen') ? mb_strlen($s, 'UTF-8') : strlen($s);
+    }
+
+    /**
+     * Split the raw pattern into meaningful terms, stripping the BOOLEAN MODE
+     * operator characters so user input cannot inject its own operators. Leading
+     * '-' is preserved as an exclusion marker; quoted "phrases" are returned whole
+     * (without the quotes) via the $phrases out-parameter.
+     *
+     * @param array $phrases  filled with the quoted phrases found (operators stripped)
+     *
+     * @return array          the loose words, each ['neg' => bool, 'text' => string]
+     */
+    private function patternTerms(&$phrases)
+    {
+        $phrases = array();
+        $raw     = (string)$this->sPatternRaw;
+
+        // On invalid UTF-8 the /u pattern functions return null/false; cast so a
+        // bad byte sequence degrades to an empty term set rather than a warning.
+        if (preg_match_all('/"([^"]+)"/u', $raw, $m)) {
+            foreach ($m[1] as $phrase) {
+                $phrase = trim((string)preg_replace('/[+\-*"()~<>@]/u', ' ', $phrase));
+                $phrase = (string)preg_replace('/\s+/u', ' ', $phrase);
+                if ($phrase !== '') {
+                    $phrases[] = $phrase;
+                }
+            }
+            $raw = (string)preg_replace('/"[^"]+"/u', ' ', $raw);
+        }
+
+        $words = array();
+        foreach ((array)preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            $neg  = ($word[0] === '-');
+            $text = (string)preg_replace('/[+\-*"()~<>@]/u', '', $word);
+            if ($text !== '') {
+                $words[] = array('neg' => $neg, 'text' => $text);
+            }
+        }
+
+        return $words;
+    }
+
+    /**
+     * Whether the pattern has at least one term FULLTEXT can index. A query made
+     * only of below-min-length words (e.g. "tv", "hp 15") matches nothing in
+     * InnoDB, so it routes to the LIKE fallback instead.
+     *
+     * @return bool
+     */
+    private function ftUsable()
+    {
+        if ($this->sPatternRaw === null || $this->sPatternRaw === '') {
+            return true;
+        }
+        $words = $this->patternTerms($phrases);
+        if (!empty($phrases)) {
+            return true;
+        }
+        $min = $this->ftMinWord();
+        foreach ($words as $w) {
+            if (!$w['neg'] && $this->uLen($w['text']) >= $min) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Build an escaped, quoted IN BOOLEAN MODE query from the raw pattern:
+     * every loose word becomes a required prefix term (+word*), quoted "phrases"
+     * become required exact phrases, and -word becomes an exclusion. This turns
+     * MySQL's default OR-any-term matching into AND-all-terms with prefix recall.
+     * Falls back to the stored escaped pattern when there is nothing to build.
+     *
+     * @return string
+     */
+    private function booleanPattern()
+    {
+        $words   = $this->patternTerms($phrases);
+        $tokens  = array();
+
+        foreach ($phrases as $phrase) {
+            $tokens[] = '+"' . $phrase . '"';
+        }
+        foreach ($words as $w) {
+            $tokens[] = $w['neg'] ? '-' . $w['text'] : '+' . $w['text'] . '*';
+        }
+
+        if (empty($tokens)) {
+            return $this->sPattern;
+        }
+
+        return "'" . $this->escapeString(implode(' ', $tokens)) . "'";
+    }
+
+    /**
+     * WHERE fragment for the short-term fallback: match each term as a substring
+     * of the title or description. Wildcard/escape metacharacters are stripped so
+     * the term cannot alter the LIKE pattern.
+     *
+     * @return string
+     */
+    private function likePattern()
+    {
+        $words = $this->patternTerms($phrases);
+        $terms = array();
+        foreach ($phrases as $phrase) {
+            $terms[] = $phrase;
+        }
+        foreach ($words as $w) {
+            if (!$w['neg']) {
+                $terms[] = $w['text'];
+            }
+        }
+
+        $clauses = array();
+        foreach ($terms as $term) {
+            $term = str_replace(array('%', '_'), array('\%', '\_'), $term);
+            $esc  = $this->escapeString($term);
+            $clauses[] = sprintf(
+                "(d.s_title LIKE '%%%s%%' OR d.s_description LIKE '%%%s%%')",
+                $esc,
+                $esc
+            );
+        }
+
+        if (empty($clauses)) {
+            return sprintf(
+                "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
+                $this->booleanPattern()
+            );
+        }
+
+        return '(' . implode(' AND ', $clauses) . ')';
     }
 
     /**

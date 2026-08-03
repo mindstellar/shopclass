@@ -95,13 +95,8 @@ class AjaxUploader
                     $this->allowedExtensions
                 ));
             }
-            $files = Session::newInstance()->_get('ajax_files');
-            if (!is_array($files)) {
-                $files = array();
-            }
-            $files[Params::getParam('qquuid')] = $uuid['basename'];
-            Session::newInstance()->_set('ajax_files', $files);
-
+            // The caller (the ajax_upload action) records the staged file against the form's
+            // upload token once it knows the final, auto-rotated name the client will use.
             return array('success' => true);
         }
 

@@ -206,7 +206,7 @@ class WebThemes extends Themes
             $this->theme_path   = $this->path . $this->theme . '/';
         } else {
             $this->theme_exists = false;
-            $this->theme_path   = osc_content_path() . 'themes/bender/';
+            $this->theme_path   = osc_content_path() . 'themes/storefront/';
         }
     }
 
@@ -216,7 +216,7 @@ class WebThemes extends Themes
             $this->theme_url =
                 osc_apply_filter('theme_url', osc_base_url() . str_replace(osc_base_path(), '', $this->theme_path));
         } else {
-            $this->theme_url = osc_apply_filter('theme_url', osc_base_url() . 'oc-content/themes/bender/');
+            $this->theme_url = osc_apply_filter('theme_url', osc_base_url() . 'oc-content/themes/storefront/');
         }
     }
 
@@ -241,8 +241,8 @@ class WebThemes extends Themes
         $this->theme = '';
 
         $this->theme_exists = false;
-        $this->theme_path   = osc_content_path() . 'themes/bender/';
-        $this->theme_url    = osc_base_url() . 'oc-content/themes/bender/';
+        $this->theme_path   = osc_content_path() . 'themes/storefront/';
+        $this->theme_url    = osc_base_url() . 'oc-content/themes/storefront/';
 
         $functions_path = $this->getCurrentThemePath() . 'functions.php';
         if (file_exists($functions_path)) {

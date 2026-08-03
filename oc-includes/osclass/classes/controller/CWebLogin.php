@@ -122,7 +122,7 @@ class CWebLogin extends BaseModel
 
                 osc_run_hook('before_login');
 
-                $url_redirect = osc_get_http_referer();
+                $url_redirect = osc_pop_login_redirect();
                 if (osc_rewrite_enabled() && $url_redirect != '') {
                     // if comes from oc-admin/
                     if (strpos($url_redirect, 'oc-admin') !== false) {
@@ -170,19 +170,10 @@ class CWebLogin extends BaseModel
                 } elseif ($logged == 2) {
                     osc_add_flash_error_message(_m('The user has been suspended'));
                 } elseif ($logged == 3) {
+                    // bootstrap_login() already issued a browser-session identity cookie;
+                    // upgrade it to a persistent one when "remember me" is ticked.
                     if (Params::getParam('remember') == 1) {
-                        Cookie::newInstance()->set_expires(osc_time_cookie());
-                        Cookie::newInstance()->push('oc_userId', $user['pk_i_id']);
-                        Cookie::newInstance()->push(
-                            'oc_userSecret',
-                            \mindstellar\security\RememberMe::issue(
-                                'web',
-                                $user['pk_i_id'],
-                                $user['s_password'],
-                                osc_time_cookie()
-                            )
-                        );
-                        Cookie::newInstance()->set();
+                        osc_web_user_login($user, true);
                     }
 
                     if ($url_redirect == '') {
@@ -348,7 +339,10 @@ class CWebLogin extends BaseModel
                 $this->redirectTo(osc_base_url());
                 break;
             default:                //login
-                Session::newInstance()->_setReferer(osc_get_http_referer());
+                // Stash where the visitor came from in a short-lived signed cookie rather
+                // than the session, so merely opening the login page never starts a session
+                // (which would carry an osclass cookie and defeat reverse-proxy caching).
+                osc_set_login_redirect(osc_get_http_referer(), true);
                 if (osc_logged_user_id()) {
                     $this->redirectTo(osc_user_dashboard_url());
                 }

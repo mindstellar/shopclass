@@ -353,6 +353,22 @@ class FieldForm extends Form
                 $attributes['data-cf-rules'] = osc_esc_html(json_encode($field['rules']));
             }
 
+            // Autocomplete: a text field wired to the shared oscAutocomplete widget,
+            // sourced from the core custom-field suggestion endpoint. The full URL is
+            // built here (the static widget needs no base-URL global) and the widget
+            // appends &term=; only searchable fields expose values, enforced server
+            // side. Enqueue the shared UI so it loads wherever the field renders.
+            if ($type === 'AUTOCOMPLETE' && !empty($field['pk_i_id'])) {
+                $attributes['data-osc-autocomplete'] = '1';
+                $attributes['data-osc-ac-source']    = osc_esc_html(
+                    osc_base_url(true) . '?page=ajax&action=custom_field_autocomplete&field=' . (int) $field['pk_i_id']
+                );
+                $min = (isset($field['min_length']) && (int) $field['min_length'] > 0) ? (int) $field['min_length'] : 2;
+                $attributes['data-osc-ac-min'] = $min;
+                osc_enqueue_script('osc-ui-common');
+                osc_enqueue_style('osc-ui-common');
+            }
+
             // Cascading options (small-set): a dropdown whose options are narrowed to
             // the parent field's value. Carry the parent slug and the parentValue ->
             // options map on the select; the select renders the union of all options
@@ -599,7 +615,7 @@ class FieldForm extends Form
      *
      * @return void
      */
-    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list')
+    public static function renderFieldList(array $fields, $wrapperClass = 'meta_list', $enqueueJs = false)
     {
         if (count($fields) === 0) {
             return;
@@ -632,7 +648,7 @@ class FieldForm extends Form
             }
         }
         echo '</div>';
-        self::conditionalLogicScript();
+        self::conditionalLogicScript($enqueueJs);
     }
 
     /**
@@ -642,13 +658,14 @@ class FieldForm extends Form
      * of a sibling field changes. Vanilla JS, no jQuery. The server re-evaluates the
      * same rules on save, so this is UX only and never gates data integrity.
      */
-    public static function conditionalLogicScript()
+    public static function conditionalLogicScript($enqueue = false)
     {
         static $printed = false;
         if ($printed) {
             return;
         }
         $printed = true;
+        if ($enqueue) { ob_start(); }
         ?>
         <script type="text/javascript">
             (function () {
@@ -770,6 +787,9 @@ class FieldForm extends Form
             })();
         </script>
         <?php
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, defined('OC_ADMIN') && OC_ADMIN, 'field_conditional_logic_js');
+        }
     }
     /**
      * Generate MultiLanguage Title Description Fields for Item

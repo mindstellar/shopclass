@@ -89,22 +89,25 @@ class CWebSearch extends BaseModel
                             preg_replace('|/$|', '', Params::getParam('sCategory'))
                         );
 
-                        $category = Category::newInstance()->findBySlug($tmp[count($tmp) - 1]);
+                        $categorySlug = $tmp[count($tmp) - 1];
+                        $category     = Category::newInstance()->findBySlug($categorySlug);
 
-                        Params::setParam('sCategory', $tmp[count($tmp) - 1]);
+                        Params::setParam('sCategory', $categorySlug);
                     } else {
-                        $category = Category::newInstance()
-                            ->findBySlug(Params::getParam('sCategory'));
+                        $categorySlug = Params::getParam('sCategory');
+                        $category     = Category::newInstance()->findBySlug($categorySlug);
 
-                        Params::setParam('sCategory', Params::getParam('sCategory'));
+                        Params::setParam('sCategory', $categorySlug);
                     }
                     if (count($category) === 0) {
+                        $this->categorySlugRedirect($categorySlug);
                         $this->do404();
                     }
                 } else {
                     $category = Category::newInstance()->findBySlug($search_uri);
 
                     if (count($category) === 0) {
+                        $this->categorySlugRedirect($search_uri);
                         $this->do404();
                     }
                     Params::setParam('sCategory', $search_uri);
@@ -513,25 +516,43 @@ class CWebSearch extends BaseModel
         osc_run_hook('search_conditions', Params::getParamsAsArray());
 
         // RETRIEVE ITEMS AND TOTAL
-        // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
-        // enable/spam/delete) that bumps it makes every stored search result unreachable at
-        // once — the same immediate invalidation getLatestItems() already gets. Without it a
-        // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
-        $key         = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
-        $found       = null;
-        $cache       = osc_cache_get($key, $found);
+        // A search backend may answer the query itself: a listener on 'search_results' receives
+        // the fully-parsed Search model and the request params and returns
+        // ['items' => array, 'total' => int] to take over — or null to leave core's MySQL search
+        // in charge. This lets a plugin or theme delegate to an external engine (Manticore,
+        // Elasticsearch, …) while core keeps ownership of URL parsing, the view export and the
+        // feeds. A backend owns its own caching, so core's result cache is bypassed when one
+        // responds. It may also return a 'model' — its own query object — which core exports as
+        // the page's 'search' so the premium rail and osc_search() run against the same engine.
+        $backend     = osc_apply_filter('search_results', null, $this->mSearch, Params::getParamsAsArray());
         $aItems      = null;
         $iTotalItems = null;
-        if ($cache) {
-            $aItems      = $cache['aItems'];
-            $iTotalItems = $cache['iTotalItems'];
+        $searchModel = $this->mSearch;
+        if (is_array($backend) && isset($backend['items'])) {
+            $aItems      = $backend['items'];
+            $iTotalItems = (int)($backend['total'] ?? count($aItems));
+            if (isset($backend['model']) && $backend['model'] instanceof Search) {
+                $searchModel = $backend['model'];
+            }
         } else {
-            $aItems                = $this->mSearch->doSearch();
-            $iTotalItems           = $this->mSearch->count();
-            $_cache['aItems']      = $aItems;
-            $_cache['iTotalItems'] = $iTotalItems;
+            // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
+            // enable/spam/delete) that bumps it makes every stored search result unreachable at
+            // once — the same immediate invalidation getLatestItems() already gets. Without it a
+            // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
+            $key   = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
+            $found = null;
+            $cache = osc_cache_get($key, $found);
+            if ($cache) {
+                $aItems      = $cache['aItems'];
+                $iTotalItems = $cache['iTotalItems'];
+            } else {
+                $aItems                = $this->mSearch->doSearch();
+                $iTotalItems           = $this->mSearch->count();
+                $_cache['aItems']      = $aItems;
+                $_cache['iTotalItems'] = $iTotalItems;
 
-            osc_cache_set($key, $_cache, OSC_CACHE_TTL);
+                osc_cache_set($key, $_cache, OSC_CACHE_TTL);
+            }
         }
 
         $aItems = osc_apply_filter('pre_show_items', $aItems);
@@ -589,9 +610,10 @@ class CWebSearch extends BaseModel
         $this->_exportVariableToView('items', $aItems);
         $this->_exportVariableToView('search_show_as', $p_sShowAs);
 
-        if (OSC_DEBUG) {
-            $this->_exportVariableToView('search', $this->mSearch);
-        }
+        // Export the search model the page was built from, always — not only under
+        // OSC_DEBUG. osc_get_premiums()/osc_search() read this 'search' key and otherwise
+        // build a fresh core Search, which on a delegated page is the wrong engine.
+        $this->_exportVariableToView('search', $searchModel);
 
         // json
         $json          = $this->mSearch->toJson();
@@ -677,6 +699,8 @@ class CWebSearch extends BaseModel
                 osc_run_hook('feed_' . $p_sFeed, $aItems);
             }
         } else {
+            // Public search / category results: cacheable for anonymous visitors.
+            osc_mark_response_cacheable();
             $this->doView('search.php');
         }
     }
@@ -694,6 +718,43 @@ class CWebSearch extends BaseModel
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * If $slug is a category's former slug, 301 to its current URL. No-op (returns) when
+     * there is no history row or the target category is gone/disabled - the caller then 404s.
+     *
+     * @param string $slug
+     *
+     * @return void
+     */
+    private function categorySlugRedirect($slug)
+    {
+        $slug = trim((string)$slug);
+        if ($slug === '') {
+            return;
+        }
+        try {
+            $rows = osc_db_select(
+                'SELECT fk_i_category_id FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
+                . ' WHERE s_slug = ? ORDER BY dt_date DESC LIMIT 1',
+                array($slug)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return;
+        }
+        if (count($rows) === 0) {
+            return;
+        }
+        $category = Category::newInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
+        if (!$category || (int)$category['b_enabled'] === 0) {
+            return; // deleted/disabled -> let the caller 404
+        }
+        $currentSlug = $category['s_slug'];
+        if ($currentSlug === '' || $currentSlug === $slug) {
+            return; // loop guard
+        }
+        $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
     }
 }
 

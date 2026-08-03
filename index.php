@@ -20,16 +20,23 @@ if (PHP_SAPI === 'cli') {
 require_once __DIR__ . '/oc-load.php';
 
 if (CLI) {
-    //Example: php index.php -p cron -t hourly
+    // Legacy entry: `php index.php -p cron -t hourly`. Richer maintenance
+    // commands live in oc-cli.php.
     $cli_params = getopt('p:t:');
     if ($cli_params) {
-        Params::setParam('page', $cli_params['p']);
-        Params::setParam('cron-type', $cli_params['t']);
+        if (isset($cli_params['p'])) {
+            Params::setParam('page', $cli_params['p']);
+        }
+        if (isset($cli_params['t'])) {
+            Params::setParam('cron-type', $cli_params['t']);
+        }
     }
     if (Params::getParam('page') === 'upgrade') {
-        echo \mindstellar\upgrade\Osclass::upgradeDB();
+        $result  = \mindstellar\upgrade\Osclass::upgradeDB();
+        $decoded = json_decode((string) $result, true);
+        echo $result, PHP_EOL;
 
-        exit(1);
+        exit(is_array($decoded) && (int) ($decoded['error'] ?? 1) === 0 ? 0 : 1);
     }
 
     if (Params::getParam('page') !== 'cron'
@@ -170,8 +177,45 @@ switch (Params::getParam('page')) {
         break;
 }
 
+// Stamp the response's Cache-Control now that the page is built and identity/session state is
+// final. Output is buffered (Csrf::init), so headers are not yet sent; a controller that streamed
+// a file, redirected, or exited never reaches here and keeps its own headers.
+osc_send_response_cache_headers();
+
 if (!defined('__FROM_CRON__') && osc_auto_cron()) {
-    \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+    // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
+    // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
+    // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
+    //
+    // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
+    // shared across every web node and every locale (Object_Cache_Factory directly, not the
+    // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
+    // survives between requests and so cannot throttle anything, so there fall back to the
+    // modification time of a stamp file under uploads/, no cache backend required. Either path
+    // fails open (write fails or file unwritable => cron still runs), never closed.
+    $autocron_window = 300;
+    $autocron_fire   = false;
+    $autocron_cache  = Object_Cache_Factory::newInstance();
+
+    if (!($autocron_cache instanceof Object_Cache_default)) {
+        $autocron_found = false;
+        if ($autocron_cache->get('osclass_autocron_tick', $autocron_found) === false) {
+            $autocron_cache->set('osclass_autocron_tick', 1, $autocron_window);
+            $autocron_fire = true;
+        }
+    } else {
+        // A dotfile, so a "deny hidden files" web-server rule keeps it unreadable; it carries no
+        // data anyway, only its mtime matters.
+        $autocron_stamp = osc_uploads_path() . '.autocron_tick';
+        if (!file_exists($autocron_stamp) || (time() - (int)@filemtime($autocron_stamp)) >= $autocron_window) {
+            @touch($autocron_stamp);
+            $autocron_fire = true;
+        }
+    }
+
+    if ($autocron_fire) {
+        \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+    }
 }
 
 /* file end: ./index.php */

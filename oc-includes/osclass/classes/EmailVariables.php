@@ -149,12 +149,6 @@ class EmailVariables
                 '{ADS}',
                 '{UNSUB_LINK}'
             ),
-            'alert_email_instant'                     => array(
-                '{USER_NAME}',
-                '{USER_EMAIL}',
-                '{ADS}',
-                '{UNSUB_LINK}'
-            ),
             'email_comment_validated'                 => array(
                 '{COMMENT_AUTHOR}',
                 '{COMMENT_EMAIL}',

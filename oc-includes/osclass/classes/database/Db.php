@@ -40,6 +40,13 @@ class Db
     private static $depth = 0;
 
     /**
+     * Whether the end-of-request leaked-transaction guard has been registered.
+     *
+     * @var bool
+     */
+    private static $leakGuardArmed = false;
+
+    /**
      * Resolve the singleton mysqli connection through the Connection wrapper, which
      * owns the sole sanctioned access to the raw handle. Keeps this class off the
      * deprecated DBConnectionClass::getOsclassDb() path.
@@ -80,6 +87,8 @@ class Db
      */
     public static function beginTransaction(): bool
     {
+        self::armLeakGuard();
+
         if (self::$depth > 0) {
             if (!self::savepoint('oscsp' . self::$depth)) {
                 return false;
@@ -161,6 +170,44 @@ class Db
     public static function inTransaction(): bool
     {
         return self::$depth > 0;
+    }
+
+    /**
+     * Arm, once per request, a shutdown check that catches a transaction left open at request
+     * end — a begin() without a matching commit()/rollBack() (an escaped exception outside the
+     * transaction() wrapper, a plugin's raw osc_db_begin, or mismatched nesting). Left alone,
+     * such a transaction is rolled back implicitly when the connection closes, silently
+     * discarding every write since the begin and logging nothing — the exact fingerprint of the
+     * "listing saved no row, no error logged" failures. Here it is instead rolled back
+     * explicitly and logged loudly, so the leak is diagnosable and the connection never closes
+     * mid-transaction. Registered lazily (only if a transaction is ever opened) so a request
+     * that uses none pays nothing.
+     *
+     * @return void
+     */
+    private static function armLeakGuard(): void
+    {
+        if (self::$leakGuardArmed) {
+            return;
+        }
+        self::$leakGuardArmed = true;
+
+        register_shutdown_function(static function (): void {
+            if (self::$depth <= 0) {
+                return;
+            }
+            error_log(sprintf(
+                'Db: transaction still open at request end (depth=%d) — rolling back. A begin() '
+                . 'without a matching commit()/rollBack() discards every write since it; find the '
+                . 'unbalanced begin (likely a raw osc_db_begin or an escaped exception).',
+                self::$depth
+            ));
+            // Unwind every open level so the connection is not left mid-transaction.
+            $guard = 0;
+            while (self::$depth > 0 && $guard++ < 1024) {
+                self::rollBack();
+            }
+        });
     }
 
     /**

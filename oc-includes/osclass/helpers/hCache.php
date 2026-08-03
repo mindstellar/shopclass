@@ -262,6 +262,49 @@ function osc_invalidate_search_cache()
 }
 
 
+/**
+ * Current generation number for the category cache (Category::toTree and
+ * Category::findByPrimaryKey). Folded into their cache keys so a bump makes every
+ * stored entry — every locale, every id, tree and by-key alike — unreachable at
+ * once, the practical way to invalidate a key space whose members are not
+ * enumerable.
+ *
+ * Read through the raw cache factory so the generation is global rather than
+ * per-locale. The default dummy cache keeps returning 0, which leaves caching
+ * behaviour exactly as it was before this helper existed.
+ *
+ * @return int
+ */
+function osc_cache_category_generation()
+{
+    $found = null;
+    $gen   = Object_Cache_Factory::newInstance()->get('osc_category_cache_gen', $found);
+
+    return is_numeric($gen) ? (int)$gen : 0;
+}
+
+
+/**
+ * Bump the category-cache generation, invalidating every cached category tree and
+ * category row. Called on the category lifecycle events (add, edit, reorder,
+ * delete) so a renamed or moved category leaves the cache immediately instead of
+ * lingering for the cache TTL — a slug-change 301 depends on this to resolve the
+ * new canonical URL right away.
+ *
+ * @return int the new generation
+ */
+function osc_invalidate_category_cache()
+{
+    $cache = Object_Cache_Factory::newInstance();
+    $found = null;
+    $gen   = $cache->get('osc_category_cache_gen', $found);
+    $gen   = (is_numeric($gen) ? (int)$gen : 0) + 1;
+    $cache->set('osc_category_cache_gen', $gen, 0);
+
+    return $gen;
+}
+
+
 // Clear an item's derived cache on the lifecycle events that change it, so reads
 // following a write see fresh data instead of a stale cached copy.
 osc_add_hook('edited_item', static function ($item) {
@@ -293,3 +336,11 @@ osc_add_hook('delete_resource', static function ($resource) {
 osc_add_hook('after_delete_item', static function ($itemId) {
     osc_invalidate_item_cache($itemId);
 });
+
+// Bump the category cache on every category lifecycle event, so a renamed, moved,
+// added or deleted category is served fresh instead of from a stale tree/row. The
+// generation bump ignores its hook arguments by design.
+osc_add_hook('add_category', 'osc_invalidate_category_cache');
+osc_add_hook('edited_category', 'osc_invalidate_category_cache');
+osc_add_hook('edited_category_order', 'osc_invalidate_category_cache');
+osc_add_hook('delete_category', 'osc_invalidate_category_cache');

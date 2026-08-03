@@ -188,6 +188,19 @@ $scopeOptions = array(
                         </div>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-label"><?php _e('Report CAPTCHA'); ?></div>
+                    <div class="form-controls">
+                        <div class="form-label-checkbox">
+                            <input type="checkbox" id="enabled_recaptcha_reports" name="enabled_recaptcha_reports" value="1"
+                                <?php echo(!empty($prefs['enabled_recaptcha_reports']) ? 'checked="checked"' : ''); ?> />
+                            <label for="enabled_recaptcha_reports"><?php _e('Require a CAPTCHA to report a listing'); ?></label>
+                        </div>
+                        <div class="help-box">
+                            <?php _e('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.'); ?>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-actions">
                     <input type="submit" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
                 </div>

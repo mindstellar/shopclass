@@ -200,6 +200,18 @@ osc_register_field_type('PHONE', array(
     'config'     => array('placeholder', 'help_text'),
 ));
 
+// A text field whose suggestions come from the core custom-field autocomplete
+// endpoint (distinct existing values of the field). The field must be searchable
+// for the endpoint to expose its values. The shared oscAutocomplete widget wires
+// itself from the data- attributes FieldForm emits; themes style .osc-ac-list.
+osc_register_field_type('AUTOCOMPLETE', array(
+    'label'   => 'Autocomplete',
+    'group'   => 'Advanced',
+    'icon'       => 'search',
+    'storage'    => 'TEXT',
+    'config'     => array('placeholder', 'help_text', 'default', 'min_length'),
+));
+
 
 /*
  * ---------------------------------------------------------------------------
@@ -229,4 +241,57 @@ function osc_get_field_groups()
 function osc_get_category_field_groups($categoryId)
 {
     return FieldGroup::newInstance()->findByCategory($categoryId);
+}
+
+
+/**
+ * Whether a custom field is visible for an item under its conditional-logic show_when
+ * rule. Reuses the same evaluator as the save path (FieldValidator::evaluateCondition),
+ * so display and persistence never diverge.
+ *
+ * Note: a field hidden at post time is already dropped by the save-time re-evaluation
+ * (ItemActions / FieldValidator), so it has no stored value and never reaches display.
+ * This helper only matters for the residual case of a value stored before a show_when
+ * rule was later added or edited — a theme can call it to hide such a stale value.
+ *
+ * @param array          $field a field row (rules under 'rules' post-extendField, or raw s_meta)
+ * @param array|int|null $item  item row, item id, or null for the current item
+ *
+ * @return bool
+ */
+function osc_field_is_visible($field, $item = null)
+{
+    // Conditional rules live in the field's s_meta; Field::extendField() merges them onto
+    // the row as 'rules'. Accept either a merged row or a raw one.
+    $rules = array();
+    if (isset($field['rules']) && is_array($field['rules'])) {
+        $rules = $field['rules'];
+    } elseif (isset($field['s_meta']) && $field['s_meta'] !== '') {
+        $decoded = json_decode($field['s_meta'], true);
+        if (is_array($decoded) && isset($decoded['rules']) && is_array($decoded['rules'])) {
+            $rules = $decoded['rules'];
+        }
+    }
+    if (empty($rules['show_when'])) {
+        return true;
+    }
+
+    if ($item === null) {
+        $itemId = (int) osc_item_id();
+    } elseif (is_array($item)) {
+        $itemId = (int) ($item['pk_i_id'] ?? 0);
+    } else {
+        $itemId = (int) $item;
+    }
+
+    // Map the item's stored custom-field values by slug so a rule referencing a sibling
+    // field can be resolved — the same shape FieldValidator evaluates against.
+    $slugValues = array();
+    foreach (Item::newInstance()->metaFields($itemId) as $row) {
+        if (isset($row['s_slug'])) {
+            $slugValues[$row['s_slug']] = $row['s_value'] ?? null;
+        }
+    }
+
+    return \mindstellar\forms\FieldValidator::evaluateCondition($rules['show_when'], $slugValues);
 }

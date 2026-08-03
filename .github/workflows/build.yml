@@ -149,13 +149,20 @@ jobs:
 
       - name: Extract release notes from CHANGELOG
         run: |
-          # Use the top-most CHANGELOG release section (up to the next one) as the release body.
-          # Matches "## <version>" only — "### <group>" headings inside a section must not count.
-          awk 'BEGIN{n=0} /^## [^#]/{n++; if (n==2) exit} n>=1{print}' CHANGELOG.md > release_notes.md
+          # The release body is a SHORT summary, not the whole changelog: the
+          # top-most "## <version>" heading plus the intro paragraph that follows
+          # it, up to the first "### <group>" heading (or the next release). The
+          # full categorised bullet list stays in CHANGELOG.md and is linked
+          # below — a single accumulating section (every beta lands under one
+          # "## <version>") would otherwise dump hundreds of lines into a release.
+          awk 'BEGIN{n=0} /^## [^#]/{n++; if (n==2) exit} n>=1 && /^### /{exit} n>=1{print}' CHANGELOG.md > release_notes.md
           if [ ! -s release_notes.md ]; then
             echo "See the commit history for changes in this release." > release_notes.md
           fi
-          printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${GITHUB_REF_NAME}" >> release_notes.md
+          # Link the tag, not the branch: the branch ref moves, but "${OSCLASS_VERSION}"
+          # is tagged by this same run, so the link keeps resolving to the notes for
+          # exactly this release.
+          printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${OSCLASS_VERSION}" >> release_notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

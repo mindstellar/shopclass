@@ -495,7 +495,12 @@ class FormInputs implements InputInterface
                         unset($selected);
                     }
                     if (isset($v['children'])) {
-                        $selectOptionsString .= $this->getOptionsString($v['children'], $optGroupLevel - 1) . PHP_EOL;
+                        // getOptionsString expects ($selectedValue, $optionsArray); recurse with the
+                        // children as selectOptions, not the child array as the value.
+                        $childOptions                  = $options;
+                        $childOptions['selectOptions'] = $v['children'];
+                        $childOptions['optGroupLevel'] = $optGroupLevel - 1;
+                        $selectOptionsString           .= $this->getOptionsString($defaultValue, $childOptions) . PHP_EOL;
                     }
                     // if $optgroupLevel is set, add optgroup
                     if ($optGroupLevel === 0) {

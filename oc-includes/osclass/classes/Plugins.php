@@ -481,7 +481,19 @@ class Plugins
      */
     public static function hasHook($hook)
     {
-        return isset(self::$hooks[$hook]);
+        if (!isset(self::$hooks[$hook])) {
+            return false;
+        }
+        // removeHook() unsets individual callbacks but leaves the (now empty) priority
+        // buckets behind, so a bare isset() reports true forever once a hook has ever been
+        // registered. Answer the question the name asks: is anything still listening?
+        foreach (self::$hooks[$hook] as $callbacks) {
+            if (!empty($callbacks)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

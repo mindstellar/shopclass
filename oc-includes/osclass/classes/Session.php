@@ -20,6 +20,10 @@ class Session
     //attributes
     private static $instance;
     private $session = array();
+    private $ephemeral = array();
+    private $messages = array();
+    private $form = array();
+    private $keepForm = array();
     private $started = false;
 
     /**
@@ -138,7 +142,7 @@ class Session
      */
     private function seedDefaults()
     {
-        foreach (array('messages', 'keepForm', 'form') as $key) {
+        foreach (array('keepForm', 'form') as $key) {
             if (!isset($this->session[$key])) {
                 $this->session[$key] = array();
             }
@@ -175,7 +179,10 @@ class Session
     {
         $this->maybeResume();
 
-        return $this->session[$key] ?? '';
+        // A physical session value wins; otherwise fall back to a request-scoped
+        // ephemeral value (see _setEphemeral) so cookie-authenticated identity is
+        // readable through the same API without a session having been started.
+        return $this->session[$key] ?? $this->ephemeral[$key] ?? '';
     }
 
     /**
@@ -188,7 +195,7 @@ class Session
     {
         $this->maybeResume();
 
-        return isset($this->session[$key]);
+        return isset($this->session[$key]) || isset($this->ephemeral[$key]);
     }
     /**
      * @param $key
@@ -199,6 +206,32 @@ class Session
         $this->ensureStarted();
         $_SESSION[$key]      = $value;
         $this->session[$key] = $value;
+    }
+
+    /**
+     * Set a request-scoped value that is readable via _get()/_has() but never persisted.
+     *
+     * Unlike _set(), this touches neither $_SESSION nor starts a physical session, and it
+     * is deliberately excluded from the pending-write merge in ensureStarted(). It exists so
+     * identity resolved from a signed cookie can be exposed through the historical
+     * Session::_get('userId') API while the visitor stays session-free and cacheable.
+     *
+     * @param $key
+     * @param $value
+     */
+    public function _setEphemeral($key, $value)
+    {
+        $this->ephemeral[$key] = $value;
+    }
+
+    /**
+     * Drop a request-scoped ephemeral value (e.g. on logout).
+     *
+     * @param $key
+     */
+    public function _dropEphemeral($key)
+    {
+        unset($this->ephemeral[$key]);
     }
 
     public function session_destroy()
@@ -252,9 +285,10 @@ class Session
      */
     public function _setMessage($key, $value, $type)
     {
-        $messages         = $this->_get('messages');
-        $messages[$key][] = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
-        $this->_set('messages', $messages);
+        // Flash messages live in a request-scoped store (see below), never $_SESSION, so
+        // adding one does not start a session. They are carried across the following
+        // redirect in a short-lived, HMAC-signed cookie by _flushFlashMessages().
+        $this->messages[$key][] = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
     }
 
     /**
@@ -264,9 +298,7 @@ class Session
      */
     public function _getMessage($key)
     {
-        $messages = $this->_get('messages');
-
-        return $messages[$key] ?? '';
+        return $this->messages[$key] ?? '';
     }
 
     /**
@@ -274,14 +306,120 @@ class Session
      */
     public function _dropMessage($key)
     {
-        $messages = $this->_get('messages');
-        if (!isset($messages[$key])) {
-            // Nothing to drop — avoid a write that would needlessly start a session.
-            // osc_show_flash_message() calls this on every page render.
+        unset($this->messages[$key]);
+    }
+
+    /**
+     * Load flash messages left by the previous request from the signed cookie into the
+     * request-scoped store, then clear the cookie (single-use). Call once, early in the
+     * bootstrap — before any output — so clearing the cookie can still emit a header and a
+     * mere GET that only *reads* flash messages never starts a session.
+     *
+     * @return void
+     */
+    public function _loadFlashMessages()
+    {
+        $value = $_COOKIE['oc_flash'] ?? '';
+        if ($value === '') {
             return;
         }
-        unset($messages[$key]);
-        $this->_set('messages', $messages);
+        $this->writeSignedStore('oc_flash', '', time() - 3600);
+        unset($_COOKIE['oc_flash']);
+
+        $messages = $this->decodeSignedStore($value);
+        if (!empty($messages)) {
+            $this->messages = $messages;
+        }
+    }
+
+    /**
+     * Persist any pending flash messages into the signed cookie so the next request can show
+     * them. Called right before a redirect (the moment a flash needs to survive), while
+     * headers can still be sent. Messages already rendered — and dropped — this request are
+     * simply not present, so they are not carried over.
+     *
+     * @return void
+     */
+    public function _flushFlashMessages()
+    {
+        if (empty($this->messages)) {
+            return;
+        }
+        $this->writeSignedStore('oc_flash', $this->encodeSignedStore($this->messages), time() + 300);
+    }
+
+    /**
+     * Serialise + HMAC-sign a value for a standalone cookie store (flash, form repop). The
+     * signature is what lets these be client-side cookies safely: a tampered value verifies
+     * to nothing, so a visitor cannot forge flash HTML or form input.
+     *
+     * @param mixed $data
+     *
+     * @return string
+     */
+    private function encodeSignedStore($data)
+    {
+        $payload = base64_encode(json_encode($data));
+
+        return $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+    }
+
+    /**
+     * Verify and decode a signed cookie-store value. Returns an empty array unless the
+     * signature is valid.
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private function decodeSignedStore($value)
+    {
+        if (!is_string($value) || strpos($value, '.') === false) {
+            return array();
+        }
+        $dot     = strrpos($value, '.');
+        $payload = substr($value, 0, $dot);
+        $sig     = substr($value, $dot + 1);
+        if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
+            return array();
+        }
+        $json = base64_decode($payload, true);
+        if ($json === false) {
+            return array();
+        }
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : array();
+    }
+
+    /**
+     * Write (or, with a past expiry, delete) a standalone signed-store cookie. Standalone —
+     * not the session container — so it never starts a session.
+     *
+     * @param string $name
+     * @param string $value
+     * @param int    $expiry
+     *
+     * @return void
+     */
+    private function writeSignedStore($name, $value, $expiry)
+    {
+        if (headers_sent()) {
+            return;
+        }
+        $options = array(
+            'expires'  => $expiry,
+            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        );
+        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
+            $options['secure'] = true;
+        }
+        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
+            $options['domain'] = COOKIE_DOMAIN;
+        }
+        setcookie($name, $value, $options);
     }
 
     /**
@@ -289,9 +427,7 @@ class Session
      */
     public function _keepForm($key)
     {
-        $aKeep       = $this->_get('keepForm');
-        $aKeep[$key] = 1;
-        $this->_set('keepForm', $aKeep);
+        $this->keepForm[$key] = 1;
     }
 
     /**
@@ -299,24 +435,24 @@ class Session
      */
     public function _dropKeepForm($key = '')
     {
-        $aKeep = $this->_get('keepForm');
         if ($key) {
-            unset($aKeep[$key]);
-            $this->_set('keepForm', $aKeep);
+            unset($this->keepForm[$key]);
         } else {
-            $this->_set('keepForm', array());
+            $this->keepForm = array();
         }
     }
 
     /**
+     * Stash a submitted form value so a form can be refilled after a validation error. Held in
+     * a request-scoped store (never $_SESSION, so it starts no session) and carried across the
+     * redirect back to the form in a signed cookie by _flushFormData().
+     *
      * @param $key
      * @param $value
      */
     public function _setForm($key, $value)
     {
-        $form       = $this->_get('form');
-        $form[$key] = $value;
-        $this->_set('form', $form);
+        $this->form[$key] = $value;
     }
 
     /**
@@ -326,12 +462,11 @@ class Session
      */
     public function _getForm($key = '')
     {
-        $form = $this->_get('form');
         if ($key) {
-            return $form[$key] ?? '';
+            return $this->form[$key] ?? '';
         }
 
-        return $form;
+        return $this->form;
     }
 
     /**
@@ -339,43 +474,82 @@ class Session
      */
     public function _getKeepForm()
     {
-        return $this->_get('keepForm');
+        return $this->keepForm;
     }
 
     public function _viewMessage()
     {
-        print_r($this->session['messages']);
+        print_r($this->messages);
     }
 
     public function _viewForm()
     {
-        print_r($_SESSION['form']);
+        print_r($this->form);
     }
 
     public function _viewKeep()
     {
-        print_r($_SESSION['keepForm']);
+        print_r($this->keepForm);
     }
 
     public function _clearVariables()
     {
-        $form  = $this->_get('form');
-        $aKeep = $this->_get('keepForm');
-        if (is_array($form)) {
-            foreach ($form as $key => $value) {
-                if (!isset($aKeep[$key])) {
-                    unset($_SESSION['form'][$key], $this->session['form'][$key]);
-                }
+        foreach ($this->form as $key => $value) {
+            if (!isset($this->keepForm[$key])) {
+                unset($this->form[$key]);
             }
         }
+    }
 
-        if (isset($this->session['osc_http_referer_state'])) {
-            $this->session['osc_http_referer_state']++;
-            $_SESSION['osc_http_referer_state']++;
-            if ((int)$this->session['osc_http_referer_state'] >= 2) {
-                $this->_dropReferer();
-            }
+    /**
+     * Load form-repopulation data left by the previous request from its signed cookie into the
+     * request-scoped store. Called once, early in the bootstrap. When nothing is marked to
+     * keep the data is single-use (consume and clear the cookie); when some keys are kept
+     * (a multi-step post that detours through, e.g., the login page) the cookie is re-written
+     * so it survives an intermediate render-only request that never redirects.
+     *
+     * @return void
+     */
+    public function _loadFormData()
+    {
+        $value = $_COOKIE['oc_form'] ?? '';
+        if ($value === '') {
+            return;
         }
+        $data           = $this->decodeSignedStore($value);
+        $this->form     = (isset($data['f']) && is_array($data['f'])) ? $data['f'] : array();
+        $this->keepForm = (isset($data['k']) && is_array($data['k'])) ? $data['k'] : array();
+
+        if (!empty($this->keepForm)) {
+            $this->writeSignedStore('oc_form', $value, time() + 1800);
+        } else {
+            $this->writeSignedStore('oc_form', '', time() - 3600);
+            unset($_COOKIE['oc_form']);
+        }
+    }
+
+    /**
+     * Persist pending form-repopulation data into the signed cookie so the form can be refilled
+     * after the redirect back to it. Called right before a redirect (in Utils::redirectTo). A
+     * value too large for a cookie is skipped rather than silently truncated — the form simply
+     * will not pre-fill that one time.
+     *
+     * @return void
+     */
+    public function _flushFormData()
+    {
+        if (empty($this->form) && empty($this->keepForm)) {
+            if (isset($_COOKIE['oc_form'])) {
+                $this->writeSignedStore('oc_form', '', time() - 3600);
+            }
+
+            return;
+        }
+        $value = $this->encodeSignedStore(array('f' => $this->form, 'k' => $this->keepForm));
+        if (strlen($value) > 3800) {
+            return;
+        }
+        $this->writeSignedStore('oc_form', $value, time() + 1800);
     }
 
     public function _dropReferer()

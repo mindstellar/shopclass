@@ -5,7 +5,7 @@ INSERT INTO /*TABLE_PREFIX*/t_currency (pk_c_code, s_name, s_description, b_enab
 
 INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ('osclass', 'version','/*OSCLASS_VERSION*/', 'STRING')
-    ,('osclass', 'theme', 'bender', 'STRING')
+    ,('osclass', 'theme', 'storefront', 'STRING')
     ,('osclass', 'admin_language', 'en_US', 'STRING')
     ,('osclass', 'language', 'en_US', 'STRING')
     ,('osclass', 'pageDesc', '', 'STRING')
@@ -38,6 +38,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'notify_new_comment', '1', 'BOOLEAN')
     ,('osclass', 'notify_new_comment_user', '0', 'BOOLEAN')
     ,('osclass', 'enabled_recaptcha_items', '0', 'BOOLEAN')
+    ,('osclass', 'enabled_recaptcha_comments', '0', 'BOOLEAN')
+    ,('osclass', 'enabled_recaptcha_reports', '0', 'BOOLEAN')
     ,('osclass', 'logged_user_item_validation', '1', 'BOOLEAN')
     ,('osclass', 'items_wait_time', '0', 'INTEGER')
     ,('osclass', 'enabled_user_validation', '1', 'BOOLEAN')
