@@ -25,6 +25,10 @@ services:
       - .:/application
       # Alpine PHP keeps its config here, not /etc/php/<ver>/...
       - ./.docker/php-fpm/php-ini-overrides.ini:/usr/local/etc/php/conf.d/99-overrides.ini
+      # Storefront (the default public theme) lives in its own sibling repo and is
+      # symlinked into oc-content/themes; mount it at the theme path so the container
+      # resolves it. Assumes the theme-storefront checkout sits next to this repo.
+      - ../theme-storefront:/application/oc-content/themes/storefront
     environment:
       # Configure entirely from the environment: ignore any config.php on the
       # bind mount and read the database settings from these variables.
@@ -77,6 +81,8 @@ services:
     volumes:
       - .:/application
       - ./.docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      # Same storefront theme mount so nginx can serve its static assets.
+      - ../theme-storefront:/application/oc-content/themes/storefront
     depends_on:
       - php-fpm
     ports:
