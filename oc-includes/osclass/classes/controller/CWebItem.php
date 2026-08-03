@@ -451,6 +451,13 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_edit_url($secret, $item));
                 break;
             case 'mark':
+                // Reporting changes state, so it requires a valid CSRF token: a report must
+                // come from a real form submission on the listing page. The modern report
+                // form (a POST that carries the auto-injected token) works unchanged; the
+                // legacy tokenless GET report links (osc_item_link_*) are no longer honoured,
+                // which also removes the "a prefetch/<img> silently marks a listing" vector.
+                osc_csrf_check();
+
                 $id = Params::getParam('id');
                 $as = Params::getParam('as');
 
@@ -461,7 +468,18 @@ class CWebItem extends BaseModel
                 }
                 View::newInstance()->_exportVariableToView('item', $item);
 
-                // Any gating (per-reporter dedup, rate-limit, captcha) belongs in a listener on
+                // Optional CAPTCHA on the report, when enabled and a provider is active —
+                // the anonymous-abuse gate for installs that want it.
+                if (osc_recaptcha_reports_enabled() && osc_captcha_enabled()
+                    && !osc_check_captcha()
+                ) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_item_url());
+
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                }
+
+                // Any further gating (per-reporter dedup, rate-limit) belongs in a listener on
                 // the item_mark filter — mark() applies it. The old user-agent allowlist here was
                 // broken both ways: it silently dropped reports from browsers not on its stale
                 // list (e.g. Firefox) while letting bots that spoof a known UA straight through.
@@ -598,6 +616,16 @@ class CWebItem extends BaseModel
 
                 $itemId = Params::getParam('id');
                 $item   = Item::newInstance()->findByPrimaryKey($itemId);
+                $this->_exportVariableToView('item', $item);
+
+                if (osc_recaptcha_comments_enabled() && osc_captcha_enabled()
+                    && !osc_check_captcha()
+                ) {
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo(osc_item_url());
+
+                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                }
 
                 osc_run_hook('pre_item_add_comment_post', $item);
 

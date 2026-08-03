@@ -52,6 +52,8 @@ class CAdminSettingsComments extends AdminSecBaseModel
                 $notifyNewCommentUser = (($notifyNewCommentUser != '') ? true : false);
                 $regUserPostComments  = Params::getParam('reg_user_post_comments');
                 $regUserPostComments  = (($regUserPostComments != '') ? true : false);
+                $recaptchaComments    = Params::getParam('enabled_recaptcha_comments');
+                $recaptchaComments    = (($recaptchaComments != '') ? true : false);
 
                 $msg = '';
                 if (!osc_validate_int(Params::getParam('num_moderate_comments'))) {
@@ -76,6 +78,7 @@ class CAdminSettingsComments extends AdminSecBaseModel
                 $iUpdated += osc_set_preference('comments_per_page', $commentsPerPage);
 
                 $iUpdated += osc_set_preference('reg_user_post_comments', $regUserPostComments);
+                $iUpdated += osc_set_preference('enabled_recaptcha_comments', $recaptchaComments);
 
                 if ($iUpdated > 0) {
                     osc_add_flash_ok_message(_m('Comment settings have been updated'), 'admin');
