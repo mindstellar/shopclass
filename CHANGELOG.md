@@ -164,6 +164,12 @@ closed. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- Pagination: the `list-last` class now lands on the final item (it was overwritten and never
+  applied, so the last page's styling was off), a Pagination object can be rendered more than once
+  without duplicating classes, and an out-of-range `iPage` no longer renders a bogus page number.
+  The list is now a labelled navigation landmark with `aria-current` on the active page and
+  `aria-label`s on the first/prev/next/last arrows. `osc_pagination_items()` no longer emits an
+  undefined-variable notice outside profile/list contexts.
 - Send-to-friend no longer 500s on an empty or malformed form. It dispatched the email without
   validating the recipient, so an empty/bad address reached PHPMailer and threw. It now validates
   the sender/recipient names and emails up front (like the contact-seller form) and returns a

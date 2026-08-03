@@ -63,6 +63,10 @@ class Pagination
         $this->firstUrl           = $params['first_url'] ?? $this->url;
         $this->nofollow           = $params['nofollow'] ?? false;
         $this->listClass          = $params['list_class'] ?? false;
+
+        // Clamp the selected page into range (internal 1-based, valid up to total-1)
+        // so an out-of-range ?iPage= can't render a bogus page number.
+        $this->selected = max(1, min((int) $this->selected, max(1, (int) $this->total - 1)));
     }
 
     /**
@@ -72,11 +76,15 @@ class Pagination
     {
         if ($this->total > 1) {
             $links = $this->get_links();
+            // Landmark + label on the existing <ul> (no wrapper element, so theme CSS
+            // targeting the list is unaffected) for screen-reader navigation.
+            $nav = ' role="navigation" aria-label="' . osc_esc_html(__('Pagination')) . '"';
             if ($this->listClass !== false) {
-                return '<ul class="' . $this->listClass . '">' . implode($this->delimiter, $links) . '</ul>';
+                return '<ul class="' . osc_esc_html($this->listClass) . '"' . $nav . '>'
+                    . implode($this->delimiter, $links) . '</ul>';
             }
 
-            return '<ul>' . implode($this->delimiter, $links) . '</ul>';
+            return '<ul' . $nav . '>' . implode($this->delimiter, $links) . '</ul>';
         }
 
         return '';
@@ -87,93 +95,79 @@ class Pagination
      */
     public function get_links()
     {
-        $pages   = $this->get_pages();
-        $links   = array();
-        $isFirst = 0;
-        $isLast  = 0;
+        $pages = $this->get_pages();
 
-
-        $attrs = array();
-        if ($this->nofollow) {
-            $attrs['rel'] = 'nofollow';
-        }
-
+        // Build the items in display order first, then mark the true first/last —
+        // computed as locals so instance state is never mutated (the object stays
+        // reusable, and `list-last` actually lands on the final item).
+        $items = array();
         if (isset($pages['first'])) {
-            if (!$isFirst) {
-                $this->class_first .= ' list-first';
-                $isFirst++;
-            }
-            $attrs['class'] = $this->class_first;
-            $attrs['href']  = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), '', $this->firstUrl);
-            $links[]        = $this->createATag($this->text_first, $attrs);
+            $items[] = array('text' => $this->text_first, 'href' => $this->pageUrl(1),
+                'class' => $this->class_first, 'label' => __('First page'));
         }
         if (isset($pages['prev'])) {
-            if (!$isFirst) {
-                $this->class_prev .= ' list-first';
-                $isFirst++;
-            }
-            $attrs['class'] = $this->class_prev;
-            if ($pages['prev'] == 1) {
-                $attrs['href'] = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), '', $this->firstUrl);
-            } else {
-                $attrs['href'] = str_replace(array(
-                    urlencode('{PAGE}'),
-                    '{PAGE}'
-                ), array($pages['prev'], $pages['prev']), $this->url);
-            }
-            $links[] = $this->createATag($this->text_prev, $attrs);
+            $items[] = array('text' => $this->text_prev, 'href' => $this->pageUrl($pages['prev']),
+                'class' => $this->class_prev, 'label' => __('Previous page'));
         }
         foreach ($pages['pages'] as $p) {
-            $isLast++;
-            if (!isset($pages['next']) && !isset($pages['last']) && ($isLast == count($pages['pages']))) {
-                $classfirst_selected     = $this->class_selected . ' list-last';
-                $classfirst_non_selected = $this->class_non_selected . ' list-last';
-            }
-            if (!$isFirst) {
-                $classfirst_selected     = $this->class_selected . ' list-first';
-                $classfirst_non_selected = $this->class_non_selected . ' list-first';
-                $isFirst++;
-            } else {
-                $classfirst_selected     = $this->class_selected;
-                $classfirst_non_selected = $this->class_non_selected;
-            }
-            if ($p == 1) {
-                $attrs['href'] = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), '', $this->firstUrl);
-            } else {
-                $attrs['href'] = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), array(
-                    $p,
-                    $p
-                ), $this->url);
-            }
             if ($p == $this->selected) {
-                $links[] = $this->createSpanTag($p, array('class' => $classfirst_selected));
+                $items[] = array('text' => $p, 'current' => true, 'class' => $this->class_selected);
             } else {
-                $attrs['class'] = $classfirst_non_selected;
-                $links[]        = $this->createATag($p, $attrs);
+                $items[] = array('text' => $p, 'href' => $this->pageUrl($p),
+                    'class' => $this->class_non_selected, 'label' => sprintf(__('Page %s'), $p));
             }
         }
         if (isset($pages['next'])) {
-            if (!isset($pages['last'])) {
-                $this->class_next .= ' list-last';
-            }
-            $attrs['class'] = $this->class_next;
-            $attrs['href']  = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), array(
-                $pages['next'],
-                $pages['next']
-            ), $this->url);
-            $links[]        = $this->createATag($this->text_next, $attrs);
+            $items[] = array('text' => $this->text_next, 'href' => $this->pageUrl($pages['next']),
+                'class' => $this->class_next, 'label' => __('Next page'));
         }
         if (isset($pages['last'])) {
-            $this->class_last .= ' list-last';
-            $attrs['class']   = $this->class_last;
-            $attrs['href']    = str_replace(array(urlencode('{PAGE}'), '{PAGE}'), array(
-                $pages['last'],
-                $pages['last']
-            ), $this->url);
-            $links[]          = $this->createATag($this->text_last, $attrs);
+            $items[] = array('text' => $this->text_last, 'href' => $this->pageUrl($pages['last']),
+                'class' => $this->class_last, 'label' => __('Last page'));
+        }
+
+        $links = array();
+        $count = count($items);
+        foreach ($items as $i => $it) {
+            $class = $it['class'];
+            if ($i === 0) {
+                $class .= ' list-first';
+            }
+            if ($i === $count - 1) {
+                $class .= ' list-last';
+            }
+            if (!empty($it['current'])) {
+                $links[] = $this->createSpanTag($it['text'], array('class' => $class, 'aria-current' => 'page'));
+                continue;
+            }
+            $attrs = array('class' => $class, 'href' => $it['href']);
+            if (isset($it['label'])) {
+                $attrs['aria-label'] = $it['label'];
+            }
+            if ($this->nofollow) {
+                $attrs['rel'] = 'nofollow';
+            }
+            $links[] = $this->createATag($it['text'], $attrs);
         }
 
         return $links;
+    }
+
+    /**
+     * Build the href for a page: page 1 uses the (page-token-stripped) first URL,
+     * every other page substitutes {PAGE} into the URL template.
+     *
+     * @param int|string $p
+     *
+     * @return string
+     */
+    protected function pageUrl($p)
+    {
+        if ((int) $p === 1) {
+            return str_replace(array(urlencode('{PAGE}'), '{PAGE}'), '', $this->firstUrl);
+        }
+
+        return str_replace(array(urlencode('{PAGE}'), '{PAGE}'), array($p, $p), $this->url);
     }
 
     /**

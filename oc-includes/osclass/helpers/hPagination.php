@@ -80,6 +80,11 @@ function osc_pagination_items($extraParams = array(), $field = false)
     } elseif (osc_is_list_items()) {
         $url       = osc_user_list_items_url('{PAGE}', $field);
         $first_url = osc_user_list_items_url();
+    } else {
+        // Neither context matched: fall back to the current search URL so $url and
+        // $first_url are always defined (was an undefined-variable notice + broken links).
+        $url       = osc_update_search_url(array('iPage' => '{PAGE}'));
+        $first_url = osc_update_search_url(array('iPage' => null));
     }
 
     $params = array(
@@ -111,9 +116,9 @@ function osc_pagination_items($extraParams = array(), $field = false)
  *          'class_prev' => css class for the prev link (default 'searchPaginationPrev')
  *          'class_next' => css class for the next link (default 'searchPaginationNext')
  *          'text_first' => text for the first link ('<<', 'First', ...) (default '&laquo;')
- *          'text_prev' => text for the first link ('<', 'Previous.', ...) (default '&raquo;')
- *          'text_next' => text for the first link ('>', 'Next', ...) (default '&lt;')
- *          'text_last' => text for the lastst link ('>>', 'Last', ...) (default '&gt;')
+ *          'text_prev' => text for the prev link ('<', 'Previous', ...) (default '&lt;')
+ *          'text_next' => text for the next link ('>', 'Next', ...) (default '&gt;')
+ *          'text_last' => text for the last link ('>>', 'Last', ...) (default '&raquo;')
  *          'class_selected' => css class for the selected link (default 'searchPaginationSelected')
  *          'class_non_selected' => css class for non selected links (default 'searchPaginationNonSelected')
  *          'delimiter' => delimiter between links (default " ")
