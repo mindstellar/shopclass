@@ -8,7 +8,8 @@ The first stable release under the Shopclass name — the culmination of the Osc
 Since the last stable (Osclass 5.2.0) the admin has been rebuilt on Bootstrap 5 and stripped of
 jQuery, the front end made sessionless so public pages are reverse-proxy/CDN cacheable, sitemaps and
 S3 storage brought into core, search made pluggable and sharper, and a long list of security holes
-closed. PHP 8.0 is now the floor.
+closed. The bundled public theme is now Storefront — a modern, responsive, vanilla-JS front end —
+replacing Bender. PHP 8.0 is now the floor.
 
 ### New
 
@@ -80,6 +81,14 @@ closed. PHP 8.0 is now the floor.
   exposes the underlying footer inline-script queue, now id-deduplicated.
 - Install smoke test in CI — a release zip is unpacked, installed against a real database, and signed
   into before it can become a release.
+- Storefront is the new default public theme — a modern, responsive, vanilla-JS front end that
+  replaces Bender as the bundled default. Fresh installs ship and activate it, and the release build
+  bundles it from its own repository.
+- Category slug changes now redirect permanently — renaming a category records its former slug and
+  301-redirects old inbound links (and indexed search results) to the current canonical URL instead
+  of 404ing. Old-slug-to-category mappings are stored so renames never chain, and the category tree
+  and row object caches are invalidated on every category add/edit/reorder/delete so the new URL
+  resolves immediately.
 
 ### Breaking
 
@@ -130,6 +139,10 @@ closed. PHP 8.0 is now the floor.
   across admin datatables, statistics widgets and the comment editor. Watermark uploads are validated
   by content, not filename; added the missing CSRF check on `upgrade_db`; search-alert subscription
   can require a logged-in user.
+- Public comment and abuse-report forms now require the configured captcha and carry a CSRF token,
+  closing an unauthenticated spam/forgery vector on the two state-changing public forms.
+- `redirectTo()` strips CR/LF from the `Location` URL, closing a header-injection / response-splitting
+  vector on redirects built from request-derived values.
 
 ### Changed
 
@@ -169,6 +182,12 @@ closed. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- Category dropdowns list sub-categories again — the nested `select()` option builder recursed with
+  the child array as the selected value and an integer as its options, collapsing each parent's
+  children into a single empty option. Affects the admin category parent picker and any nested select.
+- Checkbox custom fields render as translatable Yes/No text instead of a broken tick/cross image that
+  only the old Bender theme shipped, so every other theme showed a missing image. Overridable via the
+  `item_meta_checkbox_value` filter.
 - Pagination: the `list-last` class now lands on the final item (it was overwritten and never
   applied, so the last page's styling was off), a Pagination object can be rendered more than once
   without duplicating classes, and an out-of-range `iPage` no longer renders a bogus page number.
