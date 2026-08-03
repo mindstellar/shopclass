@@ -1700,11 +1700,14 @@ function osc_item_meta_value()
             return '';
         }
     } elseif ($meta['e_type'] == 'CHECKBOX') {
-        if ($value == 1) {
-            return '<img src="' . osc_current_web_theme_url('images/tick.png') . '" alt="" title=""/>';
-        }
+        // Theme-agnostic: return translatable Yes/No text, not an <img> that assumes the
+        // active theme ships images/tick.png + cross.png (only the legacy bender theme
+        // does, so every other theme rendered a broken image). Themes/plugins wanting an
+        // icon can override via the 'item_meta_checkbox_value' filter.
+        $checked = ((string) $value === '1');
+        $label   = $checked ? __('Yes') : __('No');
 
-        return '<img src="' . osc_current_web_theme_url('images/cross.png') . '" alt="" title=""/>';
+        return osc_apply_filter('item_meta_checkbox_value', osc_esc_html($label), $checked, $meta);
     } elseif ($meta['e_type'] == 'URL') {
         if ($value != '') {
             $attributes  = 'rel="noopener nofollow"';
