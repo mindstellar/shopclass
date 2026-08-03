@@ -59,6 +59,7 @@ osclass_latest.zip
 .php_cs.cache
 robots.txt
 /scratch.php
+/seed-demo.php
 /error.log
 /.php-cs-fixer.cache
 
