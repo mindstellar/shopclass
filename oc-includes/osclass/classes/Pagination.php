@@ -175,9 +175,76 @@ class Pagination
      */
     public function get_pages()
     {
-        $pages = $this->get_raw_pages();
+        // $this->total is stored as pageCount + 1; pass the real page count.
+        return self::computePages((int) $this->total - 1, (int) $this->selected, (int) $this->sides, (bool) $this->force_limits);
+    }
 
-        if (!$this->force_limits) {
+    /**
+     * @param null $params
+     *
+     * @return array
+     */
+    public function get_raw_pages($params = null)
+    {
+        return self::computeRawPages((int) $this->total - 1, (int) $this->selected, (int) $this->sides);
+    }
+
+    /**
+     * Pure page-window computation (no globals, no HTML) — testable in isolation.
+     * Returns the sliding window of page numbers around $selected plus first/prev/
+     * next/last boundary markers (prev/next are '' at the ends).
+     *
+     * @param int $pageCount total number of pages
+     * @param int $selected  the current page, 1-based (clamped into range)
+     * @param int $sides     how many pages to show on each side of $selected
+     *
+     * @return array{first:int, prev:int|string, pages:int[], next:int|string, last:int}
+     */
+    public static function computeRawPages($pageCount, $selected, $sides = 2)
+    {
+        $pageCount = max(1, (int) $pageCount);
+        $selected  = max(1, min((int) $selected, $pageCount));
+        $sides     = max(0, (int) $sides);
+
+        $pages          = array('pages' => array());
+        $pages['first'] = 1;
+        $pages['prev']  = $selected > 1 ? $selected - 1 : '';
+
+        for ($p = $selected - $sides; $p < $selected; $p++) {
+            if ($p >= 1) {
+                $pages['pages'][] = $p;
+            }
+        }
+        $pages['pages'][] = $selected;
+        for ($p = $selected + 1; $p <= $selected + $sides; $p++) {
+            if ($p <= $pageCount) {
+                $pages['pages'][] = $p;
+            }
+        }
+
+        $pages['next'] = $selected < $pageCount ? $selected + 1 : '';
+        $pages['last'] = $pageCount;
+
+        return $pages;
+    }
+
+    /**
+     * Pure computation of the final page set: the raw window with the boundary
+     * markers trimmed — first/last dropped when they coincide with the window edges
+     * (unless $forceLimits), and empty prev/next removed.
+     *
+     * @param int  $pageCount
+     * @param int  $selected    1-based
+     * @param int  $sides
+     * @param bool $forceLimits keep first/last even at the window edges
+     *
+     * @return array
+     */
+    public static function computePages($pageCount, $selected, $sides = 2, $forceLimits = false)
+    {
+        $pages = self::computeRawPages($pageCount, $selected, $sides);
+
+        if (!$forceLimits) {
             if ($pages['first'] == $pages['pages'][0]) {
                 unset($pages['first']);
             }
@@ -196,38 +263,6 @@ class Pagination
     }
 
     /**
-     * @param null $params
-     *
-     * @return array
-     */
-    public function get_raw_pages($params = null)
-    {
-        $pages = array();
-
-        $pages['first'] = 1;
-        $pages['prev']  = ($this->selected > 1) ? $this->selected - 1 : '';
-
-        for ($p = ($this->selected - $this->sides); $p < $this->selected; $p++) {
-            if ($p >= 1) {
-                $pages['pages'][] = $p;
-            }
-        }
-
-        $pages['pages'][] = $this->selected;
-
-        for ($p = ($this->selected + 1); $p <= ($this->selected + $this->sides); $p++) {
-            if ($p < $this->total) {
-                $pages['pages'][] = $p;
-            }
-        }
-
-        $pages['next'] = ($this->selected < ($this->total - 1)) ? $this->selected + 1 : '';
-        $pages['last'] = $this->total - 1;
-
-        return $pages;
-    }
-
-    /**
      * @param $text
      * @param $attrs
      *
@@ -235,12 +270,7 @@ class Pagination
      */
     protected function createATag($text, $attrs)
     {
-        $att = array();
-        foreach ($attrs as $k => $v) {
-            $att[] = $k . '="' . osc_esc_html($v) . '"';
-        }
-
-        return '<li><a ' . implode(' ', $att) . '>' . $text . '</a></li>';
+        return $this->wrapTag('a', $text, $attrs);
     }
 
     /**
@@ -251,12 +281,26 @@ class Pagination
      */
     protected function createSpanTag($text, $attrs)
     {
+        return $this->wrapTag('span', $text, $attrs);
+    }
+
+    /**
+     * Render one `<li>`-wrapped element with escaped attribute values.
+     *
+     * @param string $tag   'a' | 'span'
+     * @param string $text  inner text (page number or an arrow glyph)
+     * @param array  $attrs attribute name => value (values are escaped)
+     *
+     * @return string
+     */
+    protected function wrapTag($tag, $text, array $attrs)
+    {
         $att = array();
         foreach ($attrs as $k => $v) {
             $att[] = $k . '="' . osc_esc_html($v) . '"';
         }
 
-        return '<li><span ' . implode(' ', $att) . '>' . $text . '</span></li>';
+        return '<li><' . $tag . ' ' . implode(' ', $att) . '>' . $text . '</' . $tag . '></li>';
     }
 }
 

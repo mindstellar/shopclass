@@ -105,6 +105,8 @@ jobs:
         run: php tests/rewrite-resolve-rewrite.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
+      - name: Pagination
+        run: php tests/pagination.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
