@@ -211,6 +211,17 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
+    fk_i_category_id INT UNSIGNED NOT NULL,
+    fk_c_locale_code CHAR(5) NOT NULL DEFAULT '',
+    s_slug VARCHAR(191) NOT NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (s_slug, fk_c_locale_code),
+        INDEX idx_hist_cat (fk_i_category_id),
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_user_id INT UNSIGNED NULL,

@@ -534,6 +534,7 @@ class Category extends DAO
                 $prefix . 't_category_description',
                 $prefix . 't_category_stats',
                 $prefix . 't_meta_categories',
+                $prefix . 't_category_slug_history',
             ) as $table
         ) {
             try {
@@ -650,6 +651,20 @@ class Category extends DAO
                     'fk_c_locale_code' => $fieldsDescription['fk_c_locale_code']
                 );
 
+                $oldSlug = '';
+                try {
+                    $prev = osc_db_select(
+                        'SELECT s_slug FROM ' . DB_TABLE_PREFIX . 't_category_description'
+                        . ' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?',
+                        array($pk, $k)
+                    );
+                    if (count($prev) > 0) {
+                        $oldSlug = $prev[0]['s_slug'];
+                    }
+                } catch (\mindstellar\database\DbException $e) {
+                    $oldSlug = '';
+                }
+
                 try {
                     $rs = osc_db_table(DB_TABLE_PREFIX . 't_category_description')
                         ->where('fk_i_category_id', $array_where['fk_i_category_id'])
@@ -658,6 +673,33 @@ class Category extends DAO
                 } catch (\mindstellar\database\DbException $e) {
                     $rs = false;
                 }
+
+                $newSlug = $fieldsDescription['s_slug'];
+                // A slug that is now live must never redirect - drop any stale history row for it.
+                try {
+                    osc_db_execute(
+                        'DELETE FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
+                        . ' WHERE s_slug = ? AND fk_c_locale_code = ?',
+                        array($newSlug, $k)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    // best-effort
+                }
+                // Record the vacated old slug so its inbound links 301 to the new one.
+                if ($oldSlug !== '' && $oldSlug !== $newSlug) {
+                    try {
+                        osc_db_execute(
+                            'INSERT INTO ' . DB_TABLE_PREFIX . 't_category_slug_history'
+                            . ' (fk_i_category_id, fk_c_locale_code, s_slug, dt_date) VALUES (?, ?, ?, ?)'
+                            . ' ON DUPLICATE KEY UPDATE fk_i_category_id = VALUES(fk_i_category_id),'
+                            . ' dt_date = VALUES(dt_date)',
+                            array($pk, $k, $oldSlug, date('Y-m-d H:i:s'))
+                        );
+                    } catch (\mindstellar\database\DbException $e) {
+                        // best-effort
+                    }
+                }
+
                 if ($rs == 0) {
                     // Aliased INNER JOIN the builder's allowlist cannot express;
                     // both identifiers are compile-time literals and the two

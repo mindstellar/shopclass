@@ -89,22 +89,25 @@ class CWebSearch extends BaseModel
                             preg_replace('|/$|', '', Params::getParam('sCategory'))
                         );
 
-                        $category = Category::newInstance()->findBySlug($tmp[count($tmp) - 1]);
+                        $categorySlug = $tmp[count($tmp) - 1];
+                        $category     = Category::newInstance()->findBySlug($categorySlug);
 
-                        Params::setParam('sCategory', $tmp[count($tmp) - 1]);
+                        Params::setParam('sCategory', $categorySlug);
                     } else {
-                        $category = Category::newInstance()
-                            ->findBySlug(Params::getParam('sCategory'));
+                        $categorySlug = Params::getParam('sCategory');
+                        $category     = Category::newInstance()->findBySlug($categorySlug);
 
-                        Params::setParam('sCategory', Params::getParam('sCategory'));
+                        Params::setParam('sCategory', $categorySlug);
                     }
                     if (count($category) === 0) {
+                        $this->categorySlugRedirect($categorySlug);
                         $this->do404();
                     }
                 } else {
                     $category = Category::newInstance()->findBySlug($search_uri);
 
                     if (count($category) === 0) {
+                        $this->categorySlugRedirect($search_uri);
                         $this->do404();
                     }
                     Params::setParam('sCategory', $search_uri);
@@ -715,6 +718,43 @@ class CWebSearch extends BaseModel
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * If $slug is a category's former slug, 301 to its current URL. No-op (returns) when
+     * there is no history row or the target category is gone/disabled - the caller then 404s.
+     *
+     * @param string $slug
+     *
+     * @return void
+     */
+    private function categorySlugRedirect($slug)
+    {
+        $slug = trim((string)$slug);
+        if ($slug === '') {
+            return;
+        }
+        try {
+            $rows = osc_db_select(
+                'SELECT fk_i_category_id FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
+                . ' WHERE s_slug = ? ORDER BY dt_date DESC LIMIT 1',
+                array($slug)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return;
+        }
+        if (count($rows) === 0) {
+            return;
+        }
+        $category = Category::newInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
+        if (!$category || (int)$category['b_enabled'] === 0) {
+            return; // deleted/disabled -> let the caller 404
+        }
+        $currentSlug = $category['s_slug'];
+        if ($currentSlug === '' || $currentSlug === $slug) {
+            return; // loop guard
+        }
+        $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
     }
 }
 
