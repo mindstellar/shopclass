@@ -785,6 +785,10 @@ class CAdminItems extends AdminSecBaseModel
                 $regUserCanContact     = (($regUserCanContact != '') ? true : false);
                 $contactItemAttachment = Params::getParam('item_attachment');
                 $contactItemAttachment = (($contactItemAttachment != '') ? true : false);
+                // Stored as explicit '1'/'0' (not a PHP bool, which persists as '')
+                // so the send-friend helpers can tell "off" apart from "unset".
+                $enableSendFriend      = (Params::getParam('enable_send_friend') != '') ? '1' : '0';
+                $regUserCanSendFriend  = (Params::getParam('reg_user_can_send_friend') != '') ? '1' : '0';
                 $warnExpiration        = Params::getParam('warn_expiration');
                 $warnExpiration        = (int)$warnExpiration;
                 $titleLength           = Params::getParam('max_chars_per_title');
@@ -837,6 +841,8 @@ class CAdminItems extends AdminSecBaseModel
                 $iUpdated += osc_set_preference('numImages@items', $numImagesItems);
                 $iUpdated += osc_set_preference('reg_user_can_contact', $regUserCanContact);
                 $iUpdated += osc_set_preference('item_attachment', $contactItemAttachment);
+                $iUpdated += osc_set_preference('enable_send_friend', $enableSendFriend, 'osclass', 'BOOLEAN');
+                $iUpdated += osc_set_preference('reg_user_can_send_friend', $regUserCanSendFriend, 'osclass', 'BOOLEAN');
                 $iUpdated += osc_set_preference('warn_expiration', $warnExpiration);
                 $iUpdated += osc_set_preference('title_character_length', $titleLength);
                 $iUpdated += osc_set_preference('description_character_length', $descriptionLength);

@@ -493,10 +493,36 @@ class CWebItem extends BaseModel
 
                 $this->_exportVariableToView('item', $item);
 
+                // Master switch (off by default). Don't 404 or fatally break a theme
+                // that still links here — bounce back to the listing with a notice.
+                if (!osc_enable_send_friend()) {
+                    osc_add_flash_warning_message(
+                        _m('Sharing listings by email has been disabled by the administrator')
+                    );
+                    $this->redirectTo(osc_item_url());
+                }
+
+                // Sharing is an authenticated action by default: it relays site-branded
+                // mail to a request-supplied address, so require a login unless opted out.
+                if (osc_reg_user_can_send_friend() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can share listings'));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
                 $this->doView('item-send-friend.php');
                 break;
             case 'send_friend_post':
                 osc_csrf_check();
+                if (!osc_enable_send_friend()) {
+                    osc_add_flash_warning_message(
+                        _m('Sharing listings by email has been disabled by the administrator')
+                    );
+                    $this->redirectTo(osc_item_url());
+                }
+                if (osc_reg_user_can_send_friend() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can share listings'));
+                    $this->redirectTo(osc_user_login_url());
+                }
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
                 $this->_exportVariableToView('item', $item);
 
@@ -513,6 +539,19 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
+                // Bound how many listings one source may share per window — the form
+                // relays site-branded mail, so it needs a ceiling regardless of the login.
+                if (\mindstellar\security\ActionThrottle::exceeded(
+                    'send_friend',
+                    (int)osc_apply_filter('send_friend_throttle_max', 5),
+                    (int)osc_apply_filter('send_friend_throttle_window', 3600)
+                )) {
+                    osc_add_flash_error_message(
+                        _m("You've shared too many listings recently. Please try again later.")
+                    );
+                    $this->redirectTo(osc_item_send_friend_url());
+                }
+
                 osc_run_hook('pre_item_send_friend_post', $item);
 
                 $mItem  = new ItemActions(false);
@@ -525,6 +564,8 @@ class CWebItem extends BaseModel
                     osc_add_flash_error_message($result);
                     $this->redirectTo(osc_item_send_friend_url());
                 } else {
+                    // Count the accepted send toward the window.
+                    \mindstellar\security\ActionThrottle::record('send_friend');
                     Session::newInstance()->_clearVariables();
                     $this->redirectTo(osc_item_url());
                 }
@@ -597,6 +638,20 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_url());
                 }
 
+                // Bound how many enquiries one source may send per window (defence in
+                // depth: contact only reaches a listing's own seller, not an arbitrary
+                // address, so the default ceiling is looser than share-a-listing).
+                if (\mindstellar\security\ActionThrottle::exceeded(
+                    'item_contact',
+                    (int)osc_apply_filter('item_contact_throttle_max', 15),
+                    (int)osc_apply_filter('item_contact_throttle_window', 3600)
+                )) {
+                    osc_add_flash_error_message(
+                        _m("You've sent too many messages recently. Please try again later.")
+                    );
+                    $this->redirectTo(osc_item_url());
+                }
+
                 osc_run_hook('pre_item_contact_post', $item);
 
                 $mItem  = new ItemActions(false);
@@ -606,6 +661,8 @@ class CWebItem extends BaseModel
                 if (is_string($result)) {
                     osc_add_flash_error_message($result);
                 } else {
+                    // Count the accepted enquiry toward the window.
+                    \mindstellar\security\ActionThrottle::record('item_contact');
                     osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
                 }
 

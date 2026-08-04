@@ -9,6 +9,32 @@ set -eu
 
 CLI="/application/oc-cli.php"
 
+# Restore the real client IP from a trusted proxy so REMOTE_ADDR is the visitor,
+# not the proxy — login throttling and abuse keying depend on it. Off unless
+# OSC_REAL_IP_HEADER is set (e.g. "CF-Connecting-IP" behind a Cloudflare tunnel,
+# or "X-Forwarded-For" behind a load balancer). OSC_REAL_IP_TRUSTED is the
+# comma-separated CIDR allowlist of proxies to trust; the default trusts any peer,
+# which is correct only when the sole ingress is that proxy (e.g. a tunnel with no
+# published port). Narrow it if the container is directly reachable.
+write_real_ip_conf() {
+    conf=/etc/nginx/real_ip.conf
+    header="${OSC_REAL_IP_HEADER:-}"
+    if [ -z "$header" ]; then
+        : > "$conf"
+        return 0
+    fi
+    {
+        printf '%s\n' "${OSC_REAL_IP_TRUSTED:-0.0.0.0/0,::/0}" | tr ',' '\n' | while IFS= read -r cidr; do
+            cidr=$(printf '%s' "$cidr" | tr -d ' ')
+            [ -n "$cidr" ] && printf 'set_real_ip_from %s;\n' "$cidr"
+        done
+        printf 'real_ip_header %s;\n' "$header"
+        printf 'real_ip_recursive off;\n'
+    } > "$conf"
+    echo "entrypoint: real-IP restoration on ($header)."
+}
+write_real_ip_conf
+
 # Wait for the database server to accept connections. The DB may start after the
 # app (compose depends_on notwithstanding, the server can still be initialising).
 wait_for_db() {
