@@ -6987,6 +6987,10 @@ msgid ""
 "duplicate, etc."
 msgstr ""
 
+#: oc-includes/osclass/classes/form/FieldForm.php:417
+msgid "Select"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/admin/Item.php:222
 msgid "Select Currency"
 msgstr ""
@@ -7844,6 +7848,14 @@ msgstr ""
 msgid "The user connected, but isn't allowed to write to this database. Grant it "
 msgstr ""
 
+#: oc-admin/themes/modern/users/frm.php:169
+msgid "The username is NOT available"
+msgstr ""
+
+#: oc-admin/themes/modern/users/frm.php:168
+msgid "The username is available"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php:215
 msgid "The widgets below make up this page. Widgets can also appear in your"
 msgstr ""
@@ -8480,6 +8492,10 @@ msgstr ""
 msgid "Upgrading your Shopclass installation (this could take a while):"
 msgstr ""
 
+#: oc-admin/themes/modern/upgrade/index.php:139
+msgid "Upgrading your Shopclass installation (this could take a while): "
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/add.php:70
 #: oc-admin/themes/modern/languages/add.php:56
 #: oc-admin/themes/modern/media/index.php:262
@@ -8757,6 +8773,7 @@ msgstr ""
 msgid "Username: no more than 50 characters"
 msgstr ""
 
+#: oc-admin/themes/modern/users/frm.php:140
 #: oc-includes/osclass/classes/form/AdminForm.php:118
 msgid "Username: this field is required"
 msgstr ""

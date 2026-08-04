@@ -137,7 +137,7 @@ $aux = customFrmText();
             rules: { s_username: { required: true } },
             messages: {
                 s_username: {
-                    required: '<?php echo osc_esc_js(__('Username: this field is required', 'modern')); ?>.'
+                    required: '<?php echo osc_esc_js(__('Username: this field is required')); ?>.'
                 }
             },
             errorContainer: '#error_list',
@@ -165,8 +165,8 @@ $aux = customFrmText();
                         }).then(function (data) {
                             if (available) {
                                 available.textContent = (data.exists == 0)
-                                    ? '<?php echo osc_esc_js(__('The username is available', 'modern')); ?>'
-                                    : '<?php echo osc_esc_js(__('The username is NOT available', 'modern')); ?>';
+                                    ? '<?php echo osc_esc_js(__('The username is available')); ?>'
+                                    : '<?php echo osc_esc_js(__('The username is NOT available')); ?>';
                             }
                         });
                     }, 1000);

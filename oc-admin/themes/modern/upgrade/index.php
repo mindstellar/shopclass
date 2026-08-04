@@ -136,7 +136,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="result">
         <div id="output" style="display:none">
             <span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>
-            <?php _e('Upgrading your Shopclass installation (this could take a while): ', 'admin'); ?>
+            <?php _e('Upgrading your Shopclass installation (this could take a while): '); ?>
         </div>
         <div id="tohide">
             <p>
