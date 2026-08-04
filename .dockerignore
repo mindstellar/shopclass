@@ -5,6 +5,12 @@
 .gitattributes
 node_modules
 release
+# Dev-only formatting toolchain — never needed at runtime
+tools
+.editorconfig
+.php-cs-fixer.dist.php
+.php-cs-fixer.cache
+.git-blame-ignore-revs
 # Local public-theme checkouts/symlinks (gitignored). The image bundles the
 # storefront theme fresh from its release; never bake the dev symlinks or a
 # private theme into the context.

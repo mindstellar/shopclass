@@ -65,6 +65,7 @@ robots.txt
 /seed-demo.php
 /error.log
 /.php-cs-fixer.cache
+/tools/php-cs-fixer.phar
 
 /oc-admin/themes/modern/scss/bootstrap/
 /oc-admin/themes/template/

@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Web assets and config formats use a 2-space indent
+[*.{scss,css,json,yml,yaml}]
+indent_size = 2
+
+# Markdown hard line breaks rely on trailing spaces
+[*.md]
+trim_trailing_whitespace = false
+
+# Generated/vendored trees are not ours to reformat
+[{oc-includes/vendor/**,oc-includes/assets/**,oc-admin/themes/modern/scss/bootstrap/**,**/*.min.js,**/*.min.css}]
+insert_final_newline = false
+trim_trailing_whitespace = false

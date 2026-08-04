@@ -58,6 +58,10 @@
   "require-dev": {
     "roave/security-advisories": "dev-latest"
   },
+  "scripts": {
+    "cs:check": "php tools/php-cs-fixer.phar fix --dry-run --diff",
+    "cs:fix": "php tools/php-cs-fixer.phar fix"
+  },
   "suggest": {
     "ext-apcu": "Fast PHP user cache",
     "ext-memcached": "Enables the 'memcached' object cache driver (set OSC_CACHE='memcached')",
