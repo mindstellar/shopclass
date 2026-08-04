@@ -63,6 +63,9 @@ RUN mkdir -p /application/oc-content/uploads /application/oc-content/downloads \
 
 COPY .docker/prod/nginx.conf      /etc/nginx/nginx.conf
 COPY .docker/prod/supervisord.conf /etc/supervisord.conf
+# Empty default so nginx's `include /etc/nginx/real_ip.conf` is a no-op until the
+# entrypoint (re)generates it from OSC_REAL_IP_HEADER.
+RUN : > /etc/nginx/real_ip.conf
 
 # Configure entirely from the environment by default: ignore any config.php and
 # read DB settings from DB_* / WEB_PATH. Override per-deploy as needed.
