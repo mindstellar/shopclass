@@ -519,7 +519,6 @@ class OsclassErrors
         return ob_get_clean();
     }
 
-
     /**
      * Get error class based on error code.
      *

@@ -21,7 +21,6 @@
  */
 class CommentsDataTable extends DataTable
 {
-
     private $resourceID;
     private $order_by;
     private $showAll;
@@ -56,7 +55,6 @@ class CommentsDataTable extends DataTable
             $this->showAll
         );
         $this->processData($comments);
-
 
         if ($this->showAll) {
             $this->total = ItemComment::newInstance()->countAll();

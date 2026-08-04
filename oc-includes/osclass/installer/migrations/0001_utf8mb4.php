@@ -82,7 +82,7 @@ use mindstellar\migration\MigrationInterface;
  * per-table row-format clause is needed here; supporting older engines is out of
  * scope and documented rather than handled.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     /** t_preference (s_section, s_name) coordinates of the durable re-entrancy snapshot. */
     private const BACKUP_SECTION = 'osclass';
     private const BACKUP_NAME    = 'utf8mb4_fk_backup';

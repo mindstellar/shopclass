@@ -17,7 +17,6 @@
  */
 class BanRuleForm extends Form
 {
-
     /**
      * @param $rule
      */

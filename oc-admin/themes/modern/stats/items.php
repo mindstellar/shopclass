@@ -46,14 +46,12 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
          . __('Quickly find out how many new listings have been published on your site and how many visits each of the listings gets.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -68,7 +66,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -78,7 +75,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Listing Statistics &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -130,36 +126,36 @@ function customHead()
 
             <?php /*ITEMS */
             $k = 0;
-            echo 'data.addRows(' . count($items) . ');';
-            foreach ($items as $date => $num) {
-                echo 'data.setValue(' . $k . ', 0, "' . $date . '");';
-                echo 'data.setValue(' . $k . ', 1, ' . $num . ');';
-                $k++;
-            }
-            $k = 0;
-            echo 'data2.addRows(' . count($reports) . ');';
-            foreach ($reports as $date => $data) {
-                echo 'data2.setValue(' . $k . ', 0, "' . $date . '");';
-                echo 'data2.setValue(' . $k . ', 1, ' . $data['views'] . ');';
-                $k++;
-            }
+        echo 'data.addRows(' . count($items) . ');';
+        foreach ($items as $date => $num) {
+            echo 'data.setValue(' . $k . ', 0, "' . $date . '");';
+            echo 'data.setValue(' . $k . ', 1, ' . $num . ');';
+            $k++;
+        }
+        $k = 0;
+        echo 'data2.addRows(' . count($reports) . ');';
+        foreach ($reports as $date => $data) {
+            echo 'data2.setValue(' . $k . ', 0, "' . $date . '");';
+            echo 'data2.setValue(' . $k . ', 1, ' . $data['views'] . ');';
+            $k++;
+        }
 
-            /* ALERTS */
-            $k = 0;
-            echo 'data3.addRows(' . count($alerts) . ');';
-            foreach ($alerts as $date => $num) {
-                echo 'data3.setValue(' . $k . ', 0, "' . $date . '");';
-                echo 'data3.setValue(' . $k . ', 1, ' . $num . ');';
-                $k++;
-            }
-            $k = 0;
-            echo 'data4.addRows(' . count($subscribers) . ');';
-            foreach ($subscribers as $date => $num) {
-                echo 'data4.setValue(' . $k . ', 0, "' . $date . '");';
-                echo 'data4.setValue(' . $k . ', 1, ' . $num . ');';
-                $k++;
-            }
-            ?>
+        /* ALERTS */
+        $k = 0;
+        echo 'data3.addRows(' . count($alerts) . ');';
+        foreach ($alerts as $date => $num) {
+            echo 'data3.setValue(' . $k . ', 0, "' . $date . '");';
+            echo 'data3.setValue(' . $k . ', 1, ' . $num . ');';
+            $k++;
+        }
+        $k = 0;
+        echo 'data4.addRows(' . count($subscribers) . ');';
+        foreach ($subscribers as $date => $num) {
+            echo 'data4.setValue(' . $k . ', 0, "' . $date . '");';
+            echo 'data4.setValue(' . $k . ', 1, ' . $num . ');';
+            $k++;
+        }
+        ?>
 
             // Instantiate and draw our chart, passing in some options.
             var chart = new google.visualization.AreaChart(document.getElementById('placeholder'));
@@ -189,8 +185,7 @@ function customHead()
         }
     </script>
     <?php }
-}
-
+    }
 
 osc_add_hook('admin_header', 'customHead', 10);
 ?>
@@ -203,24 +198,24 @@ osc_add_hook('admin_header', 'customHead', 10);
             <div class="btn-group btn-group-sm">
                 <?php
                 $stats_intervals = ['month', 'week', 'day'];
-                if (!$type) {
-                    $type = 'day';
-                }
-                foreach ($stats_intervals as $k => $v) {
-                    echo '<a id="' . $v . '" class="btn btn-outline-primary';
-                    if ($type === $v) {
-                        echo ' active';
-                    }
-                    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=items&amp;type_stat=' . $v . '">';
-                    if ($v === 'month') {
-                        echo __('Last 10 months');
-                    } elseif ($v === 'week') {
-                        echo __('Last 10 weeks');
-                    } elseif ($v === 'day') {
-                        echo __('Last 10 days');
-                    }
-                    echo '</a>';
-                } ?>
+if (!$type) {
+    $type = 'day';
+}
+foreach ($stats_intervals as $k => $v) {
+    echo '<a id="' . $v . '" class="btn btn-outline-primary';
+    if ($type === $v) {
+        echo ' active';
+    }
+    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=items&amp;type_stat=' . $v . '">';
+    if ($v === 'month') {
+        echo __('Last 10 months');
+    } elseif ($v === 'week') {
+        echo __('Last 10 weeks');
+    } elseif ($v === 'day') {
+        echo __('Last 10 days');
+    }
+    echo '</a>';
+} ?>
             </div>
         </div>
     </div>

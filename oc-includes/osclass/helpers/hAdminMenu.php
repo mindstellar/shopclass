@@ -27,7 +27,6 @@ function osc_draw_admin_menu()
     AdminMenu::newInstance()->renderAdminMenu();
 }
 
-
 /**
  * Add menu entry
  *
@@ -49,7 +48,6 @@ function osc_add_admin_menu_page(
     AdminMenu::newInstance()->add_menu($menu_title, $url, $menu_id, $capability, $icon_url, $position);
 }
 
-
 /**
  * Remove the whole menu
  */
@@ -57,7 +55,6 @@ function osc_remove_admin_menu()
 {
     AdminMenu::newInstance()->clear_menu();
 }
-
 
 /**
  * Remove menu section with id $id_menu
@@ -68,7 +65,6 @@ function osc_remove_admin_menu_page($menu_id)
 {
     AdminMenu::newInstance()->remove_menu($menu_id);
 }
-
 
 /**
  * Add submenu under menu id $id_menu, with $array information
@@ -84,7 +80,6 @@ function osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id,
     AdminMenu::newInstance()->add_submenu($menu_id, $submenu_title, $url, $submenu_id, $capability);
 }
 
-
 /**
  * Remove submenu with id $id_submenu under menu id $id_menu
  *
@@ -95,7 +90,6 @@ function osc_remove_admin_submenu_page($menu_id, $submenu_id)
 {
     AdminMenu::newInstance()->remove_submenu($menu_id, $submenu_id);
 }
-
 
 /**
  * Add submenu divider under menu id $id_menu, with $array information
@@ -112,7 +106,6 @@ function osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $c
     AdminMenu::newInstance()->add_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability);
 }
 
-
 /**
  * Remove submenu divider with id $id_submenu under menu id $id_menu
  *
@@ -125,7 +118,6 @@ function osc_remove_admin_submenu_divider($menu_id, $submenu_id)
 {
     AdminMenu::newInstance()->remove_submenu_divider($menu_id, $submenu_id);
 }
-
 
 /**
  * Add submenu into items menu page
@@ -141,7 +133,6 @@ function osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = n
     AdminMenu::newInstance()->add_menu_items($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
-
 /**
  * Add submenu into items menu page
  *
@@ -155,7 +146,6 @@ function osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capabilit
 {
     AdminMenu::newInstance()->add_menu_categories($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
-
 
 /**
  * Add submenu into items menu page
@@ -171,7 +161,6 @@ function osc_admin_menu_pages($submenu_title, $url, $submenu_id, $capability = n
     AdminMenu::newInstance()->add_menu_pages($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
-
 /**
  * Add submenu into items menu page
  *
@@ -185,7 +174,6 @@ function osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capabilit
 {
     AdminMenu::newInstance()->add_menu_appearance($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
-
 
 /**
  * Add submenu into items menu page
@@ -201,7 +189,6 @@ function osc_admin_menu_plugins($submenu_title, $url, $submenu_id, $capability =
     AdminMenu::newInstance()->add_menu_plugins($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
-
 /**
  * Add submenu into items menu page
  *
@@ -215,7 +202,6 @@ function osc_admin_menu_settings($submenu_title, $url, $submenu_id, $capability 
 {
     AdminMenu::newInstance()->add_menu_settings($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
-
 
 /**
  * Add submenu into items menu page
@@ -231,7 +217,6 @@ function osc_admin_menu_tools($submenu_title, $url, $submenu_id, $capability = n
     AdminMenu::newInstance()->add_menu_tools($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
-
 /**
  * Add submenu into items menu page
  *
@@ -246,7 +231,6 @@ function osc_admin_menu_users($submenu_title, $url, $submenu_id, $capability = n
     AdminMenu::newInstance()->add_menu_users($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
 
-
 /**
  * Add submenu into items menu page
  *
@@ -260,7 +244,6 @@ function osc_admin_menu_stats($submenu_title, $url, $submenu_id, $capability = n
 {
     AdminMenu::newInstance()->add_menu_stats($submenu_title, $url, $submenu_id, $capability, $icon_url);
 }
-
 
 /**
  * @return string

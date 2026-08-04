@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 //customize Head
 function customHead()
 {
@@ -51,7 +50,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -62,7 +60,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
@@ -70,7 +67,6 @@ function addHelp()
               . 'interested in. From here, you can manage the options on how much information you want to save.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -85,7 +81,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -95,7 +90,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Latest searches Settings &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -177,7 +171,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         osc_purge_latest_searches(),
                                         array('hour', 'day', 'week', 'forever', '1000')
                                     ) ? 'value="'
-                                        . osc_esc_html(osc_purge_latest_searches()) . '"' : '')
+                                    . osc_esc_html(osc_purge_latest_searches()) . '"' : '')
                                     . ' onchange="javascript:document.getElementById(\'customPurge\').value = this.value;" />'
                                 ); ?>
                                 <div class="help-box">

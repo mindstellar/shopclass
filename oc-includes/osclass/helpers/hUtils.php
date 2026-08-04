@@ -31,7 +31,6 @@ function __get($key)
     return View::newInstance()->_get($key);
 }
 
-
 /**
  * Get variable from $_GET or $_POST
  *
@@ -43,7 +42,6 @@ function osc_get_param($key)
 {
     return Params::getParam($key);
 }
-
 
 /**
  * Generic function for view layer, return the $field of $item
@@ -82,7 +80,6 @@ function osc_field($item, $field, $locale)
     return '';
 }
 
-
 /**
  * Print all widgets belonging to $location
  *
@@ -98,7 +95,6 @@ function osc_show_widgets($location)
     }
 }
 
-
 /**
  * Print all widgets named $description
  *
@@ -113,7 +109,6 @@ function osc_show_widgets_by_description($description)
         osc_render_widget($w);
     }
 }
-
 
 /**
  * Print recaptcha html.
@@ -140,7 +135,6 @@ function osc_show_recaptcha($section = '')
     }
 }
 
-
 /**
  * @param $siteKey
  * @param $lang
@@ -150,7 +144,6 @@ function _osc_recaptcha_get_html($siteKey, $lang)
     echo '<div class="g-recaptcha" data-sitekey="' . $siteKey . '"></div>';
     echo '<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?hl=' . $lang . '"></script>';
 }
-
 
 /**
  * Resolves the active captcha provider for this request.
@@ -207,7 +200,6 @@ function osc_captcha_provider()
     return $provider;
 }
 
-
 /**
  * Whether a usable captcha provider is active (not 'none').
  *
@@ -218,7 +210,6 @@ function osc_captcha_enabled()
     return osc_captcha_provider() !== 'none';
 }
 
-
 /**
  * Whether both Cloudflare Turnstile keys are configured.
  *
@@ -228,7 +219,6 @@ function osc_turnstile_configured()
 {
     return osc_turnstile_site_key() !== '' && osc_turnstile_secret_key() !== '';
 }
-
 
 /**
  * Builds the active provider's captcha widget markup as a string.
@@ -268,7 +258,6 @@ function osc_captcha_widget_html($context = '', $deferred = false)
     }
 }
 
-
 /**
  * Echoes the active provider's captcha widget.
  *
@@ -281,7 +270,6 @@ function osc_show_captcha($context = '', $deferred = false)
 {
     echo osc_captcha_widget_html($context, $deferred);
 }
-
 
 /**
  * The active provider's client script URL.
@@ -299,7 +287,6 @@ function osc_captcha_script_url()
             return '';
     }
 }
-
 
 /**
  * Formats the date using the appropiate format.
@@ -358,7 +345,6 @@ function osc_format_date($date, $dateformat = null)
     $day_short   = array('', __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun'));
     $ampm        = array('AM' => __('AM'), 'PM' => __('PM'), 'am' => __('am'), 'pm' => __('pm'));
 
-
     $time       = strtotime($date);
     $dateformat = preg_replace('|(?<!\\\)F|', osc_escape_string($month[date('n', $time)]), $dateformat);
     $dateformat = preg_replace('|(?<!\\\)M|', osc_escape_string($month_short[date('n', $time)]), $dateformat);
@@ -369,7 +355,6 @@ function osc_format_date($date, $dateformat = null)
 
     return date($dateformat, $time);
 }
-
 
 /**
  * Escapes letters and numbers of a string
@@ -386,7 +371,6 @@ function osc_escape_string($string)
 
     return $string;
 }
-
 
 /**
  * Prints the user's account menu
@@ -437,7 +421,6 @@ function osc_private_user_menu($options = null)
 
     echo '</ul>';
 }
-
 
 /**
  * Gets prepared text, with:
@@ -491,7 +474,6 @@ function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</
 
     return $txt;
 }
-
 
 /**
  * Convert plain-text line breaks into HTML paragraphs and line breaks.
@@ -593,7 +575,6 @@ function osc_autop($text, $line_breaks = true)
     return trim($text);
 }
 
-
 /**
  * Whether this request came from a crawler rather than a person.
  *
@@ -655,7 +636,6 @@ function osc_is_bot_request()
     return $isBot = false;
 }
 
-
 /**
  * Whether this request should be counted in the listing view statistics.
  *
@@ -669,7 +649,6 @@ function osc_request_counts_as_view()
 
     return !osc_is_bot_request() || osc_count_bot_views();
 }
-
 
 /**
  *
@@ -691,7 +670,6 @@ function osc_get_http_referer()
 
     return '';
 }
-
 
 /**
  * The unguessable token that ties temp photo uploads on a listing form to the browser that
@@ -740,7 +718,6 @@ function osc_upload_token()
     return $token;
 }
 
-
 /**
  * Remember where a visitor came from across the login POST without a session.
  *
@@ -765,7 +742,6 @@ function osc_set_login_redirect($url, $keepExisting = false)
     osc_set_signed_redirect('oc_login_redirect', $url, $keepExisting);
 }
 
-
 /**
  * Read, validate and clear the login-redirect cookie set by osc_set_login_redirect().
  *
@@ -778,7 +754,6 @@ function osc_pop_login_redirect()
 {
     return osc_pop_signed_redirect('oc_login_redirect');
 }
-
 
 /**
  * Admin counterpart of osc_set_login_redirect(), under its own cookie so the front-end and
@@ -795,7 +770,6 @@ function osc_set_admin_login_redirect($url, $keepExisting = false)
     osc_set_signed_redirect('oc_admin_login_redirect', $url, $keepExisting);
 }
 
-
 /**
  * Admin counterpart of osc_pop_login_redirect(). Single-use.
  *
@@ -805,7 +779,6 @@ function osc_pop_admin_login_redirect()
 {
     return osc_pop_signed_redirect('oc_admin_login_redirect');
 }
-
 
 /**
  * Store a same-site destination in a short-lived, HMAC-signed standalone cookie — the shared
@@ -839,7 +812,6 @@ function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
     $_COOKIE[$cookieName] = $value;
 }
 
-
 /**
  * Read, validate and clear a signed-redirect cookie. Always deletes it (single-use).
  *
@@ -857,7 +829,6 @@ function osc_pop_signed_redirect($cookieName)
 
     return osc_signed_redirect_verify($value);
 }
-
 
 /**
  * Verify a signed-redirect cookie value and return its same-site URL, or '' if the value is
@@ -890,7 +861,6 @@ function osc_signed_redirect_verify($value)
     return $url;
 }
 
-
 /**
  * Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone —
  * not the session container — so it never starts a session.
@@ -921,7 +891,6 @@ function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
     setcookie($cookieName, $value, $options);
 }
 
-
 /**
  * @param        $id
  * @param        $regexp
@@ -945,7 +914,6 @@ function osc_add_route(
     Rewrite::newInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
 }
 
-
 /**
  * Register a controller route dispatched by class instead of by file.
  *
@@ -961,7 +929,6 @@ function osc_add_route_hook($id, $regexp, $url)
 {
     Rewrite::newInstance()->addRouteHook($id, $regexp, $url);
 }
-
 
 /**
  *
@@ -1042,7 +1009,6 @@ function osc_openstreet_geocode_url($address)
         . urlencode($address) . '&key='.osc_openstreet_api_key();
 }
 
-
 /**
  * Get URL of location files JSON.
  *
@@ -1052,7 +1018,6 @@ function osc_get_locations_json_url()
 {
     return 'https://raw.githubusercontent.com/mindstellar/geodata/master/src/json-list.json';
 }
-
 
 /**
  * Get URL of location SQL.

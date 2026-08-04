@@ -25,7 +25,6 @@ function customPageHeader()
     <?php
 }
 
-
 //customize Head
 function customHead()
 {
@@ -58,7 +57,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -70,7 +68,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Plugins &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 

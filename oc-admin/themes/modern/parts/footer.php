@@ -1,6 +1,6 @@
                         <?php if (!defined('OC_ADMIN')) {
-                            exit('Direct access is not allowed.');
-                        } ?>
+    exit('Direct access is not allowed.');
+} ?>
                     </div>
                     <div class="clear"></div>
                 </div>

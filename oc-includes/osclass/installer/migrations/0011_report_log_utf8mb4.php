@@ -30,7 +30,7 @@ use mindstellar\migration\MigrationInterface;
  * Idempotent: skips when the table is absent, and CONVERT TO on an
  * already-utf8mb4 table is a no-op.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_report_log';

@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -407,7 +409,7 @@ class CAdminPlugins extends AdminSecBaseModel
                             $sStatusWord   = __('Disabled');
                         }
                     }
-                    $row['plugin_status']= $plugin_status;
+                    $row['plugin_status'] = $plugin_status;
                     $row[]   =
                         '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
                         . $pInfo['plugin_name'] . $sHelp . '<div>' . $sUpdate . '</div>';
@@ -453,7 +455,6 @@ class CAdminPlugins extends AdminSecBaseModel
                         $this->redirectTo($url);
                     }
                 }
-
 
                 $this->_exportVariableToView('aPlugins', $array);
                 $this->doView('plugins/index.php');

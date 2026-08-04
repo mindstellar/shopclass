@@ -21,7 +21,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 osc_add_hook('admin_page_header', 'customPageHeader');
@@ -35,7 +34,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -45,7 +43,6 @@ function customPageTitle($string)
 {
     return sprintf(__('User Settings &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 

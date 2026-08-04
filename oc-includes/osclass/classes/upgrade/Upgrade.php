@@ -52,7 +52,6 @@ class Upgrade
      */
     private $objPackage;
 
-
     /**
      * Upgrade constructor.
      *

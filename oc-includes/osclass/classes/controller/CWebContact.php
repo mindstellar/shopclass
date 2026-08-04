@@ -100,7 +100,6 @@ MESSAGE;
                     'body'     => nl2br($message)
                 );
 
-
                 $error = false;
                 if (osc_contact_attachment() && Params::getParam('attachment')) {
                     $attachment = Params::getFiles('attachment');

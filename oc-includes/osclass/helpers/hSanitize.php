@@ -35,7 +35,6 @@ function osc_sanitize_url($value)
     return filter_var($value, FILTER_SANITIZE_URL);
 }
 
-
 /**
  * Sanitize a string.
  *
@@ -47,7 +46,6 @@ function osc_sanitize_string($value)
 {
     return osc_sanitizeString($value);
 }
-
 
 /**
  * Sanitize capitalization for a string.
@@ -62,7 +60,6 @@ function osc_sanitize_name($value)
 {
     return ucwords(osc_sanitize_allcaps(trim($value)));
 }
-
 
 /**
  * Sanitize string that's all-caps
@@ -80,7 +77,6 @@ function osc_sanitize_allcaps($value)
     return $value;
 }
 
-
 /**
  * Sanitize a username
  *
@@ -92,7 +88,6 @@ function osc_sanitize_username($value)
 {
     return preg_replace('/(_+)/', '_', preg_replace('/([^0-9A-Za-z_]*)/', '', str_replace(' ', '_', trim($value))));
 }
-
 
 /**
  * Sanitize number (with no periods)
@@ -109,7 +104,6 @@ function osc_sanitize_int($value)
 
     return $value;
 }
-
 
 /**
  * Format phone number. Supports 10-digit with extensions,
@@ -150,7 +144,6 @@ function osc_sanitize_phone($value)
     return $ext ? $value . ' x' . $ext : $value;
 }
 
-
 /**
  * Escape html
  *
@@ -187,7 +180,6 @@ function osc_esc_html($str = '')
 
     return $str;
 }
-
 
 /**
  * Escape single quotes, double quotes, <, >, & and line endings

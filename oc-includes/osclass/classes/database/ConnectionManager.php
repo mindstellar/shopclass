@@ -178,7 +178,6 @@ class ConnectionManager
 
         $this->setCharset('utf8mb4');
 
-
         if (!$this->dbName) {
             return true;
         }

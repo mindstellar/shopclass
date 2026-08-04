@@ -21,7 +21,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 osc_add_hook('admin_page_header', 'customPageHeader');
@@ -35,7 +34,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -45,7 +43,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Add plugin &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -78,7 +75,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <p class="text">
                     <?php _e('The plugin folder is not writable on your server so you cannot upload '
                              . 'plugins from the administration panel. Please make the folder writable and try again.');
-                    ?>
+                ?>
                 </p>
                 <p class="text">
                     <?php _e('To make the directory writable under UNIX execute this command from the shell:'); ?>

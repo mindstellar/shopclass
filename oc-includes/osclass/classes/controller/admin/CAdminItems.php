@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -818,7 +820,6 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
                 }
 
-
                 $iUpdated += osc_set_preference('enabled_recaptcha_items', $enabledRecaptchaItems);
                 if ($moderateItems) {
                     $iUpdated += osc_set_preference('moderate_items', $numModerateItems);
@@ -899,7 +900,6 @@ class CAdminItems extends AdminSecBaseModel
                     }
                 }
 
-
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
 
@@ -954,7 +954,6 @@ class CAdminItems extends AdminSecBaseModel
                         $this->redirectTo($url);
                     }
                 }
-
 
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());

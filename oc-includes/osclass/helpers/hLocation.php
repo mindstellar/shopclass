@@ -34,7 +34,6 @@ function osc_country()
     return null;
 }
 
-
 /**
  * Gets current region
  *
@@ -48,7 +47,6 @@ function osc_region()
 
     return null;
 }
-
 
 /**
  * Gets current city
@@ -64,7 +62,6 @@ function osc_city()
     return null;
 }
 
-
 /**
  * Gets current city area
  *
@@ -79,7 +76,6 @@ function osc_city_area()
     return null;
 }
 
-
 /**
  * Iterator for countries, return null if there's no more countries
  *
@@ -93,7 +89,6 @@ function osc_has_countries()
 
     return View::newInstance()->_next('countries');
 }
-
 
 /**
  * Iterator for regions, return null if there's no more regions
@@ -110,7 +105,6 @@ function osc_has_regions($country = '%%%%')
 
     return View::newInstance()->_next('regions');
 }
-
 
 /**
  * Iterator for cities, return null if there's no more cities
@@ -132,7 +126,6 @@ function osc_has_cities($region = '%%%%')
 
     return $result;
 }
-
 
 /**
  * Iterator for city areas, return null if there's no more city areas
@@ -158,7 +151,6 @@ function osc_has_city_areas($city = '%%%%')
     return $result;
 }
 
-
 /**
  * Gets number of countries
  *
@@ -173,7 +165,6 @@ function osc_count_countries()
 
     return View::newInstance()->_count('countries');
 }
-
 
 /**
  * Gets number of regions
@@ -194,7 +185,6 @@ function osc_count_regions($country = '%%%%')
     return View::newInstance()->_count('regions');
 }
 
-
 /**
  * Gets number of cities
  *
@@ -210,7 +200,6 @@ function osc_count_cities($region = '%%%%')
 
     return View::newInstance()->_count('cities');
 }
-
 
 /**
  * Gets number of city areas
@@ -231,7 +220,6 @@ function osc_count_city_areas($city = '%%%%')
     return View::newInstance()->_count('city_areas');
 }
 
-
 /**
  * Gets country's name
  *
@@ -241,7 +229,6 @@ function osc_country_name()
 {
     return osc_field(osc_country(), 'country_name', '');
 }
-
 
 /**
  * Gets country's items
@@ -253,7 +240,6 @@ function osc_country_items()
     return osc_field(osc_country(), 'items', '');
 }
 
-
 /**
  * Gets region's name
  *
@@ -263,7 +249,6 @@ function osc_region_name()
 {
     return osc_field(osc_region(), 'region_name', '');
 }
-
 
 /**
  * Gets region's items
@@ -275,7 +260,6 @@ function osc_region_items()
     return osc_field(osc_region(), 'items', '');
 }
 
-
 /**
  * Gets city's name
  *
@@ -285,7 +269,6 @@ function osc_city_name()
 {
     return osc_field(osc_city(), 'city_name', '');
 }
-
 
 /**
  * Gets city's items
@@ -297,7 +280,6 @@ function osc_city_items()
     return osc_field(osc_city(), 'items', '');
 }
 
-
 /**
  * Gets city area's name
  *
@@ -307,7 +289,6 @@ function osc_city_area_name()
 {
     return osc_field(osc_city_area(), 'city_area_name', '');
 }
-
 
 /**
  * Gets city area's items
@@ -319,7 +300,6 @@ function osc_city_area_items()
     return osc_field(osc_city_area(), 'items', '');
 }
 
-
 /**
  * Gets country's url
  *
@@ -329,7 +309,6 @@ function osc_country_url()
 {
     return osc_search_url(array('sCountry' => osc_country_name()));
 }
-
 
 /**
  * Gets region's url
@@ -341,7 +320,6 @@ function osc_region_url()
     return osc_search_url(array('sRegion' => osc_region_name()));
 }
 
-
 /**
  * Gets city's url
  *
@@ -352,7 +330,6 @@ function osc_city_url()
     return osc_search_url(array('sCity' => osc_city_name()));
 }
 
-
 /**
  * Gets city area's url
  *
@@ -362,7 +339,6 @@ function osc_city_area_url()
 {
     return osc_search_url(array('sCityArea' => osc_city_area_name()));
 }
-
 
 /**
  * Install Json locations from official repositories
@@ -378,7 +354,8 @@ function osc_install_json_locations($location = null)
          *
          */
         $locationsObj = json_decode(
-            osc_file_get_contents('https://raw.githubusercontent.com/mindstellar/geodata/master/src/json/' . rawurlencode($location)), false
+            osc_file_get_contents('https://raw.githubusercontent.com/mindstellar/geodata/master/src/json/' . rawurlencode($location)),
+            false
         );
         if ($locationsObj) {
             $countries = Country::newInstance();

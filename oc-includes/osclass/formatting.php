@@ -30,12 +30,11 @@ function add_slashes_extended($array)
     return $array;
 }
 
-
-    /**
-     * @param $string
-     *
-     * @return mixed|null|string|string[]
-     */
+/**
+ * @param $string
+ *
+ * @return mixed|null|string|string[]
+ */
 function osc_sanitizeString($string)
 {
     $string = strip_tags($string);
@@ -66,19 +65,18 @@ function osc_sanitizeString($string)
     return $string;
 }
 
+/**
+ * @param $string
+ *
+ * @return mixed|null|string|string[]
+ */
 
-    /**
-     * @param $string
-     *
-     * @return mixed|null|string|string[]
-     */
-    
 function remove_accents($string)
 {
     if (! preg_match('/[\x80-\xff]/', $string)) {
         return $string;
     }
- 
+
     if (is_utf8($string)) {
         $chars = array(
             // Decompositions for Latin-1 Supplement
@@ -408,12 +406,12 @@ function remove_accents($string)
             'Ǜ' => 'U',
             'ǜ' => 'u',
         );
- 
+
         // Used for locale-specific rules
         $locale = osc_current_user_locale();
- 
+
         if ('de_DE' === $locale || 'de_DE_formal' === $locale || 'de_CH' === $locale || 'de_CH_informal'
-            === $locale ) {
+            === $locale) {
             $chars['Ä'] = 'Ae';
             $chars['ä'] = 'ae';
             $chars['Ö'] = 'Oe';
@@ -434,7 +432,7 @@ function remove_accents($string)
             $chars['Đ'] = 'DJ';
             $chars['đ'] = 'dj';
         }
- 
+
         $string = strtr($string, $chars);
     } else {
         $chars = array();
@@ -449,26 +447,24 @@ function remove_accents($string)
             . "\xec\xed\xee\xef\xf1\xf2\xf3"
             . "\xf4\xf5\xf6\xf8\xf9\xfa\xfb"
             . "\xfc\xfd\xff";
- 
+
         $chars['out'] = 'EfSZszYcYuAAAAAACEEEEIIIINOOOOOOUUUUYaaaaaaceeeeiiiinoooooouuuuyy';
- 
+
         $string              = strtr($string, $chars['in'], $chars['out']);
         $double_chars        = array();
         $double_chars['in']  = array( "\x8c", "\x9c", "\xc6", "\xd0", "\xde", "\xdf", "\xe6", "\xf0", "\xfe" );
         $double_chars['out'] = array( 'OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th' );
         $string              = str_replace($double_chars['in'], $double_chars['out'], $string);
     }
- 
+
     return $string;
 }
 
-
-
-    /**
-     * @param $string
-     *
-     * @return false|int
-     */
+/**
+ * @param $string
+ *
+ * @return false|int
+ */
 function is_utf8($string)
 {
     return preg_match('%^(?:

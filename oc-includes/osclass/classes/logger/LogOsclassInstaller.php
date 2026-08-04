@@ -32,7 +32,7 @@ class LogOsclassInstaller extends Logger
     public static function newInstance()
     {
         if (!isset(self::$instance)) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

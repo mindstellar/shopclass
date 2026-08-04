@@ -38,7 +38,6 @@ class SecBaseModel extends BaseModel
         }
     }
 
-
     public function logout()
     {
         //destroying session

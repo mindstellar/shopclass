@@ -242,7 +242,7 @@ $ins_i18n = array(
                             </p>
                             <?php
                         }
-                        ?>
+            ?>
                     </div>
                 </div>
                 <div class="ins-card-footer">

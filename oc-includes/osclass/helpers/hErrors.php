@@ -70,7 +70,6 @@ function osc_die($title, $message, $options = array())
     die();
 }
 
-
 /**
  * @param      $param
  * @param bool $htmlencode
@@ -97,7 +96,6 @@ function getErrorParam($param, $htmlencode = false, $quotes_encode = true)
     return $value;
 }
 
-
 /**
  * @param $array
  *
@@ -115,7 +113,6 @@ function strip_slashes_extended_e($array)
 
     return $array;
 }
-
 
 /**
  * @return string

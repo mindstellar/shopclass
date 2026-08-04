@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 // The widget editor now opens inline in this page, so the editor's dependencies
 // have to be present here rather than only on the standalone add/edit screen.
 osc_enqueue_script('tiny_mce');
@@ -25,7 +24,6 @@ function addHelp()
 {
     echo '<p>' . __("Modify your site's header or footer here.") . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -40,7 +38,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -50,7 +47,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Appearance &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -72,8 +68,12 @@ foreach (osc_widget_types() as $typeId => $typeSpec) {
     $paletteTypes[$typeSpec['group']][$typeId] = $typeSpec;
 }
 uksort($paletteTypes, static function ($a, $b) {
-    if ($a === 'Legacy') { return 1; }
-    if ($b === 'Legacy') { return -1; }
+    if ($a === 'Legacy') {
+        return 1;
+    }
+    if ($b === 'Legacy') {
+        return -1;
+    }
     return strcasecmp($a, $b);
 });
 $locations = (isset($info['locations']) && is_array($info['locations'])) ? $info['locations'] : array();

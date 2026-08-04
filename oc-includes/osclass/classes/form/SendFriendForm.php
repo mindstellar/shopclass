@@ -17,7 +17,6 @@
  */
 class SendFriendForm extends Form
 {
-
     /*static public function primary_input_hidden($page) {
         parent::generic_input_hidden("id", $page["pk_i_id"]);
     }*/
@@ -103,7 +102,9 @@ class SendFriendForm extends Form
     {
         // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
         // external helper so it runs on any public theme.
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script type="text/javascript">
             (function () {
@@ -152,6 +153,8 @@ class SendFriendForm extends Form
             })();
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'send_friend_form_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'send_friend_form_js');
+        }
     }
 }

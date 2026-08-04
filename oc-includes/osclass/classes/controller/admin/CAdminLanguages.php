@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -90,7 +92,7 @@ class CAdminLanguages extends AdminSecBaseModel
 
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;
-            case('import_locations'):
+            case ('import_locations'):
                 $languageToImport = Params::getParam('language');
                 if ($languageToImport != '') {
                     if (defined('DEMO')) {
@@ -402,8 +404,10 @@ class CAdminLanguages extends AdminSecBaseModel
                         $isCurrentLanguage = (osc_current_admin_locale() === $code);
                         if ($isDefaultLanguage || $isCurrentLanguage) {
                             if ($isCurrentLanguage) {
-                                osc_add_flash_warning_message(_m('The current language can\'t be deleted. Please logout and login again with another language.'),
-                                                              'admin');
+                                osc_add_flash_warning_message(
+                                    _m('The current language can\'t be deleted. Please logout and login again with another language.'),
+                                    'admin'
+                                );
                             } else {
                                 osc_add_flash_error_message(
                                     sprintf(
@@ -419,9 +423,9 @@ class CAdminLanguages extends AdminSecBaseModel
                         } elseif ($this->localeManager->deleteLocale($code)) {
                             if (!osc_deleteDir(osc_translations_path() . $code)) {
                                 osc_add_flash_error_message(sprintf(
-                                                                _m("Directory '%s' couldn't be removed"),
-                                                                $code
-                                                            ), 'admin');
+                                    _m("Directory '%s' couldn't be removed"),
+                                    $code
+                                ), 'admin');
                             } else {
                                 osc_add_flash_ok_message(
                                     sprintf(_m('Directory "%s" has been successfully removed'), $code),

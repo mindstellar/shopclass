@@ -22,7 +22,6 @@
  */
 class UsersDataTable extends DataTable
 {
-
     private $withUserId;
     private $search;
     private $column_names;
@@ -144,7 +143,7 @@ class UsersDataTable extends DataTable
             $this->withFilters = true;
         }
         # condition for s_username
-        if (isset($_get['s_username']) && $_get['s_username'] !='') {
+        if (isset($_get['s_username']) && $_get['s_username'] != '') {
             $this->conditions['s_username'] = str_replace('*', '%', $_get['s_username']);
             $this->withFilters              = true;
         }
@@ -183,7 +182,6 @@ class UsersDataTable extends DataTable
             $this->conditions['b_active'] = $_get['b_active'];
             $this->withFilters            = true;
         }
-
 
         // set start and limit using iPage param
         $start = ($this->iPage - 1) * $_get['iDisplayLength'];

@@ -190,7 +190,6 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
     return is_array($owner) && !empty($owner);
 }
 
-
 /*
  * -------------------------------------------------------------------------
  * Unified media library (read layer over both resource tables)
@@ -222,7 +221,6 @@ function osc_media_owner_types(): array
 
     return $out;
 }
-
 
 /**
  * A page of normalised media rows plus the total for a filter. $type is 'all',
@@ -266,7 +264,6 @@ function osc_media_library_query(string $type, int $iPage, int $perPage): array
 
     return array('rows' => $rows, 'total' => $total);
 }
-
 
 /**
  * The thumbnail and full URLs for a normalised media row (see

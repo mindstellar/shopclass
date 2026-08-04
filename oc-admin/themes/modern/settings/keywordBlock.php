@@ -19,7 +19,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -35,7 +34,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -47,7 +45,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Keyword blocklist &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -115,7 +112,6 @@ function customHead()
     </script>
     <?php
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -291,14 +287,16 @@ function showingResults()
 {
     $aData = __get('aData');
     echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing((Params::getParam('iPage') - 1)
+         . osc_pagination_showing(
+             (Params::getParam('iPage') - 1)
                                   * $aData['iDisplayLength'] + 1,
-                                  ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                   + count($aData['aRows']),
-                                  $aData['iTotalDisplayRecords'], $aData['iTotalRecords'])
+             $aData['iTotalDisplayRecords'],
+             $aData['iTotalRecords']
+         )
          . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

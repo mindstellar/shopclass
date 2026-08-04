@@ -22,7 +22,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 //customize Head
 function customHead()
@@ -112,7 +111,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -124,7 +122,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Edit email template &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -155,7 +152,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 </div>
                             </div>
                             <?php PageForm::printMultiLangTitleDesc($email, false)
-                            ?>
+?>
                         </div>
                         <div class="clear"></div>
                         <div class="form-actions form-inline">

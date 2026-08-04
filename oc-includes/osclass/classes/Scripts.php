@@ -20,7 +20,6 @@ use mindstellar\utility\Deprecate;
  */
 class Scripts extends Dependencies
 {
-
     private static $instance;
     /**
      * Keep an array of loaded scripts
@@ -94,7 +93,7 @@ class Scripts extends Dependencies
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

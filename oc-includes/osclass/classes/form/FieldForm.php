@@ -665,7 +665,9 @@ class FieldForm extends Form
             return;
         }
         $printed = true;
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script type="text/javascript">
             (function () {
@@ -818,9 +820,9 @@ class FieldForm extends Form
         }
         echo '</div>';
     }
-     /**
-     * Print MultiLang Tab
-     */
+    /**
+    * Print MultiLang Tab
+    */
     private function printMultiLangTab($locales, $activeLocaleCode)
     {
         if ($locales > 1) {

@@ -21,7 +21,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -38,7 +37,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -50,7 +48,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Manage users &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -85,7 +82,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 $aData          = __get('aData');
@@ -108,19 +104,19 @@ $withFilters = __get('withFilters');
                         <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
                                value="<?php echo osc_esc_html($value); ?>"/>
                     <?php }
-                } ?>
+                    } ?>
                 <select name="iDisplayLength" class="form-select form-select-sm"
                         onchange="this.form.submit();">
                     <option value="10"><?php printf(__('%d users'), 10); ?></option>
                     <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d users'), 25); ?></option>
+                    } ?> ><?php printf(__('%d users'), 25); ?></option>
                     <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
                         echo 'selected';
-                                       } ?> ><?php printf(__('%d users'), 50); ?></option>
+                    } ?> ><?php printf(__('%d users'), 50); ?></option>
                     <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
                         echo 'selected';
-                                        } ?> ><?php printf(__('%d users'), 100); ?></option>
+                    } ?> ><?php printf(__('%d users'), 100); ?></option>
                 </select>
             </form>
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
@@ -136,7 +132,7 @@ $withFilters = __get('withFilters');
                            class="btn btn-dim"><?php _e('Reset filters'); ?></a>
                     <?php } ?>
                     <?php // One class or the other, never both — see items/index.php. Red is for destructive
-                          // actions; "a filter is applied" is a state. ?>
+                          // actions; "a filter is applied" is a state.?>
                     <a data-osc-dialog-open="#display-filters" href="#"
                        class="btn <?php echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>"
                        title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
@@ -152,8 +148,12 @@ $withFilters = __get('withFilters');
 
             <div id="bulk-actions">
                 <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions('bulk_actions', 'action', __get('bulk_options'),
-                                                 'select-box-extra'); ?>
+                    <?php osc_print_bulk_actions(
+                        'bulk_actions',
+                        'action',
+                        __get('bulk_options'),
+                        'select-box-extra'
+                    ); ?>
                     <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
                 </div>
             </div>
@@ -173,13 +173,15 @@ $withFilters = __get('withFilters');
                     <tbody>
                     <?php if (count($rows) > 0) { ?>
                         <?php foreach ($rows as $key => $row) { ?>
-                            <tr class="<?php echo implode(' ',
-                                                          osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row)); ?>">
+                            <tr class="<?php echo implode(
+                                ' ',
+                                osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row)
+                            ); ?>">
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                          // `users_processing_row` filter still hands plugins the plain word. ?>
+                                              // `users_processing_row` filter still hands plugins the plain word.?>
                                     <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
-                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                            echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>
                                 <?php } ?>
                             </tr>
@@ -201,14 +203,16 @@ $withFilters = __get('withFilters');
 function showingResults()
 {
     $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing((Params::getParam('iPage') - 1)
+    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
+        (Params::getParam('iPage') - 1)
                                                                            * $aData['iDisplayLength'] + 1,
-                                                                           ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+        ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                                                            + count($aData['aRows']),
-                                                                           $aData['iTotalDisplayRecords'], $aData['iTotalRecords'])
+        $aData['iTotalDisplayRecords'],
+        $aData['iTotalRecords']
+    )
          . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

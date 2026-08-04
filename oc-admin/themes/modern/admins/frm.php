@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 $admin = __get('admin');
 /**
  * @return array
@@ -37,14 +36,12 @@ function customFrmText()
     return $return;
 }
 
-
 function customPageHeader()
 {
     ?>
     <h1><?php _e('Users'); ?></h1>
     <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -61,7 +58,6 @@ function customPageTitle($string)
 
     return sprintf('%s &raquo; %s', $aux['title'], $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -103,7 +99,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <p class="help-inline">
                                     <em><?php _e('Administrators have total control over all aspects of your installation, '
                                                  . 'while moderators are only allowed to moderate listings, comments and media files');
-                                        ?></em>
+                        ?></em>
                                 </p>
                             </div>
                         </div>

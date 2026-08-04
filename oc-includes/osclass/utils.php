@@ -35,7 +35,6 @@ function osc_isExpired($dt_expiration)
     return !($dt_expiration > $now);
 }
 
-
 /**
  * Remove resources from disk
  *
@@ -95,7 +94,7 @@ function osc_deleteResource($id, $admin)
                 ];
                 foreach ($filesToRemove as $file) {
                     if (file_exists($file) && !is_dir($file)) {
-                        (new mindstellar\utility\FileSystem)->remove($file);
+                        (new mindstellar\utility\FileSystem())->remove($file);
                     }
                 }
             } catch (Exception $e) {
@@ -108,7 +107,6 @@ function osc_deleteResource($id, $admin)
     }
 }
 
-
 /**
  * Tries to delete the directory recursively.
  *
@@ -120,7 +118,6 @@ function osc_deleteDir($path)
 {
     return (new FileSystem())->deleteDir($path);
 }
-
 
 /**
  * Serialize the data (usefull at plugins activation)
@@ -140,7 +137,6 @@ function osc_serialize($data)
     return $data;
 }
 
-
 /**
  * Unserialize the data (usefull at plugins activation)
  *
@@ -156,7 +152,6 @@ function osc_unserialize($data)
 
     return $data;
 }
-
 
 /**
  * Checks is $data is serialized or not
@@ -198,7 +193,6 @@ function is_serialized($data)
     return false;
 }
 
-
 /**
  * VERY BASIC
  * Perform a POST request, so we could launch fake-cron calls and other core-system calls without annoying the user
@@ -212,7 +206,6 @@ function osc_doRequest($url, $_data)
 {
     return Utils::doRequest($url, $_data);
 }
-
 
 /**
  * @param $params
@@ -406,7 +399,6 @@ function osc_sendMail($params)
     return true;
 }
 
-
 /**
  * @param $text
  * @param $params
@@ -437,7 +429,6 @@ function osc_mailBeauty($text, $params)
     return $text;
 }
 
-
 /**
  * @param      $dir
  * @param int  $mode
@@ -459,7 +450,6 @@ function osc_mkdir($dir, $mode = 0755, $recursive = true)
     return true;
 }
 
-
 /**
  * @param       $source
  * @param       $dest
@@ -478,7 +468,6 @@ function osc_copy($source, $dest)
 
     return true;
 }
-
 
 /**
  * @param $file1
@@ -501,7 +490,6 @@ function osc_copyemz($file1, $file2)
 
     return $status;
 }
-
 
 /**
  * Dump osclass database into path file
@@ -611,7 +599,6 @@ function osc_dbdump($path, $file)
     return 1;
 }
 
-
 /**
  * Returns true if there is curl on system environment
  *
@@ -622,7 +609,6 @@ function testCurl()
 {
     return !(!function_exists('curl_init') || !function_exists('curl_exec'));
 }
-
 
 /**
  * Returns true if there is fsockopen on system environment
@@ -638,7 +624,6 @@ function testFsockopen()
 
     return true;
 }
-
 
 /**
  * IF http-chunked-decode not exist implement here
@@ -660,9 +645,9 @@ if (!function_exists('http_chunked_decode')) {
         $dechunk = null;
         while (($pos < $len)
                && ($chunkLenHex = substr(
-                $chunk,
-                $pos,
-                ($newlineAt = strpos($chunk, "\n", $pos + 1)) - $pos
+                   $chunk,
+                   $pos,
+                   ($newlineAt = strpos($chunk, "\n", $pos + 1)) - $pos
                ))) {
             if (!is_hex($chunkLenHex)) {
                 trigger_error('Value is not properly chunk encoded', E_USER_WARNING);
@@ -701,7 +686,6 @@ function is_hex($hex)
     return ($hex === dechex($dec));
 }
 
-
 /**
  * Process response and return headers and body
  *
@@ -722,7 +706,6 @@ function processResponse($content)
 
     return array('headers' => $headers, 'body' => $body);
 }
-
 
 /**
  * Parse headers and return into array format
@@ -748,7 +731,6 @@ function processHeaders($headers)
 
     return $headers;
 }
-
 
 /**
  * Download file using fsockopen
@@ -844,7 +826,6 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
     return false;
 }
 
-
 /**
  *
  * @param      $sourceFile
@@ -865,7 +846,6 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
 
     return true;
 }
-
 
 /**
  * Shopclass file_get_contents implementation
@@ -891,7 +871,6 @@ function osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $tim
     }
 }
 
-
 /**
  * Check if we loaded some specific module of apache
  *
@@ -904,7 +883,6 @@ function apache_mod_loaded($mod)
     return Utils::apacheModLoaded($mod);
 }
 
-
 /**
  * Change version to param number
  *
@@ -914,7 +892,6 @@ function osc_changeVersionTo($version = null)
 {
     Utils::changeOsclassVersionTo($version);
 }
-
 
 /**
  * Whether the in-app self-updater (downloading a package and overwriting core
@@ -935,7 +912,6 @@ function osc_self_update_disabled()
     return filter_var(getenv('OSC_DISABLE_SELF_UPDATE'), FILTER_VALIDATE_BOOLEAN);
 }
 
-
 /**
  * @param $array
  *
@@ -945,7 +921,6 @@ function strip_slashes_extended($array)
 {
     return Utils::stripSlashesExtended($array);
 }
-
 
 /**
  * Unzip's a specified ZIP file to a location
@@ -970,7 +945,6 @@ function osc_unzip_file($file, $to)
     }
 }
 
-
 /**
  * Common interface to zip a specified folder to a file using ziparchive or pclzip
  *
@@ -983,7 +957,6 @@ function osc_zip_folder($archive_folder, $archive_name)
 {
     return (new \mindstellar\utility\Zip())->zipFolder($archive_folder, $archive_name);
 }
-
 
 /**
  * @return bool
@@ -1001,7 +974,6 @@ function osc_check_recaptcha()
 
     return false;
 }
-
 
 /**
  * Verifies the submitted captcha token for the active provider.
@@ -1048,7 +1020,6 @@ function osc_check_captcha()
     }
 }
 
-
 /**
  * replace double slash with single slash
  *
@@ -1060,7 +1031,6 @@ function osc_replace_double_slash($path)
 {
     return Utils::replaceDoubleSlash($path);
 }
-
 
 /**
  * @param mixed|string $dir
@@ -1120,7 +1090,6 @@ function osc_check_dir_writable($dir = ABS_PATH)
 
     return true;
 }
-
 
 /**
  * @param mixed|string $dir
@@ -1191,7 +1160,6 @@ function osc_change_permissions($dir = ABS_PATH)
     return true;
 }
 
-
 /**
  * @param mixed|string $dir
  *
@@ -1227,7 +1195,6 @@ function osc_save_permissions($dir = ABS_PATH)
     return $perms;
 }
 
-
 /**
  * @param $price
  *
@@ -1237,7 +1204,6 @@ function osc_prepare_price($price)
 {
     return Utils::preparePrice($price);
 }
-
 
 /**
  * Recursive glob function
@@ -1268,7 +1234,6 @@ function rglob($pattern, $flags = 0, $path = '')
     return $files;
 }
 
-
 /**
  * Market util functions
  *
@@ -1288,7 +1253,6 @@ function osc_check_plugin_update($update_uri, $version = null)
     return false;
 }
 
-
 /**
  * @param string $update_uri
  * @param null   $version
@@ -1305,7 +1269,6 @@ function osc_check_theme_update($update_uri, $version = null)
 
     return false;
 }
-
 
 /**
  * @param string $update_uri
@@ -1344,7 +1307,6 @@ function osc_check_language_update($update_uri, $version = null, $disable = true
     return false;
 }
 
-
 /**
  * @param      $type
  * @param      $update_uri
@@ -1370,7 +1332,6 @@ function _get_market_url($type, $update_uri, $disable = true)
             return false;
         }
 
-
         /** @var string $uri */
         $uri = $update_uri;
 
@@ -1379,7 +1340,6 @@ function _get_market_url($type, $update_uri, $disable = true)
 
     return false;
 }
-
 
 /**
  * @param      $uri
@@ -1409,7 +1369,6 @@ function _need_update($uri, $version, $disable = true)
 
     return false;
 }
-
 
 /**
  * Returns
@@ -1447,7 +1406,6 @@ function version_compare2($a, $b)
     return (count($aA) < count($aB)) ? -1 : 0;
 }
 
-
 /**
  * Update category stats
  *
@@ -1458,7 +1416,6 @@ function osc_update_cat_stats()
     Utils::updateAllCategoriesStats();
 }
 
-
 /**
  * Recount items for a given a category id
  *
@@ -1468,7 +1425,6 @@ function osc_update_cat_stats_id($id)
 {
     Utils::updateCategoryStatsById($id);
 }
-
 
 /**
  * Update locations stats. I moved this function from cron.daily.php:update_location_stats
@@ -1484,7 +1440,6 @@ function osc_update_location_stats($force = false, $limit = 1000)
     return Utils::updateLocationStats($force, $limit);
 }
 
-
 /**
  * Translate current categories to new locale
  *
@@ -1495,7 +1450,6 @@ function osc_translate_categories($locale)
     Utils::translateCategories($locale);
 }
 
-
 /**
  * @return string
  */
@@ -1503,7 +1457,6 @@ function get_ip()
 {
     return Utils::getClientIp();
 }
-
 
 /**
  * @param      $url
@@ -1513,7 +1466,6 @@ function osc_redirect_to($url, $code = null)
 {
     Utils::redirectTo($url, $code);
 }
-
 
 /**
  * @param $type
@@ -1525,7 +1477,6 @@ function osc_calculate_location_slug($type)
     return Utils::calculateLocationSlug($type);
 }
 
-
 /**
  * @param $input
  */
@@ -1533,7 +1484,6 @@ function osc_prune_array(&$input)
 {
     Utils::pruneArray($input);
 }
-
 
 /**
  * @param        $section
@@ -1576,7 +1526,6 @@ function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS
     return false;
 }
 
-
 /**
  * @return bool
  */
@@ -1584,7 +1533,6 @@ function osc_is_ssl()
 {
     return Utils::isSsl();
 }
-
 
 if (!function_exists('hex2b64')) {
 

@@ -24,7 +24,7 @@ use mindstellar\migration\MigrationInterface;
  * ALTER builds the index and can take a while; FULLTEXT index creation always
  * scans the table.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_description';

@@ -123,8 +123,13 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Appearance'), osc_admin_base_url(true) . '?page=appearance', 'appearance', 'administrator',
-                        'bi bi-palette');
+        $this->add_menu(
+            __('Appearance'),
+            osc_admin_base_url(true) . '?page=appearance',
+            'appearance',
+            'administrator',
+            'bi bi-palette'
+        );
         $this->add_submenu(
             'appearance',
             __('Manage themes'),
@@ -149,8 +154,13 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Statistics'), osc_admin_base_url(true) . '?page=stats&action=items', 'stats', 'moderator',
-                        'bi bi-bar-chart');
+        $this->add_menu(
+            __('Statistics'),
+            osc_admin_base_url(true) . '?page=stats&action=items',
+            'stats',
+            'moderator',
+            'bi bi-bar-chart'
+        );
         $this->add_submenu(
             'stats',
             __('Listings'),
@@ -280,8 +290,13 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Pages'), osc_admin_base_url(true) . '?page=pages', 'pages', 'administrator',
-                        'bi bi-file-earmark-text');
+        $this->add_menu(
+            __('Pages'),
+            osc_admin_base_url(true) . '?page=pages',
+            'pages',
+            'administrator',
+            'bi bi-file-earmark-text'
+        );
 
         $this->add_menu(__('Users'), osc_admin_base_url(true) . '?page=users', 'users', 'moderator', 'bi bi-people');
         $this->add_submenu(
@@ -446,7 +461,7 @@ class AdminMenu
         $aMenu     = $adminMenu->get_array_menu();
 
         $is_moderator = osc_is_moderator();
-// find current menu section
+        // find current menu section
         $current_menu    = '';
         $current_submenu = '';
         $priority        = 0;
@@ -520,7 +535,6 @@ class AdminMenu
         $sMenu .= '<ul id="dashboard-menu" class="oscmenu col-md-12 nav nav-pills flex-column">' .
                   PHP_EOL;
 
-
         foreach ($aMenu as $key => $value) {
             $menuId = $key;
             $active = false;
@@ -540,7 +554,7 @@ class AdminMenu
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

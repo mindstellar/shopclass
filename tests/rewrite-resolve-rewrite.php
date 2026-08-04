@@ -56,8 +56,8 @@ harness_section('resolveRewrite — rule rewrite + param extraction');
 $r = resolve_rewrite($rules, 'listing/42');
 check('not a 404', $r['not_found'] === false);
 pin('uri rewritten to target', 'index.php?page=item&id=42', $r['uri']);
-pin('page param extracted',    'item', $r['params']['page'] ?? null);
-pin('id param extracted',      '42',   $r['params']['id'] ?? null);
+pin('page param extracted', 'item', $r['params']['page'] ?? null);
+pin('id param extracted', '42', $r['params']['id'] ?? null);
 
 harness_section('resolveRewrite — catch-all + encoded segment decoded once');
 $r = resolve_rewrite($rules, 'a%2Bb');

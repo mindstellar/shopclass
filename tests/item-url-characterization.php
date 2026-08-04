@@ -74,39 +74,62 @@ function item_url(array $prefs, array $item, string $locale = ''): string
 }
 
 harness_section('osc_item_url_from_item — friendly URLs on');
-pin('{ITEM_TITLE}_{ITEM_ID}',
+pin(
+    '{ITEM_TITLE}_{ITEM_ID}',
     'http://example.com/blue-bicycle-almost-new_42',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'), $ITEM));
-pin('{ITEM_CITY}/{ITEM_TITLE}_{ITEM_ID}',
+    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'), $ITEM)
+);
+pin(
+    '{ITEM_CITY}/{ITEM_TITLE}_{ITEM_ID}',
     'http://example.com/san-jose/blue-bicycle-almost-new_42',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_CITY}/{ITEM_TITLE}_{ITEM_ID}'), $ITEM));
-pin('id-only structure',
+    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_CITY}/{ITEM_TITLE}_{ITEM_ID}'), $ITEM)
+);
+pin(
+    'id-only structure',
     'http://example.com/ad/42',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => 'ad/{ITEM_ID}'), $ITEM));
-pin('locale prefixed when passed',
+    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => 'ad/{ITEM_ID}'), $ITEM)
+);
+pin(
+    'locale prefixed when passed',
     'http://example.com/en_US/blue-bicycle-almost-new_42',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'), $ITEM, 'en_US'));
+    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'), $ITEM, 'en_US')
+);
 
 harness_section('osc_item_url_from_item — quirks pinned');
-pin("'?' in the structure is stripped, not a query separator",
+pin(
+    "'?' in the structure is stripped, not a query separator",
     'http://example.com/blue-bike_42ref=x',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}?ref=x'),
-        array('pk_i_id' => 42, 's_title' => 'Blue Bike', 's_city' => 'Berlin', 'fk_i_category_id' => 3)));
-pin('comma in title becomes a dash (via sanitize)',
+    item_url(
+        array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}?ref=x'),
+        array('pk_i_id' => 42, 's_title' => 'Blue Bike', 's_city' => 'Berlin', 'fk_i_category_id' => 3)
+    )
+);
+pin(
+    'comma in title becomes a dash (via sanitize)',
     'http://example.com/a-b_9',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'),
-        array('pk_i_id' => 9, 's_title' => 'a,b', 's_city' => '', 'fk_i_category_id' => 1)));
+    item_url(
+        array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_TITLE}_{ITEM_ID}'),
+        array('pk_i_id' => 9, 's_title' => 'a,b', 's_city' => '', 'fk_i_category_id' => 1)
+    )
+);
 
 harness_section('osc_item_url_from_item — friendly URLs off (non-rewrite fallback)');
-pin('plain query URL',
+pin(
+    'plain query URL',
     'http://example.com/index.php?page=item&id=42',
-    item_url(array('rewriteEnabled' => '0'), $ITEM));
-pin('plain query URL with locale',
+    item_url(array('rewriteEnabled' => '0'), $ITEM)
+);
+pin(
+    'plain query URL with locale',
     'http://example.com/index.php?page=item&id=42&lang=en_US',
-    item_url(array('rewriteEnabled' => '0'), $ITEM, 'en_US'));
+    item_url(array('rewriteEnabled' => '0'), $ITEM, 'en_US')
+);
 
 harness_section('osc_item_url_from_item — invalid item');
-pin('item without pk_i_id -> empty string', '',
-    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_ID}'), array('s_title' => 'x')));
+pin(
+    'item without pk_i_id -> empty string',
+    '',
+    item_url(array('rewriteEnabled' => '1', 'rewrite_item_url' => '{ITEM_ID}'), array('s_title' => 'x'))
+);
 
 exit(harness_result());

@@ -64,7 +64,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -75,7 +74,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
@@ -84,7 +82,6 @@ function addHelp()
               . ", check your hosting's help section.")
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -99,7 +96,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -109,7 +105,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Mail Settings &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 

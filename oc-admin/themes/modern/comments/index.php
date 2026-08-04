@@ -21,7 +21,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -37,7 +36,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -49,7 +47,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Comments &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -81,8 +78,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <input type="hidden" name="action" value="bulk_actions"/>
         <div id="bulk-actions">
             <div class="input-group input-group-sm">
-                <?php osc_print_bulk_actions('bulk_actions', 'bulk_actions', __get('bulk_options'),
-                                             'select-box-extra'); ?>
+                <?php osc_print_bulk_actions(
+                    'bulk_actions',
+                    'bulk_actions',
+                    __get('bulk_options'),
+                    'select-box-extra'
+                ); ?>
                 <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
             </div>
         </div>
@@ -102,13 +103,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <tbody>
                 <?php if (count($rows) > 0) { ?>
                     <?php foreach ($rows as $key => $row) { ?>
-                        <tr class="<?php echo implode(' ',
-                                                      osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row)); ?>">
+                        <tr class="<?php echo implode(
+                            ' ',
+                            osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row)
+                        ); ?>">
                             <?php foreach ($row as $k => $v) { ?>
                                 <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                      // `comments_processing_row` filter still hands plugins the plain word. ?>
+                                          // `comments_processing_row` filter still hands plugins the plain word.?>
                                 <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
-                                    echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
+                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                 ?></td>
                             <?php } ?>
                         </tr>
@@ -131,14 +134,16 @@ function showingResults()
 {
     $aData = __get('aData');
     echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing((Params::getParam('iPage') - 1)
+         . osc_pagination_showing(
+             (Params::getParam('iPage') - 1)
                                   * $aData['iDisplayLength'] + 1,
-                                  ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                   + count($aData['aRows']),
-                                  $aData['iTotalDisplayRecords'], $aData['iTotalRecords'])
+             $aData['iTotalDisplayRecords'],
+             $aData['iTotalRecords']
+         )
          . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

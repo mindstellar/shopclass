@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 //getting variables for this view
 $themes = __get('themes');
 $info   = WebThemes::newInstance()->loadThemeInfo(osc_theme());
@@ -26,7 +25,6 @@ function addHelp()
               . "you'll lose all changes if you change to a new theme.")
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -45,7 +43,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -55,7 +52,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Appearance &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -91,16 +87,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="available-theme row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4">
                     <?php
                     $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
-                    $bThemesToUpdate = is_array($aThemesToUpdate);
-                    $csrf_token      = osc_csrf_token_url();
-                    $hasOtherThemes  = false;
-                    foreach ($themes as $theme) {
-                        if ($theme === osc_theme()) {
-                            continue;
-                        }
-                        $hasOtherThemes = true;
-                        $info = WebThemes::newInstance()->loadThemeInfo($theme);
-                        ?>
+$bThemesToUpdate = is_array($aThemesToUpdate);
+$csrf_token      = osc_csrf_token_url();
+$hasOtherThemes  = false;
+foreach ($themes as $theme) {
+    if ($theme === osc_theme()) {
+        continue;
+    }
+    $hasOtherThemes = true;
+    $info = WebThemes::newInstance()->loadThemeInfo($theme);
+    ?>
                         <div class="col">
                             <div class="card">
                                 <img class="card-img-top"
@@ -110,15 +106,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <div class="theme-stage">
                                         <div class="">
                                             <a href="<?php echo osc_admin_base_url(true);
-                                            ?>?page=appearance&amp;action=activate&amp;theme=<?php
-                                            echo $theme; ?>&amp;<?php echo $csrf_token;
-?>" class="btn btn-mini btn-primary"><?php _e('Activate'); ?></a>
+    ?>?page=appearance&amp;action=activate&amp;theme=<?php
+    echo $theme; ?>&amp;<?php echo $csrf_token;
+    ?>" class="btn btn-mini btn-primary"><?php _e('Activate'); ?></a>
                                             <a target="_blank"
                                                href="<?php echo osc_base_url(true); ?>?theme=<?php echo $theme; ?>"
                                                class="btn btn-mini btn-dim"><?php _e('Preview'); ?></a>
                                             <a onclick="return delete_dialog('<?php echo $theme; ?>');"
                                                href="<?php echo osc_admin_base_url(true);
-                                                ?>?page=appearance&amp;action=delete&amp;webtheme=<?php
+    ?>?page=appearance&amp;action=delete&amp;webtheme=<?php
                                                echo $theme; ?>&amp;<?php echo $csrf_token; ?>"
                                                class="btn btn-sm btn-dim delete"><?php _e('Delete'); ?></a>
                                             <?php

@@ -30,7 +30,7 @@ use mindstellar\migration\MigrationInterface;
  * Idempotent: CREATE TABLE IF NOT EXISTS, so re-running after an interrupted
  * upgrade leaves the existing table alone.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_login_attempt';

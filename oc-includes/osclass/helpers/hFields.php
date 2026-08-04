@@ -32,7 +32,6 @@ function osc_register_field_type($id, $spec)
     FieldTypeRegistry::instance()->register($id, $spec);
 }
 
-
 /**
  * All registered field types, keyed by id.
  *
@@ -42,7 +41,6 @@ function osc_field_types()
 {
     return FieldTypeRegistry::instance()->all();
 }
-
 
 /**
  * The spec for a registered field type, or null when it is not registered.
@@ -56,7 +54,6 @@ function osc_field_type($id)
     return FieldTypeRegistry::instance()->get($id);
 }
 
-
 /**
  * The storage primitive (t_meta_fields.e_type value) a field type stores as.
  *
@@ -68,7 +65,6 @@ function osc_field_type_storage($id)
 {
     return FieldTypeRegistry::instance()->storageOf($id);
 }
-
 
 /**
  * Resolve a field row's real type id. New/plugin types persist their identity in
@@ -94,7 +90,6 @@ function osc_field_resolve_type($field)
 
     return $field['e_type'] ?? 'TEXT';
 }
-
 
 /*
  * ---------------------------------------------------------------------------
@@ -212,7 +207,6 @@ osc_register_field_type('AUTOCOMPLETE', array(
     'config'     => array('placeholder', 'help_text', 'default', 'min_length'),
 ));
 
-
 /*
  * ---------------------------------------------------------------------------
  * Field groups (reusable forms).
@@ -229,7 +223,6 @@ function osc_get_field_groups()
     return FieldGroup::newInstance()->listAll();
 }
 
-
 /**
  * The groups (with their inherited fields) that apply to a category, honouring the
  * same category inheritance as loose fields.
@@ -242,7 +235,6 @@ function osc_get_category_field_groups($categoryId)
 {
     return FieldGroup::newInstance()->findByCategory($categoryId);
 }
-
 
 /**
  * Whether a custom field is visible for an item under its conditional-logic show_when

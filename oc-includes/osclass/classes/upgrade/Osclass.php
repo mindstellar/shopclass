@@ -36,7 +36,6 @@ use Preference;
  */
 class Osclass extends UpgradePackage
 {
-
     /**
      * Osclass constructor.
      *
@@ -182,7 +181,8 @@ class Osclass extends UpgradePackage
         $isFresh    = false;
         $preference = Preference::newInstance();
         if ($force === true
-            || (!$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
+            || (
+                !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
             )
         ) {
             if ((defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) || osc_get_bool_preference('allow_update_prerelease')) {

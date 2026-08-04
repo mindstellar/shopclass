@@ -22,7 +22,6 @@
  */
 class AlertsDataTable extends DataTable
 {
-
     private $search;
     private $order_by;
     private $total_filtered;
@@ -71,7 +70,6 @@ class AlertsDataTable extends DataTable
      */
     private function getDBParams($_get)
     {
-
 
         $column_names = array(
             0 => 'dt_date',
@@ -133,7 +131,6 @@ class AlertsDataTable extends DataTable
                 $options[] =
                     '<a onclick="return delete_alert(\'' . $aRow['pk_i_id'] . '\');" href="#">' . __('Delete') . '</a>';
 
-
                 if ($aRow['b_active'] == 1) {
                     $options[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
@@ -143,7 +140,6 @@ class AlertsDataTable extends DataTable
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;status=1" >' . __('Activate') . '</a>';
                 }
-
 
                 $options = osc_apply_filter('actions_manage_alerts', $options, $aRow);
                 // create list of actions
@@ -174,9 +170,9 @@ class AlertsDataTable extends DataTable
                     }
                     if (count($conditions['aCategories']) > $l) {
                         $cat_array[] = '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
-                                ', ',
-                                $conditions['aCategories']
-                            )) . '" >' . __('...More') . '</a>';
+                            ', ',
+                            $conditions['aCategories']
+                        )) . '" >' . __('...More') . '</a>';
                     }
 
                     $pieces[] = sprintf(__('<b>Categories:</b> %s'), implode(', ', $cat_array));

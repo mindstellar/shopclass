@@ -75,7 +75,7 @@ class User extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -111,7 +111,6 @@ class User extends DAO
 
         return osc_db_stringify_rows($rows);
     }
-
 
     /**
      * Find an user by its primary key

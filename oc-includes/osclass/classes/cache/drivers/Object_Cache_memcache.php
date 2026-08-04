@@ -16,7 +16,6 @@
  */
 class Object_Cache_memcache implements iObject_Cache
 {
-
     /**
      * The amount of times the cache data was already stored in the cache.
      *
@@ -312,7 +311,6 @@ padding: 1em;'><h2>Memcache stats</h2>";
             'server'       => $server,
         );
     }
-
 
     /**
      * Namespace every key with a value unique to this install.

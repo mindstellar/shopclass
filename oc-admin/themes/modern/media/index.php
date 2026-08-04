@@ -47,7 +47,6 @@ function customPageTitle($string)
     return sprintf(__('Media &raquo; %s'), $string);
 }
 
-
 osc_add_filter('admin_title', 'customPageTitle');
 
 osc_add_filter('render-wrapper', static function () {

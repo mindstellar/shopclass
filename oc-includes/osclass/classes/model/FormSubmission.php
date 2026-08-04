@@ -44,7 +44,7 @@ class FormSubmission
     public static function newInstance(): self
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

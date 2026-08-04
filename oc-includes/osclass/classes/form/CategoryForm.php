@@ -126,7 +126,7 @@ class CategoryForm extends Form
      */
     public static function expiration_days_input_text($category = null)
     {
-        $attributes['id'] ='i_expiration_days';
+        $attributes['id'] = 'i_expiration_days';
         $attributes['maxlength'] = 3;
         echo (new self())->text('i_expiration_days', $category['i_expiration_days'] ?? '', $attributes);
     }
@@ -186,7 +186,7 @@ class CategoryForm extends Form
     {
         $tabs    = array();
         $content = array();
-        $current_locale_code = OC_ADMIN?osc_current_admin_locale():osc_current_user_locale();
+        $current_locale_code = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
         foreach ($locales as $locale) {
             $value         = isset($category['locale'][$locale['pk_c_code']])
                 ? $category['locale'][$locale['pk_c_code']]['s_name'] : '';

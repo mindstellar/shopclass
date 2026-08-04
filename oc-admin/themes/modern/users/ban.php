@@ -20,7 +20,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -38,7 +37,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -50,7 +48,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Manage ban rules &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -119,7 +116,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 $aData     = __get('aData');
@@ -130,7 +126,6 @@ $direction = Params::getParam('direction');
 $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
-
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <h2 class="render-title"><?php _e('Manage ban rules'); ?></h2>
@@ -140,8 +135,12 @@ $rows    = $aData['aRows'];
 
             <div id="bulk-actions">
                 <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions('bulk_actions', 'action', __get('bulk_options'),
-                                                 'select-box-extra'); ?>
+                    <?php osc_print_bulk_actions(
+                        'bulk_actions',
+                        'action',
+                        __get('bulk_options'),
+                        'select-box-extra'
+                    ); ?>
                     <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
                 </div>
             </div>
@@ -185,14 +184,16 @@ function showingResults()
 {
     $aData = __get('aData');
     echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing((Params::getParam('iPage') - 1)
+         . osc_pagination_showing(
+             (Params::getParam('iPage') - 1)
                                   * $aData['iDisplayLength'] + 1,
-                                  ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                   + count($aData['aRows']),
-                                  $aData['iTotalDisplayRecords'], $aData['iTotalRecords'])
+             $aData['iTotalDisplayRecords'],
+             $aData['iTotalRecords']
+         )
          . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

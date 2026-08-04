@@ -21,7 +21,6 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminLogin extends AdminBaseModel
 {
-
     public function __construct()
     {
         parent::__construct();
@@ -230,8 +229,11 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url());
                 }
 
-                if (Params::getParam('new_password', false, false) === Params::getParam('new_password2', false,
-                        false)) {
+                if (Params::getParam('new_password', false, false) === Params::getParam(
+                    'new_password2',
+                    false,
+                    false
+                )) {
                     // Consume the reset code (single-use) by replacing its fingerprint with a
                     // fresh dead one, alongside the new password.
                     Admin::newInstance()->update(

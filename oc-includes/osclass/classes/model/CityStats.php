@@ -56,7 +56,7 @@ class CityStats extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -327,8 +327,7 @@ class CityStats extends DAO
      *
      * @return array
      */
-    private function calculateAllStats(array $cities)
-    : array
+    private function calculateAllStats(array $cities): array
     {
         if (empty($cities)) {
             return array();

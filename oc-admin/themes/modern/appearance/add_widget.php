@@ -65,7 +65,6 @@ if ($currentTypeId !== '' && !empty($widget['s_config'])) {
     }
 }
 
-
 /**
  * The value a config field should show: the widget's saved config when this
  * is the widget's current type, otherwise the field's declared default.
@@ -87,8 +86,6 @@ function widgetConfigFieldValue($field, $typeId, $currentTypeId, $currentWidgetC
 
     return $default;
 }
-
-
 
 // Type id => description, used by the client-side toggle to show a help line
 // under the picker without re-fetching anything from the server.
@@ -124,7 +121,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -134,7 +130,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Appearance &raquo; %s'), $string);
 }
-
 
 if (!$inline) {
     osc_add_filter('admin_title', 'customPageTitle');
@@ -155,7 +150,6 @@ function customHead()
     ?>
 <?php }
 
-
 if (!$inline) {
     osc_add_hook('admin_header', 'customHead', 10);
     osc_current_admin_theme_path('parts/header.php');
@@ -172,8 +166,8 @@ if (!$inline) {
                     <input type="hidden" name="id" value="<?php echo Params::getParam('id', true); ?>"/>
                 <?php } ?>
                 <input type="hidden" name="location" value="<?php echo Params::getParam('location', true); ?>"/>
-                <?php // When managing a static page's blocks, carry the page id so the ?>
-                <?php // save returns to that page editor instead of the appearance screen. ?>
+                <?php // When managing a static page's blocks, carry the page id so the?>
+                <?php // save returns to that page editor instead of the appearance screen.?>
                 <?php if ((int)Params::getParam('page_builder_id') > 0) { ?>
                     <input type="hidden" name="page_builder_id"
                            value="<?php echo (int)Params::getParam('page_builder_id'); ?>"/>
@@ -184,7 +178,7 @@ if (!$inline) {
                         <input type="text" class="form-control form-control-sm" id="widget_description"
                                name="description" value="<?php if ($edit) {
                                    echo osc_esc_html($widget['s_description']);
-                                                         } ?>"/>
+                               } ?>"/>
                     </div>
                     <div class="mb-3">
                         <label for="widget_type_select"><?php _e('Widget type'); ?></label>
@@ -206,8 +200,8 @@ if (!$inline) {
                         <?php echo ($currentTypeId !== '') ? 'hidden' : ''; ?>>
                         <label for="body"><?php _e('HTML Code for the Widget'); ?></label>
                         <textarea name="content" id="body"><?php if ($edit) {
-                                echo osc_esc_html($widget['s_content']);
-                                                           } ?></textarea>
+                            echo osc_esc_html($widget['s_content']);
+                        } ?></textarea>
                     </div>
                     <div id="widget-type-fields">
                         <?php foreach ($widgetTypes as $typeId => $typeSpec) {

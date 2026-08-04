@@ -21,7 +21,6 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminSettings
 {
-
     public function __construct()
     {
         osc_run_hook('init_admin_settings');

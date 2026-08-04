@@ -25,7 +25,7 @@ use mindstellar\migration\MigrationInterface;
  * a fresh install, which the runner baselines rather than replays; this
  * migration brings an existing install up to the same state.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         if ($this->columnExists($conn, DB_TABLE_PREFIX . 't_widget', 'i_order')) {

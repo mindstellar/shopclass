@@ -16,7 +16,6 @@ function addHelp()
     echo '<p>' . __('Add, edit or delete information associated to alerts.') . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -29,7 +28,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -41,7 +39,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Manage alerts &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -83,14 +80,20 @@ $rows    = $aData['aRows'];
                     <select name="alert_action" id="bulk_actions" class="form-select select-box-extra">
                         <option value=""><?php _e('Bulk actions'); ?></option>
                         <option value="activate"
-                                data-dialog-content="<?php printf(__('Are you sure you want to %s the selected alerts?'),
-                                                                  strtolower(__('Activate'))); ?>"><?php _e('Activate'); ?></option>
+                                data-dialog-content="<?php printf(
+                                    __('Are you sure you want to %s the selected alerts?'),
+                                    strtolower(__('Activate'))
+                                ); ?>"><?php _e('Activate'); ?></option>
                         <option value="deactivate"
-                                data-dialog-content="<?php printf(__('Are you sure you want to %s the selected alerts?'),
-                                                                  strtolower(__('Deactivate'))); ?>"><?php _e('Deactivate'); ?></option>
+                                data-dialog-content="<?php printf(
+                                    __('Are you sure you want to %s the selected alerts?'),
+                                    strtolower(__('Deactivate'))
+                                ); ?>"><?php _e('Deactivate'); ?></option>
                         <option value="delete"
-                                data-dialog-content="<?php printf(__('Are you sure you want to %s the selected alerts?'),
-                                                                  strtolower(__('Delete'))); ?>"><?php _e('Delete'); ?></option>
+                                data-dialog-content="<?php printf(
+                                    __('Are you sure you want to %s the selected alerts?'),
+                                    strtolower(__('Delete'))
+                                ); ?>"><?php _e('Delete'); ?></option>
                     </select> <input type="submit" id="bulk_apply" class="btn btn-primary"
                                      value="<?php echo osc_esc_html(__('Apply')); ?>"/>
                 </div>
@@ -137,14 +140,16 @@ function showingResults()
 {
     $aData = __get('aData');
     echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing((Params::getParam('iPage') - 1)
+         . osc_pagination_showing(
+             (Params::getParam('iPage') - 1)
                                   * $aData['iDisplayLength'] + 1,
-                                  ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                   + count($aData['aRows']),
-                                  $aData['iTotalDisplayRecords'], $aData['iTotalRecords'])
+             $aData['iTotalDisplayRecords'],
+             $aData['iTotalRecords']
+         )
          . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

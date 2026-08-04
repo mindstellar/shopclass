@@ -19,7 +19,6 @@ use ZipArchive;
  */
 class Zip
 {
-
     /**
      * @var \mindstellar\utility\FileSystem
      */
@@ -105,7 +104,6 @@ class Zip
             return 2;
         }
 
-
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $file = $zip->statIndex($i);
 
@@ -137,7 +135,6 @@ class Zip
 
         return 1;
     }
-
 
     /**
      * We assume that the $to path is correct and can be written. It unzips an archive using the PclZip library.
@@ -185,7 +182,6 @@ class Zip
         return 1;
     }
 
-
     /**
      * Common interface to zip a specified folder to a file using ziparchive or pclzip
      *
@@ -208,7 +204,6 @@ class Zip
         return $this->zipFolderPclZip($archive_folder, $archive_name);
     }
 
-
     /**
      * Zips a specified folder to a file
      *
@@ -219,7 +214,7 @@ class Zip
      */
     private function zipFolderZipArchive($archive_folder, $archive_name)
     {
-        $zip = new ZipArchive;
+        $zip = new ZipArchive();
         if ($zip->open($archive_name, ZipArchive::CREATE) === true) {
             $dir = preg_replace('/[\/]{2,}/', '/', $archive_folder . '/');
 
@@ -248,7 +243,6 @@ class Zip
 
         return false;
     }
-
 
     /**
      * Zips a specified folder to a file

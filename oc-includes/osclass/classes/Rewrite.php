@@ -240,14 +240,14 @@ class Rewrite
             'index.php?page=item&id=$1&comments-page=$2'
         );
         $rewrite->addRule('^([a-z]{2})_([A-Z]{2})/' . str_replace(
-                '{ITEM_CITY}',
+            '{ITEM_CITY}',
+            '.*',
+            str_replace(
+                '{CATEGORIES}',
                 '.*',
-                str_replace(
-                    '{CATEGORIES}',
-                    '.*',
-                    str_replace('{ITEM_TITLE}', '.*', str_replace('{ITEM_ID}', '([0-9]+)', $item_url))
-                )
+                str_replace('{ITEM_TITLE}', '.*', str_replace('{ITEM_ID}', '([0-9]+)', $item_url))
             )
+        )
             . '$', 'index.php?page=item&id=$3&lang=$1_$2');
         $rewrite->addRule(
             '^' . str_replace('{ITEM_CITY}', '.*', str_replace(
@@ -374,10 +374,10 @@ class Rewrite
                 'index.php?page=page&slug=$1'
             );
             $rewrite->addRule('^([a-z]{2})_([A-Z]{2})/' . str_replace(
-                    '{PAGE_SLUG}',
-                    '([\p{L}\p{N}_\-,]+)',
-                    $page_url
-                ) . '/?$', 'index.php?page=page&lang=$1_$2&slug=$3');
+                '{PAGE_SLUG}',
+                '([\p{L}\p{N}_\-,]+)',
+                $page_url
+            ) . '/?$', 'index.php?page=page&lang=$1_$2&slug=$3');
         }
 
         // Clean archive files
@@ -752,7 +752,7 @@ class Rewrite
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

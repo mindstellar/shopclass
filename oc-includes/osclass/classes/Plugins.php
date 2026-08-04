@@ -17,7 +17,6 @@
  */
 class Plugins
 {
-
     public static $plugins_infos = array();
     private static $used_hooks = array();
     private static $hooks;
@@ -43,7 +42,7 @@ class Plugins
                 if (isset(self::$hooks[$hook][$priority]) && is_array(self::$hooks[$hook][$priority])) {
                     foreach (self::$hooks[$hook][$priority] as $fxName) {
                         if (is_callable($fxName)) {
-                            $content = $fxName( $content, ...$args);
+                            $content = $fxName($content, ...$args);
                         } else {
                             trigger_error('Unknown filter ' . $fxName, E_USER_WARNING);
                         }
@@ -380,7 +379,6 @@ class Plugins
 
         return true;
     }
-
 
     /**
      * @param callable-string  $hook

@@ -734,7 +734,7 @@ osc_current_admin_theme_path('parts/header.php');
     // into forms — grouped by the exact categories they share — so they become
     // visible and editable without changing where a single one renders.
     $looseCount = count($looseCats);
-    if ($looseCount > 0) { ?>
+if ($looseCount > 0) { ?>
         <div class="cf-legacy-banner" role="status">
             <i class="bi bi-clock-history" aria-hidden="true"></i>
             <div class="cf-legacy-text">

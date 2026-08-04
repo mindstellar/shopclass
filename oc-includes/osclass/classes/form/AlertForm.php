@@ -17,7 +17,6 @@
  */
 class AlertForm extends Form
 {
-
     /**
      * @return bool
      */

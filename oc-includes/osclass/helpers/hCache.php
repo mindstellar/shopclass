@@ -25,7 +25,6 @@ function osc_cache_add($key, $data, $expire = 0)
     return Object_Cache_Factory::newInstance()->add($key, $data, $expire);
 }
 
-
 /**
  * @return mixed
  */
@@ -33,7 +32,6 @@ function osc_cache_close()
 {
     return Object_Cache_Factory::newInstance()->close();
 }
-
 
 /**
  * @param $key
@@ -47,7 +45,6 @@ function osc_cache_delete($key)
     return Object_Cache_Factory::newInstance()->delete($key);
 }
 
-
 /**
  * @return bool
  */
@@ -55,7 +52,6 @@ function osc_cache_flush()
 {
     return Object_Cache_Factory::newInstance()->flush();
 }
-
 
 /**
  * Normalised statistics for the active cache driver, or null when it has none.
@@ -74,7 +70,6 @@ function osc_cache_stats()
 
     return $cache->statsData();
 }
-
 
 /**
  * Atomically increment a numeric cache key, creating it at $initial on first
@@ -110,7 +105,6 @@ function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
     return $value;
 }
 
-
 /**
  * Initialize Cache factory instance using singleton
  */
@@ -118,7 +112,6 @@ function osc_cache_init()
 {
     Object_Cache_Factory::newInstance();
 }
-
 
 /**
  * @param $key
@@ -133,7 +126,6 @@ function osc_cache_get($key, &$found)
     return Object_Cache_Factory::newInstance()->get($key, $found);
 }
 
-
 /**
  * @param     $key
  * @param     $data
@@ -147,7 +139,6 @@ function osc_cache_set($key, $data, $expire = 0)
 
     return Object_Cache_Factory::newInstance()->set($key, $data, $expire);
 }
-
 
 /**
  * Invalidate cached data that is a pure function of an item id (currently the
@@ -241,7 +232,6 @@ function osc_cache_search_generation()
     return is_numeric($gen) ? (int)$gen : 0;
 }
 
-
 /**
  * Bump the search-cache generation, invalidating every cached search/latest-items
  * result. Called on the item lifecycle events that change what a search returns
@@ -260,7 +250,6 @@ function osc_invalidate_search_cache()
 
     return $gen;
 }
-
 
 /**
  * Current generation number for the category cache (Category::toTree and
@@ -283,7 +272,6 @@ function osc_cache_category_generation()
     return is_numeric($gen) ? (int)$gen : 0;
 }
 
-
 /**
  * Bump the category-cache generation, invalidating every cached category tree and
  * category row. Called on the category lifecycle events (add, edit, reorder,
@@ -303,7 +291,6 @@ function osc_invalidate_category_cache()
 
     return $gen;
 }
-
 
 // Clear an item's derived cache on the lifecycle events that change it, so reads
 // following a write see fresh data instead of a stale cached copy.

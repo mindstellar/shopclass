@@ -150,8 +150,7 @@ abstract class UpgradePackage
      *
      * @return string
      */
-    public function getTitle()
-    : string
+    public function getTitle(): string
     {
         return $this->s_title;
     }
@@ -161,8 +160,7 @@ abstract class UpgradePackage
      *
      * @return string
      */
-    public function getShortName()
-    : string
+    public function getShortName(): string
     {
         return $this->s_short_name;
     }
@@ -172,8 +170,7 @@ abstract class UpgradePackage
      *
      * @return string
      */
-    public function getSourceUrl()
-    : string
+    public function getSourceUrl(): string
     {
         return $this->s_source_url;
     }
@@ -183,8 +180,7 @@ abstract class UpgradePackage
      *
      * @return string
      */
-    public function getTargetDirectory()
-    : string
+    public function getTargetDirectory(): string
     {
         return $this->s_target_directory;
     }
@@ -194,8 +190,7 @@ abstract class UpgradePackage
      *
      * @return array
      */
-    public function getFilteredFiles()
-    : array
+    public function getFilteredFiles(): array
     {
         return $this->a_filtered_files;
     }
@@ -205,8 +200,7 @@ abstract class UpgradePackage
      *
      * @return bool
      */
-    public function isCompatible()
-    : bool
+    public function isCompatible(): bool
     {
         if ($this->a_compatible !== null && !$this->forceUpgrade) {
             return in_array($this->osclass_version, $this->a_compatible, false);
@@ -239,8 +233,7 @@ abstract class UpgradePackage
     /**
      * @return string
      */
-    public function getNewVersion()
-    : string
+    public function getNewVersion(): string
     {
         return $this->s_new_version;
     }

@@ -35,13 +35,11 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>' . __('See how many listings from your site have been reported as spam, expired, duplicate, etc.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -56,7 +54,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -66,7 +63,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Report Statistics &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -97,17 +93,17 @@ function customHead()
             data.addColumn('number', '<?php echo osc_esc_js(__('Offensive')); ?>');
             data.addColumn('number', '<?php echo osc_esc_js(__('Expired')); ?>');
             <?php $k = 0;
-            echo 'data.addRows(' . count($reports) . ');';
-            foreach ($reports as $date => $data) {
-                echo 'data.setValue(' . $k . ', 0, "' . $date . '");';
-                echo 'data.setValue(' . $k . ', 1, ' . $data['spam'] . ');';
-                echo 'data.setValue(' . $k . ', 2, ' . $data['repeated'] . ');';
-                echo 'data.setValue(' . $k . ', 3, ' . $data['bad_classified'] . ');';
-                echo 'data.setValue(' . $k . ', 4, ' . $data['offensive'] . ');';
-                echo 'data.setValue(' . $k . ', 5, ' . $data['expired'] . ');';
-                $k++;
-            }
-            ?>
+        echo 'data.addRows(' . count($reports) . ');';
+        foreach ($reports as $date => $data) {
+            echo 'data.setValue(' . $k . ', 0, "' . $date . '");';
+            echo 'data.setValue(' . $k . ', 1, ' . $data['spam'] . ');';
+            echo 'data.setValue(' . $k . ', 2, ' . $data['repeated'] . ');';
+            echo 'data.setValue(' . $k . ', 3, ' . $data['bad_classified'] . ');';
+            echo 'data.setValue(' . $k . ', 4, ' . $data['offensive'] . ');';
+            echo 'data.setValue(' . $k . ', 5, ' . $data['expired'] . ');';
+            $k++;
+        }
+        ?>
 
             // Instantiate and draw our chart, passing in some options.
             var chart = new google.visualization.ColumnChart(document.getElementById('placeholder'));
@@ -118,8 +114,7 @@ function customHead()
         }
     </script>
     <?php }
-}
-
+    }
 
 osc_add_hook('admin_header', 'customHead', 10);
 ?>
@@ -132,24 +127,24 @@ osc_add_hook('admin_header', 'customHead', 10);
             <div class="btn-group btn-group-sm">
                 <?php
                 $comments_stats_intervals = ['month', 'week', 'day'];
-                if (!$type) {
-                    $type = 'day';
-                }
-                foreach ($comments_stats_intervals as $k => $v) {
-                    echo '<a id="' . $v . '" class="btn btn-outline-primary';
-                    if ($type === $v ) {
-                        echo ' active';
-                    }
-                    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=reports&amp;type_stat=' . $v . '">';
-                    if ($v === 'month') {
-                        echo __('Last 10 months');
-                    } elseif ($v === 'week') {
-                        echo __('Last 10 weeks');
-                    } elseif ($v === 'day') {
-                        echo __('Last 10 days');
-                    }
-                    echo '</a>';
-                } ?>
+if (!$type) {
+    $type = 'day';
+}
+foreach ($comments_stats_intervals as $k => $v) {
+    echo '<a id="' . $v . '" class="btn btn-outline-primary';
+    if ($type === $v) {
+        echo ' active';
+    }
+    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=reports&amp;type_stat=' . $v . '">';
+    if ($v === 'month') {
+        echo __('Last 10 months');
+    } elseif ($v === 'week') {
+        echo __('Last 10 weeks');
+    } elseif ($v === 'day') {
+        echo __('Last 10 days');
+    }
+    echo '</a>';
+} ?>
             </div>
         </div>
     </div>

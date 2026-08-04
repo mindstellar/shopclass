@@ -207,7 +207,7 @@ osc_current_admin_theme_path('parts/header.php');
                             </td>
                         </tr>
                     <?php }
-                } else { ?>
+                    } else { ?>
                     <tr>
                         <td colspan="5" class="text-center">
                             <p><?php if (count($forms) === 0) {

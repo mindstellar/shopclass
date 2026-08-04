@@ -22,7 +22,6 @@ function osc_meta_publish($catId = null)
     echo '</div>';
 }
 
-
 /**
  * @param null $catId
  * @param null $item_id
@@ -34,7 +33,6 @@ function osc_meta_edit($catId = null, $item_id = null)
     FieldForm::meta_fields_input($catId, $item_id);
     echo '</div>';
 }
-
 
 osc_add_hook('item_form', 'osc_meta_publish');
 osc_add_hook('item_edit', 'osc_meta_edit');
@@ -49,7 +47,6 @@ function osc_meta_search($catId = null)
 {
     FieldForm::meta_fields_search($catId);
 }
-
 
 osc_add_hook('search_form', 'osc_meta_search');
 
@@ -91,7 +88,6 @@ function search_title()
 
     return $result;
 }
-
 
 /**
  * @return bool|mixed
@@ -246,7 +242,6 @@ function meta_title()
     return osc_apply_filter('meta_title_filter', $text);
 }
 
-
 /**
  * @return bool|mixed
  */
@@ -278,7 +273,6 @@ function meta_description()
 
     return osc_apply_filter('meta_description_filter', $text);
 }
-
 
 /**
  * @return bool|mixed
@@ -328,7 +322,6 @@ function meta_keywords()
 
     return osc_apply_filter('meta_keywords_filter', $text);
 }
-
 
 /**
  * @return array
@@ -405,7 +398,6 @@ function osc_search_footer_links()
     }
 }
 
-
 /**
  * @param null $f
  *
@@ -436,7 +428,6 @@ function osc_footer_link_url($f = null)
 
     return osc_search_url($params);
 }
-
 
 /**
  * @param null $f
@@ -476,7 +467,6 @@ function osc_footer_link_title($f = null)
     return $text;
 }
 
-
 /**
  * Instantiate the admin toolbar object.
  *
@@ -494,7 +484,6 @@ function _osc_admin_toolbar_init()
     return true;
 }
 
-
 // and we hook our function via
 osc_add_hook('init_admin', '_osc_admin_toolbar_init');
 
@@ -510,7 +499,6 @@ function osc_draw_admin_toolbar()
     $adminToolbar->render();
 }
 
-
 /**
  * Add logout link
  */
@@ -523,7 +511,6 @@ function osc_admin_toolbar_logout()
                                               'meta'  => array('class' => 'bi bi-box-arrow-right')
                                           ));
 }
-
 
 function osc_admin_toolbar_comments()
 {
@@ -542,7 +529,6 @@ function osc_admin_toolbar_comments()
     }
 }
 
-
 function osc_admin_toolbar_spam()
 {
     $total = Item::newInstance()->countByMarkas('spam');
@@ -559,7 +545,6 @@ function osc_admin_toolbar_spam()
         );
     }
 }
-
 
 /**
  * @param bool $force
@@ -585,7 +570,6 @@ function osc_admin_toolbar_update_core($force = false)
     }
 }
 
-
 /**
  * @param bool $force
  *
@@ -604,7 +588,6 @@ function osc_check_plugins_update($force = false)
 
     return $total;
 }
-
 
 /**
  * @return int
@@ -633,7 +616,6 @@ function _osc_check_plugins_update()
     return $total;
 }
 
-
 /**
  * @param bool $force
  */
@@ -659,7 +641,6 @@ function osc_admin_toolbar_update_plugins($force = false)
     }
 }
 
-
 /**
  * @param bool $force
  *
@@ -676,7 +657,6 @@ function osc_check_themes_update($force = false)
 
     return $total;
 }
-
 
 /**
  * @return int
@@ -704,7 +684,6 @@ function _osc_check_themes_update()
     return $total;
 }
 
-
 /**
  * @param bool $force
  */
@@ -730,7 +709,6 @@ function osc_admin_toolbar_update_themes($force = false)
     }
 }
 
-
 // languages todo
 /**
  * @param bool $force
@@ -750,7 +728,6 @@ function osc_check_languages_update($force = false)
 
     return $total;
 }
-
 
 /**
  * @return int
@@ -777,7 +754,6 @@ function _osc_check_languages_update()
     return $total;
 }
 
-
 /**
  * @param bool $force
  */
@@ -803,7 +779,6 @@ function osc_admin_toolbar_update_languages($force = false)
     }
 }
 
-
 function osc_ga_analytics_footer()
 {
     $id = osc_google_analytics_id();
@@ -824,7 +799,6 @@ function osc_ga_analytics_footer()
     }
 }
 
-
 if (osc_google_analytics_id()) {
     osc_add_hook('footer', 'osc_ga_analytics_footer');
 }
@@ -836,7 +810,6 @@ function osc_item_tinymce_header()
     }
     osc_enqueue_script('tiny_mce');
 }
-
 
 /**
  * Load the shared oscAutocomplete combobox on the public item form (publish/edit),
@@ -853,7 +826,6 @@ function osc_ui_common_header()
     osc_enqueue_style('osc-ui-common');
 }
 osc_add_hook('header', 'osc_ui_common_header');
-
 
 function osc_item_tinymce_footer()
 {
@@ -882,12 +854,10 @@ function osc_item_tinymce_footer()
     <?php
 }
 
-
 if (osc_tinymce_frontend()) {
     osc_add_hook('header', 'osc_item_tinymce_header');
     osc_add_hook('footer', 'osc_item_tinymce_footer');
 }
-
 
 /**
  * Run the enabled Tools > Cleanup rules once — a single batch of the configured size per
@@ -918,7 +888,6 @@ function osc_run_cleanup()
 }
 osc_add_hook('cron_daily', 'osc_run_cleanup');
 
-
 function osc_show_maintenance()
 {
     if (defined('__OSC_MAINTENANCE__')) { ?>
@@ -946,8 +915,7 @@ function osc_show_maintenance()
             }
         </style>
     <?php }
-}
-
+    }
 
 osc_add_hook('header', 'osc_show_maintenance');
 
@@ -955,7 +923,6 @@ function osc_meta_generator()
 {
     echo '<meta name="generator" content="Shopclass ' . OSCLASS_VERSION . '" />';
 }
-
 
 osc_add_hook('header', 'osc_meta_generator');
 
@@ -970,7 +937,6 @@ if (osc_force_jpeg()) {
         return 'jpg';
     }
 
-
     /**
      * @param $content
      *
@@ -980,7 +946,6 @@ if (osc_force_jpeg()) {
     {
         return 'image/jpeg';
     }
-
 
     osc_add_filter('upload_image_extension', 'osc_force_jpeg_extension');
     osc_add_filter('upload_image_mime', 'osc_force_jpeg_mime');

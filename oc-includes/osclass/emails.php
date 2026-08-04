@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -22,7 +24,6 @@
 function fn_email_alert_validation($alert, $email, $secret)
 {
     $user['s_name'] = '';
-
 
     // send alert validation email
     $prefLocale       = osc_language();
@@ -91,7 +92,6 @@ function fn_email_alert_validation($alert, $email, $secret)
 
     osc_sendMail($emailParams);
 }
-
 
 osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
 
@@ -191,7 +191,6 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
 
 /**
@@ -289,7 +288,6 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 
     osc_sendMail($emailParams);
 }
-
 
 osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
 
@@ -389,7 +387,6 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
 
 /**
@@ -457,7 +454,6 @@ function fn_email_comment_validated($aComment)
         osc_sendMail($emailParams);
     }
 }
-
 
 osc_add_hook('hook_email_comment_validated', 'fn_email_comment_validated');
 
@@ -536,7 +532,6 @@ function fn_email_new_item_non_register_user($item)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_new_item_non_register_user', 'fn_email_new_item_non_register_user');
 
 /**
@@ -614,7 +609,6 @@ function fn_email_user_forgot_password($user, $password_url)
     }
 }
 
-
 osc_add_hook('hook_email_user_forgot_password', 'fn_email_user_forgot_password');
 
 /**
@@ -675,7 +669,6 @@ function fn_email_user_registration($user)
         osc_sendMail($emailParams);
     }
 }
-
 
 osc_add_hook('hook_email_user_registration', 'fn_email_user_registration');
 
@@ -748,7 +741,6 @@ function fn_email_new_email($new_email, $validation_url)
     }
 }
 
-
 osc_add_hook('hook_email_new_email', 'fn_email_new_email');
 
 /**
@@ -816,7 +808,6 @@ function fn_email_user_validation($user, $input)
         osc_sendMail($emailParams);
     }
 }
-
 
 osc_add_hook('hook_email_user_validation', 'fn_email_user_validation');
 
@@ -900,7 +891,6 @@ function fn_email_send_friend($aItem)
 
     osc_sendMail($emailParams);
 }
-
 
 osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
 
@@ -1018,7 +1008,6 @@ function fn_email_item_inquiry($aItem)
     @unlink($path);
 }
 
-
 osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
 
 /**
@@ -1107,7 +1096,6 @@ function fn_email_new_comment_admin($aItem)
         }
     }
 }
-
 
 osc_add_hook('hook_email_new_comment_admin', 'fn_email_new_comment_admin');
 
@@ -1216,7 +1204,6 @@ function fn_email_item_validation($item)
     );
     osc_sendMail($emailParams);
 }
-
 
 osc_add_hook('hook_email_item_validation', 'fn_email_item_validation');
 
@@ -1336,7 +1323,6 @@ function fn_email_admin_new_item($item)
         }
     }
 }
-
 
 osc_add_hook('hook_email_admin_new_item', 'fn_email_admin_new_item');
 
@@ -1463,7 +1449,6 @@ function fn_email_item_validation_non_register_user($item)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_item_validation_non_register_user', 'fn_email_item_validation_non_register_user');
 
 /**
@@ -1528,7 +1513,6 @@ function fn_email_admin_new_user($user)
         }
     }
 }
-
 
 osc_add_hook('hook_email_admin_new_user', 'fn_email_admin_new_user');
 
@@ -1627,7 +1611,6 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_contact_user', 'fn_email_contact_user');
 
 /**
@@ -1718,7 +1701,6 @@ function fn_email_new_comment_user($aItem)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_new_comment_user', 'fn_email_new_comment_user');
 
 /**
@@ -1781,9 +1763,7 @@ function fn_email_new_admin($data)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_new_admin', 'fn_email_new_admin');
-
 
 /**
  * @param $aItem
@@ -1867,7 +1847,6 @@ function fn_email_warn_expiration($aItem)
     osc_sendMail($emailParams);
 }
 
-
 osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
 
 /**
@@ -1934,7 +1913,6 @@ function fn_email_auto_upgrade($result)
     }
 }
 
-
 osc_add_hook('after_auto_upgrade', 'fn_email_auto_upgrade', 10);
 
 /**
@@ -1946,6 +1924,5 @@ function _osc_from_email_aux()
 
     return !empty($tmp) ? $tmp : osc_contact_email();
 }
-
 
 /* file end: ./oc-includes/osclass/emails.php */

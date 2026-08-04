@@ -31,7 +31,6 @@ function osc_run_hook($hook, ...$args)
     Plugins::runHook($hook, ...$args);
 }
 
-
 /**
  * Apply a filter to a text
  *
@@ -45,7 +44,6 @@ function osc_apply_filter($hook, $content, ...$args)
 {
     return Plugins::applyFilter($hook, $content, ...$args);
 }
-
 
 /**
  * Add a hook
@@ -61,7 +59,6 @@ function osc_add_hook($hook, $function, $priority = 5)
     Plugins::addHook($hook, $function, $priority);
 }
 
-
 /**
  * Add a filter
  *
@@ -76,7 +73,6 @@ function osc_add_filter($hook, $function, $priority = 5)
     Plugins::addHook($hook, $function, $priority);
 }
 
-
 /**
  * Remove a hook's function
  *
@@ -89,7 +85,6 @@ function osc_remove_hook($hook, $function)
 {
     Plugins::removeHook($hook, $function);
 }
-
 
 /**
  * Remove a filter's function
@@ -104,7 +99,6 @@ function osc_remove_filter($hook, $function)
     Plugins::removeHook($hook, $function);
 }
 
-
 /**
  * If the plugin is attached to the category
  *
@@ -118,7 +112,6 @@ function osc_is_this_category($name, $id)
     return Plugins::isThisCategory($name, $id);
 }
 
-
 /**
  * Returns plugin's information
  *
@@ -131,7 +124,6 @@ function osc_plugin_get_info($plugin)
     return Plugins::getInfo($plugin);
 }
 
-
 /**
  * Check if there's a new version of the plugin
  *
@@ -143,7 +135,6 @@ function osc_plugin_check_update($plugin)
 {
     return Plugins::checkUpdate($plugin);
 }
-
 
 /**
  * Register a plugin file to be loaded
@@ -158,7 +149,6 @@ function osc_register_plugin($path, $function)
     Plugins::register($path, $function);
 }
 
-
 /**
  * Get list of the plugins
  *
@@ -168,7 +158,6 @@ function osc_get_plugins()
 {
     return Plugins::getActive();
 }
-
 
 /**
  * Gets if a plugin is installed or not
@@ -182,7 +171,6 @@ function osc_plugin_is_installed($plugin)
     return Plugins::isInstalled($plugin);
 }
 
-
 /**
  * Gets if a plugin is enabled or not
  *
@@ -194,7 +182,6 @@ function osc_plugin_is_enabled($plugin)
 {
     return Plugins::isEnabled($plugin);
 }
-
 
 /**
  * Show the default configure view for plugins (attach them to categories)
@@ -208,7 +195,6 @@ function osc_plugin_configure_view($plugin)
     Plugins::configureView($plugin);
 }
 
-
 /**
  * Gets the path to a plugin's resource
  *
@@ -221,7 +207,6 @@ function osc_plugin_resource($file)
     return Plugins::resource($file);
 }
 
-
 /**
  * Gets plugin's configure url
  *
@@ -233,7 +218,6 @@ function osc_plugin_configure_url($plugin)
 {
     return osc_admin_base_url(true) . '?page=plugins&action=configure&plugin=' . $plugin;
 }
-
 
 /**
  * Gets the ajax url
@@ -249,7 +233,6 @@ function osc_admin_ajax_hook_url($hook = '', $params = array())
     return _osc_ajax_hook_url(true, $hook, $params);
 }
 
-
 /**
  * Gets the ajax url
  *
@@ -263,7 +246,6 @@ function osc_ajax_hook_url($hook = '', $params = array())
 {
     return _osc_ajax_hook_url(false, $hook, $params);
 }
-
 
 /**
  * Gets the ajax url
@@ -300,7 +282,6 @@ function _osc_ajax_hook_url($admin, $hook, $params)
     return $url;
 }
 
-
 /**
  * Gets the path for ajax
  *
@@ -316,7 +297,6 @@ function osc_ajax_plugin_url($file = '')
 
     return (osc_base_url(true) . '?page=ajax&action=custom&ajaxfile=' . $file);
 }
-
 
 /**
  * Gets the configure admin's url
@@ -334,7 +314,6 @@ function osc_admin_configure_plugin_url($file = '')
     return osc_admin_base_url(true) . '?page=plugins&action=configure&plugin=' . $file;
 }
 
-
 /**
  * Gets urls for custom plugin administrations options
  *
@@ -351,7 +330,6 @@ function osc_admin_render_plugin_url($file = '')
     return osc_admin_base_url(true) . '?page=plugins&action=renderplugin&file=' . $file;
 }
 
-
 /**
  * Show custom plugin administrationfile
  *
@@ -363,7 +341,6 @@ function osc_admin_render_plugin($file = '')
 {
     osc_redirect_to(osc_admin_render_plugin_url($file));
 }
-
 
 /**
  * Fix the problem of symbolics links in the path of the file
@@ -382,7 +359,6 @@ function osc_plugin_path($file)
     return $file;
 }
 
-
 /**
  * Fix the problem of symbolics links in the path of the file
  *
@@ -399,7 +375,6 @@ function osc_plugin_url($file)
 
     return $dir;
 }
-
 
 /**
  * Fix the problem of symbolics links in the path of the file

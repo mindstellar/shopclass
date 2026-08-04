@@ -32,7 +32,6 @@ use RuntimeException;
  */
 class Plugin extends UpgradePackage
 {
-
     /**
      * @return bool
      */

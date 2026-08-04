@@ -119,7 +119,6 @@ class CWebAjax extends BaseModel
                     return false;
                 }
 
-
                 $aItem = Item::newInstance()->findByPrimaryKey($item);
 
                 // Check if the item exists

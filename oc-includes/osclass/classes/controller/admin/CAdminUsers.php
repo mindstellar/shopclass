@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -377,7 +379,6 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-
                 if ($status == 1) {
                     if ($iUpdated == 0) {
                         $msg = _m('No alerts have been activated');
@@ -487,7 +488,6 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $alertsDataTable->rawRows());
 
@@ -548,7 +548,6 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $banRulesDataTable->rawRows());
 
@@ -566,7 +565,6 @@ class CAdminUsers extends AdminSecBaseModel
 
                 $bulk_options = osc_apply_filter('ban_rule_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
-
 
                 //calling the view...
                 $this->doView('users/ban.php');
@@ -707,7 +705,6 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('withFilters', $usersDataTable->withFilters());
                 $this->_exportVariableToView('aRawRows', $usersDataTable->rawRows());
@@ -768,7 +765,6 @@ class CAdminUsers extends AdminSecBaseModel
 
                 $bulk_options = osc_apply_filter('user_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
-
 
                 //calling the view...
                 $this->doView('users/index.php');

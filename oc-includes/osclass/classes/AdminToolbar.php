@@ -35,7 +35,7 @@ class AdminToolbar
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -154,7 +154,7 @@ class AdminToolbar
                      . ((isset($value->target)) ? 'target="' . $value->target . '"' : '') . '>' . $value->title . '</a>';
                 if ($hasSubmenu === true) {
                     echo '<ul class="osc_admin_submenu" id="osc_toolbar_sub_' . $value->id . '">';
-                        //echo '<ul class="osc_admin_submenu" id="osc_toolbar_sub_' . $value->id . '"></ul>';
+                    //echo '<ul class="osc_admin_submenu" id="osc_toolbar_sub_' . $value->id . '"></ul>';
                     foreach ($value->submenu as $subvalue) {
                         if (isset($subvalue->subid)) {
                             $submeta = '';
@@ -167,7 +167,6 @@ class AdminToolbar
                                     ? 'target="' . $subvalue->target . '"' : '') . '>' . $subvalue->title . '</a><li>';
                         }
                     }
-
 
                     echo '</ul>';
                 }

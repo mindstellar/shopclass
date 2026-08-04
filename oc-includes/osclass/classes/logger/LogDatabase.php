@@ -49,7 +49,7 @@ class LogDatabase
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -481,13 +481,13 @@ CSS;
         fwrite($fp, '==================================================' . PHP_EOL);
 
         fwrite(
-                $fp,
-                '=' . str_pad(
-                    'Date: ' . date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:s'),
-                    48,
-                    ' ',
-                    STR_PAD_BOTH
-                ) . '=' . PHP_EOL
+            $fp,
+            '=' . str_pad(
+                'Date: ' . date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:s'),
+                48,
+                ' ',
+                STR_PAD_BOTH
+            ) . '=' . PHP_EOL
         );
         fwrite($fp, '==================================================' . PHP_EOL . PHP_EOL);
 

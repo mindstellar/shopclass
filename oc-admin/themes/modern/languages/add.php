@@ -21,7 +21,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -31,7 +30,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Add language &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 

@@ -19,12 +19,12 @@ function admin_js_lang_string()
             'no_subcategory'      => __('No subcategory'),
             'select_subcategory'  => __('Select subcategory')
         );
-        $locales = osc_get_locales();
-        $codes = array();
-        foreach ($locales as $locale) {
-            $codes[] = osc_esc_js($locale['pk_c_code']);
-        }
-        ?>
+    $locales = osc_get_locales();
+    $codes = array();
+    foreach ($locales as $locale) {
+        $codes[] = osc_esc_js($locale['pk_c_code']);
+    }
+    ?>
         osc.locales = {};
         osc.locales._default = '<?php echo osc_language(); ?>';
         osc.locales.current = '<?php echo osc_current_admin_locale(); ?>';
@@ -34,7 +34,6 @@ function admin_js_lang_string()
     </script>
     <?php
 }
-
 
 osc_add_hook('admin_header', 'admin_js_lang_string');
 
@@ -80,8 +79,7 @@ function admin_header_favicons()
             }
         ?> href="<?php echo osc_esc_html($f['href']); ?>">
     <?php }
-}
-
+    }
 
 osc_add_hook('admin_header', 'admin_header_favicons');
 
@@ -104,7 +102,6 @@ function admin_footer_html()
     </div><?php
 }
 
-
 osc_add_hook('admin_content_footer', 'admin_footer_html');
 
 /**
@@ -117,7 +114,6 @@ function check_market_language_compatibility($slug, $language_version)
 {
     return osc_check_language_update($slug);
 }
-
 
 /**
  * @param $versions
@@ -140,7 +136,6 @@ function check_market_compatibility($versions)
     return false;
 }
 
-
 function check_version_admin_footer()
 {
     if ((time() - osc_last_version_check()) > (24 * 3600)) {
@@ -156,7 +151,6 @@ function check_version_admin_footer()
         <?php
     }
 }
-
 
 osc_add_hook('admin_footer', 'check_version_admin_footer');
 
@@ -174,7 +168,6 @@ function check_languages_admin_footer()
     <?php
 }
 
-
 function check_themes_admin_footer()
 {
     ?>
@@ -188,7 +181,6 @@ function check_themes_admin_footer()
     </script>
     <?php
 }
-
 
 function check_plugins_admin_footer()
 {
@@ -326,7 +318,7 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 <?php break;
             case 'code': ?>
                 <?php // Raw HTML/JS: a plain monospace textarea, never TinyMCE. The
-                      // widget-code-editor class keeps the appearance TinyMCE init away. ?>
+                      // widget-code-editor class keeps the appearance TinyMCE init away.?>
                 <textarea id="<?php echo osc_esc_html($id); ?>" class="form-control widget-code-editor"
                           style="font-family:monospace" rows="8" spellcheck="false" autocomplete="off"
                           name="<?php echo osc_esc_html($inputName); ?>"
@@ -338,7 +330,7 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                           <?php echo $dis; ?>><?php echo osc_esc_html($val); ?></textarea>
                 <?php break;
             case 'image': ?>
-                <?php // A media URL chosen via the picker (parts/media-picker.php). ?>
+                <?php // A media URL chosen via the picker (parts/media-picker.php).?>
                 <div class="widget-image-field">
                     <input type="hidden" id="<?php echo osc_esc_html($id); ?>" class="widget-image-input"
                            name="<?php echo osc_esc_html($inputName); ?>"

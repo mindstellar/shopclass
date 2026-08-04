@@ -59,7 +59,6 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
 /** Enable osclass db query explain logging */
 //define('OSC_DEBUG_DB_EXPLAIN', false); //default is false
 
-
 /**
  * Object cache driver. Default is 'default' (a per-request in-memory array that
  * does NOT persist between requests). For a real shared cache, install the
@@ -81,7 +80,3 @@ defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localh
 //$_cache_config = array(
 //    array('default_host' => '127.0.0.1', 'default_port' => 11211, 'default_weight' => 1),
 //);
-
-
-
-

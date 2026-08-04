@@ -22,8 +22,8 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\utility\FileSystem;
-use WebThemes;
 use RuntimeException;
+use WebThemes;
 
 /**
  * Class Theme
@@ -32,7 +32,6 @@ use RuntimeException;
  */
 class Theme extends UpgradePackage
 {
-
     /**
      * Extra actions after upgradeProcess is done
      */

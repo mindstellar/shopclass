@@ -18,7 +18,6 @@
  */
 class Styles extends Dependencies
 {
-
     private static $instance;
     public $styles = [];
 
@@ -53,8 +52,7 @@ class Styles extends Dependencies
     /**
      * Get the css styles urls
      */
-    public function getStyles()
-    : array
+    public function getStyles(): array
     {
         $styles = array();
         $this->order();
@@ -74,8 +72,7 @@ class Styles extends Dependencies
      *
      * @return string
      */
-    private function cssLinkTag(string $css)
-    : string
+    private function cssLinkTag(string $css): string
     {
         return '<link href="' . Plugins::applyFilter('style_url', $css) . '" rel="stylesheet" type="text/css" />'
                . PHP_EOL;
@@ -84,11 +81,10 @@ class Styles extends Dependencies
     /**
      * @return \Styles
      */
-    public static function newInstance()
-    : Styles
+    public static function newInstance(): Styles
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

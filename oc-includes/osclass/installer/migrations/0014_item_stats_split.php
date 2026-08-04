@@ -47,7 +47,7 @@ use mindstellar\migration\MigrationInterface;
  * before use, and the rollup backfill is deterministic so INSERT IGNORE either
  * writes a (date, bucket) row or leaves the identical one already there.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     /** Counter columns, in schema order. */
     private const COUNTERS = array(
         'i_num_views',
@@ -154,7 +154,7 @@ return new class implements MigrationInterface {
     private function sums(string $prefix): string
     {
         return implode(', ', array_map(
-            static fn($c) => 'SUM(' . $prefix . $c . ')',
+            static fn ($c) => 'SUM(' . $prefix . $c . ')',
             self::COUNTERS
         ));
     }

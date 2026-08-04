@@ -22,7 +22,7 @@ use mindstellar\migration\MigrationInterface;
  *
  * Idempotent: DROP TABLE IF EXISTS is a no-op when the table is already absent.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $conn->execute('DROP TABLE IF EXISTS ' . DB_TABLE_PREFIX . 't_keywords');

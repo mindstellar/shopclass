@@ -42,28 +42,30 @@ $_POST = array();
 Params::init();
 
 harness_section('getParamInt — array-injection safe, scalar-identical');
-pin('scalar id -> int',            42, Params::getParamInt('id'));
-pin('numeric page -> int',          3, Params::getParamInt('iPage'));
-pin('negative -> int',             -7, Params::getParamInt('neg'));
+pin('scalar id -> int', 42, Params::getParamInt('id'));
+pin('numeric page -> int', 3, Params::getParamInt('iPage'));
+pin('negative -> int', -7, Params::getParamInt('neg'));
 pin('dirty "5abc" -> 5 (as (int))', 5, Params::getParamInt('dirty'));
-pin('ARRAY value -> default 0',     0, Params::getParamInt('idArr'));
-pin('array -> custom default',     -1, Params::getParamInt('idArr', -1));
-pin('missing -> default 0',         0, Params::getParamInt('nope'));
-pin('missing -> custom default',    9, Params::getParamInt('nope', 9));
+pin('ARRAY value -> default 0', 0, Params::getParamInt('idArr'));
+pin('array -> custom default', -1, Params::getParamInt('idArr', -1));
+pin('missing -> default 0', 0, Params::getParamInt('nope'));
+pin('missing -> custom default', 9, Params::getParamInt('nope', 9));
 
 harness_section('getParamString — never returns an array');
 pin('scalar purified (tags stripped)', 'hithere', Params::getParamString('name'));
-pin('ARRAY value -> empty string',     '',        Params::getParamString('nameArr'));
-pin('missing -> empty string',         '',        Params::getParamString('nope'));
-check('matches getParam() for a scalar',
-    Params::getParamString('name') === Params::getParam('name'));
+pin('ARRAY value -> empty string', '', Params::getParamString('nameArr'));
+pin('missing -> empty string', '', Params::getParamString('nope'));
+check(
+    'matches getParam() for a scalar',
+    Params::getParamString('name') === Params::getParam('name')
+);
 
 harness_section('getParamArray — never returns a scalar');
 $meta = Params::getParamArray('meta');
 check('array value returned as array', is_array($meta) && count($meta) === 2);
 check('array values are purified', ($meta['4'] ?? null) === 'v' && ($meta['5'] ?? null) === 'w');
-pin('SCALAR value -> empty array',  array(), Params::getParamArray('id'));
-pin('missing -> empty array',       array(), Params::getParamArray('nope'));
+pin('SCALAR value -> empty array', array(), Params::getParamArray('id'));
+pin('missing -> empty array', array(), Params::getParamArray('nope'));
 
 $fail = $GLOBALS['failCount'];
 echo "\n" . ($fail === 0

@@ -33,7 +33,6 @@ function osc_locale_field($field, $locale = '')
     return osc_field(osc_locale(), $field, $locale);
 }
 
-
 /**
  * Gets locale object
  *
@@ -50,7 +49,6 @@ function osc_locale()
 
     return $locale;
 }
-
 
 /**
  * Gets list of locales
@@ -69,7 +67,6 @@ function osc_get_locales()
     return $locale;
 }
 
-
 /**
  * Private function to count locales
  *
@@ -80,7 +77,6 @@ function osc_priv_count_locales()
     return View::newInstance()->_count('locales');
 }
 
-
 /**
  * Reset iterator of locales
  *
@@ -90,7 +86,6 @@ function osc_goto_first_locale()
 {
     View::newInstance()->_reset('locales');
 }
-
 
 /**
  * Gets number of enabled locales for website
@@ -106,7 +101,6 @@ function osc_count_web_enabled_locales()
     return osc_priv_count_locales();
 }
 
-
 /**
  * Iterator for enabled locales for website
  *
@@ -121,7 +115,6 @@ function osc_has_web_enabled_locales()
     return View::newInstance()->_next('locales');
 }
 
-
 /**
  * Gets current locale's code
  *
@@ -132,7 +125,6 @@ function osc_locale_code()
     return osc_locale_field('pk_c_code');
 }
 
-
 /**
  * Gets current locale's name
  *
@@ -142,7 +134,6 @@ function osc_locale_name()
 {
     return osc_locale_field('s_name');
 }
-
 
 /**
  * Gets current locale's currency format
@@ -164,7 +155,6 @@ function osc_locale_currency_format()
     return $cLocale['s_currency_format'];
 }
 
-
 /**
  * Gets current locale's decimal point
  *
@@ -184,7 +174,6 @@ function osc_locale_dec_point()
 
     return $cLocale['s_dec_point'];
 }
-
 
 /**
  * Gets current locale's thousands separator
@@ -215,7 +204,7 @@ function osc_locale_text_direction()
 {
     $aLocales = osc_get_locales();
     $cLocale  = $aLocales[0];
-    
+
     foreach ($aLocales as $locale) {
         if ($locale['pk_c_code'] === osc_current_user_locale()) {
             $cLocale = $locale;
@@ -225,7 +214,6 @@ function osc_locale_text_direction()
 
     return $cLocale['s_direction'];
 }
-
 
 /**
  * Gets current locale's number of decimals
@@ -276,7 +264,6 @@ function osc_all_enabled_locales_for_admin($indexed_by_pk = false)
     return OSCLocale::newInstance()->listAllEnabled(true, $indexed_by_pk);
 }
 
-
 /**
  * Gets current locale object
  *
@@ -289,7 +276,6 @@ function osc_get_current_user_locale()
 
     return $locale;
 }
-
 
 /**
  * Get the actual locale of the user.
@@ -325,7 +311,6 @@ function osc_current_user_locale()
 
     return osc_language();
 }
-
 
 /**
  * Persist the visitor's chosen front-end locale in a dedicated cookie.
@@ -365,7 +350,6 @@ function osc_set_current_user_locale($locale)
     // after a ?lang= switch reads it back through osc_current_user_locale().
     $_COOKIE['oc_userLocale'] = $locale;
 }
-
 
 /**
  * Get the actual locale of the admin.

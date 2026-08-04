@@ -25,10 +25,16 @@ require_once __DIR__ . '/lib/harness.php';
 
 // Pagination's render methods call these osclass helpers; stub them DB-/bootstrap-free.
 if (!function_exists('osc_esc_html')) {
-    function osc_esc_html($s) { return htmlspecialchars((string) $s, ENT_QUOTES); }
+    function osc_esc_html($s)
+    {
+        return htmlspecialchars((string) $s, ENT_QUOTES);
+    }
 }
 if (!function_exists('__')) {
-    function __($s, $d = '') { return $s; }
+    function __($s, $d = '')
+    {
+        return $s;
+    }
 }
 
 $GLOBALS['okCount']    = 0;

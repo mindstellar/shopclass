@@ -35,7 +35,6 @@ class Formatting
         return $array;
     }
 
-
     /**
      * @param $string
      *
@@ -66,7 +65,6 @@ class Formatting
 
         return $string;
     }
-
 
     /**
      * @param $string
@@ -462,8 +460,6 @@ class Formatting
 
         return $string;
     }
-
-
 
     /**
      * Check if string is a UTF8 encoded

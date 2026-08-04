@@ -175,8 +175,8 @@ class ItemActions
         $aItem['contactName']       = trim($this->Sanitize->string($aItem['contactName']));
         $aItem['contactEmail']      = $this->Sanitize->email($aItem['contactEmail']);
         $aItem['contactPhone']      = $this->Sanitize->phone($aItem['contactPhone']);
-        $aItem['cityArea'] = $aItem['cityArea']?osc_sanitize_name(strip_tags(trim($aItem['cityArea']))) : '';
-        $aItem['address']  = $aItem['address']?osc_sanitize_name(strip_tags(trim($aItem['address']))) : '';
+        $aItem['cityArea'] = $aItem['cityArea'] ? osc_sanitize_name(strip_tags(trim($aItem['cityArea']))) : '';
+        $aItem['address']  = $aItem['address'] ? osc_sanitize_name(strip_tags(trim($aItem['address']))) : '';
 
         // Anonymous
         $aItem['contactName'] = osc_validate_text($aItem['contactName'], 3) ? $aItem['contactName'] : __('Anonymous');
@@ -444,7 +444,6 @@ class ItemActions
 
         return $success;
     }
-
 
     /**
      * @param array  $title
@@ -1455,7 +1454,6 @@ class ItemActions
             $b_spam    = $item['b_spam'];
             $isExpired = osc_isExpired($item['dt_expiration']);
 
-
             if (
                 $b_active == 1 && $b_enabled == 1 && $b_spam == 0
                 && !$isExpired
@@ -1682,7 +1680,6 @@ class ItemActions
             $flash_error .= __('Message: this field is required') . PHP_EOL;
         }
 
-
         if (!empty($flash_error)) {
             return $flash_error;
         }
@@ -1700,7 +1697,6 @@ class ItemActions
         }
 
         $aItem = $this->prepareDataForFunction('add_comment');
-
 
         $authorName  = trim(strip_tags($aItem['authorName']));
         $authorEmail = trim(strip_tags($aItem['authorEmail']));

@@ -411,9 +411,7 @@ class FileSystem
             throw new RuntimeException(sprintf('Unable to copy "%s" because file does not exist.', $originFile));
         }
 
-
         $this->mkdir(dirname($targetFile));
-
 
         $doCopy = true;
         if (!$overwriteNewerFiles && null === parse_url($originFile, PHP_URL_HOST) && is_file($targetFile)) {
@@ -682,8 +680,7 @@ class FileSystem
      *
      * @return bool
      */
-    private function testCurl()
-    : bool
+    private function testCurl(): bool
     {
         return (function_exists('curl_init') || function_exists('curl_exec'));
     }

@@ -12,7 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 /**
  * Helper Flash Messages
  *
@@ -34,7 +33,6 @@ function osc_add_flash_message($msg, $section = 'pubMessages')
     Session::newInstance()->_setMessage($section, $msg, 'error');
 }
 
-
 /**
  * Adds an ephemeral message to the session. (ok style)
  *
@@ -47,7 +45,6 @@ function osc_add_flash_ok_message($msg, $section = 'pubMessages')
 {
     Session::newInstance()->_setMessage($section, $msg, 'ok');
 }
-
 
 /**
  * Adds an ephemeral message to the session. (error style)
@@ -62,7 +59,6 @@ function osc_add_flash_error_message($msg, $section = 'pubMessages')
     Session::newInstance()->_setMessage($section, $msg, 'error');
 }
 
-
 /**
  * Adds an ephemeral message to the session. (info style)
  *
@@ -76,7 +72,6 @@ function osc_add_flash_info_message($msg, $section = 'pubMessages')
     Session::newInstance()->_setMessage($section, $msg, 'info');
 }
 
-
 /**
  * Adds an ephemeral message to the session. (warning style)
  *
@@ -89,7 +84,6 @@ function osc_add_flash_warning_message($msg, $section = 'pubMessages')
 {
     Session::newInstance()->_setMessage($section, $msg, 'warning');
 }
-
 
 /**
  * Shows all the pending flash messages in session and cleans up the array.
@@ -126,7 +120,6 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
     }
     Session::newInstance()->_dropMessage($section);
 }
-
 
 /**
  *

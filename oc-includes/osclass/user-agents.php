@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 /*
@@ -12,7 +14,6 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 
 /*
  * Kept for compatibility only — core no longer reads this list.

@@ -17,7 +17,6 @@
  */
 class LanguageForm extends Form
 {
-
     /**
      * @param $locale
      */
@@ -170,7 +169,7 @@ class LanguageForm extends Form
         $attributes['id'] = 's_direction';
         $value = $aLocale['s_direction'];
 
-        echo (new Form)->select('s_direction', $value, $attributes, $options );
+        echo (new Form())->select('s_direction', $value, $attributes, $options);
     }
 
     /**

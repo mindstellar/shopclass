@@ -194,7 +194,6 @@ class LoginThrottle
         }
     }
 
-
     /**
      * The ledger could not be reached, so the limiter stands aside.
      *

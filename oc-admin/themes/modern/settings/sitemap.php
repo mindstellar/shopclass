@@ -91,7 +91,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                value="<?php echo osc_esc_html($prefs['sitemap_number']); ?>"/>
                         <div class="help-box">
                             <?php _e('Number of URLs per XML item sitemap file. Extra listings roll into additional '
-                                     . 'sitemaps automatically. Keep this low if you hit memory or timeout errors.'); ?>
+                                             . 'sitemaps automatically. Keep this low if you hit memory or timeout errors.'); ?>
                         </div>
                     </div>
                 </div>
@@ -226,7 +226,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="sitemap-regenerate" class="separate-top">
         <h3 class="render-title"><?php _e('Regenerate'); ?></h3>
         <p><?php _e('The sitemap is cached for a few hours after it is first requested. Use this if you need '
-                    . 'search engines to see fresh content immediately.'); ?></p>
+                            . 'search engines to see fresh content immediately.'); ?></p>
         <form name="sitemap_regenerate_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
             <input type="hidden" name="action" value="sitemap_regenerate"/>

@@ -22,7 +22,6 @@
  */
 class PagesDataTable extends DataTable
 {
-
     private $pages;
     private $total_filtered;
 

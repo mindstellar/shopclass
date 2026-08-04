@@ -21,7 +21,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -31,7 +30,6 @@ function customPageTitle($string)
 {
     return __('Upgrade');
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -66,7 +64,6 @@ function customHead()
         });
     </script>
 <?php }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -127,7 +124,6 @@ function upgradeReleaseNotes()
 
     return array('label' => $label, 'entries' => $entries);
 }
-
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 

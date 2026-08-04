@@ -43,7 +43,6 @@ function osc_static_page()
     return $page;
 }
 
-
 /**
  * Gets current page field
  *
@@ -56,7 +55,6 @@ function osc_static_page_field($field, $locale = '')
 {
     return osc_field(osc_static_page(), $field, $locale);
 }
-
 
 /**
  * Gets current page title
@@ -73,7 +71,6 @@ function osc_static_page_title($locale = '')
 
     return osc_static_page_field('s_title', $locale);
 }
-
 
 /**
  * Gets current page text
@@ -96,7 +93,6 @@ function osc_static_page_text($locale = '')
     return osc_autop($text);
 }
 
-
 /**
  * Gets current page ID
  *
@@ -106,7 +102,6 @@ function osc_static_page_id()
 {
     return osc_static_page_field('pk_i_id');
 }
-
 
 /**
  * Get page order
@@ -118,7 +113,6 @@ function osc_static_page_order()
     return (int)osc_static_page_field('i_order');
 }
 
-
 /**
  * Gets current page modification date
  *
@@ -128,7 +122,6 @@ function osc_static_page_mod_date()
 {
     return osc_static_page_field('dt_mod_date');
 }
-
 
 /**
  * Gets current page publish date
@@ -140,7 +133,6 @@ function osc_static_page_pub_date()
     return osc_static_page_field('dt_pub_date');
 }
 
-
 /**
  * Gets current page slug or internal name
  *
@@ -150,7 +142,6 @@ function osc_static_page_slug()
 {
     return osc_static_page_field('s_internal_name');
 }
-
 
 /**
  * Gets current page meta information
@@ -172,7 +163,6 @@ function osc_static_page_meta($field = null)
 
     return $meta;
 }
-
 
 /**
  * Gets current page url
@@ -209,7 +199,6 @@ function osc_static_page_url($locale = '')
     return $path;
 }
 
-
 /**
  * Gets the specified static page by internal name.
  *
@@ -229,7 +218,6 @@ function osc_get_static_page($internal_name, $locale = '')
     View::newInstance()->_exportVariableToView('page', $page);
 }
 
-
 /**
  * Gets the total of static pages. If static pages are not loaded, this function will load them.
  *
@@ -243,7 +231,6 @@ function osc_count_static_pages()
 
     return View::newInstance()->_count('pages');
 }
-
 
 /**
  * Let you know if there are more static pages in the list. If static pages are not loaded,
@@ -273,7 +260,6 @@ function osc_has_static_pages()
 
     return $page;
 }
-
 
 /**
  * Move the iterator to the first position of the pages array

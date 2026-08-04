@@ -70,11 +70,10 @@ class Item extends FormInputs
     /**
      * @return \mindstellar\form\admin\Item
      */
-    public static function instance()
-    : Item
+    public static function instance(): Item
     {
         if (!isset(self::$instance)) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

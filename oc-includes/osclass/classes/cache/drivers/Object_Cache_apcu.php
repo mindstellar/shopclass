@@ -18,7 +18,6 @@
  */
 class Object_Cache_apcu implements iObject_Cache
 {
-
     /**
      * Holds the cached objects
      *
@@ -308,7 +307,6 @@ class Object_Cache_apcu implements iObject_Cache
             'server'       => null,
         );
     }
-
 
     /**
      * Namespace every key with a value unique to this install.

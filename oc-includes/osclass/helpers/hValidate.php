@@ -39,7 +39,6 @@ function osc_validate_text($value = '', $count = 1, $required = true)
     return true;
 }
 
-
 /**
  * Validate one or more numbers (no periods)
  *
@@ -56,7 +55,6 @@ function osc_validate_int($value)
     return false;
 }
 
-
 /**
  * Validate one or more numbers (no periods), must be more than 0.
  *
@@ -68,7 +66,6 @@ function osc_validate_nozero($value)
 {
     return preg_match('/^[0-9]+$/', $value) && $value > 0;
 }
-
 
 /**
  * Validate $value is a number or a numeric string
@@ -88,7 +85,6 @@ function osc_validate_number($value = null, $required = false)
 
     return true;
 }
-
 
 /**
  * Validate $value is a number phone,
@@ -111,7 +107,6 @@ function osc_validate_phone($value = null, $count = 10, $required = false)
     return true;
 }
 
-
 /**
  * Validate if $value is more than $min
  *
@@ -124,7 +119,6 @@ function osc_validate_min($value = null, $min = 6)
 {
     return !(mb_strlen($value, 'UTF-8') < $min);
 }
-
 
 /**
  * Validate if $value is less than $max
@@ -139,7 +133,6 @@ function osc_validate_max($value = null, $max = 255)
     return !(mb_strlen($value, 'UTF-8') > $max);
 }
 
-
 /**
  * Validate if $value belongs at range between min to max
  *
@@ -153,7 +146,6 @@ function osc_validate_range($value, $min = 6, $max = 255)
 {
     return mb_strlen($value, 'UTF-8') >= $min && mb_strlen($value, 'UTF-8') <= $max;
 }
-
 
 /**
  * Validate if exist $city, $region, $country in db
@@ -195,7 +187,6 @@ function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCou
     return false;
 }
 
-
 /**
  * Validate if exist category $value and is enabled in db
  *
@@ -220,7 +211,6 @@ function osc_validate_category($value)
 
     return false;
 }
-
 
 /**
  * Validate if $value url is a valid url.
@@ -261,7 +251,6 @@ function osc_validate_url($value, $required = false, $get_headers = false)
     return true;
 }
 
-
 /**
  * Validate time between two items added/comments
  *
@@ -287,7 +276,6 @@ function osc_validate_spam_delay($type = 'item')
         date('Y-m-d H:i:s', time() - (int)$delay)
     ) === 0;
 }
-
 
 /**
  * Validate an email address
@@ -354,7 +342,6 @@ function osc_validate_email($email, $required = true)
     return true;
 }
 
-
 /**
  * validate username, accept letters plus underline, without separators
  *
@@ -367,7 +354,6 @@ function osc_validate_username($value, $min = 1)
 {
     return mb_strlen($value, 'UTF-8') >= $min && preg_match('/^[A-Za-z0-9_]+$/', $value);
 }
-
 
 /**
  * Validate locale  string. Check against available locale list

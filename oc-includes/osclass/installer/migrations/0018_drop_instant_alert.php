@@ -22,7 +22,7 @@ use mindstellar\migration\MigrationInterface;
  *
  * Idempotent: a DELETE matching no rows is a no-op, so re-running is safe.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $conn->execute(

@@ -37,7 +37,7 @@ class Dump extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -277,7 +277,6 @@ class Dump extends DAO
         }
     }
 
-
     /**
      * Add quotes if it's necessary
      *
@@ -289,16 +288,16 @@ class Dump extends DAO
      */
     private function _quotes($type, &$_str, $value)
     {
-//            * numeric *
-//            BIT: 16 - TINYINT: 1 - BOOL: 1 - SMALLINT: 2 - MEDIUMINT: 9
-//            INTEGER: 3 - BIGINT: 8 - SERIAL: 8 - FLOAT: 4 - DOUBLE: 5
-//            DECIMAL: 246 - NUMERIC: 246 - FIXED: 246
-//            * dates *
-//            DATE: 10 - DATETIME: 12 - TIMESTAMP: 7 - TIME: 11 - YEAR: 13
-//            * strings & binary *
-//            CHAR: 254 - VARCHAR: 253 - ENUM: 254 - SET: 254 - BINARY: 254
-//            VARBINARY: 253 - TINYBLOB: 252 - BLOB: 252 - MEDIUMBLOB: 252
-//            TINYTEXT: 252 - TEXT: 252 - MEDIUMTEXT: 252 - LONGTEXT: 252
+        //            * numeric *
+        //            BIT: 16 - TINYINT: 1 - BOOL: 1 - SMALLINT: 2 - MEDIUMINT: 9
+        //            INTEGER: 3 - BIGINT: 8 - SERIAL: 8 - FLOAT: 4 - DOUBLE: 5
+        //            DECIMAL: 246 - NUMERIC: 246 - FIXED: 246
+        //            * dates *
+        //            DATE: 10 - DATETIME: 12 - TIMESTAMP: 7 - TIME: 11 - YEAR: 13
+        //            * strings & binary *
+        //            CHAR: 254 - VARCHAR: 253 - ENUM: 254 - SET: 254 - BINARY: 254
+        //            VARBINARY: 253 - TINYBLOB: 252 - BLOB: 252 - MEDIUMBLOB: 252
+        //            TINYTEXT: 252 - TEXT: 252 - MEDIUMTEXT: 252 - LONGTEXT: 252
 
         $aNumeric = array(16, 1, 2, 9, 3, 8, 4, 5, 246);
         $aDates   = array(10, 12, 7, 11, 13);

@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -86,7 +88,6 @@ if (is_array($cron)) {
             array('d_last_exec' => $d_now, 'd_next_exec' => $d_next),
             array('e_type' => 'DAILY')
         );
-
 
         //osc_do_auto_upgrade();
 

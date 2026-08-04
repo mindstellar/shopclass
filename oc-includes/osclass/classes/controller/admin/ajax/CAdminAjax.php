@@ -22,7 +22,6 @@ define('IS_AJAX', true);
  */
 class CAdminAjax extends AdminSecBaseModel
 {
-
     public function __construct()
     {
         parent::__construct();
@@ -891,9 +890,9 @@ class CAdminAjax extends AdminSecBaseModel
                 echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
 
-            /******************************
-             ** COMPLETE UPGRADE PROCESS **
-             ******************************/
+                /******************************
+                 ** COMPLETE UPGRADE PROCESS **
+                 ******************************/
             case 'upgrade': // AT THIS POINT WE KNOW IF THERE'S AN UPDATE OR NOT
                 osc_csrf_check();
                 if (osc_self_update_disabled()) {

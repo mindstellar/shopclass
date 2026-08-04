@@ -12,7 +12,6 @@ namespace mindstellar\utility;
 
 use Category;
 use City;
-use Cookie;
 use Country;
 use LoginAttempt;
 use Params;
@@ -26,7 +25,6 @@ use Session;
  */
 class Validate
 {
-
     /**
      * Validate using filter_var
      * common method to validate value

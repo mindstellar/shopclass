@@ -73,7 +73,6 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0, $enqu
     echo '</form>';
 }
 
-
 /**
  * Options for the core.form widget's form picker: forms flagged "available as a
  * block" (s_meta.placeable). Returned as [{value,label}] and resolved lazily by
@@ -96,7 +95,6 @@ function osc_form_widget_options()
 
     return $out;
 }
-
 
 /**
  * A form's fields for a placement context — its stored fields (Field::findByGroup)
@@ -122,7 +120,6 @@ function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
     return is_array($fields) ? $fields : array();
 }
 
-
 /**
  * Register a form placement-context type so its submissions read sensibly in the
  * admin. Thin wrapper over FormContextRegistry::register().
@@ -137,7 +134,6 @@ function osc_register_form_context($type, $spec)
     \mindstellar\forms\FormContextRegistry::instance()->register($type, $spec);
 }
 
-
 /**
  * Describe a submission's placement context for the admin: ['label' => string,
  * 'url' => ?string]. Never throws.
@@ -151,7 +147,6 @@ function osc_form_context_display($type, $id)
 {
     return \mindstellar\forms\FormContextRegistry::instance()->describe((string)$type, (int)$id);
 }
-
 
 /**
  * Derive a placement context (type, id) from the t_widget row a form is rendered
@@ -177,7 +172,6 @@ function osc_form_context_from_widget($widgetRow)
     return array('widget', 0);
 }
 
-
 /*
  * Core "Form" widget — places a custom form (Listings → Custom forms) into any
  * widget area: a static page, a page-builder canvas, a sidebar. Registered
@@ -202,7 +196,6 @@ osc_register_widget('core.form', array(
         osc_render_form($formId, $contextType, $contextId);
     },
 ));
-
 
 /*
  * Core placement contexts. 'page' resolves to the static page's title + public

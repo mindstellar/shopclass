@@ -67,8 +67,8 @@ function osc_checkLocales()
             }
 
             // inserting e-mail translations
-            if (file_exists(osc_translations_path() . $locale['locale_code'] . '/mail.json' )) {
-                $mailJson = file_get_contents(osc_translations_path() . $locale['locale_code'] . '/mail.json' );
+            if (file_exists(osc_translations_path() . $locale['locale_code'] . '/mail.json')) {
+                $mailJson = file_get_contents(osc_translations_path() . $locale['locale_code'] . '/mail.json');
                 if ($mailJson) {
                     Page::newInstance()->importEmailJsonTemplates($mailJson);
                 }
@@ -92,7 +92,6 @@ function osc_checkLocales()
 
     return true;
 }
-
 
 /**
  * @return array

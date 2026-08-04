@@ -34,7 +34,7 @@ use mindstellar\migration\MigrationInterface;
  * exists, and t_item_meta is untouched. CREATE IF NOT EXISTS keeps the step
  * idempotent; the same tables are declared in struct.sql for a fresh install.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $submission = DB_TABLE_PREFIX . 't_form_submission';
