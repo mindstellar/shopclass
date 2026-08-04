@@ -1,0 +1,59 @@
+# Production-style stack: the self-contained Shopclass image plus a database.
+# One command brings up a working, already-installed site:
+#
+#   docker compose -f docker-compose.prod.yml up --build
+#   open http://localhost:8080   (admin at /oc-admin/, from the OSC_ADMIN_* below)
+#
+# For a real deployment, point at a managed database, set a strong admin password
+# (or omit OSC_ADMIN_PASSWORD to have one generated and printed in the logs), set
+# WEB_PATH to the public URL, and offload uploads to S3 for multi-instance scaling.
+name: shopclass-prod
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Or pull a published image instead of building:
+    # image: ghcr.io/mindstellar/shopclass:latest
+    ports:
+      - "8080:80"
+    environment:
+      OSC_IGNORE_CONFIG_FILE: "1"
+      DB_HOST: db
+      DB_NAME: shopclass
+      DB_USER: shopclass
+      DB_PASSWORD: shopclass
+      WEB_PATH: http://localhost:8080/
+      OSC_SITE_TITLE: Shopclass
+      OSC_ADMIN_USER: admin
+      OSC_ADMIN_EMAIL: admin@example.com
+      OSC_ADMIN_PASSWORD: changeme
+    volumes:
+      - uploads:/application/oc-content/uploads
+      - downloads:/application/oc-content/downloads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: shopclass
+      MARIADB_USER: shopclass
+      MARIADB_PASSWORD: shopclass
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads:
+  downloads:

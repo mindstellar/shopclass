@@ -45,6 +45,12 @@ replacing Bender. PHP 8.0 is now the floor.
   installed. DB settings and `WEB_PATH` from the environment or `config.php` are authoritative; when
   they come from the environment no `config.php` is written, keeping the container filesystem
   read-only.
+- Official production Docker image (`Dockerfile`) — a single self-contained container (nginx +
+  php-fpm + supervisor) that self-provisions on first boot via the headless installer and applies
+  pending migrations on every start, so a container platform or `docker compose -f
+  docker-compose.prod.yml up` brings up an installed, running site with no manual step. The default
+  storefront theme is bundled from its release; configure via `DB_*`, `WEB_PATH` and `OSC_ADMIN_*`,
+  and offload uploads to S3 for multi-instance scaling.
 - Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
   flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
   `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
