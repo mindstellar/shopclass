@@ -19,7 +19,18 @@ if (PHP_SAPI !== 'cli') {
 
 define('CLI', true);
 
-require_once __DIR__ . '/oc-load.php';
+$cliArgv = array_slice($argv, 1);
+
+// The `install` verb must run before the app is configured/installed, where the
+// normal oc-load.php bootstrap osc_die()s. It loads an installer-style bootstrap
+// that self-provisions from the environment instead; every other verb needs the
+// fully booted app.
+if (($cliArgv[0] ?? '') === 'install') {
+    require_once __DIR__ . '/oc-includes/osclass/cli-install-bootstrap.php';
+} else {
+    require_once __DIR__ . '/oc-load.php';
+}
+
 require_once __DIR__ . '/oc-includes/osclass/classes/cli/Cli.php';
 
-exit(\mindstellar\cli\Cli::run(array_slice($argv, 1)));
+exit(\mindstellar\cli\Cli::run($cliArgv));

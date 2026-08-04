@@ -39,6 +39,12 @@ replacing Bender. PHP 8.0 is now the floor.
   `sitemap:warm`, `user:create-admin`, `user:reset-password`, plugin management
   (`plugin:list`/`activate`/`deactivate`), theme management (`theme:list`/`activate`), and a
   `doctor` health check.
+- Headless install — `oc-cli.php install --unattended` provisions a fresh site (schema, seed data,
+  baseline migrations, admin account) from environment variables or flags, with no interactive step,
+  so a container or one-click platform can self-provision on first boot. Idempotent: a no-op once
+  installed. DB settings and `WEB_PATH` from the environment or `config.php` are authoritative; when
+  they come from the environment no `config.php` is written, keeping the container filesystem
+  read-only.
 - Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
   flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
   `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
