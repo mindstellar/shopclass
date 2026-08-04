@@ -56,6 +56,11 @@ replacing Bender. PHP 8.0 is now the floor.
   (it would be discarded on the next redeploy) — update by deploying a newer image tag; the
   entrypoint's `db:upgrade` migrates the schema. The same flag disables self-update on any immutable
   install.
+- Translation templates are generated and shipped — a build step (`npm run i18n`) extracts every
+  translatable string from the source into `oc-content/languages/core.pot` and `messages.pot`, so a
+  translator can start a new locale, and compiles the bundled locale's `.po` to `.mo` so the binary
+  catalogues never go stale. The release zip also drops build-only files (`Dockerfile`, `.docker/`,
+  compose files, `phpcs.xml`).
 - Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
   flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
   `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
@@ -199,6 +204,9 @@ replacing Bender. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- Five admin strings that passed a non-existent text domain (`'admin'`/`'modern'`/`'osclass'`) to
+  `__()`/`_e()` always rendered untranslated; they now use the default `core` domain and are
+  translatable.
 - Category dropdowns list sub-categories again — the nested `select()` option builder recursed with
   the child array as the selected value and an integer as its options, collapsing each parent's
   children into a single empty option. Affects the admin category parent picker and any nested select.
