@@ -194,6 +194,11 @@ replacing Bender. PHP 8.0 is now the floor.
 - Checkbox custom fields render as translatable Yes/No text instead of a broken tick/cross image that
   only the old Bender theme shipped, so every other theme showed a missing image. Overridable via the
   `item_meta_checkbox_value` filter.
+- The admin/one-click upgrade now records the new version in the `version` preference. The upgrade
+  swaps the code files and upgrades the database in a single request, so the `OSCLASS_VERSION`
+  constant loaded at the start still held the pre-upgrade value when the version was written — the
+  preference lagged a version behind after every upgrade. It's now read from the freshly-synced code
+  on disk.
 - Pagination: the `list-last` class now lands on the final item (it was overwritten and never
   applied, so the last page's styling was off), a Pagination object can be rendered more than once
   without duplicating classes, and an out-of-range `iPage` no longer renders a bogus page number.
