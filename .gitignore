@@ -66,6 +66,7 @@ robots.txt
 /error.log
 /.php-cs-fixer.cache
 /tools/php-cs-fixer.phar
+/tools/lint/vendor/
 
 /oc-admin/themes/modern/scss/bootstrap/
 /oc-admin/themes/template/

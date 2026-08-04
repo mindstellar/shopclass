@@ -1,0 +1,13 @@
+{
+    "description": "Isolated linters for Shopclass CI/dev. Kept out of the shipped oc-includes/vendor tree, which is committed and packaged into the release zip.",
+    "require": {
+        "squizlabs/php_codesniffer": "^3.10",
+        "phpcompatibility/php-compatibility": "^9.3",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}
