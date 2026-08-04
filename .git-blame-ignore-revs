@@ -1,0 +1,6 @@
+# Revisions to skip in `git blame` — bulk, no-op-to-runtime reformats only.
+# Enable locally once:  git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub honours this file automatically.
+
+# style: apply php-cs-fixer PSR-12 formatting across PHP tree
+f18358c2efa0179be8208a4a8f2362a599c3f55e
