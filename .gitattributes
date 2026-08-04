@@ -18,3 +18,9 @@
 /package.json export-ignore
 /package-lock.json export-ignore
 /docs export-ignore
+/phpcs.xml export-ignore
+/Dockerfile export-ignore
+/.dockerignore export-ignore
+/.docker export-ignore
+/docker-compose.yml export-ignore
+/docker-compose.prod.yml export-ignore
