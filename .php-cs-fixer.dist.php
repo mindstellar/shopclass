@@ -28,6 +28,12 @@ return (new PhpCsFixer\Config())
     ->setRiskyAllowed(false)
     ->setRules([
         '@PSR12'                      => true,
+        // Reindenting multi-line PHP embedded in inline-HTML templates is not
+        // deterministic across PHP runtimes (the fixer tokenises with the host
+        // PHP), which made the same files format differently on 8.2 vs 8.3. Pin
+        // these two to a stable behaviour so any supported PHP agrees.
+        'method_argument_space'       => ['on_multiline' => 'ignore'],
+        'statement_indentation'       => false,
         'no_unused_imports'           => true,
         'ordered_imports'             => ['sort_algorithm' => 'alpha'],
         'no_trailing_whitespace'      => true,
