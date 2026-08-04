@@ -18,7 +18,7 @@
 class CategoryForm extends Form
 {
     /**
-     * @param $category
+     * @param array $category
      */
     public static function primary_input_hidden($category)
     {
@@ -27,9 +27,9 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param        $categories
-     * @param        $category
-     * @param null   $default_item
+     * @param array $categories
+     * @param array $category
+     * @param null $default_item
      * @param string $name
      */
     public static function category_select(
@@ -45,8 +45,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param $array
-     * @param $deep
+     * @param array $array
+     * @param int $deep
      *
      * @return array
      */
@@ -69,8 +69,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param      $categories
-     * @param      $category
+     * @param array $categories
+     * @param array $category
      * @param null $default_item
      * @param int  $deep
      */
@@ -179,7 +179,7 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param      $locales
+     * @param array $locales
      * @param array|null $category
      */
     public static function multilanguage_name_description($locales, $category = null)
