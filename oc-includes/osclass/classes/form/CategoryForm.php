@@ -96,8 +96,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $categories
-     * @param null $selected
+     * @param array|null $categories
+     * @param array|null $selected
      * @param int  $depth
      */
     public static function categories_tree($categories = null, $selected = null, $depth = 0)
@@ -154,7 +154,7 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * @param array|null $category
      */
     public static function apply_changes_to_subcategories($category = null)
     {
@@ -180,7 +180,7 @@ class CategoryForm extends Form
 
     /**
      * @param      $locales
-     * @param null $category
+     * @param array|null $category
      */
     public static function multilanguage_name_description($locales, $category = null)
     {
