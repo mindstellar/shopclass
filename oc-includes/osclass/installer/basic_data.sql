@@ -124,6 +124,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'selectable_parent_categories', '0', 'BOOLEAN')
     ,('osclass', 'reg_user_post_comments', '0', 'BOOLEAN')
     ,('osclass', 'reg_user_can_contact', '0', 'BOOLEAN')
+    ,('osclass', 'enable_send_friend', '0', 'BOOLEAN')
+    ,('osclass', 'reg_user_can_send_friend', '1', 'BOOLEAN')
     ,('osclass', 'alerts_require_login', '0', 'BOOLEAN')
     ,('osclass', 'watermark_text', '', 'STRING')
     ,('osclass', 'watermark_text_color', '', 'STRING')

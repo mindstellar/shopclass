@@ -493,10 +493,36 @@ class CWebItem extends BaseModel
 
                 $this->_exportVariableToView('item', $item);
 
+                // Master switch (off by default). Don't 404 or fatally break a theme
+                // that still links here — bounce back to the listing with a notice.
+                if (!osc_enable_send_friend()) {
+                    osc_add_flash_warning_message(
+                        _m('Sharing listings by email has been disabled by the administrator')
+                    );
+                    $this->redirectTo(osc_item_url());
+                }
+
+                // Sharing is an authenticated action by default: it relays site-branded
+                // mail to a request-supplied address, so require a login unless opted out.
+                if (osc_reg_user_can_send_friend() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can share listings'));
+                    $this->redirectTo(osc_user_login_url());
+                }
+
                 $this->doView('item-send-friend.php');
                 break;
             case 'send_friend_post':
                 osc_csrf_check();
+                if (!osc_enable_send_friend()) {
+                    osc_add_flash_warning_message(
+                        _m('Sharing listings by email has been disabled by the administrator')
+                    );
+                    $this->redirectTo(osc_item_url());
+                }
+                if (osc_reg_user_can_send_friend() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can share listings'));
+                    $this->redirectTo(osc_user_login_url());
+                }
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
                 $this->_exportVariableToView('item', $item);
 

@@ -121,6 +121,34 @@ function osc_reg_user_can_contact()
 }
 
 /**
+ * Whether the "share listing / send to a friend" form is available at all.
+ *
+ * Off by default: the form sends site-branded mail to a recipient taken straight
+ * from the request, so it is an anonymous mail-relay surface until an admin turns
+ * it on. Unset reads as off (a fresh or not-yet-migrated install stays closed);
+ * only an explicit '1' enables it.
+ *
+ * @return boolean
+ */
+function osc_enable_send_friend()
+{
+    return getPreference('enable_send_friend') === '1';
+}
+
+/**
+ * Whether sharing a listing by email requires a logged-in web user.
+ *
+ * On by default: even once an admin enables the feature, keep it behind a login
+ * so the relay is not anonymous. Only an explicit '0' opens it to guests.
+ *
+ * @return boolean
+ */
+function osc_reg_user_can_send_friend()
+{
+    return getPreference('reg_user_can_send_friend') !== '0';
+}
+
+/**
  * Gets list of blacklsited terms for usernames
  *
  * @return string

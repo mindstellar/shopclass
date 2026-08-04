@@ -2,6 +2,27 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.0.1
+
+A security and maintenance release on top of 6.0.0: it hardens the public "send to a friend" form and
+lets the Docker image recover the real client IP when it runs behind a trusted proxy.
+
+### New
+
+- Real client IP behind a proxy — set `OSC_REAL_IP_HEADER` (e.g. `CF-Connecting-IP` for a Cloudflare
+  tunnel, `X-Forwarded-For` for a load balancer) so the image restores the visitor's IP into
+  `REMOTE_ADDR`, which login throttling and abuse keying rely on. `OSC_REAL_IP_TRUSTED` sets the
+  trusted-proxy CIDRs (defaults to any peer — correct only when the sole ingress is that proxy). Off
+  by default.
+
+### Security
+
+- The "send to a friend" form emailed a listing to a recipient taken straight from the request, from
+  the site's own address — an anonymous mail-relay surface. It now ships off by default
+  (`enable_send_friend`) and, when enabled, requires a logged-in user (`reg_user_can_send_friend`, on
+  by default), both under Settings → Listings. A theme that still links to it is bounced back with a
+  notice rather than breaking.
+
 ## Shopclass 6.0.0
 
 The first stable release under the Shopclass name — the culmination of the Osclass modernization.
@@ -59,11 +80,6 @@ replacing Bender. PHP 8.0 is now the floor.
 - Demo mode from the environment — set `OSC_DEMO=1` to enable the read-only public-demo lockdown in
   a container, where `OSC_IGNORE_CONFIG_FILE` skips the `config.php` `define('DEMO', true)`. A value
   in `config.php` still wins.
-- Real client IP behind a proxy — set `OSC_REAL_IP_HEADER` (e.g. `CF-Connecting-IP` for a Cloudflare
-  tunnel, `X-Forwarded-For` for a load balancer) so the image restores the visitor's IP into
-  `REMOTE_ADDR`, which login throttling and abuse keying rely on. `OSC_REAL_IP_TRUSTED` sets the
-  trusted-proxy CIDRs (defaults to any peer — correct only when the sole ingress is that proxy). Off
-  by default.
 - Translation templates are generated and shipped — a build step (`npm run i18n`) extracts every
   translatable string from the source into `oc-content/languages/core.pot` and `messages.pot`, so a
   translator can start a new locale, and compiles the bundled locale's `.po` to `.mo` so the binary

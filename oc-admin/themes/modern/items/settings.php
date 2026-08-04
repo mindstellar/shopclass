@@ -189,6 +189,26 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-label"> <?php _e('Share listing'); ?></div>
+                        <div class="form-controls">
+                            <div class="form-label-checkbox">
+                                <label>
+                                    <input type="checkbox" <?php echo(osc_enable_send_friend() ? 'checked="checked"'
+                                    : ''); ?> name="enable_send_friend" value="1"/>
+                                    <?php _e('Enable the "send to a friend" form'); ?>
+                                </label>
+                                <div class="help-box"><?php _e('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.'); ?></div>
+                            </div>
+                            <div class="separate-top-medium">
+                                <label>
+                                    <input type="checkbox" <?php echo(osc_reg_user_can_send_friend()
+                                    ? 'checked="checked"' : ''); ?> name="reg_user_can_send_friend" value="1"/>
+                                    <?php _e('Only allow registered users to share listings'); ?>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-label"> <?php _e('Notifications'); ?></div>
                         <div class="form-controls">
                             <div class="form-label-checkbox">
