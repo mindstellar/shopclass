@@ -1,0 +1,26 @@
+# Keep the build context lean. vendor/ and oc-includes/assets/ are committed and
+# MUST ship in the image, so they are deliberately not ignored.
+.git
+.github
+.gitattributes
+node_modules
+release
+# Dev-only formatting toolchain — never needed at runtime
+tools
+.editorconfig
+.php-cs-fixer.dist.php
+.php-cs-fixer.cache
+.git-blame-ignore-revs
+# Local public-theme checkouts/symlinks (gitignored). The image bundles the
+# storefront theme fresh from its release; never bake the dev symlinks or a
+# private theme into the context.
+oc-content/themes/storefront
+oc-content/themes/bender
+oc-content/themes/shopclass
+*.log
+bugs.md
+.remember
+.claude
+docker-compose.yml
+Dockerfile
+.dockerignore

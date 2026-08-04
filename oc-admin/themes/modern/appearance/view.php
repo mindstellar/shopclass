@@ -21,7 +21,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -32,7 +31,6 @@ function customPageTitle($string)
     return sprintf(__('Appearance &raquo; %s'), $string);
 }
 
-
 osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
@@ -42,7 +40,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if (strpos($file, '../') === false && strpos($file, '..\\') == false && file_exists($file)) {
             require_once $file;
         }
-        ?>
+?>
     </div>
     <!-- /theme files -->
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

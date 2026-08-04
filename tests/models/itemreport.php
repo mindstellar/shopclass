@@ -325,12 +325,12 @@ ksort($breakdown);
 pin('the breakdown maps each reason to its distinct-reporter count', array('offensive' => 1, 'spam' => 2), $breakdown);
 check(
     'every count is a genuine int (C4)',
-    array_reduce($breakdown, static fn($carry, $v) => $carry && is_int($v), true),
+    array_reduce($breakdown, static fn ($carry, $v) => $carry && is_int($v), true),
     describe($breakdown)
 );
 check(
     'every reason key is a string (C4)',
-    array_reduce(array_keys($breakdown), static fn($carry, $k) => $carry && is_string($k), true),
+    array_reduce(array_keys($breakdown), static fn ($carry, $k) => $carry && is_string($k), true),
     describe(array_keys($breakdown))
 );
 

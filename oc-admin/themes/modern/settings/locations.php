@@ -105,7 +105,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="widget-box-title">
                             <span><?php _e('Regions'); ?></span>
                             <a class="ms-2 btn btn-sm btn-outline-primary float-right hide" id="b_new_region" href="#" title="<?php _e('Add new');
-                            ?>">
+?>">
                                 <i class="bi bi-plus-circle"></i></a>
                             <a id="b_remove_region" class="btn btn-sm btn-outline-danger float-right hide" href="#"
                                title="<?php _e('Remove selected'); ?>">
@@ -169,13 +169,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringDelete = '<?php echo osc_esc_js(__('Delete')); ?>';
         var stringDeleteTitle = "<?php echo osc_esc_js(__('Delete selected locations')); ?>";
         var stringDeleteWarning = "<?php echo osc_esc_js(__("This action can't be undone. Items associated to this location will be deleted. "
-                                                            . "Users from this location will be unlinked, but not deleted. Are you sure you want to continue?"));?>";
+                                . "Users from this location will be unlinked, but not deleted. Are you sure you want to continue?"));?>";
         var stringEdit = '<?php echo osc_esc_js(__('Edit')); ?>';
         var stringEnter = '<?php echo osc_esc_js(__('Enter')); ?>';
         var stringImport = '<?php echo osc_esc_js(__('Import')); ?>';
         var stringImportLocations = '<?php echo osc_esc_js(__('Import locations')); ?>';
         var stringImportWarning = "<?php echo osc_esc_js(__("Import a country with it's regions and cities from our database. "
-                                                            . "Already imported countries aren't shown.")); ?>";
+                                . "Already imported countries aren't shown.")); ?>";
         var stringName = '<?php echo osc_esc_js(__("Name")); ?>';
         var stringRegion = '<?php echo osc_esc_js(__("Region")); ?>';
         var stringRegionName = '<?php echo osc_esc_js(__("Region name")); ?>';

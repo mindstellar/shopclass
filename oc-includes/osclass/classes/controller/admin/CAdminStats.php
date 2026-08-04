@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -223,7 +225,6 @@ class CAdminStats extends AdminSecBaseModel
                     }
                 }
 
-
                 $alerts      = array();
                 $subscribers = array();
                 if (Params::getParam('type_stat') === 'week') {
@@ -281,7 +282,6 @@ class CAdminStats extends AdminSecBaseModel
                         $max_subs = $subscriber['num'];
                     }
                 }
-
 
                 $this->_exportVariableToView('reports', $reports);
                 $this->_exportVariableToView('items', $items);

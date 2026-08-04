@@ -16,7 +16,6 @@
  */
 class Object_Cache_Factory
 {
-
     private static $instance;
 
     /**
@@ -50,8 +49,10 @@ class Object_Cache_Factory
             // mismatch so the misconfiguration is not silent.
             if (!class_exists($cache_class, true)) {
                 self::$instance = new Object_Cache_default();
-                trigger_error('Cache ' . $cache . ' UNKNOWN - loaded Object_Cache_default cache',
-                    E_USER_NOTICE);
+                trigger_error(
+                    'Cache ' . $cache . ' UNKNOWN - loaded Object_Cache_default cache',
+                    E_USER_NOTICE
+                );
 
                 return self::$instance;
             }
@@ -61,8 +62,10 @@ class Object_Cache_Factory
                 self::$instance = new $cache_class();
             } else {
                 self::$instance = new Object_Cache_default();
-                trigger_error('Cache ' . $cache . ' NOT SUPPORTED - loaded Object_Cache_default cache',
-                    E_USER_NOTICE);
+                trigger_error(
+                    'Cache ' . $cache . ' NOT SUPPORTED - loaded Object_Cache_default cache',
+                    E_USER_NOTICE
+                );
             }
 
             return self::$instance;

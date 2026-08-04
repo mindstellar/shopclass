@@ -31,7 +31,7 @@ class AdminThemes extends Themes
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;

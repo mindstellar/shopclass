@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ruleset name="Shopclass PHP compatibility">
+    <description>Fail on syntax or functions below the supported PHP floor (8.0).</description>
+
+    <!-- Scan the app; skip vendored, generated, and legacy-GUI trees. -->
+    <file>.</file>
+    <exclude-pattern>*/oc-includes/vendor/*</exclude-pattern>
+    <exclude-pattern>*/oc-includes/assets/*</exclude-pattern>
+    <exclude-pattern>*/oc-content/*</exclude-pattern>
+    <exclude-pattern>*/oc-includes/osclass/gui/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/tools/*</exclude-pattern>
+    <exclude-pattern>*/worktrees/*</exclude-pattern>
+
+    <config name="testVersion" value="8.0-"/>
+    <rule ref="PHPCompatibility">
+        <!-- A PHP 7.0 behavioural note about debug_backtrace() reporting the
+             current argument value; below our floor and not a break on 8.0+. -->
+        <exclude name="PHPCompatibility.FunctionUse.ArgumentFunctionsReportCurrentValue"/>
+        <!-- False positive: __get is a legitimate magic method, not a user
+             function squatting on the reserved double-underscore prefix. -->
+        <exclude name="PHPCompatibility.FunctionNameRestrictions.ReservedFunctionNames.FunctionDoubleUnderscore"/>
+        <!-- 'resource' is only soft-reserved since 7.0; the class is namespaced
+             and does not break on 8.0. -->
+        <exclude name="PHPCompatibility.Keywords.ForbiddenNamesAsDeclared.resourceFound"/>
+    </rule>
+
+    <arg name="extensions" value="php"/>
+    <arg value="p"/>
+</ruleset>

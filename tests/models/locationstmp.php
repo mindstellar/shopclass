@@ -378,12 +378,17 @@ pin('batchDelete with no ids returns false', false, $model->batchDelete(array(),
 pin('batchDelete returns bool true', true, $model->batchDelete(array($regUS), 'REGION'));
 check('the US region entry is drained', !$pairExists((string)$regUS, 'REGION'));
 check('the CA (survivor) region entry remains', $pairExists((string)$regCA, 'REGION'));
-check('a CITY row of the same numeric id is untouched (e_type scopes the delete)',
-    $pairExists((string)$cityUS, 'CITY') || (string)$cityUS !== (string)$regUS);
+check(
+    'a CITY row of the same numeric id is untouched (e_type scopes the delete)',
+    $pairExists((string)$cityUS, 'CITY') || (string)$cityUS !== (string)$regUS
+);
 
 // A type mismatch matches nothing but is still a successful query -> true.
-pin('batchDelete of the right ids under the wrong type still returns true', true,
-    $model->batchDelete(array($cityUS), 'REGION'));
+pin(
+    'batchDelete of the right ids under the wrong type still returns true',
+    true,
+    $model->batchDelete(array($cityUS), 'REGION')
+);
 check('...and nothing was actually removed (the CITY row stays)', $pairExists((string)$cityUS, 'CITY'));
 
 $batchDeleteFailsFalse = $quiet(static function () use ($model, $withTableGone, $table, $regCA) {
@@ -417,10 +422,15 @@ $seedPair('US', 'COUNTRY');
 $seedPair('CA', 'COUNTRY');
 // Pre-conversion: `id_location = 0` coerces 'US' and 'CA' to 0 and deletes BOTH
 // (returns int 2). Post-conversion: string '0' matches neither, returns int 0.
-pin('delete by numeric-coercing "0" now matches nothing (was 2, coercion dropped)', 0,
-    $model->delete(array('e_type' => 'COUNTRY', 'id_location' => '0')));
-check('...both real country entries survive (were wrongly deleted before)',
-    $pairExists('US', 'COUNTRY') && $pairExists('CA', 'COUNTRY'));
+pin(
+    'delete by numeric-coercing "0" now matches nothing (was 2, coercion dropped)',
+    0,
+    $model->delete(array('e_type' => 'COUNTRY', 'id_location' => '0'))
+);
+check(
+    '...both real country entries survive (were wrongly deleted before)',
+    $pairExists('US', 'COUNTRY') && $pairExists('CA', 'COUNTRY')
+);
 
 $clear();
 

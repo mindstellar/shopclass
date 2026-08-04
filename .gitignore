@@ -33,6 +33,9 @@ oc-content/plugins/*
 # languages
 oc-content/languages/*
 !oc-content/languages/en_US
+# The extracted translation templates are tracked and shipped so translators can
+# start a new locale; other locales are fetched at install time, not committed.
+!oc-content/languages/*.pot
 # Intellij IDEA
 .idea/*
 *.iml
@@ -62,6 +65,8 @@ robots.txt
 /seed-demo.php
 /error.log
 /.php-cs-fixer.cache
+/tools/php-cs-fixer.phar
+/tools/lint/vendor/
 
 /oc-admin/themes/modern/scss/bootstrap/
 /oc-admin/themes/template/

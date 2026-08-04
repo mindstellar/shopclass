@@ -38,7 +38,6 @@ function osc_user_field($field, $locale = '')
     return osc_field($user, $field, $locale);
 }
 
-
 /**
  * Gets user array from view
  *
@@ -54,7 +53,6 @@ function osc_user()
 
     return $user;
 }
-
 
 /**
  * Gets true if user is logged in web
@@ -75,7 +73,6 @@ function osc_is_web_user_logged_in()
 
     return false;
 }
-
 
 /**
  * Resolve the current front-end user for this request, or null.
@@ -121,7 +118,6 @@ function osc_resolve_web_user()
     return null;
 }
 
-
 /**
  * Populate the request-scoped identity for the given user.
  *
@@ -141,7 +137,6 @@ function osc_web_user_apply_identity($user)
     $session->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
     View::newInstance()->_exportVariableToView('_loggedUser', $user);
 }
-
 
 /**
  * Log a front-end user in by issuing the signed identity cookie.
@@ -186,7 +181,6 @@ function osc_web_user_login($user, $remember = false)
     osc_web_user_apply_identity($user);
 }
 
-
 /**
  * Resolve front-end identity early in the bootstrap so the historical
  * Session::_get('userId') readers see a cookie-authenticated user even before any
@@ -211,7 +205,6 @@ function osc_run_web_user_identity()
     osc_is_web_user_logged_in();
 }
 
-
 /**
  * Gets logged user id
  *
@@ -221,7 +214,6 @@ function osc_logged_user_id()
 {
     return (int)Session::newInstance()->_get('userId');
 }
-
 
 /**
  * Gets logged user mail
@@ -233,7 +225,6 @@ function osc_logged_user_email()
     return (string)Session::newInstance()->_get('userEmail');
 }
 
-
 /**
  * Gets logged user name
  *
@@ -244,7 +235,6 @@ function osc_logged_user_name()
     return (string)Session::newInstance()->_get('userName');
 }
 
-
 /**
  * Gets logged user phone
  *
@@ -254,7 +244,6 @@ function osc_logged_user_phone()
 {
     return (string)Session::newInstance()->_get('userPhone');
 }
-
 
 /**
  * Gets user's profile url
@@ -281,7 +270,6 @@ function osc_user_public_profile_url($id = null)
 
     return $path;
 }
-
 
 /**
  * Gets current items page from public profile
@@ -316,7 +304,6 @@ function osc_user_list_items_pub_profile_url($page = '', $itemsPerPage = false)
 
     return $path;
 }
-
 
 /**
  * Gets true if admin user is logged in
@@ -363,7 +350,6 @@ function osc_is_admin_user_logged_in()
     return false;
 }
 
-
 /**
  * Gets logged admin id
  *
@@ -373,7 +359,6 @@ function osc_logged_admin_id()
 {
     return (int)Session::newInstance()->_get('adminId');
 }
-
 
 /**
  * Gets logged admin username
@@ -385,7 +370,6 @@ function osc_logged_admin_username()
     return (string)Session::newInstance()->_get('adminUserName');
 }
 
-
 /**
  * Gets logged admin name
  *
@@ -395,7 +379,6 @@ function osc_logged_admin_name()
 {
     return (string)Session::newInstance()->_get('adminName');
 }
-
 
 /**
  * Gets logged admin email
@@ -407,7 +390,6 @@ function osc_logged_admin_email()
     return (string)Session::newInstance()->_get('adminEmail');
 }
 
-
 /**
  * Gets name of current user
  *
@@ -417,7 +399,6 @@ function osc_user_name()
 {
     return (string)osc_user_field('s_name');
 }
-
 
 /**
  * Gets email of current user
@@ -429,7 +410,6 @@ function osc_user_email()
     return (string)osc_user_field('s_email');
 }
 
-
 /**
  * Gets username of current user
  *
@@ -439,7 +419,6 @@ function osc_user_username()
 {
     return (string)osc_user_field('s_username');
 }
-
 
 /**
  * Gets registration date of current user
@@ -451,7 +430,6 @@ function osc_user_regdate()
     return (string)osc_user_field('dt_reg_date');
 }
 
-
 /**
  * Gets id of current user
  *
@@ -461,7 +439,6 @@ function osc_user_id()
 {
     return (int)osc_user_field('pk_i_id');
 }
-
 
 /**
  * Gets last access date
@@ -473,7 +450,6 @@ function osc_user_access_date()
     return (string)osc_user_field('dt_access_date');
 }
 
-
 /**
  * Gets last access ip
  *
@@ -484,7 +460,6 @@ function osc_user_access_ip()
     return (string)osc_user_field('s_access_ip');
 }
 
-
 /**
  * Gets website of current user
  *
@@ -494,7 +469,6 @@ function osc_user_website()
 {
     return (string)osc_user_field('s_website');
 }
-
 
 /**
  * Gets description/information of current user
@@ -529,7 +503,6 @@ function osc_user_info($locale = '')
     return (string)$info;
 }
 
-
 /**
  * Gets phone of current user
  *
@@ -540,7 +513,6 @@ function osc_user_phone_land()
     return (string)osc_user_field('s_phone_land');
 }
 
-
 /**
  * Gets cell phone of current user
  *
@@ -550,7 +522,6 @@ function osc_user_phone_mobile()
 {
     return (string)osc_user_field('s_phone_mobile');
 }
-
 
 /**
  * Gets phone_land if exist, else if exist return phone_mobile,
@@ -571,7 +542,6 @@ function osc_user_phone()
     return '';
 }
 
-
 /**
  * Gets country of current user
  *
@@ -581,7 +551,6 @@ function osc_user_country()
 {
     return (string)osc_user_field('s_country');
 }
-
 
 /**
  * Gets region of current user
@@ -593,7 +562,6 @@ function osc_user_region()
     return (string)osc_user_field('s_region');
 }
 
-
 /**
  * Gets region id of current user
  *
@@ -603,7 +571,6 @@ function osc_user_region_id()
 {
     return (string)osc_user_field('fk_i_region_id');
 }
-
 
 /**
  * Gets city of current user
@@ -615,7 +582,6 @@ function osc_user_city()
     return (string)osc_user_field('s_city');
 }
 
-
 /**
  * Gets city id of current user
  *
@@ -625,7 +591,6 @@ function osc_user_city_id()
 {
     return (string)osc_user_field('fk_i_city_id');
 }
-
 
 /**
  * Gets city area of current user
@@ -637,7 +602,6 @@ function osc_user_city_area()
     return (string)osc_user_field('s_city_area');
 }
 
-
 /**
  * Gets city area id of current user
  *
@@ -647,7 +611,6 @@ function osc_user_city_area_id()
 {
     return (string)osc_user_field('fk_i_city_area_id');
 }
-
 
 /**
  * Gets address of current user
@@ -659,7 +622,6 @@ function osc_user_address()
     return (string)osc_user_field('s_address');
 }
 
-
 /**
  * Gets postal zip of current user
  *
@@ -669,7 +631,6 @@ function osc_user_zip()
 {
     return (string)osc_user_field('s_zip');
 }
-
 
 /**
  * Gets latitude of current user
@@ -681,7 +642,6 @@ function osc_user_latitude()
     return (float)osc_user_field('d_coord_lat');
 }
 
-
 /**
  * Gets longitude of current user
  *
@@ -691,7 +651,6 @@ function osc_user_longitude()
 {
     return (float)osc_user_field('d_coord_long');
 }
-
 
 /**
  * Gets type (company/user) of current user
@@ -703,7 +662,6 @@ function osc_user_is_company()
     return (bool)osc_user_field('b_company');
 }
 
-
 /**
  * Gets number of items validated of current user
  *
@@ -714,7 +672,6 @@ function osc_user_items_validated()
     return (int)osc_user_field('i_items');
 }
 
-
 /**
  * Gets number of comments validated of current user
  *
@@ -724,7 +681,6 @@ function osc_user_comments_validated()
 {
     return osc_user_field('i_comments');
 }
-
 
 /**
  * Gets number of users
@@ -748,7 +704,6 @@ function osc_total_users($condition = '')
     }
 }
 
-
 /////////////
 // ALERTS  //
 /////////////
@@ -765,7 +720,6 @@ function osc_alert_field($field)
     return osc_field(View::newInstance()->_current('alerts'), $field, '');
 }
 
-
 /**
  * Gets next alert if there is, else return null
  *
@@ -780,7 +734,6 @@ function osc_has_alerts()
     return $result;
 }
 
-
 /**
  * Gets number of alerts in array alerts
  *
@@ -790,7 +743,6 @@ function osc_count_alerts()
 {
     return (int)View::newInstance()->_count('alerts');
 }
-
 
 /**
  * Gets current alert fomr view
@@ -802,7 +754,6 @@ function osc_alert()
     return View::newInstance()->_current('alerts');
 }
 
-
 /**
  * Gets search field of current alert
  *
@@ -812,7 +763,6 @@ function osc_alert_search()
 {
     return (string)osc_alert_field('s_search');
 }
-
 
 /**
  * Gets secret of current alert
@@ -824,7 +774,6 @@ function osc_alert_secret()
     return (string)osc_alert_field('s_secret');
 }
 
-
 /**
  * Gets id of current alert
  *
@@ -834,7 +783,6 @@ function osc_alert_id()
 {
     return (string)osc_alert_field('pk_i_id');
 }
-
 
 /**
  * Gets aate of current alert
@@ -846,7 +794,6 @@ function osc_alert_date()
     return (string)osc_alert_field('dt_date');
 }
 
-
 /**
  * Gets unsub date of current alert
  *
@@ -856,7 +803,6 @@ function osc_alert_unsub_date()
 {
     return (string)osc_alert_field('dt_unsub_date');
 }
-
 
 /**
  * Gets type of current alert
@@ -868,7 +814,6 @@ function osc_alert_type()
     return (string)osc_alert_field('e_type');
 }
 
-
 /**
  * Gets active of current alert
  *
@@ -878,7 +823,6 @@ function osc_alert_is_active()
 {
     return (bool)osc_alert_field('b_active');
 }
-
 
 /**
  * Public URL of a user's avatar, or a bundled placeholder when they have none.
@@ -911,7 +855,6 @@ function osc_user_avatar_url(?int $userId = null, string $variant = 'thumbnail')
     return osc_base_url() . 'oc-includes/images/avatar-placeholder.svg';
 }
 
-
 /**
  * Whether a user has an uploaded avatar.
  *
@@ -928,7 +871,6 @@ function osc_has_user_avatar(?int $userId = null): bool
 
     return $userId > 0 && !empty(osc_get_resources('user', $userId));
 }
-
 
 /**
  * Gets next user in users array

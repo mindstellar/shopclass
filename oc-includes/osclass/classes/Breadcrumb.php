@@ -66,7 +66,6 @@ class Breadcrumb
         $this->title['register']               = __('Create a new account');
         $this->title['contact']                = __('Contact');
 
-
         if (!is_array($lang)) {
             return;
         }

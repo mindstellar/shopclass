@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 $user      = __get('user');
 $countries = __get('countries');
 $regions   = __get('regions');
@@ -45,14 +44,12 @@ function customFrmText()
     return $return;
 }
 
-
 function customPageHeader()
 {
     ?>
     <h1><?php _e('Users'); ?></h1>
     <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -67,7 +64,6 @@ function customPageTitle($string)
 
     return sprintf('%s &raquo; %s', $aux['title'], $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -85,7 +81,6 @@ function customHead()
 
     <?php
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -137,7 +132,7 @@ $aux = customFrmText();
             rules: { s_username: { required: true } },
             messages: {
                 s_username: {
-                    required: '<?php echo osc_esc_js(__('Username: this field is required', 'modern')); ?>.'
+                    required: '<?php echo osc_esc_js(__('Username: this field is required')); ?>.'
                 }
             },
             errorContainer: '#error_list',
@@ -165,8 +160,8 @@ $aux = customFrmText();
                         }).then(function (data) {
                             if (available) {
                                 available.textContent = (data.exists == 0)
-                                    ? '<?php echo osc_esc_js(__('The username is available', 'modern')); ?>'
-                                    : '<?php echo osc_esc_js(__('The username is NOT available', 'modern')); ?>';
+                                    ? '<?php echo osc_esc_js(__('The username is available')); ?>'
+                                    : '<?php echo osc_esc_js(__('The username is NOT available')); ?>';
                             }
                         });
                     }, 1000);
@@ -337,8 +332,8 @@ $aux = customFrmText();
                                 <h3 class="render-title"><?php _e('Password'); ?></h3>
                                 <div class="form-row">
                                     <div class="form-label"><?php _e('New password'); ?><?php if (!$aux['edit']) {
-                                            printf('<br/><em>%s</em>', __('(twice, required)'));
-                                                            } ?></div>
+                                        printf('<br/><em>%s</em>', __('(twice, required)'));
+                                    } ?></div>
                                     <div class="form-controls">
                                         <?php UserForm::password_text($user); ?>
                                         <?php if ($aux['edit']) { ?>
@@ -398,8 +393,10 @@ $aux = customFrmText();
                                                 }
                                                 if (count($raw_data['aCategories']) > $l) {
                                                     $cat_array[] =
-                                                        '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(', ',
-                                                                                                                               $raw_data['aCategories']))
+                                                        '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
+                                                            ', ',
+                                                            $raw_data['aCategories']
+                                                        ))
                                                         . '" >' . __('...More') . '</a>';
                                                 }
                                                 ?>
@@ -424,7 +421,7 @@ $aux = customFrmText();
                                                     <label><b><?php echo osc_esc_html($r['s_title']); ?></b></label>
                                                     <p><?php echo osc_esc_html($r['s_description']); ?></p>
                                                 <?php }
-                                            } else { ?>
+                                                } else { ?>
                                                 <label>&nbsp;</label>
                                                 <p>&nbsp;</p>
                                             <?php } ?>

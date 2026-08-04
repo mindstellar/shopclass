@@ -505,7 +505,7 @@ class CWebSearch extends BaseModel
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
                                     . 't_item.pk_i_id IN (' . $sql . ')');
                             }
-                                break;
+                            break;
                         default:
                             break;
                     }
@@ -645,7 +645,7 @@ class CWebSearch extends BaseModel
                 // FEED REQUESTED!
                 header('Content-type: text/xml; charset=utf-8');
 
-                $feed = new RSSFeed;
+                $feed = new RSSFeed();
                 $feed->setTitle(__('Latest listings added') . ' - ' . osc_page_title());
                 $feed->setLink(osc_base_url());
                 $feed->setDescription(__('Latest listings added in') . ' ' . osc_page_title());

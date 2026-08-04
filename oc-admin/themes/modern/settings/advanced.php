@@ -14,7 +14,6 @@ if (!defined('OC_ADMIN')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 $current_host = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_HOST);
 if ($current_host === null) {
     $current_host = Params::getServerParam('HTTP_HOST');
@@ -24,7 +23,6 @@ if ($current_host === null) {
 function customHead()
 {
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -36,7 +34,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
@@ -44,7 +41,6 @@ function addHelp()
               . "<strong>Be careful</strong> when modifying default values if you're not sure what you're doing!")
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -60,7 +56,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -71,7 +66,6 @@ function customPageTitle($string)
     return sprintf(__('Advanced Settings &raquo; %s'), $string);
 }
 
-
 osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php');
@@ -81,7 +75,7 @@ osc_current_admin_theme_path('parts/header.php');
     <div id="general-settings">
         <?php
         $cache_type = Object_Cache_Factory::newInstance()->_get_cache();
-        if ($cache_type !== 'default') { ?>
+if ($cache_type !== 'default') { ?>
             <!--    Cache flush    -->
             <h2 class="render-title"><?php _e('Flush cache'); ?></h2>
             <form id="cache_flush" name="cache_flush" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -115,22 +109,22 @@ osc_current_admin_theme_path('parts/header.php');
                             <select name="e_type" id="e_type">
                                 <option value="" <?php if (osc_subdomain_type()) {
                                     ?>selected="selected"<?php
-                                                 } ?>><?php _e('No subdomains'); ?></option>
+                                } ?>><?php _e('No subdomains'); ?></option>
                                 <option value="category" <?php if (osc_subdomain_type() === 'category') {
                                     ?>selected="selected"<?php
-                                                         } ?>><?php _e('Category based'); ?></option>
+                                } ?>><?php _e('Category based'); ?></option>
                                 <option value="country" <?php if (osc_subdomain_type() === 'country') {
                                     ?>selected="selected"<?php
-                                                        } ?>><?php _e('Country based'); ?></option>
+                                } ?>><?php _e('Country based'); ?></option>
                                 <option value="region" <?php if (osc_subdomain_type() === 'region') {
                                     ?>selected="selected"<?php
-                                                       } ?>><?php _e('Region based'); ?></option>
+                                } ?>><?php _e('Region based'); ?></option>
                                 <option value="city" <?php if (osc_subdomain_type() === 'city') {
                                     ?>selected="selected"<?php
-                                                     } ?>><?php _e('City based'); ?></option>
+                                } ?>><?php _e('City based'); ?></option>
                                 <option value="user" <?php if (osc_subdomain_type() === 'user') {
                                     ?>selected="selected"<?php
-                                                     } ?>><?php _e('User based'); ?></option>
+                                } ?>><?php _e('User based'); ?></option>
                             </select>
                         </div>
                     </div>

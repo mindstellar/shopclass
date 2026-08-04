@@ -17,7 +17,6 @@
  */
 class ItemForm extends Form
 {
-
     /**
      * @param $item
      */
@@ -174,16 +173,16 @@ class ItemForm extends Form
         <script type="text/javascript" charset="utf-8">
             <?php
             $tmp_cat = array();
-            foreach ($categories as $c) {
-                if ($c['fk_i_parent_id'] == null) {
-                    $c['fk_i_parent_id'] = 0;
-                }
-                $tmp_cat[$c['fk_i_parent_id']][] = array($c['pk_i_id'], $c['s_name']);
+        foreach ($categories as $c) {
+            if ($c['fk_i_parent_id'] == null) {
+                $c['fk_i_parent_id'] = 0;
             }
-            foreach ($tmp_cat as $k => $v) {
-                echo 'var categories_' . $k . ' = ' . json_encode($v) . ';' . PHP_EOL;
-            }
-            ?>
+            $tmp_cat[$c['fk_i_parent_id']][] = array($c['pk_i_id'], $c['s_name']);
+        }
+        foreach ($tmp_cat as $k => $v) {
+            echo 'var categories_' . $k . ' = ' . json_encode($v) . ';' . PHP_EOL;
+        }
+        ?>
 
             if (typeof osc === 'undefined') { var osc = {}; }
             if (osc.langs == undefined) { osc.langs = {}; }
@@ -603,7 +602,6 @@ class ItemForm extends Form
         return true;
     }
 
-
     /**
      * @param null $cities
      * @param null $item
@@ -871,7 +869,9 @@ class ItemForm extends Form
      */
     public static function location_javascript_new($path = 'front', $enqueue = false)
     {
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script>
             (function () {
@@ -1061,16 +1061,19 @@ class ItemForm extends Form
             }
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), array('osc-ui-common'), ($path === 'admin'), 'item_location_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), array('osc-ui-common'), ($path === 'admin'), 'item_location_js');
+        }
     }
-
 
     /**
      * @param string $path
      */
     public static function location_javascript($path = 'front', $enqueue = false)
     {
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script>
             (function () {
@@ -1279,9 +1282,10 @@ class ItemForm extends Form
             }
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, ($path === 'admin'), 'item_location_cascade_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, ($path === 'admin'), 'item_location_cascade_js');
+        }
     }
-
 
     /**
      * @param null $resources
@@ -1300,21 +1304,21 @@ class ItemForm extends Form
                          name="<?php echo $_r['s_name']; ?>">
                         <img src="
                         <?php echo osc_apply_filter(
-                                'resource_path',
-                                osc_base_url() . $_r['s_path'],
-                                $_r
-                            )
+                            'resource_path',
+                            osc_base_url() . $_r['s_path'],
+                            $_r
+                        )
                             . $_r['pk_i_id'] . '_thumbnail.'
                             . $_r['s_extension']; ?>"/><a
                                 href="javascript:delete_image(<?php echo $_r['pk_i_id'] . ', '
-                                    . $_r['fk_i_item_id'] . ", '" . $_r['s_name'] . "', '"
-                                    . Params::getParam('secret') . "'"; ?>);"
+                                                    . $_r['fk_i_item_id'] . ", '" . $_r['s_name'] . "', '"
+                                                    . Params::getParam('secret') . "'"; ?>);"
                                 class="delete"><?php _e('Delete'); ?></a>
                     </div>
                 <?php } ?>
             </div>
         <?php }
-    }
+        }
 
     public static function photos_javascript()
     {
@@ -1409,10 +1413,10 @@ class ItemForm extends Form
             var catPriceEnabled = [];
             <?php
             $categories = Category::newInstance()->listAll(false);
-            foreach ($categories as $c) {
-                echo 'catPriceEnabled[' . $c['pk_i_id'] . '] = ' . $c['b_price_enabled'] . ';';
-            }
-            ?>
+        foreach ($categories as $c) {
+            echo 'catPriceEnabled[' . $c['pk_i_id'] . '] = ' . $c['b_price_enabled'] . ';';
+        }
+        ?>
             (function () {
                 var url = '<?php echo (defined('OC_ADMIN') && OC_ADMIN) ? osc_admin_base_url(true) : osc_base_url(true); ?>';
 

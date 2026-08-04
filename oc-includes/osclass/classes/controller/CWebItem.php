@@ -190,7 +190,7 @@ class CWebItem extends BaseModel
                     ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
                     if ($success == 1) {
                         osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
-                    } else if (osc_moderate_admin_post()) {
+                    } elseif (osc_moderate_admin_post()) {
                         osc_add_flash_ok_message(_m('Your listing will be published after an admin approves it.'));
                     } else {
                         osc_add_flash_ok_message(_m('Your listing has been published'));

@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 //customize Head
 function customHead()
 {
@@ -47,7 +46,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 osc_add_hook('admin_page_header', 'customPageHeader');
@@ -63,7 +61,6 @@ function customPageHeader()
     </h1>
     <?php
 }
-
 
 $typeForm = __get('typeForm');
 /**
@@ -89,7 +86,6 @@ function customText($return = 'title')
     return $text[$return];
 }
 
-
 /**
  * @param $string
  *
@@ -99,7 +95,6 @@ function customPageTitle($string)
 {
     return sprintf('%s &raquo; %s', customText('title'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -129,9 +124,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php if ($typeForm
                                           === 'edit_post'
                                 ) {
-                                               echo 'disabled="disabled"';
+                                    echo 'disabled="disabled"';
                                 }
-                                ?>
+?>
                             />
                             <span class="help-box">
                                 <?php printf(
@@ -158,7 +153,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <?php if ($typeForm === 'edit_post') { ?>
                             <input class="btn btn-red" type="button" value="<?php echo osc_esc_html(__('Cancel')); ?>"
                                    onclick="location.href='<?php echo osc_admin_base_url(true);
-                                    ?>?page=settings&amp;action=currencies'">
+                            ?>?page=settings&amp;action=currencies'">
                         <?php } ?>
                         <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(customText('button')); ?></button>
                     </div>

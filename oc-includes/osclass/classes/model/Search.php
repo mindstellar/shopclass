@@ -12,7 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 /**
  * Class Search
  */
@@ -322,7 +321,7 @@ class Search extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -584,11 +583,11 @@ class Search extends DAO
     public function notFromUser($id)
     {
         $this->addWhere(sprintf(
-                              '(%st_item.fk_i_user_id != %d || %st_item.fk_i_user_id IS NULL) ',
-                              DB_TABLE_PREFIX,
-                              $id,
-                              DB_TABLE_PREFIX
-                          ));
+            '(%st_item.fk_i_user_id != %d || %st_item.fk_i_user_id IS NULL) ',
+            DB_TABLE_PREFIX,
+            $id,
+            DB_TABLE_PREFIX
+        ));
     }
 
     /**
@@ -709,10 +708,10 @@ class Search extends DAO
         if ($this->withItemId) {
             // add field s_user_name
             $this->addSelect(sprintf(
-                                   '%st_item.*, %st_item.s_contact_name as s_user_name',
-                                   DB_TABLE_PREFIX,
-                                   DB_TABLE_PREFIX
-                               ));
+                '%st_item.*, %st_item.s_contact_name as s_user_name',
+                DB_TABLE_PREFIX,
+                DB_TABLE_PREFIX
+            ));
             $this->addFrom(sprintf('%st_item', DB_TABLE_PREFIX));
             $this->addWhere('pk_i_id', (int)$this->itemId);
         } else {
@@ -743,18 +742,18 @@ class Search extends DAO
                         // combined index cannot weight columns, so add a
                         // title-only MATCH and score it double.
                         $this->addSelect(sprintf(
-                                               "(2 * MATCH(d.s_title) AGAINST(%s IN BOOLEAN MODE)"
+                            "(2 * MATCH(d.s_title) AGAINST(%s IN BOOLEAN MODE)"
                                                . " + MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE))"
                                                . " as relevance",
-                                               $bool,
-                                               $bool
-                                           ));
+                            $bool,
+                            $bool
+                        ));
                         $this->addHavingClause(sprintf("relevance > %s", 0));
                     } else {
                         $this->addWhere(sprintf(
-                                              "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
-                                              $bool
-                                          ));
+                            "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
+                            $bool
+                        ));
                     }
                 } else {
                     // Every term is below the FULLTEXT min token size, so MATCH
@@ -768,9 +767,9 @@ class Search extends DAO
                     $this->locale_code[$this->userLocaleCode] = $this->userLocaleCode;
                 }
                 $this->addWhere(sprintf(
-                                      "( d.fk_c_locale_code LIKE '%s' )",
-                                      implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
-                                  ));
+                    "( d.fk_c_locale_code LIKE '%s' )",
+                    implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
+                ));
             }
 
             // item conditions
@@ -811,9 +810,9 @@ class Search extends DAO
                     'LEFT'
                 );
                 $this->addWhere(sprintf(
-                                      "%st_item_resource.s_content_type LIKE '%%image%%' ",
-                                      DB_TABLE_PREFIX
-                                  ));
+                    "%st_item_resource.s_content_type LIKE '%%image%%' ",
+                    DB_TABLE_PREFIX
+                ));
                 $this->addGroupByClause(DB_TABLE_PREFIX . 't_item.pk_i_id');
             }
             if ($this->onlyPremium) {
@@ -918,10 +917,10 @@ class Search extends DAO
             $this->addWhere(' ( ' . implode(' || ', $this->user_ids) . ' ) ');
         } else {
             $this->addWhere(sprintf(
-                                  '%st_item.fk_i_user_id = %d ',
-                                  DB_TABLE_PREFIX,
-                                  $this->user_ids
-                              ));
+                '%st_item.fk_i_user_id = %d ',
+                DB_TABLE_PREFIX,
+                $this->user_ids
+            ));
         }
     }
 
@@ -1402,9 +1401,9 @@ class Search extends DAO
             $this->addFrom(DB_TABLE_PREFIX . 't_item as ti');
             $this->addWhere('ti.pk_i_id = d.fk_i_item_id');
             $this->addWhere(sprintf(
-                                  "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
-                                  $this->booleanPattern()
-                              ));
+                "MATCH(d.s_description, d.s_title) AGAINST(%s IN BOOLEAN MODE)",
+                $this->booleanPattern()
+            ));
             $this->addWhere('ti.b_premium = 1');
 
             if (empty($this->locale_code)) {
@@ -1415,9 +1414,9 @@ class Search extends DAO
                 }
             }
             $this->addWhere(sprintf(
-                                  "( d.fk_c_locale_code LIKE '%s' )",
-                                  implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
-                              ));
+                "( d.fk_c_locale_code LIKE '%s' )",
+                implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
+            ));
 
             $subSelect = $this->compileQuery();
             $this->resetQuery();
@@ -1427,15 +1426,14 @@ class Search extends DAO
             $this->addFrom(DB_TABLE_PREFIX . 't_item');
             $this->addFrom(sprintf('%st_item_stats', DB_TABLE_PREFIX));
             $this->addWhere(sprintf(
-                                  '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
-                                  DB_TABLE_PREFIX,
-                                  DB_TABLE_PREFIX
-                              ));
+                '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
+                DB_TABLE_PREFIX,
+                DB_TABLE_PREFIX
+            ));
             $this->addWhere(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
             $this->addWhere(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
             $this->addWhere(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
             $this->addWhere(sprintf('%st_item.b_spam = 0', DB_TABLE_PREFIX));
-
 
             if ($this->withLocations || (defined('OC_ADMIN') && OC_ADMIN)) {
                 $this->addJoin(
@@ -1471,10 +1469,10 @@ class Search extends DAO
             $this->addFrom(DB_TABLE_PREFIX . 't_item');
             $this->addFrom(sprintf('%st_item_stats', DB_TABLE_PREFIX));
             $this->addWhere(sprintf(
-                                  '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
-                                  DB_TABLE_PREFIX,
-                                  DB_TABLE_PREFIX
-                              ));
+                '%st_item_stats.fk_i_item_id = %st_item.pk_i_id',
+                DB_TABLE_PREFIX,
+                DB_TABLE_PREFIX
+            ));
             $this->addWhere(sprintf('%st_item.b_premium = 1', DB_TABLE_PREFIX));
             $this->addWhere(sprintf('%st_item.b_enabled = 1 ', DB_TABLE_PREFIX));
             $this->addWhere(sprintf('%st_item.b_active = 1 ', DB_TABLE_PREFIX));
@@ -2118,9 +2116,12 @@ class Search extends DAO
                 // Comprobar: si ( s_name existe ) then get location id,
                 $aData['s_country'][] =
                     DB_TABLE_PREFIX . 't_item_location.s_country LIKE \'%' . $matches[2][0] . '%\'';
-            } elseif (preg_match(                                                     '/' . DB_TABLE_PREFIX
+            } elseif (preg_match(
+                '/' . DB_TABLE_PREFIX
                                                                                       . 't_item_location.fk_c_country_code = \'?(.*)\'?/',
-                                                                                      $condition, $matches)
+                $condition,
+                $matches
+            )
             ) {
                 $aData['fk_c_country_code'][] =
                     DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ' . $matches[1];

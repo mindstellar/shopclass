@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -105,7 +107,6 @@ class CAdminAdmins extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
                 }
 
-
                 $currentAdmin = $this->adminManager->findByPrimaryKey(osc_logged_admin_id());
                 if ($sCurrentPassword == '' || !isset($currentAdmin['s_password']) || $currentAdmin['s_password'] == ''
                     || !osc_verify_password($sCurrentPassword, $currentAdmin['s_password'])
@@ -113,7 +114,6 @@ class CAdminAdmins extends AdminSecBaseModel
                     osc_add_flash_warning_message(_m('Incorrent current password'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
                 }
-
 
                 $array = array(
                     's_password'  => osc_hash_password($sPassword),
@@ -233,7 +233,6 @@ class CAdminAdmins extends AdminSecBaseModel
                     }
                 }
 
-
                 $currentAdmin = $this->adminManager->findByPrimaryKey(osc_logged_admin_id());
                 if ($sOldPassword == '' || !isset($currentAdmin['s_password']) || $currentAdmin['s_password'] == ''
                     || !osc_verify_password($sOldPassword, $currentAdmin['s_password'])
@@ -241,7 +240,6 @@ class CAdminAdmins extends AdminSecBaseModel
                     osc_add_flash_warning_message(_m('Incorrent current password'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
                 }
-
 
                 if ($adminId != osc_logged_admin_id()) {
                     $array['b_moderator'] = $bModerator;

@@ -158,7 +158,6 @@ class DBCommandClass
      */
     private $a_from;
 
-
     /**
      * DBCommandClass constructor.
      *
@@ -205,7 +204,7 @@ class DBCommandClass
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -1538,7 +1537,6 @@ class DBCommandClass
 
         return $reconciler->reconcile($queries);
     }
-
 
     /**
      * Get last SQL query

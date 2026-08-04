@@ -18,7 +18,6 @@
  */
 class Dependencies
 {
-
     public $registered;
     public $queue;
 

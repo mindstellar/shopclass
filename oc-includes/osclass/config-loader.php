@@ -89,6 +89,13 @@ if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
     define('WEB_PATH', $oscEnv('WEB_PATH'));
 }
 
+// Demo mode (optional). Lets a container enable the read-only public-demo lockdown
+// without a config.php, which OSC_IGNORE_CONFIG_FILE would otherwise skip. A value
+// in config.php still wins; anything falsy or unset leaves DEMO undefined.
+if (!defined('DEMO') && filter_var((string)getenv('OSC_DEMO'), FILTER_VALIDATE_BOOLEAN)) {
+    define('DEMO', true);
+}
+
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',
 // 'memcache' — and the memcached/memcache drivers read their server list from the
 // $_cache_config global. Bridge both from the environment so a containerised deploy can

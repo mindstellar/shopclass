@@ -112,7 +112,6 @@ require_once LIB_PATH . 'osclass/helpers/hFields.php';
 require_once LIB_PATH . 'osclass/helpers/hForms.php';
 require_once LIB_PATH . 'osclass/compatibility.php';
 
-
 if (!defined('OSC_CRYPT_KEY')) {
     define('OSC_CRYPT_KEY', osc_get_preference('crypt_key'));
 }
@@ -143,7 +142,6 @@ osc_run_web_user_identity();
 if (osc_timezone()) {
     date_default_timezone_set(osc_timezone());
 }
-
 
 Scripts::init();
 Styles::init();

@@ -26,7 +26,7 @@ use mindstellar\migration\MigrationInterface;
  * installer/struct.sql for a fresh install, which the runner baselines rather
  * than replays; this migration brings an existing install up to the same state.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_resource ('

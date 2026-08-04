@@ -30,7 +30,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -43,7 +42,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -55,7 +53,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Categories &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -107,13 +104,17 @@ function drawCategory($category)
                     <?php if ($num_subs > 0) { ?>
                         <span class="cat-meta-item" title="<?php echo osc_esc_html(__('Subcategories')); ?>">
                             <i class="bi bi-diagram-3"></i><?php echo osc_esc_html(sprintf(
-                                _n('%d subcategory', '%d subcategories', $num_subs), $num_subs)); ?>
+                                _n('%d subcategory', '%d subcategories', $num_subs),
+                                $num_subs
+                            )); ?>
                         </span>
                     <?php } ?>
                     <?php if ($num_items > 0) { ?>
                         <span class="cat-meta-item" title="<?php echo osc_esc_html(__('Listings in this category')); ?>">
                             <i class="bi bi-card-list"></i><?php echo osc_esc_html(sprintf(
-                                _n('%d listing', '%d listings', $num_items), $num_items)); ?>
+                                _n('%d listing', '%d listings', $num_items),
+                                $num_items
+                            )); ?>
                         </span>
                     <?php } ?>
                 </span>
@@ -129,7 +130,9 @@ function drawCategory($category)
                 </button>
                 <button type="button" class="cat-action" data-cat-act="toggle"
                         aria-label="<?php echo osc_esc_html(sprintf(
-                            $enabled ? __('Disable %s') : __('Enable %s'), $name)); ?>"
+                            $enabled ? __('Disable %s') : __('Enable %s'),
+                            $name
+                        )); ?>"
                         title="<?php echo $enabled ? osc_esc_html(__('Disable')) : osc_esc_html(__('Enable')); ?>">
                     <i class="bi <?php echo $enabled ? 'bi-pause-circle' : 'bi-play-circle'; ?>"></i>
                 </button>

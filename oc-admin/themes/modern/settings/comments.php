@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 //customize Head
 function customHead()
 {
@@ -57,7 +56,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -68,12 +66,10 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>' . __("Modify the options that allow your users to publish comments on your site's listings.") . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -88,7 +84,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -98,7 +93,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Comment Settings &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -145,10 +139,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </label>
                         </div>
                         <div class="form-label-checkbox-offset">
-                            <?php printf(__('Before a comment appears, comment author must have at least %s previously approved comments'),
-                                         '<input type="text" class="input-small" name="num_moderate_comments" value="'
-                                         . ((osc_moderate_comments() == -1) ? '0' : osc_esc_html(osc_moderate_comments()))
-                                         . '" />'); ?>
+                            <?php printf(
+                                __('Before a comment appears, comment author must have at least %s previously approved comments'),
+                                '<input type="text" class="input-small" name="num_moderate_comments" value="'
+                                 . ((osc_moderate_comments() == -1) ? '0' : osc_esc_html(osc_moderate_comments()))
+                                 . '" />'
+                            ); ?>
                             <div class="help-box"><?php _e('If the value is zero, an administrator must always approve comments'); ?></div>
                         </div>
                     </div>
@@ -156,9 +152,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="form-row">
                     <div class="form-label"><?php _e('Other comment settings'); ?></div>
                     <div class="form-controls">
-                        <?php printf(__('Break comments into pages with %s comments per page'),
-                                     '<input type="text" class="input-small" name="comments_per_page" value="'
-                                     . osc_esc_html(osc_comments_per_page()) . '" />'); ?>
+                        <?php printf(
+                            __('Break comments into pages with %s comments per page'),
+                            '<input type="text" class="input-small" name="comments_per_page" value="'
+                                     . osc_esc_html(osc_comments_per_page()) . '" />'
+                        ); ?>
                         <div class="help-box"><?php _e('If the value is zero all comments are shown'); ?></div>
                     </div>
                 </div>

@@ -111,7 +111,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
@@ -119,7 +118,6 @@ function addHelp()
               . 'the number of images per ad, include a watermark, etc.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -134,7 +132,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -144,7 +141,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Media Settings &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -209,13 +205,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="form-label"><?php _e('JPEG quality'); ?></div>
                         <div class="form-controls">
                             <?php $jpegQuality = (int) osc_get_preference('jpeg_quality');
-                            if ($jpegQuality < 1 || $jpegQuality > 100) {
-                                $jpegQuality = 82;
-                            } ?>
+if ($jpegQuality < 1 || $jpegQuality > 100) {
+    $jpegQuality = 82;
+} ?>
                             <input type="number" min="1" max="100" class="input-small" name="jpeg_quality"
                                    style="width:6rem" value="<?php echo $jpegQuality; ?>"/>
                             <span class="help-box"><?php _e('Compression quality for saved JPEGs, from 1 (smallest file) to '
-                                                            . '100 (best quality). 82 is a good balance.'); ?></span>
+                                . '100 (best quality). 82 is a good balance.'); ?></span>
                         </div>
                     </div>
                     <div class="form-row">
@@ -245,10 +241,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="form-controls">
                             <div class="form-label-checkbox">
                                 <input type="checkbox" name="use_imagick" value="1" <?php
-                                echo(($imagickLoaded && osc_use_imagick()) ? 'checked="checked"' : '');
-                                if (!$imagickLoaded) {
-                                    echo 'disabled="disabled"';
-                                } ?> />
+    echo(($imagickLoaded && osc_use_imagick()) ? 'checked="checked"' : '');
+if (!$imagickLoaded) {
+    echo 'disabled="disabled"';
+} ?> />
                                 <label for="use_imagick"><?php _e('Use ImageMagick instead of GD library'); ?></label>
                             </div>
                             <?php if (!$imagickLoaded) { ?>
@@ -268,20 +264,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-label-checkbox">
                                 <input type="radio" id="watermark_none" name="watermark_type"
                                        value="none" <?php echo((!osc_is_watermark_image() && !osc_is_watermark_text())
-                                        ? 'checked="checked"' : ''); ?> />
+        ? 'checked="checked"' : ''); ?> />
                                 <label for="watermark_none"><?php _e('None'); ?></label>
                             </div>
                             <div class="form-label-checkbox">
                                 <input type="radio" id="watermark_text" name="watermark_type"
                                        value="text" <?php echo(osc_is_watermark_text() ? 'checked="checked"'
-                                        : ''); ?> <?php echo($freeType ? '' : 'disabled="disabled"'); ?> />
+        : ''); ?> <?php echo($freeType ? '' : 'disabled="disabled"'); ?> />
                                 <label for="watermark_text"><?php _e('Text'); ?></label>
                                 <?php if (!$freeType) { ?>
                                     <div class="callout-danger">
                                         <p><?php printf(
-                                                __('Freetype library is required. How to <a target="_blank" href="%s">install/configure</a>'),
-                                                'https://www.php.net/manual/en/image.installation.php'
-                                            ); ?></p>
+                                            __('Freetype library is required. How to <a target="_blank" href="%s">install/configure</a>'),
+                                            'https://www.php.net/manual/en/image.installation.php'
+                                        ); ?></p>
                                     </div>
                                 <?php } ?>
                             </div>
@@ -382,7 +378,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <input type="color" maxlength="8" id="colorpickerField2" class="form-control form-control-color"
                                            name="background_color"
                                            value="<?php echo $background_color;
-                                            ?>"/>
+                            ?>"/>
                                     <div class="help-box">
                                         <?php _e('Background Hexadecimal color value'); ?>
                                     </div>
@@ -400,11 +396,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                 osc_watermark_text_color()
                                             );
                                         }
-                                        ?>
+                            ?>
                                         <img src="<?php
-                                        echo osc_base_url()
-                                             . str_replace(osc_base_path(), '', osc_uploads_path())
-                                             . Preference::newInstance()->get('watermark_text_image_name') ?>"/>
+                            echo osc_base_url()
+                                 . str_replace(osc_base_path(), '', osc_uploads_path())
+                                 . Preference::newInstance()->get('watermark_text_image_name') ?>"/>
                                     </div>
                                 </div>
                             </div>
@@ -414,15 +410,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-controls">
                                 <select name="watermark_text_place" id="watermark_text_place">
                                     <option value="centre" <?php echo (osc_watermark_place() === 'centre')
-                                        ? 'selected="true"' : ''; ?>><?php _e('Centre'); ?></option>
+                            ? 'selected="true"' : ''; ?>><?php _e('Centre'); ?></option>
                                     <option value="tl" <?php echo (osc_watermark_place() === 'tl') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Top Left'); ?></option>
+                            : ''; ?>><?php _e('Top Left'); ?></option>
                                     <option value="tr" <?php echo (osc_watermark_place() === 'tr') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Top Right'); ?></option>
+                            : ''; ?>><?php _e('Top Right'); ?></option>
                                     <option value="bl" <?php echo (osc_watermark_place() === 'bl') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Bottom Left'); ?></option>
+                            : ''; ?>><?php _e('Bottom Left'); ?></option>
                                     <option value="br" <?php echo (osc_watermark_place() === 'br') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Bottom Right'); ?></option>
+                            : ''; ?>><?php _e('Bottom Right'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -436,10 +432,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php if (osc_is_watermark_image()) { ?>
                                     <div class="help-box"><img width="100px"
                                                                src="<?php echo osc_base_url() . str_replace(
-                                                                       osc_base_path(),
-                                                                       '',
-                                                                       osc_uploads_path()
-                                                                    ) . 'watermark.png' ?>"/></div>
+                                                                   osc_base_path(),
+                                                                   '',
+                                                                   osc_uploads_path()
+                                                               ) . 'watermark.png' ?>"/></div>
                                 <?php } ?>
                                 <div class="help-box"><?php _e('It has to be a .PNG image'); ?></div>
                                 <div class="help-box"><?php _e("Shopclass doesn't check the watermark image size"); ?></div>
@@ -450,15 +446,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-controls">
                                 <select name="watermark_image_place" id="watermark_image_place">
                                     <option value="centre" <?php echo (osc_watermark_place() === 'centre')
-                                        ? 'selected="true"' : ''; ?>><?php _e('Centre'); ?></option>
+                                                               ? 'selected="true"' : ''; ?>><?php _e('Centre'); ?></option>
                                     <option value="tl" <?php echo (osc_watermark_place() === 'tl') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Top Left'); ?></option>
+                                                               : ''; ?>><?php _e('Top Left'); ?></option>
                                     <option value="tr" <?php echo (osc_watermark_place() === 'tr') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Top Right'); ?></option>
+                                                               : ''; ?>><?php _e('Top Right'); ?></option>
                                     <option value="bl" <?php echo (osc_watermark_place() === 'bl') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Bottom Left'); ?></option>
+                                                               : ''; ?>><?php _e('Bottom Left'); ?></option>
                                     <option value="br" <?php echo (osc_watermark_place() === 'br') ? 'selected="true"'
-                                        : ''; ?>><?php _e('Bottom Right'); ?></option>
+                                                               : ''; ?>><?php _e('Bottom Right'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -468,11 +464,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="form-controls">
                             <p>
                                 <?php _e('You can regenerate different image dimensions. If you have changed the dimension of thumbnails, '
-                                         . 'preview or normal images, you might want to regenerate your images.'); ?>
+                                                                . 'preview or normal images, you might want to regenerate your images.'); ?>
                             </p>
                             <a class="btn btn-dim"
                                href="<?php echo osc_admin_base_url(true) . '?page=settings&action=images_post' . '&'
-                                                . osc_csrf_token_url(); ?>"><?php _e('Regenerate'); ?></a>
+                                                                       . osc_csrf_token_url(); ?>"><?php _e('Regenerate'); ?></a>
                         </div>
                     </div>
                     <div class="clear"></div>

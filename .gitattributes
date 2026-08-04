@@ -18,3 +18,13 @@
 /package.json export-ignore
 /package-lock.json export-ignore
 /docs export-ignore
+/.editorconfig export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/.phpcompat.xml.dist export-ignore
+/.git-blame-ignore-revs export-ignore
+/tools export-ignore
+/Dockerfile export-ignore
+/.dockerignore export-ignore
+/.docker export-ignore
+/docker-compose.yml export-ignore
+/docker-compose.prod.yml export-ignore

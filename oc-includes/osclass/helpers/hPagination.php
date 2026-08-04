@@ -39,7 +39,6 @@ function osc_search_pagination()
     return $pagination->doPagination();
 }
 
-
 /**
  * Gets the pagination links of comments pagination
  *
@@ -64,7 +63,6 @@ function osc_comments_pagination()
 
     return $pagination->doPagination();
 }
-
 
 /**
  * @param array $extraParams
@@ -103,7 +101,6 @@ function osc_pagination_items($extraParams = array(), $field = false)
 
     return $pagination->doPagination();
 }
-
 
 /**
  * Gets generic pagination links
@@ -144,7 +141,6 @@ function osc_pagination($params = null)
     return $pagination->doPagination();
 }
 
-
 /**
  * @param $aData
  */
@@ -171,7 +167,7 @@ function osc_show_pagination_admin($aData)
                         <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
                                value="<?php echo osc_esc_html($value); ?>"/>
                     <?php }
-                } ?>
+                    } ?>
                 <ul>
                     <li>
                         <span class="list-first"><?php _e('Page'); ?></span>
@@ -187,12 +183,11 @@ function osc_show_pagination_admin($aData)
             $aux        = $pagination->doPagination();
             echo $aux;
         }
-        osc_run_hook('after_show_pagination_admin');
-        ?>
+    osc_run_hook('after_show_pagination_admin');
+    ?>
     </div>
     <?php
 }
-
 
 /**
  * @param      $from
@@ -219,6 +214,5 @@ function osc_pagination_showing($from, $to, $filtered, $total = null)
 
     return sprintf(__('Showing %s to %s of %s results'), $from, $to, $filtered);
 }
-
 
 ?>

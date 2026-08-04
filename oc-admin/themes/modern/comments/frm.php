@@ -14,7 +14,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 $comment = __get('comment');
 
 if (isset($comment['pk_i_id'])) {
@@ -36,7 +35,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -49,7 +47,6 @@ function customPageTitle($string)
     return sprintf(__('Edit comment &raquo; %s'), $string);
 }
 
-
 osc_add_filter('admin_title', 'customPageTitle');
 
 //customize Head
@@ -57,7 +54,6 @@ function customHead()
 {
     CommentForm::js_validation(true);
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 

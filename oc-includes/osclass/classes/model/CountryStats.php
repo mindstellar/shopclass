@@ -56,7 +56,7 @@ class CountryStats extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -187,7 +187,6 @@ class CountryStats extends DAO
     {
         return $this->findByPrimaryKey($countryCode);
     }
-
 
     /**
      * Return a list of countries and counter items.

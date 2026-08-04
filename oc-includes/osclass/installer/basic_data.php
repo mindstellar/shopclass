@@ -98,7 +98,6 @@ $categories = array(
     array('pk_i_id' => 95,  'i_position' => 21, 'fk_i_parent_id' => 8,    's_name' => __('Other Jobs'))
 );
 
-
 $item = array(
     'catId' => 9,
     'title' => __('Example Ad'),
@@ -109,7 +108,6 @@ $item = array(
     'region' => __('Example region'),
     'city' => __('Example city'),
 );
-
 
 $page = array(
     's_title' => __('Example page title'),

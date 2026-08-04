@@ -21,7 +21,6 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminItemComments extends AdminSecBaseModel
 {
-
     private $itemCommentManager;
 
     public function __construct()
@@ -265,7 +264,6 @@ class CAdminItemComments extends AdminSecBaseModel
                         $this->redirectTo($url);
                     }
                 }
-
 
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $commentsDataTable->rawRows());

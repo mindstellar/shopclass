@@ -37,7 +37,6 @@ function __($key, $domain = 'core')
     return osc_apply_filter('gettext', $string);
 }
 
-
 /**
  * Translate strings and echo them
  *
@@ -52,7 +51,6 @@ function _e($key, $domain = 'core')
     echo __($key, $domain);
 }
 
-
 /**
  * Translate string (flash messages)
  *
@@ -66,7 +64,6 @@ function _m($key)
 {
     return __($key, 'messages');
 }
-
 
 /**
  * Retrieve the singular or plural translation of the string.
@@ -87,7 +84,6 @@ function _n($single_key, $plural_key, $count, $domain = 'core')
 
     return osc_apply_filter('ngettext', $string);
 }
-
 
 /**
  * Retrieve the singular or plural translation of the string.

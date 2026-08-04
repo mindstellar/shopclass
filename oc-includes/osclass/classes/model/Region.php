@@ -44,7 +44,7 @@ class Region extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -174,7 +174,6 @@ class Region extends DAO
 
         return osc_db_stringify_rows($rows);
     }
-
 
     /**
      *  Delete a region with its cities and city areas

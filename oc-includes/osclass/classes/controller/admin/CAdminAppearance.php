@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -97,7 +99,7 @@ class CAdminAppearance extends AdminSecBaseModel
 
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
-            /* widgets */
+                /* widgets */
             case ('widgets'):
                 $info = WebThemes::newInstance()->loadThemeInfo(osc_theme());
 
@@ -313,7 +315,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 header('Content-Type: application/json');
                 echo json_encode(array('error' => $ok ? 0 : 1));
                 exit;
-            /* /widget */
+                /* /widget */
             case ('activate'):
                 osc_csrf_check();
                 osc_set_preference('theme', Params::getParam('theme'));

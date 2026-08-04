@@ -27,7 +27,7 @@ use mindstellar\migration\MigrationInterface;
  * log, so whichever side creates the table first, both read and write the same
  * structure during the window before the theme defers to core.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     /** Section the core item-moderation preferences live under. */
     private const SECTION = 'moderation';
 

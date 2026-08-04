@@ -4,14 +4,16 @@
     "@popperjs/core": "^2.11.8",
     "esbuild": "^0.28.1",
     "eslint": "^9.39.5",
+    "gettext-parser": "^9.1.1",
     "sass-embedded": "^1.100.0"
   },
   "description": "Shopclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
   "scripts": {
-    "build": "npm run assets && npm run css && npm run js",
+    "build": "npm run assets && npm run css && npm run js && npm run i18n",
     "assets": "node scripts/copy-assets.mjs",
     "css": "node scripts/build-css.mjs",
     "js": "esbuild oc-admin/themes/modern/js/location.js --minify --sourcemap --outfile=oc-admin/themes/modern/js/location.min.js",
+    "i18n": "node scripts/build-i18n.mjs",
     "watch": "node scripts/build-css.mjs --watch",
     "lint": "eslint oc-admin/themes/modern/js",
     "test": "echo \"Error: no test specified\" && exit 1"

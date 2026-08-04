@@ -41,11 +41,11 @@ function parse_params(string $uri): array
 harness_section('parseParams — decodes exactly once');
 $p = parse_params('index.php?page=search&sParams=a%2Bb');
 pin('%2B stays a literal plus, not a space', 'a+b', $p['sParams'] ?? null);
-pin('page param preserved',              'search', $p['page'] ?? null);
+pin('page param preserved', 'search', $p['page'] ?? null);
 pin('double-encoded space stays %20', '%20', parse_params('index.php?q=%2520')['q'] ?? null);
 pin('%20 decodes to one space', 'hello world', parse_params('index.php?q=hello%20world')['q'] ?? null);
-pin('numeric id untouched',        '42', parse_params('index.php?id=42')['id'] ?? null);
-pin('trailing %25 kept as %',     '10%', parse_params('index.php?n=10%25')['n'] ?? null);
+pin('numeric id untouched', '42', parse_params('index.php?id=42')['id'] ?? null);
+pin('trailing %25 kept as %', '10%', parse_params('index.php?n=10%25')['n'] ?? null);
 
 harness_section('parseParams — edge cases');
 pin('no query string -> empty map', array(), parse_params('index.php'));

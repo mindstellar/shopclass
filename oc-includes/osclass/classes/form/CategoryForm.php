@@ -18,7 +18,7 @@
 class CategoryForm extends Form
 {
     /**
-     * @param $category
+     * @param array $category
      */
     public static function primary_input_hidden($category)
     {
@@ -27,9 +27,9 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param        $categories
-     * @param        $category
-     * @param null   $default_item
+     * @param array $categories
+     * @param array $category
+     * @param null $default_item
      * @param string $name
      */
     public static function category_select(
@@ -45,8 +45,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param $array
-     * @param $deep
+     * @param array $array
+     * @param int $deep
      *
      * @return array
      */
@@ -69,8 +69,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param      $categories
-     * @param      $category
+     * @param array $categories
+     * @param array $category
      * @param null $default_item
      * @param int  $deep
      */
@@ -96,8 +96,8 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $categories
-     * @param null $selected
+     * @param array|null $categories
+     * @param array|null $selected
      * @param int  $depth
      */
     public static function categories_tree($categories = null, $selected = null, $depth = 0)
@@ -126,7 +126,7 @@ class CategoryForm extends Form
      */
     public static function expiration_days_input_text($category = null)
     {
-        $attributes['id'] ='i_expiration_days';
+        $attributes['id'] = 'i_expiration_days';
         $attributes['maxlength'] = 3;
         echo (new self())->text('i_expiration_days', $category['i_expiration_days'] ?? '', $attributes);
     }
@@ -154,7 +154,7 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * @param array|null $category
      */
     public static function apply_changes_to_subcategories($category = null)
     {
@@ -179,14 +179,14 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param      $locales
-     * @param null $category
+     * @param array $locales
+     * @param array|null $category
      */
     public static function multilanguage_name_description($locales, $category = null)
     {
         $tabs    = array();
         $content = array();
-        $current_locale_code = OC_ADMIN?osc_current_admin_locale():osc_current_user_locale();
+        $current_locale_code = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
         foreach ($locales as $locale) {
             $value         = isset($category['locale'][$locale['pk_c_code']])
                 ? $category['locale'][$locale['pk_c_code']]['s_name'] : '';

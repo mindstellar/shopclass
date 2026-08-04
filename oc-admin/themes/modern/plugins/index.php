@@ -21,7 +21,6 @@ function addHelp()
          . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -37,7 +36,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -49,7 +47,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Plugins &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -122,19 +119,20 @@ $tab_index = 2;
     function showingResults()
     {
         $aData = __get('aPlugins');
-        echo '<ul class="showing-results"><li><span>' . osc_pagination_showing((Params::getParam('iPage') - 1)
+        echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
+            (Params::getParam('iPage') - 1)
                                                                                * $aData['iDisplayLength'] + 1,
-                                                                               ((Params::getParam('iPage') - 1)
+            ((Params::getParam('iPage') - 1)
                                                                                 * $aData['iDisplayLength'])
                                                                                + count($aData['aaData']),
-                                                                               $aData['iTotalDisplayRecords'])
+            $aData['iTotalDisplayRecords']
+        )
              . '</span></li></ul>';
     }
 
-
-    osc_add_hook('before_show_pagination_admin', 'showingResults');
-    osc_show_pagination_admin($aData);
-    ?>
+osc_add_hook('before_show_pagination_admin', 'showingResults');
+osc_show_pagination_admin($aData);
+?>
 
     <div class="display-select-bottom">
         <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
@@ -143,21 +141,21 @@ $tab_index = 2;
                     <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
                            value="<?php echo osc_esc_html($value); ?>"/>
                 <?php }
-            } ?>
+                } ?>
             <select name="iDisplayLength" class="form-select form-select-sm select-box-medium float-left"
                     onchange="this.form.submit();">
                 <option value="10" <?php if (Params::getParam('iDisplayLength') == 10) {
                     echo 'selected';
-                                   } ?> ><?php printf(__('%d plugins'), 10); ?></option>
+                } ?> ><?php printf(__('%d plugins'), 10); ?></option>
                 <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
                     echo 'selected';
-                                   } ?> ><?php printf(__('%d plugins'), 25); ?></option>
+                } ?> ><?php printf(__('%d plugins'), 25); ?></option>
                 <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
                     echo 'selected';
-                                   } ?> ><?php printf(__('%d plugins'), 50); ?></option>
+                } ?> ><?php printf(__('%d plugins'), 50); ?></option>
                 <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
                     echo 'selected';
-                                    } ?> ><?php printf(__('%d plugins'), 100); ?></option>
+                } ?> ><?php printf(__('%d plugins'), 100); ?></option>
             </select>
         </form>
     </div>
@@ -194,8 +192,8 @@ $tab_index = 2;
             .textContent = title;
         pluginModal.querySelector(".osc-dialog-text")
             .textContent = "<?php echo osc_esc_js(__('This action can not be undone.'
-                                                     . ' Uninstalling plugins may result in a permanent loss of data. '
-                                                     . 'Are you sure you want to continue?')); ?>";
+                                 . ' Uninstalling plugins may result in a permanent loss of data. '
+                                 . 'Are you sure you want to continue?')); ?>";
         pluginModal.querySelector("#pluginModalSubmit")
             .textContent = "<?php echo osc_esc_js(__('Uninstall')); ?>";
         pluginModal.showModal();

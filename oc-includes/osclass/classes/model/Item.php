@@ -74,7 +74,7 @@ class Item extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -1522,10 +1522,10 @@ class Item extends DAO
             }
             $aDescriptions = array();
             foreach ($descriptions as $d) {
-                if ($d['s_title']!='') {
+                if ($d['s_title'] != '') {
                     $aDescriptions[$d['fk_i_item_id']]['locale'][$d['fk_c_locale_code']]['s_title'] = $d['s_title'];
                 }
-                if ($d['s_description']!='') {
+                if ($d['s_description'] != '') {
                     $aDescriptions[$d['fk_i_item_id']]['locale'][$d['fk_c_locale_code']]['s_description'] = $d['s_description'];
                 }
             }

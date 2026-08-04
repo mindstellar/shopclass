@@ -21,7 +21,6 @@
  */
 class Object_Cache_memcached implements iObject_Cache
 {
-
     /**
      * Holds the cached objects (in-process, per-request layer).
      *
@@ -310,7 +309,6 @@ padding: 1em;'><h2>Memcached stats</h2>";
             'server'       => $server,
         );
     }
-
 
     /**
      * Namespace every key with a value unique to this install.

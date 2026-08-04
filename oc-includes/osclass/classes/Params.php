@@ -244,7 +244,6 @@ class Params
 
         $value = self::purify($value, $html_encode, $xss_check, $quotes_encode);
 
-
         return $value;
     }
 

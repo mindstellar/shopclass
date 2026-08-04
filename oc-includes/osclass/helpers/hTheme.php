@@ -24,7 +24,6 @@ function osc_admin_render_theme_url($file = '')
     return osc_admin_base_url(true) . '?page=appearance&action=render&file=' . $file;
 }
 
-
 /**
  * Render the specified file
  *
@@ -48,7 +47,6 @@ function osc_render_file($file = '')
     }
 }
 
-
 /**
  * Gets urls for render custom files in front-end
  *
@@ -66,7 +64,6 @@ function osc_render_file_url($file = '')
 
     return osc_base_url(true) . '?page=custom&file=' . $file;
 }
-
 
 /**
  * Re-send the flash messages of the given section. Usefull for custom theme/plugins files.
@@ -92,7 +89,6 @@ function osc_resend_flash_messages($section = 'pubMessages')
     }
 }
 
-
 /**
  * Enqueue script
  *
@@ -102,7 +98,6 @@ function osc_enqueue_script($id)
 {
     Scripts::newInstance()->enqueueScript($id);
 }
-
 
 /**
  * Enqueue a block of inline JavaScript into the footer, after the file scripts.
@@ -117,7 +112,6 @@ function osc_enqueue_script_code($code, $dependencies = null, $id = null)
     Scripts::enqueueScriptCode($code, $dependencies, defined('OC_ADMIN') && OC_ADMIN, $id);
 }
 
-
 /**
  * Remove script from the queue, so it will not be loaded
  *
@@ -127,7 +121,6 @@ function osc_remove_script($id)
 {
     Scripts::newInstance()->removeScript($id);
 }
-
 
 /**
  * Add script to be loaded
@@ -141,7 +134,6 @@ function osc_register_script($id, $url, $dependencies = null)
     Scripts::newInstance()->registerScript($id, $url, $dependencies);
 }
 
-
 /**
  * Remove script from the queue, so it will not be loaded
  *
@@ -151,7 +143,6 @@ function osc_unregister_script($id)
 {
     Scripts::newInstance()->unregisterScript($id);
 }
-
 
 /**
  * Print the HTML tags to make the script load
@@ -166,7 +157,6 @@ function osc_load_scripts()
     }
 }
 
-
 /**
  * Register style with dependencies
  *
@@ -179,7 +169,6 @@ function osc_register_style($id, $url, $dependencies = null)
     Styles::newInstance()->register($id, $url, $dependencies);
 }
 
-
 /**
  * Remove style from the queue, so it will not be loaded
  *
@@ -189,7 +178,6 @@ function osc_unregister_style($id)
 {
     Styles::newInstance()->unregister($id);
 }
-
 
 /**
  * Add style to be loaded
@@ -207,7 +195,6 @@ function osc_enqueue_style($id, $url = null)
     }
 }
 
-
 /**
  * Remove style from the queue, so it will not be loaded
  *
@@ -218,7 +205,6 @@ function osc_remove_style($id)
     Styles::newInstance()->removeStyle($id);
 }
 
-
 /**
  * Print the HTML tags to make the style load
  */
@@ -226,7 +212,6 @@ function osc_load_styles()
 {
     Styles::newInstance()->printStyles();
 }
-
 
 /**
  * @param        $id
@@ -251,6 +236,5 @@ function osc_print_bulk_actions($id, $name, $options, $class = '')
     }
     echo '</select>';
 }
-
 
 /* file end: ./oc-includes/osclass/hTheme.php */

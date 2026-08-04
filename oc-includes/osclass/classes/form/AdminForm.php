@@ -17,7 +17,6 @@
  */
 class AdminForm extends Form
 {
-
     /**
      * @param $admin
      */
@@ -39,8 +38,10 @@ class AdminForm extends Form
      */
     public static function username_text($admin = null)
     {
-        parent::generic_input_text('s_username',
-            isset($admin['s_username']) ? $admin['s_username'] : '');
+        parent::generic_input_text(
+            's_username',
+            isset($admin['s_username']) ? $admin['s_username'] : ''
+        );
     }
 
     /**
@@ -85,8 +86,14 @@ class AdminForm extends Form
             array('i_value' => '1', 's_text' => __('Moderator'))
         );
 
-        parent::generic_select('b_moderator', $options, 'i_value', 's_text', null,
-            isset($admin['b_moderator']) ? $admin['b_moderator'] : null);
+        parent::generic_select(
+            'b_moderator',
+            $options,
+            'i_value',
+            's_text',
+            null,
+            isset($admin['b_moderator']) ? $admin['b_moderator'] : null
+        );
     }
 
     public static function js_validation()

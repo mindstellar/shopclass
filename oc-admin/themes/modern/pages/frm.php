@@ -66,14 +66,12 @@ function customFrmText($return = 'title')
     return $text[$return];
 }
 
-
 function customPageHeader()
 {
     ?>
     <h1><?php _e('Pages'); ?></h1>
     <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -86,7 +84,6 @@ function customPageTitle($string)
 {
     return sprintf('%s &raquo; %s', customFrmText('title'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -155,7 +152,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -167,7 +163,6 @@ function pageFrmRenderOffset()
 {
     return 'row-offset';
 }
-
 
 osc_add_filter('render-wrapper', 'pageFrmRenderOffset');
 
@@ -188,7 +183,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
                     <?php // The mode class sets the initial view; the template select toggles
                     // it live (see the mode script + .page-mode-* CSS). The title always
-                    // shows; the text editor and the widget canvas swap. ?>
+                    // shows; the text editor and the widget canvas swap.?>
                     <div id="left-side" class="col page-mode-<?php echo $pb_is_builder ? 'builder' : 'classic'; ?>">
                         <?php PageForm::printMultiLangTitleDesc($page); ?>
                         <?php
@@ -249,7 +244,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                           role="button"
                                                           aria-label="<?php echo osc_esc_html(sprintf(
                                                               __('Reorder widget %s. Drag, or focus and press the up'
-                                                              . ' or down arrow keys.'),
+                                                                        . ' or down arrow keys.'),
                                                               $b['s_description']
                                                           )); ?>">
                                                         <i class="bi bi-grip-vertical" aria-hidden="true"></i>
@@ -289,7 +284,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </div>
                         <?php } else { ?>
                             <?php // Placeholder shown when the template select is switched to a
-                            // builder template but the page is not yet saved as one. ?>
+                            // builder template but the page is not yet saved as one.?>
                             <div class="card mb-3 page-blocks-card js-page-widgets-hint">
                                 <div class="card-body">
                                     <div class="page-blocks-head">
@@ -302,7 +297,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 </div>
                             </div>
                         <?php } ?>
-                        <?php // Plugin fields render full-width here, as they did before the rail existed. ?>
+                        <?php // Plugin fields render full-width here, as they did before the rail existed.?>
                         <?php osc_run_hook('page_meta'); ?>
                     </div>
 
@@ -393,13 +388,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if (!select || !main) { return; }
         var builderIds = <?php
             $pb_builder_ids = array();
-        foreach ($registeredTemplates as $rid => $rspec) {
-            if (!empty($rspec['builder'])) {
-                $pb_builder_ids[] = $rid;
-            }
-        }
-            echo json_encode($pb_builder_ids);
-        ?>;
+foreach ($registeredTemplates as $rid => $rspec) {
+    if (!empty($rspec['builder'])) {
+        $pb_builder_ids[] = $rid;
+    }
+}
+echo json_encode($pb_builder_ids);
+?>;
         function sync() {
             var builder = builderIds.indexOf(select.value) !== -1;
             main.classList.toggle('page-mode-builder', builder);

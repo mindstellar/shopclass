@@ -106,12 +106,12 @@ foreach ($pbf_types as $pbf_id => $pbf_spec) {
         var descBox    = document.getElementById('pbfTypeDescription');
         var descriptions = <?php
             $pbf_desc = array();
-            foreach ($pbf_types as $pbf_id => $pbf_spec) {
-                $pbf_desc[$pbf_id] = isset($pbf_spec['description']) && is_string($pbf_spec['description'])
-                    ? $pbf_spec['description'] : '';
-            }
-            echo json_encode($pbf_desc);
-        ?>;
+foreach ($pbf_types as $pbf_id => $pbf_spec) {
+    $pbf_desc[$pbf_id] = isset($pbf_spec['description']) && is_string($pbf_spec['description'])
+        ? $pbf_spec['description'] : '';
+}
+echo json_encode($pbf_desc);
+?>;
 
         function setGroupEnabled(group, on) {
             group.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !on; });

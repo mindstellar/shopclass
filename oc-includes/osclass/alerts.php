@@ -46,7 +46,6 @@ function osc_runAlert($type = null, $last_exec = null)
     $active   = true;
     $searches = Alerts::newInstance()->findByTypeGroup($type, $active);
 
-
     foreach ($searches as $s_search) {
         // Isolate each saved search: the cron already moved d_last_exec forward before
         // calling this, so an uncaught throw here would drop every remaining subscriber's

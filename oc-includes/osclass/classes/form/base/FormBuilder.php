@@ -18,7 +18,6 @@
 
 namespace mindstellar\form\base;
 
-
 use Exception;
 use mindstellar\Csrf;
 
@@ -122,8 +121,7 @@ class FormBuilder
      *
      * @return $this
      */
-    public function addForm(string $name, bool $csrf = true, array $attributes = [], array $inputSchema = [])
-    : FormBuilder
+    public function addForm(string $name, bool $csrf = true, array $attributes = [], array $inputSchema = []): FormBuilder
     {
         $this->formSchema['attributes']['name'] = $name;
         $this->formSchema['csrf']               = $csrf;
@@ -160,8 +158,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addHidden(string $name, string $value = '', array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addHidden(string $name, string $value = '', array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -181,8 +178,7 @@ class FormBuilder
      *
      * @return $this
      */
-    public function addCommonInputOptions(array $options = [])
-    : FormBuilder
+    public function addCommonInputOptions(array $options = []): FormBuilder
     {
         $this->formSchema['commonInputOptions'] = array_merge($this->formSchema['commonInputOptions'], $options);
 
@@ -196,8 +192,7 @@ class FormBuilder
      *
      * @return $this
      */
-    public function addCommonInputAttributes(array $attributes = [])
-    : FormBuilder
+    public function addCommonInputAttributes(array $attributes = []): FormBuilder
     {
         $this->formSchema['commonInputAttributes'] = array_merge($this->formSchema['commonInputAttributes'], $attributes);
 
@@ -211,8 +206,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addHtmlContent(string $content)
-    : FormBuilder
+    public function addHtmlContent(string $content): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'value' => $content,
@@ -232,8 +226,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addText(string $name, string $value = '', array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addText(string $name, string $value = '', array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -256,8 +249,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addPassword(string $name, string $value = '', array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addPassword(string $name, string $value = '', array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -280,8 +272,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addTextarea(string $name, string $value = '', array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addTextarea(string $name, string $value = '', array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -304,8 +295,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addSelect(string $name, $values, array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addSelect(string $name, $values, array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -328,8 +318,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addCheckbox(string $name, array $value = [], array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addCheckbox(string $name, array $value = [], array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -352,8 +341,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addRadio(string $name, $value, array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addRadio(string $name, $value, array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -375,8 +363,7 @@ class FormBuilder
      *
      * @return \mindstellar\form\base\FormBuilder
      */
-    public function addFile(string $name, array $attributes = [], array $options = [])
-    : FormBuilder
+    public function addFile(string $name, array $attributes = [], array $options = []): FormBuilder
     {
         $this->formSchema['inputSchema'][] = [
             'name'       => $name,
@@ -395,8 +382,7 @@ class FormBuilder
      * @return string
      * @throws \Exception
      */
-    public function renderForm()
-    : string
+    public function renderForm(): string
     {
         if (!isset($this->formSchema['attributes']['name'])) {
             throw new Exception('Form name attribute is not set');
@@ -414,8 +400,7 @@ class FormBuilder
      *
      * @return string
      */
-    private function formAttributesString()
-    : string
+    private function formAttributesString(): string
     {
         $str = '';
         // if form attributes are given
@@ -432,8 +417,7 @@ class FormBuilder
      * render form inputs from given schema
      * @return string
      */
-    private function renderInputs()
-    : string
+    private function renderInputs(): string
     {
         $str = '';
         if (!empty($this->formSchema['inputSchema'])) {
@@ -457,8 +441,12 @@ class FormBuilder
                         }
                         // call $input['type] as FormInput method and pass $input['name'], $input['value'] and $input['options'] as arguments
                         $inputMethod = $input['type'];
-                        $str         .= $this->formInputs->$inputMethod($input['name'], $input['value'], $input['attributes'],
-                                                                        $input['options']);
+                        $str         .= $this->formInputs->$inputMethod(
+                            $input['name'],
+                            $input['value'],
+                            $input['attributes'],
+                            $input['options']
+                        );
                         break;
                 }
                 unset($input);
@@ -474,8 +462,7 @@ class FormBuilder
      * @return string
      * @throws \Exception
      */
-    private function renderSubmit()
-    : string
+    private function renderSubmit(): string
     {
         $options    = [];
         $attributes = [];

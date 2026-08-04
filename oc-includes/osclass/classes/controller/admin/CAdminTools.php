@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -167,13 +169,17 @@ class CAdminTools extends AdminSecBaseModel
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-2):
-                        $msg = sprintf(_m('Could not connect with the database. Error: %s'),
-                            \mindstellar\database\Connection::instance()->lastError());
+                        $msg = sprintf(
+                            _m('Could not connect with the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError()
+                        );
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-3):
-                        $msg = sprintf(_m('Could not select the database. Error: %s'),
-                            \mindstellar\database\Connection::instance()->lastError());
+                        $msg = sprintf(
+                            _m('Could not select the database. Error: %s'),
+                            \mindstellar\database\Connection::instance()->lastError()
+                        );
                         osc_add_flash_error_message($msg, 'admin');
                         break;
                     case (-4):

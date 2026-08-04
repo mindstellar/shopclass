@@ -39,7 +39,6 @@ abstract class DataTable
         $this->rawRows  = array();
     }
 
-
     /**
      * FUNCTIONS THAT SHOULD BE REDECLARED IN SUB-CLASSES
      *
@@ -71,9 +70,6 @@ abstract class DataTable
             }
         }
     }
-
-
-
 
     /**
      * COMMON FUNCTIONS . DO NOT MODIFY THEM

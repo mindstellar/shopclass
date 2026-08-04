@@ -36,7 +36,6 @@ function osc_search()
     return $search;
 }
 
-
 /**
  * Gets available search orders
  *
@@ -59,7 +58,6 @@ function osc_list_orders()
     return $list_order;
 }
 
-
 /**
  * Gets current search page
  *
@@ -69,7 +67,6 @@ function osc_search_alert_subscribed()
 {
     return View::newInstance()->_get('search_alert_subscribed') == 1;
 }
-
 
 /**
  * Gets current search page
@@ -81,7 +78,6 @@ function osc_search_page()
     return View::newInstance()->_get('search_page');
 }
 
-
 /**
  * Gets total pages of search
  *
@@ -91,7 +87,6 @@ function osc_search_total_pages()
 {
     return View::newInstance()->_get('search_total_pages');
 }
-
 
 /**
  * Gets if "has pic" option is enabled or not in the search
@@ -103,7 +98,6 @@ function osc_search_has_pic()
     return View::newInstance()->_get('search_has_pic');
 }
 
-
 /**
  * Gets if "only premium" option is enabled or not in the search
  *
@@ -113,7 +107,6 @@ function osc_search_only_premium()
 {
     return View::newInstance()->_get('search_only_premium');
 }
-
 
 /**
  * Gets current search order
@@ -125,7 +118,6 @@ function osc_search_order()
     return View::newInstance()->_get('search_order');
 }
 
-
 /**
  * Gets current search order type
  *
@@ -135,7 +127,6 @@ function osc_search_order_type()
 {
     return View::newInstance()->_get('search_order_type');
 }
-
 
 /**
  * Gets current search pattern
@@ -151,7 +142,6 @@ function osc_search_pattern()
     return '';
 }
 
-
 /**
  * Gets current search country
  *
@@ -161,7 +151,6 @@ function osc_search_country()
 {
     return View::newInstance()->_get('search_country');
 }
-
 
 /**
  * Gets current search region
@@ -173,7 +162,6 @@ function osc_search_region()
     return View::newInstance()->_get('search_region');
 }
 
-
 /**
  * Gets current search city
  *
@@ -183,7 +171,6 @@ function osc_search_city()
 {
     return View::newInstance()->_get('search_city');
 }
-
 
 /**
  * Gets current search users
@@ -199,7 +186,6 @@ function osc_search_user()
     return array();
 }
 
-
 /**
  * Gets current search max price
  *
@@ -209,7 +195,6 @@ function osc_search_price_max()
 {
     return View::newInstance()->_get('search_price_max');
 }
-
 
 /**
  * Gets current search min price
@@ -221,7 +206,6 @@ function osc_search_price_min()
     return View::newInstance()->_get('search_price_min');
 }
 
-
 /**
  * Gets current search total items
  *
@@ -231,7 +215,6 @@ function osc_search_total_items()
 {
     return View::newInstance()->_get('search_total_items');
 }
-
 
 /**
  * Gets current search "show as" variable (show the items as a list or as a gallery)
@@ -243,7 +226,6 @@ function osc_search_show_as()
     return View::newInstance()->_get('search_show_as');
 }
 
-
 /**
  * Gets current search start item record
  *
@@ -254,7 +236,6 @@ function osc_search_start()
     return View::newInstance()->_get('search_start');
 }
 
-
 /**
  * Gets current search end item record
  *
@@ -264,7 +245,6 @@ function osc_search_end()
 {
     return View::newInstance()->_get('search_end');
 }
-
 
 /**
  * Gets current search category
@@ -286,7 +266,6 @@ function osc_search_category()
 
     return $category;
 }
-
 
 /**
  * Gets current search category id
@@ -316,7 +295,6 @@ function osc_search_category_id()
 
     return $category;
 }
-
 
 function osc_search_category_description($locale = '')
 {
@@ -375,7 +353,6 @@ function osc_update_search_url($params = array(), $forced = false)
     return osc_search_url($merged);
 }
 
-
 /**
  * Load the form for the alert subscription
  *
@@ -386,7 +363,6 @@ function osc_alert_form()
     osc_current_web_theme_path('alert-form.php');
 }
 
-
 /**
  * Gets alert of current search
  *
@@ -396,7 +372,6 @@ function osc_search_alert()
 {
     return View::newInstance()->_get('search_alert');
 }
-
 
 /**
  * Gets for a default search (all categories, noother option)
@@ -411,7 +386,6 @@ function osc_search_show_all_url($params = array())
 
     return osc_update_search_url($params);
 }
-
 
 /**
  * Gets search url given params
@@ -598,7 +572,8 @@ function osc_search_url($params = null)
             $url = $base_url . $seo_prefix . $url;
         } elseif (isset($params['sRegion']) && is_string($params['sRegion'])
             && strpos($params['sRegion'], ',') === false
-            && ($countP == 1 || ($countP == 2 && (isset($params['iPage']) || isset($params['sCategory'])))
+            && (
+                $countP == 1 || ($countP == 2 && (isset($params['iPage']) || isset($params['sCategory'])))
                 || (isset($params['iPage'], $params['sCategory']) && $countP == 3)
             )
         ) {
@@ -757,7 +732,6 @@ function osc_search_url($params = null)
     return str_replace('%2C', ',', $url);
 }
 
-
 /**
  * @param $var
  *
@@ -776,7 +750,6 @@ function osc_remove_slash($var)
     return $var;
 }
 
-
 /**
  * Gets list of countries with items
  *
@@ -790,7 +763,6 @@ function osc_list_country()
 
     return null;
 }
-
 
 /**
  * Gets list of regions with items
@@ -806,7 +778,6 @@ function osc_list_region()
     return null;
 }
 
-
 /**
  * Gets list of cities with items
  *
@@ -820,7 +791,6 @@ function osc_list_city()
 
     return null;
 }
-
 
 /**
  * Gets the next country in the list_countries list
@@ -840,7 +810,6 @@ function osc_has_list_countries()
 
     return $result;
 }
-
 
 /**
  * Gets the next region in the list_regions list
@@ -865,7 +834,6 @@ function osc_has_list_regions($country = '%%%%')
     return $result;
 }
 
-
 /**
  * Gets the next city in the list_cities list
  *
@@ -887,7 +855,6 @@ function osc_has_list_cities($region = '%%%%')
     return $result;
 }
 
-
 /**
  * Gets the total number of countries in list_countries
  *
@@ -902,7 +869,6 @@ function osc_count_list_countries()
 
     return View::newInstance()->_count('list_countries');
 }
-
 
 /**
  * Gets the total number of regions in list_regions
@@ -923,7 +889,6 @@ function osc_count_list_regions($country = '%%%%')
     return View::newInstance()->_count('list_regions');
 }
 
-
 /**
  * Gets the total number of cities in list_cities
  *
@@ -941,7 +906,6 @@ function osc_count_list_cities($region = '%%%%')
     return View::newInstance()->_count('list_cities');
 }
 
-
 // country attributes
 /**
  * Gets the name of current "list country"
@@ -953,7 +917,6 @@ function osc_list_country_name()
     return osc_field(osc_list_country(), 'country_name', '');
 }
 
-
 /**
  * Gets the number of items of current "list country"
  *
@@ -963,7 +926,6 @@ function osc_list_country_code()
 {
     return osc_field(osc_list_country(), 'country_code', '');
 }
-
 
 /**
  * Gets the number of items of current "list country"
@@ -975,7 +937,6 @@ function osc_list_country_items()
     return osc_field(osc_list_country(), 'items', '');
 }
 
-
 /**
  * Gets the url of current "list country"
  *
@@ -985,7 +946,6 @@ function osc_list_country_url()
 {
     return osc_search_url(array('sCountry' => osc_list_country_code()));
 }
-
 
 // region attributes
 /**
@@ -998,7 +958,6 @@ function osc_list_region_name()
     return osc_field(osc_list_region(), 'region_name', '');
 }
 
-
 /**
  * Gets the name of current "list region" by slug
  *
@@ -1008,7 +967,6 @@ function osc_list_region_slug()
 {
     return osc_field(osc_list_region(), 'region_name', '');
 }
-
 
 /**
  * Gets the ID of current "list region"
@@ -1020,7 +978,6 @@ function osc_list_region_id()
     return osc_field(osc_list_region(), 'region_id', '');
 }
 
-
 /**
  * Gets the number of items of current "list region"
  *
@@ -1031,7 +988,6 @@ function osc_list_region_items()
     return osc_field(osc_list_region(), 'items', '');
 }
 
-
 /**
  * Gets the url of current "list region"
  *
@@ -1041,7 +997,6 @@ function osc_list_region_url()
 {
     return osc_search_url(array('sRegion' => osc_list_region_id()));
 }
-
 
 // city attributes
 /**
@@ -1054,7 +1009,6 @@ function osc_list_city_name()
     return osc_field(osc_list_city(), 'city_name', '');
 }
 
-
 /**
  * Gets the list of current "list city" by slug
  *
@@ -1064,7 +1018,6 @@ function osc_list_city_slug()
 {
     return osc_field(osc_list_city(), 'city_slug', '');
 }
-
 
 /**
  * Gets the ID of current "list city"
@@ -1076,7 +1029,6 @@ function osc_list_city_id()
     return osc_field(osc_list_city(), 'city_id', '');
 }
 
-
 /**
  * Gets the number of items of current "list city"
  *
@@ -1087,7 +1039,6 @@ function osc_list_city_items()
     return osc_field(osc_list_city(), 'items', '');
 }
 
-
 /**
  * Gets the url of current "list city"
  *
@@ -1097,7 +1048,6 @@ function osc_list_city_url()
 {
     return osc_search_url(array('sCity' => osc_list_city_id()));
 }
-
 
 /**********************
  ** LATEST SEARCHES **
@@ -1121,7 +1071,6 @@ function osc_get_latest_searches($limit = 20)
     return View::newInstance()->_get('latest_searches');
 }
 
-
 /**
  * Gets the total number of latest searches done in the website
  *
@@ -1138,7 +1087,6 @@ function osc_count_latest_searches()
 
     return View::newInstance()->_count('latest_searches');
 }
-
 
 /**
  * Gets the next latest search
@@ -1157,7 +1105,6 @@ function osc_has_latest_searches()
     return View::newInstance()->_next('latest_searches');
 }
 
-
 /**
  * Gets the current latest search
  *
@@ -1172,7 +1119,6 @@ function osc_latest_search()
     return null;
 }
 
-
 /**
  * Gets the current latest search pattern
  *
@@ -1182,7 +1128,6 @@ function osc_latest_search_text()
 {
     return osc_field(osc_latest_search(), 's_search', '');
 }
-
 
 /**
  * Gets the current latest search date
@@ -1194,7 +1139,6 @@ function osc_latest_search_date()
     return osc_field(osc_latest_search(), 'd_date', '');
 }
 
-
 /**
  * Gets the current latest search total
  *
@@ -1204,7 +1148,6 @@ function osc_latest_search_total()
 {
     return osc_field(osc_latest_search(), 'i_total', '');
 }
-
 
 /**
  * @return array|mixed|string
@@ -1217,7 +1160,6 @@ function osc_get_canonical()
 
     return '';
 }
-
 
 /**
  * @param $conditions
@@ -1271,7 +1213,6 @@ function osc_get_raw_search($conditions)
 
     return $conditions;
 }
-
 
 /**
  * @param $paramCat

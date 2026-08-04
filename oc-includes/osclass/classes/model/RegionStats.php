@@ -56,7 +56,7 @@ class RegionStats extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -323,8 +323,7 @@ class RegionStats extends DAO
      *
      * @return array
      */
-    private function calculateAllStats(array $regions)
-    : array
+    private function calculateAllStats(array $regions): array
     {
         if (empty($regions)) {
             return array();

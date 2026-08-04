@@ -18,7 +18,6 @@
 
 namespace mindstellar\form\base;
 
-
 /**
  * Class BaseInputs
  * Generate Basic Form Inputs
@@ -55,8 +54,7 @@ interface InputInterface
      *
      * @return string
      */
-    public function checkbox(string $name, $value, array $attributes = [], array $options = [])
-    : string;
+    public function checkbox(string $name, $value, array $attributes = [], array $options = []): string;
 
     /**
      * Select

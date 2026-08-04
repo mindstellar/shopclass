@@ -16,7 +16,6 @@
  */
 class Object_Cache_default implements iObject_Cache
 {
-
     /**
      * Holds the cached objects
      *

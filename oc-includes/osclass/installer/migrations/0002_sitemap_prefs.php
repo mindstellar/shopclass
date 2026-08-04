@@ -28,7 +28,7 @@ use mindstellar\migration\MigrationInterface;
  * theme working until it opts in. Once both `sitemap` and `shopclass_theme` hold
  * the value, the `sitemap` section is authoritative for the core generator.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     /** Legacy source section the bundled theme used for these preferences. */
     private const LEGACY_SECTION = 'shopclass_theme';
 

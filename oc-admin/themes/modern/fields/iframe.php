@@ -137,7 +137,7 @@ $formCount = (int)__get('form_count');
                             'rows'        => array('label' => __('Rows'), 'type' => 'number'),
                             'pattern'     => array('label' => __('Pattern (regex)'), 'type' => 'text'),
                         );
-                        ?>
+?>
                         <div id="cf_config_block" class="cf-config-block">
                             <?php foreach ($cfgRows as $cfgKey => $cfgRow) { ?>
                                 <div class="form-row cf-config-row" data-cfg-key="<?php echo osc_esc_html($cfgKey); ?>">
@@ -146,16 +146,16 @@ $formCount = (int)__get('form_count');
                                         <input type="<?php echo $cfgRow['type']; ?>" class="form-control"
                                                name="cfg_<?php echo osc_esc_html($cfgKey); ?>"
                                                value="<?php echo osc_esc_html($cfgValue($cfgKey)); ?>"<?php
-                                               echo $cfgRow['type'] === 'number' ? ' step="any"' : ''; ?> />
+                       echo $cfgRow['type'] === 'number' ? ' step="any"' : ''; ?> />
                                     </div>
                                 </div>
                             <?php } ?>
                         </div>
 
                         <?php
-                        // Conditional visibility / requirement — one condition against
-                        // a sibling field. Emitted as JSON in cfg_rules on submit.
-                        ?>
+// Conditional visibility / requirement — one condition against
+// a sibling field. Emitted as JSON in cfg_rules on submit.
+?>
                         <div id="cf_rules_block" class="cf-rules-block">
                             <div class="form-row">
                                 <div class="form-label"><?php _e('Conditional logic'); ?></div>
@@ -184,10 +184,10 @@ $formCount = (int)__get('form_count');
                                     <select class="form-select" id="cf_rule_op">
                                         <?php
                                         $ops = array('eq' => __('is'), 'neq' => __('is not'), 'filled' => __('is filled'), 'gt' => __('is greater than'), 'lt' => __('is less than'));
-                                        foreach ($ops as $opKey => $opLabel) {
-                                            $selAttr = (isset($ruleCond['op']) && $ruleCond['op'] === $opKey) ? ' selected' : '';
-                                            echo '<option value="' . $opKey . '"' . $selAttr . '>' . osc_esc_html($opLabel) . '</option>';
-                                        } ?>
+foreach ($ops as $opKey => $opLabel) {
+    $selAttr = (isset($ruleCond['op']) && $ruleCond['op'] === $opKey) ? ' selected' : '';
+    echo '<option value="' . $opKey . '"' . $selAttr . '>' . osc_esc_html($opLabel) . '</option>';
+} ?>
                                     </select>
                                     <input type="text" class="form-control" id="cf_rule_value"
                                            value="<?php echo osc_esc_html($ruleCond['value'] ?? ''); ?>"
@@ -200,7 +200,7 @@ $formCount = (int)__get('form_count');
                         <?php
                         // Cascading options — only meaningful for choice fields; the JS
                         // shows this block for DROPDOWN/RADIO only.
-                        ?>
+?>
                         <div id="cf_cascade_block" class="cf-rules-block" style="display:none;">
                             <div class="form-row">
                                 <div class="form-label"><?php _e('Cascading options'); ?></div>
@@ -261,14 +261,14 @@ $formCount = (int)__get('form_count');
                                 <div class="form-label"></div>
                                 <div class="form-controls">
                                     <label><?php FieldForm::searchable_checkbox($field); ?><?php
-                                                                                            _e('Tick to allow searches by this field'); ?></label>
+_e('Tick to allow searches by this field'); ?></label>
                                 </div>
                             </div>
                             <div class="form-row" id="field_newtab" style="display: none;">
                                 <div class="form-label"></div>
                                 <div class="form-controls">
                                     <label><?php FieldForm::newtab_checkbox($field); ?><?php
-                                                                                        _e('Tick to open links in new tab'); ?></label>
+_e('Tick to open links in new tab'); ?></label>
                                 </div>
                             </div>
                         </div>

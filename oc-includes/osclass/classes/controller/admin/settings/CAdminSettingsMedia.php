@@ -1,4 +1,6 @@
-<?php if (!defined('ABS_PATH')) {
+<?php
+
+if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
@@ -252,10 +254,13 @@ class CAdminSettingsMedia extends AdminSecBaseModel
         switch ($sSuffix) {
             case 'P':
                 $iValue *= 1024;
+                // no break
             case 'T':
                 $iValue *= 1024;
+                // no break
             case 'G':
                 $iValue *= 1024;
+                // no break
             case 'M':
                 $iValue *= 1024;
                 break;

@@ -113,7 +113,6 @@ class SchemaReconciler
             }
         }
 
-
         $queries = array_merge($struct_queries, $data_queries);
 
         $ok            = true;
@@ -263,10 +262,10 @@ class SchemaReconciler
             if (array_key_exists(strtolower($tbl_field['Field']), $normal_fields)) {
                 // Take the of the field
                 if (preg_match(
-                        '|' . $tbl_field['Field'] . " (ENUM\s*\(([^\)]*)\))|i",
-                        $normal_fields[strtolower($tbl_field['Field'])],
-                        $match
-                    )
+                    '|' . $tbl_field['Field'] . " (ENUM\s*\(([^\)]*)\))|i",
+                    $normal_fields[strtolower($tbl_field['Field'])],
+                    $match
+                )
                     || preg_match(
                         '|' . $tbl_field['Field'] . ' ([^ ]*( unsigned)?)|i',
                         $normal_fields[strtolower($tbl_field['Field'])],

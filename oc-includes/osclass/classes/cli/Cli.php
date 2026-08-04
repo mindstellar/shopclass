@@ -34,6 +34,7 @@ class Cli
      * @var array<string, array{0: string, 1: string}>
      */
     private array $commands = [
+        'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Reconcile schema and run pending migrations (--skip-db)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
@@ -107,6 +108,190 @@ class Cli
         }
 
         return $opts;
+    }
+
+    /**
+     * Headless install driven by the environment (or flags, which win). Reachable
+     * before the app is installed because oc-cli.php loads the installer bootstrap
+     * for this verb instead of oc-load.php. Idempotent: a no-op once installed.
+     *
+     * @param array<string, mixed> $args
+     */
+    private function cmdInstall(array $args): int
+    {
+        if (!array_key_exists('unattended', $args)) {
+            $this->err(
+                "Usage: install --unattended [options]\n"
+                . "  Settings come from the environment; flags cover a no-config install and\n"
+                . "  override env for site/admin. DB_*/WEB_PATH from env or config.php are authoritative.\n"
+                . "  Database:  DB_NAME DB_USER [DB_PASSWORD] [DB_HOST=localhost] [DB_PORT] [DB_TABLE_PREFIX=oc_]\n"
+                . "             --db-name= --db-user= --db-password= --db-host= --db-port= --db-prefix= [--create-db]\n"
+                . "  Site:      WEB_PATH (e.g. https://example.com/)  [OSC_SITE_TITLE] [OSC_LOCALE=en_US]\n"
+                . "             --web-url= --site-title= --locale=\n"
+                . "  Admin:     OSC_ADMIN_EMAIL [OSC_ADMIN_USER=admin] [OSC_ADMIN_PASSWORD] [OSC_ADMIN_NAME]\n"
+                . "             --admin-email= --admin-user= --admin-password= --admin-name=\n"
+            );
+
+            return 2;
+        }
+
+        // Idempotency: never re-run against a live install (struct.sql is not
+        // re-runnable). Safe pre-config — returns false when nothing is configured.
+        if (is_osclass_installed()) {
+            $this->out("Shopclass is already installed; nothing to do.\n");
+
+            return 0;
+        }
+
+        $env = static function (string $key): ?string {
+            $value = getenv($key);
+
+            return ($value !== false && $value !== '') ? $value : null;
+        };
+        $opt = static function (string $flag, ?string $envValue, ?string $default = null) use ($args) {
+            if (array_key_exists($flag, $args) && is_string($args[$flag]) && $args[$flag] !== '') {
+                return $args[$flag];
+            }
+
+            return $envValue ?? $default;
+        };
+
+        // DB settings and WEB_PATH: config-loader locks these into immutable
+        // constants at bootstrap when the environment (or a config.php) provides
+        // them, and oc_install() installs over those constants — so when defined,
+        // mirror them (a flag can't override an already-defined constant, and the
+        // probe must target the same database the install writes to). Otherwise
+        // resolve from flags/env for a no-config install.
+        if (defined('DB_NAME')) {
+            $dbName   = DB_NAME;
+            $dbHost   = defined('DB_HOST') ? DB_HOST : 'localhost';
+            $dbUser   = defined('DB_USER') ? DB_USER : '';
+            $dbPass   = defined('DB_PASSWORD') ? DB_PASSWORD : '';
+            $dbPrefix = defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : 'oc_';
+            if (defined('DB_PORT') && (string) DB_PORT !== '' && strpos((string) $dbHost, ':') === false) {
+                $dbHost .= ':' . DB_PORT;
+            }
+        } else {
+            $dbName   = $opt('db-name', $env('DB_NAME'));
+            $dbHost   = $opt('db-host', $env('DB_HOST'), 'localhost');
+            $dbUser   = $opt('db-user', $env('DB_USER'));
+            $dbPass   = $opt('db-password', $env('DB_PASSWORD'), '');
+            $dbPrefix = $opt('db-prefix', $env('DB_TABLE_PREFIX'), 'oc_');
+            $dbPort   = $opt('db-port', $env('DB_PORT'));
+            if ($dbPort !== null && strpos((string) $dbHost, ':') === false) {
+                $dbHost .= ':' . $dbPort;
+            }
+        }
+        $webUrl     = defined('WEB_PATH') ? WEB_PATH : $opt('web-url', $env('WEB_PATH'));
+        $siteTitle  = $opt('site-title', $env('OSC_SITE_TITLE'), 'Shopclass');
+        $locale     = $opt('locale', $env('OSC_LOCALE'), 'en_US');
+        $adminUser  = $opt('admin-user', $env('OSC_ADMIN_USER'), 'admin');
+        $adminEmail = $opt('admin-email', $env('OSC_ADMIN_EMAIL'));
+        $adminName  = $opt('admin-name', $env('OSC_ADMIN_NAME'), 'Administrator');
+        $createDb   = array_key_exists('create-db', $args);
+
+        $missing = [];
+        foreach (['DB_NAME/--db-name' => $dbName, 'DB_USER/--db-user' => $dbUser,
+                     'WEB_PATH/--web-url' => $webUrl, 'OSC_ADMIN_EMAIL/--admin-email' => $adminEmail] as $label => $value) {
+            if ($value === null || $value === '') {
+                $missing[] = $label;
+            }
+        }
+        if ($missing) {
+            $this->err('Missing required settings: ' . implode(', ', $missing) . "\n");
+
+            return 2;
+        }
+        if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->err("Invalid admin email address.\n");
+
+            return 2;
+        }
+        if (!preg_match('/^[A-Za-z0-9_]+$/', (string) $dbPrefix)) {
+            $this->err("Invalid table prefix (letters, numbers and underscore only).\n");
+
+            return 2;
+        }
+
+        // Lock in WEB_PATH/REL_WEB_URL before oc_install() reaches
+        // define_install_constants(), whose HTTP-derived fallback can't run under CLI.
+        $webUrl = rtrim((string) $webUrl, '/') . '/';
+        if (!defined('WEB_PATH')) {
+            define('WEB_PATH', $webUrl);
+        }
+        if (!defined('REL_WEB_URL')) {
+            $path = parse_url($webUrl, PHP_URL_PATH);
+            define('REL_WEB_URL', ($path === null || $path === '') ? '/' : $path);
+        }
+
+        // Locale for the seeded site language and admin, mirroring the GUI installer.
+        \Session::newInstance()->_set('userLocale', $locale);
+        \Session::newInstance()->_set('adminLocale', $locale);
+
+        // Feed oc_install() the settings it reads from the request in the GUI.
+        Params::setParam('dbhost', $dbHost);
+        Params::setParam('dbname', $dbName);
+        Params::setParam('username', $dbUser);
+        Params::setParam('password', $dbPass);
+        Params::setParam('tableprefix', $dbPrefix);
+        if ($createDb) {
+            Params::setParam('createdb', '1');
+            Params::setParam('admin_username', $dbUser);
+            Params::setParam('admin_password', $dbPass);
+        }
+
+        $this->out(sprintf("Installing Shopclass at %s\n", WEB_PATH));
+
+        // Schema + seed data + baseline migrations. Returns false on success, an
+        // {error[, field]} array on failure.
+        $result = oc_install();
+        if (is_array($result)) {
+            $message = isset($result['error']) ? strip_tags((string) $result['error']) : 'installation failed';
+            $this->err('Install failed: ' . $message . "\n");
+
+            return 1;
+        }
+
+        // Admin account, mirroring the installer's own insert (osc_db_table, no
+        // credential email). s_secret/b_moderator keep their column defaults.
+        $adminPwArgs = [];
+        if (array_key_exists('admin-password', $args) && is_string($args['admin-password']) && $args['admin-password'] !== '') {
+            $adminPwArgs['password'] = $args['admin-password'];
+        } elseif (($envAdminPw = $env('OSC_ADMIN_PASSWORD')) !== null) {
+            $adminPwArgs['password'] = $envAdminPw;
+        }
+        [$adminPassword, $generated] = $this->resolvePassword($adminPwArgs);
+
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert([
+                's_name'     => $adminName,
+                's_username' => $adminUser,
+                's_password' => osc_hash_password($adminPassword),
+                's_email'    => $adminEmail,
+            ]);
+
+            // Site identity, matching the GUI installer's basic_info().
+            $prefTable = DB_TABLE_PREFIX . 't_preference';
+            $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+            osc_db_execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
+            osc_db_execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
+        } catch (\Throwable $e) {
+            $this->err('Schema installed, but creating the admin account failed: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+
+        // Finalize: writes the osclass_installed sentinel LAST.
+        finish_installation($adminPassword);
+
+        $this->out("Shopclass installed successfully.\n");
+        $this->out(sprintf("  Admin URL: %soc-admin/\n", WEB_PATH));
+        $this->out(sprintf("  Username:  %s\n", $adminUser));
+        if ($generated) {
+            $this->out(sprintf("  Password:  %s\n", $adminPassword));
+        }
+
+        return 0;
     }
 
     /**

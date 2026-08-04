@@ -17,7 +17,6 @@
  */
 class CAdminSettingsMain extends AdminSecBaseModel
 {
-
     public function __construct()
     {
         parent::__construct();

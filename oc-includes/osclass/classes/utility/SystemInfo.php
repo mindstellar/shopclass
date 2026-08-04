@@ -196,15 +196,13 @@ class SystemInfo
      *
      * @return array
      */
-    public function getSystemInfoArr()
-    : array
+    public function getSystemInfoArr(): array
     {
         $systemInfoArr             = array();
         $systemInfoArr['osclass']  = $this->getOsclassInfoArr();
         $systemInfoArr['php']      = $this->getPhpInfoArr();
         $systemInfoArr['database'] = $this->getDbInfoArr();
         $systemInfoArr['browser']  = $this->getBrowserInfoArr();
-
 
         return $systemInfoArr;
     }
@@ -214,8 +212,7 @@ class SystemInfo
      *
      * @return array
      */
-    private function getOsclassInfoArr()
-    : array
+    private function getOsclassInfoArr(): array
     {
         $this->setOsclassInfo();
         $osclassInfoArr                    = array();
@@ -247,8 +244,7 @@ class SystemInfo
         return $osclassInfoArr;
     }
 
-    public function setOsclassInfo()
-    : self
+    public function setOsclassInfo(): self
     {
         $all_preferences_serialized = serialize(Preference::newInstance()->listAll());
         $all_preference_bytes       = round(mb_strlen($all_preferences_serialized, '8bit') / 1024, 2);
@@ -325,8 +321,7 @@ class SystemInfo
      *
      * @return array
      */
-    private function getPhpInfoArr()
-    : array
+    private function getPhpInfoArr(): array
     {
         $this->setPhpInfo();
         $phpInfoArr                         = array();
@@ -349,8 +344,7 @@ class SystemInfo
         return $phpInfoArr;
     }
 
-    public function setPhpInfo()
-    : self
+    public function setPhpInfo(): self
     {
         $this->php_os                   = PHP_OS;
         $this->php_os_architecture      = php_uname('m');
@@ -381,8 +375,7 @@ class SystemInfo
      *
      * @return array
      */
-    private function getDbInfoArr()
-    : array
+    private function getDbInfoArr(): array
     {
         $this->setDbInfo();
         $dbInfoArr                 = array();
@@ -395,8 +388,7 @@ class SystemInfo
         return $dbInfoArr;
     }
 
-    public function setDbInfo()
-    : self
+    public function setDbInfo(): self
     {
         $this->db_serverinfo   = Connection::instance()->serverInfo();
         $this->db_host         = DB_HOST;
@@ -414,8 +406,7 @@ class SystemInfo
      *
      * @return array
      */
-    private function getBrowserInfoArr()
-    : array
+    private function getBrowserInfoArr(): array
     {
         $this->setBrowserInfo();
         $browserInfoArr                      = array();
@@ -427,8 +418,7 @@ class SystemInfo
         return $browserInfoArr;
     }
 
-    public function setBrowserInfo()
-    : self
+    public function setBrowserInfo(): self
     {
         $userAgent            = $_SERVER['HTTP_USER_AGENT'];
         $browser              = array();

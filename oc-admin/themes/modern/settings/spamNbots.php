@@ -21,7 +21,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 function addHelp()
 {
     echo '<p>'
@@ -29,7 +28,6 @@ function addHelp()
               . 'Be careful: in order to use these services, you must register on their sites first and follow their instructions.')
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -44,7 +42,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -54,7 +51,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Spam and bots &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -77,25 +73,27 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                    value="<?php echo(osc_akismet_key() ? osc_esc_html(osc_akismet_key()) : ''); ?>"/>
                             <?php
                             $akismet_status = View::newInstance()->_get('akismet_status');
-                            $alert_msg      = '';
-                            $alert_type     = 'error';
-                            switch ($akismet_status) {
-                                case 1:
-                                    $alert_type = 'ok';
-                                    $alert_msg  = __('This key is valid');
-                                    break;
-                                case 2:
-                                    $alert_type = 'error';
-                                    $alert_msg  = __('The key you entered is invalid. Please double-check it');
-                                    break;
-                                case 3:
-                                    $alert_type = 'warning';
-                                    $alert_msg  =
-                                        sprintf(__('Akismet is disabled, please enter an API key. <a href="%s" target="_blank">(Get your key)</a>'),
-                                                'http://akismet.com/get/');
-                                    break;
-                            }
-                            ?>
+$alert_msg      = '';
+$alert_type     = 'error';
+switch ($akismet_status) {
+    case 1:
+        $alert_type = 'ok';
+        $alert_msg  = __('This key is valid');
+        break;
+    case 2:
+        $alert_type = 'error';
+        $alert_msg  = __('The key you entered is invalid. Please double-check it');
+        break;
+    case 3:
+        $alert_type = 'warning';
+        $alert_msg  =
+            sprintf(
+                __('Akismet is disabled, please enter an API key. <a href="%s" target="_blank">(Get your key)</a>'),
+                'http://akismet.com/get/'
+            );
+        break;
+}
+?>
                             <div class="callout-<?php echo $alert_type; ?> separate-top-medium">
                                 <p><?php echo $alert_msg; ?></p>
                             </div>
@@ -111,11 +109,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
     <div id="recaptcha-settings" class="separate-top">
         <h3 class="render-title"><?php _e('Captcha'); ?></h3>
-        <p><?php printf(__('Protect your site from automated abuse with Google reCAPTCHA or Cloudflare Turnstile. '
+        <p><?php printf(
+            __('Protect your site from automated abuse with Google reCAPTCHA or Cloudflare Turnstile. '
                            . '<a href="%1$s" target="_blank">Get a reCAPTCHA key</a> or '
                            . '<a href="%2$s" target="_blank">get a Turnstile key</a>.'),
-                                 'https://www.google.com/recaptcha/admin#whyrecaptcha',
-                                 'https://dash.cloudflare.com/?to=/:account/turnstile'); ?></p>
+            'https://www.google.com/recaptcha/admin#whyrecaptcha',
+            'https://dash.cloudflare.com/?to=/:account/turnstile'
+        ); ?></p>
         <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
             <input type="hidden" name="action" value="recaptcha_post"/>
@@ -127,25 +127,25 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <?php $captcha_provider_pref = osc_captcha_provider_pref(); ?>
                         <select class="form-select form-select-sm" name="captchaProvider">
                             <option value="auto" <?php echo ($captcha_provider_pref === 'auto')
-                                ? 'selected="true"' : ''; ?>><?php _e('Automatic'); ?></option>
+            ? 'selected="true"' : ''; ?>><?php _e('Automatic'); ?></option>
                             <option value="turnstile" <?php echo ($captcha_provider_pref === 'turnstile')
-                                ? 'selected="true"' : ''; ?>><?php _e('Cloudflare Turnstile'); ?></option>
+            ? 'selected="true"' : ''; ?>><?php _e('Cloudflare Turnstile'); ?></option>
                             <option value="recaptcha" <?php echo ($captcha_provider_pref === 'recaptcha')
-                                ? 'selected="true"' : ''; ?>><?php _e('Google reCAPTCHA'); ?></option>
+            ? 'selected="true"' : ''; ?>><?php _e('Google reCAPTCHA'); ?></option>
                             <option value="none" <?php echo ($captcha_provider_pref === 'none')
-                                ? 'selected="true"' : ''; ?>><?php _e('None'); ?></option>
+            ? 'selected="true"' : ''; ?>><?php _e('None'); ?></option>
                         </select>
                         <div class="help-box">
                             <?php _e('Automatic prefers reCAPTCHA whenever its site and secret keys below are set; clear '
-                                     . 'both to let Turnstile take over instead. Pick a provider to force it, or None to '
-                                     . 'turn captchas off.'); ?>
+                 . 'both to let Turnstile take over instead. Pick a provider to force it, or None to '
+                 . 'turn captchas off.'); ?>
                         </div>
                         <?php
                         // A forced provider (Turnstile/reCAPTCHA) whose keys are blank
                         // resolves to 'none', silently disabling captcha site-wide.
                         // Warn the admin instead of leaving only the help text.
                         if (osc_captcha_provider() === 'none'
-                            && ($captcha_provider_pref === 'turnstile' || $captcha_provider_pref === 'recaptcha')
+        && ($captcha_provider_pref === 'turnstile' || $captcha_provider_pref === 'recaptcha')
                         ) {
                             $captcha_missing_keys = ($captcha_provider_pref === 'turnstile')
                                 ? __('Turnstile site key and Turnstile secret key')
@@ -154,7 +154,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="callout-warning separate-top-medium">
                                 <p><?php echo osc_esc_html(sprintf(
                                     __('Captcha is currently off: you forced a provider but its keys are empty. '
-                                       . 'Enter the %s below to turn captcha on.'),
+                                           . 'Enter the %s below to turn captcha on.'),
                                     $captcha_missing_keys
                                 )); ?></p>
                             </div>
@@ -166,7 +166,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="recaptchaPubKey"
                                value="<?php echo(osc_recaptcha_public_key() ? osc_esc_html(osc_recaptcha_public_key())
-                                   : ''); ?>"/>
+                                       : ''); ?>"/>
                     </div>
                 </div>
                 <div class="form-row">
@@ -174,7 +174,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="recaptchaPrivKey"
                                value="<?php echo(osc_recaptcha_private_key() ? osc_esc_html(osc_recaptcha_private_key())
-                                   : ''); ?>"/>
+                                       : ''); ?>"/>
                     </div>
                 </div>
                 <div class="form-row">
@@ -182,7 +182,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="turnstileSiteKey"
                                value="<?php echo(osc_turnstile_site_key() ? osc_esc_html(osc_turnstile_site_key())
-                                   : ''); ?>"/>
+                                       : ''); ?>"/>
                         <div class="help-box">
                             <?php _e('From the Cloudflare dashboard &raquo; Turnstile.'); ?>
                         </div>
@@ -193,7 +193,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-controls">
                         <input type="text" class="input-large" name="turnstileSecretKey"
                                value="<?php echo(osc_turnstile_secret_key() ? osc_esc_html(osc_turnstile_secret_key())
-                                   : ''); ?>"/>
+                                       : ''); ?>"/>
                         <div class="help-box">
                             <?php _e('From the Cloudflare dashboard &raquo; Turnstile.'); ?>
                         </div>
@@ -269,7 +269,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="number" min="1" class="input-small" name="login_throttle_window"
                                value="<?php echo osc_esc_html(osc_login_throttle_window()); ?>"/>
                         <span class="help-inline"><?php _e('minutes. How far back failures are counted, and so how '
-                                                          . 'long a refusal lasts.'); ?></span>
+                                                              . 'long a refusal lasts.'); ?></span>
                     </div>
                 </div>
                 <div class="form-row">
@@ -278,8 +278,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="number" min="1" class="input-small" name="login_throttle_max_ip"
                                value="<?php echo osc_esc_html(osc_login_throttle_max_ip()); ?>"/>
                         <span class="help-inline"><?php _e('Failures from one visitor address, across every account '
-                                                          . 'it tried. Keep this generous: an office or mobile '
-                                                          . 'network is many people behind one address.'); ?></span>
+                                                              . 'it tried. Keep this generous: an office or mobile '
+                                                              . 'network is many people behind one address.'); ?></span>
                     </div>
                 </div>
                 <div class="form-row">
@@ -288,8 +288,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="number" min="1" class="input-small" name="login_throttle_max_account"
                                value="<?php echo osc_esc_html(osc_login_throttle_max_account()); ?>"/>
                         <span class="help-inline"><?php _e('Failures against one account name, from anywhere. This '
-                                                          . 'is what catches guessing spread across many '
-                                                          . 'addresses.'); ?></span>
+                                                              . 'is what catches guessing spread across many '
+                                                              . 'addresses.'); ?></span>
                     </div>
                 </div>
                 <div class="form-row">
@@ -298,8 +298,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="number" min="0" class="input-small" name="login_attempt_retention_days"
                                value="<?php echo osc_esc_html(osc_login_attempt_retention_days()); ?>"/>
                         <span class="help-inline"><?php _e('days, pruned by the daily cron. Only the window above '
-                                                          . 'affects the limits; the rest is history. 0 keeps '
-                                                          . 'everything.'); ?></span>
+                                                              . 'affects the limits; the rest is history. 0 keeps '
+                                                              . 'everything.'); ?></span>
                     </div>
                 </div>
                 <div class="form-actions">
@@ -318,7 +318,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="submit" id="submit_login_throttle_reset"
                                value="<?php echo osc_esc_html(__('Clear now')); ?>" class="btn"/>
                         <span class="help-inline"><?php _e('Lets anyone currently refused try again straight away, '
-                                                          . 'including you.'); ?></span>
+                                                              . 'including you.'); ?></span>
                     </div>
                 </div>
             </fieldset>

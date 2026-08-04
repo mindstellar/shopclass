@@ -21,7 +21,6 @@ function addHelp()
         . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 /**
@@ -33,7 +32,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Admins &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -84,16 +82,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <tr>
                                 <?php foreach ($array as $key => $value) { ?>
                                     <td <?php if ($key == 0) {
-                                            echo 'class="col-bulkactions"';
-                                        } elseif ($key == 1) {
-                                            echo ' echo data-col-name="' . __('Username') . '"';
-                                        } elseif ($key == 2) {
-                                            echo ' data-col-name="' . __('Name') . '"';
-                                        } elseif ($key == 3) {
-                                            echo ' data-col-name="' . __('E-mail') . '"';
-                                        } else {
-                                            echo  'data-col-name="' . ucfirst($key) . '"';
-                                        } ?>>
+                                        echo 'class="col-bulkactions"';
+                                    } elseif ($key == 1) {
+                                        echo ' echo data-col-name="' . __('Username') . '"';
+                                    } elseif ($key == 2) {
+                                        echo ' data-col-name="' . __('Name') . '"';
+                                    } elseif ($key == 3) {
+                                        echo ' data-col-name="' . __('E-mail') . '"';
+                                    } else {
+                                        echo  'data-col-name="' . ucfirst($key) . '"';
+                                    } ?>>
                                         <?php echo $value; ?>
                                     </td>
                                 <?php } ?>
@@ -117,14 +115,14 @@ function showingResults()
 {
     $aData = __get('aAdmins');
     echo '<ul class="showing-results"><li><span>'
-        . osc_pagination_showing((Params::getParam('iPage') - 1)
+        . osc_pagination_showing(
+            (Params::getParam('iPage') - 1)
                 * $aData['iDisplayLength'] + 1,
             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                 + count($aData['aaData']),
             $aData['iTotalDisplayRecords']
         ) . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

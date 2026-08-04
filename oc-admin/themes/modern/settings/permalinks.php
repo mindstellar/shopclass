@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 //customize Head
 function customHead()
 {
@@ -336,7 +335,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 /**
@@ -347,7 +345,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 function addHelp()
@@ -357,7 +354,6 @@ function addHelp()
               . " <strong>Be careful</strong>: depending on your hosting service, this might not work correctly.")
          . '</p>';
 }
-
 
 osc_add_hook('help_box', 'addHelp');
 
@@ -371,7 +367,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -381,7 +376,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Permalinks &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -415,7 +409,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                         <div id="custom_rules" <?php if (!osc_rewrite_enabled()) {
                             echo 'class="hide"';
-                                               } ?>>
+                        } ?>>
                             <details class="rules-disclosure">
                                 <summary><?php _e('Advanced: customize URL structure'); ?></summary>
                                 <h3 class="render-title"><?php _e('Listings, pages &amp; categories'); ?></h3>
@@ -425,8 +419,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         <input type="text" class="input-large" name="rewrite_item_url"
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_item_url')); ?>"/>
                                         <div class="help-box">
-                                            <?php echo sprintf(__('Accepted keywords: %s'),
-                                                               '{ITEM_ID},{ITEM_TITLE},{ITEM_CITY},{CATEGORIES}'); ?>
+                                            <?php echo sprintf(
+                                                __('Accepted keywords: %s'),
+                                                '{ITEM_ID},{ITEM_TITLE},{ITEM_CITY},{CATEGORIES}'
+                                            ); ?>
                                         </div>
                                     </div>
                                 </div>
@@ -436,8 +432,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         <input type="text" class="input-large" name="rewrite_page_url"
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_page_url')); ?>"/>
                                         <div class="help-box">
-                                            <?php echo sprintf(__('Accepted keywords: %s'),
-                                                               '{PAGE_ID}, {PAGE_SLUG}'); ?>
+                                            <?php echo sprintf(
+                                                __('Accepted keywords: %s'),
+                                                '{PAGE_ID}, {PAGE_SLUG}'
+                                            ); ?>
                                         </div>
                                     </div>
                                 </div>
@@ -447,8 +445,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         <input type="text" class="input-large" name="rewrite_cat_url"
                                                value="<?php echo osc_esc_html(osc_get_preference('rewrite_cat_url')); ?>"/>
                                         <div class="help-box">
-                                            <?php echo sprintf(__('Accepted keywords: %s'),
-                                                               '{CATEGORY_ID},{CATEGORY_NAME},{CATEGORIES}'); ?>
+                                            <?php echo sprintf(
+                                                __('Accepted keywords: %s'),
+                                                '{CATEGORY_ID},{CATEGORY_NAME},{CATEGORIES}'
+                                            ); ?>
                                         </div>
                                     </div>
                                 </div>
@@ -756,14 +756,14 @@ HTACCESS;
                                         <?php } ?>
                                         <div class="server-config-block">
                                             <h4><?php echo $htaccess_exists
-                                                    ? osc_esc_html(__('What it should look like'))
-                                                    : osc_esc_html(__('What your .htaccess file should look like')); ?></h4>
+                                                                    ? osc_esc_html(__('What it should look like'))
+                                                                    : osc_esc_html(__('What your .htaccess file should look like')); ?></h4>
                                             <pre><?php echo htmlentities($htaccess, ENT_COMPAT, 'UTF-8'); ?></pre>
                                         </div>
                                     </div>
                                 </div>
                             <?php }
-                        } ?>
+                            } ?>
                         <div class="form-actions">
                             <input type="submit" id="save_changes"
                                    value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>

@@ -26,7 +26,6 @@ function osc_register_page_template($id, $spec)
     PageTemplateRegistry::instance()->register($id, $spec);
 }
 
-
 /**
  * All registered page templates, keyed by id.
  *
@@ -36,7 +35,6 @@ function osc_page_templates()
 {
     return PageTemplateRegistry::instance()->all();
 }
-
 
 /**
  * The spec for a registered page template, or null when the id is not registered.
@@ -49,7 +47,6 @@ function osc_page_template($id)
 {
     return PageTemplateRegistry::instance()->get($id);
 }
-
 
 /**
  * The widget location key for a static page's block canvas. Page blocks are
@@ -69,7 +66,6 @@ function osc_page_builder_location($pageId = null)
     return 'page.' . (int)$pageId;
 }
 
-
 /**
  * Render the current static page's blocks — the widgets placed on its canvas.
  * Themes call this from a template-widgets.php; the core fallback renderer calls
@@ -81,7 +77,6 @@ function osc_show_page_widgets()
 {
     osc_show_widgets(osc_page_builder_location());
 }
-
 
 /*
  * Core "Page builder" template — the block canvas. Registered unconditionally so

@@ -17,7 +17,6 @@
  */
 abstract class Logger
 {
-
     /**
      * Log a message with the INFO level.
      *

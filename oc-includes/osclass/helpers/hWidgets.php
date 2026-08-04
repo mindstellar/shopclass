@@ -26,7 +26,6 @@ function osc_register_widget($id, $spec)
     WidgetRegistry::instance()->register($id, $spec);
 }
 
-
 /**
  * All registered widget types, keyed by id.
  *
@@ -36,7 +35,6 @@ function osc_widget_types()
 {
     return WidgetRegistry::instance()->all();
 }
-
 
 /**
  * Render a single widget row.
@@ -79,7 +77,6 @@ function osc_render_widget($widgetRow)
     // Legacy stored-content path — byte-identical to the historical behaviour.
     echo $widgetRow['s_content'];
 }
-
 
 /*
  * Core "Rich text" widget — the default, safe text block, registered first so it

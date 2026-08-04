@@ -35,7 +35,6 @@ function osc_db_name()
     return DB_NAME;
 }
 
-
 /**
  * Gets database host
  *
@@ -49,7 +48,6 @@ function osc_db_host()
     return DB_HOST;
 }
 
-
 /**
  * Gets database user
  *
@@ -62,7 +60,6 @@ function osc_db_user()
 
     return DB_USER;
 }
-
 
 /**
  * Gets database password

@@ -22,7 +22,6 @@ define('IS_AJAX', true);
  */
 class CAdminAjax extends AdminSecBaseModel
 {
-
     public function __construct()
     {
         parent::__construct();
@@ -891,12 +890,16 @@ class CAdminAjax extends AdminSecBaseModel
                 echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
 
-            /******************************
-             ** COMPLETE UPGRADE PROCESS **
-             ******************************/
+                /******************************
+                 ** COMPLETE UPGRADE PROCESS **
+                 ******************************/
             case 'upgrade': // AT THIS POINT WE KNOW IF THERE'S AN UPDATE OR NOT
                 osc_csrf_check();
-                if (defined('DEMO')) {
+                if (osc_self_update_disabled()) {
+                    $msg    = __('In-app updates are disabled on this installation. Update by deploying a newer container image; the database is migrated automatically on start.');
+                    $result = array('error' => 6, 'message' => $msg);
+                    osc_add_flash_warning_message($msg, 'admin');
+                } elseif (defined('DEMO')) {
                     $msg    = __('This action cannot be done because it is a demo site');
                     $result = array('error' => 6, 'message' => $msg);
                     osc_add_flash_warning_message($msg, 'admin');
@@ -920,7 +923,11 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'reinstall_osclass': // We are forcing an update
                 osc_csrf_check();
-                if (defined('DEMO')) {
+                if (osc_self_update_disabled()) {
+                    $msg    = __('In-app updates are disabled on this installation. Update by deploying a newer container image; the database is migrated automatically on start.');
+                    $result = array('error' => 6, 'message' => $msg);
+                    osc_add_flash_warning_message($msg, 'admin');
+                } elseif (defined('DEMO')) {
                     $msg    = __('This action cannot be done because it is a demo site');
                     $result = array('error' => 6, 'message' => $msg);
                     osc_add_flash_warning_message($msg, 'admin');

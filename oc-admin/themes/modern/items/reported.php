@@ -54,14 +54,15 @@ $direction = Params::getParam('direction');
 function showingResults()
 {
     $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing((Params::getParam('iPage') - 1)
+    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
+        (Params::getParam('iPage') - 1)
                                                                            * $aData['iDisplayLength'] + 1,
-                                                                           ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
+        ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
                                                                            + count($aData['aRows']),
-                                                                           $aData['iTotalDisplayRecords'],
-                                                                           $aData['iTotalRecords']) . '</span></li></ul>';
+        $aData['iTotalDisplayRecords'],
+        $aData['iTotalRecords']
+    ) . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_current_admin_theme_path('parts/header.php'); ?>
@@ -74,18 +75,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php if ($key !== 'iDisplayLength') { ?>
                         <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
                     <?php }
-                } ?>
+                    } ?>
                 <select name="iDisplayLength" class="form-select form-select-sm " onchange="this.form.submit();">
                     <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
                     <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
                         echo 'selected';
-                                       } ?>><?php printf(__('%d Listings'), 25); ?></option>
+                    } ?>><?php printf(__('%d Listings'), 25); ?></option>
                     <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
                         echo 'selected';
-                                       } ?>><?php printf(__('%d Listings'), 50); ?></option>
+                    } ?>><?php printf(__('%d Listings'), 50); ?></option>
                     <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
                         echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 100); ?></option>
+                    } ?>><?php printf(__('%d Listings'), 100); ?></option>
                 </select>
             </form>
             <?php if ($sort !== 'date') { ?>
@@ -135,7 +136,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <tr>
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                          // `items_processing_row` filter still hands plugins the plain word. ?>
+                                          // `items_processing_row` filter still hands plugins the plain word.?>
                                     <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
                                         echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
                                     ?></td>

@@ -1,0 +1,65 @@
+# GitHub Action for Shopclass
+name: Lint PHP
+on:
+  # develop and master are excluded here because the release workflow calls this
+  # one for those branches (mirroring test.yml). Without that, a push to either
+  # would lint twice: once from this trigger and once as a called job.
+  push:
+    branches-ignore:
+      - develop
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  workflow_call:
+
+# Pin the same php-cs-fixer the tree was formatted with; a version drift here
+# would flag files as unformatted that a developer's local run left clean.
+env:
+  PHP_CS_FIXER_VERSION: v3.64.0
+
+jobs:
+  lint:
+    name: PHP format + 8.0 floor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      # The formatter is a pinned PHAR rather than a composer dep, so that it
+      # never lands in the committed oc-includes/vendor tree shipped in the zip.
+      - name: Fetch php-cs-fixer
+        run: |
+          mkdir -p tools
+          curl -fsSL -o tools/php-cs-fixer.phar \
+            "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/releases/download/${PHP_CS_FIXER_VERSION}/php-cs-fixer.phar"
+
+      # The one-time reformat left the whole tree clean, so this is a full-tree
+      # dry-run: any drift is a real failure, not pre-existing debt to skip.
+      - name: Check formatting (PSR-12)
+        run: composer cs:check
+
+      # PHPCompatibility lives in its own project for the same vendor reason.
+      - name: Install compatibility linter
+        run: composer lint:install
+
+      - name: Check PHP 8.0 floor
+        run: composer compat

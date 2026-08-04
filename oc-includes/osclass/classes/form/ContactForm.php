@@ -17,7 +17,6 @@
  */
 class ContactForm extends Form
 {
-
     /**
      * @return bool
      */
@@ -132,7 +131,9 @@ class ContactForm extends Form
     {
         // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no
         // external helper so it runs on any public theme.
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script>
             (function () {
@@ -174,6 +175,8 @@ class ContactForm extends Form
             })();
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'contact_form_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'contact_form_js');
+        }
     }
 }

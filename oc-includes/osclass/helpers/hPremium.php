@@ -24,7 +24,6 @@
 // FUNCTIONS THAT RETURNS OBJECT FROM THE STATIC CLASS (VIEW) //
 ////////////////////////////////////////////////////////////////
 
-
 /**
  * Gets new premiums ads
  *
@@ -47,7 +46,6 @@ function osc_get_premiums($max = 2)
     return $premiums;
 }
 
-
 /**
  * Gets current premium array from view
  *
@@ -62,7 +60,6 @@ function osc_premium()
     return null;
 }
 
-
 /**
  * Gets a specific field from current premium
  *
@@ -76,16 +73,13 @@ function osc_premium_field($field, $locale = '')
     return osc_field(osc_premium(), $field, $locale);
 }
 
-
 /////////////////////////////////////////////////
 // END FUNCTIONS THAT RETURNS OBJECT FROM VIEW //
 /////////////////////////////////////////////////
 
-
 ///////////////////////
 // HELPERS FOR PREMIUMS //
 ///////////////////////
-
 
 /**
  * Gets id from current premium
@@ -97,7 +91,6 @@ function osc_premium_id()
     return (int)osc_premium_field('pk_i_id');
 }
 
-
 /**
  * Gets user id from current premium
  *
@@ -107,7 +100,6 @@ function osc_premium_user_id()
 {
     return (int)osc_premium_field('fk_i_user_id');
 }
-
 
 /**
  * Gets description from current premium, if $locale is unspecified $locale is current user locale
@@ -138,7 +130,6 @@ function osc_premium_description($locale = '')
     return (string)$desc;
 }
 
-
 /**
  * Gets title from current premium, if $locale is unspecified $locale is current user locale
  *
@@ -168,7 +159,6 @@ function osc_premium_title($locale = '')
     return (string)$title;
 }
 
-
 /**
  * Gets category from current premium
  *
@@ -191,7 +181,6 @@ function osc_premium_category($locale = '')
 
     return osc_field($category, 's_name', $locale);
 }
-
 
 /**
  * Gets category description from current premium, if $locale is unspecified $locale is current
@@ -217,7 +206,6 @@ function osc_premium_category_description($locale = '')
     return osc_field($category, 's_description', $locale);
 }
 
-
 /**
  * Gets category id of current premium
  *
@@ -227,7 +215,6 @@ function osc_premium_category_id()
 {
     return (int)osc_premium_field('fk_i_category_id');
 }
-
 
 /**
  * Gets publication date of current premium
@@ -239,7 +226,6 @@ function osc_premium_pub_date()
     return (string)osc_premium_field('dt_pub_date');
 }
 
-
 /**
  * Gets modification date of current premium
  *
@@ -249,7 +235,6 @@ function osc_premium_mod_date()
 {
     return (string)osc_premium_field('dt_mod_date');
 }
-
 
 /**
  * Gets price of current premium
@@ -265,7 +250,6 @@ function osc_premium_price()
     return (float)osc_premium_field('i_price');
 }
 
-
 /**
  * Gets formatted price of current premium
  *
@@ -275,7 +259,6 @@ function osc_premium_formated_price()
 {
     return osc_format_price(osc_premium_price(), osc_premium_currency_symbol());
 }
-
 
 /**
  * Gets currency symbol of an item
@@ -292,7 +275,6 @@ function osc_premium_currency_symbol()
     return is_array($aCurrency) ? $aCurrency['s_description'] : '';
 }
 
-
 /**
  * Gets currency of current premium
  *
@@ -302,7 +284,6 @@ function osc_premium_currency()
 {
     return (string)osc_premium_field('fk_c_currency_code');
 }
-
 
 /**
  * Gets contact name of current premium
@@ -314,7 +295,6 @@ function osc_premium_contact_name()
     return (string)osc_premium_field('s_contact_name');
 }
 
-
 /**
  * Gets contact email of current premium
  *
@@ -325,7 +305,6 @@ function osc_premium_contact_email()
     return (string)osc_premium_field('s_contact_email');
 }
 
-
 /**
  * Gets country name of current premium
  *
@@ -335,7 +314,6 @@ function osc_premium_country()
 {
     return (string)osc_premium_field('s_country');
 }
-
 
 /**
  * Gets country code of current premium
@@ -348,7 +326,6 @@ function osc_premium_country_code()
     return (string)osc_premium_field('fk_c_country_code');
 }
 
-
 /**
  * Gets region of current premium
  *
@@ -358,7 +335,6 @@ function osc_premium_region()
 {
     return (string)osc_premium_field('s_region');
 }
-
 
 /**
  * Gets city of current premium
@@ -370,7 +346,6 @@ function osc_premium_city()
     return (string)osc_premium_field('s_city');
 }
 
-
 /**
  * Gets city area of current premium
  *
@@ -380,7 +355,6 @@ function osc_premium_city_area()
 {
     return (string)osc_premium_field('s_city_area');
 }
-
 
 /**
  * Gets address of current premium
@@ -392,7 +366,6 @@ function osc_premium_address()
     return (string)osc_premium_field('s_address');
 }
 
-
 /**
  * Gets true if can show email user at frontend, else return false
  *
@@ -402,7 +375,6 @@ function osc_premium_show_email()
 {
     return (bool)osc_premium_field('b_show_email');
 }
-
 
 /**
  * Gets zip code of current premium
@@ -414,7 +386,6 @@ function osc_premium_zip()
     return (string)osc_premium_field('s_zip');
 }
 
-
 /**
  * Gets latitude of current premium
  *
@@ -425,7 +396,6 @@ function osc_premium_latitude()
     return (float)osc_premium_field('d_coord_lat');
 }
 
-
 /**
  * Gets longitude of current premium
  *
@@ -435,7 +405,6 @@ function osc_premium_longitude()
 {
     return (float)osc_premium_field('d_coord_long');
 }
-
 
 /**
  * Gets true if current premium is marked premium, else return false
@@ -450,7 +419,6 @@ function osc_premium_is_premium()
 
     return false;
 }
-
 
 /**
  * return number of views of current premium
@@ -467,7 +435,6 @@ function osc_premium_views()
     return ItemStats::newInstance()->getViews(osc_premium_id());
 }
 
-
 /**
  * Gets status of current premium.
  * b_active = true  -> premium is active
@@ -480,7 +447,6 @@ function osc_premium_status()
     return (bool)osc_premium_field('b_active');
 }
 
-
 /**
  * Gets secret string of current premium
  *
@@ -490,7 +456,6 @@ function osc_premium_secret()
 {
     return (string)osc_premium_field('s_secret');
 }
-
 
 /**
  * Gets if current premium is active
@@ -502,7 +467,6 @@ function osc_premium_is_active()
     return (osc_premium_field('b_active') == 1);
 }
 
-
 /**
  * Gets if current premium is inactive
  *
@@ -512,7 +476,6 @@ function osc_premium_is_inactive()
 {
     return (osc_premium_field('b_active') == 0);
 }
-
 
 /**
  * Gets if premium is marked as spam
@@ -524,7 +487,6 @@ function osc_premium_is_spam()
     return (osc_premium_field('b_spam') == 1);
 }
 
-
 /**
  * Gets total number of comments of current premium
  *
@@ -534,7 +496,6 @@ function osc_premium_total_comments()
 {
     return ItemComment::newInstance()->totalComments(osc_premium_id());
 }
-
 
 /**
  * Gets page of comments in current pagination
@@ -551,11 +512,9 @@ function osc_premium_comments_page()
     return (int)$page;
 }
 
-
 //////////////////////////
 // HELPERS FOR PREMIUMS //
 //////////////////////////
-
 
 /////////////
 // DETAILS //
@@ -581,7 +540,6 @@ function osc_has_premiums()
     return View::newInstance()->_next('premiums');
 }
 
-
 /**
  * Set the internal pointer of array premiums to its first element, and return it.
  *
@@ -592,7 +550,6 @@ function osc_reset_premiums()
     return View::newInstance()->_reset('premiums');
 }
 
-
 /**
  * Gets number of premiums in current array premiums
  *
@@ -602,7 +559,6 @@ function osc_count_premiums()
 {
     return (int)View::newInstance()->_count('premiums');
 }
-
 
 /**
  * Gets number of resources in array resources of current premium
@@ -621,7 +577,6 @@ function osc_count_premium_resources()
     return (int)View::newInstance()->_count('resources');
 }
 
-
 /**
  * Gets next premium resource if there is, else return null
  *
@@ -639,7 +594,6 @@ function osc_has_premium_resources()
     return View::newInstance()->_next('resources');
 }
 
-
 /**
  * Gets current resource of current array resources of current premium
  *
@@ -656,7 +610,6 @@ function osc_get_premium_resources()
 
     return View::newInstance()->_get('resources');
 }
-
 
 /**
  * Gets number of premium comments of current premium
@@ -677,7 +630,6 @@ function osc_count_premium_comments()
     return View::newInstance()->_count('comments');
 }
 
-
 /**
  * Gets next comment of current premium comments
  *
@@ -697,7 +649,6 @@ function osc_has_premium_comments()
     return View::newInstance()->_next('comments');
 }
 
-
 /**
  * Gets number of premiums
  *
@@ -708,7 +659,6 @@ function osc_priv_count_premiums()
 {
     return (int)View::newInstance()->_count('premiums');
 }
-
 
 /***************
  * META FIELDS *
@@ -731,7 +681,6 @@ function osc_count_premium_meta()
     return View::newInstance()->_count('metafields');
 }
 
-
 /**
  * Gets next premium meta field if there is, else return null
  *
@@ -748,7 +697,6 @@ function osc_has_premium_meta()
 
     return View::newInstance()->_next('metafields');
 }
-
 
 /**
  * Gets premium meta fields

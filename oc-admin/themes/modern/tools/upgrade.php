@@ -9,6 +9,25 @@ if (!defined('OC_ADMIN')) {
 //customize Head
 function customHead()
 {
+    // Immutable deployments (the Docker image) disable the in-app updater: a
+    // file-writing upgrade would be discarded on the next redeploy. Show how to
+    // update instead of the upgrade flow.
+    if (osc_self_update_disabled()) {
+        ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var stepsDiv = document.getElementById('steps_div');
+                var steps = document.getElementById('steps');
+                if (steps) {
+                    steps.innerHTML = '<div class="step"><h3><?php echo osc_esc_js(__('In-app updates are disabled')); ?></h3>' +
+                        '<div class="callout-info"><?php echo osc_esc_js(__('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.')); ?></div></div>';
+                }
+                if (stepsDiv) { stepsDiv.style.display = 'block'; }
+            });
+        </script>
+        <?php
+        return;
+    }
     ?>
     <script>
         // #steps_div hide

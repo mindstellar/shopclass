@@ -19,7 +19,6 @@ use mindstellar\utility\Deprecate;
  */
 class PageForm extends Form
 {
-
     /**
      * @param null $page
      */
@@ -72,9 +71,10 @@ class PageForm extends Form
      */
     public static function multilanguage_name_description($locales, $page = null)
     {
-        Deprecate::deprecatedFunction('multilanguage_name_description',
-                                                           '5.1.0',
-                                                           'printMultiLangTitleDesc'
+        Deprecate::deprecatedFunction(
+            'multilanguage_name_description',
+            '5.1.0',
+            'printMultiLangTitleDesc'
         );
         $num_locales = count($locales);
         if ($num_locales > 1) {
@@ -128,7 +128,6 @@ class PageForm extends Form
             echo '</div>';
         }
     }
-
 
     /**
      * Generate MultiLanguage Title Description Fields for Item

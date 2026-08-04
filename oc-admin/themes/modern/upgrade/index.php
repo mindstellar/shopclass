@@ -21,7 +21,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -31,7 +30,6 @@ function customPageTitle($string)
 {
     return __('Upgrade');
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -66,7 +64,6 @@ function customHead()
         });
     </script>
 <?php }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -128,7 +125,6 @@ function upgradeReleaseNotes()
     return array('label' => $label, 'entries' => $entries);
 }
 
-
 osc_current_admin_theme_path('parts/header.php'); ?>
 
 <div id="backup-settings">
@@ -136,7 +132,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="result">
         <div id="output" style="display:none">
             <span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>
-            <?php _e('Upgrading your Shopclass installation (this could take a while): ', 'admin'); ?>
+            <?php _e('Upgrading your Shopclass installation (this could take a while): '); ?>
         </div>
         <div id="tohide">
             <p>

@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '6.0.0.rc2');
+    define('OSCLASS_VERSION', '6.0.0');
 }
 
 if (!defined('MULTISITE')) {
@@ -92,7 +92,7 @@ if (!defined('OSC_MEMORY_LIMIT')) {
     define('OSC_MEMORY_LIMIT', '32M');
 }
 
-if (function_exists('memory_get_usage') && ( (int) @ini_get('memory_limit') < abs((int) OSC_MEMORY_LIMIT) )) {
+if (function_exists('memory_get_usage') && ((int) @ini_get('memory_limit') < abs((int) OSC_MEMORY_LIMIT))) {
     @ini_set('memory_limit', OSC_MEMORY_LIMIT);
 }
 

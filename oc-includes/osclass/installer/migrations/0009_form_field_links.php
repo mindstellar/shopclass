@@ -36,7 +36,7 @@ use mindstellar\migration\MigrationInterface;
  * table is declared in installer/struct.sql for a fresh install, which the runner
  * baselines rather than replays.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $link = DB_TABLE_PREFIX . 't_meta_group_fields';

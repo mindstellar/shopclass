@@ -22,7 +22,6 @@
  */
 class BanRulesDataTable extends DataTable
 {
-
     private $order_by;
     private $column_names;
     private $userId;
@@ -31,7 +30,6 @@ class BanRulesDataTable extends DataTable
      */
     private $withUserId;
     private $search;
-
 
     /**
      * @param $params

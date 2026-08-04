@@ -17,7 +17,6 @@
  */
 class CommentForm extends Form
 {
-
     /**
      * @param null $comment
      */
@@ -104,7 +103,9 @@ class CommentForm extends Form
         // renders on both the admin (comment edit) and the public theme, so it depends
         // on neither jQuery nor the admin's ui-osc.js helper.
         $errorContainer = $admin ? '#error_list' : '#comment_error_list';
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script>
             (function () {
@@ -148,6 +149,8 @@ class CommentForm extends Form
             })();
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, $admin, 'comment_form_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, $admin, 'comment_form_js');
+        }
     }
 }

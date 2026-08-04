@@ -13,7 +13,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
 $rule = __get('rule');
 
 /**
@@ -39,14 +38,12 @@ function customFrmText()
     return $return;
 }
 
-
 function customPageHeader()
 {
     ?>
     <h1><?php _e('Users'); ?></h1>
     <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -62,14 +59,12 @@ function customPageTitle($string)
     return sprintf('%s &raquo; %s', $aux['title'], $string);
 }
 
-
 osc_add_filter('admin_title', 'customPageTitle');
 
 //customize Head
 function customHead()
 {
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 

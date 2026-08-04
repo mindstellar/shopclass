@@ -21,7 +21,6 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminSettingsComments extends AdminSecBaseModel
 {
-
     public function __construct()
     {
         parent::__construct();

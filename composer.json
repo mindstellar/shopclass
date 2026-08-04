@@ -58,6 +58,13 @@
   "require-dev": {
     "roave/security-advisories": "dev-latest"
   },
+  "scripts": {
+    "cs:check": "php tools/php-cs-fixer.phar fix --dry-run --diff",
+    "cs:fix": "php tools/php-cs-fixer.phar fix",
+    "lint:install": "composer install --working-dir=tools/lint --no-interaction",
+    "compat": "php tools/lint/vendor/bin/phpcs --standard=.phpcompat.xml.dist",
+    "lint": ["@cs:check", "@compat"]
+  },
   "suggest": {
     "ext-apcu": "Fast PHP user cache",
     "ext-memcached": "Enables the 'memcached' object cache driver (set OSC_CACHE='memcached')",

@@ -71,7 +71,6 @@ function osc_csrf_token_url()
     return (new Csrf())->tokenUrl();
 }
 
-
 /**
  * Hidden CSRF input fields to drop inside a &lt;form&gt;, for templates that want to emit the token
  * explicitly instead of relying on the shutdown auto-injector. Mark the &lt;form&gt; with
@@ -86,7 +85,6 @@ function osc_csrf_token_form()
     return (new Csrf())->tokenForm();
 }
 
-
 /**
  * Check if CSRF token is valid, die in other case
  *
@@ -96,7 +94,6 @@ function osc_csrf_check()
 {
     (new Csrf())->check();
 }
-
 
 /**
  * Check if an email and/or IP are banned
@@ -123,7 +120,6 @@ function osc_is_banned($email = '', $ip = null)
 
     return 2; //IP is banned
 }
-
 
 /**
  * Check if IP is banned
@@ -168,7 +164,6 @@ function osc_is_ip_banned($ip, $rules = null)
     return false;
 }
 
-
 /**
  * Check if email is banned
  *
@@ -201,7 +196,6 @@ function osc_is_email_banned($email, $rules = null)
     return false;
 }
 
-
 /**
  * Check if username is blacklisted
  *
@@ -225,7 +219,6 @@ function osc_is_username_blacklisted($username)
 
     return false;
 }
-
 
 /**
  * Verify an user's password
@@ -255,7 +248,6 @@ function osc_verify_password($password, $hash)
     return hash_equals((string)$hash, sha1($password));
 }
 
-
 /**
  * Wording for a sign-in refused by {@see \mindstellar\security\LoginThrottle}.
  *
@@ -280,7 +272,6 @@ function osc_login_throttle_message($seconds)
         $minutes
     );
 }
-
 
 /**
  * Spend the work of a password check against a hash that cannot match.
@@ -319,7 +310,6 @@ function osc_dummy_password_verify($password)
     return false;
 }
 
-
 /**
  * Hash a password in available method (bcrypt/sha1)
  *
@@ -336,7 +326,6 @@ function osc_hash_password($password)
 
     return password_hash($password, PASSWORD_BCRYPT, $options);
 }
-
 
 /**
  * @param $alert
@@ -371,7 +360,6 @@ function osc_encrypt_alert($alert)
     return $cipher->encrypt($string);
 }
 
-
 /**
  * @param $string
  *
@@ -403,7 +391,6 @@ function osc_decrypt_alert($string)
     return trim(substr($cipher->decrypt($string), 32));
 }
 
-
 function osc_set_alert_public_key()
 {
     if (!osc_get_preference('alert_public_key')) {
@@ -411,7 +398,6 @@ function osc_set_alert_public_key()
         osc_reset_preferences();
     }
 }
-
 
 /**
  * Persistent per-install public key for search-alert tokens. Kept in preferences (not the
@@ -429,7 +415,6 @@ function osc_get_alert_public_key()
     return osc_get_preference('alert_public_key');
 }
 
-
 function osc_set_alert_private_key()
 {
     if (!osc_get_preference('alert_private_key')) {
@@ -437,7 +422,6 @@ function osc_set_alert_private_key()
         osc_reset_preferences();
     }
 }
-
 
 /**
  * Persistent per-install private key backing search-alert encryption. See
@@ -453,7 +437,6 @@ function osc_get_alert_private_key()
 
     return osc_get_preference('alert_private_key');
 }
-
 
 /**
  * @param $length

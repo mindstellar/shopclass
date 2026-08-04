@@ -17,7 +17,6 @@
  */
 class ManageItemsForm extends Form
 {
-
     // OK
     /**
      * @param null $categories

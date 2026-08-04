@@ -57,7 +57,6 @@ function customPageHeader()
     <?php
 }
 
-
 osc_add_hook('admin_page_header', 'customPageHeader');
 
 /**
@@ -69,7 +68,6 @@ function customPageTitle($string)
 {
     return sprintf('%s &raquo; %s', customText('subtitle'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -142,7 +140,6 @@ function customHead()
     <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 $new_item = __get('new_item');
@@ -156,7 +153,6 @@ function render_offset()
 {
     return 'row-offset';
 }
-
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminItemForm" class="col-xl-10">
@@ -230,7 +226,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         } else {
                             ItemForm::plugin_edit_item();
                         }
-                        ?>
+?>
                     </div>
                     <div id="right-side" class="col-xl-4 col-lg-4">
                         <div class="card mb-3">
@@ -301,7 +297,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                         <?php ItemForm::expiration_input('add'); ?>
                                     </div>
                                     <label><?php _e('It could be an integer (days from original publishing date it will '
-                                                    . 'be expired, 0 to never expire) or a date in the format "yyyy-mm-dd hh:mm:ss"'); ?></label>
+                            . 'be expired, 0 to never expire) or a date in the format "yyyy-mm-dd hh:mm:ss"'); ?></label>
                                 <?php } elseif (!$new_item) { ?>
                                     <div>
                                         <label><input type="checkbox" id="update_expiration" name="update_expiration"
@@ -312,8 +308,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                                 <?php ItemForm::expiration_input('edit'); ?>
                                             </div>
                                             <label><?php _e('It could be an integer (days from original publishing date '
-                                                            . 'it will be expired, 0 to never expire) or a date in the format '
-                                                            . '"yyyy-mm-dd hh:mm:ss"'); ?></label>
+                                    . 'it will be expired, 0 to never expire) or a date in the format '
+                                    . '"yyyy-mm-dd hh:mm:ss"'); ?></label>
                                         </div>
                                     </div>
                                 <?php } ?>

@@ -39,6 +39,31 @@ replacing Bender. PHP 8.0 is now the floor.
   `sitemap:warm`, `user:create-admin`, `user:reset-password`, plugin management
   (`plugin:list`/`activate`/`deactivate`), theme management (`theme:list`/`activate`), and a
   `doctor` health check.
+- Headless install — `oc-cli.php install --unattended` provisions a fresh site (schema, seed data,
+  baseline migrations, admin account) from environment variables or flags, with no interactive step,
+  so a container or one-click platform can self-provision on first boot. Idempotent: a no-op once
+  installed. DB settings and `WEB_PATH` from the environment or `config.php` are authoritative; when
+  they come from the environment no `config.php` is written, keeping the container filesystem
+  read-only.
+- Official production Docker image (`Dockerfile`) — a single self-contained container (nginx +
+  php-fpm + supervisor) that self-provisions on first boot via the headless installer and applies
+  pending migrations on every start, so a container platform or `docker compose -f
+  docker-compose.prod.yml up` brings up an installed, running site with no manual step. The default
+  storefront theme is bundled from its release; configure via `DB_*`, `WEB_PATH` and `OSC_ADMIN_*`,
+  and offload uploads to S3 for multi-instance scaling. Published to GHCR on every release, tagged
+  with the exact version plus a moving channel alias (`:6.0.0.rc2` and `:rc`; `:latest` for stable).
+  The image sets `OSC_DISABLE_SELF_UPDATE=1` so the admin's file-writing self-updater is turned off
+  (it would be discarded on the next redeploy) — update by deploying a newer image tag; the
+  entrypoint's `db:upgrade` migrates the schema. The same flag disables self-update on any immutable
+  install.
+- Demo mode from the environment — set `OSC_DEMO=1` to enable the read-only public-demo lockdown in
+  a container, where `OSC_IGNORE_CONFIG_FILE` skips the `config.php` `define('DEMO', true)`. A value
+  in `config.php` still wins.
+- Translation templates are generated and shipped — a build step (`npm run i18n`) extracts every
+  translatable string from the source into `oc-content/languages/core.pot` and `messages.pot`, so a
+  translator can start a new locale, and compiles the bundled locale's `.po` to `.mo` so the binary
+  catalogues never go stale. The release zip also drops build-only files (`Dockerfile`, `.docker/`,
+  compose files, `phpcs.xml`).
 - Core spam moderation — a keyword blocklist and visitor reporting that record why a listing was
   flagged, quarantine matches for review, and auto-hide past a threshold. Gate-able via the
   `item_mark` filter / `item_marked` action. Supersedes the Butler plugin.
@@ -182,12 +207,20 @@ replacing Bender. PHP 8.0 is now the floor.
 
 ### Fixed
 
+- Five admin strings that passed a non-existent text domain (`'admin'`/`'modern'`/`'osclass'`) to
+  `__()`/`_e()` always rendered untranslated; they now use the default `core` domain and are
+  translatable.
 - Category dropdowns list sub-categories again — the nested `select()` option builder recursed with
   the child array as the selected value and an integer as its options, collapsing each parent's
   children into a single empty option. Affects the admin category parent picker and any nested select.
 - Checkbox custom fields render as translatable Yes/No text instead of a broken tick/cross image that
   only the old Bender theme shipped, so every other theme showed a missing image. Overridable via the
   `item_meta_checkbox_value` filter.
+- The admin/one-click upgrade now records the new version in the `version` preference. The upgrade
+  swaps the code files and upgrades the database in a single request, so the `OSCLASS_VERSION`
+  constant loaded at the start still held the pre-upgrade value when the version was written — the
+  preference lagged a version behind after every upgrade. It's now read from the freshly-synced code
+  on disk.
 - Pagination: the `list-last` class now lands on the final item (it was overwritten and never
   applied, so the last page's styling was off), a Pagination object can be rendered more than once
   without duplicating classes, and an out-of-range `iPage` no longer renders a bogus page number.

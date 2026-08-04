@@ -28,7 +28,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 osc_add_filter('admin_body_class', 'addBodyClass');
 if (!function_exists('addBodyClass')) {
     /**
@@ -52,7 +51,6 @@ function customPageHeader()
     <?php
 }
 
-
 /**
  * @param $string
  *
@@ -62,7 +60,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Dashboard &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -160,7 +157,6 @@ function chartJs()
     <?php
 }
 
-
 osc_add_hook('admin_footer', 'chartJs', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
@@ -204,48 +200,48 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="widget-box-content dash-category-scroll">
                     <?php
                     $countEvent = 1;
-                    if (!empty($numItemsPerCategory)) { ?>
+if (!empty($numItemsPerCategory)) { ?>
                         <table class="table" cellpadding="0" cellspacing="0">
                             <tbody>
                                 <?php
-                                $even = false;
-                                foreach ($numItemsPerCategory as $c) { ?>
+            $even = false;
+    foreach ($numItemsPerCategory as $c) { ?>
                                     <tr<?php if ($even == true) {
-                                            $even = false;
-                                            echo ' class="even"';
-                                       } else {
-                                           $even = true;
-                                       }
-                                       if ($countEvent == 1) {
-                                           echo ' class="table-first-row"';
-                                       } ?>>
+                                        $even = false;
+                                        echo ' class="even"';
+                                    } else {
+                                        $even = true;
+                                    }
+        if ($countEvent == 1) {
+            echo ' class="table-first-row"';
+        } ?>>
                                         <td><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo
-                                                                                                                    $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_name']); ?></a>
+                                                                                     $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_name']); ?></a>
                                         </td>
                                         <td><?php echo $c['i_num_items'] . '&nbsp;' . (($c['i_num_items'] == 1)
-                                                ? __('Listing') : __('Listings')); ?></td>
+                 ? __('Listing') : __('Listings')); ?></td>
                                         </tr>
                                         <?php foreach ($c['categories'] as $subc) { ?>
                                             <tr<?php if ($even == true) {
-                                                    $even = false;
-                                                    echo ' class="even"';
-                                               } else {
-                                                   $even = true;
-                                               } ?>>
+                                                $even = false;
+                                                echo ' class="even"';
+                                            } else {
+                                                $even = true;
+                                            } ?>>
                                                 <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;
                                             catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
                                                 </td>
                                                 <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
-                                                        ? __('Listing') : __('Listings')); ?></td>
+                                                     ? __('Listing') : __('Listings')); ?></td>
                                                 </tr>
                                             <?php
                                             $countEvent++;
                                         }
-                                        ?>
+        ?>
                                         <?php
-                                        $countEvent++;
-                                }
-                                ?>
+        $countEvent++;
+    }
+    ?>
                             </tbody>
                         </table>
                     <?php } else { ?>
@@ -262,13 +258,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="widget-box-content widget-box-content-stats">
                     <div id="widget-box-stats-listings" class="widget-box-stats">
                         <div class="stats-detail"><?php printf(
-                                                        __('Total number of listings: %s'),
-                                                        $numItems
-                                                    ); ?></div>
+                            __('Total number of listings: %s'),
+                            $numItems
+                        ); ?></div>
                         <div class="stats-detail"><?php printf(
-                                                        __('Total number of users: %s'),
-                                                        $numUsers
-                                                    ); ?></div>
+                            __('Total number of users: %s'),
+                            $numUsers
+                        ); ?></div>
                         <div id="placeholder-listing" class="graph-placeholder" height="120"></div>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php _e('Listing statistics'); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>
@@ -284,22 +280,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="widget-box-content">
                     <?php
                     $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
-                    $fmtBytes = static function ($bytes) {
-                        if (!is_numeric($bytes) || $bytes <= 0) {
-                            return '—';
-                        }
-                        $units = array('B', 'KB', 'MB', 'GB', 'TB');
-                        $i     = (int) min(floor(log($bytes, 1024)), count($units) - 1);
-                        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
-                    };
-                    $rows = array(
-                        array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
-                        array('bi-filetype-php', __('PHP version'), PHP_VERSION),
-                        array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
-                        array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
-                        array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
-                    );
-                    ?>
+$fmtBytes = static function ($bytes) {
+    if (!is_numeric($bytes) || $bytes <= 0) {
+        return '—';
+    }
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    $i     = (int) min(floor(log($bytes, 1024)), count($units) - 1);
+    return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
+};
+$rows = array(
+    array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
+    array('bi-filetype-php', __('PHP version'), PHP_VERSION),
+    array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
+    array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
+    array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
+);
+?>
                     <ul class="dash-system">
                         <?php foreach ($rows as $r) { ?>
                             <li class="dash-system-row">

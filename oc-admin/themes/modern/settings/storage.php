@@ -343,7 +343,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </form>
                         <div class="help-box">
                             <?php _e('Imports your Better S3 connection settings and marks images already uploaded to that '
-                                     . 'bucket as remote, without re-uploading them.'); ?>
+                         . 'bucket as remote, without re-uploading them.'); ?>
                         </div>
                     <?php } ?>
                 </div>

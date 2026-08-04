@@ -354,7 +354,7 @@ class Utils
             }
             if (count($regionIds) > 0) {
                 $regionUpdate = RegionStats::newInstance()->updateAllStats($regionIds);
-                if ($regionUpdate >=0) {
+                if ($regionUpdate >= 0) {
                     // batch delete $regionIds from locations_tmp
                     $loctmp->batchDelete($regionIds, 'REGION');
                 }

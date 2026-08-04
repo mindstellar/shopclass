@@ -71,13 +71,13 @@ $named = array('blog' => array(
 harness_section('resolveRoute — named {…} placeholders (pure)');
 $r = rw_invoke(rw_with_routes($named), 'resolveRoute', 'blog/42/hello-world');
 check('returns a match', is_array($r));
-pin('capture 1 bound to {post_id}', '42',          $r['params']['post_id'] ?? null);
-pin('capture 2 bound to {slug}',    'hello-world', $r['params']['slug'] ?? null);
-pin('route id recorded',            'blog',        $r['params']['route'] ?? null);
-pin('page set to custom',           'custom',      $r['params']['page'] ?? null);
-pin('location carried',             'blog',        $r['location']);
-pin('section carried',              'single',      $r['section']);
-pin('title carried',                'Blog',        $r['title']);
+pin('capture 1 bound to {post_id}', '42', $r['params']['post_id'] ?? null);
+pin('capture 2 bound to {slug}', 'hello-world', $r['params']['slug'] ?? null);
+pin('route id recorded', 'blog', $r['params']['route'] ?? null);
+pin('page set to custom', 'custom', $r['params']['page'] ?? null);
+pin('location carried', 'blog', $r['location']);
+pin('section carried', 'single', $r['section']);
+pin('title carried', 'Blog', $r['title']);
 
 harness_section('resolveRoute — route_param_N fallback + controller + miss');
 $fallback = array('foo' => array(
@@ -92,7 +92,7 @@ $controller = array('api' => array(
 ));
 $r = rw_invoke(rw_with_routes($controller), 'resolveRoute', 'api/status');
 pin('controller route -> page=route', 'route', $r['params']['page'] ?? null);
-pin('controller route location null', null,     $r['location']);
+pin('controller route location null', null, $r['location']);
 
 pin('no match -> null', null, rw_invoke(rw_with_routes($named), 'resolveRoute', 'nothing/here'));
 
@@ -103,8 +103,8 @@ Params::init();
 $rw    = rw_with_routes($named);
 $match = rw_invoke($rw, 'resolveRoute', 'blog/42/hello-world');
 rw_invoke($rw, 'applyMatch', $match);
-pin('Params.post_id set', '42',    Params::getParam('post_id'));
-pin('Params.page set',    'custom', Params::getParam('page'));
+pin('Params.post_id set', '42', Params::getParam('post_id'));
+pin('Params.page set', 'custom', Params::getParam('page'));
 pin('instance location set', 'blog', rw_prop($rw, 'location'));
 
 harness_section('resolveSitemap — core fallback (pure)');

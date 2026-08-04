@@ -35,7 +35,7 @@ use mindstellar\migration\MigrationInterface;
  * the ALTER rewrites the table and can take a while; there is no way to change
  * an engine without that.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_description';

@@ -21,7 +21,6 @@ function addHelp()
         . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
@@ -33,11 +32,10 @@ function customPageHeader()
             <i class="bi bi-arrow-down-circle-fill"></i>
         </a>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=languages&amp;action=add" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Upload language');
-        ?>"><i class="bi bi-plus-circle-fill"></i></a>
+    ?>"><i class="bi bi-plus-circle-fill"></i></a>
     </h1>
     <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -45,7 +43,6 @@ function customPageTitle($string)
 {
     return sprintf(__('Languages &raquo; %s'), $string);
 }
-
 
 osc_add_filter('admin_title', 'customPageTitle');
 
@@ -66,7 +63,6 @@ function customHead()
     </script>
     <?php
 }
-
 
 osc_add_hook('admin_header', 'customHead', 10);
 
@@ -105,18 +101,18 @@ osc_current_admin_theme_path('parts/header.php');
                             <tr>
                                 <?php foreach ($array as $key => $value) { ?>
                                     <td <?php if ($key === 0) {
-                                            echo 'class="col-bulkactions"';
-                                        } elseif ($key === 1) {
-                                            echo 'data-col-name="' . __("Name") . '"';
-                                        } elseif ($key === 2) {
-                                            echo 'class="col-short-name" data-col-name="' . __("Short name") . '"';
-                                        } elseif ($key === 3) {
-                                            echo 'class="col-description" data-col-name="' . __("Description") . '"';
-                                        } elseif ($key === 4) {
-                                            echo 'class="col-enabled-website" data-col-name="' . __("Enabled (website)") . '"';
-                                        } elseif ($key === 5) {
-                                            echo 'class="col-enabled-backend" data-col-name="' . __("Enabled (oc-admin)") . '"';
-                                        } ?>>
+                                        echo 'class="col-bulkactions"';
+                                    } elseif ($key === 1) {
+                                        echo 'data-col-name="' . __("Name") . '"';
+                                    } elseif ($key === 2) {
+                                        echo 'class="col-short-name" data-col-name="' . __("Short name") . '"';
+                                    } elseif ($key === 3) {
+                                        echo 'class="col-description" data-col-name="' . __("Description") . '"';
+                                    } elseif ($key === 4) {
+                                        echo 'class="col-enabled-website" data-col-name="' . __("Enabled (website)") . '"';
+                                    } elseif ($key === 5) {
+                                        echo 'class="col-enabled-backend" data-col-name="' . __("Enabled (oc-admin)") . '"';
+                                    } ?>>
                                         <?php echo $value; ?></td>
                                 <?php } ?>
                             </tr>

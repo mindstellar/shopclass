@@ -52,7 +52,7 @@ class LocationsTmp extends DAO
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -85,8 +85,7 @@ class LocationsTmp extends DAO
      * Populate Cities from City Table
      * @return bool
      */
-    public function populateCities()
-    : bool
+    public function populateCities(): bool
     {
         // INSERT IGNORE ...SELECT pk_i_id column from t_city table into the
         // staging table. Both table names are model-owned (never runtime input)
@@ -108,8 +107,7 @@ class LocationsTmp extends DAO
      * populate Regions from Region Table
      * @return bool
      */
-    public function populateRegions()
-    : bool
+    public function populateRegions(): bool
     {
         // INSERT IGNORE ...SELECT pk_i_id column from t_region table into the
         // staging table. Both table names are model-owned; the e_type is bound.
@@ -130,8 +128,7 @@ class LocationsTmp extends DAO
      * populate Countries from Country Table
      * @return bool
      */
-    public function populateCountries()
-    : bool
+    public function populateCountries(): bool
     {
         // INSERT IGNORE ...SELECT pk_c_code column from t_country table into the
         // staging table. Both table names are model-owned; the e_type is bound.
@@ -147,7 +144,6 @@ class LocationsTmp extends DAO
 
         return true;
     }
-
 
     /**
      * @param array $where

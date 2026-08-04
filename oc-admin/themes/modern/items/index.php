@@ -20,12 +20,11 @@ function addHelp()
         . '</p>';
 }
 
-
 osc_add_hook('help_box', 'addHelp');
 
 function customPageHeader()
 {
-?>
+    ?>
     <h1><?php _e('Listings'); ?>
         <a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;action=settings" class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
         <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
@@ -33,7 +32,6 @@ function customPageHeader()
     </h1>
 <?php
 }
-
 
 osc_add_hook('admin_page_header', 'customPageHeader');
 
@@ -91,7 +89,6 @@ function customHead()
 <?php
 }
 
-
 osc_add_hook('admin_header', 'customHead', 10);
 
 $categories  = __get('categories');
@@ -120,12 +117,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <a id="btn-hide-filters" class="btn btn-dim" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
                     <?php } ?>
                     <?php $opt = 'oPattern';
-                    if (Params::getParam('shortcut-filter') != '') {
-                        $opt = Params::getParam('shortcut-filter');
-                    } ?>
+if (Params::getParam('shortcut-filter') != '') {
+    $opt = Params::getParam('shortcut-filter');
+} ?>
                     <?php $classPattern = 'hide';
-                    $classUser          = 'hide';
-                    $classItemId        = 'hide'; ?>
+$classUser          = 'hide';
+$classItemId        = 'hide'; ?>
                     <?php if ($opt === 'oUser') {
                         $classUser = '';
                     } ?>
@@ -137,21 +134,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     } ?>
                     <select id="filter-select" name="shortcut-filter" class="form-select form-select-sm">
                         <option value="oPattern" <?php if ($opt === 'oPattern') {
-                                                        echo 'selected="selected"';
-                                                    } ?>><?php _e('Pattern'); ?></option>
+                            echo 'selected="selected"';
+                        } ?>><?php _e('Pattern'); ?></option>
                         <option value="oUser" <?php if ($opt === 'oUser') {
-                                                    echo 'selected="selected"';
-                                                } ?>><?php _e('Email'); ?></option>
+                            echo 'selected="selected"';
+                        } ?>><?php _e('Email'); ?></option>
                         <option value="oItemId" <?php if ($opt === 'oItemId') {
-                                                    echo 'selected="selected"';
-                                                } ?>><?php _e('Item ID'); ?></option>
+                            echo 'selected="selected"';
+                        } ?>><?php _e('Item ID'); ?></option>
                     </select>
                     <input id="fPattern" type="text" name="sSearch" placeholder="<?php _e('Keywords') ?>" value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>" class="form-control w-25 <?php echo $classPattern; ?>" />
                     <input id="fUser" name="user" type="text" placeholder="<?php _e('User Email') ?>" class="fUser form-control w-25 <?php echo $classUser; ?>" value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
                     <input id="fUserId" name="userId" type="hidden" placeholder="<?php _e('User ID') ?>" class="form-control w-25" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
                     <input id="fItemId" type="text" name="itemId" placeholder="<?php _e('Item ID') ?>" value="<?php echo osc_esc_html(Params::getParam('itemId')); ?>" class="form-control w-25 <?php echo $classItemId; ?>" />
                     <a id="btn-display-filters" data-osc-dialog-open="#display-filters" href="#" class="btn <?php
-                                                                                                                                echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
+                                                                                                        echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
                     </a>
                     <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
                         <i class="bi bi-search"></i>
@@ -163,24 +160,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php if ($key !== 'iDisplayLength') { ?>
                         <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
                 <?php }
-                } ?>
+                    } ?>
                 <select name="iDisplayLength" class="form-select form-select-sm" onchange="this.form.submit();">
                     <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
                     <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 25); ?></option>
+                        echo 'selected';
+                    } ?>><?php printf(__('%d Listings'), 25); ?></option>
                     <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 50); ?></option>
+                        echo 'selected';
+                    } ?>><?php printf(__('%d Listings'), 50); ?></option>
                     <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 100); ?></option>
+                        echo 'selected';
+                    } ?>><?php printf(__('%d Listings'), 100); ?></option>
                     <option value="250" <?php if (Params::getParam('iDisplayLength') == 250) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 250); ?></option>
+                        echo 'selected';
+                    } ?>><?php printf(__('%d Listings'), 250); ?></option>
                     <option value="500" <?php if (Params::getParam('iDisplayLength') == 500) {
-                                            echo 'selected';
-                                        } ?>><?php printf(__('%d Listings'), 500); ?></option>
+                        echo 'selected';
+                    } ?>><?php printf(__('%d Listings'), 500); ?></option>
                 </select>
             </form>
         </div>
@@ -216,18 +213,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <?php if (count($rows) > 0) { ?>
                         <?php foreach ($rows as $key => $row) { ?>
                             <tr class="<?php echo implode(
-                                            ' ',
-                                            osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row)
-                                        ); ?>">
+                                ' ',
+                                osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row)
+                            ); ?>">
                                 <?php foreach ($row as $k => $v) { ?>
                                     <?php // Status is the one value that gets presentational markup — it becomes a badge
-                                    // (tint + icon + word). This wrap lives in the THEME, not in
-                                    // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
-                                    // word for any plugin hooked on the `items_processing_row` filter. 
+                                        // (tint + icon + word). This wrap lives in the THEME, not in
+                                        // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
+                                        // word for any plugin hooked on the `items_processing_row` filter.
                                     ?>
                                     <td class="col-<?php echo $k; ?>" data-col-name="<?php echo ucfirst($k); ?>"><?php
                                                                                                                     echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                                                                                                    ?></td>
+                                    ?></td>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
@@ -253,7 +250,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 function showingResults()
 {
     $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing((Params::getParam('iPage') - 1)
+    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
+        (Params::getParam('iPage') - 1)
             * $aData['iDisplayLength'] + 1,
         ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
             + count($aData['aRows']),
@@ -262,7 +260,6 @@ function showingResults()
     )
         . '</span></li></ul>';
 }
-
 
 osc_add_hook('before_show_pagination_admin', 'showingResults');
 osc_show_pagination_admin($aData);

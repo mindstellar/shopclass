@@ -17,7 +17,6 @@
  */
 class UserForm extends Form
 {
-
     /**
      * @param $user
      */
@@ -397,7 +396,9 @@ class UserForm extends Form
     {
         // Self-contained vanilla validation (no jQuery). Renders on the public register
         // form and the admin add-user form, so it depends on no external helper.
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script type="text/javascript">
             (function () {
@@ -439,14 +440,18 @@ class UserForm extends Form
             })();
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_register_form_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_register_form_js');
+        }
     }
 
     public static function js_validation_edit($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery). Editing a user: the password
         // fields are optional, but if filled they must be >= 5 chars and match.
-        if ($enqueue) { ob_start(); }
+        if ($enqueue) {
+            ob_start();
+        }
         ?>
         <script>
             (function () {
@@ -486,7 +491,9 @@ class UserForm extends Form
             })();
         </script>
         <?php
-        if ($enqueue) { Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_edit_form_js'); }
+        if ($enqueue) {
+            Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_edit_form_js');
+        }
     }
 
     /**

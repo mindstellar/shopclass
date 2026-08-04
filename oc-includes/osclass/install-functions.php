@@ -34,7 +34,6 @@ function _purify($value, $xss_check)
 
     $_purifier = new HTMLPurifier($_config);
 
-
     if (is_array($value)) {
         foreach ($value as $k => &$v) {
             $v = _purify($v, $xss_check); // recursive
@@ -45,7 +44,6 @@ function _purify($value, $xss_check)
 
     return $value;
 }
-
 
 /**
  * @param      $param
@@ -75,7 +73,6 @@ function getServerParam($param, $htmlencode = false, $xss_check = true, $quotes_
     return ($value);
 }
 
-
 /**
  * The url of the site
  *
@@ -95,7 +92,6 @@ function get_absolute_url()
     return $protocol . '://' . getServerParam('HTTP_HOST') . $URI;
 }
 
-
 /**
  * The relative url on the domain url
  *
@@ -109,7 +105,6 @@ function get_relative_url()
 
     return substr($url, 0, strpos($url, '/oc-includes')) . "/";
 }
-
 
 /**
  * Get the requirements to install Shopclass
@@ -248,7 +243,6 @@ function get_requirements()
     return $array;
 }
 
-
 /**
  * Check if some of the requirements to install Shopclass are correct or not
  *
@@ -267,7 +261,6 @@ function check_requirements($array)
 
     return false;
 }
-
 
 /**
  * Turn a MySQL/mysqli error code into a plain-language message a non-technical
@@ -357,7 +350,6 @@ function install_db_error_message($code, array $ctx = array())
             );
     }
 }
-
 
 /**
  * Try the database settings entered on step 2 without committing to them, so the
@@ -456,7 +448,6 @@ function install_test_db_connection()
     );
 }
 
-
 /**
  * Per-session installer nonce. The installer runs before any preference exists
  * (so osc_csrf_check() cannot yet work), so state-changing installer requests
@@ -475,7 +466,6 @@ function install_nonce()
     return $nonce;
 }
 
-
 /**
  * Verify the nonce submitted with a state-changing installer request against the
  * one stored in the session, in constant time.
@@ -489,7 +479,6 @@ function install_nonce_check()
 
     return $token !== '' && $session !== '' && hash_equals($session, $token);
 }
-
 
 /**
  * insert/update preference allow_report_osclass
@@ -507,7 +496,6 @@ function set_allow_report_osclass($value)
 
     Preference::newInstance()->insert($values);
 }
-
 
 /**
  * Install Shopclass database
@@ -742,7 +730,6 @@ function oc_install()
     return false;
 }
 
-
 /**
  * Insert the example data (categories and emails) on all available locales
  *
@@ -770,7 +757,6 @@ function oc_install_example_data()
             return $str;
         }
     }
-
 
     foreach ($categories as $category) {
         $fields['pk_i_id']           = $category['pk_i_id'];
@@ -814,7 +800,7 @@ function oc_install_example_data()
 
 function define_install_constants($dbhost, $dbname, $username, $password, $tableprefix)
 {
-    
+
     defined('DB_NAME') or define('DB_NAME', $dbname);
     defined('DB_USER') or define('DB_USER', $username);
     defined('DB_PASSWORD') or define('DB_PASSWORD', $password);
@@ -872,7 +858,6 @@ CONFIG;
     file_put_contents(ABS_PATH . 'config.php', $config_text);
 }
 
-
 /**
  * Create config from config-sample.php file
  *
@@ -890,7 +875,7 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
     $password = addslashes($password);
     $abs_url = get_absolute_url();
     $rel_url = get_relative_url();
-    
+
     // Load config sample
     $config_sample_path = ABS_PATH . 'config-sample.php';
     $config_sample = file($config_sample_path);
@@ -931,7 +916,6 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
     return true;
 }
 
-
 /**
  * @return bool
  */
@@ -961,7 +945,6 @@ function is_osclass_installed()
 
     return (int)$count === 1;
 }
-
 
 /**
  * @param $password
@@ -1003,7 +986,6 @@ function finish_installation($password)
     );
 }
 
-
 /**
  * Menus
  */
@@ -1012,12 +994,10 @@ function display_database_config($form_data = null, $error = null)
     include_once 'installer/gui/install-database.php';
 }
 
-
 function display_target()
 {
     include_once 'installer/gui/install-target.php';
 }
-
 
 /**
  * Notify the major search engines that the sitemap exists. Network I/O only —
@@ -1042,7 +1022,6 @@ function install_ping_search_engines()
     }
 }
 
-
 /**
  * @param $password
  */
@@ -1050,7 +1029,6 @@ function display_finish($password)
 {
     include_once 'installer/gui/install-finish.php';
 }
-
 
 /**
  * @return array
@@ -1132,7 +1110,6 @@ function basic_info()
         );
     }
 }
-
 
 /**
  * @return bool

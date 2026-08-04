@@ -22,7 +22,7 @@ use mindstellar\migration\MigrationInterface;
  * which the runner baselines rather than replays; this migration brings an
  * existing install up to the same state.
  */
-return new class implements MigrationInterface {
+return new class () implements MigrationInterface {
     /** Section the core avatar preferences live under. */
     private const SECTION = 'osclass';
 

@@ -36,7 +36,6 @@ use Preference;
  */
 class Osclass extends UpgradePackage
 {
-
     /**
      * Osclass constructor.
      *
@@ -122,12 +121,40 @@ class Osclass extends UpgradePackage
                 ]);
             }
 
-            Utils::changeOsclassVersionTo(OSCLASS_VERSION);
+            Utils::changeOsclassVersionTo(self::newVersionOnDisk());
 
             return json_encode(['error' => 0, 'message' => __('Shopclass DB Upgraded Successfully')]);
         }
 
         return json_encode(['error' => 1, 'message' => __('Unable to upgrade Database')]);
+    }
+
+    /**
+     * The version from the freshly-synced code on disk, not the OSCLASS_VERSION
+     * constant.
+     *
+     * The one-request upgrade (doUpgrade() then upgradeDB() in the same request)
+     * has already replaced default-constants.php on disk, but OSCLASS_VERSION was
+     * defined at the start of the request from the OLD code and cannot be
+     * redefined — so recording it would write the pre-upgrade version into the
+     * `version` preference, which then never catches up. This upgrade reconciled
+     * the schema against the struct.sql and migrations already on disk, so the
+     * version it records must come from disk too. Falls back to the constant when
+     * the file can't be read (e.g. a plain in-process db:upgrade, where they match).
+     */
+    private static function newVersionOnDisk(): string
+    {
+        $file = osc_lib_path() . 'osclass/default-constants.php';
+        if (is_readable($file)) {
+            $contents = file_get_contents($file);
+            if ($contents !== false
+                && preg_match('/define\(\s*[\'"]OSCLASS_VERSION[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]/', $contents, $m)
+            ) {
+                return $m[1];
+            }
+        }
+
+        return OSCLASS_VERSION;
     }
 
     /**
@@ -154,7 +181,8 @@ class Osclass extends UpgradePackage
         $isFresh    = false;
         $preference = Preference::newInstance();
         if ($force === true
-            || (!$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
+            || (
+                !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
             )
         ) {
             if ((defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) || osc_get_bool_preference('allow_update_prerelease')) {

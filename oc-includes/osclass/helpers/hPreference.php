@@ -30,7 +30,6 @@ function osc_time_cookie()
     return (int)31536000; // one year in seconds
 }
 
-
 /**
  * Gets if comments are enabled or not
  *
@@ -40,7 +39,6 @@ function osc_comments_enabled()
 {
     return getBoolPreference('enabled_comments');
 }
-
 
 /**
  * Force uploaded images to be JPEG
@@ -52,7 +50,6 @@ function osc_force_jpeg()
     return getBoolPreference('force_jpeg');
 }
 
-
 /**
  * Gets comments per page
  *
@@ -62,7 +59,6 @@ function osc_comments_per_page()
 {
     return (int)getPreference('comments_per_page');
 }
-
 
 /**
  * Gets auto update settings
@@ -74,7 +70,6 @@ function osc_auto_update()
     return getPreference('auto_update');
 }
 
-
 /**
  * Gets number of days to warn about an ad being expired
  *
@@ -84,7 +79,6 @@ function osc_warn_expiration()
 {
     return (int)getPreference('warn_expiration');
 }
-
 
 /**
  * Gets timezone
@@ -96,7 +90,6 @@ function osc_timezone()
     return getPreference('timezone');
 }
 
-
 /**
  * Gets csrf session name
  *
@@ -106,7 +99,6 @@ function osc_csrf_name()
 {
     return getPreference('csrf_name');
 }
-
 
 /**
  * Gets if only users can post comments
@@ -118,7 +110,6 @@ function osc_reg_user_post_comments()
     return getBoolPreference('reg_user_post_comments');
 }
 
-
 /**
  * Gets if only users can contact to seller
  *
@@ -128,7 +119,6 @@ function osc_reg_user_can_contact()
 {
     return getPreference('reg_user_can_contact');
 }
-
 
 /**
  * Gets list of blacklsited terms for usernames
@@ -140,7 +130,6 @@ function osc_username_blacklist()
     return getPreference('username_blacklist');
 }
 
-
 /**
  * Gets if users are enabled or not
  *
@@ -150,7 +139,6 @@ function osc_users_enabled()
 {
     return getBoolPreference('enabled_users');
 }
-
 
 /**
  * Gets if user registration is enabled
@@ -162,7 +150,6 @@ function osc_user_registration_enabled()
     return getBoolPreference('enabled_user_registration');
 }
 
-
 /**
  * Gets is user validation is enabled or not
  *
@@ -172,7 +159,6 @@ function osc_user_validation_enabled()
 {
     return getBoolPreference('enabled_user_validation');
 }
-
 
 /**
  * Gets if validation for logged users is required or not
@@ -184,7 +170,6 @@ function osc_logged_user_item_validation()
     return getBoolPreference('logged_user_item_validation');
 }
 
-
 /**
  * Gets how many comments should be posted before auto-moderation
  *
@@ -194,7 +179,6 @@ function osc_moderate_comments()
 {
     return (int)getPreference('moderate_comments');
 }
-
 
 /**
  * Gets if notification of new comments is enabled or not to admin
@@ -206,7 +190,6 @@ function osc_notify_new_comment()
     return getBoolPreference('notify_new_comment');
 }
 
-
 /**
  * Gets if notification of new comments is enabled or notto users
  *
@@ -216,7 +199,6 @@ function osc_notify_new_comment_user()
 {
     return getBoolPreference('notify_new_comment_user');
 }
-
 
 /**
  * Gets if nice urls are enabled or not
@@ -228,7 +210,6 @@ function osc_rewrite_enabled()
     return getBoolPreference('rewriteEnabled');
 }
 
-
 /**
  * Gets if mod rewrite is loaded or not (if apache runs on cgi mode, mod rewrite will not be detected)
  *
@@ -238,7 +219,6 @@ function osc_mod_rewrite_loaded()
 {
     return getBoolPreference('mod_rewrite_loaded');
 }
-
 
 /**
  * Gets if original images should be kept
@@ -250,7 +230,6 @@ function osc_keep_original_image()
     return getBoolPreference('keep_original_image');
 }
 
-
 /**
  * Force image aspect
  *
@@ -260,7 +239,6 @@ function osc_force_aspect_image()
 {
     return getBoolPreference('force_aspect_image');
 }
-
 
 /**
  * Gets if autocron is enabled
@@ -272,7 +250,6 @@ function osc_auto_cron()
     return getBoolPreference('auto_cron');
 }
 
-
 /**
  * Gets if recaptcha for items is enabled or not
  *
@@ -282,7 +259,6 @@ function osc_recaptcha_items_enabled()
 {
     return getBoolPreference('enabled_recaptcha_items');
 }
-
 
 /**
  * Gets if the captcha for the comment form is enabled or not
@@ -294,7 +270,6 @@ function osc_recaptcha_comments_enabled()
     return getBoolPreference('enabled_recaptcha_comments');
 }
 
-
 /**
  * Gets if the captcha for the report-listing form is enabled or not
  *
@@ -304,7 +279,6 @@ function osc_recaptcha_reports_enabled()
 {
     return getBoolPreference('enabled_recaptcha_reports');
 }
-
 
 /**
  * Gets how many seconds should an user wait to post a second item (0 for no waiting)
@@ -316,7 +290,6 @@ function osc_items_wait_time()
     return (int)getPreference('items_wait_time');
 }
 
-
 /**
  * Gets how many items should be moderated to enable auto-moderation
  *
@@ -326,7 +299,6 @@ function osc_moderate_items()
 {
     return (int)getPreference('moderate_items');
 }
-
 
 /**
  * Gets if admin needs to moderate newly posted items.
@@ -338,7 +310,6 @@ function osc_moderate_admin_post()
     return getBoolPreference('moderate_admin_post');
 }
 
-
 /**
  * Gets if admin needs to moderate edited items.
  *
@@ -348,7 +319,6 @@ function osc_moderate_admin_edit()
 {
     return getBoolPreference('moderate_admin_edit');
 }
-
 
 /**
  * Gets if only registered users can publish new items or anyone could
@@ -360,7 +330,6 @@ function osc_reg_user_post()
     return getBoolPreference('reg_user_post');
 }
 
-
 /**
  * Gets if the prices are o not enabled on the item's form
  *
@@ -370,7 +339,6 @@ function osc_price_enabled_at_items()
 {
     return getBoolPreference('enableField#f_price@items');
 }
-
 
 /**
  * Gets if images are o not enabled in item's form
@@ -382,7 +350,6 @@ function osc_images_enabled_at_items()
     return getBoolPreference('enableField#images@items');
 }
 
-
 /**
  * Gets how many images are allowed per item (o for unlimited)
  *
@@ -392,7 +359,6 @@ function osc_max_images_per_item()
 {
     return (int)getPreference('numImages@items');
 }
-
 
 /**
  * Gets how many characters are allowed for the listings title
@@ -406,7 +372,6 @@ function osc_max_characters_per_title()
     return (!empty($value) ? (int)$value : 128);
 }
 
-
 /**
  * Gets how many characters are allowed for the listings description
  *
@@ -419,7 +384,6 @@ function osc_max_characters_per_description()
     return (!empty($value) ? (int)$value : 4096);
 }
 
-
 /**
  * Gets if TinyMCE is enabled on frontend.
  *
@@ -429,7 +393,6 @@ function osc_tinymce_frontend()
 {
     return getBoolPreference('tinymce_frontend');
 }
-
 
 /**
  * Gets if notification are sent to admin when a send-a-friend message is sent
@@ -441,7 +404,6 @@ function osc_notify_contact_friends()
     return getBoolPreference('notify_contact_friends');
 }
 
-
 /**
  * Gets if notification are sent to admin when a contact message is sent
  *
@@ -451,7 +413,6 @@ function osc_notify_contact_item()
 {
     return getBoolPreference('notify_contact_item');
 }
-
 
 /**
  * Gets item attachment is enabled
@@ -463,7 +424,6 @@ function osc_item_attachment()
     return getBoolPreference('item_attachment');
 }
 
-
 /**
  * Gets if contact attachment is enabled
  *
@@ -473,7 +433,6 @@ function osc_contact_attachment()
 {
     return getBoolPreference('contact_attachment');
 }
-
 
 /**
  * Gets if notification are sent to admin with new item
@@ -485,7 +444,6 @@ function osc_notify_new_item()
     return getBoolPreference('notify_new_item');
 }
 
-
 /**
  * Gets if notification are sent to admin with new user
  *
@@ -495,7 +453,6 @@ function osc_notify_new_user()
 {
     return getBoolPreference('notify_new_user');
 }
-
 
 /**
  * Gets if the mailserver requires authetification
@@ -507,7 +464,6 @@ function osc_mailserver_auth()
     return getBoolPreference('mailserver_auth');
 }
 
-
 /**
  * Gets if the mailserver requires authetification
  *
@@ -517,7 +473,6 @@ function osc_mailserver_pop()
 {
     return getBoolPreference('mailserver_pop');
 }
-
 
 //OTHER FUNCTIONS TO GET INFORMATION OF PREFERENCES
 /**
@@ -530,7 +485,6 @@ function osc_rewrite_rules()
     return getPreference('rewrite_rules');
 }
 
-
 /**
  * Gets max kb of uploads
  *
@@ -540,7 +494,6 @@ function osc_max_size_kb()
 {
     return (int)getPreference('maxSizeKb');
 }
-
 
 /**
  * Gets allowed extensions of uploads
@@ -552,7 +505,6 @@ function osc_allowed_extension()
     return getPreference('allowedExt');
 }
 
-
 /**
  * Gets if use of imagick is enabled or not
  *
@@ -562,7 +514,6 @@ function osc_use_imagick()
 {
     return getBoolPreference('use_imagick');
 }
-
 
 /**
  * Gets thumbnails' dimensions
@@ -574,7 +525,6 @@ function osc_thumbnail_dimensions()
     return getPreference('dimThumbnail');
 }
 
-
 /**
  * Gets preview images' dimensions
  *
@@ -584,7 +534,6 @@ function osc_preview_dimensions()
 {
     return getPreference('dimPreview');
 }
-
 
 /**
  * Gets normal size images' dimensions
@@ -596,7 +545,6 @@ function osc_normal_dimensions()
     return getPreference('dimNormal');
 }
 
-
 /**
  * Gets when was the last version check
  *
@@ -606,7 +554,6 @@ function osc_last_version_check()
 {
     return (int)getPreference('last_version_check');
 }
-
 
 /**
  * Gets when was the last version check
@@ -618,7 +565,6 @@ function osc_themes_last_version_check()
     return (int)getPreference('themes_last_version_check');
 }
 
-
 /**
  * Gets when was the last version check
  *
@@ -628,7 +574,6 @@ function osc_plugins_last_version_check()
 {
     return (int)getPreference('plugins_last_version_check');
 }
-
 
 /**
  * Gets when was the last version check
@@ -640,7 +585,6 @@ function osc_languages_last_version_check()
     return (int)getPreference('languages_last_version_check');
 }
 
-
 /**
  * Gets json response when checking if there is available a new version
  *
@@ -650,7 +594,6 @@ function osc_update_core_json()
 {
     return getPreference('update_core_json');
 }
-
 
 /**
  * Gets current version
@@ -662,7 +605,6 @@ function osc_version()
     return getPreference('version');
 }
 
-
 /**
  * Gets website's title
  *
@@ -672,7 +614,6 @@ function osc_page_title()
 {
     return getPreference('pageTitle');
 }
-
 
 /**
  * Gets website's default language
@@ -684,7 +625,6 @@ function osc_language()
     return getPreference('language');
 }
 
-
 /**
  * Gets website's admin default language
  *
@@ -694,7 +634,6 @@ function osc_admin_language()
 {
     return getPreference('admin_language');
 }
-
 
 /**
  * Gets current theme
@@ -706,7 +645,6 @@ function osc_theme()
     return getPreference('theme');
 }
 
-
 /**
  * Gets current admin theme
  *
@@ -716,7 +654,6 @@ function osc_admin_theme()
 {
     return getPreference('admin_theme');
 }
-
 
 /**
  * Gets website description
@@ -728,7 +665,6 @@ function osc_page_description()
     return getPreference('pageDesc');
 }
 
-
 /**
  * Gets contact email
  *
@@ -738,7 +674,6 @@ function osc_contact_email()
 {
     return getPreference('contactEmail');
 }
-
 
 /**
  * Gets date format
@@ -750,7 +685,6 @@ function osc_date_format()
     return getPreference('dateFormat');
 }
 
-
 /**
  * Gets time format
  *
@@ -760,7 +694,6 @@ function osc_time_format()
 {
     return getPreference('timeFormat');
 }
-
 
 /**
  * Gets week start day
@@ -772,7 +705,6 @@ function osc_week_starts_at()
     return getPreference('weekStart');
 }
 
-
 /**
  * Gets number of items to display on RSS
  *
@@ -782,7 +714,6 @@ function osc_num_rss_items()
 {
     return (int)getPreference('num_rss_items');
 }
-
 
 /**
  * Gets default currency
@@ -794,7 +725,6 @@ function osc_currency()
     return getPreference('currency');
 }
 
-
 /**
  * Gets akismet key
  *
@@ -804,7 +734,6 @@ function osc_akismet_key()
 {
     return getPreference('akismetKey');
 }
-
 
 /**
  * Gets recaptcha private key
@@ -816,7 +745,6 @@ function osc_recaptcha_private_key()
     return getPreference('recaptchaPrivKey');
 }
 
-
 /**
  * Gets if third party sources are allowed to install new plugins and themes
  *
@@ -826,7 +754,6 @@ function osc_market_external_sources()
 {
     return true;
 }
-
 
 /**
  * Gets recaptcha public key
@@ -838,7 +765,6 @@ function osc_recaptcha_public_key()
     return getPreference('recaptchaPubKey');
 }
 
-
 /**
  * Gets mailserver's type
  *
@@ -848,7 +774,6 @@ function osc_mailserver_type()
 {
     return getPreference('mailserver_type');
 }
-
 
 /**
  * Gets mailserver's host
@@ -860,7 +785,6 @@ function osc_mailserver_host()
     return getPreference('mailserver_host');
 }
 
-
 /**
  * Gets mailserver's port
  *
@@ -870,7 +794,6 @@ function osc_mailserver_port()
 {
     return (int)getPreference('mailserver_port');
 }
-
 
 /**
  * Gets mail from
@@ -882,7 +805,6 @@ function osc_mailserver_mail_from()
     return getPreference('mailserver_mail_from');
 }
 
-
 /**
  * Gets name from
  *
@@ -892,7 +814,6 @@ function osc_mailserver_name_from()
 {
     return getPreference('mailserver_name_from');
 }
-
 
 /**
  * Gets mailserver's username
@@ -904,7 +825,6 @@ function osc_mailserver_username()
     return getPreference('mailserver_username');
 }
 
-
 /**
  * Gets mailserver's password
  *
@@ -914,7 +834,6 @@ function osc_mailserver_password()
 {
     return getPreference('mailserver_password');
 }
-
 
 /**
  * Gets if use SSL on the mailserver
@@ -926,7 +845,6 @@ function osc_mailserver_ssl()
     return getPreference('mailserver_ssl');
 }
 
-
 /**
  * Gets list of active plugins
  *
@@ -936,7 +854,6 @@ function osc_active_plugins()
 {
     return getPreference('active_plugins');
 }
-
 
 /**
  * Gets list of installed plugins
@@ -948,7 +865,6 @@ function osc_installed_plugins()
     return getPreference('installed_plugins');
 }
 
-
 /**
  * Gets default order field at search
  *
@@ -958,7 +874,6 @@ function osc_default_order_field_at_search()
 {
     return getPreference('defaultOrderField@search');
 }
-
 
 /**
  * Gets default order type at search
@@ -970,7 +885,6 @@ function osc_default_order_type_at_search()
     return getPreference('defaultOrderType@search');
 }
 
-
 /**
  * Gets default show as at search
  *
@@ -980,7 +894,6 @@ function osc_default_show_as_at_search()
 {
     return getPreference('defaultShowAs@search');
 }
-
 
 /**
  * Gets max results per page at search
@@ -992,7 +905,6 @@ function osc_max_results_per_page_at_search()
     return (int)getPreference('maxResultsPerPage@search');
 }
 
-
 /**
  * Gets default results per page at search
  *
@@ -1002,7 +914,6 @@ function osc_default_results_per_page_at_search()
 {
     return (int)getPreference('defaultResultsPerPage@search');
 }
-
 
 /**
  * Gets max latest items
@@ -1014,7 +925,6 @@ function osc_max_latest_items()
     return (int)getPreference('maxLatestItems@home');
 }
 
-
 /**
  * Gets if save searches is enabled or not
  *
@@ -1025,7 +935,6 @@ function osc_save_latest_searches()
     return getBoolPreference('save_latest_searches');
 }
 
-
 /**
  * @return string
  */
@@ -1033,7 +942,6 @@ function osc_purge_latest_searches()
 {
     return getPreference('purge_latest_searches');
 }
-
 
 /**
  * Whether admin activity logging (t_log) is enabled. Defaults to on when the
@@ -1047,7 +955,6 @@ function osc_is_admin_log_enabled()
 
     return $v === '' ? true : ((int) $v === 1);
 }
-
 
 /**
  * Retention window for admin activity logs, in days. 0 keeps rows forever.
@@ -1064,7 +971,6 @@ function osc_admin_log_retention_days()
 
     return max(0, (int) $v);
 }
-
 
 /**
  * Whether listing view counting is enabled. Defaults to on when the preference
@@ -1084,7 +990,6 @@ function osc_item_views_enabled()
     return $v === '' ? true : ((int) $v === 1);
 }
 
-
 /**
  * Whether requests from crawlers count as listing views. Defaults to off — a
  * crawler is not a reader, and on a well-indexed site bots are the majority of
@@ -1098,7 +1003,6 @@ function osc_count_bot_views()
 
     return $v === '' ? false : ((int) $v === 1);
 }
-
 
 /**
  * Retention window for the site-wide daily stats rollup, in days. 0 keeps rows
@@ -1118,7 +1022,6 @@ function osc_item_stats_retention_days()
     return max(0, (int) $v);
 }
 
-
 /**
  * Whether failed sign-ins are counted and limited. On unless turned off.
  *
@@ -1130,7 +1033,6 @@ function osc_login_throttle_enabled()
 
     return $v === '' || $v === null ? true : (bool)(int)$v;
 }
-
 
 /**
  * How far back failures are counted, in minutes. Doubles as how long a block
@@ -1144,7 +1046,6 @@ function osc_login_throttle_window()
 
     return $v > 0 ? $v : 15;
 }
-
 
 /**
  * Failures from one address within the window before it is blocked. Counts
@@ -1160,7 +1061,6 @@ function osc_login_throttle_max_ip()
     return $v > 0 ? $v : 20;
 }
 
-
 /**
  * Failures against one account within the window before it needs a captcha,
  * or is blocked where no captcha can be shown.
@@ -1173,7 +1073,6 @@ function osc_login_throttle_max_account()
 
     return $v > 0 ? $v : 10;
 }
-
 
 /**
  * How long recorded attempts are kept, in days, before the daily cron drops
@@ -1192,7 +1091,6 @@ function osc_login_attempt_retention_days()
     return max(0, (int)$v);
 }
 
-
 /**
  * Gets how many seconds between item post to not consider it SPAM
  *
@@ -1202,7 +1100,6 @@ function osc_item_spam_delay()
 {
     return (int)60; // need to be changed
 }
-
 
 /**
  * Gets how many seconds between comment post to not consider it SPAM
@@ -1214,7 +1111,6 @@ function osc_comment_spam_delay()
     return (int)60; // need to be changed
 }
 
-
 /**
  * Gets if parent categories are enabled or not
  *
@@ -1225,7 +1121,6 @@ function osc_selectable_parent_categories()
     return getPreference('selectable_parent_categories');
 }
 
-
 /**
  * Return max. number of latest items displayed at home index
  *
@@ -1235,7 +1130,6 @@ function osc_max_latest_items_at_home()
 {
     return (int)getPreference('maxLatestItems@home');
 }
-
 
 /**
  * generic function to retrieve preferences
@@ -1249,7 +1143,6 @@ function osc_get_preference($key, $section = 'osclass')
 {
     return getPreference($key, $section);
 }
-
 
 /**
  * generic function to retrieve preferences as bool
@@ -1269,7 +1162,6 @@ function osc_get_bool_preference($key, $section = 'osclass')
     return false;
 }
 
-
 /**
  * generic function to retrieve preferences
  *
@@ -1283,7 +1175,6 @@ function osc_get_preference_section($section = 'osclass')
 
     return $_P->getSection($section);
 }
-
 
 /**
  * generic function to insert/update preferences
@@ -1300,7 +1191,6 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
     return Preference::newInstance()->replace($key, $value, $section, $type);
 }
 
-
 /**
  * generic function to delete preferences
  *
@@ -1314,7 +1204,6 @@ function osc_delete_preference($key = '', $section = 'osclass')
     return Preference::newInstance()->delete(array('s_name' => $key, 's_section' => $section));
 }
 
-
 /**
  * Reload preferences
  *
@@ -1324,7 +1213,6 @@ function osc_reset_preferences()
 {
     return Preference::newInstance()->toArray();
 }
-
 
 /**
  * Return if need mark images with text
@@ -1338,7 +1226,6 @@ function osc_is_watermark_text()
     return $text != '';
 }
 
-
 /**
  * Return if need mark images with image
  *
@@ -1351,7 +1238,6 @@ function osc_is_watermark_image()
     return $image != '';
 }
 
-
 /**
  * Return watermark text color
  *
@@ -1361,7 +1247,6 @@ function osc_watermark_text_color()
 {
     return getPreference('watermark_text_color');
 }
-
 
 /**
  * Return watermark text
@@ -1373,7 +1258,6 @@ function osc_watermark_text()
     return getPreference('watermark_text');
 }
 
-
 /**
  * Return watermark place
  *
@@ -1383,7 +1267,6 @@ function osc_watermark_place()
 {
     return getPreference('watermark_place');
 }
-
 
 /**
  * Return subdomain type
@@ -1395,7 +1278,6 @@ function osc_subdomain_type()
     return getPreference('subdomain_type');
 }
 
-
 /**
  * Return subdomain host
  *
@@ -1406,7 +1288,6 @@ function osc_subdomain_host()
     return getPreference('subdomain_host');
 }
 
-
 /**
  * Return version of recaptcha
  *
@@ -1416,7 +1297,6 @@ function osc_recaptcha_version()
 {
     return getPreference('recaptcha_version');
 }
-
 
 /**
  * Gets the configured captcha provider preference.
@@ -1432,7 +1312,6 @@ function osc_captcha_provider_pref()
     return getPreference('captchaProvider');
 }
 
-
 /**
  * Gets the Cloudflare Turnstile site key (public, safe for markup).
  *
@@ -1442,7 +1321,6 @@ function osc_turnstile_site_key()
 {
     return getPreference('turnstileSiteKey');
 }
-
 
 /**
  * Gets the Cloudflare Turnstile secret key.
@@ -1456,7 +1334,6 @@ function osc_turnstile_secret_key()
 {
     return getPreference('turnstileSecretKey');
 }
-
 
 //PRIVATE FUNCTION (if there was a class :P)
 /**
@@ -1476,7 +1353,6 @@ function getBoolPreference($key)
 
     return false;
 }
-
 
 // PRIVATE FUNCTION FOR GETTING NO BOOLEAN INFORMATION (if there was a class :P)
 /**
