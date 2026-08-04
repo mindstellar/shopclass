@@ -21,7 +21,9 @@ lets the Docker image recover the real client IP when it runs behind a trusted p
   the site's own address — an anonymous mail-relay surface. It now ships off by default
   (`enable_send_friend`) and, when enabled, requires a logged-in user (`reg_user_can_send_friend`, on
   by default), both under Settings → Listings. A theme that still links to it is bounced back with a
-  notice rather than breaking.
+  notice rather than breaking. Both it and the contact-seller form are now rate limited per source
+  address (filterable via `send_friend_throttle_max` / `item_contact_throttle_max`), so neither can be
+  driven as a spam relay.
 
 ## Shopclass 6.0.0
 
