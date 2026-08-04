@@ -56,6 +56,9 @@ replacing Bender. PHP 8.0 is now the floor.
   (it would be discarded on the next redeploy) — update by deploying a newer image tag; the
   entrypoint's `db:upgrade` migrates the schema. The same flag disables self-update on any immutable
   install.
+- Demo mode from the environment — set `OSC_DEMO=1` to enable the read-only public-demo lockdown in
+  a container, where `OSC_IGNORE_CONFIG_FILE` skips the `config.php` `define('DEMO', true)`. A value
+  in `config.php` still wins.
 - Translation templates are generated and shipped — a build step (`npm run i18n`) extracts every
   translatable string from the source into `oc-content/languages/core.pot` and `messages.pot`, so a
   translator can start a new locale, and compiles the bundled locale's `.po` to `.mo` so the binary
