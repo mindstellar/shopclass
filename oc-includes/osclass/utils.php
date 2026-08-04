@@ -917,6 +917,26 @@ function osc_changeVersionTo($version = null)
 
 
 /**
+ * Whether the in-app self-updater (downloading a package and overwriting core
+ * files) is disabled for this installation. Set on immutable deployments — the
+ * Docker image sets OSC_DISABLE_SELF_UPDATE=1 — where the running code is baked
+ * into an image and a file-writing upgrade would be discarded on the next
+ * redeploy while leaving the database ahead of the code. Those installs update
+ * by deploying a newer image; the entrypoint's `db:upgrade` migrates the schema.
+ *
+ * @return bool
+ */
+function osc_self_update_disabled()
+{
+    if (defined('OSC_DISABLE_SELF_UPDATE')) {
+        return (bool) OSC_DISABLE_SELF_UPDATE;
+    }
+
+    return filter_var(getenv('OSC_DISABLE_SELF_UPDATE'), FILTER_VALIDATE_BOOLEAN);
+}
+
+
+/**
  * @param $array
  *
  * @return string

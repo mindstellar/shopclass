@@ -66,7 +66,12 @@ COPY .docker/prod/supervisord.conf /etc/supervisord.conf
 
 # Configure entirely from the environment by default: ignore any config.php and
 # read DB settings from DB_* / WEB_PATH. Override per-deploy as needed.
-ENV OSC_IGNORE_CONFIG_FILE=1
+# OSC_DISABLE_SELF_UPDATE turns off the admin's file-writing self-updater: the
+# code is baked into this image, so updates come from deploying a newer image tag
+# (the entrypoint's db:upgrade migrates the schema), not from writing into a
+# running container.
+ENV OSC_IGNORE_CONFIG_FILE=1 \
+    OSC_DISABLE_SELF_UPDATE=1
 
 EXPOSE 80
 
