@@ -37,20 +37,17 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # image, data volume and healthcheck come from compose.db.yml; the prod-specific
+  # credentials and restart policy stay here.
   db:
-    image: mariadb:11
+    extends:
+      file: compose.db.yml
+      service: mariadb
     environment:
       MARIADB_DATABASE: shopclass
       MARIADB_USER: shopclass
       MARIADB_PASSWORD: shopclass
       MARIADB_ROOT_PASSWORD: root
-    volumes:
-      - db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
     restart: unless-stopped
 
 volumes:
