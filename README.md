@@ -231,7 +231,14 @@ please don't modify the marks or imply endorsement.
 
 - [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
 - [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.
-- Installation, local development, and the production image are covered in the sections above.
+
+**Guides**
+
+- [Caching contract](docs/CACHING.md) — how Shopclass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
+- [Page builder](docs/PAGE-BUILDER.md) — the page-template registry and the widget-based page composition model.
+- [Custom fields](docs/CUSTOM-FIELDS.md) — field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
+
+Installation, local development, and the production image are covered in the sections above.
 
 ## Contributing
 
