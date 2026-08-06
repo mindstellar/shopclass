@@ -126,26 +126,28 @@ function osc_reg_user_can_contact()
  * Off by default: the form sends site-branded mail to a recipient taken straight
  * from the request, so it is an anonymous mail-relay surface until an admin turns
  * it on. Unset reads as off (a fresh or not-yet-migrated install stays closed);
- * only an explicit '1' enables it.
+ * only an explicit '1' enables it. Kept in its own `send_friend` section so it
+ * cannot collide with a like-named key in the shared `osclass` section.
  *
  * @return boolean
  */
 function osc_enable_send_friend()
 {
-    return getPreference('enable_send_friend') === '1';
+    return getPreference('enable_send_friend', 'send_friend') === '1';
 }
 
 /**
  * Whether sharing a listing by email requires a logged-in web user.
  *
  * On by default: even once an admin enables the feature, keep it behind a login
- * so the relay is not anonymous. Only an explicit '0' opens it to guests.
+ * so the relay is not anonymous. Only an explicit '0' opens it to guests. Lives
+ * in the `send_friend` section alongside its enable switch.
  *
  * @return boolean
  */
 function osc_reg_user_can_send_friend()
 {
-    return getPreference('reg_user_can_send_friend') !== '0';
+    return getPreference('reg_user_can_send_friend', 'send_friend') !== '0';
 }
 
 /**

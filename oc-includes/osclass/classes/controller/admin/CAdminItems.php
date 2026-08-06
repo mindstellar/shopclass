@@ -841,8 +841,13 @@ class CAdminItems extends AdminSecBaseModel
                 $iUpdated += osc_set_preference('numImages@items', $numImagesItems);
                 $iUpdated += osc_set_preference('reg_user_can_contact', $regUserCanContact);
                 $iUpdated += osc_set_preference('item_attachment', $contactItemAttachment);
-                $iUpdated += osc_set_preference('enable_send_friend', $enableSendFriend, 'osclass', 'BOOLEAN');
-                $iUpdated += osc_set_preference('reg_user_can_send_friend', $regUserCanSendFriend, 'osclass', 'BOOLEAN');
+                $iUpdated += osc_set_preference('enable_send_friend', $enableSendFriend, 'send_friend', 'BOOLEAN');
+                $iUpdated += osc_set_preference(
+                    'reg_user_can_send_friend',
+                    $regUserCanSendFriend,
+                    'send_friend',
+                    'BOOLEAN'
+                );
                 $iUpdated += osc_set_preference('warn_expiration', $warnExpiration);
                 $iUpdated += osc_set_preference('title_character_length', $titleLength);
                 $iUpdated += osc_set_preference('description_character_length', $descriptionLength);
