@@ -979,7 +979,7 @@ function osc_purge_latest_searches()
  */
 function osc_is_admin_log_enabled()
 {
-    $v = osc_get_preference('admin_log_enabled', 'log');
+    $v = osc_get_preference('admin_log_enabled', 'osclass');
 
     return $v === '' ? true : ((int) $v === 1);
 }
@@ -992,7 +992,7 @@ function osc_is_admin_log_enabled()
  */
 function osc_admin_log_retention_days()
 {
-    $v = osc_get_preference('admin_log_retention_days', 'log');
+    $v = osc_get_preference('admin_log_retention_days', 'osclass');
     if ($v === '' || $v === null) {
         return 90;
     }
@@ -1013,7 +1013,7 @@ function osc_admin_log_retention_days()
  */
 function osc_item_views_enabled()
 {
-    $v = osc_get_preference('item_views_enabled', 'stats');
+    $v = osc_get_preference('item_views_enabled', 'osclass');
 
     return $v === '' ? true : ((int) $v === 1);
 }
@@ -1027,7 +1027,7 @@ function osc_item_views_enabled()
  */
 function osc_count_bot_views()
 {
-    $v = osc_get_preference('count_bot_views', 'stats');
+    $v = osc_get_preference('count_bot_views', 'osclass');
 
     return $v === '' ? false : ((int) $v === 1);
 }
@@ -1042,7 +1042,7 @@ function osc_count_bot_views()
  */
 function osc_item_stats_retention_days()
 {
-    $v = osc_get_preference('item_stats_retention_days', 'stats');
+    $v = osc_get_preference('item_stats_retention_days', 'osclass');
     if ($v === '' || $v === null) {
         return 0;
     }

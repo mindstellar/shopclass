@@ -17,7 +17,7 @@
  */
 
 /** Preference section the item-moderation settings live under. */
-const OSC_MODERATION_SECTION = 'moderation';
+const OSC_MODERATION_SECTION = 'osclass';
 
 /**
  * Is the keyword blocklist active?

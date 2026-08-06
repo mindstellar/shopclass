@@ -182,22 +182,22 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 osc_set_preference(
                     'keyword_spam_enabled',
                     Params::getParam('keyword_spam_enabled') != '' ? 1 : 0,
-                    'moderation',
+                    'osclass',
                     'BOOLEAN'
                 );
                 osc_set_preference(
                     'keyword_spam_hard_block',
                     Params::getParam('keyword_spam_hard_block') != '' ? 1 : 0,
-                    'moderation',
+                    'osclass',
                     'BOOLEAN'
                 );
                 osc_set_preference(
                     'report_autoblock',
                     Params::getParam('report_autoblock') != '' ? 1 : 0,
-                    'moderation',
+                    'osclass',
                     'BOOLEAN'
                 );
-                osc_set_preference('report_threshold', $threshold, 'moderation', 'INTEGER');
+                osc_set_preference('report_threshold', $threshold, 'osclass', 'INTEGER');
                 osc_set_preference(
                     'enabled_recaptcha_reports',
                     Params::getParam('enabled_recaptcha_reports') != '' ? 1 : 0,

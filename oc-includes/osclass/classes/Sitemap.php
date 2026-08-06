@@ -48,7 +48,7 @@ class Sitemap extends DAO
     public const MAX_SITEMAP_URLS = 50000;
 
     /** Preference group (t_preference.s_section) that holds the sitemap settings. */
-    public const PREF_GROUP = 'sitemap';
+    public const PREF_GROUP = 'osclass';
 
     /** Default number of item URLs per child sitemap when the preference is unset. */
     private const DEFAULT_ITEMS_PER_SITEMAP = 5000;
