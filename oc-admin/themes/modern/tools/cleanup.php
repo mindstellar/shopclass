@@ -46,7 +46,7 @@ $cleanup_rules = array(
 );
 
 $engine      = Cleanup::newInstance();
-$batch_limit = (int)osc_get_preference('batch_limit', 'cleanup');
+$batch_limit = (int)osc_get_preference('batch_limit', 'osclass');
 if ($batch_limit < 1) {
     $batch_limit = 250;
 }
@@ -72,8 +72,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </thead>
                     <tbody>
                     <?php foreach ($cleanup_rules as $rule => $meta) {
-                        $enabled = osc_get_preference('enabled_' . $rule, 'cleanup') == 1;
-                        $days    = (int)osc_get_preference('days_' . $rule, 'cleanup');
+                        $enabled = osc_get_preference('enabled_' . $rule, 'osclass') == 1;
+                        $days    = (int)osc_get_preference('days_' . $rule, 'osclass');
                         if ($days < 1) {
                             $days = 30;
                         }

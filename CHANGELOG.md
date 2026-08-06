@@ -2,6 +2,28 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.0.2
+
+A maintenance release: the production container can send mail through an external SMTP relay, and the
+core feature preferences are consolidated back into one section.
+
+### New
+
+- Container mail relay — the production Docker image installs msmtp and renders its config from the
+  environment (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`,
+  `SMTP_STARTTLS`), so a deployed container sends registration, password-reset and contact email
+  through a real provider with no in-app SMTP setup. With no relay configured, mail is logged and
+  dropped by a shim so the failure is loud rather than silent.
+- Opt-in `:edge` container image channel — a push to `develop` whose head commit message contains
+  `[publish-edge]` refreshes `ghcr.io/mindstellar/shopclass:edge` (gated on the same tests as a
+  release) without cutting a versioned tag, so deployers can preview changes before the next release.
+
+### Changed
+
+- Core feature preferences — sitemap, spam moderation, cleanup, item stats and the admin activity log
+  — now live in the shared `osclass` preference section instead of their own, so every core setting is
+  found in one place. An automatic migration relocates existing values on upgrade; nothing is lost.
+
 ## Shopclass 6.0.1
 
 A security and maintenance release on top of 6.0.0: it hardens the public "send to a friend" form and

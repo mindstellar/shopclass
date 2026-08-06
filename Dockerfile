@@ -16,8 +16,10 @@ LABEL org.opencontainers.image.title="Shopclass" \
       org.opencontainers.image.source="https://github.com/mindstellar/shopclass"
 
 # System packages + a lightweight web/process layer. curl is used by the app and
-# the entrypoint's health/DB waits.
-RUN apk add --no-cache nginx supervisor curl unzip tzdata
+# the entrypoint's health/DB waits. msmtp is a send-only SMTP client: the image
+# bundles no MTA, so PHP mail() relays through it to a smarthost the entrypoint
+# configures from the environment (ca-certificates backs its TLS trust).
+RUN apk add --no-cache nginx supervisor curl unzip tzdata msmtp ca-certificates
 
 # PHP extensions Shopclass uses in production (superset of composer's ext-*
 # requires, plus opcache and the memcached object-cache driver). imagick is left

@@ -35,6 +35,66 @@ write_real_ip_conf() {
 }
 write_real_ip_conf
 
+# Outbound mail. The image bundles no MTA; msmtp is a send-only client that relays
+# to a smarthost. So mail works when a relay is configured, and — crucially — is
+# LOUD rather than silent when it is not: PHP mail() otherwise hands off to a
+# sendmail that does not exist in this image and drops the message without a trace.
+#
+#   SMTP_HOST      relay host (required to send) — a provider submission host like
+#                  smtp-relay.gmail.com, or a relay sidecar's service name.
+#   SMTP_PORT      default 25. 587/465 (or SMTP_TLS=1) enables STARTTLS/TLS.
+#   SMTP_USER      set to enable SMTP AUTH; omit for an unauthenticated sidecar.
+#   SMTP_PASSWORD  password for SMTP_USER.
+#   SMTP_FROM      default envelope From. Defaults to root@<hostname>.
+configure_mail() {
+    ini=/usr/local/etc/php/conf.d/zz-mail.ini   # loads after 99-shopclass.ini
+    host="${SMTP_HOST:-}"
+    if [ -z "$host" ]; then
+        cat > /usr/local/bin/sendmail-unconfigured <<'SH'
+#!/bin/sh
+# No mail relay configured: consume the message and say so loudly, rather than
+# failing silently. Set SMTP_HOST (+ SMTP_PORT/USER/PASSWORD) to actually send.
+cat >/dev/null
+echo "mail: no relay configured (set SMTP_HOST) — outgoing message dropped" >&2
+exit 0
+SH
+        chmod +x /usr/local/bin/sendmail-unconfigured
+        printf 'sendmail_path = "/usr/local/bin/sendmail-unconfigured"\n' > "$ini"
+        echo "entrypoint: no mail relay configured; mail() will log and drop. Set SMTP_HOST to send."
+        return 0
+    fi
+    port="${SMTP_PORT:-25}"
+    from="${SMTP_FROM:-root@$(hostname)}"
+    {
+        echo "# Rendered by entrypoint from the environment; do not edit."
+        echo "defaults"
+        echo "logfile -"
+        if [ "${SMTP_TLS:-}" = "1" ] || [ "$port" = "587" ] || [ "$port" = "465" ]; then
+            echo "tls on"
+            echo "tls_starttls ${SMTP_STARTTLS:-on}"
+            echo "tls_trust_file /etc/ssl/certs/ca-certificates.crt"
+        else
+            echo "tls off"
+        fi
+        echo ""
+        echo "account default"
+        echo "host $host"
+        echo "port $port"
+        echo "from $from"
+        if [ -n "${SMTP_USER:-}" ]; then
+            echo "auth on"
+            echo "user $SMTP_USER"
+            echo "password ${SMTP_PASSWORD:-}"
+        else
+            echo "auth off"
+        fi
+    } > /etc/msmtprc
+    chmod 600 /etc/msmtprc
+    printf 'sendmail_path = "/usr/bin/msmtp -t"\n' > "$ini"
+    echo "entrypoint: mail relay -> ${host}:${port} (auth: ${SMTP_USER:+on}${SMTP_USER:-off})."
+}
+configure_mail
+
 # Wait for the database server to accept connections. The DB may start after the
 # app (compose depends_on notwithstanding, the server can still be initialising).
 wait_for_db() {

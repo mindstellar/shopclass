@@ -180,6 +180,37 @@ credentials with the `SHOPCLASS_DATABASE_NAME` / `SHOPCLASS_DATABASE_USER` /
 `MYSQL_ROOT_PASSWORD` (export them, or put them in a `.env` file next to the
 compose file).
 
+### Run the production image
+
+For a deployment rather than development there is a self-contained image — Nginx,
+PHP-FPM and Supervisor in one container, with the Storefront theme baked in — that
+provisions itself on first boot. Bring it up with a database:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Or skip the build and pull the published image (tagged per release, with `:latest`
+tracking the newest stable):
+
+```bash
+docker pull ghcr.io/mindstellar/shopclass:latest
+```
+
+It comes up **already installed** at **http://localhost:8080** (admin at
+`/oc-admin/`). Everything is configured from the environment:
+
+| Variable | Purpose |
+|---|---|
+| `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
+| `WEB_PATH` | Public base URL of the site |
+| `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | First admin account — leave the password unset to have one generated and printed to the logs |
+
+For a real deployment, point `DB_HOST` at a managed database, set a strong admin
+password, set `WEB_PATH` to your public URL, and offload uploads to S3 so more than
+one instance can run. Update by deploying a newer image tag; the container migrates
+its own schema on start.
+
 ## Brand
 
 Logos, the mark, the favicon set, and the palette live in the
@@ -195,6 +226,19 @@ Logos, the mark, the favicon set, and the palette live in the
 
 Brand assets are licensed **CC BY-ND 4.0**: use them to refer to Shopclass, but
 please don't modify the marks or imply endorsement.
+
+## Documentation
+
+- [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
+- [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.
+
+**Guides**
+
+- [Caching contract](docs/CACHING.md) — how Shopclass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
+- [Page builder](docs/PAGE-BUILDER.md) — the page-template registry and the widget-based page composition model.
+- [Custom fields](docs/CUSTOM-FIELDS.md) — field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
+
+Installation, local development, and the production image are covered in the sections above.
 
 ## Contributing
 

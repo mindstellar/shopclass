@@ -48,12 +48,13 @@ services:
         condition: service_started
     command: php-fpm
 
-  # MariaDB database
+  # MariaDB database — image, data volume and healthcheck come from compose.db.yml;
+  # the dev-specific name, credentials and host port stay here.
   mariadb:
-    image: mariadb:11
+    extends:
+      file: compose.db.yml
+      service: mariadb
     container_name: shopclass-mariadb
-    volumes:
-      - db-data:/var/lib/mysql
     environment:
       - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
       - MARIADB_DATABASE=${SHOPCLASS_DATABASE_NAME:-shopclass}
@@ -62,11 +63,6 @@ services:
     ports:
       # Reach the database from the host (e.g. a GUI client) at 127.0.0.1:3307.
       - "3307:3306"
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
 
   # Memcached (optional object cache)
   memcached:

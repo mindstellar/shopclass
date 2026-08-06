@@ -309,30 +309,30 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 osc_csrf_check();
                 $limit = Params::getParamInt('batch_limit');
-                osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'cleanup', 'INTEGER');
+                osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'osclass', 'INTEGER');
                 foreach (Cleanup::RULES as $rule) {
-                    osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'cleanup', 'BOOLEAN');
+                    osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'osclass', 'BOOLEAN');
                     if ($rule !== 'reported') {
                         $days = Params::getParamInt('days_' . $rule);
-                        osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'cleanup', 'INTEGER');
+                        osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'osclass', 'INTEGER');
                     }
                 }
                 osc_set_preference(
                     'item_views_enabled',
                     Params::getParam('item_views_enabled') ? '1' : '0',
-                    'stats',
+                    'osclass',
                     'BOOLEAN'
                 );
                 osc_set_preference(
                     'count_bot_views',
                     Params::getParam('count_bot_views') ? '1' : '0',
-                    'stats',
+                    'osclass',
                     'BOOLEAN'
                 );
                 osc_set_preference(
                     'item_stats_retention_days',
                     max(0, Params::getParamInt('item_stats_retention_days')),
-                    'stats',
+                    'osclass',
                     'INTEGER'
                 );
                 osc_reset_preferences();
@@ -407,13 +407,13 @@ class CAdminTools extends AdminSecBaseModel
                 osc_set_preference(
                     'admin_log_enabled',
                     Params::getParam('admin_log_enabled') != '' ? 1 : 0,
-                    'log',
+                    'osclass',
                     'BOOLEAN'
                 );
                 osc_set_preference(
                     'admin_log_retention_days',
                     $retention > 0 ? $retention : 0,
-                    'log',
+                    'osclass',
                     'INTEGER'
                 );
                 osc_reset_preferences();
