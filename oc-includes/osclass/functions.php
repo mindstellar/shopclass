@@ -926,6 +926,20 @@ function osc_meta_generator()
 
 osc_add_hook('header', 'osc_meta_generator');
 
+/**
+ * Emit <meta name="robots" content="noindex, follow"> when a controller has marked
+ * the current response as thin/empty (e.g. a valid but empty category or location
+ * browse page). Keeps the URL crawlable and 200, without indexing an empty page.
+ */
+function osc_meta_noindex()
+{
+    if (View::newInstance()->_exists('meta_noindex') && View::newInstance()->_get('meta_noindex')) {
+        echo '<meta name="robots" content="noindex, follow" />';
+    }
+}
+
+osc_add_hook('header', 'osc_meta_noindex');
+
 if (osc_force_jpeg()) {
     /**
      * @param $content

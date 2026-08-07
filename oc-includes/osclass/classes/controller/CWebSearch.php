@@ -649,7 +649,27 @@ class CWebSearch extends BaseModel
 
         // calling the view...
         if (count($aItems) === 0) {
-            header('HTTP/1.1 404 Not Found');
+            // An empty *refined* search (free-text pattern, price range, custom-field facet,
+            // has-photo / premium filter) is a genuine no-match — 404 it so those thin,
+            // infinite result pages are not indexed. An empty *browse* page (a valid category
+            // or location with no listings yet) is a real, stable URL: keep it 200 so it is
+            // not de-indexed, but noindex it while empty so the thin page is not indexed.
+            $metaFacets     = Params::getParam('meta');
+            $isRefinedSearch = ($p_sPattern !== '')
+                || ($p_sPriceMin !== '' && $p_sPriceMin !== null)
+                || ($p_sPriceMax !== '' && $p_sPriceMax !== null)
+                || (is_array($metaFacets) && count($metaFacets) > 0)
+                || $p_bPic
+                || $p_bPremium;
+
+            if ($isRefinedSearch) {
+                header('HTTP/1.1 404 Not Found');
+            } else {
+                $this->_exportVariableToView('meta_noindex', true);
+                // Drop the self-canonical: noindex + canonical on the same URL is a
+                // contradictory signal, and the page is being told not to index.
+                $this->_exportVariableToView('canonical', '');
+            }
         }
 
         osc_run_hook('after_search');
