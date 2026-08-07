@@ -97,6 +97,16 @@ $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
 };
 
+/* The model runner shares this process-lifetime singleton across files and
+ * truncates tables between them, but not the in-memory cache. Rebuild the
+ * singleton against the (empty) table so its cache starts clean — the staleness
+ * assertions below assume the cache was constructed against an empty table, which
+ * a prior file seeding the shared osclass section would otherwise break. */
+$admin->query("TRUNCATE TABLE $table");
+$prefInstance = new ReflectionProperty('Preference', 'instance');
+$prefInstance->setAccessible(true);
+$prefInstance->setValue(null, null);
+
 $model = Preference::newInstance();
 
 /* ----------------------------------------------------------------------------
