@@ -2,6 +2,33 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.0.3
+
+An SEO pass on the public pages: self-referential canonicals, correct handling of empty and
+query-string search URLs, and a valid breadcrumb graph.
+
+### Changed
+
+- Public pages emit a self-referential `<link rel="canonical">` — item detail, the homepage and
+  search/category pages. The search canonical is the unsorted, page-1 URL, so paginated and
+  sort/facet permutations of a result set consolidate onto one indexable URL.
+- A valid but empty category or location page now returns `200` with
+  `<meta name="robots" content="noindex, follow">` instead of a soft `404`, so a real landing page is
+  not de-indexed while it holds no listings. Empty free-text or faceted searches still return `404`.
+- The core breadcrumb is now a valid schema.org `BreadcrumbList` — the list is wrapped in the
+  `BreadcrumbList` scope and each crumb carries a `position`, so the breadcrumb rich result can be
+  parsed (themes rendering their own breadcrumb are unaffected).
+
+### Fixed
+
+- A query-string search on the rewritten `/search` route (e.g. `/search?sPattern=x`) now
+  301-redirects to the friendly URL instead of returning `404`.
+
+### Security
+
+- The `generator` meta tag no longer publishes the exact version, so a visitor cannot read it to
+  target a known-vulnerable release.
+
 ## Shopclass 6.0.2
 
 A maintenance release: the production container can send mail through an external SMTP relay, and the
