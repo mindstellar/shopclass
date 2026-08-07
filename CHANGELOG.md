@@ -23,6 +23,9 @@ query-string search URLs, and a valid breadcrumb graph.
 
 - A query-string search on the rewritten `/search` route (e.g. `/search?sPattern=x`) now
   301-redirects to the friendly URL instead of returning `404`.
+- Deleting a category assigned to a meta field group no longer fails silently — the group ↔
+  category mapping is now cleared as part of the delete cascade, so the foreign key no longer
+  blocks removal and the category no longer reappears in the tree.
 
 ### Security
 
