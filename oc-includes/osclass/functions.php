@@ -921,7 +921,7 @@ osc_add_hook('header', 'osc_show_maintenance');
 
 function osc_meta_generator()
 {
-    echo '<meta name="generator" content="Shopclass ' . OSCLASS_VERSION . '" />';
+    echo '<meta name="generator" content="Shopclass" />';
 }
 
 osc_add_hook('header', 'osc_meta_generator');
