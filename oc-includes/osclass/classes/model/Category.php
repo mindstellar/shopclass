@@ -534,6 +534,7 @@ class Category extends DAO
                 $prefix . 't_category_description',
                 $prefix . 't_category_stats',
                 $prefix . 't_meta_categories',
+                $prefix . 't_meta_group_categories',
                 $prefix . 't_category_slug_history',
             ) as $table
         ) {
