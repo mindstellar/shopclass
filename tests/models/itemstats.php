@@ -105,7 +105,9 @@ $truncate = static function () use ($admin, $table, $daily): void {
 
 /** Set a preference and drop the model layer's cached copy. */
 $setPref = static function (string $key, string $value): void {
-    osc_set_preference($key, $value, 'stats', 'BOOLEAN');
+    // Stats prefs live in the shared osclass section (consolidated from the old
+    // 'stats' section); seed where osc_item_views_enabled() now reads.
+    osc_set_preference($key, $value, 'osclass', 'BOOLEAN');
     osc_reset_preferences();
 };
 
