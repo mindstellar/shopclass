@@ -2,6 +2,68 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.1.0
+
+Groundwork for a GitHub-native plugin and theme market. Packages can now declare which
+Shopclass and PHP versions they support, and the core refuses an update that would not run
+on the site installing it. The download and extraction path that every plugin, theme and
+core update passes through has been hardened, and packages that ship no artwork now render
+a built-in placeholder instead of a broken image.
+
+### New
+
+- Plugins and themes can declare `Requires Shopclass`, `Tested up to`, and `Requires PHP` in
+  their header block. All three are optional — a package that declares nothing is treated as
+  before, never as incompatible — and they are parsed for both plugins and themes.
+- `mindstellar\market\Compatibility` evaluates those fields into one of four verdicts and
+  picks the highest release a site can actually run. A site on 6.1 offered a package whose
+  newest version requires 7.0 resolves to that package's last 6.x-compatible release rather
+  than being offered an update that would fatal on boot.
+- `osc_theme_screenshot_url()` and `osc_plugin_icon_url()` resolve a package's artwork, or a
+  bundled placeholder when it has none, with `osc_theme_has_screenshot()` /
+  `osc_plugin_has_icon()` to tell the two apart. Both are filterable.
+- `tools/package-lint.php` validates a package directory against the published package
+  specification, and `deprecated-api.json` lists every deprecated core symbol with its
+  replacement. Both ship as release assets so external tooling reads one authoritative copy
+  instead of maintaining its own.
+- The package contract and the market design are documented in `docs/PACKAGE-SPEC.md` and
+  `docs/MARKET.md`.
+
+### Changed
+
+- A package's compatibility is no longer decided by an exact string match against a
+  comma-separated version list, which judged a package declaring `6.0.2` incompatible with
+  6.0.3. The legacy list is still honoured when a package declares nothing newer.
+- A download that returns a non-2xx status, an empty body, or a body failing its expected
+  checksum is now a failure rather than a file written to disk and reported as success.
+
+### Security
+
+- Zip extraction now resolves every entry against the destination and rejects the whole
+  archive if any entry escapes it, rather than skipping that entry and continuing. Absolute
+  paths, Windows drive prefixes, backslash traversal, and symlink entries are all rejected,
+  and entry-count, per-entry size, total size and compression-ratio caps stop a zip bomb
+  before it is decompressed.
+- Package downloads can carry an expected SHA-256, verified before extraction, and a
+  checksum-carrying package is restricted to an allowlist of release hosts so a tampered
+  source cannot redirect an install elsewhere. Packages resolved from a site's own update
+  URI are unaffected.
+- Redirect and total-transfer limits were added to the download path, which previously
+  followed redirects without a cap and had no overall timeout.
+
+### Fixed
+
+- The Appearance screen no longer renders a broken image for a theme that ships no
+  `screenshot.png`; it also gained lazy loading, real alternative text, and intrinsic
+  dimensions so the grid no longer reflows.
+- `Zip::isPathValid()` never rejected anything — its condition evaluated false for every
+  ordinary path, so the destination check had been dead since it was written.
+- The plugin and theme update-package builders assembled their result and then returned
+  nothing, and their GitHub branch tested `stripos(...) === true`, which that function never
+  returns. Neither could ever have produced a package.
+- `osc_downloadFile()` discarded the result of the download it performed and always reported
+  success.
+
 ## Shopclass 6.0.3
 
 An SEO pass on the public pages: self-referential canonicals, correct handling of empty and
