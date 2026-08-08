@@ -89,3 +89,6 @@ docs/private/
 
 # Generated at release time and attached as a release asset, never committed
 deprecated-api.json
+
+# Runtime rollback archives written by the market installer
+oc-content/downloads/backups/
