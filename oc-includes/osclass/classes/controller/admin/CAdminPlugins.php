@@ -570,7 +570,7 @@ class CAdminPlugins extends AdminSecBaseModel
             'last_checked'      => $catalog->lastChecked(),
             'error'             => $catalog->lastError(),
             'writable'          => is_writable(osc_plugins_path()),
-            'disabled'          => osc_self_update_disabled() || defined('DEMO'),
+            'disabled'          => osc_package_installs_disabled() || defined('DEMO'),
             'categories'        => $categories,
             'catalog_available' => $index !== array() || $updates !== array(),
         );

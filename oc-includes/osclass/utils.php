@@ -913,6 +913,25 @@ function osc_self_update_disabled()
 }
 
 /**
+ * Whether installing/updating market packages (plugins/themes) is disabled for
+ * this installation. Distinct from osc_self_update_disabled(): that flag stops
+ * core from overwriting itself on an immutable deployment. Packages are not
+ * core — on a deployment where oc-content is a persistent volume, a package
+ * write survives a redeploy just fine, so this defaults to enabled and is only
+ * set where the site owner has no persistent oc-content to write into.
+ *
+ * @return bool
+ */
+function osc_package_installs_disabled()
+{
+    if (defined('OSC_DISABLE_PACKAGE_INSTALLS')) {
+        return (bool) OSC_DISABLE_PACKAGE_INSTALLS;
+    }
+
+    return filter_var(getenv('OSC_DISABLE_PACKAGE_INSTALLS'), FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
  * @param $array
  *
  * @return string

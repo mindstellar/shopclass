@@ -1203,7 +1203,7 @@ class CAdminAjax extends AdminSecBaseModel
                 'checked_at' => 0, 'error' => null, 'counts' => $emptyCounts,
             );
         }
-        if (osc_self_update_disabled()) {
+        if (osc_package_installs_disabled()) {
             return array(
                 'ok' => false, 'message' => __('Catalog refresh is disabled on this deployment.'),
                 'checked_at' => 0, 'error' => null, 'counts' => $emptyCounts,
@@ -1278,7 +1278,7 @@ class CAdminAjax extends AdminSecBaseModel
                 'slug' => $slug, 'version' => null, 'rolled_back' => false,
             );
         }
-        if (osc_self_update_disabled()) {
+        if (osc_package_installs_disabled()) {
             return array(
                 'ok' => false, 'message' => __('Package installs are disabled on this deployment.'),
                 'slug' => $slug, 'version' => null, 'rolled_back' => false,

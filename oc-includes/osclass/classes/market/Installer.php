@@ -122,7 +122,7 @@ final class Installer
             return $this->result(false, __('Package installs are disabled in demo mode.'), $slug, null, false);
         }
 
-        if (osc_self_update_disabled()) {
+        if (osc_package_installs_disabled()) {
             return $this->result(
                 false,
                 __('Package installs are disabled on this deployment.'),

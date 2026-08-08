@@ -18,6 +18,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\market\PackageReconciler;
 use Params;
 use Plugins;
 use Sitemap;
@@ -41,6 +42,7 @@ class Cli
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Reconcile schema and run pending migrations (--skip-db)'],
+        'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
@@ -364,6 +366,37 @@ class Cli
     }
 
     /**
+     * Container-only step: OSC_BUNDLED_CONTENT_PATH points at a pristine copy of
+     * oc-content baked into the image, outside the persistent volume; when it
+     * exists, install bundled plugins/themes missing from the live oc-content
+     * and refresh ones this image ships a newer version of (PackageReconciler).
+     * A no-op on every install that isn't running from that image layout.
+     *
+     * @param array<string, mixed> $args
+     */
+    private function cmdPackageReconcile(array $args): int
+    {
+        $pristineRoot = (string) (getenv('OSC_BUNDLED_CONTENT_PATH') ?: '');
+        if ($pristineRoot === '' || !is_dir($pristineRoot)) {
+            $this->out("No bundled content path configured for this install; nothing to reconcile.\n");
+
+            return 0;
+        }
+
+        $actions = PackageReconciler::reconcile($pristineRoot, PLUGINS_PATH, THEMES_PATH);
+        if ($actions === []) {
+            $this->out("Bundled plugins/themes already up to date.\n");
+
+            return 0;
+        }
+        foreach ($actions as $line) {
+            $this->out($line . "\n");
+        }
+
+        return 0;
+    }
+
+    /**
      * @param array<string, mixed> $args
      */
     private function cmdCacheFlush(array $args): int
@@ -681,8 +714,8 @@ class Cli
     }
 
     /**
-     * Refuses state-changing market operations under DEMO or when the site's
-     * self-updater is disabled (e.g. an immutable Docker deployment).
+     * Refuses state-changing market operations under DEMO or when package
+     * installs are disabled for this deployment.
      */
     private function marketWriteGuard(): int
     {
@@ -691,8 +724,8 @@ class Cli
 
             return 1;
         }
-        if (osc_self_update_disabled()) {
-            $this->err("Self-update is disabled for this install (OSC_DISABLE_SELF_UPDATE).\n");
+        if (osc_package_installs_disabled()) {
+            $this->err("Package installs are disabled for this install (OSC_DISABLE_PACKAGE_INSTALLS).\n");
 
             return 1;
         }

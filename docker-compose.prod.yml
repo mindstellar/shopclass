@@ -32,6 +32,13 @@ services:
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
+      # Persist installed/updated plugins and themes across redeploys. A fresh
+      # volume is seeded from the image on first start; after that the
+      # entrypoint's package:reconcile keeps the bundled ones current on every
+      # start without touching anything installed through the market — see the
+      # Dockerfile and PackageReconciler.
+      - plugins:/application/oc-content/plugins
+      - themes:/application/oc-content/themes
     depends_on:
       db:
         condition: service_healthy
@@ -54,3 +61,5 @@ volumes:
   db-data:
   uploads:
   downloads:
+  plugins:
+  themes:

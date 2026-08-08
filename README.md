@@ -205,11 +205,23 @@ It comes up **already installed** at **http://localhost:8080** (admin at
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | Public base URL of the site |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | First admin account — leave the password unset to have one generated and printed to the logs |
+| `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing/updating plugins and themes from the admin market and `oc-cli.php market:*` — unset (the default) leaves them on |
 
 For a real deployment, point `DB_HOST` at a managed database, set a strong admin
 password, set `WEB_PATH` to your public URL, and offload uploads to S3 so more than
-one instance can run. Update by deploying a newer image tag; the container migrates
-its own schema on start.
+one instance can run.
+
+**Core vs. packages update differently.** Core ships baked into the image, so core
+updates come from deploying a newer image tag; the container migrates its own
+schema on start, and the in-app core updater is off (`OSC_DISABLE_SELF_UPDATE=1`) so
+it can't write over itself only to lose the write on the next redeploy. Plugins and
+themes are different: `docker-compose.prod.yml` mounts `oc-content/plugins` and
+`oc-content/themes` as named volumes alongside `uploads`/`downloads`, so a package
+installed or updated from the admin market (or `oc-cli.php market:install` /
+`market:update`) survives a redeploy. On every start, the entrypoint reconciles that
+volume against the bundled packages baked into the new image — installing any that
+are missing and refreshing any the image ships a newer version of — without ever
+touching a package installed through the market.
 
 ## Brand
 

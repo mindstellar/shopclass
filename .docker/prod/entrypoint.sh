@@ -122,10 +122,22 @@ wait_for_db
 
 # Install if needed; a no-op once the install sentinel is present (and, crucially,
 # does not require the admin/site env on a restart — it returns before validating
-# them once installed).
+# them once installed). Runs before package:reconcile/db:upgrade below: both need
+# the fully booted app (oc-load.php), which refuses to load until installed.
 echo "entrypoint: ensuring Shopclass is installed..."
 if ! php "$CLI" install --unattended; then
     echo "entrypoint: install failed — check DB_*/WEB_PATH/OSC_ADMIN_* environment" >&2
+    exit 1
+fi
+
+# Reconcile bundled plugins/themes onto the persistent oc-content volume: install
+# ones this image bundles that the volume is missing, refresh ones the image
+# ships a newer version of, and never touch anything installed through the
+# market (see PackageReconciler). A no-op unless OSC_BUNDLED_CONTENT_PATH points
+# at the pristine copy this image bakes outside the volume.
+echo "entrypoint: reconciling bundled plugins/themes..."
+if ! php "$CLI" package:reconcile; then
+    echo "entrypoint: package:reconcile failed" >&2
     exit 1
 fi
 
