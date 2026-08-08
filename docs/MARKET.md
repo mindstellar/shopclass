@@ -1,13 +1,9 @@
 # Market — a GitHub-native plugin & theme ecosystem
 
-Status: **Live**, shipped in Shopclass 6.1.0. All six phases in §10 landed: both registries
-are public, their catalogs are served from GitHub Pages, and core browses, installs, and
-updates packages from them. Download counts (§12) shipped in 6.1.0.beta3. Catalog signing
-did not ship — see §9. The catalog stopped publishing a precomputed per-version `compat`
-verdict and started publishing a package-level `requires_min`/`tested_max` range instead
-(§4, §5) — a static file served to sites on many core versions can't bake a verdict that's
-right for more than one of them; `Compatibility::evaluate()`, run locally, always was and
-remains the thing that decides whether an install is actually blocked.
+Status: **Live**, shipped in Shopclass 6.1.0. Both registries are public, their catalogs
+are served from GitHub Pages, and core browses, installs, and updates packages from them.
+Catalog signing (§9) is scoped but not built.
+
 Scope: two GitHub repositories (`mindstellar/shopclass-plugins`,
 `mindstellar/shopclass-themes`), the static catalog they publish, and the core
 code that browses, installs, and updates from it.
@@ -24,7 +20,11 @@ file on a CDN.
 
 ---
 
-## 1. Where this started (grounded history)
+## 1. Background: what this replaced
+
+Skip this section if you only want the design — §2 onward is self-contained. It is here
+because several classes exist specifically to repair a named defect below, and the dead
+code they replaced is still in the tree; without this, that code looks inexplicable.
 
 Everything in this section describes the state the market subsystem was in before this
 system was built. It explains why the code looks as it does today — several of the classes
@@ -331,7 +331,7 @@ asset it resolves for each version (§7) — the same response it already uses t
 asset and compute its sha256, so no extra API call is spent on it. Per-version `downloads`
 in `updates.json` and `packages/<slug>.json` is that one asset's count; the package-level
 `downloads` in `index.json` and `packages/<slug>.json` sums it across every version the
-build resolved. This resolves §12's former open question: it is free, requires no
+build resolved. This resolves §11's former open question: it is free, requires no
 telemetry or call-home, and needs no scraping beyond an API core CI already calls. It is
 **not an install count** — it also counts CI jobs, mirrors, bots, and the same person
 re-downloading a release, so treat it as a popularity signal for ranking/sorting, never as
@@ -689,93 +689,35 @@ is checked before the button renders, reusing the messaging already in
 | Malicious package merged | PR gate §6, human review required, no auto-merge; org members only for `external/*.json` registrations pointing outside `mindstellar` |
 | Contributor code exfiltrating CI secrets | `pull_request` (not `pull_request_target`); no secrets in the validate workflow; runtime jobs in a container with a throwaway DB |
 | Tampered download | sha256 in the catalog, verified before extraction (`Installer.php:147`); host allowlist on download URLs (`FileSystem::isAllowedPackageHost()`); HTTPS with peer verification enforced |
-| Poisoned catalog | Catalog is only writable by CI on a protected branch, and every field is type-checked and re-validated against the host allowlist on read (`Catalog::sanitize*()`). **Not built**: a minisign/cosign signature over `updates.json` verified against a public key shipped in core, so a compromised Pages deploy is still rejected even if the branch protection itself were bypassed — this was scoped as a Phase 6 item (§10) and did not ship |
+| Poisoned catalog | Catalog is only writable by CI on a protected branch, and every field is type-checked and re-validated against the host allowlist on read (`Catalog::sanitize*()`). **Not built**: a minisign/cosign signature over `updates.json` verified against a public key shipped in core, so a compromised Pages deploy is still rejected even if the branch protection itself were bypassed — scoped but never built |
 | Zip slip / zip bomb | `Zip` rewrite (§8) — realpath containment, symlink rejection, entry-count and size caps |
 | Half-written install | Staged extraction, atomic move, rollback backup |
 | Supply-chain drift between CI and runtime | One shared validator downloaded from core releases (§6.4) |
 
 ---
 
-## 10. Phases
+## 10. Documentation
 
-All six shipped, in this order, in Shopclass 6.1.0.
+The registry's whole value proposition is that a stranger can ship a package
+without asking anyone how, so the documentation is part of the product rather
+than a description of it.
 
-**Phase 0 — core prerequisites.** `Requires Shopclass` / `Tested up to` /
-`Requires PHP` headers + parsing (`Plugins::getInfo()`,
-`WebThemes::loadThemeInfo()`); the `Compatibility` class; `isCompatible()`
-rewrite; the placeholder-thumbnail helpers and the `appearance/index.php` fix;
-`Zip` hardening; sha256 verification in `FileSystem::downloadFile()`; the
-`Plugin`/`Theme` `getPackageInfo()` repairs. Landed before any registry existed,
-so a 6.1 site could see whether its already-installed packages claimed support
-for 6.x before the catalog had a single entry in it.
+`docs/PACKAGE-SPEC.md` is the package contract; this file is the system design.
+Each registry carries a `README.md`, a `CONTRIBUTING.md`, JSON Schemas for its
+manifests, and pull-request and issue templates. `tools/ci/README.md` documents
+the shared CI harness. Core's `CHANGELOG.md` records what changed and when.
 
-**Phase 1 — tooling core publishes.** `tools/package-lint.php`;
-`scripts/gen-deprecated-api.mjs` + `deprecated-api.json`; both attached to core
-releases by `build.yml`, individually and inside `shopclass-package-ci.tar.gz`.
+Two rules keep this from rotting:
 
-**Phase 2 — repository scaffolding.** Both repos created; schemas,
-`CONTRIBUTING.md`, category vocabulary, `.distignore` convention. Seeded
-`shopclass-plugins` with `sample-forms` and `sample-widgets` (mirrored, not
-moved — both still ship in the core zip too, per the resolution of the "do
-bundled plugins leave core" question, §12) and `shopclass-themes` with
-`external/bender.json` pointing at `mindstellar/theme-bender`; a second
-external registration, `external/storefront.json` for
-`mindstellar/theme-storefront`, was added afterward the same way.
-
-**Phase 3 — PR validation** (§6) — `pr-validate.yml`, `tools/validate-external.sh`
-(§6.6), and the sticky-comment annotator (`tools/ci/annotate.php`) live in both
-repos.
-
-**Phase 4 — release + catalog build + Pages** (§7) — `release.yml` (plugins repo),
-`catalog.yml` (both), both catalogs served from GitHub Pages with the
-`raw.githubusercontent.com` mirror confirmed live and byte-identical.
-
-**Phase 5 — core catalog client** (§8) — `Catalog`, `PackageIndex`, `Installer`;
-`_osc_check_plugins_update()`/`_osc_check_themes_update()` repointed; the five
-`market:*` CLI verbs. Update badges work again for the first time since 3.x.
-
-**Phase 6 — Browse/Install UI** (§8.2) shipped: Browse/Updates tabs, the detail
-dialog, install/update/rollback wired through `CAdminAjax`. Catalog signing and
-a rendered author-docs site, both scoped under this phase, did **not** ship —
-see §9 and §12.
-
-Each phase carried a documentation deliverable — see §11 for what each one
-actually produced.
-
----
-
-## 11. Documentation deliverables
-
-An ecosystem is only as usable as its documentation: the registry's whole value
-proposition is that a stranger can ship a package without asking anyone how.
-Every row below shipped except the last one.
-
-| Document | Lives in | Status | Purpose |
-|---|---|---|---|
-| `docs/MARKET.md` | core | done | This document — system design, kept current as the system changes |
-| `docs/PACKAGE-SPEC.md` | core | done | The package contract. Core's parser, the registry CI, and the catalog builder are all implemented **against this file** |
-| `CHANGELOG.md` entries | core | done, ongoing | Load-bearing format — the release workflow, the admin upgrade screen, and the version tool all parse it |
-| Inline API docs | core | done | Docblocks on `Compatibility`, `Catalog`, `Installer`, `PackageIndex`, and the new `osc_*` helpers |
-| `CONTRIBUTING.md` | each registry repo | done | Submission walkthrough: fork, add package, what CI runs, how to read the sticky comment, how a release is cut |
-| `README.md` | each registry repo | done | What the repo is, how to browse it, how to register an externally-hosted package |
-| `schema/*.schema.json` | each registry repo | done | Machine-readable manifest schema — the enforceable half of PACKAGE-SPEC §7 |
-| `PULL_REQUEST_TEMPLATE.md` + `ISSUE_TEMPLATE/` | each registry repo (`.github/`) | done | Author checklist mirroring the blocking gates |
-| `deprecated-api.json` | core release asset | done, generated | Not written — the deprecation inventory CI annotates against |
-| Migration note for authors | folded into `docs/PACKAGE-SPEC.md` §7 | done, not standalone | How an existing self-hosted package's `Plugin update URI` relates to a catalog listing, documented in place rather than as a separate file |
-| Author guide (rendered docs site) | — | **not built** | PACKAGE-SPEC and CONTRIBUTING rendered for people who will never read a repo. `https://mindstellar.github.io/shopclass-plugins/` serves the JSON catalog only, at 404 for anything else — this remains future work |
-
-Two rules that keep this from rotting:
-
-1. **PACKAGE-SPEC is the single source.** The registry's `CONTRIBUTING.md` links
-   to it and does not restate the rules; a validator that disagrees with it is a
-   bug in the validator. This is the same discipline as the shared
+1. **PACKAGE-SPEC is the single source.** Each registry's `CONTRIBUTING.md`
+   links to it rather than restating its rules, and a validator that disagrees
+   with it is a bug in the validator. Same discipline as the shared
    `package-lint.php` in §6.4 — one implementation, one specification.
-2. **Documentation is not optional.** Code that ships undocumented in this
-   system is code no third party can use, which is the whole point of the
-   system. The one gap above (the rendered docs site) is tracked, not silently
-   dropped.
+2. **A described feature that does not exist says so.** Catalog signing (§9) and
+   a rendered author-facing docs site are both scoped and unbuilt; neither is
+   implied to work anywhere in these documents.
 
-## 12. Open questions
+## 11. Open questions
 
 1. **Do bundled plugins leave core? — resolved: mirrored, not moved.**
    `sample-forms` and `sample-widgets` are registered in `shopclass-plugins`

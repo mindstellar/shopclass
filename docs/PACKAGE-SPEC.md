@@ -3,7 +3,7 @@
 Status: **Shipped, in force.** The header fields in §3 parse in core as of Shopclass 6.1.0;
 `mindstellar/shopclass-plugins` and `mindstellar/shopclass-themes` are live, and §6-§8 describe
 their actual PR validation, not a plan for it. See `docs/MARKET.md` for the ecosystem design
-and what each phase delivered.
+and how the pieces fit together.
 
 Audience: anyone writing a Shopclass plugin or theme, and anyone implementing tooling
 that reads one. This is the contract. Core parses packages according to it, the registry
