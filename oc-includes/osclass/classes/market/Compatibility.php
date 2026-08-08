@@ -56,7 +56,7 @@ final class Compatibility
         $requiresPhp = self::normalize((string) ($info['requires_php'] ?? ''));
         $testedUpTo  = self::normalize((string) ($info['tested_up_to'] ?? ''));
 
-        if ($requires !== null && version_compare($requires, $coreVersion, '>')) {
+        if ($requires !== null && version_compare($requires, self::releaseVersion($coreVersion), '>')) {
             return [
                 'status'  => self::INCOMPATIBLE,
                 'blocked' => true,
@@ -125,7 +125,7 @@ final class Compatibility
             $requires    = self::normalize((string) ($entry['requires'] ?? ''));
             $requiresPhp = self::normalize((string) ($entry['requires_php'] ?? ''));
 
-            if ($requires !== null && version_compare($requires, $coreVersion, '>')) {
+            if ($requires !== null && version_compare($requires, self::releaseVersion($coreVersion), '>')) {
                 continue;
             }
             if ($requiresPhp !== null && version_compare($requiresPhp, $phpVersion, '>')) {
@@ -149,7 +149,7 @@ final class Compatibility
         switch ($verdict['status']) {
             case self::INCOMPATIBLE:
                 $requires = self::normalize((string) ($info['requires'] ?? ''));
-                if ($requires !== null && version_compare($requires, $coreVersion, '>')) {
+                if ($requires !== null && version_compare($requires, self::releaseVersion($coreVersion), '>')) {
                     return sprintf(__('Requires %s+'), $requires);
                 }
 
@@ -163,6 +163,16 @@ final class Compatibility
             default:
                 return sprintf(__('Compatible with %s.x'), self::minor($coreVersion));
         }
+    }
+
+    /**
+     * The release a prerelease core belongs to: "6.1.0.beta2" -> "6.1.0". A site running the
+     * 6.1 beta already has 6.1's code, so a package declaring `Requires Shopclass: 6.1.0` must
+     * install there rather than being refused for the whole prerelease series.
+     */
+    private static function releaseVersion(string $version): string
+    {
+        return (string) preg_replace('/[.-](dev|beta|rc|alpha)\\d*$/i', '', trim($version));
     }
 
     /**
