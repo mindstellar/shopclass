@@ -304,6 +304,7 @@ function osc_market_render_browse($rows, $meta, $type)
         <label class="market-sort-label">
             <span class="visually-hidden"><?php _e('Sort'); ?></span>
             <select class="form-select form-select-sm market-sort">
+                <option value="updated-desc" selected><?php _e('Recently updated'); ?></option>
                 <option value="name-asc"><?php _e('Name (A–Z)'); ?></option>
                 <option value="name-desc"><?php _e('Name (Z–A)'); ?></option>
                 <option value="author-asc"><?php _e('Author (A–Z)'); ?></option>
@@ -390,10 +391,17 @@ function osc_market_render_updates($rows, $meta, $type)
                 $art = osc_market_installed_art($type, $row['slug']); ?>
                 <li class="market-update-item" data-market-item="<?php echo osc_esc_html(json_encode($row)); ?>"
                     data-market-slug="<?php echo osc_esc_html($row['slug']); ?>">
-                    <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
+                    <button type="button" class="market-card-thumb-btn market-update-thumb-btn" data-market-open-detail
+                            aria-label="<?php echo osc_esc_html(sprintf(__('View details for %s'), $row['name'])); ?>">
+                        <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
+                    </button>
                     <div class="market-update-body">
                         <?php osc_market_render_compat_badge($row['compat']); ?>
-                        <h3 class="market-update-title"><?php echo osc_esc_html($row['name']); ?></h3>
+                        <h3 class="market-update-title">
+                            <button type="button" class="market-card-title-btn" data-market-open-detail>
+                                <?php echo osc_esc_html($row['name']); ?>
+                            </button>
+                        </h3>
                         <p class="market-update-versions">
                             <?php echo osc_esc_html(sprintf(
                                 __('%1$s → %2$s'),
@@ -417,15 +425,15 @@ function osc_market_render_updates($rows, $meta, $type)
 }
 
 /**
- * The detail dialog skeleton -- a native <dialog>, populated client-side by market.js
- * from the clicked card's data-market-item JSON. One per page; the Browse and
- * Updates grids share it.
- *
- * The frozen browse/update row contract (docs/MARKET.md §8.2) carries only what the
- * card itself needs -- no screenshots, rendered README, per-version table or
- * repo/issue links -- so the dialog shows the richer identity fields it does have
- * (description, author, version, categories, tags, full compatibility reason) rather
- * than inventing placeholder content for sections the data can't support yet.
+ * The detail dialog skeleton -- a native <dialog>, populated client-side by market.js.
+ * One per page; the Browse and Updates grids share it. Opening it does two things:
+ * market.js first clones the identity fields it already has from the clicked card's
+ * data-market-item JSON (name, author, short description, compat, tags) so the dialog
+ * never opens blank, then fetches action=market_detail for the rest -- screenshots, the
+ * sanitised README, the per-version compatibility table and the repo/issue links -- which
+ * the frozen browse/update row contract (docs/MARKET.md §8.2) deliberately does not carry.
+ * A loading state covers the gap; a failure leaves the identity fields visible with an
+ * inline error rather than a blank dialog.
  *
  * @param string $type 'plugin' or 'theme'
  */
@@ -452,6 +460,46 @@ function osc_market_render_detail_dialog($type)
                 <ul class="market-detail-tags"></ul>
             </div>
         </div>
+        <div class="market-detail-screens" hidden>
+            <div class="market-detail-screens-strip" role="group"
+                 aria-label="<?php echo osc_esc_html(__('Screenshots')); ?>" tabindex="0">
+                <button type="button" class="market-detail-screens-prev"
+                        aria-label="<?php echo osc_esc_html(__('Previous screenshot')); ?>">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+                <div class="market-detail-screens-view"></div>
+                <button type="button" class="market-detail-screens-next"
+                        aria-label="<?php echo osc_esc_html(__('Next screenshot')); ?>">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="market-detail-screens-caption"></p>
+        </div>
+        <div class="market-detail-body-loading">
+            <i class="bi bi-arrow-repeat is-spinning" aria-hidden="true"></i>
+            <?php _e('Loading details…'); ?>
+        </div>
+        <p class="market-detail-body-error" hidden></p>
+        <div class="market-detail-readme"></div>
+        <div class="market-detail-versions" hidden>
+            <h3 class="market-detail-section-title"><?php _e('Versions'); ?></h3>
+            <div class="market-detail-versions-scroll">
+                <table class="table market-detail-versions-table">
+                    <thead>
+                    <tr>
+                        <th scope="col"><?php _e('Version'); ?></th>
+                        <th scope="col"><?php _e('Requires'); ?></th>
+                        <th scope="col"><?php _e('Requires PHP'); ?></th>
+                        <th scope="col"><?php _e('Tested up to'); ?></th>
+                        <th scope="col"><?php _e('Size'); ?></th>
+                        <th scope="col"><?php _e('Compatibility'); ?></th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <ul class="market-detail-links" hidden></ul>
         <div class="osc-dialog-actions">
             <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
             <span class="market-detail-actions"></span>
@@ -480,5 +528,10 @@ function osc_market_i18n($type)
         'checking'         => __('Checking…'),
         'noResults'        => __('No packages match your search.'),
         'byAuthor'         => __('by %s'),
+        'linkHomepage'     => __('Homepage'),
+        'linkRepo'         => __('Repository'),
+        'linkIssues'       => __('Issue tracker'),
+        'linkDocs'         => __('Documentation'),
+        'detailError'      => __("Couldn't load details for this package."),
     );
 }

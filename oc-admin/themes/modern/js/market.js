@@ -49,6 +49,10 @@
         var installUrl = app.getAttribute('data-install-url') || '';
         var updateUrl = app.getAttribute('data-update-url') || '';
         var refreshUrl = app.getAttribute('data-refresh-url') || '';
+        // action=market_detail shares the refresh URL's type + CSRF token (the same token
+        // already does triple duty for install/update/refresh — osc_csrf_check() validates
+        // the session, not the action name).
+        var detailUrl = refreshUrl ? refreshUrl.replace('action=market_refresh', 'action=market_detail') : '';
 
         // ---- Search / filter / sort (client-side, over the rendered grid only) ----
         var grid = app.querySelector('.market-grid');
@@ -87,6 +91,17 @@
             }
         }
 
+        // ISO-8601 -> epoch ms, or null when absent/unparseable — a package's `updated_at`
+        // is catalog-supplied and untrusted, so "sorts last" has to be the fallback for
+        // anything Date.parse can't make sense of, not a 1970 date or a thrown error.
+        function parseUpdatedAt(value) {
+            if (!value || typeof value !== 'string') {
+                return null;
+            }
+            var t = Date.parse(value);
+            return isNaN(t) ? null : t;
+        }
+
         function applySort() {
             if (!grid || !sortSelect) {
                 return;
@@ -96,6 +111,28 @@
             items.sort(function (a, b) {
                 var da = parseItem(a.querySelector('.market-card'));
                 var db = parseItem(b.querySelector('.market-card'));
+
+                if (mode === 'updated-desc') {
+                    var ta = parseUpdatedAt(da.updated_at);
+                    var tb = parseUpdatedAt(db.updated_at);
+                    if (ta !== null || tb !== null) {
+                        // A dated row always outranks an undated one; two dated rows compare
+                        // newest-first. Two undated rows fall through to the name tie-break
+                        // below — which is also what happens for every pair when nothing in
+                        // the grid carries `updated_at` at all, degrading the whole sort to
+                        // alphabetical.
+                        if (ta === null) {
+                            return 1;
+                        }
+                        if (tb === null) {
+                            return -1;
+                        }
+                        if (ta !== tb) {
+                            return tb - ta;
+                        }
+                    }
+                }
+
                 var av;
                 var bv;
                 if (mode === 'author-asc') {
@@ -130,6 +167,10 @@
                 applyFilters();
             });
         }
+        // Apply the default sort (Recently updated) to the server-rendered grid on load,
+        // not just to the dropdown's own selected option.
+        applySort();
+        applyFilters();
 
         // ---- Install / update -------------------------------------------------
         function setButtonBusy(btn, busy, label) {
@@ -340,7 +381,231 @@
         var dVersion = dialog.querySelector('.market-detail-version');
         var dTags = dialog.querySelector('.market-detail-tags');
         var dActions = dialog.querySelector('.market-detail-actions');
+        var dLoading = dialog.querySelector('.market-detail-body-loading');
+        var dError = dialog.querySelector('.market-detail-body-error');
+        var dReadme = dialog.querySelector('.market-detail-readme');
+        var dScreens = dialog.querySelector('.market-detail-screens');
+        var dScreensStrip = dialog.querySelector('.market-detail-screens-strip');
+        var dScreensView = dialog.querySelector('.market-detail-screens-view');
+        var dScreensCaption = dialog.querySelector('.market-detail-screens-caption');
+        var dScreensPrev = dialog.querySelector('.market-detail-screens-prev');
+        var dScreensNext = dialog.querySelector('.market-detail-screens-next');
+        var dVersionsWrap = dialog.querySelector('.market-detail-versions');
+        var dVersionsBody = dialog.querySelector('.market-detail-versions-table tbody');
+        var dLinks = dialog.querySelector('.market-detail-links');
         var lastTrigger = null;
+        // Per-slug response cache (docs/MARKET.md \u00a78.2: "reopening is instant") \u2014 cleared on
+        // page load, which is fine: the catalog itself is a 24h-cached resource, so a stale
+        // in-memory copy for the lifetime of one page view is not a freshness concern.
+        var detailCache = Object.create(null);
+
+        function compatStatusClass(status) {
+            switch (status) {
+                case 'ok':
+                    return 'active';
+                case 'untested':
+                    return 'untested';
+                case 'incompatible':
+                    return 'blocked';
+                default:
+                    return 'undeclared';
+            }
+        }
+
+        // Mirrors osc_market_render_compat_badge()'s markup exactly, so a badge built here
+        // reads identically (and reuses the same CSS) whether it came from the server-rendered
+        // card or from this fetched detail payload.
+        function compatBadgeNode(compat) {
+            var wrap = document.createElement('div');
+            wrap.className = 'market-card-status status-' + compatStatusClass(compat && compat.status);
+            var span = document.createElement('span');
+            span.className = 'osc-status';
+            span.textContent = (compat && compat.badge) || '';
+            wrap.appendChild(span);
+            return wrap;
+        }
+
+        function formatBytes(bytes) {
+            bytes = Number(bytes) || 0;
+            if (!bytes) {
+                return '\u2014';
+            }
+            var units = ['B', 'KB', 'MB', 'GB'];
+            var i = 0;
+            var value = bytes;
+            while (value >= 1024 && i < units.length - 1) {
+                value /= 1024;
+                i++;
+            }
+            return (i === 0 ? String(bytes) : value.toFixed(value < 10 ? 1 : 0)) + ' ' + units[i];
+        }
+
+        // ---- Screenshot strip (arrow-key navigable) ---------------------------
+        var screenState = { items: [], index: 0 };
+
+        function renderScreenshot() {
+            var items = screenState.items;
+            dScreensView.innerHTML = '';
+            if (!items.length) {
+                dScreensCaption.textContent = '';
+                return;
+            }
+            var item = items[screenState.index];
+            if (item.node) {
+                dScreensView.appendChild(item.node.cloneNode(true));
+            } else {
+                var img = document.createElement('img');
+                img.src = item.src;
+                img.alt = item.caption || '';
+                img.loading = 'lazy';
+                dScreensView.appendChild(img);
+            }
+            dScreensCaption.textContent = item.caption || '';
+            var multi = items.length > 1;
+            dScreensPrev.hidden = !multi;
+            dScreensNext.hidden = !multi;
+        }
+
+        // A package with no real screenshots still shows a single "slide" \u2014 the same
+        // placeholder/icon tile already cloned into .market-detail-thumb \u2014 rather than an
+        // empty strip, so the dialog never implies artwork exists when it does not.
+        function setScreenshots(list, placeholderNode) {
+            if (list && list.length) {
+                screenState.items = list.map(function (shot) {
+                    return { src: shot.src, caption: shot.caption || '' };
+                });
+            } else if (placeholderNode) {
+                screenState.items = [{ node: placeholderNode, caption: '' }];
+            } else {
+                screenState.items = [];
+            }
+            screenState.index = 0;
+            renderScreenshot();
+        }
+
+        function moveScreenshot(delta) {
+            if (screenState.items.length < 2) {
+                return;
+            }
+            screenState.index = (screenState.index + delta + screenState.items.length) % screenState.items.length;
+            renderScreenshot();
+        }
+
+        dScreensPrev.addEventListener('click', function () {
+            moveScreenshot(-1);
+        });
+        dScreensNext.addEventListener('click', function () {
+            moveScreenshot(1);
+        });
+        dScreensStrip.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                moveScreenshot(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                moveScreenshot(1);
+            }
+        });
+
+        // ---- Version table ------------------------------------------------------
+        function renderVersions(versions) {
+            dVersionsBody.innerHTML = '';
+            (versions || []).forEach(function (v) {
+                var tr = document.createElement('tr');
+                [v.version, v.requires || '\u2014', v.requires_php || '\u2014', v.tested || '\u2014', formatBytes(v.size)]
+                    .forEach(function (text) {
+                        var td = document.createElement('td');
+                        td.textContent = text;
+                        tr.appendChild(td);
+                    });
+                var compatTd = document.createElement('td');
+                compatTd.appendChild(compatBadgeNode(v.compat));
+                tr.appendChild(compatTd);
+                dVersionsBody.appendChild(tr);
+            });
+        }
+
+        // ---- Links ----------------------------------------------------------
+        var linkLabels = {
+            repo: i18n.linkRepo || 'Repository',
+            homepage: i18n.linkHomepage || 'Homepage',
+            issues: i18n.linkIssues || 'Issue tracker',
+            docs: i18n.linkDocs || 'Documentation'
+        };
+        var linkOrder = ['repo', 'homepage', 'issues', 'docs'];
+
+        function renderLinks(links) {
+            dLinks.innerHTML = '';
+            links = links || {};
+            linkOrder.forEach(function (key) {
+                var url = links[key];
+                if (!url) {
+                    return;
+                }
+                // repo and homepage are frequently the same URL; show it once.
+                if (key === 'homepage' && links.repo === url) {
+                    return;
+                }
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'nofollow noopener';
+                a.textContent = linkLabels[key];
+                li.appendChild(a);
+                dLinks.appendChild(li);
+            });
+        }
+
+        // ---- Loading / error / ready states --------------------------------
+        function setDetailState(state, message) {
+            dLoading.hidden = state !== 'loading';
+            dError.hidden = state !== 'error';
+            if (state === 'error') {
+                dError.textContent = message || i18n.detailError || i18n.ajaxError || '';
+            }
+            var ready = state === 'ready';
+            dReadme.hidden = !ready;
+            dScreens.hidden = !ready || screenState.items.length === 0;
+            dVersionsWrap.hidden = !ready || dVersionsBody.children.length === 0;
+            dLinks.hidden = !ready || dLinks.children.length === 0;
+        }
+
+        function applyDetail(detail, placeholderNode) {
+            dReadme.innerHTML = detail.description_html || '';
+            setScreenshots(detail.screenshots, placeholderNode);
+            renderVersions(detail.versions);
+            renderLinks(detail.links);
+            setDetailState('ready');
+        }
+
+        function loadDetail(slug, placeholderNode) {
+            setDetailState('loading');
+            if (Object.prototype.hasOwnProperty.call(detailCache, slug)) {
+                applyDetail(detailCache[slug], placeholderNode);
+                return;
+            }
+            if (!detailUrl || !slug) {
+                setDetailState('error');
+                return;
+            }
+            fetch(detailUrl + '&slug=' + encodeURIComponent(slug), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (r) {
+                return r.json();
+            }).then(function (res) {
+                if (res && res.ok && res.detail) {
+                    detailCache[slug] = res.detail;
+                    applyDetail(res.detail, placeholderNode);
+                } else {
+                    setDetailState('error', res && res.message);
+                }
+            }).catch(function () {
+                setDetailState('error');
+            });
+        }
 
         function openDetail(container) {
             var data = parseItem(container.matches('[data-market-item]') ? container : container.querySelector('[data-market-item]'));
@@ -349,7 +614,9 @@
             var actionSrc = container.querySelector('.market-card-action');
 
             dThumb.innerHTML = '';
+            var placeholderNode = null;
             if (thumbSrc) {
+                placeholderNode = thumbSrc.cloneNode(true);
                 dThumb.appendChild(thumbSrc.cloneNode(true));
             }
             dStatus.innerHTML = '';
@@ -378,6 +645,11 @@
             if (actionSrc) {
                 dActions.appendChild(actionSrc.cloneNode(true));
             }
+
+            // The richer content (screenshots, README, version table, links) is not in the
+            // row JSON at all (docs/MARKET.md \u00a78.2) \u2014 fetched here, on open, not baked into
+            // page render, and cached per slug so reopening the same card is instant.
+            loadDetail(data.slug, placeholderNode);
 
             lastTrigger = document.activeElement;
             if (typeof dialog.showModal === 'function') {
