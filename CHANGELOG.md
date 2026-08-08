@@ -4,14 +4,28 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.1.0
 
-Groundwork for a GitHub-native plugin and theme market. Packages can now declare which
-Shopclass and PHP versions they support, and the core refuses an update that would not run
-on the site installing it. The download and extraction path that every plugin, theme and
-core update passes through has been hardened, and packages that ship no artwork now render
-a built-in placeholder instead of a broken image.
+Plugins and themes can now be found, installed and updated from inside the admin. Packages
+declare which Shopclass and PHP versions they support, and the site is only ever offered a
+version it can actually run — so an install on an older release is routed to the last version
+that still works there rather than one that would fail on boot. Update checks, which have been
+silently reporting nothing since 3.x, work again. The download and extraction path every
+plugin, theme and core update passes through has been hardened, and packages that ship no
+artwork render a built-in placeholder instead of a broken image.
 
 ### New
 
+- Plugins and themes can be browsed, installed and updated from the admin. Plugins and
+  Appearance each gain **Browse** and **Updates** tabs backed by a published catalog of packages;
+  search, category filter and sort run in the browser, and a package with no artwork falls back to
+  a built-in placeholder. Installs verify the publisher host and a SHA-256 checksum, stage and
+  validate the package before touching the live directory, and roll back to a backup if the swap
+  fails.
+- Plugin and theme update checks work again. The market helpers they relied on have returned
+  `false` unconditionally since 3.x, so the admin update badges could never report anything; they
+  now resolve against the catalog and offer the highest version the site can actually run, rather
+  than the newest that exists.
+- `oc-cli.php` gains `market:refresh`, `market:search`, `market:info`, `market:install` and
+  `market:update` for headless and container installs.
 - Plugins and themes can declare `Requires Shopclass`, `Tested up to`, and `Requires PHP` in
   their header block. All three are optional — a package that declares nothing is treated as
   before, never as incompatible — and they are parsed for both plugins and themes.
