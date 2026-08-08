@@ -1395,6 +1395,7 @@ class CAdminAjax extends AdminSecBaseModel
             'links'            => self::marketSanitizeLinks($raw),
             'categories'       => isset($raw['categories']) && is_array($raw['categories']) ? array_values($raw['categories']) : array(),
             'tags'             => isset($raw['tags']) && is_array($raw['tags']) ? array_values($raw['tags']) : array(),
+            'downloads'        => is_int($raw['downloads'] ?? null) ? $raw['downloads'] : 0,
         );
     }
 
@@ -1464,6 +1465,7 @@ class CAdminAjax extends AdminSecBaseModel
                 'requires_php' => $compatInfo['requires_php'],
                 'tested'       => $compatInfo['tested_up_to'],
                 'size'         => (int) ($entry['size'] ?? 0),
+                'downloads'    => is_int($entry['downloads'] ?? null) ? $entry['downloads'] : 0,
                 'released_at'  => null,
                 'compat'       => array(
                     'status'  => $verdict['status'],
@@ -1551,12 +1553,16 @@ class CAdminAjax extends AdminSecBaseModel
             $config = HTMLPurifier_Config::createDefault();
             $config->set(
                 'HTML.Allowed',
-                'h1,h2,h3,h4,h5,h6,p,br,blockquote,ul,ol,li,strong,b,em,i,code,pre,a[href],img[src|alt|loading]'
+                'h1,h2,h3,h4,h5,h6,p,br,blockquote,ul,ol,li,strong,b,em,i,code,pre,a[href],img[src|alt|loading],'
+                . 'table,thead,tbody,tr,th[class],td[class]'
             );
             $config->set('HTML.TargetBlank', true);
             $config->set('HTML.TargetNoopener', true);
             $config->set('HTML.Nofollow', true);
             $config->set('URI.AllowedSchemes', array('http' => true, 'https' => true));
+            // Only the two alignment classes renderMarkdownSafe() (tools/ci/build-catalog.php)
+            // ever emits are let through -- everything else on a class attribute is stripped.
+            $config->set('Attr.AllowedClasses', array('text-center' => true, 'text-end' => true));
             // Stripping down to a small tag set leaves nothing worth persisting a definition
             // cache for; the in-memory NullCache avoids writing serializer blobs to disk, same
             // as Params::purify()'s own HTMLPurifier instance.

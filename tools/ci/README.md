@@ -190,10 +190,13 @@ source is HTML-escaped before any block/inline pattern is applied, so every
 tag in the rendered output is one the renderer built itself from a recognised
 Markdown construct — there is no way for a `<script>` or an `onclick="..."` in
 a README to reach the output as anything but inert escaped text. It is a
-small, deliberately non-exhaustive subset of Markdown (headings, lists,
-blockquotes, fenced code, bold/italic, links and images with a scheme
-allowlist) — enough for a real package README, not a CommonMark
-implementation.
+small, deliberately non-exhaustive subset of Markdown (headings, nested
+lists, task-list markers rendered as inert symbols, GFM pipe tables with
+optional column alignment, blockquotes, fenced code, bold/italic, and links
+and images with a scheme allowlist) — enough for a real package README, not a
+CommonMark implementation. Table alignment is emitted as `text-center` /
+`text-end` classes rather than inline styles, because the admin purifies this
+HTML a second time before rendering it and drops `style`.
 
 **A local build cache makes `--offline` possible.** Every GitHub API response
 and downloaded asset is cached under `<out>/.build-cache/` (not part of the
