@@ -367,12 +367,111 @@ class CAdminAppearance extends AdminSecBaseModel
                 //preparing variables for the view
                 $this->_exportVariableToView('themes', $themes);
 
+                list($aMarketBrowse, $aMarketUpdates, $aMarketMeta) = $this->buildMarketViewData();
+                $this->_exportVariableToView('aMarketBrowse', $aMarketBrowse);
+                $this->_exportVariableToView('aMarketUpdates', $aMarketUpdates);
+                $this->_exportVariableToView('aMarketMeta', $aMarketMeta);
+
                 $this->doView('appearance/index.php');
                 break;
         }
     }
 
     //hopefully generic...
+
+    /**
+     * Browse / Updates / Meta data sets the appearance view renders (docs/MARKET.md §8.2):
+     * catalog themes not yet installed, installed themes with a pending update, and the
+     * surrounding metadata (last check, write access, disabled state). Reads the cached
+     * catalog only -- it never forces a live fetch on page render.
+     *
+     * @return array{0: array, 1: array, 2: array} [$browse, $updates, $meta]
+     */
+    private function buildMarketViewData()
+    {
+        $catalog      = \mindstellar\market\Catalog::forThemes();
+        $packageIndex = \mindstellar\market\PackageIndex::forThemes();
+
+        $index   = $catalog->index();
+        $updates = $catalog->updates();
+
+        $browse = array();
+        foreach ($packageIndex->available() as $slug => $row) {
+            $latest     = $updates[$slug][0] ?? null;
+            $compatInfo = $latest !== null
+                ? array(
+                    'requires'     => $latest['requires'],
+                    'requires_php' => $latest['requires_php'],
+                    'tested_up_to' => $latest['tested'],
+                )
+                : array();
+            $browse[] = array(
+                'slug'              => $row['slug'],
+                'name'              => $row['name'],
+                'short_description' => $row['short_description'],
+                'author'            => $row['author'],
+                'version'           => $row['version'],
+                'icon'              => $row['icon'],
+                'categories'        => $row['categories'],
+                'tags'              => $row['tags'],
+                'compat'            => array(
+                    'status'  => $row['compatibility']['status'],
+                    'blocked' => $row['compatibility']['blocked'],
+                    'reason'  => $row['compatibility']['reason'],
+                    'badge'   => \mindstellar\market\Compatibility::badgeLabel($compatInfo),
+                ),
+            );
+        }
+
+        $marketUpdates = array();
+        foreach ($packageIndex->installed() as $slug => $row) {
+            if ($row['update'] === null) {
+                continue;
+            }
+            $update     = $row['update'];
+            $compatInfo = array(
+                'requires'     => $update['requires'] ?? '',
+                'requires_php' => $update['requires_php'] ?? '',
+                'tested_up_to' => $update['tested'] ?? '',
+            );
+            $verdict         = \mindstellar\market\Compatibility::evaluate($compatInfo);
+            $marketUpdates[] = array(
+                'slug'              => $row['slug'],
+                'name'              => $row['name'],
+                'installed_version' => $row['version'],
+                'new_version'       => $update['version'],
+                'size'              => $update['size'] ?? 0,
+                'compat'            => array(
+                    'status'  => $verdict['status'],
+                    'blocked' => $verdict['blocked'],
+                    'reason'  => $verdict['reason'],
+                    'badge'   => \mindstellar\market\Compatibility::badgeLabel($compatInfo),
+                ),
+            );
+        }
+
+        $categories = array();
+        foreach ($index as $row) {
+            foreach ((array) ($row['categories'] ?? array()) as $category) {
+                if (is_string($category) && $category !== '') {
+                    $categories[$category] = true;
+                }
+            }
+        }
+        $categories = array_keys($categories);
+        sort($categories);
+
+        $meta = array(
+            'last_checked'      => $catalog->lastChecked(),
+            'error'             => $catalog->lastError(),
+            'writable'          => is_writable(osc_themes_path()),
+            'disabled'          => osc_self_update_disabled() || defined('DEMO'),
+            'categories'        => $categories,
+            'catalog_available' => $index !== array() || $updates !== array(),
+        );
+
+        return array($browse, $marketUpdates, $meta);
+    }
 
     /**
      * Where a widget add/edit/delete returns to. A widget managed from a static

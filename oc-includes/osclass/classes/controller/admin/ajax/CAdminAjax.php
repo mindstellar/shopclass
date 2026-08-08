@@ -11,6 +11,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\market\Catalog;
+use mindstellar\market\Compatibility;
+use mindstellar\market\Installer;
+use mindstellar\market\PackageIndex;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\Utils;
@@ -890,6 +894,36 @@ class CAdminAjax extends AdminSecBaseModel
                 echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
 
+                /**********************
+                 ** PACKAGE MARKET   **
+                 ** docs/MARKET.md §8.2 **
+                 **********************/
+            case 'market_refresh':
+                osc_csrf_check();
+                header('Content-Type: application/json');
+                echo json_encode($this->marketRefresh(Params::getParamString('type')));
+                break;
+            case 'market_install':
+                osc_csrf_check();
+                header('Content-Type: application/json');
+                echo json_encode($this->marketInstallOrUpdate(
+                    'install',
+                    Params::getParamString('type'),
+                    Params::getParamString('slug'),
+                    Params::getParamString('version')
+                ));
+                break;
+            case 'market_update':
+                osc_csrf_check();
+                header('Content-Type: application/json');
+                echo json_encode($this->marketInstallOrUpdate(
+                    'update',
+                    Params::getParamString('type'),
+                    Params::getParamString('slug'),
+                    Params::getParamString('version')
+                ));
+                break;
+
                 /******************************
                  ** COMPLETE UPGRADE PROCESS **
                  ******************************/
@@ -1102,6 +1136,195 @@ class CAdminAjax extends AdminSecBaseModel
         $dayInSeconds   = 24 * 3600;
         $retryInSeconds = 3600;
         osc_set_preference('last_version_check', time() - ($dayInSeconds - $retryInSeconds));
+    }
+
+    /**
+     * Validates the posted `type` against the market's two package kinds, before it
+     * reaches a filesystem path or a Catalog/Installer factory call.
+     *
+     * @param string $type
+     *
+     * @return string|null 'plugin', 'theme', or null when neither
+     */
+    private static function marketType($type)
+    {
+        return in_array($type, array('plugin', 'theme'), true) ? $type : null;
+    }
+
+    private static function marketCatalog($type)
+    {
+        return $type === 'theme' ? Catalog::forThemes() : Catalog::forPlugins();
+    }
+
+    private static function marketPackageIndex($type)
+    {
+        return $type === 'theme' ? PackageIndex::forThemes() : PackageIndex::forPlugins();
+    }
+
+    private static function marketInstaller($type)
+    {
+        return $type === 'theme' ? Installer::forThemes() : Installer::forPlugins();
+    }
+
+    /**
+     * action=market_refresh -- forces a live catalog check (conditional GET; a 304 on
+     * the common path) for the requested package kind and reports what the Browse /
+     * Updates screens will now show. docs/MARKET.md §8.2.
+     *
+     * @param string $type 'plugin' or 'theme'
+     *
+     * @return array{ok:bool, message:string, checked_at:int, error:?string,
+     *               counts:array{available:int, updates:int}}
+     */
+    private function marketRefresh($type)
+    {
+        $emptyCounts = array('available' => 0, 'updates' => 0);
+
+        $type = self::marketType($type);
+        if ($type === null) {
+            return array(
+                'ok' => false, 'message' => __('Invalid package type.'),
+                'checked_at' => 0, 'error' => null, 'counts' => $emptyCounts,
+            );
+        }
+
+        if (defined('DEMO')) {
+            return array(
+                'ok' => false, 'message' => __("This action can't be done because it's a demo site"),
+                'checked_at' => 0, 'error' => null, 'counts' => $emptyCounts,
+            );
+        }
+        if (osc_self_update_disabled()) {
+            return array(
+                'ok' => false, 'message' => __('Catalog refresh is disabled on this deployment.'),
+                'checked_at' => 0, 'error' => null, 'counts' => $emptyCounts,
+            );
+        }
+
+        $catalog = self::marketCatalog($type);
+        $catalog->index(true);
+        $catalog->updates(true);
+
+        $packageIndex = self::marketPackageIndex($type);
+        $counts       = array(
+            'available' => count($packageIndex->available()),
+            'updates'   => count($packageIndex->pendingUpdates()),
+        );
+
+        $error = $catalog->lastError();
+
+        return array(
+            'ok'         => $error === null,
+            'message'    => $error === null ? __('Catalog refreshed.') : $error,
+            'checked_at' => $catalog->lastChecked(),
+            'error'      => $error,
+            'counts'     => $counts,
+        );
+    }
+
+    /**
+     * action=market_install / action=market_update -- resolves the version to install
+     * server-side (Compatibility::pickBestVersion() for a fresh install,
+     * PackageIndex::pendingUpdates() for an update) and refuses when the client-supplied
+     * version no longer matches, instead of trusting a version string handed in by the
+     * browser. docs/MARKET.md §8.2, §9.
+     *
+     * @param string $mode    'install' or 'update'
+     * @param string $type    'plugin' or 'theme'
+     * @param string $slug
+     * @param string $version version the client last saw; re-validated, never trusted
+     *
+     * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
+     */
+    private function marketInstallOrUpdate($mode, $type, $slug, $version)
+    {
+        $slug = trim((string) $slug);
+
+        $type = self::marketType($type);
+        if ($type === null) {
+            return array(
+                'ok' => false, 'message' => __('Invalid package type.'),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
+            return array(
+                'ok' => false, 'message' => __('Invalid package slug.'),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+
+        $version = trim((string) $version);
+        if ($version === '') {
+            return array(
+                'ok' => false, 'message' => __('No version was specified.'),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+
+        if (defined('DEMO')) {
+            return array(
+                'ok' => false, 'message' => __("This action can't be done because it's a demo site"),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+        if (osc_self_update_disabled()) {
+            return array(
+                'ok' => false, 'message' => __('Package installs are disabled on this deployment.'),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+
+        $packageIndex  = self::marketPackageIndex($type);
+        $installedRows = $packageIndex->installed();
+        $isInstalled   = isset($installedRows[$slug]);
+
+        if ($mode === 'install') {
+            if ($isInstalled) {
+                return array(
+                    'ok' => false, 'message' => __('This package is already installed; use Update instead.'),
+                    'slug' => $slug, 'version' => null, 'rolled_back' => false,
+                );
+            }
+
+            $catalog  = self::marketCatalog($type);
+            $versions = $catalog->updates()[$slug] ?? array();
+            $best     = Compatibility::pickBestVersion($versions);
+        } else {
+            if (!$isInstalled) {
+                return array(
+                    'ok' => false, 'message' => __('This package is not installed; use Install instead.'),
+                    'slug' => $slug, 'version' => null, 'rolled_back' => false,
+                );
+            }
+
+            $pending = $packageIndex->pendingUpdates();
+            $best    = $pending[$slug] ?? null;
+        }
+
+        if ($best === null) {
+            return array(
+                'ok' => false, 'message' => __('No compatible version is available for this package.'),
+                'slug' => $slug, 'version' => null, 'rolled_back' => false,
+            );
+        }
+
+        // Re-resolve, never trust: the version the client saw may be stale by the time
+        // this request lands (a catalog refresh, or another admin, in between).
+        if ((string) $best['version'] !== $version) {
+            return array(
+                'ok'          => false,
+                'message'     => __('The available version has changed since you loaded this page; refresh and try again.'),
+                'slug'        => $slug,
+                'version'     => null,
+                'rolled_back' => false,
+            );
+        }
+
+        $installer = self::marketInstaller($type);
+
+        return $mode === 'install' ? $installer->install($slug, $best) : $installer->update($slug, $best);
     }
 
     /**
