@@ -86,3 +86,6 @@ PRODUCT.md
 
 # Private/local docs (design, contracts) — kept out of the shipped repo
 docs/private/
+
+# Generated at release time and attached as a release asset, never committed
+deprecated-api.json
