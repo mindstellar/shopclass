@@ -160,6 +160,39 @@ function osc_market_format_size($bytes)
 }
 
 /**
+ * A raw GitHub release-asset download count -> a compact string ("1.2k", "3.4M"), the same
+ * rounding as osc_market_format_size() and mirrored in market.js's formatCount() so a
+ * server-rendered card and a fetched detail dialog read identically. Empty string for
+ * 0/negative -- callers render nothing rather than "0 downloads", since no published
+ * catalog carries this field yet (docs/MARKET.md §8.2 frozen field names) and it may stay
+ * 0 or absent on any given package for a long time after that.
+ *
+ * @param int $count
+ *
+ * @return string
+ */
+function osc_market_format_downloads($count)
+{
+    $count = max(0, (int) $count);
+    if ($count === 0) {
+        return '';
+    }
+    if ($count < 1000) {
+        return (string) $count;
+    }
+    $units = array('B' => 1000000000, 'M' => 1000000, 'k' => 1000);
+    foreach ($units as $suffix => $threshold) {
+        if ($count >= $threshold) {
+            $value = $count / $threshold;
+
+            return ($value < 10 ? number_format($value, 1) : (string) round($value)) . $suffix;
+        }
+    }
+
+    return (string) $count;
+}
+
+/**
  * One reason a primary action can't be taken right now, checked in a fixed order so
  * the owner always sees the most useful explanation first. Returns '' when the
  * action is available.
@@ -305,11 +338,17 @@ function osc_market_render_browse($rows, $meta, $type)
             <span class="visually-hidden"><?php _e('Sort'); ?></span>
             <select class="form-select form-select-sm market-sort">
                 <option value="updated-desc" selected><?php _e('Recently updated'); ?></option>
+                <option value="downloads-desc"><?php _e('Most downloaded'); ?></option>
                 <option value="name-asc"><?php _e('Name (A–Z)'); ?></option>
                 <option value="name-desc"><?php _e('Name (Z–A)'); ?></option>
                 <option value="author-asc"><?php _e('Author (A–Z)'); ?></option>
             </select>
         </label>
+        <span class="market-downloads-hint" tabindex="0"
+              title="<?php echo osc_esc_html(__("Downloads are GitHub's cumulative count of release-asset downloads — includes CI, mirrors, bots and repeat downloads. Not an install count.")); ?>">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span class="visually-hidden"><?php _e('What "downloads" means'); ?></span>
+        </span>
         <button type="button" class="btn btn-sm btn-secondary market-refresh-btn">
             <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
             <?php _e('Check now'); ?>
@@ -338,7 +377,16 @@ function osc_market_render_browse($rows, $meta, $type)
                                     <?php echo osc_esc_html($row['name']); ?>
                                 </button>
                             </h3>
-                            <p class="market-card-author"><?php echo osc_esc_html(sprintf(__('by %s'), $row['author'])); ?></p>
+                            <p class="market-card-author">
+                                <?php echo osc_esc_html(sprintf(__('by %s'), $row['author'])); ?>
+                                <?php $downloads = osc_market_format_downloads($row['downloads'] ?? 0); ?>
+                                <?php if ($downloads !== '') : ?>
+                                    <span class="market-card-downloads"
+                                          title="<?php echo osc_esc_html(__("GitHub's cumulative release-asset downloads — includes CI, mirrors, bots and repeat downloads. Not an install count.")); ?>">
+                                        · <?php echo osc_esc_html(sprintf(__('%s downloads'), $downloads)); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </p>
                             <p class="market-card-desc"><?php echo osc_esc_html($row['short_description']); ?></p>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
@@ -456,6 +504,11 @@ function osc_market_render_detail_dialog($type)
                         <dt><?php _e('Version'); ?></dt>
                         <dd class="market-detail-version"></dd>
                     </div>
+                    <div class="market-detail-downloads-row" hidden>
+                        <dt><?php _e('Downloads'); ?></dt>
+                        <dd class="market-detail-downloads"
+                            title="<?php echo osc_esc_html(__("GitHub's cumulative release-asset downloads — includes CI, mirrors, bots and repeat downloads. Not an install count.")); ?>"></dd>
+                    </div>
                 </dl>
                 <ul class="market-detail-tags"></ul>
             </div>
@@ -492,6 +545,7 @@ function osc_market_render_detail_dialog($type)
                         <th scope="col"><?php _e('Requires PHP'); ?></th>
                         <th scope="col"><?php _e('Tested up to'); ?></th>
                         <th scope="col"><?php _e('Size'); ?></th>
+                        <th scope="col"><?php _e('Downloads'); ?></th>
                         <th scope="col"><?php _e('Compatibility'); ?></th>
                     </tr>
                     </thead>
@@ -533,5 +587,6 @@ function osc_market_i18n($type)
         'linkIssues'       => __('Issue tracker'),
         'linkDocs'         => __('Documentation'),
         'detailError'      => __("Couldn't load details for this package."),
+        'downloadsCount'   => __('%s downloads'),
     );
 }

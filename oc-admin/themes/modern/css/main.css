@@ -17660,6 +17660,21 @@ form h3, form .h3 {
   display: inline-block;
 }
 
+.market-downloads-hint {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  cursor: help;
+  display: inline-flex;
+  font-size: 1rem;
+}
+.market-downloads-hint:hover, .market-downloads-hint:focus-visible {
+  color: var(--osc-bronze);
+}
+.market-downloads-hint:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
 .market-last-checked {
   color: var(--osc-ink-muted);
   font-size: 0.8125rem;
@@ -17736,6 +17751,10 @@ form h3, form .h3 {
   color: var(--osc-ink-muted);
   font-size: 0.8125rem;
   margin: 0;
+}
+
+.market-card-downloads {
+  white-space: nowrap;
 }
 
 .market-card-desc {
@@ -18032,6 +18051,37 @@ form h3, form .h3 {
 .market-detail-readme ul, .market-detail-readme ol {
   padding-inline-start: 1.4em;
 }
+.market-detail-readme li > ul,
+.market-detail-readme li > ol {
+  margin-block: 0.25em 0;
+}
+.market-detail-readme table {
+  border: 1px solid var(--osc-rule);
+  border-collapse: collapse;
+  display: block;
+  font-size: 0.875em;
+  margin: 0 0 0.75em;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+.market-detail-readme thead {
+  background-color: var(--osc-bench-warm);
+}
+.market-detail-readme th {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125em;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.market-detail-readme th, .market-detail-readme td {
+  border-block-end: 1px solid var(--osc-rule);
+  padding: 0.5em 0.75em;
+  text-align: start;
+}
+.market-detail-readme tbody tr:last-child > * {
+  border-block-end: 0;
+}
 .market-detail-readme a {
   color: var(--osc-bronze);
 }
@@ -18081,7 +18131,7 @@ form h3, form .h3 {
 .market-detail-versions-table {
   font-size: 0.8125rem;
   margin: 0;
-  min-inline-size: 32rem;
+  min-inline-size: 36rem;
 }
 .market-detail-versions-table .market-card-status {
   display: inline-flex;

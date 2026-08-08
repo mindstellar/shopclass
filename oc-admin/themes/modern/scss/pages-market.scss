@@ -44,6 +44,26 @@
   }
 }
 
+// The "what do downloads mean" tooltip next to the sort control (docs/MARKET.md — this is a
+// GitHub release-asset count, not an install count; said once here rather than on every card).
+.market-downloads-hint {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  cursor: help;
+  display: inline-flex;
+  font-size: 1rem;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+}
+
 .market-last-checked {
   color: var(--osc-ink-muted);
   font-size: .8125rem;
@@ -124,6 +144,12 @@
   color: var(--osc-ink-muted);
   font-size: .8125rem;
   margin: 0;
+}
+
+// Appended to the author line rather than a row of its own, so a card with no count (today's
+// live catalogs, §MARKET.md 8.2) loses nothing and one with a count doesn't crowd the rhythm.
+.market-card-downloads {
+  white-space: nowrap;
 }
 
 .market-card-desc {
@@ -449,6 +475,51 @@
     padding-inline-start: 1.4em;
   }
 
+  // Nesting is expressed by the same padding-inline-start stacking per level; the only fix
+  // needed is the paragraph-weight bottom margin above, which reads as too much air between a
+  // parent item and its own sublist.
+  li > ul,
+  li > ol {
+    margin-block: .25em 0;
+  }
+
+  // Matches table.scss's admin data table (bench-warm header, ink-muted label text, hairline
+  // row rule) rather than inventing a second table style -- a README table is still the
+  // admin's table, just inside prose. `display: block` + `overflow-x: auto` on the table
+  // itself scrolls a wide table inside its own box without a wrapper element, which nothing
+  // downstream of the sanitiser adds -- the dialog and the page never widen.
+  table {
+    border: 1px solid var(--osc-rule);
+    border-collapse: collapse;
+    display: block;
+    font-size: .875em;
+    margin: 0 0 .75em;
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+
+  thead {
+    background-color: var(--osc-bench-warm);
+  }
+
+  th {
+    color: var(--osc-ink-muted);
+    font-size: .8125em;
+    font-weight: 500;
+    letter-spacing: .01em;
+    white-space: nowrap;
+  }
+
+  th, td {
+    border-block-end: 1px solid var(--osc-rule);
+    padding: .5em .75em;
+    text-align: start;
+  }
+
+  tbody tr:last-child > * {
+    border-block-end: 0;
+  }
+
   a {
     color: var(--osc-bronze);
   }
@@ -505,7 +576,7 @@
 .market-detail-versions-table {
   font-size: .8125rem;
   margin: 0;
-  min-inline-size: 32rem;
+  min-inline-size: 36rem;
 
   .market-card-status {
     display: inline-flex;

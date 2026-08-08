@@ -133,6 +133,18 @@
                     }
                 }
 
+                if (mode === 'downloads-desc') {
+                    // `downloads` is 0 when unknown (docs/MARKET.md §8.2 frozen field names),
+                    // so descending-by-count already puts 0/missing rows last with no separate
+                    // null case needed — unlike parseUpdatedAt above. Equal counts (including
+                    // two zeros) fall through to the name tie-break below.
+                    var cda = Number(da.downloads) || 0;
+                    var cdb = Number(db.downloads) || 0;
+                    if (cda !== cdb) {
+                        return cdb - cda;
+                    }
+                }
+
                 var av;
                 var bv;
                 if (mode === 'author-asc') {
@@ -379,6 +391,8 @@
         var dDesc = dialog.querySelector('.market-detail-desc');
         var dReason = dialog.querySelector('.market-detail-reason');
         var dVersion = dialog.querySelector('.market-detail-version');
+        var dDownloadsRow = dialog.querySelector('.market-detail-downloads-row');
+        var dDownloads = dialog.querySelector('.market-detail-downloads');
         var dTags = dialog.querySelector('.market-detail-tags');
         var dActions = dialog.querySelector('.market-detail-actions');
         var dLoading = dialog.querySelector('.market-detail-body-loading');
@@ -438,6 +452,23 @@
                 i++;
             }
             return (i === 0 ? String(bytes) : value.toFixed(value < 10 ? 1 : 0)) + ' ' + units[i];
+        }
+
+        // Mirrors osc_market_format_downloads() in market.php so a server-rendered card and
+        // this fetched detail dialog compact the same count the same way ("1.2k", "3.4M").
+        function formatCount(count) {
+            count = Math.max(0, Number(count) || 0);
+            if (count < 1000) {
+                return String(count);
+            }
+            var units = [{ v: 1e9, s: 'B' }, { v: 1e6, s: 'M' }, { v: 1e3, s: 'k' }];
+            for (var i = 0; i < units.length; i++) {
+                if (count >= units[i].v) {
+                    var value = count / units[i].v;
+                    return (value < 10 ? value.toFixed(1) : String(Math.round(value))) + units[i].s;
+                }
+            }
+            return String(count);
         }
 
         // ---- Screenshot strip (arrow-key navigable) ---------------------------
@@ -512,7 +543,11 @@
             dVersionsBody.innerHTML = '';
             (versions || []).forEach(function (v) {
                 var tr = document.createElement('tr');
-                [v.version, v.requires || '\u2014', v.requires_php || '\u2014', v.tested || '\u2014', formatBytes(v.size)]
+                var downloads = Number(v.downloads) || 0;
+                // A tabular secondary stat alongside Size/Requires/Tested, all of which already
+                // read "\u2014" for missing data here \u2014 unlike the card, this isn't a number repeated
+                // on its own across dozens of tiles, so the existing table convention applies.
+                [v.version, v.requires || '\u2014', v.requires_php || '\u2014', v.tested || '\u2014', formatBytes(v.size), downloads > 0 ? formatCount(downloads) : '\u2014']
                     .forEach(function (text) {
                         var td = document.createElement('td');
                         td.textContent = text;
@@ -576,6 +611,17 @@
             setScreenshots(detail.screenshots, placeholderNode);
             renderVersions(detail.versions);
             renderLinks(detail.links);
+            // Absent/0 (no published catalog carries this field yet) hides the whole row rather
+            // than reading "0 downloads" — same rule as the card.
+            var downloads = Number(detail.downloads) || 0;
+            if (dDownloadsRow) {
+                dDownloadsRow.hidden = downloads <= 0;
+            }
+            if (dDownloads) {
+                dDownloads.textContent = downloads > 0
+                    ? (i18n.downloadsCount || '%s downloads').replace('%s', formatCount(downloads))
+                    : '';
+            }
             setDetailState('ready');
         }
 
@@ -635,6 +681,19 @@
             dVersion.textContent = data.new_version
                 ? (data.installed_version + ' \u2192 ' + data.new_version)
                 : (data.version || '');
+            // Paint from the row JSON immediately (Browse rows already carry `downloads`) so the
+            // dialog doesn't flash blank before the fetch below resolves; applyDetail() then
+            // overwrites with market_detail's own value once it lands, same rule either way:
+            // 0/absent hides the row rather than reading "0 downloads".
+            var rowDownloads = Number(data.downloads) || 0;
+            if (dDownloadsRow) {
+                dDownloadsRow.hidden = rowDownloads <= 0;
+            }
+            if (dDownloads) {
+                dDownloads.textContent = rowDownloads > 0
+                    ? (i18n.downloadsCount || '%s downloads').replace('%s', formatCount(rowDownloads))
+                    : '';
+            }
             dTags.innerHTML = '';
             (data.tags || []).forEach(function (tag) {
                 var li = document.createElement('li');
