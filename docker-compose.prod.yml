@@ -37,6 +37,12 @@ services:
       # entrypoint's package:reconcile keeps the bundled ones current on every
       # start without touching anything installed through the market — see the
       # Dockerfile and PackageReconciler.
+      #
+      # Upgrading from an image that predates these two volumes: copy the two
+      # directories out of the running container first. The new volumes are
+      # seeded from the image, so anything installed into the old container's
+      # writable layer is not carried across and cannot be recovered after the
+      # old container is gone.
       - plugins:/application/oc-content/plugins
       - themes:/application/oc-content/themes
     depends_on:

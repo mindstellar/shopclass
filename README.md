@@ -229,6 +229,13 @@ volume against the bundled packages baked into the new image — installing any 
 are missing and refreshing any the image ships a newer version of — without ever
 touching a package installed through the market.
 
+> **Upgrading from an image released before those two volumes existed:** copy
+> `oc-content/plugins` and `oc-content/themes` out of the running container before you
+> redeploy. Those directories used to live in the container's writable layer, so anything
+> installed there was already discarded on each redeploy; the new volumes are seeded from
+> the image, which means packages from the old container are not carried across and cannot
+> be recovered once it is gone. Reinstall them after upgrading. Zip installs are unaffected.
+
 ## Brand
 
 Logos, the mark, the favicon set, and the palette live in the

@@ -10,7 +10,19 @@ version it can actually run — so an install on an older release is routed to t
 that still works there rather than one that would fail on boot. Update checks, which have been
 silently reporting nothing since 3.x, work again. The download and extraction path every
 plugin, theme and core update passes through has been hardened, and packages that ship no
-artwork render a built-in placeholder instead of a broken image.
+artwork render a built-in placeholder instead of a broken image. Container deployments should
+read the upgrade note below before redeploying.
+
+### Breaking
+
+- **Container deployments: back up `oc-content/plugins` and `oc-content/themes` before upgrading.**
+  Earlier production images kept those directories inside the container's writable layer, where
+  anything installed was already discarded on every redeploy. This release moves them onto named
+  volumes so installs finally persist — but the first redeploy onto the new arrangement seeds those
+  volumes from the image, so packages installed into a still-running old container are not carried
+  across and cannot be recovered afterwards. Copy them out first, and reinstall once the upgrade is
+  done. Sites installed from the zip are unaffected. A stale entry may remain in the active-plugins
+  preference for a package whose files are gone; it is ignored and harmless.
 
 ### New
 
