@@ -1,8 +1,9 @@
 # Package specification — plugins and themes
 
-Status: **Draft, tracking implementation.** The header fields in §3.3 land in core 6.1;
-everything describing the registry (§6-§8) describes repositories that do not exist yet.
-See `docs/MARKET.md` for the ecosystem design and its phasing.
+Status: **Shipped, in force.** The header fields in §3 parse in core as of Shopclass 6.1.0;
+`mindstellar/shopclass-plugins` and `mindstellar/shopclass-themes` are live, and §6-§8 describe
+their actual PR validation, not a plan for it. See `docs/MARKET.md` for the ecosystem design
+and what each phase delivered.
 
 Audience: anyone writing a Shopclass plugin or theme, and anyone implementing tooling
 that reads one. This is the contract. Core parses packages according to it, the registry
@@ -117,9 +118,9 @@ Support URI: https://github.com/mindstellar/better-s3/issues
 | `Author URI` | optional | `author_uri` | |
 | `Support URI` | recommended | `support_uri` | Rendered as the support icon in the admin list |
 | `Plugin update URI` | optional | `plugin_update_uri` | Legacy self-hosted update endpoint. Redundant for catalog packages; see §7 |
-| `Requires Shopclass` | recommended | `requires` | §3.3 |
-| `Tested up to` | recommended | `tested_up_to` | §3.3 |
-| `Requires PHP` | recommended | `requires_php` | §3.3 |
+| `Requires Shopclass` | recommended | `requires` | §4 |
+| `Tested up to` | recommended | `tested_up_to` | §4 |
+| `Requires PHP` | recommended | `requires_php` | §4 |
 
 ### 3.3 Theme fields
 
@@ -249,11 +250,21 @@ CI against `schema/package.schema.json` in the registry repo.
 A package hosted in its **own repository** instead registers a single
 `external/<slug>.json` in the registry, pointing at that repo; the catalog builder reads
 the real header block out of the released zip, so metadata cannot drift from the artifact.
-Both forms produce identical catalog entries — core cannot tell them apart.
+Both forms produce identical catalog entries — core cannot tell them apart. Note what
+`shopclass.json` never carries: a `version`. The catalog reads that from your `index.php`
+header and your release tag, the same way it reads an external package's — there is exactly
+one place a version can be declared.
 
 `Plugin update URI` / `Theme update URI` remain supported for packages distributed outside
 the registry entirely. They are the fallback path, polled per-package; catalog packages
 get a single batched update check instead and should leave the field off.
+
+**`updated_at` drives the default browse order, and it is not something you set.** The
+catalog's `index.json` carries an `updated_at` per package, taken from your newest
+release's publish timestamp — not from anything in `shopclass.json` or the header. The
+admin Browse screen pre-selects "Recently updated" as its sort. Ship no releases for a long
+time and your package sinks toward the bottom of that list regardless of how good it is;
+the only way to stay near the top is to keep cutting releases.
 
 ---
 
@@ -272,6 +283,17 @@ no unexpected output).
 compatibility declarations, an uninstall that leaves tables behind, and `Tested up to`
 more than one minor behind current core. A pull request can be merged with warnings
 outstanding; they exist to inform, not to gate.
+
+**Registering a package from your own repository gets a narrower gate.** An
+`external/<slug>.json` registration (§7) is checked by `tools/validate-external.sh`, which
+draws a line an in-repo package doesn't need: manifest facts you wrote yourself — slug,
+`source.repo`, `asset_pattern`, category vocabulary — are blocking, same as any other
+manifest error. Facts about what your upstream repository's release **currently**
+publishes — a missing `LICENSE`, a `package-lint.php` finding inside your own released
+zip, a `Version:` header that disagrees with your own release tag — are warnings only.
+The registration PR is reviewing your manifest, not fixing your other repository from
+inside it, so a defect in what you've already released is surfaced on the sticky comment
+but does not block the registration.
 
 ---
 
@@ -315,16 +337,22 @@ under `OSC_DEBUG`. Core publishes the full inventory as `deprecated-api.json` wi
 release: symbol, the version that deprecated it, its replacement, and its scheduled
 removal version.
 
-Registry CI consumes that inventory two ways — a static scan of your source and a runtime
-capture during the smoke install — and reports every hit as a **warning on your pull
-request**, annotated on the offending line:
+Registry CI consumes that inventory two ways — `tools/ci/deprecation-scan.php`'s static
+scan of your source (function/method calls and hook/filter-name string literals) and a
+runtime capture from a collector plugin during the smoke install — and reports every hit
+as a **warning on your pull request**, annotated on the offending line:
 
 > ⚠️ `osc_check_plugin_update()` is deprecated since 6.0 and scheduled for removal in 7.0.
 > No replacement.
 
-Deprecations never fail a build. They are a schedule, not a rejection: a symbol deprecated
-in 6.x is removed no earlier than the next major, so a warning is a note that you have a
-release cycle to act, not that your package is broken.
+The static scan skips anything under `vendor/`, `third-party/`, or `thirdparty/` — the
+same carve-out §9 gives the security scan, for the same reason: a warning about a
+dependency you didn't write isn't something you can act on from inside your own PR.
+
+Deprecations never fail a build — `deprecation-scan.php` always exits `0`. They are a
+schedule, not a rejection: a symbol deprecated in 6.x is removed no earlier than the next
+major, so a warning is a note that you have a release cycle to act, not that your package
+is broken.
 
 The reciprocal obligation on core is the compatibility contract in the project README:
 admin CSS class names, `osc_*` helper signatures, hook names, and asset paths under
