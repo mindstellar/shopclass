@@ -437,6 +437,7 @@ final class Catalog
             'url'          => $url,
             'sha256'       => $sha256,
             'size'         => $size,
+            'published_at' => is_string($entry['published_at'] ?? null) ? $entry['published_at'] : '',
         ];
     }
 
@@ -547,6 +548,8 @@ final class Catalog
             usort($versions, static fn ($a, $b) => version_compare($b['version'], $a['version']));
         }
 
+        // `support` carries issues/docs; homepage and the source repository are top-level and
+        // were previously dropped, leaving the detail view with no link back to the project.
         $links = [];
         if (isset($raw['support']) && is_array($raw['support'])) {
             foreach ($raw['support'] as $name => $value) {
@@ -554,6 +557,14 @@ final class Catalog
                     $links[$name] = $value;
                 }
             }
+        }
+        if (is_string($raw['homepage'] ?? null) && preg_match('#^https?://#i', $raw['homepage'])) {
+            $links['homepage'] = $raw['homepage'];
+        }
+        if (isset($raw['source']['repo']) && is_string($raw['source']['repo'])
+            && preg_match('#^[\\w.-]+/[\\w.-]+$#', $raw['source']['repo'])
+        ) {
+            $links['repo'] = 'https://github.com/' . $raw['source']['repo'];
         }
 
         return [
