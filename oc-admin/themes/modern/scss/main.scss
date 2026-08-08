@@ -32,6 +32,7 @@
 @import "pages-system-info.scss";
 @import "tabs.scss";
 @import "pages-plugins.scss";
+@import "pages-market.scss";
 @import "responsive.scss";
 // Last: the dark-theme token overrides must win the cascade over Bootstrap's own
 // [data-bs-theme="dark"] block. See the header of _theme-dark.scss.

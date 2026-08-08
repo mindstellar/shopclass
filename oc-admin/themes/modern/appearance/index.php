@@ -68,8 +68,50 @@ function appearanceThumbHue($slug)
     return crc32($slug) % 360;
 }
 
+osc_current_admin_theme_path('parts/market.php');
+
+$aMarketBrowse  = __get('aMarketBrowse');
+$aMarketUpdates = __get('aMarketUpdates');
+$aMarketMeta    = __get('aMarketMeta');
+if (!is_array($aMarketBrowse)) {
+    $aMarketBrowse = array();
+}
+if (!is_array($aMarketUpdates)) {
+    $aMarketUpdates = array();
+}
+if (!is_array($aMarketMeta)) {
+    $aMarketMeta = array(
+        'last_checked' => 0, 'error' => null, 'writable' => true,
+        'disabled' => false, 'categories' => array(), 'catalog_available' => false,
+    );
+}
+
+osc_register_script('admin-market', osc_asset_url_versioned(osc_current_admin_theme_js_url('market.js')), array('admin-osc', 'admin-ui-osc'));
+osc_enqueue_script('admin-market');
+
+$marketCsrf       = osc_csrf_token_url();
+$marketInstallUrl = osc_admin_base_url(true) . '?page=ajax&action=market_install&type=theme&' . $marketCsrf;
+$marketUpdateUrl  = osc_admin_base_url(true) . '?page=ajax&action=market_update&type=theme&' . $marketCsrf;
+$marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh&type=theme&' . $marketCsrf;
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="appearance-page">
+    <div class="market-app" data-type="theme"
+         data-install-url="<?php echo osc_esc_html($marketInstallUrl); ?>"
+         data-update-url="<?php echo osc_esc_html($marketUpdateUrl); ?>"
+         data-refresh-url="<?php echo osc_esc_html($marketRefreshUrl); ?>"
+         data-i18n='<?php echo osc_esc_html(json_encode(osc_market_i18n('theme'))); ?>'>
+        <div class="osc-tab">
+            <ul>
+                <li><a href="#market-tab-installed"><?php _e('Themes'); ?></a></li>
+                <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
+                <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
+                        <span class="market-tab-count" id="market-updates-count">(<?php echo (int) count($aMarketUpdates); ?>)</span>
+                    </a></li>
+            </ul>
+        </div>
+
+        <div id="market-tab-installed">
     <!-- themes list -->
     <div class="appearance">
         <div id="tabs">
@@ -178,6 +220,18 @@ foreach ($themes as $theme) {
         </div>
     </div>
     <!-- /themes list -->
+        </div>
+
+        <div id="market-tab-browse" hidden>
+            <?php osc_market_render_browse($aMarketBrowse, $aMarketMeta, 'theme'); ?>
+        </div>
+
+        <div id="market-tab-updates" hidden>
+            <?php osc_market_render_updates($aMarketUpdates, $aMarketMeta, 'theme'); ?>
+        </div>
+
+        <?php osc_market_render_detail_dialog('theme'); ?>
+    </div>
 </div>
 <dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
     <form method="get" action="<?php echo osc_admin_base_url(true); ?>">

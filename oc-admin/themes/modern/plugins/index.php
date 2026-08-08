@@ -54,10 +54,52 @@ $iDisplayLength = __get('iDisplayLength');
 $aData          = __get('aPlugins');
 
 $tab_index = 2;
+
+osc_current_admin_theme_path('parts/market.php');
+
+$aMarketBrowse  = __get('aMarketBrowse');
+$aMarketUpdates = __get('aMarketUpdates');
+$aMarketMeta    = __get('aMarketMeta');
+if (!is_array($aMarketBrowse)) {
+    $aMarketBrowse = array();
+}
+if (!is_array($aMarketUpdates)) {
+    $aMarketUpdates = array();
+}
+if (!is_array($aMarketMeta)) {
+    $aMarketMeta = array(
+        'last_checked' => 0, 'error' => null, 'writable' => true,
+        'disabled' => false, 'categories' => array(), 'catalog_available' => false,
+    );
+}
+
+osc_register_script('admin-market', osc_asset_url_versioned(osc_current_admin_theme_js_url('market.js')), array('admin-osc', 'admin-ui-osc'));
+osc_enqueue_script('admin-market');
+
+$marketCsrf       = osc_csrf_token_url();
+$marketInstallUrl = osc_admin_base_url(true) . '?page=ajax&action=market_install&type=plugin&' . $marketCsrf;
+$marketUpdateUrl  = osc_admin_base_url(true) . '?page=ajax&action=market_update&type=plugin&' . $marketCsrf;
+$marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh&type=plugin&' . $marketCsrf;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <h2 class="render-title"><?php _e('Manage plugins'); ?></h2>
 
+<div class="market-app" data-type="plugin"
+     data-install-url="<?php echo osc_esc_html($marketInstallUrl); ?>"
+     data-update-url="<?php echo osc_esc_html($marketUpdateUrl); ?>"
+     data-refresh-url="<?php echo osc_esc_html($marketRefreshUrl); ?>"
+     data-i18n='<?php echo osc_esc_html(json_encode(osc_market_i18n('plugin'))); ?>'>
+    <div class="osc-tab">
+        <ul>
+            <li><a href="#market-tab-installed"><?php _e('Installed'); ?></a></li>
+            <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
+            <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
+                    <span class="market-tab-count" id="market-updates-count">(<?php echo (int) count($aMarketUpdates); ?>)</span>
+                </a></li>
+        </ul>
+    </div>
+
+    <div id="market-tab-installed">
 <?php if (Params::getParam('error') != '') { ?>
     <!-- flash message -->
     <div class="flashmessage flashmessage-error">
@@ -159,6 +201,18 @@ osc_show_pagination_admin($aData);
             </select>
         </form>
     </div>
+</div>
+    </div>
+
+    <div id="market-tab-browse" hidden>
+        <?php osc_market_render_browse($aMarketBrowse, $aMarketMeta, 'plugin'); ?>
+    </div>
+
+    <div id="market-tab-updates" hidden>
+        <?php osc_market_render_updates($aMarketUpdates, $aMarketMeta, 'plugin'); ?>
+    </div>
+
+    <?php osc_market_render_detail_dialog('plugin'); ?>
 </div>
 <dialog id="pluginModal" class="osc-dialog osc-dialog-danger">
     <form method="get" action="<?php echo osc_admin_base_url(true); ?>">

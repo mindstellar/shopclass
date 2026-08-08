@@ -19,3 +19,52 @@
 .ui-osc-tabs .ui-tabs-nav li {
   float: inline-end;
 }
+
+// .osc-tab — the ARIA tabs widget oscInitTabs() wires (ui-osc.js). Same segmented-control
+// look as .ui-osc-tabs above (bench-sunk track, pill-free 4px-radius pills), kept as a
+// separate ruleset because the two are driven by different scripts with different markup
+// contracts and neither should have to match the other's DOM shape to share a look.
+.osc-tab {
+  margin-bottom: 1rem;
+
+  > ul {
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .15rem;
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: .2rem;
+
+    li {
+      margin: 0;
+    }
+
+    a {
+      border-radius: $border-radius-sm;
+      color: var(--osc-ink-muted);
+      cursor: pointer;
+      display: block;
+      font-size: .8125rem;
+      font-weight: 500;
+      padding: .4rem .85rem;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--osc-ink);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--osc-bronze);
+        outline-offset: 2px;
+      }
+    }
+
+    li.is-active a {
+      background-color: var(--osc-bench);
+      color: var(--osc-ink);
+      font-weight: 600;
+    }
+  }
+}

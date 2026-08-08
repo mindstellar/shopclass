@@ -1,0 +1,340 @@
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Mindstellar Community
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+// Browse / Updates market tabs (docs/MARKET.md §8.2), shared by the Plugins and
+// Appearance screens (parts/market.php). Cards reuse .osc-thumb (pages-themes.scss),
+// .osc-status (table.scss) and .callout-* (flashmessage.scss) rather than inventing
+// parallel components for art, state and notices.
+
+.market-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin: .75rem 0 1rem;
+
+  .market-search {
+    min-inline-size: 12rem;
+  }
+
+  .market-filter-category,
+  .market-sort {
+    min-inline-size: 9rem;
+  }
+
+  .market-search-label,
+  .market-filter-label,
+  .market-sort-label {
+    display: block;
+  }
+
+  .market-refresh-btn {
+    margin-inline-start: auto;
+
+    i.bi-arrow-repeat.is-spinning {
+      animation: osc-market-spin 1s linear infinite;
+      display: inline-block;
+    }
+  }
+}
+
+.market-last-checked {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .5rem 0 0;
+}
+
+.market-empty,
+.market-no-results {
+  color: var(--osc-ink-muted);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+// ---- Browse grid -----------------------------------------------------------
+.market-grid-item {
+  margin-bottom: 1rem;
+}
+
+.market-card {
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.market-card-thumb-btn {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  text-align: start;
+  width: 100%;
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.market-card-thumb {
+  aspect-ratio: 4 / 3;
+}
+
+.market-card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.market-card-status {
+  order: -1;
+}
+
+.market-card-title {
+  font-size: 1.0625rem; // Title
+  margin: 0;
+}
+
+.market-card-title-btn {
+  background: none;
+  border: 0;
+  color: var(--osc-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: start;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+  }
+}
+
+.market-card-author {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0;
+}
+
+.market-card-desc {
+  color: var(--osc-ink);
+  flex: 1 1 auto;
+  font-size: .875rem;
+  margin: 0;
+}
+
+.market-card-reason {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .25rem 0 0;
+}
+
+.market-card-actions {
+  margin-top: .5rem;
+}
+
+.market-card-action {
+  min-inline-size: 6.5rem;
+
+  &.is-loading {
+    position: relative;
+
+    .market-action-label {
+      visibility: hidden;
+    }
+
+    &::after {
+      animation: osc-market-spin .6s linear infinite;
+      block-size: .85rem;
+      border: 2px solid rgba(255, 255, 255, .5);
+      border-radius: 50%;
+      border-top-color: #fff;
+      content: "";
+      inline-size: .85rem;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      margin-block-start: -.45rem;
+      margin-inline-start: -.45rem;
+      position: absolute;
+    }
+  }
+}
+
+.market-card-action[disabled] {
+  cursor: not-allowed;
+}
+
+// ---- Updates list -----------------------------------------------------------
+.market-updates-toolbar {
+  margin-top: 0;
+}
+
+.market-updates-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.market-update-item {
+  align-items: center;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: 1rem;
+  padding: .85rem 0;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+
+  .market-update-item-thumb,
+  .osc-thumb {
+    block-size: 3.5rem;
+    border-radius: $border-radius-sm;
+    flex: 0 0 auto;
+    inline-size: 3.5rem;
+  }
+}
+
+.market-update-body {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.market-update-title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.market-update-versions {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .15rem 0 0;
+}
+
+.market-update-size {
+  margin-inline-start: .5rem;
+}
+
+.market-update-actions {
+  flex: 0 0 auto;
+  text-align: end;
+}
+
+// ---- Detail dialog -----------------------------------------------------------
+.market-detail-dialog {
+  padding: 0;
+}
+
+.market-detail-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding-block-end: 1rem;
+  position: relative;
+}
+
+.market-detail-close {
+  inset-block-start: 1rem;
+  inset-inline-end: 1rem;
+  position: absolute;
+}
+
+.market-detail-thumb {
+  flex: 0 0 auto;
+  inline-size: 10rem;
+
+  .osc-thumb {
+    aspect-ratio: 4 / 3;
+    border-radius: $border-radius;
+  }
+}
+
+.market-detail-main {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  padding-inline-end: 2rem;
+}
+
+.market-detail-status:empty {
+  display: none;
+}
+
+.market-detail-author {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .15rem 0 .5rem;
+}
+
+.market-detail-desc {
+  margin: 0 0 .5rem;
+}
+
+.market-detail-reason {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.market-detail-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin: .75rem 0;
+
+  dt {
+    color: var(--osc-ink-muted);
+    font-size: .75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.market-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &:empty {
+    display: none;
+  }
+
+  li {
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius-pill;
+    color: var(--osc-ink-muted);
+    font-size: .75rem;
+    padding: .1rem .55rem;
+  }
+}
+
+@keyframes osc-market-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .market-refresh-btn i.bi-arrow-repeat.is-spinning,
+  .market-card-action.is-loading::after {
+    animation: none;
+  }
+}
