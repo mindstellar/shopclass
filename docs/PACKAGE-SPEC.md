@@ -266,6 +266,12 @@ admin Browse screen pre-selects "Recently updated" as its sort. Ship no releases
 time and your package sinks toward the bottom of that list regardless of how good it is;
 the only way to stay near the top is to keep cutting releases.
 
+**`downloads` is also not something you set.** The catalog builder reads it from GitHub's
+own per-asset download count on each release, summed across every version for the
+package-level figure in `index.json` and `packages/<slug>.json`. It is a raw count of
+release-asset fetches — it includes CI runs, mirrors, and repeat downloads — not a
+measure of active installs, so do not advertise it as one.
+
 ---
 
 ## 8. What CI checks

@@ -519,6 +519,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 'categories'        => $row['categories'],
                 'tags'              => $row['tags'],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
+                'downloads'         => is_int($row['downloads'] ?? null) ? $row['downloads'] : 0,
                 'compat'            => array(
                     'status'  => $row['compatibility']['status'],
                     'blocked' => $row['compatibility']['blocked'],

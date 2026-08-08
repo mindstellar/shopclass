@@ -2,8 +2,8 @@
 
 Status: **Live**, shipped in Shopclass 6.1.0. All six phases in §10 landed: both registries
 are public, their catalogs are served from GitHub Pages, and core browses, installs, and
-updates packages from them. Catalog signing and download counts did not ship — see §9 and
-§12.
+updates packages from them. Download counts (§12) shipped in 6.1.0.beta3. Catalog signing
+did not ship — see §9.
 Scope: two GitHub repositories (`mindstellar/shopclass-plugins`,
 `mindstellar/shopclass-themes`), the static catalog they publish, and the core
 code that browses, installs, and updates from it.
@@ -290,11 +290,24 @@ later without breaking old installs.
 
 | File | Purpose | Fetched by core |
 |---|---|---|
-| `v1/updates.json` | `{slug: [{version, requires, requires_php, tested, url, sha256, size, published_at}]}` for **every** package, versions newest-first | Once per 24h, conditional GET |
-| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version, icon URL, categories, tags, `updated_at` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
-| `v1/packages/<slug>.json` | Full detail: rendered README (`description_html`), screenshots, `versions[]` with per-version compatibility, `links` (homepage/repo/issues) | Lazily, when a detail view opens |
+| `v1/updates.json` | `{slug: [{version, requires, requires_php, tested, url, sha256, size, published_at, downloads}]}` for **every** package, versions newest-first | Once per 24h, conditional GET |
+| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version, icon URL, categories, tags, `updated_at`, `downloads` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
+| `v1/packages/<slug>.json` | Full detail: rendered README (`description_html`), screenshots, `versions[]` with per-version compatibility and `downloads`, a package-level `downloads` total, `links` (homepage/repo/issues) | Lazily, when a detail view opens |
 | `v1/categories.json` | Category vocabulary + counts, as a JSON array of `{id, label, description, count}` | With `index.json` |
 | `v1/manifest.json` | Catalog-level build metadata — `core_version` the build was validated against, `generated_at`, `package_count`, `resolved_version_count`, `schema_version` | Not fetched by core; an operator/debugging artifact of the catalog build |
+
+**`downloads` is GitHub's own count of release-asset fetches, nothing more.** The catalog
+builder reads `assets[].download_count` from the GitHub Releases API response for the
+asset it resolves for each version (§7) — the same response it already uses to pick that
+asset and compute its sha256, so no extra API call is spent on it. Per-version `downloads`
+in `updates.json` and `packages/<slug>.json` is that one asset's count; the package-level
+`downloads` in `index.json` and `packages/<slug>.json` sums it across every version the
+build resolved. This resolves §12's former open question: it is free, requires no
+telemetry or call-home, and needs no scraping beyond an API core CI already calls. It is
+**not an install count** — it also counts CI jobs, mirrors, bots, and the same person
+re-downloading a release, so treat it as a popularity signal for ranking/sorting, never as
+a measure of how many sites run a package. A catalog published before this field existed
+has none; `Catalog` reads that as `0`, not as missing data (§8 below).
 
 Efficiency rules core follows:
 
@@ -743,12 +756,12 @@ Two rules that keep this from rotting:
    is the pattern actually used for both live themes (`bender`, `storefront`,
    §3.2); neither theme's source lives in the registry, so review is "does this
    manifest point at a real repo and release," not a codebase review.
-3. **Download counts.** Still not built. Genuinely useful for ranking, and
-   still impossible to collect without either a call-home from installs or
-   scraping GitHub release statistics; the catalog's published `index.json` and
-   `v1/manifest.json` carry no download-count field of any kind today. The
-   GitHub asset download count remains the recommended source if this is ever
-   built — free, imprecise, no telemetry required.
+3. **Download counts — resolved: built on GitHub's asset download count.** Shipped in
+   6.1.0.beta3, as the recommended source concluded here: no call-home, no telemetry,
+   no scraping beyond an API the catalog build already calls. `downloads` is a frozen
+   field, per-version and per-package, in `updates.json`, `index.json`, and
+   `packages/<slug>.json` — see §5 for the exact shape and honest limits (it is GitHub's
+   raw asset-fetch count, not an install count).
 4. **Paid plugins.** Still out of scope; still no commerce in this system. Not
    verified whether the manifest schema reserves a `price` field — treat that
    detail as unconfirmed rather than repeat the earlier draft's claim about it.

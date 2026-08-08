@@ -73,7 +73,7 @@ final class Catalog
      *
      * @return array<string, array<int, array{version:string, requires:string,
      *              requires_php:string, tested:string, url:string, sha256:string,
-     *              size:int}>>
+     *              size:int, downloads:int}>>
      */
     public function updates(bool $force = false): array
     {
@@ -88,7 +88,7 @@ final class Catalog
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
-     *              tags:array<int,string>, updated_at:string}>
+     *              tags:array<int,string>, updated_at:string, downloads:int}>
      */
     public function index(bool $force = false): array
     {
@@ -360,7 +360,8 @@ final class Catalog
      * through — a poisoned catalog must not be able to point an install anywhere.
      *
      * @return array<string, array<int, array{version:string, requires:string,
-     *              requires_php:string, tested:string, url:string, sha256:string, size:int}>>
+     *              requires_php:string, tested:string, url:string, sha256:string, size:int,
+     *              downloads:int}>>
      */
     private function sanitizeUpdates($raw): array
     {
@@ -429,6 +430,12 @@ final class Catalog
         $size = $entry['size'] ?? 0;
         $size = is_int($size) || is_float($size) ? max(0, (int) $size) : 0;
 
+        // GitHub's cumulative release-asset download count for this version. Absent on any
+        // catalog published before this field existed, so it defaults to 0 rather than
+        // dropping the version or warning — see the class docblock on catalog tolerance.
+        $downloads = $entry['downloads'] ?? 0;
+        $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
+
         return [
             'version'      => $version,
             'requires'     => is_string($entry['requires'] ?? null) ? $entry['requires'] : '',
@@ -438,6 +445,7 @@ final class Catalog
             'sha256'       => $sha256,
             'size'         => $size,
             'published_at' => is_string($entry['published_at'] ?? null) ? $entry['published_at'] : '',
+            'downloads'    => $downloads,
         ];
     }
 
@@ -447,7 +455,7 @@ final class Catalog
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
-     *              tags:array<int,string>, updated_at:string}>
+     *              tags:array<int,string>, updated_at:string, downloads:int}>
      */
     private function sanitizeIndex($raw): array
     {
@@ -481,6 +489,12 @@ final class Catalog
                 $iconValue = null;
             }
 
+            // Package total (sum across every published version). Absent on a catalog
+            // published before this field existed — defaults to 0, same tolerance as every
+            // other field here.
+            $downloads = $row['downloads'] ?? 0;
+            $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
+
             $result[$slug] = [
                 'slug'              => $slug,
                 'name'              => is_string($row['name'] ?? null) ? $row['name'] : $slug,
@@ -495,6 +509,7 @@ final class Catalog
                     ? array_values(array_filter($row['tags'], 'is_string'))
                     : [],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
+                'downloads'         => $downloads,
             ];
         }
 
@@ -567,6 +582,11 @@ final class Catalog
             $links['repo'] = 'https://github.com/' . $raw['source']['repo'];
         }
 
+        // Package total (sum across every published version) — same tolerant default as
+        // index()/updates() so a catalog published before this field existed still reads.
+        $downloads = $raw['downloads'] ?? 0;
+        $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
+
         return [
             'slug'              => $slug,
             'name'              => is_string($raw['name'] ?? null) ? $raw['name'] : $slug,
@@ -584,6 +604,7 @@ final class Catalog
             'links'             => $links,
             'versions'          => $versions,
             'updated_at'        => is_string($raw['updated_at'] ?? null) ? $raw['updated_at'] : '',
+            'downloads'         => $downloads,
         ];
     }
 }

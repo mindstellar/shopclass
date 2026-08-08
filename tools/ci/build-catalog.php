@@ -607,6 +607,176 @@ function escapeMd(string $s): string
     return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Nesting levels beyond this flatten into the innermost list rather than recursing further. */
+const MAX_LIST_DEPTH = 8;
+
+/**
+ * Whether `$line` opens a list item, and at what indentation. Tabs count as two spaces so
+ * tab- and space-indented sources compare on the same scale.
+ *
+ * @return array{indent:int, ordered:bool, content:string}|null
+ */
+function matchListItem(string $line): ?array
+{
+    if (preg_match('/^([ \t]*)([-*+])\s+(.*)$/', $line, $m)) {
+        return ['indent' => strlen(str_replace("\t", '  ', $m[1])), 'ordered' => false, 'content' => $m[3]];
+    }
+    if (preg_match('/^([ \t]*)\d+\.\s+(.*)$/', $line, $m)) {
+        return ['indent' => strlen(str_replace("\t", '  ', $m[1])), 'ordered' => true, 'content' => $m[2]];
+    }
+
+    return null;
+}
+
+/** A list item's own text: task-list checkbox (rendered as an inert symbol) plus inline markdown. */
+function renderListItemContent(string $raw): string
+{
+    if (preg_match('/^\[([ xX])\]\s+(.*)$/', $raw, $m)) {
+        $symbol = strtolower($m[1]) === 'x' ? "\u{2611}" : "\u{2610}"; // checked / empty box, never an interactive control
+        return $symbol . ' ' . renderInlineMarkdown(escapeMd($m[2]));
+    }
+
+    return renderInlineMarkdown(escapeMd($raw));
+}
+
+/**
+ * Consumes a run of same-type, same-indent list items starting at `$lines[$i]`, recursing into
+ * a child `<ul>`/`<ol>` for any more-indented item that immediately follows. `$depth` is capped
+ * at MAX_LIST_DEPTH: beyond that, deeper items are flattened into this list instead of nesting
+ * further, so adversarial indentation cannot recurse without bound.
+ */
+function renderListBlock(array $lines, int &$i, int $n, int $indent, int $depth): string
+{
+    $ordered = matchListItem($lines[$i])['ordered'];
+    $atCap = $depth >= MAX_LIST_DEPTH;
+    $items = [];
+
+    while ($i < $n) {
+        $item = matchListItem($lines[$i]);
+        if ($item === null || $item['ordered'] !== $ordered || $item['indent'] < $indent) {
+            break;
+        }
+        if ($item['indent'] > $indent) {
+            if (!$atCap) {
+                break; // Handled by the recursive call below, on the item that precedes this one.
+            }
+            $items[] = '<li>' . renderListItemContent($item['content']) . '</li>';
+            $i++;
+            continue;
+        }
+
+        $content = renderListItemContent($item['content']);
+        $i++;
+
+        $nested = '';
+        $next = $i < $n ? matchListItem($lines[$i]) : null;
+        if ($next !== null && $next['indent'] > $indent && !$atCap) {
+            $nested = renderListBlock($lines, $i, $n, $next['indent'], $depth + 1);
+        }
+
+        $items[] = '<li>' . $content . $nested . '</li>';
+    }
+
+    $tag = $ordered ? 'ol' : 'ul';
+
+    return "<{$tag}>" . implode('', $items) . "</{$tag}>";
+}
+
+/**
+ * Splits a table row on unescaped `|`, dropping one optional leading/trailing empty cell
+ * produced by the row's own outer pipes, and turning `\|` back into a literal pipe.
+ *
+ * @return string[]
+ */
+function splitTableRow(string $row): array
+{
+    $cells = preg_split('/(?<!\\\\)\|/', trim($row));
+    if ($cells === false) {
+        return [];
+    }
+    if ($cells !== [] && trim($cells[0]) === '') {
+        array_shift($cells);
+    }
+    if ($cells !== [] && trim((string) end($cells)) === '') {
+        array_pop($cells);
+    }
+
+    return array_map(static fn (string $c): string => str_replace('\\|', '|', trim($c)), $cells);
+}
+
+/** Whether `$line` is a GFM table delimiter row (`|---|:---:|---:|`, outer pipes optional). */
+function isTableDelimiterRow(string $line): bool
+{
+    if (trim($line) === '' || !str_contains($line, '-')) {
+        return false;
+    }
+    $cells = splitTableRow($line);
+    if ($cells === []) {
+        return false;
+    }
+    foreach ($cells as $cell) {
+        if (!preg_match('/^:?-+:?$/', $cell)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** @return string[] 'left'|'center'|'right'|'' per delimiter cell, indexed like the header. */
+function parseTableAlignments(array $delimCells): array
+{
+    return array_map(static function (string $cell): string {
+        $left = str_starts_with($cell, ':');
+        $right = str_ends_with($cell, ':');
+        if ($left && $right) {
+            return 'center';
+        }
+
+        return $right ? 'right' : ($left ? 'left' : '');
+    }, $delimCells);
+}
+
+/**
+ * Pads a short row with empty cells and folds an overrun into the last column (joined by a
+ * space) rather than dropping it, so a ragged row never loses content or breaks the table shape.
+ *
+ * @return string[]
+ */
+function normalizeTableRow(array $cells, int $colCount): array
+{
+    if ($colCount <= 0) {
+        return [];
+    }
+    if (count($cells) <= $colCount) {
+        return array_pad($cells, $colCount, '');
+    }
+    $head = array_slice($cells, 0, $colCount - 1);
+    $head[] = implode(' ', array_slice($cells, $colCount - 1));
+
+    return $head;
+}
+
+/** Bootstrap alignment utility class for a column, or '' — never a `style=` attribute. */
+function tableAlignClass(array $aligns, int $col): string
+{
+    return match ($aligns[$col] ?? '') {
+        'center' => ' class="text-center"',
+        'right'  => ' class="text-end"',
+        default  => '',
+    };
+}
+
+function renderTableRow(array $cells, int $colCount, array $aligns, string $cellTag): string
+{
+    $out = '<tr>';
+    foreach (normalizeTableRow($cells, $colCount) as $idx => $cell) {
+        $out .= '<' . $cellTag . tableAlignClass($aligns, $idx) . '>' . renderInlineMarkdown(escapeMd($cell)) . '</' . $cellTag . '>';
+    }
+
+    return $out . '</tr>';
+}
+
 function renderMarkdownSafe(?string $markdown): string
 {
     if ($markdown === null || trim($markdown) === '') {
@@ -638,6 +808,24 @@ function renderMarkdownSafe(?string $markdown): string
             continue;
         }
 
+        // GFM pipe table: a header row followed immediately by a delimiter row. Excludes a
+        // heading or blockquote line that happens to contain a literal '|' -- those take
+        // priority so e.g. a heading directly above an unrelated `---` rule isn't swallowed.
+        if (str_contains($line, '|') && !preg_match('/^(#{1,6}\s|>)/', $line)
+            && $i + 1 < $n && isTableDelimiterRow($lines[$i + 1])) {
+            $headerCells = splitTableRow($line);
+            $aligns = parseTableAlignments(splitTableRow($lines[$i + 1]));
+            $colCount = count($headerCells);
+            $i += 2;
+            $bodyHtml = '';
+            while ($i < $n && trim($lines[$i]) !== '' && str_contains($lines[$i], '|')) {
+                $bodyHtml .= renderTableRow(splitTableRow($lines[$i]), $colCount, $aligns, 'td');
+                $i++;
+            }
+            $html[] = '<table><thead>' . renderTableRow($headerCells, $colCount, $aligns, 'th') . '</thead><tbody>' . $bodyHtml . '</tbody></table>';
+            continue;
+        }
+
         // ATX heading.
         if (preg_match('/^(#{1,6})\s+(.*?)\s*#*$/', $line, $m)) {
             $level = strlen($m[1]);
@@ -664,32 +852,18 @@ function renderMarkdownSafe(?string $markdown): string
             continue;
         }
 
-        // Unordered list.
-        if (preg_match('/^\s*[-*+]\s+(.*)$/', $line)) {
-            $items = [];
-            while ($i < $n && preg_match('/^\s*[-*+]\s+(.*)$/', $lines[$i], $m)) {
-                $items[] = '<li>' . renderInlineMarkdown(escapeMd($m[1])) . '</li>';
-                $i++;
-            }
-            $html[] = '<ul>' . implode('', $items) . '</ul>';
-            continue;
-        }
-
-        // Ordered list.
-        if (preg_match('/^\s*\d+\.\s+(.*)$/', $line)) {
-            $items = [];
-            while ($i < $n && preg_match('/^\s*\d+\.\s+(.*)$/', $lines[$i], $m)) {
-                $items[] = '<li>' . renderInlineMarkdown(escapeMd($m[1])) . '</li>';
-                $i++;
-            }
-            $html[] = '<ol>' . implode('', $items) . '</ol>';
+        // List (ordered or unordered), nesting into a child list per indentation level.
+        $listItem = matchListItem($line);
+        if ($listItem !== null) {
+            $html[] = renderListBlock($lines, $i, $n, $listItem['indent'], 1);
             continue;
         }
 
         // Paragraph — consecutive non-blank, non-special lines.
         $buf = [];
         while ($i < $n && trim($lines[$i]) !== ''
-            && !preg_match('/^(```|#{1,6}\s|>|\s*[-*+]\s|\s*\d+\.\s|\s*([-*_])\s*(?:\2\s*){2,}$)/', $lines[$i])) {
+            && !preg_match('/^(```|#{1,6}\s|>|[ \t]*[-*+]\s|[ \t]*\d+\.\s|\s*([-*_])\s*(?:\2\s*){2,}$)/', $lines[$i])
+            && !(str_contains($lines[$i], '|') && $i + 1 < $n && isTableDelimiterRow($lines[$i + 1]))) {
             $buf[] = $lines[$i];
             $i++;
         }
@@ -838,7 +1012,7 @@ function discoverExternalPackages(string $root, string $type, array &$errors): a
  *
  * @return array{ok:bool, entry:?array, artwork_zip_bytes:?string, artwork_slug_dir:?string, error:?string}
  */
-function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, bool $offline, string $cacheDir, string $coreVersion): array
+function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, int $downloadCount, bool $offline, string $cacheDir, string $coreVersion): array
 {
     if (!isAllowedDownloadUrl($assetUrl)) {
         return ['ok' => false, 'entry' => null, 'artwork_zip_bytes' => null, 'artwork_slug_dir' => null, 'error' => "refusing to emit a download URL outside the host allowlist: {$assetUrl}"];
@@ -874,6 +1048,11 @@ function resolveOneRelease(string $slug, string $type, string $assetUrl, string 
         'sha256'        => hash('sha256', $bytes),
         'size'          => strlen($bytes),
         'published_at'  => $publishedAt,
+        // GitHub's own cumulative count of times this asset was fetched (docs/MARKET.md
+        // §5, §12) — read from the same releases-API response used to pick the asset and
+        // its URL above, never a second call. Not an install count: it includes CI runs,
+        // mirrors, and re-downloads.
+        'downloads'     => max(0, $downloadCount),
         'header'        => $header,
         'compat'        => ['status' => $compat['status'], 'blocked' => $compat['blocked'], 'reason' => $compat['reason']],
     ];
@@ -933,7 +1112,7 @@ function resolveInRepoVersions(string $slug, string $type, array $allReleases, b
             continue;
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), $offline, $cacheDir, $coreVersion);
+        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($chosen['download_count'] ?? 0), $offline, $cacheDir, $coreVersion);
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
@@ -993,7 +1172,7 @@ function resolveExternalVersions(string $slug, string $type, array $manifest, bo
             $notes[] = "{$tag}: asset_pattern matched " . count($matchingAssets) . ' assets — using ' . $matchingAssets[0]['name'];
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), $offline, $cacheDir, $coreVersion);
+        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($matchingAssets[0]['download_count'] ?? 0), $offline, $cacheDir, $coreVersion);
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
@@ -1158,10 +1337,15 @@ function buildPackageEntry(
             'sha256'         => $v['sha256'],
             'size'           => $v['size'],
             'published_at'   => $v['published_at'],
+            'downloads'      => $v['downloads'],
             'compat'         => $v['compat'],
             'changelog_html' => renderMarkdownSafe($changelogSrc),
         ];
     }
+
+    // Package total is the sum across every published version resolved above, not just
+    // the newest — a package's cumulative popularity, not a snapshot of its latest release.
+    $totalDownloads = array_sum(array_column($versionsOut, 'downloads'));
 
     $categories = array_values(array_unique(array_map('strval', $manifest['categories'] ?? [])));
     sort($categories, SORT_STRING);
@@ -1190,6 +1374,7 @@ function buildPackageEntry(
         'screenshots'      => $screenshots,
         'latest_version'   => $newest['version'] ?? null,
         'updated_at'       => $newest['published_at'] ?? null,
+        'downloads'        => $totalDownloads,
         'versions'         => $versionsOut,
     ];
 
@@ -1221,6 +1406,7 @@ function buildUpdatesJson(array $packages): array
             'url'          => $v['url'],
             'sha256'       => $v['sha256'],
             'size'         => $v['size'],
+            'downloads'    => $v['downloads'],
         ], $pkg['versions']);
     }
 
@@ -1241,6 +1427,7 @@ function buildIndexJson(array $packages): array
             'categories'       => $pkg['categories'],
             'tags'             => $pkg['tags'],
             'updated_at'       => $pkg['updated_at'],
+            'downloads'        => $pkg['downloads'],
         ];
     }
     usort($out, static fn ($a, $b) => strcmp($a['slug'], $b['slug']));
