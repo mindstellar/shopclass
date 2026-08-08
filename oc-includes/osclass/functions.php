@@ -598,9 +598,19 @@ function _osc_check_plugins_update()
     $array            = array();
     $array_downloaded = array();
     $plugins          = Plugins::listAll();
+
+    // Catalog failures are absorbed internally (cached payload + retry clock);
+    // a hard throw here still must not break the admin footer poll or the CLI.
+    try {
+        $pending = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
     foreach ($plugins as $plugin) {
         $info = osc_plugin_get_info($plugin);
-        if (osc_check_plugin_update(@$info['plugin_update_uri'], @$info['version'])) {
+        $slug = dirname($plugin);
+        if (isset($pending[$slug])) {
             $array[] = @$info['plugin_update_uri'];
             $total++;
         }
@@ -667,9 +677,16 @@ function _osc_check_themes_update()
     $array            = array();
     $array_downloaded = array();
     $themes           = WebThemes::newInstance()->getListThemes();
+
+    try {
+        $pending = \mindstellar\market\PackageIndex::forThemes()->pendingUpdates();
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
     foreach ($themes as $theme) {
         $info = WebThemes::newInstance()->loadThemeInfo($theme);
-        if (osc_check_theme_update(@$info['theme_update_uri'], @$info['version'])) {
+        if (isset($pending[$theme])) {
             $array[] = $theme;
             $total++;
         }
