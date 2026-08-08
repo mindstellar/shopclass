@@ -151,6 +151,7 @@ jobs:
           cp tools/ci/deprecation-scan.php package-ci/
           cp tools/ci/annotate.php package-ci/
           cp tools/ci/smoke-install.sh package-ci/
+          cp tools/ci/build-catalog.php package-ci/
           cp tools/ci/deprecation-collector/index.php package-ci/deprecation-collector/
           tar czf shopclass-package-ci.tar.gz package-ci
 
