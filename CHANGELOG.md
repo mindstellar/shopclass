@@ -26,6 +26,17 @@ artwork render a built-in placeholder instead of a broken image.
   than the newest that exists.
 - `oc-cli.php` gains `market:refresh`, `market:search`, `market:info`, `market:install` and
   `market:update` for headless and container installs.
+- Container deployments keep what they install. `oc-content/plugins` and `oc-content/themes`
+  are persisted alongside uploads and downloads, and the entrypoint reconciles bundled packages
+  from a pristine copy in the image on every start — installing what is missing, refreshing only
+  what the image has newer, and never touching a package the site owner installed. Package
+  installs are now gated separately from the core self-updater (`OSC_DISABLE_PACKAGE_INSTALLS`,
+  off by default), so a container can update plugins and themes in place while core continues to
+  update by deploying a new image.
+- Catalog listings carry a download count, and Browse can sort by it. The figure is GitHub's
+  cumulative count of release-asset downloads, so it includes CI, mirrors and bots and is not an
+  install count; it is shown only where there is one, and the default ordering stays most
+  recently updated.
 - Plugins and themes can declare `Requires Shopclass`, `Tested up to`, and `Requires PHP` in
   their header block. All three are optional — a package that declares nothing is treated as
   before, never as incompatible — and they are parsed for both plugins and themes.
@@ -67,6 +78,10 @@ artwork render a built-in placeholder instead of a broken image.
 
 ### Fixed
 
+- A prerelease core was refused any package requiring the release it belongs to — `6.1.0.beta2`
+  could not install a package declaring `Requires Shopclass: 6.1.0`, because the beta sorts below
+  the release. Compatibility now compares against the release a prerelease belongs to, so testers
+  are not locked out of the series they are testing.
 - The Appearance screen no longer renders a broken image for a theme that ships no
   `screenshot.png`; it also gained lazy loading, real alternative text, and intrinsic
   dimensions so the grid no longer reflows.

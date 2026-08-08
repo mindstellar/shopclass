@@ -104,6 +104,7 @@ php oc-cli.php help          # list every command
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
 | `db:upgrade [--skip-db]` | Reconcile the schema and run pending migrations after an update. `--skip-db` continues past false-positive query errors. |
+| `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content` — a no-op outside a container image. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
@@ -113,6 +114,11 @@ php oc-cli.php help          # list every command
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin. |
 | `theme:list` | List installed public themes and mark the active one. |
 | `theme:activate --theme=<name>` | Set the active public theme. |
+| `market:refresh [--type=plugin\|theme]` | Refresh the cached plugin/theme catalog from the registry. |
+| `market:search <query> [--type=plugin\|theme]` | Search the catalog. |
+| `market:info <slug> [--type=plugin\|theme]` | Show catalog details for a package. |
+| `market:install <slug> [--type=plugin\|theme]` | Install a package from the catalog. |
+| `market:update <slug>\|--all [--type=plugin\|theme]` | Update installed packages from the catalog. |
 | `doctor` | Report on PHP version, extensions, database, writability, cron freshness, and cache. Exits non-zero if any check fails. |
 | `version` | Print the installed version. |
 
@@ -249,6 +255,8 @@ please don't modify the marks or imply endorsement.
 - [Caching contract](docs/CACHING.md) — how Shopclass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
 - [Page builder](docs/PAGE-BUILDER.md) — the page-template registry and the widget-based page composition model.
 - [Custom fields](docs/CUSTOM-FIELDS.md) — field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
+- [Market](docs/MARKET.md) — the GitHub-native plugin & theme ecosystem: the [`shopclass-plugins`](https://github.com/mindstellar/shopclass-plugins) / [`shopclass-themes`](https://github.com/mindstellar/shopclass-themes) registries, the static catalog they publish, and how core browses, installs, and updates from it.
+- [Package spec](docs/PACKAGE-SPEC.md) — the contract a plugin or theme must satisfy to be listed in the market: header fields, compatibility, versioning, artwork, and security requirements.
 
 Installation, local development, and the production image are covered in the sections above.
 
