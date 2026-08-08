@@ -18,9 +18,16 @@
  * resolved safely.
  *
  * Dependency-free, like the rest of this family: no bootstrap, no autoloader,
- * no database. The one exception is Compatibility.php (see below), which is
- * itself dependency-free apart from a __() call a passthrough shim satisfies
- * here. Runs from an extracted release bundle with no core checkout present.
+ * no database. Runs from an extracted release bundle with no core checkout present.
+ *
+ * Publishes facts, not a verdict: each version carries its own raw `requires` /
+ * `requires_php` / `tested`, exactly as declared in that release's header, and a
+ * package-level `requires_min` / `tested_max` summarising the span across every
+ * version this build resolved. It does **not** publish a precomputed compatibility
+ * judgement against any one core install — a static catalog serves sites on many
+ * core versions at once, so a verdict baked in here would be right for at most one
+ * of them. `mindstellar\market\Compatibility::evaluate()` is what decides that, run
+ * locally by the site reading the catalog (docs/MARKET.md §4, §5).
  *
  * Usage:
  *   php build-catalog.php --type=plugin|theme --root=<registry-repo-root> \
@@ -1008,11 +1015,12 @@ function discoverExternalPackages(string $root, string $type, array &$errors): a
  * Downloads one release's chosen asset, verifies it, and reads its own header.
  * Per-version requires/requires_php/tested come from THIS artifact, never the
  * newest one (docs/MARKET.md §4) — that is simply a consequence of calling
- * this once per resolved release rather than once per package.
+ * this once per resolved release rather than once per package. No compatibility
+ * verdict is computed here — see the file docblock.
  *
  * @return array{ok:bool, entry:?array, artwork_zip_bytes:?string, artwork_slug_dir:?string, error:?string}
  */
-function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, int $downloadCount, bool $offline, string $cacheDir, string $coreVersion): array
+function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, int $downloadCount, bool $offline, string $cacheDir): array
 {
     if (!isAllowedDownloadUrl($assetUrl)) {
         return ['ok' => false, 'entry' => null, 'artwork_zip_bytes' => null, 'artwork_slug_dir' => null, 'error' => "refusing to emit a download URL outside the host allowlist: {$assetUrl}"];
@@ -1037,8 +1045,6 @@ function resolveOneRelease(string $slug, string $type, string $assetUrl, string 
     $requiresPhp = $header['requires_php'] !== '' ? $header['requires_php'] : null;
     $testedUpTo = $header['tested_up_to'] !== '' ? $header['tested_up_to'] : null;
 
-    $compat = \mindstellar\market\Compatibility::evaluate($header, $coreVersion, PHP_VERSION);
-
     $entry = [
         'version'       => $version,
         'requires'      => $requires,
@@ -1054,7 +1060,6 @@ function resolveOneRelease(string $slug, string $type, string $assetUrl, string 
         // mirrors, and re-downloads.
         'downloads'     => max(0, $downloadCount),
         'header'        => $header,
-        'compat'        => ['status' => $compat['status'], 'blocked' => $compat['blocked'], 'reason' => $compat['reason']],
     ];
 
     return ['ok' => true, 'entry' => $entry, 'artwork_zip_bytes' => $bytes, 'artwork_slug_dir' => $read['slug_dir'], 'error' => null];
@@ -1063,7 +1068,7 @@ function resolveOneRelease(string $slug, string $type, string $assetUrl, string 
 /**
  * @return array{versions: array<int,array>, artwork: array{bytes:?string, slug_dir:?string}, notes: array<int,string>, hadError: bool}
  */
-function resolveInRepoVersions(string $slug, string $type, array $allReleases, bool $offline, string $cacheDir, string $coreVersion, int $maxVersions): array
+function resolveInRepoVersions(string $slug, string $type, array $allReleases, bool $offline, string $cacheDir, int $maxVersions): array
 {
     $pattern = '/^' . preg_quote($slug, '/') . '-v(.+)$/';
     $matches = [];
@@ -1112,7 +1117,7 @@ function resolveInRepoVersions(string $slug, string $type, array $allReleases, b
             continue;
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($chosen['download_count'] ?? 0), $offline, $cacheDir, $coreVersion);
+        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($chosen['download_count'] ?? 0), $offline, $cacheDir);
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
@@ -1132,7 +1137,7 @@ function resolveInRepoVersions(string $slug, string $type, array $allReleases, b
 /**
  * @return array{versions: array<int,array>, artwork: array{bytes:?string, slug_dir:?string}, notes: array<int,string>, hadError: bool}
  */
-function resolveExternalVersions(string $slug, string $type, array $manifest, bool $offline, string $cacheDir, ?string $token, string $coreVersion, int $maxVersions): array
+function resolveExternalVersions(string $slug, string $type, array $manifest, bool $offline, string $cacheDir, ?string $token, int $maxVersions): array
 {
     $repo = (string) $manifest['source']['repo'];
     $assetPattern = (string) $manifest['asset_pattern'];
@@ -1172,7 +1177,7 @@ function resolveExternalVersions(string $slug, string $type, array $manifest, bo
             $notes[] = "{$tag}: asset_pattern matched " . count($matchingAssets) . ' assets — using ' . $matchingAssets[0]['name'];
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($matchingAssets[0]['download_count'] ?? 0), $offline, $cacheDir, $coreVersion);
+        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($matchingAssets[0]['download_count'] ?? 0), $offline, $cacheDir);
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
@@ -1219,6 +1224,40 @@ function displayAuthor(array $header, string $type): string
 }
 
 /**
+ * The package-level `requires_min` / `tested_max` pair: the lowest `requires` and the
+ * highest `tested` among the versions this build resolved, so a browse listing can show a
+ * supported range without reading every version. A blank/non-version-shaped value on any
+ * one version is simply excluded from the comparison, same as `Compatibility::normalize()`
+ * treats it core-side — this file cannot depend on that class (see the file docblock), so
+ * the same tolerance is reimplemented here in miniature.
+ *
+ * @param array<int,array{requires:?string, tested:?string}> $versionsOut
+ *
+ * @return array{requires_min:?string, tested_max:?string}
+ */
+function packageSupportedRange(array $versionsOut): array
+{
+    $requiresMin = null;
+    $testedMax = null;
+
+    foreach ($versionsOut as $v) {
+        $requires = $v['requires'];
+        if (is_string($requires) && preg_match('/^\d/', $requires)
+            && ($requiresMin === null || version_compare($requires, $requiresMin, '<'))) {
+            $requiresMin = $requires;
+        }
+
+        $tested = $v['tested'];
+        if (is_string($tested) && preg_match('/^\d/', $tested)
+            && ($testedMax === null || version_compare($tested, $testedMax, '>'))) {
+            $testedMax = $tested;
+        }
+    }
+
+    return ['requires_min' => $requiresMin, 'tested_max' => $testedMax];
+}
+
+/**
  * @return array{package: array, summary: string, hadError: bool}
  */
 function buildPackageEntry(
@@ -1228,7 +1267,6 @@ function buildPackageEntry(
     array $manifest,
     array $resolution,
     ?string $localDir,
-    string $coreVersion,
     string $outDir
 ): array {
     $versions = $resolution['versions'];
@@ -1338,7 +1376,6 @@ function buildPackageEntry(
             'size'           => $v['size'],
             'published_at'   => $v['published_at'],
             'downloads'      => $v['downloads'],
-            'compat'         => $v['compat'],
             'changelog_html' => renderMarkdownSafe($changelogSrc),
         ];
     }
@@ -1346,6 +1383,8 @@ function buildPackageEntry(
     // Package total is the sum across every published version resolved above, not just
     // the newest — a package's cumulative popularity, not a snapshot of its latest release.
     $totalDownloads = array_sum(array_column($versionsOut, 'downloads'));
+
+    $range = packageSupportedRange($versionsOut);
 
     $categories = array_values(array_unique(array_map('strval', $manifest['categories'] ?? [])));
     sort($categories, SORT_STRING);
@@ -1375,6 +1414,12 @@ function buildPackageEntry(
         'latest_version'   => $newest['version'] ?? null,
         'updated_at'       => $newest['published_at'] ?? null,
         'downloads'        => $totalDownloads,
+        // Package-level supported range, derived from every version resolved above — the
+        // lowest `requires` and the highest `tested` currently published, so a listing can
+        // show "works with X – Y" without reading every version (docs/MARKET.md §5). Not a
+        // verdict against any one core install; see the file docblock.
+        'requires_min'     => $range['requires_min'],
+        'tested_max'       => $range['tested_max'],
         'versions'         => $versionsOut,
     ];
 
@@ -1428,6 +1473,8 @@ function buildIndexJson(array $packages): array
             'tags'             => $pkg['tags'],
             'updated_at'       => $pkg['updated_at'],
             'downloads'        => $pkg['downloads'],
+            'requires_min'     => $pkg['requires_min'],
+            'tested_max'       => $pkg['tested_max'],
         ];
     }
     usort($out, static fn ($a, $b) => strcmp($a['slug'], $b['slug']));
@@ -1491,28 +1538,6 @@ function buildManifestJson(string $type, string $coreVersion, array $packages): 
  * Main
  * ------------------------------------------------------------------ */
 
-function loadCompatibility(): void
-{
-    $compatPath = null;
-    foreach ([__DIR__ . '/Compatibility.php', __DIR__ . '/../../oc-includes/osclass/classes/market/Compatibility.php'] as $candidate) {
-        if (is_file($candidate)) {
-            $compatPath = $candidate;
-            break;
-        }
-    }
-    if ($compatPath === null) {
-        fwrite(STDERR, "Cannot find Compatibility.php. Put it beside this script (package-ci bundle layout).\n");
-        exit(2);
-    }
-    if (!function_exists('__')) {
-        function __($text, $domain = 'default')
-        {
-            return $text;
-        }
-    }
-    require_once $compatPath;
-}
-
 function main(array $argv): int
 {
     $options = parseArgs($argv);
@@ -1544,8 +1569,6 @@ function main(array $argv): int
     }
     $out = realpath($out);
     $cacheDir = $out . '/.build-cache';
-
-    loadCompatibility();
 
     $type = $options['type'];
     $offline = $options['offline'];
@@ -1582,16 +1605,16 @@ function main(array $argv): int
     $packages = []; // slug => assembled package array, insertion order == resolution order
 
     foreach ($inRepo as $p) {
-        $resolution = resolveInRepoVersions($p['slug'], $type, $allReleases, $offline, $cacheDir, $coreVersion, $maxVersions);
-        $built = buildPackageEntry($p['slug'], $type, 'in-repo', $p['manifest'], $resolution, $p['dir'], $coreVersion, $out);
+        $resolution = resolveInRepoVersions($p['slug'], $type, $allReleases, $offline, $cacheDir, $maxVersions);
+        $built = buildPackageEntry($p['slug'], $type, 'in-repo', $p['manifest'], $resolution, $p['dir'], $out);
         $packages[$p['slug']] = $built['package'];
         fwrite(STDERR, "build-catalog: {$built['summary']}\n");
         $hadFailure = $hadFailure || $built['hadError'];
     }
 
     foreach ($external as $p) {
-        $resolution = resolveExternalVersions($p['slug'], $type, $p['manifest'], $offline, $cacheDir, $token, $coreVersion, $maxVersions);
-        $built = buildPackageEntry($p['slug'], $type, 'external', $p['manifest'], $resolution, null, $coreVersion, $out);
+        $resolution = resolveExternalVersions($p['slug'], $type, $p['manifest'], $offline, $cacheDir, $token, $maxVersions);
+        $built = buildPackageEntry($p['slug'], $type, 'external', $p['manifest'], $resolution, null, $out);
         $packages[$p['slug']] = $built['package'];
         fwrite(STDERR, "build-catalog: {$built['summary']}\n");
         $hadFailure = $hadFailure || $built['hadError'];

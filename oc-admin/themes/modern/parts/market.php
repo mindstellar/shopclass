@@ -120,7 +120,10 @@ function osc_market_render_thumb($art, $slug, $name)
 
 /**
  * The compatibility badge -- tint, shape and word (The Three Signal Rule) -- reusing
- * the admin's existing .osc-status component instead of a market-specific one.
+ * the admin's existing .osc-status component instead of a market-specific one. The word
+ * is the package's published supported range ("Works with 6.0 – 6.1", "6.0 and newer"),
+ * never a verdict against this install; the tint still comes from the locally-evaluated
+ * status so an incompatible or untested package still reads differently at a glance.
  *
  * @param array $compat {status, blocked, reason, badge}
  */
@@ -131,6 +134,27 @@ function osc_market_render_compat_badge($compat)
     <div class="market-card-status status-<?php echo osc_esc_html($class); ?>">
         <span class="osc-status"><?php echo osc_esc_html($compat['badge'] ?? ''); ?></span>
     </div>
+    <?php
+}
+
+/**
+ * A muted, informational note for a package that hasn't been tested with the running core
+ * yet -- distinct from osc_market_render_action()'s blocked-reason paragraph, which only
+ * ever appears when the button is actually disabled. Untested never disables anything
+ * (Compatibility::evaluate() returns blocked:false for it), so this must never read as a
+ * warning -- just a fact the owner might want before installing.
+ *
+ * @param array $compat row's `compat`
+ */
+function osc_market_render_untested_note($compat)
+{
+    if (($compat['status'] ?? '') !== 'untested') {
+        return;
+    }
+    ?>
+    <p class="market-card-note">
+        <?php echo osc_esc_html(__("Not tested with your Shopclass version yet. Installing and updating still work as normal.")); ?>
+    </p>
     <?php
 }
 
@@ -388,6 +412,7 @@ function osc_market_render_browse($rows, $meta, $type)
                                 <?php endif; ?>
                             </p>
                             <p class="market-card-desc"><?php echo osc_esc_html($row['short_description']); ?></p>
+                            <?php osc_market_render_untested_note($row['compat']); ?>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
                             </div>
@@ -461,6 +486,7 @@ function osc_market_render_updates($rows, $meta, $type)
                                 <span class="market-update-size"><?php echo osc_esc_html($size); ?></span>
                             <?php endif; ?>
                         </p>
+                        <?php osc_market_render_untested_note($row['compat']); ?>
                     </div>
                     <div class="market-update-actions">
                         <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to %s'), $row['new_version'])); ?>
@@ -498,6 +524,7 @@ function osc_market_render_detail_dialog($type)
                 <p class="osc-dialog-title market-detail-title"></p>
                 <p class="market-detail-author"></p>
                 <p class="market-detail-desc"></p>
+                <p class="market-detail-note"></p>
                 <p class="market-detail-reason"></p>
                 <dl class="market-detail-meta">
                     <div class="market-detail-version-row">

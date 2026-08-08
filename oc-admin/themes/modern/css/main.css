@@ -17770,6 +17770,12 @@ form h3, form .h3 {
   margin: 0.25rem 0 0;
 }
 
+.market-card-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  margin: 0.25rem 0 0;
+}
+
 .market-card-actions {
   margin-top: 0.5rem;
 }
@@ -17905,6 +17911,14 @@ form h3, form .h3 {
 
 .market-detail-desc {
   margin: 0 0 0.5rem;
+}
+
+.market-detail-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+}
+.market-detail-note:empty {
+  display: none;
 }
 
 .market-detail-reason {

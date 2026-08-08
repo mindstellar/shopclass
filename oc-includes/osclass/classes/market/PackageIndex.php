@@ -76,9 +76,14 @@ final class PackageIndex
      * Catalog entries that are not present locally — what the Browse screen renders for
      * "not yet installed".
      *
+     * `$row + [...]` carries every field `Catalog::index()` publishes straight through,
+     * including `requires_min`/`tested_max` (the package's supported range) — the badge
+     * text a caller renders from this row, not `compatibility` below.
+     *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
-     *              tags:array<int,string>, updated_at:string,
+     *              tags:array<int,string>, updated_at:string, requires_min:?string,
+     *              tested_max:?string,
      *              compatibility:array{status:string, blocked:bool, reason:string}}>
      */
     public function available(): array

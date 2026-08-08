@@ -389,6 +389,7 @@
         var dTitle = dialog.querySelector('.market-detail-title');
         var dAuthor = dialog.querySelector('.market-detail-author');
         var dDesc = dialog.querySelector('.market-detail-desc');
+        var dNote = dialog.querySelector('.market-detail-note');
         var dReason = dialog.querySelector('.market-detail-reason');
         var dVersion = dialog.querySelector('.market-detail-version');
         var dDownloadsRow = dialog.querySelector('.market-detail-downloads-row');
@@ -673,11 +674,22 @@
             dTitle.textContent = data.name || '';
             dAuthor.textContent = data.author ? (i18n.byAuthor || 'by %s').replace('%s', data.author) : '';
             dDesc.textContent = data.short_description || '';
+            // The muted "not tested yet" note, cloned the same way the badge and the reason
+            // are -- it's server-rendered text, not part of the row JSON, and only present
+            // when osc_market_render_untested_note() actually printed it.
+            var noteSrc = container.querySelector('.market-card-note');
+            if (dNote) {
+                dNote.textContent = noteSrc ? noteSrc.textContent : '';
+            }
             // Prefer the reason actually shown next to the button: a card can be blocked by
             // directory writability or a disabled deployment, neither of which travels in the
-            // row JSON (only Compatibility::evaluate()'s reason does).
+            // row JSON. The `data.compat` fallback is gated on `blocked` -- evaluate() also
+            // returns a non-empty 'reason' for untested/undeclared, which is not a block and
+            // already has its own place (the note above); showing it here too would duplicate it.
             var reasonSrc = container.querySelector('.market-card-reason');
-            dReason.textContent = reasonSrc ? reasonSrc.textContent : ((data.compat && data.compat.reason) || '');
+            dReason.textContent = reasonSrc
+                ? reasonSrc.textContent
+                : ((data.compat && data.compat.blocked && data.compat.reason) || '');
             dVersion.textContent = data.new_version
                 ? (data.installed_version + ' \u2192 ' + data.new_version)
                 : (data.version || '');

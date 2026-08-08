@@ -78,6 +78,12 @@ artwork render a built-in placeholder instead of a broken image.
 
 ### Fixed
 
+- The catalog no longer bakes a compatibility verdict per version at build time — one static
+  file is served to sites on many core versions, so a verdict computed against whatever core
+  the build happened to run against was wrong for every other one, including the reference
+  plugin showing as incompatible on its own catalog. It now publishes the raw `requires` /
+  `requires_php` / `tested` fields plus a package-level supported range, and every verdict is
+  computed locally, as it already was for the install/update gate itself.
 - A prerelease core was refused any package requiring the release it belongs to — `6.1.0.beta2`
   could not install a package declaring `Requires Shopclass: 6.1.0`, because the beta sorts below
   the release. Compatibility now compares against the release a prerelease belongs to, so testers

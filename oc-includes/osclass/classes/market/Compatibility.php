@@ -140,7 +140,7 @@ final class Compatibility
         return $best;
     }
 
-    /** Short badge label for the admin UI, e.g. "Compatible with 6.0.x" / "Untested with 6.0" / "Requires 6.2+". */
+    /** Short badge label for the admin UI, e.g. "Compatible with 6.0.x" / "Not tested with 6.0 yet" / "Requires 6.2+". */
     public static function badgeLabel(array $info, ?string $coreVersion = null): string
     {
         $coreVersion = $coreVersion ?? OSCLASS_VERSION;
@@ -157,12 +157,45 @@ final class Compatibility
 
                 return sprintf(__('Requires PHP %s'), $requiresPhp ?? '');
             case self::UNTESTED:
-                return sprintf(__('Untested with %s'), self::minor($coreVersion));
+                return sprintf(__('Not tested with %s yet'), self::minor($coreVersion));
             case self::UNDECLARED:
                 return __('Compatibility not declared');
             default:
                 return sprintf(__('Compatible with %s.x'), self::minor($coreVersion));
         }
+    }
+
+    /**
+     * The supported-range label a catalog listing shows instead of a baked verdict, e.g.
+     * "Works with 6.0 – 6.1" or "6.0 and newer". Takes the package's own published
+     * `requires_min` / `tested_max` (docs/MARKET.md §5) — never a core version — so unlike
+     * `badgeLabel()` this does no `version_compare()` against the running install and is
+     * exactly the same string on every site regardless of what core version reads it. It
+     * says what the package supports; `evaluate()` is still what decides whether *this*
+     * install may act on it.
+     */
+    public static function rangeLabel(?string $requiresMin, ?string $testedMax): string
+    {
+        $requiresMin = $requiresMin !== null ? self::normalize($requiresMin) : null;
+        $testedMax   = $testedMax !== null ? self::normalize($testedMax) : null;
+
+        if ($requiresMin === null && $testedMax === null) {
+            return __('Compatibility not declared');
+        }
+
+        if ($requiresMin === null) {
+            return sprintf(__('Up to %s'), self::minor($testedMax));
+        }
+
+        if ($testedMax === null) {
+            return sprintf(__('%s and newer'), self::minor($requiresMin));
+        }
+
+        if (self::minor($requiresMin) === self::minor($testedMax)) {
+            return sprintf(__('Works with %s'), self::minor($requiresMin));
+        }
+
+        return sprintf(__('Works with %1$s – %2$s'), self::minor($requiresMin), self::minor($testedMax));
     }
 
     /**

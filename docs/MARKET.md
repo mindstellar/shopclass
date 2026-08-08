@@ -3,7 +3,11 @@
 Status: **Live**, shipped in Shopclass 6.1.0. All six phases in §10 landed: both registries
 are public, their catalogs are served from GitHub Pages, and core browses, installs, and
 updates packages from them. Download counts (§12) shipped in 6.1.0.beta3. Catalog signing
-did not ship — see §9.
+did not ship — see §9. The catalog stopped publishing a precomputed per-version `compat`
+verdict and started publishing a package-level `requires_min`/`tested_max` range instead
+(§4, §5) — a static file served to sites on many core versions can't bake a verdict that's
+right for more than one of them; `Compatibility::evaluate()`, run locally, always was and
+remains the thing that decides whether an install is actually blocked.
 Scope: two GitHub repositories (`mindstellar/shopclass-plugins`,
 `mindstellar/shopclass-themes`), the static catalog they publish, and the core
 code that browses, installs, and updates from it.
@@ -247,9 +251,21 @@ New class `mindstellar\market\Compatibility`:
 |---|---|---|
 | `requires` > core version | `version_compare` | **Blocked** — Install/Update disabled, "Requires Shopclass 6.2 or newer (you have 6.0.3)" |
 | `requires_php` > `PHP_VERSION` | `version_compare` | **Blocked** — "Requires PHP 8.2 (you have 8.0.30)" |
-| `tested_up_to` < core, compared at **minor** precision | `6.0` vs `6.1` | **Warning** — installs, badge reads "Untested with 6.1" |
-| `tested_up_to` ≥ core minor | — | **OK** — badge reads "Compatible with 6.0.x" |
+| `tested_up_to` < core, compared at **minor** precision | `6.0` vs `6.1` | **Untested** — installs, a muted note reads "Not tested with your Shopclass version yet" — informational, never a warning, since nothing is disabled |
+| `tested_up_to` ≥ core minor | — | **OK** |
 | nothing declared | — | Muted "not declared" |
+
+`evaluate()` is always run **locally**, against whatever core version and PHP version are
+actually running — never trusted from a precomputed value in the catalog (see §5: the
+catalog stopped publishing one). This is what decides whether an action is actually
+blocked; `Compatibility::badgeLabel()` renders that per-install verdict as a short string
+("Compatible with 6.0.x", "Not tested with 6.1 yet", "Requires 6.2+") for the per-version
+table in the detail dialog. The card and detail-dialog badge shown *before* that — "does
+this package support my 6.x at all?" — is a different, install-independent string:
+`Compatibility::rangeLabel()` formats the catalog's own published `requires_min` /
+`tested_max` (§5) as "Works with 6.0 – 6.1" or "6.0 and newer", with no version_compare
+against the running core at all, because a static catalog file is read by sites on many
+different core versions and a single baked verdict can only ever be right for one of them.
 
 The important consequence is in **update resolution**: the catalog lists every
 released version of a package with its own `requires`, and
@@ -275,9 +291,9 @@ before the comparison: `6.1.0.beta2` evaluates as `6.1.0`. A site running the
 6.1.0` installs there rather than being refused for the whole prerelease
 series — this landed as a follow-up fix once the beta cycle exposed the case.
 
-The admin package list and every catalog card render a compatibility badge from
-the same evaluation, so "does this support my 6.x?" is answerable at a glance
-before install and after.
+The admin package list and every catalog card render a badge built from these two
+sources — the published range for "does this support my 6.x?", the local verdict for
+"can I actually click the button?" — so both questions are answerable at a glance.
 
 ---
 
@@ -291,10 +307,23 @@ later without breaking old installs.
 | File | Purpose | Fetched by core |
 |---|---|---|
 | `v1/updates.json` | `{slug: [{version, requires, requires_php, tested, url, sha256, size, published_at, downloads}]}` for **every** package, versions newest-first | Once per 24h, conditional GET |
-| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version, icon URL, categories, tags, `updated_at`, `downloads` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
-| `v1/packages/<slug>.json` | Full detail: rendered README (`description_html`), screenshots, `versions[]` with per-version compatibility and `downloads`, a package-level `downloads` total, `links` (homepage/repo/issues) | Lazily, when a detail view opens |
+| `v1/index.json` | Slim browse rows — slug, name, short description, author, latest version, icon URL, categories, tags, `updated_at`, `downloads`, `requires_min`, `tested_max` — published as a **JSON array**, not an object; `Catalog::index()` re-keys it by slug on read so nothing downstream has to | On first open of Browse, then cached 24h |
+| `v1/packages/<slug>.json` | Full detail: rendered README (`description_html`), screenshots, `versions[]` with per-version `requires`/`requires_php`/`tested`/`downloads`, a package-level `downloads` total, `requires_min`/`tested_max`, `links` (homepage/repo/issues) | Lazily, when a detail view opens |
 | `v1/categories.json` | Category vocabulary + counts, as a JSON array of `{id, label, description, count}` | With `index.json` |
 | `v1/manifest.json` | Catalog-level build metadata — `core_version` the build was validated against, `generated_at`, `package_count`, `resolved_version_count`, `schema_version` | Not fetched by core; an operator/debugging artifact of the catalog build |
+
+**`requires_min` / `tested_max` are a supported *range*, never a verdict.** Each version in
+`updates.json` and `packages/<slug>.json` already carries its own raw `requires` /
+`requires_php` / `tested` — exactly what that release's header declared, nothing computed
+against them. `requires_min` and `tested_max` are a package-level summary the builder
+derives from those: the lowest `requires` and the highest `tested` among the versions the
+build resolved, so a browse row can show "works with 6.0 – 6.1" without fetching every
+version. Neither field says anything about whether *this* install can use the package —
+only `Compatibility::evaluate()`, run locally by the site reading the catalog, decides
+that (§4). A catalog built before this shipped carries a per-version `compat` object
+instead (a verdict baked against whatever core version the build happened to resolve
+against — wrong by construction for every site not on that exact version); `Catalog`
+reads that shape too, but ignores the `compat` key entirely rather than trusting it.
 
 **`downloads` is GitHub's own count of release-asset fetches, nothing more.** The catalog
 builder reads `assets[].download_count` from the GitHub Releases API response for the
@@ -630,15 +659,18 @@ view data and hand it to shared partials in
 `oc-admin/themes/modern/parts/market.php`: `osc_market_render_browse()`,
 `osc_market_render_updates()`, `osc_market_render_detail_dialog()`. `Browse` is
 a card grid rendered from the cached slim index: thumbnail, name, author, short
-description, compatibility badge, and one primary action (`Install` /
-`Update to 1.4.0` / `Installed`, or a disabled button with the reason when
-blocked by §4). Search, category filter, and sort run client-side over the
-cached JSON, with **"Recently updated" (`updated_at` descending) pre-selected**
-as the default sort — an abandoned package sinks to the bottom of Browse rather
-than sitting wherever the catalog happened to list it. A detail dialog — a
-native `<dialog>`, consistent with the modernised admin — shows screenshots, the
-sanitised README, the per-version compatibility table, and links to the repo and
-its issue tracker.
+description, a badge for the package's published supported range (§4), and one
+primary action (`Install` / `Update to 1.4.0` / `Installed`, or a disabled button
+with the reason when blocked by §4). A package that hasn't been tested with the
+running core yet gets a muted note under the badge — informational, since
+untested never blocks the action. Search, category filter, and sort run
+client-side over the cached JSON, with **"Recently updated" (`updated_at`
+descending) pre-selected** as the default sort — an abandoned package sinks to
+the bottom of Browse rather than sitting wherever the catalog happened to list
+it. A detail dialog — a native `<dialog>`, consistent with the modernised admin
+— shows screenshots, the sanitised README, a per-version table (`requires` /
+`requires_php` / `tested`, each with its own locally-evaluated badge), and links
+to the repo and its issue tracker.
 
 Install, update, refresh, and detail fetch are POSTs/GETs through
 `CAdminAjax` (`market_install`, `market_update`, `market_refresh`,

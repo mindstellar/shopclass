@@ -165,9 +165,15 @@ admin UI and the updater:
 |---|---|---|
 | `Requires Shopclass` > running core | **Incompatible** | Install/Update disabled. "Requires Shopclass 6.2 or newer (you have 6.0.3)" |
 | `Requires PHP` > running PHP | **Incompatible** | Install/Update disabled |
-| `Tested up to` < running core, compared at **minor precision** | **Untested** | Installs. Badge reads "Untested with 6.1" |
-| `Tested up to` ≥ running core minor | **OK** | Badge reads "Compatible with 6.0.x" |
+| `Tested up to` < running core, compared at **minor precision** | **Untested** | Installs. A muted, informational note reads "Not tested with your Shopclass version yet" |
+| `Tested up to` ≥ running core minor | **OK** | Installs, no note |
 | Nothing declared | **Undeclared** | Installs. Muted "compatibility not declared" |
+
+This table is evaluated **locally**, by whichever site is reading the catalog — the
+published catalog itself carries only the raw fields above (per version) and a
+package-level `requires_min`/`tested_max` summarising them (docs/MARKET.md §5), never a
+precomputed verdict. A verdict baked at catalog-build time could only ever be correct for
+sites on the one core version the build happened to run against.
 
 `Tested up to` is compared at minor precision on purpose. A package tested against 6.0.1
 is not meaningfully untested on 6.0.3 — patch releases do not break plugin API — so
@@ -184,6 +190,25 @@ metadata matters more than per-package.
 Consequently: **when you drop support for a core series, raise `Requires Shopclass` on the
 new release rather than deleting the old one.** Deleting old releases strands users; a
 correct `Requires` line routes them to the right version automatically.
+
+**Runtime stays permissive; strictness lives at submission time instead.** A package
+untested on a newer core must never be blocked from installing — that table above doesn't
+change. But a range that is nonsensical on its face is a mistake in the header, not a fact
+about the future, and `tools/package-lint.php` catches it while a human and CI are still
+looking at the pull request:
+
+| Check | Level | Why |
+|---|---|---|
+| `Requires Shopclass` > `Tested up to` | Error | The declared range is empty — the package claims a floor higher than anything it was verified against. |
+| `Tested up to` names a core version newer than the newest known release | Error | You cannot have tested against a release that does not exist yet. |
+| `Requires Shopclass` names a version that never shipped | Error | Almost always a typo for a real version. |
+| `Requires PHP` below core's own 8.0 floor | Warning | Meaningless rather than wrong — every install already clears core's floor, so the field gates nobody. |
+| `Requires PHP` above the newest PHP core tests against | Warning | Not necessarily wrong, but suspicious enough to double-check. |
+
+The two version-existence checks need to know which core versions actually exist; they run
+only when the caller supplies that list (`--core-versions=PATH`, §8) and are silently
+skipped otherwise — the range-empty and `Requires PHP` checks have no such dependency and
+always run.
 
 ---
 
@@ -280,15 +305,23 @@ Registry pull requests validate **only the packages the PR changed**. Full gate 
 rationale are in `docs/MARKET.md` §6; the split that matters to an author:
 
 **Blocking** — structure and slug, manifest schema, header parse, version increment,
-compatibility fields naming real core versions, `php -l` across 8.0–8.5, PHP 8.0 floor via
-PHPCompatibility, dangerous-construct scan (§9), and a smoke install in a real container
-(install → enable → load admin and public pages → disable → uninstall, with no fatal and
-no unexpected output).
+compatibility fields naming real core versions (§4: an empty `Requires`/`Tested up to`
+range, or either field naming a core version that doesn't exist), `php -l` across
+8.0–8.5, PHP 8.0 floor via PHPCompatibility, dangerous-construct scan (§9), and a smoke
+install in a real container (install → enable → load admin and public pages → disable →
+uninstall, with no fatal and no unexpected output).
 
 **Non-blocking warnings** — use of deprecated core APIs (§10), code style, missing
-compatibility declarations, an uninstall that leaves tables behind, and `Tested up to`
-more than one minor behind current core. A pull request can be merged with warnings
-outstanding; they exist to inform, not to gate.
+compatibility declarations, a `Requires PHP` outside core's own supported range, an
+uninstall that leaves tables behind, and `Tested up to` more than one minor behind current
+core. A pull request can be merged with warnings outstanding; they exist to inform, not to
+gate.
+
+The compatibility-field checks that need to know which core versions exist (§4) run via
+`tools/package-lint.php --core-versions=PATH`, pointed at a list registry CI fetches fresh
+for each run. The script itself stays dependency-free and network-free by default — a
+contributor running it standalone from a downloaded release asset, with no list supplied,
+gets every other check unchanged and just skips the two that need one.
 
 **Registering a package from your own repository gets a narrower gate.** An
 `external/<slug>.json` registration (§7) is checked by `tools/validate-external.sh`, which

@@ -88,7 +88,8 @@ final class Catalog
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
-     *              tags:array<int,string>, updated_at:string, downloads:int}>
+     *              tags:array<int,string>, updated_at:string, downloads:int,
+     *              requires_min:?string, tested_max:?string}>
      */
     public function index(bool $force = false): array
     {
@@ -401,6 +402,14 @@ final class Catalog
         return $result;
     }
 
+    /**
+     * A raw catalog version entry carries `requires` / `requires_php` / `tested` — the
+     * facts `Compatibility::evaluate()` runs locally. A catalog built before this class
+     * stopped publishing a baked verdict also carries a `compat` key here; this whitelists
+     * only the fields below, so that key (and anything else unrecognised) is silently
+     * dropped rather than trusted — the same catalog reads cleanly whichever build produced
+     * it, and a stale precomputed verdict never reaches a caller.
+     */
     private function sanitizeVersionEntry(array $entry, string $slug): ?array
     {
         $version = $entry['version'] ?? null;
@@ -455,7 +464,8 @@ final class Catalog
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
-     *              tags:array<int,string>, updated_at:string, downloads:int}>
+     *              tags:array<int,string>, updated_at:string, downloads:int,
+     *              requires_min:?string, tested_max:?string}>
      */
     private function sanitizeIndex($raw): array
     {
@@ -510,10 +520,24 @@ final class Catalog
                     : [],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
                 'downloads'         => $downloads,
+                // Package-level supported range (docs/MARKET.md §5) — the lowest `requires`
+                // and highest `tested` across every version the catalog build resolved, so
+                // Browse can render "works with X – Y" from this slim row alone. Absent on a
+                // catalog published before this field existed, same tolerant default (null,
+                // not a dropped row) as everything else here; `Compatibility::rangeLabel()`
+                // already renders null/null as "not declared".
+                'requires_min'      => $this->sanitizeVersionLike($row['requires_min'] ?? null),
+                'tested_max'        => $this->sanitizeVersionLike($row['tested_max'] ?? null),
             ];
         }
 
         return $result;
+    }
+
+    /** A version-shaped string ("6.0", "6.1.0") or null — never garbage passed through as one. */
+    private function sanitizeVersionLike($value): ?string
+    {
+        return is_string($value) && preg_match('/^\d+(\.\d+)*/', $value) ? $value : null;
     }
 
     /**
@@ -605,6 +629,10 @@ final class Catalog
             'versions'          => $versions,
             'updated_at'        => is_string($raw['updated_at'] ?? null) ? $raw['updated_at'] : '',
             'downloads'         => $downloads,
+            // Package-level supported range — see sanitizeIndex()'s own copy of this field
+            // for why it's here rather than derived from `versions` on every read.
+            'requires_min'      => $this->sanitizeVersionLike($raw['requires_min'] ?? null),
+            'tested_max'        => $this->sanitizeVersionLike($raw['tested_max'] ?? null),
         ];
     }
 }

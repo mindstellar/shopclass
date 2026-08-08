@@ -23,7 +23,20 @@
  * dependency-free apart from a __() call a passthrough shim satisfies here.
  *
  * Usage:
- *   php tools/package-lint.php --type=plugin --core=6.0.3 [--json] [--compat=PATH] <package-dir>
+ *   php tools/package-lint.php --type=plugin --core=6.0.3 [--json] [--compat=PATH]
+ *       [--core-versions=PATH] <package-dir>
+ *
+ * --core-versions points at a JSON file listing every known Shopclass core
+ * release (a flat array of version strings, or an object with a "versions"
+ * array — prereleases included) and enables the version-existence checks in
+ * §4: "Tested up to" naming a version ahead of the newest known release, and
+ * "Requires Shopclass" naming a version that never existed. This is
+ * deliberately not fetched over the network by this script — callers that
+ * have one (registry CI does) pass it; a contributor running this offline
+ * from a downloaded release asset gets neither the flag nor the file, and
+ * those two checks are silently skipped rather than failing or guessing.
+ * The SHOPCLASS_CORE_VERSIONS environment variable is an equivalent way to
+ * point at the same file when passing a flag isn't convenient.
  *
  * Exit codes: 0 = no errors (warnings do not fail a build), 1 = errors found,
  * 2 = usage error.
@@ -36,6 +49,11 @@ const VENDORED_DIR_NAMES = ['vendor', 'third-party', 'thirdparty'];
 const WARN_UNPACKED_BYTES = 15 * 1024 * 1024;
 const FORBIDDEN_EXTENSIONS = ['exe', 'dll', 'so'];
 const SHELL_FUNCTIONS = ['system', 'exec', 'shell_exec', 'passthru', 'proc_open'];
+
+/** Core's own PHP floor (PACKAGE-SPEC §9): "Requires PHP" below this gates nobody. */
+const CORE_PHP_FLOOR = '8.0';
+/** Newest PHP core's CI itself tests against (PACKAGE-SPEC §8: "php -l across 8.0-8.5"). */
+const CORE_PHP_CEILING = '8.5';
 
 /** Header fields recognised in a plugin's index.php, per PACKAGE-SPEC §3.2. */
 const PLUGIN_FIELDS = [
@@ -81,16 +99,17 @@ function printUsage(): void
 {
     fwrite(
         STDERR,
-        "Usage: php tools/package-lint.php --type=plugin|theme --core=X.Y.Z [--json] [--compat=PATH] <package-dir>\n"
+        "Usage: php tools/package-lint.php --type=plugin|theme --core=X.Y.Z [--json] [--compat=PATH]\n"
+        . "           [--core-versions=PATH] <package-dir>\n"
     );
 }
 
 /**
- * @return array{type:?string, core:?string, json:bool, compat:?string, dir:?string}
+ * @return array{type:?string, core:?string, json:bool, compat:?string, coreVersions:?string, dir:?string}
  */
 function parseArgs(array $argv): array
 {
-    $options = ['type' => null, 'core' => null, 'json' => false, 'compat' => null, 'dir' => null];
+    $options = ['type' => null, 'core' => null, 'json' => false, 'compat' => null, 'coreVersions' => null, 'dir' => null];
     $positional = [];
 
     foreach (array_slice($argv, 1) as $arg) {
@@ -102,6 +121,8 @@ function parseArgs(array $argv): array
             $options['core'] = substr($arg, 7);
         } elseif (str_starts_with($arg, '--compat=')) {
             $options['compat'] = substr($arg, 9);
+        } elseif (str_starts_with($arg, '--core-versions=')) {
+            $options['coreVersions'] = substr($arg, 16);
         } elseif ($arg === '-h' || $arg === '--help') {
             printUsage();
             exit(0);
@@ -287,6 +308,121 @@ function checkVersion(string $version, string $relFile): array
     }
 
     return $findings;
+}
+
+/* ------------------------------------------------------------------ *
+ * Compatibility range — PACKAGE-SPEC §4. Submission-time strictness: these
+ * checks catch a header that declares an impossible or nonexistent range,
+ * something a human/CI reviewing the PR can fix on the spot. They never
+ * touch how core evaluates compatibility at runtime (Compatibility::evaluate()
+ * stays permissive for anything merely untested).
+ * ------------------------------------------------------------------ */
+
+/** Leading "v", surrounding whitespace, and any trailing junk stripped; null if nothing numeric remains. */
+function bareVersion(string $v): ?string
+{
+    $v = ltrim(trim($v), 'vV');
+    if (!preg_match('/^(\d+(?:\.\d+)*)/', $v, $m)) {
+        return null;
+    }
+
+    return $m[1];
+}
+
+/**
+ * First two dot-separated segments, zero-padded — e.g. "6" -> "6.0", "6.1.5" -> "6.1".
+ * Mirrors Compatibility::minor()'s precision, since "Tested up to" is declared and
+ * evaluated at minor precision everywhere else in this system; comparing at full
+ * precision here would flag the ordinary, documented pattern of `Requires Shopclass:
+ * 6.1.5` alongside `Tested up to: 6.1` as a contradiction when it is not one.
+ */
+function minorPrecision(string $v): ?string
+{
+    $bare = bareVersion($v);
+    if ($bare === null) {
+        return null;
+    }
+    $parts = explode('.', $bare);
+
+    return $parts[0] . '.' . ($parts[1] ?? '0');
+}
+
+/**
+ * Whether a declared version corresponds to a real core release: an exact match, or a
+ * prefix of one (so "6.1" is considered to exist once any "6.1.x" release has shipped —
+ * authors are not required to name a specific patch).
+ *
+ * @param string[] $knownVersions
+ */
+function versionExistsInList(string $bareVersion, array $knownVersions): bool
+{
+    foreach ($knownVersions as $known) {
+        $known = ltrim(trim($known), 'vV');
+        if ($known === $bareVersion || str_starts_with($known, $bareVersion . '.') || str_starts_with($known, $bareVersion . '-')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Loads the optional core-versions list: --core-versions=PATH, else the
+ * SHOPCLASS_CORE_VERSIONS environment variable, else null (checks that need it are
+ * skipped). Accepts a flat JSON array of version strings, or an object carrying one
+ * under a "versions" key. A present-but-unusable file degrades the same way as an
+ * absent one — a warning to stderr, never a hard failure of the whole run.
+ *
+ * @return string[]|null
+ */
+function loadCoreVersions(?string $flagPath): ?array
+{
+    $path = $flagPath;
+    if ($path === null) {
+        $env = getenv('SHOPCLASS_CORE_VERSIONS');
+        $path = ($env !== false && $env !== '') ? $env : null;
+    }
+    if ($path === null) {
+        return null;
+    }
+    if (!is_file($path)) {
+        fwrite(STDERR, "Warning: --core-versions file not found: {$path} — skipping version-existence checks.\n");
+
+        return null;
+    }
+
+    $raw = @file_get_contents($path);
+    $decoded = $raw === false ? null : json_decode($raw, true);
+    if (is_array($decoded) && isset($decoded['versions']) && is_array($decoded['versions'])) {
+        $decoded = $decoded['versions'];
+    }
+    if (!is_array($decoded)) {
+        fwrite(STDERR, "Warning: --core-versions file at {$path} is not a JSON array (or {\"versions\": [...]})" . " — skipping version-existence checks.\n");
+
+        return null;
+    }
+
+    $versions = array_values(array_filter(array_map(
+        static fn ($v) => is_string($v) && trim($v) !== '' ? trim($v) : null,
+        $decoded
+    )));
+
+    if ($versions === []) {
+        fwrite(STDERR, "Warning: --core-versions file at {$path} names no versions — skipping version-existence checks.\n");
+
+        return null;
+    }
+
+    return $versions;
+}
+
+/** Highest entry by version_compare(), prereleases included — same "genuinely newest" rule catalog.yml resolves with. */
+function newestVersion(array $versions): string
+{
+    $sorted = $versions;
+    usort($sorted, static fn ($a, $b) => version_compare($b, $a));
+
+    return $sorted[0];
 }
 
 /* ------------------------------------------------------------------ *
@@ -603,6 +739,7 @@ function main(array $argv): int
     $coreVersion = $options['core'];
     $fieldMap = $type === 'plugin' ? PLUGIN_FIELDS : THEME_FIELDS;
     $findings = [];
+    $knownCoreVersions = loadCoreVersions($options['coreVersions']);
 
     // --- Structure ----------------------------------------------------
     $slug = basename($root);
@@ -727,6 +864,88 @@ function main(array $argv): int
                     null,
                     \mindstellar\market\Compatibility::badgeLabel($info, $coreVersion) . ' — ' . $verdict['reason']
                 );
+            }
+        }
+
+        // A declared range that is empty on its face — no external data needed, the
+        // header alone already contradicts itself. Compared at minor precision (see
+        // minorPrecision()) so the documented `Requires Shopclass: 6.1.5` / `Tested up
+        // to: 6.1` pairing is not flagged as a false positive.
+        if ($info['requires'] !== '' && $info['tested_up_to'] !== '') {
+            $requiresMinor = minorPrecision($info['requires']);
+            $testedMinor = minorPrecision($info['tested_up_to']);
+            if ($requiresMinor !== null && $testedMinor !== null && version_compare($requiresMinor, $testedMinor, '>')) {
+                $findings[] = finding(
+                    'error',
+                    'COMPAT_RANGE_EMPTY',
+                    $indexRel,
+                    null,
+                    "\"Requires Shopclass: {$info['requires']}\" is higher than \"Tested up to: {$info['tested_up_to']}\" " .
+                        '— the declared range is empty. Raise "Tested up to", or lower "Requires Shopclass".'
+                );
+            }
+        }
+
+        // Version-existence checks — need to know which core versions actually shipped,
+        // so they run only when --core-versions (or SHOPCLASS_CORE_VERSIONS) supplied one.
+        if ($knownCoreVersions !== null) {
+            if ($info['tested_up_to'] !== '') {
+                $testedMinor = minorPrecision($info['tested_up_to']);
+                $newestMinor = minorPrecision(newestVersion($knownCoreVersions));
+                if ($testedMinor !== null && $newestMinor !== null && version_compare($testedMinor, $newestMinor, '>')) {
+                    $findings[] = finding(
+                        'error',
+                        'COMPAT_TESTED_AHEAD',
+                        $indexRel,
+                        null,
+                        "\"Tested up to: {$info['tested_up_to']}\" names a Shopclass version newer than the newest known " .
+                            'release (' . newestVersion($knownCoreVersions) . ') — you cannot have tested against a ' .
+                            'release that does not exist yet. Likely a typo.'
+                    );
+                }
+            }
+
+            if ($info['requires'] !== '') {
+                $requiresBare = bareVersion($info['requires']);
+                if ($requiresBare !== null && !versionExistsInList($requiresBare, $knownCoreVersions)) {
+                    $findings[] = finding(
+                        'error',
+                        'COMPAT_REQUIRES_UNKNOWN_VERSION',
+                        $indexRel,
+                        null,
+                        "\"Requires Shopclass: {$info['requires']}\" does not match any known Shopclass release — likely a typo."
+                    );
+                }
+            }
+        }
+
+        // Requires PHP against core's own supported range. Neither end can produce a
+        // wrong install/update decision at runtime (the field only ever gates upward,
+        // and core's own 8.0 floor already applies to every install regardless of what
+        // a package declares), so both are warnings rather than errors — signal that the
+        // declaration is probably a mistake, not proof that it is one.
+        if ($info['requires_php'] !== '') {
+            $requiresPhpBare = bareVersion($info['requires_php']);
+            if ($requiresPhpBare !== null) {
+                if (version_compare($requiresPhpBare, CORE_PHP_FLOOR, '<')) {
+                    $findings[] = finding(
+                        'warning',
+                        'REQUIRES_PHP_BELOW_FLOOR',
+                        $indexRel,
+                        null,
+                        "\"Requires PHP: {$info['requires_php']}\" is below Shopclass's own PHP floor (" . CORE_PHP_FLOOR . ') ' .
+                            '— every supported install already meets it, so this declares nothing meaningful.'
+                    );
+                } elseif (version_compare($requiresPhpBare, CORE_PHP_CEILING, '>')) {
+                    $findings[] = finding(
+                        'warning',
+                        'REQUIRES_PHP_ABOVE_CEILING',
+                        $indexRel,
+                        null,
+                        "\"Requires PHP: {$info['requires_php']}\" is above the newest PHP version this project tests " .
+                            'against (' . CORE_PHP_CEILING . ') — double check this is not a typo.'
+                    );
+                }
             }
         }
     }

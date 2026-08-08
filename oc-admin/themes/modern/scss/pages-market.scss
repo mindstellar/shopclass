@@ -165,6 +165,14 @@
   margin: .25rem 0 0;
 }
 
+// Informational, not a warning -- an untested package still installs and updates, so this
+// gets the same muted treatment as .market-card-reason rather than a callout tint.
+.market-card-note {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .25rem 0 0;
+}
+
 .market-card-actions {
   margin-top: .5rem;
 }
@@ -311,6 +319,15 @@
 
 .market-detail-desc {
   margin: 0 0 .5rem;
+}
+
+.market-detail-note {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .market-detail-reason {
