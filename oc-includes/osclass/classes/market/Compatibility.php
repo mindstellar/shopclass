@@ -89,7 +89,7 @@ final class Compatibility
             return ['status' => self::OK, 'blocked' => false, 'reason' => ''];
         }
 
-        if ($requires !== null) {
+        if ($requires !== null || $requiresPhp !== null) {
             return ['status' => self::OK, 'blocked' => false, 'reason' => ''];
         }
 
