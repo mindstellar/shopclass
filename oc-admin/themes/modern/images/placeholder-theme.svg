@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-hidden="true">
+  <!-- Loaded via <img src>: cannot read page CSS vars or data-bs-theme, so
+       the palette switches on prefers-color-scheme instead. -->
+  <style>
+    .bg { fill: #eef1f5; }
+    .fg { fill: #bcc4cf; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #2b333d; }
+      .fg { fill: #46505d; }
+    }
+  </style>
+  <rect class="bg" width="400" height="300"/>
+  <circle class="fg" cx="138" cy="108" r="30"/>
+  <path class="fg" d="M0 244 L108 148 L184 208 L266 126 L400 226 V300 H0 Z"/>
+</svg>

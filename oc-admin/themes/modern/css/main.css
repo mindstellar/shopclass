@@ -14467,6 +14467,38 @@ table.table-small td {
 .current-theme .card-title {
   text-transform: capitalize;
 }
+.current-theme .osc-thumb {
+  height: 100%;
+}
+
+.osc-thumb {
+  overflow: hidden;
+  position: relative;
+}
+
+.osc-thumb--fallback {
+  background-color: hsl(var(--osc-thumb-hue, 200), 45%, 92%);
+}
+.osc-thumb--fallback img {
+  opacity: 0.4;
+}
+
+[data-bs-theme=dark] .osc-thumb--fallback {
+  background-color: hsl(var(--osc-thumb-hue, 200), 28%, 22%);
+}
+
+.osc-thumb-letter {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-size: 2.5rem;
+  font-weight: 600;
+  inset: 0;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+  text-transform: uppercase;
+}
 
 .theme-stage {
   position: relative;

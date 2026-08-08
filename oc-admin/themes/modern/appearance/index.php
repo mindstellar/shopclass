@@ -55,6 +55,19 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
+/**
+ * Hue (0-359) derived from a hash of the slug, so a grid of unillustrated
+ * themes still reads as visually distinct tiles.
+ *
+ * @param string $slug
+ *
+ * @return int
+ */
+function appearanceThumbHue($slug)
+{
+    return crc32($slug) % 360;
+}
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="appearance-page">
     <!-- themes list -->
@@ -68,8 +81,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="card mb-3 col-sm-12 col-md-8 col-lg-6">
                         <div class="row no-gutters">
                             <div class="col">
-                                <img src="<?php echo osc_base_url() . '/oc-content/themes/' . osc_theme() . '/screenshot.png' ?>"
-                                     class="card-img" alt="<?php echo $info['name']; ?>">
+                                <?php $currentHasScreenshot = osc_theme_has_screenshot(); ?>
+                                <div class="osc-thumb<?php echo $currentHasScreenshot ? '' : ' osc-thumb--fallback'; ?>"
+                                     <?php if (!$currentHasScreenshot) : ?>style="--osc-thumb-hue: <?php echo appearanceThumbHue(osc_theme()); ?>"<?php endif; ?>>
+                                    <img src="<?php echo osc_esc_html(osc_theme_screenshot_url()); ?>"
+                                         class="card-img" alt="<?php echo osc_esc_html(sprintf(__('Screenshot of the %s theme'), $info['name'])); ?>"
+                                         width="400" height="300" loading="lazy">
+                                    <?php if (!$currentHasScreenshot) : ?>
+                                        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($info['name'], 0, 1))); ?></span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="col">
                                 <div class="card-body">
@@ -99,9 +120,18 @@ foreach ($themes as $theme) {
     ?>
                         <div class="col">
                             <div class="card">
-                                <img class="card-img-top"
-                                     src="<?php echo osc_base_url(); ?>/oc-content/themes/<?php echo $theme; ?>/screenshot.png"
-                                     title="<?php echo $info['name']; ?>" alt="<?php echo $info['name']; ?>"/>
+                                <?php $hasScreenshot = osc_theme_has_screenshot($theme); ?>
+                                <div class="osc-thumb<?php echo $hasScreenshot ? '' : ' osc-thumb--fallback'; ?>"
+                                     <?php if (!$hasScreenshot) : ?>style="--osc-thumb-hue: <?php echo appearanceThumbHue($theme); ?>"<?php endif; ?>>
+                                    <img class="card-img-top"
+                                         src="<?php echo osc_esc_html(osc_theme_screenshot_url($theme)); ?>"
+                                         title="<?php echo osc_esc_html($info['name']); ?>"
+                                         alt="<?php echo osc_esc_html(sprintf(__('Screenshot of the %s theme'), $info['name'])); ?>"
+                                         width="400" height="300" loading="lazy"/>
+                                    <?php if (!$hasScreenshot) : ?>
+                                        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($info['name'], 0, 1))); ?></span>
+                                    <?php endif; ?>
+                                </div>
                                 <div class="card-body">
                                     <div class="theme-stage">
                                         <div class="">

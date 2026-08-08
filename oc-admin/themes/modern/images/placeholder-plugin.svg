@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-hidden="true">
+  <!-- Loaded via <img src>: cannot read page CSS vars or data-bs-theme, so
+       the palette switches on prefers-color-scheme instead. -->
+  <style>
+    .bg { fill: #eef1f5; }
+    .fg { fill: #bcc4cf; }
+    .fg-line { stroke: #bcc4cf; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #2b333d; }
+      .fg { fill: #46505d; }
+      .fg-line { stroke: #46505d; }
+    }
+  </style>
+  <rect class="bg" width="200" height="200"/>
+  <rect class="fg" x="80" y="40" width="14" height="50" rx="4"/>
+  <rect class="fg" x="106" y="40" width="14" height="50" rx="4"/>
+  <rect class="fg" x="60" y="90" width="80" height="66" rx="12"/>
+  <path class="fg-line" d="M100 156 C100 182 138 182 138 156" fill="none" stroke-width="10" stroke-linecap="round"/>
+</svg>

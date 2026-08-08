@@ -214,6 +214,68 @@ function osc_load_styles()
 }
 
 /**
+ * Public URL of a theme's screenshot, or a bundled placeholder when it has
+ * none. Checks screenshot.png, then screenshot.jpg, then screenshot.webp on
+ * disk, in that order — themes in the wild ship all three.
+ *
+ * @param string|null $theme defaults to the active theme
+ *
+ * @return string
+ */
+function osc_theme_screenshot_url($theme = null)
+{
+    if ($theme === null) {
+        $theme = osc_theme();
+    }
+
+    $asset = _osc_theme_screenshot_asset($theme);
+    $url   = $asset !== null
+        ? osc_base_url() . 'oc-content/themes/' . $theme . '/' . $asset
+        : osc_base_url() . 'oc-admin/themes/modern/images/placeholder-theme.svg';
+
+    return osc_apply_filter('theme_screenshot_url', $url, $theme);
+}
+
+/**
+ * Whether a theme has a screenshot on disk, as opposed to the fallback
+ * placeholder osc_theme_screenshot_url() returns.
+ *
+ * @param string|null $theme defaults to the active theme
+ *
+ * @return bool
+ */
+function osc_theme_has_screenshot($theme = null)
+{
+    if ($theme === null) {
+        $theme = osc_theme();
+    }
+
+    return _osc_theme_screenshot_asset($theme) !== null;
+}
+
+/**
+ * Finds the screenshot filename for a theme on disk.
+ *
+ * @param string $theme
+ *
+ * @return string|null the filename found (relative to the theme folder), or null
+ */
+function _osc_theme_screenshot_asset($theme)
+{
+    if (!is_string($theme) || $theme === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $theme)) {
+        return null;
+    }
+
+    foreach (array('screenshot.png', 'screenshot.jpg', 'screenshot.webp') as $asset) {
+        if (file_exists(osc_themes_path() . $theme . '/' . $asset)) {
+            return $asset;
+        }
+    }
+
+    return null;
+}
+
+/**
  * @param        $id
  * @param        $name
  * @param        $options

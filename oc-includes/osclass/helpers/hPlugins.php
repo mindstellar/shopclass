@@ -343,6 +343,70 @@ function osc_admin_render_plugin($file = '')
 }
 
 /**
+ * Public URL of a plugin's icon, or a bundled placeholder when it has none.
+ * Checks assets/icon.svg, then assets/icon.png, then assets/icon-256.png on
+ * disk, in that order.
+ *
+ * @param string|null $plugin bare directory slug ('better-s3') or the
+ *                             filename form Plugins::getInfo() returns
+ *                             ('better-s3/index.php'); anything that fails
+ *                             slug validation falls back to the placeholder
+ *
+ * @return string
+ */
+function osc_plugin_icon_url($plugin = null)
+{
+    $asset = _osc_plugin_icon_asset($plugin);
+    $url   = $asset !== null
+        ? osc_base_url() . 'oc-content/plugins/' . $asset
+        : osc_base_url() . 'oc-admin/themes/modern/images/placeholder-plugin.svg';
+
+    return osc_apply_filter('plugin_icon_url', $url, $plugin);
+}
+
+/**
+ * Whether a plugin has an icon asset on disk, as opposed to the fallback
+ * placeholder osc_plugin_icon_url() returns.
+ *
+ * @param string|null $plugin bare slug or filename form; see osc_plugin_icon_url()
+ *
+ * @return bool
+ */
+function osc_plugin_has_icon($plugin = null)
+{
+    return _osc_plugin_icon_asset($plugin) !== null;
+}
+
+/**
+ * Normalises a plugin identifier down to its directory slug and finds its
+ * icon asset on disk. Never interpolates unvalidated input into a filesystem
+ * path: a slug that fails the pattern check is treated as not found.
+ *
+ * @param mixed $plugin bare slug or filename form; see osc_plugin_icon_url()
+ *
+ * @return string|null the icon path relative to PLUGINS_PATH, or null
+ */
+function _osc_plugin_icon_asset($plugin)
+{
+    if (!is_string($plugin) || $plugin === '') {
+        return null;
+    }
+
+    $slug = strpos($plugin, '/') !== false ? dirname($plugin) : $plugin;
+    if ($slug === '' || $slug === '.' || !preg_match('/^[a-zA-Z0-9._-]+$/', $slug)) {
+        return null;
+    }
+
+    foreach (array('assets/icon.svg', 'assets/icon.png', 'assets/icon-256.png') as $icon) {
+        if (file_exists(osc_plugins_path() . $slug . '/' . $icon)) {
+            return $slug . '/' . $icon;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Fix the problem of symbolics links in the path of the file
  *
  * @param string $file The filename of plugin.
