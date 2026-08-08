@@ -613,18 +613,34 @@ class FileSystem
     /**
      * Get content implementation
      *
-     * @param      $url
-     * @param null $post_data
-     * @param bool $verify_ssl
-     * @param int  $timeout Total transfer timeout in seconds. 0 (default) leaves
-     *                      no overall limit, matching the historic behaviour, so
-     *                      callers such as large-file downloads are unaffected.
+     * @param             $url
+     * @param null         $post_data
+     * @param bool         $verify_ssl
+     * @param int          $timeout       Total transfer timeout in seconds. 0 (default) leaves
+     *                                    no overall limit, matching the historic behaviour, so
+     *                                    callers such as large-file downloads are unaffected.
+     * @param array        $headers       Extra request header lines (e.g. `'If-None-Match: "abc"'`),
+     *                                    added on top of the defaults this method already sets.
+     * @param array|null   $responseInfo  Out parameter. When a variable is passed, it is filled with
+     *                                    `['status' => int, 'headers' => array<lowercase-name, value>]`
+     *                                    describing the final response (post-redirects) — callers doing
+     *                                    conditional GET (ETag / Last-Modified) need the status code to
+     *                                    tell a 304 from a 200, and the response headers to read the new
+     *                                    validators back.
      *
      * @return bool|string $data
      */
-    public function getContents($url, $post_data = null, bool $verify_ssl = true, int $timeout = 0)
-    {
-        $data = null;
+    public function getContents(
+        $url,
+        $post_data = null,
+        bool $verify_ssl = true,
+        int $timeout = 0,
+        array $headers = [],
+        ?array &$responseInfo = null
+    ) {
+        $data            = null;
+        $responseHeaders = [];
+        $responseInfo    = ['status' => 0, 'headers' => []];
         if ($this->testCurl()) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -665,10 +681,38 @@ class FileSystem
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
             }
 
-            $data = curl_exec($ch);
+            if (!empty($headers)) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            }
+
+            // A redirect starts a new header block; only the last one (the final
+            // response) is what the caller wants, so each "HTTP/" status line resets
+            // what has been collected so far.
+            curl_setopt($ch, CURLOPT_HEADERFUNCTION, static function ($curlHandle, $headerLine) use (&$responseHeaders) {
+                $length  = strlen($headerLine);
+                $trimmed = trim($headerLine);
+                if ($trimmed === '') {
+                    return $length;
+                }
+                if (stripos($trimmed, 'HTTP/') === 0) {
+                    $responseHeaders = [];
+
+                    return $length;
+                }
+                $parts = explode(':', $trimmed, 2);
+                if (count($parts) === 2) {
+                    $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+
+                return $length;
+            });
+
+            $data                     = curl_exec($ch);
+            $responseInfo['status']  = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $responseInfo['headers'] = $responseHeaders;
             curl_close($ch);
         } else {
-            throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes. 
+            throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes.
             Is PHP-curl extension installed?', $url));
         }
 
