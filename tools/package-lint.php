@@ -568,9 +568,24 @@ function main(array $argv): int
         return 2;
     }
 
-    $compatPath = $options['compat'] ?? (__DIR__ . '/../oc-includes/osclass/classes/market/Compatibility.php');
-    if (!is_file($compatPath)) {
-        fwrite(STDERR, "Cannot find Compatibility.php at: {$compatPath}\n");
+    // Beside-itself first: both files are published as release assets, so a contributor
+    // who downloaded the pair into one directory needs no --compat at all.
+    $compatPath = $options['compat'];
+    if ($compatPath === null) {
+        foreach ([__DIR__ . '/Compatibility.php',
+                  __DIR__ . '/../oc-includes/osclass/classes/market/Compatibility.php'] as $candidate) {
+            if (is_file($candidate)) {
+                $compatPath = $candidate;
+                break;
+            }
+        }
+    }
+    if ($compatPath === null || !is_file($compatPath)) {
+        fwrite(
+            STDERR,
+            "Cannot find Compatibility.php. Put it beside this script, or pass --compat=PATH.\n"
+            . "Both files are attached to every Shopclass release.\n"
+        );
 
         return 2;
     }
