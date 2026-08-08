@@ -240,8 +240,14 @@ function printAnnotations(array $findings, string $pathPrefix): void
  * @param array<int, array<string,mixed>> $findings
  * @return array{gate:string, status:string, errors:int, warnings:int}
  */
-function summariseGate(string $gate, array $findings, bool $alwaysNonBlocking = false): array
+function summariseGate(string $gate, array $findings, bool $alwaysNonBlocking = false, bool $ran = true): array
 {
+    // A gate that did not run must never render as a pass — a green tick for work
+    // that was skipped is worse than no tick at all.
+    if (!$ran) {
+        return ['gate' => $gate, 'status' => '⏭️', 'errors' => null, 'warnings' => null];
+    }
+
     $errors = 0;
     $warnings = 0;
     foreach ($findings as $f) {
@@ -282,12 +288,12 @@ function whereText(array $f, string $pathPrefix): string
 /**
  * @param array<int, array<string,mixed>> $findings
  */
-function buildComment(string $slug, array $findings, string $pathPrefix): string
+function buildComment(string $slug, array $findings, string $pathPrefix, array $ran = []): string
 {
     $gates = [
-        summariseGate('lint', $findings),
-        summariseGate('deprecations', $findings, true),
-        summariseGate('smoke', $findings),
+        summariseGate('lint', $findings, false, $ran['lint'] ?? true),
+        summariseGate('deprecations', $findings, true, $ran['deprecations'] ?? true),
+        summariseGate('smoke', $findings, false, $ran['smoke'] ?? true),
     ];
     $gateLabels = ['lint' => 'Structure, manifest & security', 'deprecations' => 'Deprecated API', 'smoke' => 'Smoke install'];
 
@@ -300,7 +306,14 @@ function buildComment(string $slug, array $findings, string $pathPrefix): string
     $lines[] = '| Gate | Status | Errors | Warnings |';
     $lines[] = '|---|---|---|---|';
     foreach ($gates as $g) {
-        $lines[] = sprintf('| %s | %s | %d | %d |', $gateLabels[$g['gate']], $g['status'], $g['errors'], $g['warnings']);
+        $label = $gateLabels[$g['gate']] . ($g['errors'] === null ? ' _(not run)_' : '');
+        $lines[] = sprintf(
+            '| %s | %s | %s | %s |',
+            $label,
+            $g['status'],
+            $g['errors'] === null ? '—' : (string) $g['errors'],
+            $g['warnings'] === null ? '—' : (string) $g['warnings']
+        );
     }
     $lines[] = '';
 
@@ -358,7 +371,11 @@ function main(array $argv): int
 
     printAnnotations($findings, (string) $options['path-prefix']);
 
-    $comment = buildComment((string) $options['slug'], $findings, (string) $options['path-prefix']);
+    $comment = buildComment((string) $options['slug'], $findings, (string) $options['path-prefix'], [
+        'lint'         => $options['lint'] !== null,
+        'deprecations' => $options['deprecations'] !== null,
+        'smoke'        => $options['smoke'] !== null,
+    ]);
     if (@file_put_contents($options['comment-out'], $comment . "\n") === false) {
         fwrite(STDERR, "Could not write comment markdown to {$options['comment-out']}\n");
 
