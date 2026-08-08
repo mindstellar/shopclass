@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '6.1.0.beta4');
+    define('OSCLASS_VERSION', '6.1.0.beta5');
 }
 
 if (!defined('MULTISITE')) {
