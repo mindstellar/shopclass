@@ -41,6 +41,8 @@ class CWebMain extends BaseModel
 
             $this->redirectTo(osc_base_url());
         } else {
+            // Self-referential canonical for the homepage (SEO).
+            $this->_exportVariableToView('canonical', osc_base_url());
             // Public homepage: a shared cache may hold it briefly for anonymous visitors.
             osc_mark_response_cacheable();
             $this->doView('main.php');

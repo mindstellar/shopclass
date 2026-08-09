@@ -837,14 +837,14 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
 function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
 {
     try {
-        (new FileSystem())->downloadFile($sourceFile, $downloadedFile, $post_data);
+        // downloadFile() reports a 404, a truncated transfer or a checksum mismatch by
+        // returning false, so the return value has to be propagated, not discarded.
+        return (bool) (new FileSystem())->downloadFile($sourceFile, $downloadedFile, $post_data);
     } catch (Exception $e) {
         trigger_error($e->getMessage(), E_USER_WARNING);
 
         return false;
     }
-
-    return true;
 }
 
 /**
@@ -910,6 +910,25 @@ function osc_self_update_disabled()
     }
 
     return filter_var(getenv('OSC_DISABLE_SELF_UPDATE'), FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
+ * Whether installing/updating market packages (plugins/themes) is disabled for
+ * this installation. Distinct from osc_self_update_disabled(): that flag stops
+ * core from overwriting itself on an immutable deployment. Packages are not
+ * core — on a deployment where oc-content is a persistent volume, a package
+ * write survives a redeploy just fine, so this defaults to enabled and is only
+ * set where the site owner has no persistent oc-content to write into.
+ *
+ * @return bool
+ */
+function osc_package_installs_disabled()
+{
+    if (defined('OSC_DISABLE_PACKAGE_INSTALLS')) {
+        return (bool) OSC_DISABLE_PACKAGE_INSTALLS;
+    }
+
+    return filter_var(getenv('OSC_DISABLE_PACKAGE_INSTALLS'), FILTER_VALIDATE_BOOLEAN);
 }
 
 /**

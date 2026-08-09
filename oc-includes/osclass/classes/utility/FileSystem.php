@@ -613,18 +613,34 @@ class FileSystem
     /**
      * Get content implementation
      *
-     * @param      $url
-     * @param null $post_data
-     * @param bool $verify_ssl
-     * @param int  $timeout Total transfer timeout in seconds. 0 (default) leaves
-     *                      no overall limit, matching the historic behaviour, so
-     *                      callers such as large-file downloads are unaffected.
+     * @param             $url
+     * @param null         $post_data
+     * @param bool         $verify_ssl
+     * @param int          $timeout       Total transfer timeout in seconds. 0 (default) leaves
+     *                                    no overall limit, matching the historic behaviour, so
+     *                                    callers such as large-file downloads are unaffected.
+     * @param array        $headers       Extra request header lines (e.g. `'If-None-Match: "abc"'`),
+     *                                    added on top of the defaults this method already sets.
+     * @param array|null   $responseInfo  Out parameter. When a variable is passed, it is filled with
+     *                                    `['status' => int, 'headers' => array<lowercase-name, value>]`
+     *                                    describing the final response (post-redirects) — callers doing
+     *                                    conditional GET (ETag / Last-Modified) need the status code to
+     *                                    tell a 304 from a 200, and the response headers to read the new
+     *                                    validators back.
      *
      * @return bool|string $data
      */
-    public function getContents($url, $post_data = null, bool $verify_ssl = true, int $timeout = 0)
-    {
-        $data = null;
+    public function getContents(
+        $url,
+        $post_data = null,
+        bool $verify_ssl = true,
+        int $timeout = 0,
+        array $headers = [],
+        ?array &$responseInfo = null
+    ) {
+        $data            = null;
+        $responseHeaders = [];
+        $responseInfo    = ['status' => 0, 'headers' => []];
         if ($this->testCurl()) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -665,10 +681,38 @@ class FileSystem
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
             }
 
-            $data = curl_exec($ch);
+            if (!empty($headers)) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            }
+
+            // A redirect starts a new header block; only the last one (the final
+            // response) is what the caller wants, so each "HTTP/" status line resets
+            // what has been collected so far.
+            curl_setopt($ch, CURLOPT_HEADERFUNCTION, static function ($curlHandle, $headerLine) use (&$responseHeaders) {
+                $length  = strlen($headerLine);
+                $trimmed = trim($headerLine);
+                if ($trimmed === '') {
+                    return $length;
+                }
+                if (stripos($trimmed, 'HTTP/') === 0) {
+                    $responseHeaders = [];
+
+                    return $length;
+                }
+                $parts = explode(':', $trimmed, 2);
+                if (count($parts) === 2) {
+                    $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+
+                return $length;
+            });
+
+            $data                     = curl_exec($ch);
+            $responseInfo['status']  = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $responseInfo['headers'] = $responseHeaders;
             curl_close($ch);
         } else {
-            throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes. 
+            throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes.
             Is PHP-curl extension installed?', $url));
         }
 
@@ -723,21 +767,88 @@ class FileSystem
     }
 
     /**
+     * Total transfer timeout in seconds for downloadFile(), separate from the connect-only
+     * timeout — without it a peer that connects and then stalls mid-transfer can hold the
+     * download open indefinitely.
+     */
+    private const DOWNLOAD_TIMEOUT_SECONDS = 300;
+
+    /**
+     * Hosts a package download URL is allowed to resolve to, checked by callers such as
+     * mindstellar\upgrade\Upgrade before downloadFile() is invoked (this method stays
+     * general-purpose and is used by callers that have nothing to do with packages).
+     *
+     * @param string $url
+     *
+     * @return bool true when $url is https and its host matches an allowed entry
+     */
+    public static function isAllowedPackageHost(string $url): bool
+    {
+        $defaultHosts = [
+            'github.com',
+            'objects.githubusercontent.com',
+            'raw.githubusercontent.com',
+            '*.github.io',
+        ];
+
+        // Filterable so a self-hosted install can register its own mirror without patching
+        // core; entries may be an exact host or a "*.example.com" wildcard.
+        $allowedHosts = (array) osc_apply_filter('market_allowed_package_hosts', $defaultHosts);
+
+        $parts = parse_url($url);
+        if (!isset($parts['scheme'], $parts['host']) || strtolower($parts['scheme']) !== 'https') {
+            return false;
+        }
+        $host = strtolower($parts['host']);
+
+        foreach ($allowedHosts as $allowedHost) {
+            $allowedHost = strtolower((string) $allowedHost);
+            if ($allowedHost === '') {
+                continue;
+            }
+
+            if (strpos($allowedHost, '*.') === 0) {
+                $suffix = substr($allowedHost, 1); // e.g. ".github.io"
+                if (substr($host, -strlen($suffix)) === $suffix && $host !== ltrim($suffix, '.')) {
+                    return true;
+                }
+                continue;
+            }
+
+            if ($host === $allowedHost) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Download Files from given url
      * try to overwrite existing file.
      *
-     * @param string $sourceURL
-     * @param string $filename
-     * @param null   $post_data
-     * @param bool   $verify_ssl
+     * @param string      $sourceURL
+     * @param string      $filename
+     * @param null        $post_data
+     * @param bool        $verify_ssl
+     * @param string|null $expectedSha256 When given, the downloaded file is hashed and
+     *                                    compared; a mismatch deletes the file and returns false.
      *
      * @return bool|string
      * @throws \Exception
      */
-    public function downloadFile(string $sourceURL, string $filename, $post_data = null, bool $verify_ssl = true)
-    {
+    public function downloadFile(
+        string $sourceURL,
+        string $filename,
+        $post_data = null,
+        bool $verify_ssl = true,
+        ?string $expectedSha256 = null
+    ) {
         if (!filter_var($sourceURL, FILTER_VALIDATE_URL)) {
             throw new InvalidArgumentException(sprintf('Invalid source url "%s". ', $sourceURL));
+        }
+        if ($expectedSha256 !== null && !preg_match('/^[a-f0-9]{64}$/i', $expectedSha256)) {
+            throw new InvalidArgumentException(sprintf('Invalid expected sha256 checksum "%s". ', $expectedSha256));
         }
         if (strpos($filename, '../') !== false || strpos($filename, "..\\") !== false) {
             return false;
@@ -752,6 +863,7 @@ class FileSystem
             if ($fp) {
                 $ch = curl_init($sourceURL);
                 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_TIMEOUT, self::DOWNLOAD_TIMEOUT_SECONDS);
                 curl_setopt(
                     $ch,
                     CURLOPT_USERAGENT,
@@ -759,6 +871,7 @@ class FileSystem
                 );
                 curl_setopt($ch, CURLOPT_FILE, $fp);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
                 curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
 
                 if (stripos($sourceURL, 'https') !== false) {
@@ -770,9 +883,32 @@ class FileSystem
                     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
                 }
 
-                curl_exec($ch);
+                $success    = curl_exec($ch);
+                $curlErrno  = curl_errno($ch);
+                $httpStatus = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
                 curl_close($ch);
                 fclose($fp);
+
+                if ($success === false || $curlErrno !== 0 || $httpStatus < 200 || $httpStatus >= 300) {
+                    $this->remove($file_path);
+
+                    return false;
+                }
+
+                if (!$this->exists($file_path) || filesize($file_path) === 0) {
+                    $this->remove($file_path);
+
+                    return false;
+                }
+
+                if ($expectedSha256 !== null) {
+                    $actualSha256 = hash_file('sha256', $file_path);
+                    if ($actualSha256 === false || !hash_equals(strtolower($expectedSha256), strtolower($actualSha256))) {
+                        $this->remove($file_path);
+
+                        return false;
+                    }
+                }
 
                 return $file_path;
             }
@@ -780,7 +916,7 @@ class FileSystem
             return false;
         }
 
-        throw new RuntimeException(sprintf('Unable to download content from "%s". CURL not initializes. 
+        throw new RuntimeException(sprintf('Unable to download content from "%s". CURL not initializes.
         Is PHP-curl extension installed?', $sourceURL));
     }
 }

@@ -894,6 +894,10 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_base_url() . $itemURI, 301);
                 }
 
+                // Self-referential canonical so parameterised or duplicate variants of the
+                // listing consolidate onto the one indexable URL (SEO).
+                $this->_exportVariableToView('canonical', osc_item_url());
+
                 // Public listing detail: cacheable for anonymous visitors. A cached hit skips
                 // the render-time view increment above; sites that need exact counts drive the
                 // counter client-side (the `count_view_on_render` filter), which stays accurate

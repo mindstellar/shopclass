@@ -73,6 +73,19 @@ class Upgrade
         ) {
             $this->packageInfoValid = true;
         }
+
+        // Only a checksum-carrying package (resolved through the Catalog, always a GitHub
+        // release asset) is held to the host allowlist; a package resolved from a site's own
+        // "Plugin/Theme update URI" never gets a checksum and is left free to point anywhere,
+        // as it always has, so existing self-hosted update setups keep working.
+        if ($this->packageInfoValid
+            && $this->objPackage->getSha256() !== null
+            && !FileSystem::isAllowedPackageHost($this->objPackage->getSourceUrl())
+        ) {
+            throw new RuntimeException(
+                __('Package source host is not on the allowed list for verified downloads.')
+            );
+        }
     }
 
     /**
@@ -99,8 +112,12 @@ class Upgrade
      */
     private function processUpgrade()
     {
-        if ($extracted_package_path = $this->downloadPackageAndExtract()
-        ) {
+        $extracted_package_path = $this->downloadPackageAndExtract();
+        if (!$extracted_package_path) {
+            return;
+        }
+
+        try {
             // Enable maintenance mode
             $this->FileSystem->touch(ABS_PATH . '.maintenance');
 
@@ -130,11 +147,11 @@ class Upgrade
                 );
             }
 
-            $this->FileSystem->remove($extracted_package_path);
-
             $this->objPackage->afterProcessUpgrade();
-
-            // Disable maintenance mode
+        } finally {
+            // Unconditional: leaving the extracted temp directory or the maintenance flag
+            // behind on a thrown error is its own follow-up problem for the next request.
+            $this->FileSystem->remove($extracted_package_path);
             $this->FileSystem->remove(ABS_PATH . '.maintenance');
         }
     }
@@ -150,19 +167,34 @@ class Upgrade
         $unique_id       = $this->FileSystem->generateUniqueId('package_');
         $unique_filename = $unique_id . '.zip';
         $download_path   = CONTENT_PATH . 'downloads/';
-        if ($downloaded = $this->FileSystem->downloadFile(
-            $this->objPackage->getSourceUrl(),
-            $download_path . $unique_filename
-        )
-        ) {
-            $resultCode = $this->Zip->unzipFile($downloaded, $download_path . $unique_id);
-            $this->FileSystem->remove($download_path . $unique_filename);
+        $zip_file        = $download_path . $unique_filename;
+        $extract_path    = $download_path . $unique_id;
+
+        try {
+            $downloaded = $this->FileSystem->downloadFile(
+                $this->objPackage->getSourceUrl(),
+                $zip_file,
+                null,
+                true,
+                $this->objPackage->getSha256()
+            );
+
+            if (!$downloaded) {
+                return false;
+            }
+
+            $resultCode = $this->Zip->unzipFile($downloaded, $extract_path);
             if ($resultCode === 1) {
-                return $download_path . $unique_id;
+                return $extract_path;
             }
             throw new RuntimeException(__('Unable to unzip package file.'));
+        } catch (\Throwable $e) {
+            // unzipFile() can still leave partial output in $extract_path on a -1 (read/write)
+            // failure part-way through; never leave that behind on any failure path.
+            $this->FileSystem->remove($extract_path);
+            throw $e;
+        } finally {
+            $this->FileSystem->remove($zip_file);
         }
-
-        return false;
     }
 }

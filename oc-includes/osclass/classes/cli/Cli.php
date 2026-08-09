@@ -14,6 +14,11 @@ namespace mindstellar\cli;
 use Admin;
 use Cron;
 use mindstellar\database\Connection;
+use mindstellar\market\Catalog;
+use mindstellar\market\Compatibility;
+use mindstellar\market\Installer;
+use mindstellar\market\PackageIndex;
+use mindstellar\market\PackageReconciler;
 use Params;
 use Plugins;
 use Sitemap;
@@ -37,6 +42,7 @@ class Cli
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Reconcile schema and run pending migrations (--skip-db)'],
+        'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
@@ -46,6 +52,11 @@ class Cli
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
         'theme:list'          => ['cmdThemeList', 'List installed public themes'],
         'theme:activate'      => ['cmdThemeActivate', 'Set the active public theme (--theme=<name>)'],
+        'market:refresh'      => ['cmdMarketRefresh', 'Refresh the package catalog (--type=plugin|theme)'],
+        'market:search'       => ['cmdMarketSearch', 'Search the catalog (<query> [--type=plugin|theme])'],
+        'market:info'         => ['cmdMarketInfo', 'Show catalog details for a package (<slug> [--type=plugin|theme])'],
+        'market:install'      => ['cmdMarketInstall', 'Install a package from the catalog (<slug> [--type=plugin|theme])'],
+        'market:update'       => ['cmdMarketUpdate', 'Update installed packages from the catalog (<slug>|--all [--type=plugin|theme])'],
         'doctor'              => ['cmdDoctor', 'Run environment and health checks'],
         'version'             => ['cmdVersion', 'Print the installed Shopclass version'],
         'help'                => ['cmdHelp', 'Show this help'],
@@ -355,6 +366,37 @@ class Cli
     }
 
     /**
+     * Container-only step: OSC_BUNDLED_CONTENT_PATH points at a pristine copy of
+     * oc-content baked into the image, outside the persistent volume; when it
+     * exists, install bundled plugins/themes missing from the live oc-content
+     * and refresh ones this image ships a newer version of (PackageReconciler).
+     * A no-op on every install that isn't running from that image layout.
+     *
+     * @param array<string, mixed> $args
+     */
+    private function cmdPackageReconcile(array $args): int
+    {
+        $pristineRoot = (string) (getenv('OSC_BUNDLED_CONTENT_PATH') ?: '');
+        if ($pristineRoot === '' || !is_dir($pristineRoot)) {
+            $this->out("No bundled content path configured for this install; nothing to reconcile.\n");
+
+            return 0;
+        }
+
+        $actions = PackageReconciler::reconcile($pristineRoot, PLUGINS_PATH, THEMES_PATH);
+        if ($actions === []) {
+            $this->out("Bundled plugins/themes already up to date.\n");
+
+            return 0;
+        }
+        foreach ($actions as $line) {
+            $this->out($line . "\n");
+        }
+
+        return 0;
+    }
+
+    /**
      * @param array<string, mixed> $args
      */
     private function cmdCacheFlush(array $args): int
@@ -651,6 +693,338 @@ class Cli
         $this->out(sprintf("Theme '%s' activated.\n", $theme));
 
         return 0;
+    }
+
+    /**
+     * Resolve --type into the plugin/theme catalog namespace, erroring on
+     * anything else since those are the only two registries.
+     *
+     * @param array<string, mixed> $args
+     */
+    private function marketType(array $args): ?string
+    {
+        $type = (string) ($args['type'] ?? 'plugin');
+        if (!in_array($type, ['plugin', 'theme'], true)) {
+            $this->err("Invalid --type. Use plugin or theme.\n");
+
+            return null;
+        }
+
+        return $type;
+    }
+
+    /**
+     * Refuses state-changing market operations under DEMO or when package
+     * installs are disabled for this deployment.
+     */
+    private function marketWriteGuard(): int
+    {
+        if (defined('DEMO')) {
+            $this->err("Disabled in demo mode.\n");
+
+            return 1;
+        }
+        if (osc_package_installs_disabled()) {
+            $this->err("Package installs are disabled for this install (OSC_DISABLE_PACKAGE_INSTALLS).\n");
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return 'unknown size';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i     = 0;
+        $value = (float) $bytes;
+        while ($value >= 1024 && $i < count($units) - 1) {
+            $value /= 1024;
+            $i++;
+        }
+
+        return sprintf('%.1f %s', $value, $units[$i]);
+    }
+
+    /**
+     * Prints slug, target version, size, and source host before an install/update
+     * actually touches disk, per the market's "say what you're about to do" contract.
+     *
+     * @param array<string, mixed> $target a versionEntry: version, url, size, ...
+     */
+    private function printInstallPlan(string $slug, array $target, bool $isUpdate = false): void
+    {
+        $host = parse_url((string) ($target['url'] ?? ''), PHP_URL_HOST);
+        $this->out(sprintf(
+            "%s %s -> %s  (%s, from %s)\n",
+            $isUpdate ? 'Updating' : 'Installing',
+            $slug,
+            (string) ($target['version'] ?? '?'),
+            $this->formatBytes((int) ($target['size'] ?? 0)),
+            $host !== null && $host !== '' ? $host : 'unknown host'
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $result Installer::install()/update() return shape
+     */
+    private function reportInstallerResult(array $result): int
+    {
+        if (!empty($result['ok'])) {
+            $message = (string) ($result['message'] ?? '');
+            $this->out(sprintf(
+                "  OK: %s %s installed.%s\n",
+                (string) ($result['slug'] ?? ''),
+                (string) ($result['version'] ?? ''),
+                $message !== '' ? ' ' . $message : ''
+            ));
+
+            return 0;
+        }
+
+        $message = (string) ($result['message'] ?? 'unknown error');
+        $this->err(sprintf(
+            "  FAILED: %s%s\n",
+            $message,
+            !empty($result['rolled_back']) ? ' (rolled back)' : ''
+        ));
+
+        return 1;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdMarketRefresh(array $args): int
+    {
+        $type = $this->marketType($args);
+        if ($type === null) {
+            return 2;
+        }
+
+        $catalog = $type === 'plugin' ? Catalog::forPlugins() : Catalog::forThemes();
+
+        $this->out(sprintf("Refreshing %s catalog...\n", $type));
+        $index   = $catalog->index(true);
+        $updates = $catalog->updates(true);
+
+        // The catalog writes its check timestamp/error straight to the DB without
+        // updating Preference's in-process cache; reload it so lastChecked()/lastError()
+        // reflect the fetch that just happened instead of whatever was cached at boot.
+        osc_reset_preferences();
+
+        if ($catalog->lastError() !== null) {
+            $this->err('Refresh failed: ' . $catalog->lastError() . "\n");
+
+            return 1;
+        }
+
+        $this->out(sprintf(
+            "  %d package(s) in the index, %d with published versions. Last checked: %s\n",
+            count($index),
+            count($updates),
+            date('Y-m-d H:i:s', $catalog->lastChecked())
+        ));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdMarketSearch(array $args): int
+    {
+        $type = $this->marketType($args);
+        if ($type === null) {
+            return 2;
+        }
+
+        $query = trim((string) ($args['_'][0] ?? ''));
+        if ($query === '') {
+            $this->err("Usage: market:search <query> [--type=plugin|theme]\n");
+
+            return 2;
+        }
+
+        $catalog = $type === 'plugin' ? Catalog::forPlugins() : Catalog::forThemes();
+        $needle  = mb_strtolower($query);
+
+        $matches = array_filter($catalog->index(), static function (array $entry) use ($needle): bool {
+            $haystack = mb_strtolower(implode(' ', [
+                (string) ($entry['slug'] ?? ''),
+                (string) ($entry['name'] ?? ''),
+                (string) ($entry['short_description'] ?? ''),
+                implode(' ', (array) ($entry['tags'] ?? [])),
+            ]));
+
+            return str_contains($haystack, $needle);
+        });
+
+        if ($matches === []) {
+            $this->out("No matches.\n");
+
+            return 0;
+        }
+
+        $this->out(sprintf("  %-24s %-10s %s\n", 'SLUG', 'VERSION', 'DESCRIPTION'));
+        foreach ($matches as $entry) {
+            $this->out(sprintf(
+                "  %-24s %-10s %s\n",
+                (string) ($entry['slug'] ?? ''),
+                (string) ($entry['version'] ?? ($entry['latest_version'] ?? '?')),
+                (string) ($entry['short_description'] ?? '')
+            ));
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdMarketInfo(array $args): int
+    {
+        $type = $this->marketType($args);
+        if ($type === null) {
+            return 2;
+        }
+
+        $slug = trim((string) ($args['_'][0] ?? ''));
+        if ($slug === '') {
+            $this->err("Usage: market:info <slug> [--type=plugin|theme]\n");
+
+            return 2;
+        }
+
+        $catalog = $type === 'plugin' ? Catalog::forPlugins() : Catalog::forThemes();
+        $detail  = $catalog->detail($slug);
+        if ($detail === null) {
+            $this->err(sprintf("No such %s in the catalog: %s\n", $type, $slug));
+
+            return 1;
+        }
+
+        $this->out(sprintf("%s (%s)\n", (string) ($detail['name'] ?? $slug), $slug));
+        if (!empty($detail['short_description'])) {
+            $this->out('  ' . $detail['short_description'] . "\n");
+        }
+        if (!empty($detail['author'])) {
+            $this->out('  Author: ' . $detail['author'] . "\n");
+        }
+
+        $versions = $catalog->updates()[$slug] ?? ($detail['versions'] ?? []);
+        $best     = Compatibility::pickBestVersion($versions);
+        if ($best !== null) {
+            $this->out(sprintf(
+                "  Best compatible version: %s (requires Shopclass %s, PHP %s)\n",
+                (string) $best['version'],
+                (string) ($best['requires'] ?? 'any'),
+                (string) ($best['requires_php'] ?? 'any')
+            ));
+        } else {
+            $this->out("  No published version is compatible with this install.\n");
+        }
+        $this->out(sprintf("  %d version(s) published.\n", count($versions)));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdMarketInstall(array $args): int
+    {
+        $type = $this->marketType($args);
+        if ($type === null) {
+            return 2;
+        }
+
+        $slug = trim((string) ($args['_'][0] ?? ''));
+        if ($slug === '') {
+            $this->err("Usage: market:install <slug> [--type=plugin|theme]\n");
+
+            return 2;
+        }
+
+        $guard = $this->marketWriteGuard();
+        if ($guard !== 0) {
+            return $guard;
+        }
+
+        $catalog  = $type === 'plugin' ? Catalog::forPlugins() : Catalog::forThemes();
+        $versions = $catalog->updates()[$slug] ?? null;
+        if ($versions === null) {
+            $this->err(sprintf("No such %s in the catalog: %s\n", $type, $slug));
+
+            return 1;
+        }
+
+        $target = Compatibility::pickBestVersion($versions);
+        if ($target === null) {
+            $this->err(sprintf("No version of '%s' is compatible with this Shopclass/PHP install.\n", $slug));
+
+            return 1;
+        }
+
+        $this->printInstallPlan($slug, $target);
+
+        $installer = $type === 'plugin' ? Installer::forPlugins() : Installer::forThemes();
+
+        return $this->reportInstallerResult($installer->install($slug, $target));
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     */
+    private function cmdMarketUpdate(array $args): int
+    {
+        $type = $this->marketType($args);
+        if ($type === null) {
+            return 2;
+        }
+
+        $all  = array_key_exists('all', $args);
+        $slug = trim((string) ($args['_'][0] ?? ''));
+        if (!$all && $slug === '') {
+            $this->err("Usage: market:update <slug>|--all [--type=plugin|theme]\n");
+
+            return 2;
+        }
+
+        $guard = $this->marketWriteGuard();
+        if ($guard !== 0) {
+            return $guard;
+        }
+
+        $index   = $type === 'plugin' ? PackageIndex::forPlugins() : PackageIndex::forThemes();
+        $pending = $index->pendingUpdates();
+
+        $slugs = $all ? array_keys($pending) : [$slug];
+        if ($slugs === []) {
+            $this->out("Nothing to update.\n");
+
+            return 0;
+        }
+
+        $installer = $type === 'plugin' ? Installer::forPlugins() : Installer::forThemes();
+        $worst     = 0;
+        foreach ($slugs as $s) {
+            $target = $pending[$s] ?? null;
+            if ($target === null) {
+                $this->err(sprintf("'%s' has no pending update.\n", $s));
+                $worst = max($worst, 1);
+                continue;
+            }
+
+            $this->printInstallPlan($s, $target, true);
+            $worst = max($worst, $this->reportInstallerResult($installer->update($s, $target)));
+        }
+
+        return $worst;
     }
 
     /**

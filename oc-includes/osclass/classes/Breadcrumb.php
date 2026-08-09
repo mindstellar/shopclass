@@ -457,7 +457,7 @@ class Breadcrumb
                 $class .= 'class="last-child" ';
             }
 
-            $text = '<li ' . $class . ' itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">';
+            $text = '<li ' . $class . ' itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">';
 
             // set separator
             if ($i > 0) {
@@ -473,10 +473,13 @@ class Breadcrumb
                 $title = '<span itemprop="name">' . $iValue['title'] . '</span>';
             }
 
+            // position is 1-based and required for a valid BreadcrumbList ListItem.
+            $title .= '<meta itemprop="position" content="' . ($i + 1) . '" />';
+
             $node[] = $text . $title . '</li>' . PHP_EOL;
         }
 
-        $result = '<ul class="breadcrumb">' . PHP_EOL;
+        $result = '<ul class="breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">' . PHP_EOL;
         $result .= implode(PHP_EOL, $node);
         $result .= '</ul>' . PHP_EOL;
 

@@ -104,6 +104,7 @@ php oc-cli.php help          # list every command
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
 | `db:upgrade [--skip-db]` | Reconcile the schema and run pending migrations after an update. `--skip-db` continues past false-positive query errors. |
+| `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content` — a no-op outside a container image. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
@@ -113,6 +114,11 @@ php oc-cli.php help          # list every command
 | `plugin:deactivate --plugin=<folder>` | Disable an active plugin. |
 | `theme:list` | List installed public themes and mark the active one. |
 | `theme:activate --theme=<name>` | Set the active public theme. |
+| `market:refresh [--type=plugin\|theme]` | Refresh the cached plugin/theme catalog from the registry. |
+| `market:search <query> [--type=plugin\|theme]` | Search the catalog. |
+| `market:info <slug> [--type=plugin\|theme]` | Show catalog details for a package. |
+| `market:install <slug> [--type=plugin\|theme]` | Install a package from the catalog. |
+| `market:update <slug>\|--all [--type=plugin\|theme]` | Update installed packages from the catalog. |
 | `doctor` | Report on PHP version, extensions, database, writability, cron freshness, and cache. Exits non-zero if any check fails. |
 | `version` | Print the installed version. |
 
@@ -205,11 +211,30 @@ It comes up **already installed** at **http://localhost:8080** (admin at
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | Public base URL of the site |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | First admin account — leave the password unset to have one generated and printed to the logs |
+| `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing/updating plugins and themes from the admin market and `oc-cli.php market:*` — unset (the default) leaves them on |
 
 For a real deployment, point `DB_HOST` at a managed database, set a strong admin
 password, set `WEB_PATH` to your public URL, and offload uploads to S3 so more than
-one instance can run. Update by deploying a newer image tag; the container migrates
-its own schema on start.
+one instance can run.
+
+**Core vs. packages update differently.** Core ships baked into the image, so core
+updates come from deploying a newer image tag; the container migrates its own
+schema on start, and the in-app core updater is off (`OSC_DISABLE_SELF_UPDATE=1`) so
+it can't write over itself only to lose the write on the next redeploy. Plugins and
+themes are different: `docker-compose.prod.yml` mounts `oc-content/plugins` and
+`oc-content/themes` as named volumes alongside `uploads`/`downloads`, so a package
+installed or updated from the admin market (or `oc-cli.php market:install` /
+`market:update`) survives a redeploy. On every start, the entrypoint reconciles that
+volume against the bundled packages baked into the new image — installing any that
+are missing and refreshing any the image ships a newer version of — without ever
+touching a package installed through the market.
+
+> **Upgrading from an image released before those two volumes existed:** copy
+> `oc-content/plugins` and `oc-content/themes` out of the running container before you
+> redeploy. Those directories used to live in the container's writable layer, so anything
+> installed there was already discarded on each redeploy; the new volumes are seeded from
+> the image, which means packages from the old container are not carried across and cannot
+> be recovered once it is gone. Reinstall them after upgrading. Zip installs are unaffected.
 
 ## Brand
 
@@ -237,6 +262,8 @@ please don't modify the marks or imply endorsement.
 - [Caching contract](docs/CACHING.md) — how Shopclass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
 - [Page builder](docs/PAGE-BUILDER.md) — the page-template registry and the widget-based page composition model.
 - [Custom fields](docs/CUSTOM-FIELDS.md) — field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
+- [Market](docs/MARKET.md) — the GitHub-native plugin & theme ecosystem: the [`shopclass-plugins`](https://github.com/mindstellar/shopclass-plugins) / [`shopclass-themes`](https://github.com/mindstellar/shopclass-themes) registries, the static catalog they publish, and how core browses, installs, and updates from it.
+- [Package spec](docs/PACKAGE-SPEC.md) — the contract a plugin or theme must satisfy to be listed in the market: header fields, compatibility, versioning, artwork, and security requirements.
 
 Installation, local development, and the production image are covered in the sections above.
 

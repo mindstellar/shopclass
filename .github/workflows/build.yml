@@ -126,6 +126,35 @@ jobs:
           OSCLASS_REF: ${{ github.sha }}
         run: bash ./.build.sh
 
+      # deprecated-api.json and package-lint.php are the registry's copy of the
+      # package contract (docs/MARKET.md §6.3-6.4): the registry CI downloads
+      # both from this release rather than keeping its own, so they must ship
+      # as release assets alongside the zip, not folded into it. Generating the
+      # inventory needs nothing beyond Node, already set up above.
+      - name: Generate deprecated API inventory
+        run: node scripts/gen-deprecated-api.mjs --out=deprecated-api.json
+
+      # The package-CI harness (docs/MARKET.md §6) — the registry repos' PR
+      # validation downloads one bundle rather than several loose files, because
+      # package-lint.php looks for Compatibility.php beside itself first (only
+      # falling back to --compat= otherwise), so a flat layout is what makes the
+      # "just extract and run" story work. The standalone assets below keep
+      # shipping unchanged; this is additive, not a replacement.
+      - name: Build package-ci bundle
+        run: |
+          set -euo pipefail
+          rm -rf package-ci
+          mkdir -p package-ci/deprecation-collector
+          cp tools/package-lint.php package-ci/
+          cp oc-includes/osclass/classes/market/Compatibility.php package-ci/
+          cp deprecated-api.json package-ci/
+          cp tools/ci/deprecation-scan.php package-ci/
+          cp tools/ci/annotate.php package-ci/
+          cp tools/ci/smoke-install.sh package-ci/
+          cp tools/ci/build-catalog.php package-ci/
+          cp tools/ci/deprecation-collector/index.php package-ci/deprecation-collector/
+          tar czf shopclass-package-ci.tar.gz package-ci
+
       # Pinned rather than taking whatever the runner happens to ship: the smoke
       # test needs mysqli both for the app and to prepare the database, and the
       # preinstalled PHP carries no guarantee of it.
@@ -169,7 +198,17 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: release/osclass_v${{ env.OSCLASS_VERSION }}.zip
+          # The zip's name/shape is the self-updater's compatibility contract
+          # with old installs — it is uploaded as-is. deprecated-api.json,
+          # package-lint.php, Compatibility.php, and the package-ci bundle that
+          # re-packages them (plus the rest of tools/ci/) are separate assets
+          # alongside it, never merged in.
+          files: |
+            release/osclass_v${{ env.OSCLASS_VERSION }}.zip
+            deprecated-api.json
+            tools/package-lint.php
+            oc-includes/osclass/classes/market/Compatibility.php
+            shopclass-package-ci.tar.gz
           tag_name: ${{ env.OSCLASS_VERSION }}
           target_commitish: ${{ github.sha }}
           name: Release ${{ env.OSCLASS_VERSION }}

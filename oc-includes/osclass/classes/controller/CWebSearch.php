@@ -53,9 +53,8 @@ class CWebSearch extends BaseModel
                             $this->redirectTo(osc_base_url() . $search_uri);
                         }
                     }
-                    if (Params::getParam('iPage') > 1) {
-                        $this->_exportVariableToView('canonical', osc_base_url() . $search_uri);
-                    }
+                    // The canonical is exported for every search page (page 1 included) and
+                    // normalised in doModel(); see the self-canonical block there.
                 } else {
                     $search_uri = $this->uri;
                 }
@@ -103,7 +102,10 @@ class CWebSearch extends BaseModel
                         $this->categorySlugRedirect($categorySlug);
                         $this->do404();
                     }
-                } else {
+                } elseif ($search_uri !== osc_get_preference('rewrite_search_url')) {
+                    // A bare /search route carrying query-string params (e.g. /search?sPattern=x)
+                    // is not a category slug — leave it for doModel() to 301 onto the friendly
+                    // URL, instead of resolving 'search' as a category and 404ing.
                     $category = Category::newInstance()->findBySlug($search_uri);
 
                     if (count($category) === 0) {
@@ -185,6 +187,18 @@ class CWebSearch extends BaseModel
             ) {
                 $this->redirectTo($searchUri, 301);
             }
+        }
+
+        // Self-referential canonical for every search/category page — the unsorted, page-1
+        // friendly URL for this result set. Dropping the paging and sort/order params
+        // consolidates paginated and sort permutations of the same set onto one indexable
+        // URL, and gives page 1 a canonical it previously lacked (SEO CORE-1/CORE-2).
+        if ($this->uri !== 'feed' && !Params::existParam('sFeed')) {
+            $canonicalParams = $uriParams;
+            foreach (array('iPage', 'sOrder', 'iOrderType', 'page', 'action', 'sParams', 'sFeed') as $drop) {
+                unset($canonicalParams[$drop]);
+            }
+            $this->_exportVariableToView('canonical', osc_search_url($canonicalParams));
         }
 
         ////////////////////////////////
@@ -635,7 +649,27 @@ class CWebSearch extends BaseModel
 
         // calling the view...
         if (count($aItems) === 0) {
-            header('HTTP/1.1 404 Not Found');
+            // An empty *refined* search (free-text pattern, price range, custom-field facet,
+            // has-photo / premium filter) is a genuine no-match — 404 it so those thin,
+            // infinite result pages are not indexed. An empty *browse* page (a valid category
+            // or location with no listings yet) is a real, stable URL: keep it 200 so it is
+            // not de-indexed, but noindex it while empty so the thin page is not indexed.
+            $metaFacets     = Params::getParam('meta');
+            $isRefinedSearch = ($p_sPattern !== '')
+                || ($p_sPriceMin !== '' && $p_sPriceMin !== null)
+                || ($p_sPriceMax !== '' && $p_sPriceMax !== null)
+                || (is_array($metaFacets) && count($metaFacets) > 0)
+                || $p_bPic
+                || $p_bPremium;
+
+            if ($isRefinedSearch) {
+                header('HTTP/1.1 404 Not Found');
+            } else {
+                $this->_exportVariableToView('meta_noindex', true);
+                // Drop the self-canonical: noindex + canonical on the same URL is a
+                // contradictory signal, and the page is being told not to index.
+                $this->_exportVariableToView('canonical', '');
+            }
         }
 
         osc_run_hook('after_search');

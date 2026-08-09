@@ -276,6 +276,24 @@ class Plugins
             $info['short_name'] = $info['plugin_name'];
         }
 
+        if (preg_match('|Requires Shopclass:([^\\r\\t\\n]*)|i', $s_info, $match)) {
+            $info['requires'] = trim($match[1]);
+        } else {
+            $info['requires'] = '';
+        }
+
+        if (preg_match('|Tested up to:([^\\r\\t\\n]*)|i', $s_info, $match)) {
+            $info['tested_up_to'] = trim($match[1]);
+        } else {
+            $info['tested_up_to'] = '';
+        }
+
+        if (preg_match('|Requires PHP:([^\\r\\t\\n]*)|i', $s_info, $match)) {
+            $info['requires_php'] = trim($match[1]);
+        } else {
+            $info['requires_php'] = '';
+        }
+
         $info['filename']             = $plugin;
         self::$plugins_infos[$plugin] = $info;
 

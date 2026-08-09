@@ -27,6 +27,48 @@
   .card-title {
     text-transform: capitalize;
   }
+
+  .osc-thumb {
+    height: 100%;
+  }
+}
+
+// Wraps osc_theme_screenshot_url()/osc_plugin_icon_url() output so a missing
+// screenshot/icon (osc_theme_has_screenshot()/osc_plugin_has_icon() false)
+// can be tinted and carry the package's initial as a text overlay, instead
+// of a bare broken/placeholder image. `--osc-thumb-hue` is a per-element hue
+// hashed from the slug in PHP (appearance/index.php) — it is not a Sass
+// colour, it is a paint-time hsl() argument, so it stays themeable the same
+// way every other token here does; only the saturation/lightness pair
+// (light vs dark) is fixed per theme below.
+.osc-thumb {
+  overflow: hidden;
+  position: relative;
+}
+
+.osc-thumb--fallback {
+  background-color: hsl(var(--osc-thumb-hue, 200) 45% 92%);
+
+  img {
+    opacity: .4;
+  }
+}
+
+[data-bs-theme="dark"] .osc-thumb--fallback {
+  background-color: hsl(var(--osc-thumb-hue, 200) 28% 22%);
+}
+
+.osc-thumb-letter {
+  align-items: center;
+  color: var(--osc-ink);
+  display: flex;
+  font-size: 2.5rem;
+  font-weight: 600;
+  inset: 0;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+  text-transform: uppercase;
 }
 
 // The legacy `.theme` card layout is gone — a floated 250px box with a fixed 285px

@@ -21,6 +21,7 @@
 
 namespace mindstellar\upgrade;
 
+use mindstellar\market\Compatibility;
 use RuntimeException;
 
 /**
@@ -59,6 +60,14 @@ abstract class UpgradePackage
      * @var array
      */
     private $a_compatible;
+
+    private string $s_requires = '';
+
+    private string $s_tested_up_to = '';
+
+    private string $s_requires_php = '';
+
+    private ?string $s_sha256 = null;
 
     private $a_filtered_files = [];
 
@@ -102,6 +111,10 @@ abstract class UpgradePackage
      *                           'a_filtered_files => array of directory/files name which shouldn't overwrite
      *                           's_compatible' => csv of compatible osclass version (optional)
      *                           's_prerelease' => true or false (Optional)
+     *                           's_requires' => minimum required Shopclass version (optional)
+     *                           's_tested_up_to' => highest Shopclass version verified (optional)
+     *                           's_requires_php' => minimum required PHP version (optional)
+     *                           's_sha256' => lowercase hex sha256 of the package download (optional)
      *                           ]
      */
     private function setVariable(array $package_info)
@@ -139,6 +152,18 @@ abstract class UpgradePackage
             }
             if (isset($package_info['s_prerelease'])) {
                 $this->s_prerelease = $package_info['s_prerelease'];
+            }
+            if (isset($package_info['s_requires'])) {
+                $this->s_requires = (string) $package_info['s_requires'];
+            }
+            if (isset($package_info['s_tested_up_to'])) {
+                $this->s_tested_up_to = (string) $package_info['s_tested_up_to'];
+            }
+            if (isset($package_info['s_requires_php'])) {
+                $this->s_requires_php = (string) $package_info['s_requires_php'];
+            }
+            if (isset($package_info['s_sha256']) && preg_match('/^[a-f0-9]{64}$/i', (string) $package_info['s_sha256'])) {
+                $this->s_sha256 = strtolower((string) $package_info['s_sha256']);
             }
         } else {
             throw new RuntimeException(__('Invalid upgrade package info'));
@@ -202,9 +227,24 @@ abstract class UpgradePackage
      */
     public function isCompatible(): bool
     {
-        if ($this->a_compatible !== null && !$this->forceUpgrade) {
+        if ($this->forceUpgrade) {
+            return true;
+        }
+
+        if ($this->s_requires !== '' || $this->s_tested_up_to !== '' || $this->s_requires_php !== '') {
+            $verdict = Compatibility::evaluate([
+                'requires'     => $this->s_requires,
+                'tested_up_to' => $this->s_tested_up_to,
+                'requires_php' => $this->s_requires_php,
+            ], $this->osclass_version);
+
+            return !$verdict['blocked'];
+        }
+
+        if ($this->a_compatible !== null) {
             return in_array($this->osclass_version, $this->a_compatible, false);
         }
+
         return true;
     }
 
@@ -236,5 +276,45 @@ abstract class UpgradePackage
     public function getNewVersion(): string
     {
         return $this->s_new_version;
+    }
+
+    /**
+     * Minimum required Shopclass version, '' when not declared.
+     *
+     * @return string
+     */
+    public function getRequires(): string
+    {
+        return $this->s_requires;
+    }
+
+    /**
+     * Highest Shopclass version this package was verified against, '' when not declared.
+     *
+     * @return string
+     */
+    public function getTestedUpTo(): string
+    {
+        return $this->s_tested_up_to;
+    }
+
+    /**
+     * Minimum required PHP version, '' when not declared.
+     *
+     * @return string
+     */
+    public function getRequiresPhp(): string
+    {
+        return $this->s_requires_php;
+    }
+
+    /**
+     * Lowercase hex sha256 of the package download, null when not declared or invalid.
+     *
+     * @return string|null
+     */
+    public function getSha256(): ?string
+    {
+        return $this->s_sha256;
     }
 }

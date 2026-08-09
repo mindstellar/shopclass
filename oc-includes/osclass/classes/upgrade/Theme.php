@@ -53,55 +53,81 @@ class Theme extends UpgradePackage
      *                           'a_filtered_files => array of directory/files name which shouldn't overwrite
      *                           's_compatible' => csv of compatible osclass version (optional)
      *                           's_prerelease' => true or false (Optional)
+     *                           's_requires' => minimum required Shopclass version (optional)
+     *                           's_tested_up_to' => highest Shopclass version verified (optional)
+     *                           's_requires_php' => minimum required PHP version (optional)
      *                           ]
+     *
+     * @return array
      */
-    public static function getPackageInfo($theme_short_name)
+    public static function getPackageInfo($theme_short_name): array
     {
-        if (!isset($theme_short_name) && file_exists(THEMES_PATH.$theme_short_name)) {
+        if (!is_string($theme_short_name) || $theme_short_name === '' || !is_dir(THEMES_PATH . $theme_short_name)) {
             throw new RuntimeException(__('Invalid theme name.'));
         }
 
         $theme_info = (new WebThemes())->loadThemeInfo($theme_short_name);
-        $package_info['s_title'] = $theme_info['theme_name'];
-        $package_info['s_short_name'] = $theme_short_name;
-        $package_info['s_installed_version'] = $theme_info['version'];
-        $package_info['s_target_directory'] = THEMES_PATH.$theme_short_name;
-
-        $json_url               = $theme_info['theme_update_uri'];
-        if (! filter_var($json_url, FILTER_VALIDATE_URL)) {
-            throw new RuntimeException($theme_short_name.':'.__('Invalid theme update uri'));
+        if (!is_array($theme_info)) {
+            throw new RuntimeException($theme_short_name . ':' . __('Invalid theme name.'));
         }
 
-        if (stripos($json_url, 'api.github.com') === true) { //It's a Github API URI
-            $theme_info_json = (new FileSystem())->getContents($json_url);
-            if ($theme_info_json) {
-                $aSelfPackage = json_decode($theme_info_json, true);
-                if (!$aSelfPackage['draft']) {
-                    if (isset($aSelfPackage['assets'][0]['browser_download_url'])) {
-                        $download_url        = $aSelfPackage['assets'][0]['browser_download_url'];
-                        $package_info['s_source_url'] = $download_url;
-                    }
-                    if (isset($aSelfPackage['tag_name'])) {
-                        $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
-                    }
+        $package_info                        = [];
+        $package_info['s_title']             = $theme_info['theme_name'];
+        $package_info['s_short_name']        = $theme_short_name;
+        $package_info['s_installed_version'] = $theme_info['version'];
+        $package_info['s_target_directory']  = THEMES_PATH . $theme_short_name;
+        $package_info['s_requires']          = $theme_info['requires'] ?? '';
+        $package_info['s_tested_up_to']      = $theme_info['tested_up_to'] ?? '';
+        $package_info['s_requires_php']      = $theme_info['requires_php'] ?? '';
 
-                    $package_info['s_prerelease'] = $aSelfPackage['prerelease'];
-                }
+        $json_url = $theme_info['theme_update_uri'];
+        if (!filter_var($json_url, FILTER_VALIDATE_URL)) {
+            throw new RuntimeException($theme_short_name . ':' . __('Invalid theme update uri'));
+        }
+
+        if (stripos($json_url, 'api.github.com') !== false) { //It's a Github API URI
+            $theme_info_json = (new FileSystem())->getContents($json_url);
+            $aSelfPackage    = $theme_info_json ? json_decode($theme_info_json, true) : null;
+            if (!is_array($aSelfPackage) || !empty($aSelfPackage['draft'])) {
+                throw new RuntimeException(
+                    $theme_short_name . ':' . __('Unable to fetch a usable package info from the update URI.')
+                );
             }
+
+            if (isset($aSelfPackage['assets'][0]['browser_download_url'])) {
+                $package_info['s_source_url'] = $aSelfPackage['assets'][0]['browser_download_url'];
+            }
+            if (isset($aSelfPackage['tag_name'])) {
+                $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
+            }
+
+            $package_info['s_prerelease'] = $aSelfPackage['prerelease'] ?? false;
         } else {
             $theme_info_json = (new FileSystem())->getContents($json_url);
-            if ($theme_info_json) {
-                $aSelfPackage = json_decode($theme_info_json, true);
-                if (isset($aSelfPackage['s_source_file'])) {
-                    $package_info['s_source_url'] = $aSelfPackage['s_source_file'];
-                }
-                if (isset($aSelfPackage['s_version'])) {
-                    $package_info['s_new_version'] = ltrim(trim($aSelfPackage['s_version']), 'v');
-                }
-                if (isset($aSelfPackage['s_compatible']) && trim($aSelfPackage['s_compatible'])) {
-                    $package_info['s_compatible'] =  $aSelfPackage['s_compatible'];
-                }
+            $aSelfPackage    = $theme_info_json ? json_decode($theme_info_json, true) : null;
+            if (!is_array($aSelfPackage)) {
+                throw new RuntimeException(
+                    $theme_short_name . ':' . __('Unable to fetch a usable package info from the update URI.')
+                );
+            }
+
+            if (isset($aSelfPackage['s_source_file'])) {
+                $package_info['s_source_url'] = $aSelfPackage['s_source_file'];
+            }
+            if (isset($aSelfPackage['s_version'])) {
+                $package_info['s_new_version'] = ltrim(trim($aSelfPackage['s_version']), 'v');
+            }
+            if (isset($aSelfPackage['s_compatible']) && trim($aSelfPackage['s_compatible'])) {
+                $package_info['s_compatible'] = $aSelfPackage['s_compatible'];
             }
         }
+
+        if (empty($package_info['s_source_url']) || empty($package_info['s_new_version'])) {
+            throw new RuntimeException(
+                $theme_short_name . ':' . __('Unable to fetch a usable package info from the update URI.')
+            );
+        }
+
+        return $package_info;
     }
 }

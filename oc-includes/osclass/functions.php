@@ -598,9 +598,19 @@ function _osc_check_plugins_update()
     $array            = array();
     $array_downloaded = array();
     $plugins          = Plugins::listAll();
+
+    // Catalog failures are absorbed internally (cached payload + retry clock);
+    // a hard throw here still must not break the admin footer poll or the CLI.
+    try {
+        $pending = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
     foreach ($plugins as $plugin) {
         $info = osc_plugin_get_info($plugin);
-        if (osc_check_plugin_update(@$info['plugin_update_uri'], @$info['version'])) {
+        $slug = dirname($plugin);
+        if (isset($pending[$slug])) {
             $array[] = @$info['plugin_update_uri'];
             $total++;
         }
@@ -667,9 +677,16 @@ function _osc_check_themes_update()
     $array            = array();
     $array_downloaded = array();
     $themes           = WebThemes::newInstance()->getListThemes();
+
+    try {
+        $pending = \mindstellar\market\PackageIndex::forThemes()->pendingUpdates();
+    } catch (\Throwable $e) {
+        $pending = array();
+    }
+
     foreach ($themes as $theme) {
         $info = WebThemes::newInstance()->loadThemeInfo($theme);
-        if (osc_check_theme_update(@$info['theme_update_uri'], @$info['version'])) {
+        if (isset($pending[$theme])) {
             $array[] = $theme;
             $total++;
         }
@@ -921,10 +938,24 @@ osc_add_hook('header', 'osc_show_maintenance');
 
 function osc_meta_generator()
 {
-    echo '<meta name="generator" content="Shopclass ' . OSCLASS_VERSION . '" />';
+    echo '<meta name="generator" content="Shopclass" />';
 }
 
 osc_add_hook('header', 'osc_meta_generator');
+
+/**
+ * Emit <meta name="robots" content="noindex, follow"> when a controller has marked
+ * the current response as thin/empty (e.g. a valid but empty category or location
+ * browse page). Keeps the URL crawlable and 200, without indexing an empty page.
+ */
+function osc_meta_noindex()
+{
+    if (View::newInstance()->_exists('meta_noindex') && View::newInstance()->_get('meta_noindex')) {
+        echo '<meta name="robots" content="noindex, follow" />';
+    }
+}
+
+osc_add_hook('header', 'osc_meta_noindex');
 
 if (osc_force_jpeg()) {
     /**

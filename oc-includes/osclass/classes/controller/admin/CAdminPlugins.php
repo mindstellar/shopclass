@@ -317,10 +317,21 @@ class CAdminPlugins extends AdminSecBaseModel
                 }
                 $aPluginsToUpdate = json_decode(osc_get_preference('plugins_to_update'), true);
                 $bPluginsToUpdate = is_array($aPluginsToUpdate) ? true : false;
+                // Catalog-sourced updates (docs/MARKET.md) are keyed by slug and read from the
+                // cached catalog only -- cheap, no network egress on page render. Most catalog
+                // packages carry no `Plugin update URI`, so the legacy in_array() check below
+                // (keyed on that URI) cannot tell them apart once it contains more than one
+                // blank entry; this keys the per-row check on the slug instead.
+                try {
+                    $aMarketPendingUpdates = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
+                } catch (\Throwable $e) {
+                    $aMarketPendingUpdates = array();
+                }
                 for ($i = $start; $i < $max; $i++) {
                     $plugin = $aPlugin[$i];
                     $row    = array();
                     $pInfo  = osc_plugin_get_info($plugin);
+                    $pSlug  = dirname($plugin) !== '.' ? dirname($plugin) : $plugin;
 
                     // prepare row 1
                     $installed = 0;
@@ -333,10 +344,12 @@ class CAdminPlugins extends AdminSecBaseModel
                     }
                     // prepare row 2
                     $sUpdate = '';
-                    // get plugins to update from t_preference
-                    if ($bPluginsToUpdate && in_array(@$pInfo['plugin_update_uri'], $aPluginsToUpdate)) {
+                    $pUpdateUri = @$pInfo['plugin_update_uri'];
+                    if (isset($aMarketPendingUpdates[$pSlug])
+                        || ($bPluginsToUpdate && $pUpdateUri != '' && in_array($pUpdateUri, $aPluginsToUpdate, true))
+                    ) {
                         $sUpdate = '<a class="market_update market-popup" href="#'
-                            . htmlentities($pInfo['plugin_update_uri']) . '">'
+                            . htmlentities($pUpdateUri) . '">'
                             . __("There's a new update available") . '</a>';
                     }
                     // prepare row 4
@@ -457,12 +470,117 @@ class CAdminPlugins extends AdminSecBaseModel
                 }
 
                 $this->_exportVariableToView('aPlugins', $array);
+
+                list($aMarketBrowse, $aMarketUpdates, $aMarketMeta) = $this->buildMarketViewData();
+                $this->_exportVariableToView('aMarketBrowse', $aMarketBrowse);
+                $this->_exportVariableToView('aMarketUpdates', $aMarketUpdates);
+                $this->_exportVariableToView('aMarketMeta', $aMarketMeta);
+
                 $this->doView('plugins/index.php');
                 break;
         }
     }
 
     //hopefully generic...
+
+    /**
+     * Browse / Updates / Meta data sets the plugins view renders (docs/MARKET.md §8.2):
+     * catalog packages not yet installed, installed plugins with a pending update, and
+     * the surrounding metadata (last check, write access, disabled state). Reads the
+     * cached catalog only -- it never forces a live fetch on page render.
+     *
+     * @return array{0: array, 1: array, 2: array} [$browse, $updates, $meta]
+     */
+    private function buildMarketViewData()
+    {
+        $catalog      = \mindstellar\market\Catalog::forPlugins();
+        $packageIndex = \mindstellar\market\PackageIndex::forPlugins();
+
+        $index   = $catalog->index();
+        $updates = $catalog->updates();
+
+        $browse = array();
+        foreach ($packageIndex->available() as $slug => $row) {
+            $browse[] = array(
+                'slug'              => $row['slug'],
+                'name'              => $row['name'],
+                'short_description' => $row['short_description'],
+                'author'            => $row['author'],
+                'version'           => $row['version'],
+                'icon'              => $row['icon'],
+                'categories'        => $row['categories'],
+                'tags'              => $row['tags'],
+                'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
+                'downloads'         => is_int($row['downloads'] ?? null) ? $row['downloads'] : 0,
+                'compat'            => array(
+                    'status'  => $row['compatibility']['status'],
+                    'blocked' => $row['compatibility']['blocked'],
+                    'reason'  => $row['compatibility']['reason'],
+                    // The package's published supported range, not a verdict against this
+                    // install — 'status' above (from PackageIndex's locally-evaluated
+                    // compatibility) still drives the badge tint and the disabled-button
+                    // reason; only the label text changed (docs/MARKET.md §5).
+                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
+                        is_string($row['requires_min'] ?? null) ? $row['requires_min'] : null,
+                        is_string($row['tested_max'] ?? null) ? $row['tested_max'] : null
+                    ),
+                ),
+            );
+        }
+
+        $marketUpdates = array();
+        foreach ($packageIndex->installed() as $slug => $row) {
+            if ($row['update'] === null) {
+                continue;
+            }
+            $update     = $row['update'];
+            $compatInfo = array(
+                'requires'     => $update['requires'] ?? '',
+                'requires_php' => $update['requires_php'] ?? '',
+                'tested_up_to' => $update['tested'] ?? '',
+            );
+            $verdict           = \mindstellar\market\Compatibility::evaluate($compatInfo);
+            $marketUpdates[]   = array(
+                'slug'              => $row['slug'],
+                'name'              => $row['name'],
+                'installed_version' => $row['version'],
+                'new_version'       => $update['version'],
+                'size'              => $update['size'] ?? 0,
+                'compat'            => array(
+                    'status'  => $verdict['status'],
+                    'blocked' => $verdict['blocked'],
+                    'reason'  => $verdict['reason'],
+                    // The range this specific update version declares for itself.
+                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
+                        $compatInfo['requires'] !== '' ? $compatInfo['requires'] : null,
+                        $compatInfo['tested_up_to'] !== '' ? $compatInfo['tested_up_to'] : null
+                    ),
+                ),
+            );
+        }
+
+        $categories = array();
+        foreach ($index as $row) {
+            foreach ((array) ($row['categories'] ?? array()) as $category) {
+                if (is_string($category) && $category !== '') {
+                    $categories[$category] = true;
+                }
+            }
+        }
+        $categories = array_keys($categories);
+        sort($categories);
+
+        $meta = array(
+            'last_checked'      => $catalog->lastChecked(),
+            'error'             => $catalog->lastError(),
+            'writable'          => is_writable(osc_plugins_path()),
+            'disabled'          => osc_package_installs_disabled() || defined('DEMO'),
+            'categories'        => $categories,
+            'catalog_available' => $index !== array() || $updates !== array(),
+        );
+
+        return array($browse, $marketUpdates, $meta);
+    }
 }
 
 /* file end: ./oc-admin/CAdminPlugins.php */

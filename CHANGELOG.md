@@ -2,6 +2,145 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.1.0
+
+Plugins and themes can now be found, installed and updated from inside the admin. Packages
+declare which Shopclass and PHP versions they support, and the site is only ever offered a
+version it can actually run — so an install on an older release is routed to the last version
+that still works there rather than one that would fail on boot. Update checks, which have been
+silently reporting nothing since 3.x, work again. The download and extraction path every
+plugin, theme and core update passes through has been hardened, and packages that ship no
+artwork render a built-in placeholder instead of a broken image. Container deployments should
+read the upgrade note below before redeploying.
+
+### Breaking
+
+- **Container deployments: back up `oc-content/plugins` and `oc-content/themes` before upgrading.**
+  Earlier production images kept those directories inside the container's writable layer, where
+  anything installed was already discarded on every redeploy. This release moves them onto named
+  volumes so installs finally persist — but the first redeploy onto the new arrangement seeds those
+  volumes from the image, so packages installed into a still-running old container are not carried
+  across and cannot be recovered afterwards. Copy them out first, and reinstall once the upgrade is
+  done. Sites installed from the zip are unaffected. A stale entry may remain in the active-plugins
+  preference for a package whose files are gone; it is ignored and harmless.
+
+### New
+
+- Plugins and themes can be browsed, installed and updated from the admin. Plugins and
+  Appearance each gain **Browse** and **Updates** tabs backed by a published catalog of packages;
+  search, category filter and sort run in the browser, and a package with no artwork falls back to
+  a built-in placeholder. Installs verify the publisher host and a SHA-256 checksum, stage and
+  validate the package before touching the live directory, and roll back to a backup if the swap
+  fails.
+- Plugin and theme update checks work again. The market helpers they relied on have returned
+  `false` unconditionally since 3.x, so the admin update badges could never report anything; they
+  now resolve against the catalog and offer the highest version the site can actually run, rather
+  than the newest that exists.
+- `oc-cli.php` gains `market:refresh`, `market:search`, `market:info`, `market:install` and
+  `market:update` for headless and container installs.
+- Container deployments keep what they install. `oc-content/plugins` and `oc-content/themes`
+  are persisted alongside uploads and downloads, and the entrypoint reconciles bundled packages
+  from a pristine copy in the image on every start — installing what is missing, refreshing only
+  what the image has newer, and never touching a package the site owner installed. Package
+  installs are now gated separately from the core self-updater (`OSC_DISABLE_PACKAGE_INSTALLS`,
+  off by default), so a container can update plugins and themes in place while core continues to
+  update by deploying a new image.
+- Catalog listings carry a download count, and Browse can sort by it. The figure is GitHub's
+  cumulative count of release-asset downloads, so it includes CI, mirrors and bots and is not an
+  install count; it is shown only where there is one, and the default ordering stays most
+  recently updated.
+- Plugins and themes can declare `Requires Shopclass`, `Tested up to`, and `Requires PHP` in
+  their header block. All three are optional — a package that declares nothing is treated as
+  before, never as incompatible — and they are parsed for both plugins and themes.
+- `mindstellar\market\Compatibility` evaluates those fields into one of four verdicts and
+  picks the highest release a site can actually run. A site on 6.1 offered a package whose
+  newest version requires 7.0 resolves to that package's last 6.x-compatible release rather
+  than being offered an update that would fatal on boot.
+- `osc_theme_screenshot_url()` and `osc_plugin_icon_url()` resolve a package's artwork, or a
+  bundled placeholder when it has none, with `osc_theme_has_screenshot()` /
+  `osc_plugin_has_icon()` to tell the two apart. Both are filterable.
+- `tools/package-lint.php` validates a package directory against the published package
+  specification, and `deprecated-api.json` lists every deprecated core symbol with its
+  replacement. Both ship as release assets so external tooling reads one authoritative copy
+  instead of maintaining its own.
+- The package contract and the market design are documented in `docs/PACKAGE-SPEC.md` and
+  `docs/MARKET.md`.
+
+### Changed
+
+- A package's compatibility is no longer decided by an exact string match against a
+  comma-separated version list, which judged a package declaring `6.0.2` incompatible with
+  6.0.3. The legacy list is still honoured when a package declares nothing newer.
+- A download that returns a non-2xx status, an empty body, or a body failing its expected
+  checksum is now a failure rather than a file written to disk and reported as success.
+
+### Security
+
+- Zip extraction now resolves every entry against the destination and rejects the whole
+  archive if any entry escapes it, rather than skipping that entry and continuing. Absolute
+  paths, Windows drive prefixes, backslash traversal, and symlink entries are all rejected,
+  and entry-count, per-entry size, total size and compression-ratio caps stop a zip bomb
+  before it is decompressed.
+- Package downloads can carry an expected SHA-256, verified before extraction, and a
+  checksum-carrying package is restricted to an allowlist of release hosts so a tampered
+  source cannot redirect an install elsewhere. Packages resolved from a site's own update
+  URI are unaffected.
+- Redirect and total-transfer limits were added to the download path, which previously
+  followed redirects without a cap and had no overall timeout.
+
+### Fixed
+
+- The catalog no longer bakes a compatibility verdict per version at build time — one static
+  file is served to sites on many core versions, so a verdict computed against whatever core
+  the build happened to run against was wrong for every other one, including the reference
+  plugin showing as incompatible on its own catalog. It now publishes the raw `requires` /
+  `requires_php` / `tested` fields plus a package-level supported range, and every verdict is
+  computed locally, as it already was for the install/update gate itself.
+- A prerelease core was refused any package requiring the release it belongs to — `6.1.0.beta2`
+  could not install a package declaring `Requires Shopclass: 6.1.0`, because the beta sorts below
+  the release. Compatibility now compares against the release a prerelease belongs to, so testers
+  are not locked out of the series they are testing.
+- The Appearance screen no longer renders a broken image for a theme that ships no
+  `screenshot.png`; it also gained lazy loading, real alternative text, and intrinsic
+  dimensions so the grid no longer reflows.
+- `Zip::isPathValid()` never rejected anything — its condition evaluated false for every
+  ordinary path, so the destination check had been dead since it was written.
+- The plugin and theme update-package builders assembled their result and then returned
+  nothing, and their GitHub branch tested `stripos(...) === true`, which that function never
+  returns. Neither could ever have produced a package.
+- `osc_downloadFile()` discarded the result of the download it performed and always reported
+  success.
+
+## Shopclass 6.0.3
+
+An SEO pass on the public pages: self-referential canonicals, correct handling of empty and
+query-string search URLs, and a valid breadcrumb graph.
+
+### Changed
+
+- Public pages emit a self-referential `<link rel="canonical">` — item detail, the homepage and
+  search/category pages. The search canonical is the unsorted, page-1 URL, so paginated and
+  sort/facet permutations of a result set consolidate onto one indexable URL.
+- A valid but empty category or location page now returns `200` with
+  `<meta name="robots" content="noindex, follow">` instead of a soft `404`, so a real landing page is
+  not de-indexed while it holds no listings. Empty free-text or faceted searches still return `404`.
+- The core breadcrumb is now a valid schema.org `BreadcrumbList` — the list is wrapped in the
+  `BreadcrumbList` scope and each crumb carries a `position`, so the breadcrumb rich result can be
+  parsed (themes rendering their own breadcrumb are unaffected).
+
+### Fixed
+
+- A query-string search on the rewritten `/search` route (e.g. `/search?sPattern=x`) now
+  301-redirects to the friendly URL instead of returning `404`.
+- Deleting a category assigned to a meta field group no longer fails silently — the group ↔
+  category mapping is now cleared as part of the delete cascade, so the foreign key no longer
+  blocks removal and the category no longer reappears in the tree.
+
+### Security
+
+- The `generator` meta tag no longer publishes the exact version, so a visitor cannot read it to
+  target a known-vulnerable release.
+
 ## Shopclass 6.0.2
 
 A maintenance release: the production container can send mail through an external SMTP relay, and the

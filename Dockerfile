@@ -56,9 +56,23 @@ RUN set -eu; \
     unzip -qq /tmp/storefront.zip -d /application/oc-content/themes/; \
     rm -f /tmp/storefront.zip
 
-# Writable runtime dirs and ownership. Only oc-content (uploads/downloads/cache)
-# is written at runtime; the rest of the tree can stay read-only.
+# Pristine copy of the bundled plugins/themes, kept outside oc-content so it always
+# reflects this image regardless of what a persistent volume mounted over
+# oc-content/plugins and oc-content/themes carries forward from an older one. The
+# entrypoint's `package:reconcile` step diffs against it on every start: installs
+# a bundled package the volume is missing, refreshes one this image ships a newer
+# version of, and never touches a slug that isn't in this copy (a site owner's own
+# market install). See PackageReconciler.
+RUN mkdir -p /usr/src/shopclass/oc-content \
+    && cp -a /application/oc-content/plugins /usr/src/shopclass/oc-content/plugins \
+    && cp -a /application/oc-content/themes /usr/src/shopclass/oc-content/themes
+
+# Writable runtime dirs and ownership. oc-content is fully writable: uploads and
+# downloads always were, and plugins/themes join them now that a container
+# deployment can mount them as persistent volumes and install packages into them.
 RUN mkdir -p /application/oc-content/uploads /application/oc-content/downloads \
+             /application/oc-content/downloads/backups \
+             /application/oc-content/plugins /application/oc-content/themes \
              /run/nginx /var/log/supervisor \
     && chown -R www-data:www-data /application/oc-content \
     && chmod +x /application/.docker/prod/entrypoint.sh /application/.docker/prod/healthcheck.sh
@@ -71,12 +85,19 @@ RUN : > /etc/nginx/real_ip.conf
 
 # Configure entirely from the environment by default: ignore any config.php and
 # read DB settings from DB_* / WEB_PATH. Override per-deploy as needed.
-# OSC_DISABLE_SELF_UPDATE turns off the admin's file-writing self-updater: the
-# code is baked into this image, so updates come from deploying a newer image tag
-# (the entrypoint's db:upgrade migrates the schema), not from writing into a
-# running container.
+# OSC_DISABLE_SELF_UPDATE turns off the admin's file-writing self-updater: core
+# code is baked into this image, so core updates come from deploying a newer
+# image tag (the entrypoint's db:upgrade migrates the schema), not from writing
+# into a running container. Package installs (plugins/themes) are a separate
+# concern gated by OSC_DISABLE_PACKAGE_INSTALLS, left unset (enabled) here:
+# oc-content/plugins and oc-content/themes are meant to be persistent volumes
+# (docker-compose.prod.yml), and package:reconcile on every start keeps the
+# bundled ones current without touching what a site owner installed themselves.
+# OSC_BUNDLED_CONTENT_PATH points package:reconcile at the pristine copy staged
+# above.
 ENV OSC_IGNORE_CONFIG_FILE=1 \
-    OSC_DISABLE_SELF_UPDATE=1
+    OSC_DISABLE_SELF_UPDATE=1 \
+    OSC_BUNDLED_CONTENT_PATH=/usr/src/shopclass/oc-content
 
 EXPOSE 80
 

@@ -75,4 +75,11 @@ $status-badge: (
         // There is no "uninstalled" entry: it is not a tint, it is the *absence* of one, and
         // it is built as an outline variant in table.scss.
         "disabled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
+
+        // The Browse/Updates package cards (docs/MARKET.md §8.2): a compatibility verdict is
+        // its own severity axis, not a repaint of the states above, so it gets two entries of
+        // its own. "blocked" above already covers Compatibility::INCOMPATIBLE — same tint, same
+        // word source (PHP), no new entry needed for that one.
+        "untested":   (tint: var(--osc-warning-tint), ink: var(--osc-warning-deep),  icon: "\f291"), // ◷ clock
+        "undeclared": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis),  icon: "\f504"), // ? question circle
 );
