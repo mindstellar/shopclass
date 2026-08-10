@@ -48,11 +48,15 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
     s_name VARCHAR(60) NOT NULL,
     s_slug VARCHAR(60) NOT NULL DEFAULT '',
     b_active TINYINT(1) NOT NULL DEFAULT 1,
+    i_source_id INT NULL,
+    d_coord_lat DECIMAL(10,6) NULL,
+    d_coord_long DECIMAL(10,6) NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_c_country_code (fk_c_country_code),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
+        UNIQUE KEY uq_region_source (i_source_id),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
@@ -64,11 +68,15 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
     s_slug VARCHAR(60) NOT NULL DEFAULT '',
     fk_c_country_code CHAR(2) NULL,
     b_active TINYINT(1) NOT NULL DEFAULT 1,
+    i_source_id INT NULL,
+    d_coord_lat DECIMAL(10,6) NULL,
+    d_coord_long DECIMAL(10,6) NULL,
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_region_id (fk_i_region_id),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
+        UNIQUE KEY uq_city_source (i_source_id),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -741,4 +749,19 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
         UNIQUE KEY uq_gateway_ref (s_gateway, s_external_ref),
         INDEX idx_user_status (fk_i_user_id, s_status),
         INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id
+-- ({slug}-r{id}) and self-heals on rename, but subdomain-based location routing
+-- resolves purely by slug and has no such fallback, so a rename needs recorded
+-- history to redirect from. No foreign key: fk_i_id points into either t_region or
+-- t_city depending on e_type, and one column cannot reference two tables.
+CREATE TABLE /*TABLE_PREFIX*/t_location_slug_history (
+    e_type ENUM('REGION', 'CITY') NOT NULL,
+    s_slug VARCHAR(191) NOT NULL,
+    fk_i_id INT UNSIGNED NOT NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (e_type, s_slug),
+        INDEX idx_hist_loc (e_type, fk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

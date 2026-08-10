@@ -207,6 +207,18 @@ cities, so no region is left without one either.
 The installer reads the two keys when present and ignores them when absent, so an older
 geodata snapshot still installs — an install is never blocked on the data being current.
 
+**Attribution.** The upstream dataset is published under the Open Database License (ODbL)
+v1.0, which requires attribution wherever the data is used publicly. `mindstellar/geodata`
+licenses `src/` under ODbL to match. Core therefore ships a second attribution helper
+alongside the geocoding one in §3:
+
+```php
+osc_location_data_attribution();   // names the location data source and its licence
+```
+
+Rendered once in the site footer, not per listing. The obligation follows the data, so it
+applies to every install regardless of which geocoding provider — if any — is configured.
+
 ---
 
 ## 5. Location data is upgradable
@@ -263,9 +275,20 @@ Countries need nothing: `pk_c_code` is already the ISO-3166 code, which is stabl
    `b_active = 0` *only if it holds no listings*; one that still holds listings is left
    fully active, because the seller's location did not stop existing just because an
    administrative boundary was redrawn.
-5. **Old slugs keep resolving.** A rename writes the previous slug to the slug-history
-   table, exactly as category renames already do (migration `0019`), so indexed URLs
-   301 rather than 404.
+5. **Old slugs keep resolving.** A rename writes the previous slug to
+   `t_location_slug_history`, the same shape as `t_category_slug_history` (migration
+   `0019`), so an indexed URL 301s rather than 404s.
+
+On that last rule, only one of the two URL schemes actually needs it. The default search
+URL embeds the row id — `osc_search_url()` writes `{slug}-r{id}`, and `CWebSearch` parses
+back only the trailing digits, resolving by primary key and then 301ing to the canonical
+form. **A stale slug there already self-heals**, and renaming 4,700 regions would have been
+invisible.
+
+Subdomain location routing is the exception: `BaseModel` resolves `region.example.com`
+through `Region::findBySlug()` alone and calls `do400()` on a miss, with no id in the URL to
+fall back to. That is the scheme a mass rename breaks, and it is why the history table
+exists — the lookup gets a history fallback before it gives up.
 
 ### First upgrade: adopting ids
 
@@ -574,8 +597,10 @@ update, which is why old slugs are written to the slug-history table — code th
 slug instead of an id still resolves, via a redirect.
 
 **DAO surface.** `City` and `Region` gain public methods for id-matched lookup and bulk
-upsert. `tests/models/locationstmp.php` pins a byte-identical method map, so it is updated
-in the same commit or the model-contracts check fails.
+upsert. `tests/models/region.php` and `tests/models/city.php` each pin their model's own
+public methods — a `harness_method_signature()` assertion per method plus a closing
+own-methods list — so both are updated in the same commit or the model-contracts check
+fails.
 
 **Themes.** `storefront` should call `osc_geocode_attribution()` and can stop geocoding
 client-side, since listings now arrive with coordinates. Neither is required — an untouched
