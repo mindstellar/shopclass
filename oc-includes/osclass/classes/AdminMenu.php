@@ -730,16 +730,36 @@ class AdminMenu
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
             . '-submenu" data-bs-parent="#dashboard-menu">';
-        foreach ($subMenu as $key => $arrSubMenu) {
-            // Index 4 is the capability on a submenu; a divider is a shorter array and
-            // carries it at index 3. This read used to be `$arrSubMenu['sub'][4]`, a key
-            // that exists on no entry — so it always evaluated null and a moderator was
-            // shown no submenu items at all, in any section.
-            $capability = $arrSubMenu[4] ?? $arrSubMenu[3];
-            if ($is_moderator && $capability !== 'moderator') {
-                continue;
+        // Which items this admin may see. Index 4 is the capability on a submenu; this
+        // read used to be `$arrSubMenu['sub'][4]`, a key that exists on no entry — so it
+        // always evaluated null and a moderator was shown no submenu items at all, in any
+        // section.
+        //
+        // A divider is skipped here on purpose. It is a label with no destination, so it
+        // can expose nothing, and judging it by its own capability produced the two ways
+        // a heading can be wrong: `add_submenu_divider()` defaults the capability to null,
+        // which hid a plugin's heading from a moderator while its items still showed, and
+        // a heading whose whole group was filtered out stayed behind titling nothing. Its
+        // visibility is decided below, by what actually follows it.
+        $visible = array();
+        foreach ($subMenu as $arrSubMenu) {
+            $isDivider = strpos($arrSubMenu[1], 'divider_') === 0;
+            if (!$isDivider) {
+                $capability = $arrSubMenu[4] ?? $arrSubMenu[3];
+                if ($is_moderator && $capability !== 'moderator') {
+                    continue;
+                }
             }
-            if (strpos($arrSubMenu[1], 'divider_') === 0) {
+            $visible[] = array($isDivider, $arrSubMenu);
+        }
+
+        foreach ($visible as $i => list($isDivider, $arrSubMenu)) {
+            if ($isDivider) {
+                // Keep it only if a real item follows before the next heading.
+                $next = $visible[$i + 1] ?? null;
+                if ($next === null || $next[0]) {
+                    continue;
+                }
                 $str .= '<li class="submenu-divide">' . $arrSubMenu[0] . '</li>' . PHP_EOL;
             } else {
                 $isCurrent = ($activeSubmenu === $arrSubMenu[2]);
@@ -780,12 +800,16 @@ class AdminMenu
     // common functions
 
     /**
-     * Add submenu under menu id $menu_id
+     * Add a group heading under menu id $menu_id.
+     *
+     * The heading titles whatever is added after it, until the next heading. It is drawn
+     * only when a visible item follows, so $capability does not govern it — a label has no
+     * destination to protect, and the items decide whether their heading is worth drawing.
      *
      * @param      $menu_id
      * @param      $submenu_title
      * @param      $submenu_id
-     * @param      $capability
+     * @param      $capability   Kept for signature compatibility; not used for visibility.
      *
      * @since 3.1
      */
