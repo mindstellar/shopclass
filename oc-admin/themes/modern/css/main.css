@@ -12857,12 +12857,8 @@ ul.showing-results {
   transform: translateY(-50%);
 }
 
-.widget-box-flush {
-  padding: 0;
-}
-.widget-box-flush > .table-responsive > .table,
-.widget-box-flush > .table {
-  margin-block-end: 0;
+.render-title.separate-top {
+  margin-block-start: 40px;
 }
 
 .panel-subtitle {
@@ -18432,6 +18428,10 @@ form h3, form .h3 {
   .billing-detail-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.billing-detail-grid .widget-box + .widget-box {
+  margin-block-start: 1.25rem;
 }
 
 .billing-summary {

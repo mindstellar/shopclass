@@ -2,8 +2,8 @@
 // Shared page patterns
 // -----------------------------------------------------------------------------
 // The shapes every screen was rebuilding by hand: a page head with actions, a
-// panel that can go flush for a table, a page-level empty state, and label/value
-// rows. Their markup lives in parts/ui.php.
+// panel, a page-level empty state, and label/value rows. Their markup lives in
+// parts/ui.php.
 //
 // Colour goes through var(--osc-*) exclusively, so all of it follows
 // data-bs-theme. Spacing and radius stay as Sass: they are identical in both
@@ -45,15 +45,13 @@
   transform: translateY(-50%);
 }
 
-// A table meets the panel edge. Cell padding already provides the inset, so the
-// panel's own padding would only double it and push the rules away from the frame.
-.widget-box-flush {
-  padding: 0;
-
-  > .table-responsive > .table,
-  > .table {
-    margin-block-end: 0;
-  }
+// `.separate-top` sets margin-block-start, but `.render-title`'s `margin: 0 0 20px`
+// shorthand is declared later at equal specificity and zeroes it again — so a section
+// heading asking for the 40px gap silently got none. (`h3.separate-top` carries an
+// element selector and always won, which is why only the h2 headings looked wrong —
+// this makes both levels behave the same.)
+.render-title.separate-top {
+  margin-block-start: 40px;
 }
 
 .panel-subtitle {

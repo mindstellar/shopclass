@@ -50,7 +50,7 @@ $reasonWords = array(
 
     <div class="billing-detail-grid">
         <div>
-            <?php osc_admin_panel_open(__('History'), array('flush' => !empty($entries))); ?>
+            <h3 class="render-title"><?php _e('History'); ?></h3>
             <?php if (empty($entries)) {
                 osc_admin_empty(array(
                     'icon'  => 'bi-clock-history',
@@ -102,7 +102,6 @@ $reasonWords = array(
                     </table>
                 </div>
             <?php } ?>
-            <?php osc_admin_panel_close(); ?>
 
             <?php osc_admin_pager(array(
                 'total'    => $total,

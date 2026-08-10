@@ -260,13 +260,17 @@ if (!function_exists('osc_admin_panel_open')) {
     /**
      * Open a panel. Flat at rest -- the border and the surface tone carry it, never a shadow.
      *
+     * For content that does not frame itself: a form, definition rows, a figure. NOT a
+     * table -- `.table` already draws its own frame, so a panel around one nests two
+     * borders and sets the section apart from every list screen in the admin, which put
+     * their table straight in the flow under an <h3 class="render-title">.
+     *
      * The title is an <h3> so a screen reader can navigate the panels on a screen. The
      * stylesheet flattens every heading level inside `.widget-box-title` to the same
      * 18px/normal, so this renders identically to the bare <span> it replaced.
      *
      * Options:
      *   'subtitle' => string  One line under the title, for the thing a header cannot say.
-     *   'flush'    => bool    Drop the content padding, so a table meets the panel edge.
      *   'actions'  => array   Action specs rendered in the header, inline-end.
      *
      * @param string $title Omit for a panel that needs no header
@@ -289,7 +293,7 @@ if (!function_exists('osc_admin_panel_open')) {
             </div>
         <?php }
 
-        echo '<div class="widget-box-content' . (!empty($opts['flush']) ? ' widget-box-flush' : '') . '">';
+        echo '<div class="widget-box-content">';
 
         if (!empty($opts['subtitle'])) {
             echo '<p class="panel-subtitle">' . osc_esc_html($opts['subtitle']) . '</p>';

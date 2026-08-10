@@ -38,7 +38,6 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
         </p>
     <?php osc_admin_toolbar_close(); ?>
 
-    <?php osc_admin_panel_open('', array('flush' => !empty($wallets))); ?>
     <?php if (empty($wallets)) {
         osc_admin_empty(array(
             'icon'  => 'bi-wallet2',
@@ -84,7 +83,6 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
             </table>
         </div>
     <?php } ?>
-    <?php osc_admin_panel_close(); ?>
 
     <?php osc_admin_pager(array(
         'total'    => $total,

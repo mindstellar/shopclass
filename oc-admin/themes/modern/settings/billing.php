@@ -21,41 +21,41 @@ $billingEnabled = (bool)__get('billing_enabled');
 $gateways       = __get('gateways');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Billing')); ?>
-
+<div id="general-settings">
     <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
         <input type="hidden" name="page" value="settings"/>
         <input type="hidden" name="action" value="billing_post"/>
+        <fieldset>
+            <div class="form-horizontal">
+                <?php osc_admin_page_head(__('Billing')); ?>
 
-        <?php osc_admin_panel_open(__('Selling on this site')); ?>
-            <p class="panel-subtitle">
-                <?php _e('Turn this on to sell things on your site — featured listings, posting credits, '
-                         . 'or whatever a payment plugin offers. Leave it off and nothing changes: posting '
-                         . 'stays free and unlimited, and the Billing menu stays hidden.'); ?>
-            </p>
+                <p class="form-intro">
+                    <?php _e('Turn this on to sell things on your site — featured listings, posting credits, '
+                             . 'or whatever a payment plugin offers. Leave it off and nothing changes: posting '
+                             . 'stays free and unlimited, and the Billing menu stays hidden.'); ?>
+                </p>
 
-            <div class="form-row">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="billing_enabled" name="billing_enabled"
-                           value="1" <?php echo $billingEnabled ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="billing_enabled">
-                        <?php _e('Enable billing'); ?>
-                    </label>
-                </div>
-                <div class="help-block osc-prose">
-                    <?php _e('Switching this off later hides the Billing menu but keeps every order and '
-                             . 'balance exactly as it is. Nothing is deleted.'); ?>
-                </div>
+                <?php osc_admin_form_row_open(__('Selling on this site')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_enabled',
+                        'name'    => 'billing_enabled',
+                        'label'   => __('Enable billing'),
+                        'checked' => $billingEnabled,
+                        'help'    => __('Switching this off later hides the Billing menu but keeps every order '
+                                        . 'and balance exactly as it is. Nothing is deleted.'),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save settings'), 'type' => 'submit'),
+                )); ?>
             </div>
-        <?php osc_admin_panel_close(); ?>
-
-        <?php osc_admin_form_actions(array(
-            array('label' => __('Save settings'), 'type' => 'submit'),
-        )); ?>
+        </fieldset>
     </form>
 
-    <?php osc_admin_panel_open(__('Payment methods'), array('flush' => !empty($gateways))); ?>
-    <?php if (empty($gateways)) {
+    <?php osc_admin_page_head(__('Payment methods'), array(), array('class' => 'separate-top'));
+
+    if (empty($gateways)) {
         osc_admin_empty(array(
             'icon'   => 'bi-credit-card',
             'title'  => __('No payment methods installed'),
@@ -100,5 +100,5 @@ $gateways       = __get('gateways');
             </table>
         </div>
     <?php } ?>
-    <?php osc_admin_panel_close(); ?>
+</div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

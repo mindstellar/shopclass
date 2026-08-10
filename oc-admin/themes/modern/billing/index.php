@@ -91,7 +91,6 @@ $isFiltered = ($filters['status'] ?? '') !== ''
         </p>
     <?php osc_admin_toolbar_close(); ?>
 
-    <?php osc_admin_panel_open('', array('flush' => !empty($orders))); ?>
     <?php if (empty($orders)) {
         osc_admin_empty(array(
             'icon'  => 'bi-receipt',
@@ -157,7 +156,6 @@ $isFiltered = ($filters['status'] ?? '') !== ''
             </table>
         </div>
     <?php } ?>
-    <?php osc_admin_panel_close(); ?>
 
     <?php osc_admin_pager(array(
         'total'    => $total,

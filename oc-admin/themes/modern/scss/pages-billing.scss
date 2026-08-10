@@ -22,6 +22,13 @@
   }
 }
 
+// Panels stacked in the side column are separate cards, so they need air between them.
+// Bootstrap's .card carries no bottom margin — it expects a grid gap to do this — and
+// without one, three cards share their borders and read as a single segmented block.
+.billing-detail-grid .widget-box + .widget-box {
+  margin-block-start: 1.25rem;
+}
+
 // The counts beside the filters: "128 orders · 96 paid · 12 awaiting payment".
 .billing-summary {
   color: var(--osc-ink-muted);
