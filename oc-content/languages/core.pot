@@ -349,7 +349,7 @@ msgstr ""
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:346
+#: oc-includes/osclass/helpers/hUtils.php:348
 msgid "AM"
 msgstr ""
 
@@ -450,7 +450,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php:15
 #: oc-admin/themes/modern/tools/logs.php:34
-#: oc-includes/osclass/classes/AdminMenu.php:434
+#: oc-includes/osclass/classes/AdminMenu.php:461
 msgid "Activity log"
 msgstr ""
 
@@ -618,14 +618,10 @@ msgid "Add widget"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:362
-msgid "Add your Google Analytics measurement ID. Example: G-XXXXXXXXXX"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/index.php:373
 msgid "Add your Google Maps JavaScript API key."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:383
+#: oc-admin/themes/modern/settings/index.php:372
 msgid "Add your Mapquest Consumer key."
 msgstr ""
 
@@ -698,6 +694,10 @@ msgstr ""
 msgid "Admin notifications"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/header.php:34
+msgid "Admin sections"
+msgstr ""
+
 #: oc-admin/themes/modern/admins/frm.php:91
 msgid "Admin type <em>(required)</em>"
 msgstr ""
@@ -706,7 +706,7 @@ msgstr ""
 msgid "Administrator"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:327
+#: oc-includes/osclass/classes/AdminMenu.php:132
 msgid "Administrators"
 msgstr ""
 
@@ -726,7 +726,7 @@ msgstr ""
 msgid "Adopt existing Better S3 images"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:296
+#: oc-includes/osclass/classes/AdminMenu.php:410
 msgid "Advanced"
 msgstr ""
 
@@ -802,7 +802,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php:97
 #: oc-admin/themes/modern/users/frm.php:366
-#: oc-includes/osclass/classes/AdminMenu.php:341
+#: oc-includes/osclass/classes/AdminMenu.php:125
 msgid "Alerts"
 msgstr ""
 
@@ -839,7 +839,7 @@ msgstr ""
 msgid "All submissions for this form have been deleted"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:456
+#: oc-admin/themes/modern/settings/index.php:445
 msgid "Allow Prerelease"
 msgstr ""
 
@@ -851,15 +851,15 @@ msgstr ""
 msgid "Allow attached files in contact publisher form"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:436
+#: oc-admin/themes/modern/settings/index.php:425
 msgid "Allow auto-updates of languages"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:424
+#: oc-admin/themes/modern/settings/index.php:413
 msgid "Allow auto-updates of themes"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:412
+#: oc-admin/themes/modern/settings/index.php:401
 msgid "Allow auto-updates plugins"
 msgstr ""
 
@@ -875,7 +875,7 @@ msgstr ""
 msgid "Allow people to post comments on listings"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:460
+#: oc-admin/themes/modern/settings/index.php:449
 msgid "Allow prerelease update"
 msgstr ""
 
@@ -980,7 +980,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/view.php:19
 #: oc-admin/themes/modern/appearance/widgets.php:24
 #: oc-admin/themes/modern/appearance/widgets.php:25
-#: oc-includes/osclass/classes/AdminMenu.php:127
+#: oc-includes/osclass/classes/AdminMenu.php:277
 msgid "Appearance"
 msgstr ""
 
@@ -1002,11 +1002,11 @@ msgstr ""
 msgid "Apply the expiration and price changes to all subcategories"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:325
+#: oc-includes/osclass/helpers/hUtils.php:327
 msgid "Apr"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:310
+#: oc-includes/osclass/helpers/hUtils.php:312
 msgid "April"
 msgstr ""
 
@@ -1172,11 +1172,11 @@ msgstr ""
 msgid "Attempts per address"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:329
+#: oc-includes/osclass/helpers/hUtils.php:331
 msgid "Aug"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:314
+#: oc-includes/osclass/helpers/hUtils.php:316
 msgid "August"
 msgstr ""
 
@@ -1292,7 +1292,7 @@ msgstr ""
 msgid "Backup SQL (store on server)"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:399
+#: oc-includes/osclass/classes/AdminMenu.php:426
 msgid "Backup data"
 msgstr ""
 
@@ -1331,7 +1331,7 @@ msgstr ""
 msgid "Ban name / Reason"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:348
+#: oc-includes/osclass/classes/AdminMenu.php:118
 msgid "Ban rules"
 msgstr ""
 
@@ -1364,8 +1364,8 @@ msgstr ""
 #: oc-admin/themes/modern/billing/wallet.php:14
 #: oc-admin/themes/modern/billing/wallet.php:15
 #: oc-admin/themes/modern/settings/billing.php:30
-#: oc-includes/osclass/classes/AdminMenu.php:289
-#: oc-includes/osclass/classes/AdminMenu.php:360
+#: oc-includes/osclass/classes/AdminMenu.php:194
+#: oc-includes/osclass/classes/AdminMenu.php:402
 msgid "Billing"
 msgstr ""
 
@@ -1427,7 +1427,7 @@ msgstr ""
 msgid "Bottom Right"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:397
+#: oc-admin/themes/modern/settings/index.php:386
 msgid "Branch - big changes"
 msgstr ""
 
@@ -1501,7 +1501,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php:62
 #: oc-admin/themes/modern/tools/cache.php:67
-#: oc-includes/osclass/classes/AdminMenu.php:413
+#: oc-includes/osclass/classes/AdminMenu.php:440
 msgid "Cache"
 msgstr ""
 
@@ -1630,7 +1630,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php:140
 #: oc-admin/themes/modern/categories/index.php:26
-#: oc-includes/osclass/classes/AdminMenu.php:64
+#: oc-includes/osclass/classes/AdminMenu.php:77
 msgid "Categories"
 msgstr ""
 
@@ -1803,7 +1803,7 @@ msgid ""
 "not, "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:452
+#: oc-admin/themes/modern/settings/index.php:441
 msgid "Check updates"
 msgstr ""
 
@@ -1894,7 +1894,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php:15
 #: oc-admin/themes/modern/tools/cleanup.php:38
-#: oc-includes/osclass/classes/AdminMenu.php:427
+#: oc-includes/osclass/classes/AdminMenu.php:447
 msgid "Cleanup"
 msgstr ""
 
@@ -1976,7 +1976,7 @@ msgstr ""
 #: oc-admin/themes/modern/emails/frm.php:173
 #: oc-admin/themes/modern/fields/submissions.php:245
 #: oc-admin/themes/modern/media/index.php:401
-#: oc-admin/themes/modern/parts/header.php:114
+#: oc-admin/themes/modern/parts/header.php:115
 #: oc-admin/themes/modern/parts/market.php:520
 #: oc-admin/themes/modern/parts/market.php:585
 #: oc-includes/osclass/classes/form/ItemForm.php:1566
@@ -1996,7 +1996,7 @@ msgstr ""
 msgid "Code"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:51
+#: oc-admin/themes/modern/parts/header.php:52
 msgid "Collapse"
 msgstr ""
 
@@ -2004,7 +2004,7 @@ msgstr ""
 msgid "Collapse all"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:49
+#: oc-admin/themes/modern/parts/header.php:50
 msgid "Collapse or expand the menu"
 msgstr ""
 
@@ -2061,9 +2061,9 @@ msgstr ""
 #: oc-admin/themes/modern/comments/index.php:39
 #: oc-admin/themes/modern/stats/comments.php:118
 #: oc-admin/themes/modern/stats/comments.php:70
-#: oc-includes/osclass/classes/AdminMenu.php:187
-#: oc-includes/osclass/classes/AdminMenu.php:217
-#: oc-includes/osclass/classes/AdminMenu.php:57
+#: oc-includes/osclass/classes/AdminMenu.php:253
+#: oc-includes/osclass/classes/AdminMenu.php:347
+#: oc-includes/osclass/classes/AdminMenu.php:70
 msgid "Comments"
 msgstr ""
 
@@ -2239,6 +2239,10 @@ msgstr ""
 msgid "Contact, feed &amp; language"
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php:344
+msgid "Content"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php:658
 msgid "Content path"
 msgstr ""
@@ -2261,7 +2265,7 @@ msgstr ""
 msgid "Copy"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:392
+#: oc-admin/themes/modern/settings/index.php:381
 msgid "Core updates"
 msgstr ""
 
@@ -2369,7 +2373,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/credits.php:29
 #: oc-admin/themes/modern/billing/index.php:117
 #: oc-admin/themes/modern/billing/order.php:60
-#: oc-includes/osclass/classes/AdminMenu.php:375
+#: oc-includes/osclass/classes/AdminMenu.php:209
 msgid "Credits"
 msgstr ""
 
@@ -2398,7 +2402,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/billing.php:76
 #: oc-admin/themes/modern/settings/currencies.php:18
 #: oc-admin/themes/modern/settings/currencies.php:52
-#: oc-includes/osclass/classes/AdminMenu.php:78
+#: oc-includes/osclass/classes/AdminMenu.php:91
 msgid "Currencies"
 msgstr ""
 
@@ -2474,12 +2478,6 @@ msgstr ""
 msgid "Custom fields"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php:48
-#: oc-admin/themes/modern/fields/index.php:706
-#: oc-includes/osclass/classes/AdminMenu.php:97
-msgid "Custom forms"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/searches.php:39
 msgid "Custom number: this field cannot be left empty"
 msgstr ""
@@ -2510,10 +2508,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/main/index.php:47
 #: oc-admin/themes/modern/main/index.php:48
-#: oc-includes/osclass/classes/AdminMenu.php:38
+#: oc-includes/osclass/classes/AdminMenu.php:51
 #: oc-includes/osclass/classes/Breadcrumb.php:54
 #: oc-includes/osclass/functions.php:198
-#: oc-includes/osclass/helpers/hUtils.php:391
+#: oc-includes/osclass/helpers/hUtils.php:393
 msgid "Dashboard"
 msgstr ""
 
@@ -2601,11 +2599,11 @@ msgstr ""
 msgid "Debug mode"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:333
+#: oc-includes/osclass/helpers/hUtils.php:335
 msgid "Dec"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:318
+#: oc-includes/osclass/helpers/hUtils.php:320
 msgid "December"
 msgstr ""
 
@@ -2973,7 +2971,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php:105
 #: oc-admin/themes/modern/categories/index.php:161
-#: oc-admin/themes/modern/settings/index.php:395
+#: oc-admin/themes/modern/settings/index.php:384
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:422
 #: oc-includes/osclass/classes/utility/SystemInfo.php:270
 #: oc-includes/osclass/classes/utility/SystemInfo.php:280
@@ -3151,10 +3149,6 @@ msgstr ""
 msgid "Edit %s"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:90
-msgid "Edit Profile"
-msgstr ""
-
 #: oc-admin/themes/modern/admins/frm.php:26
 msgid "Edit admin"
 msgstr ""
@@ -3214,6 +3208,10 @@ msgstr ""
 msgid "Edit page"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/header.php:91
+msgid "Edit profile"
+msgstr ""
+
 #: oc-admin/themes/modern/users/ban_frm.php:28
 msgid "Edit rule"
 msgstr ""
@@ -3252,6 +3250,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php:116
 #: oc-admin/themes/modern/items/index.php:260
 #: oc-admin/themes/modern/users/index.php:180
+#: oc-includes/osclass/classes/AdminMenu.php:373
 msgid "Email"
 msgstr ""
 
@@ -3265,7 +3264,7 @@ msgid "Email sent successfully"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/index.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:224
+#: oc-includes/osclass/classes/AdminMenu.php:376
 msgid "Email templates"
 msgstr ""
 
@@ -3568,11 +3567,11 @@ msgstr ""
 msgid "Failures from one visitor address, across every account "
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:323
+#: oc-includes/osclass/helpers/hUtils.php:325
 msgid "Feb"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:308
+#: oc-includes/osclass/helpers/hUtils.php:310
 msgid "February"
 msgstr ""
 
@@ -3717,16 +3716,10 @@ msgstr ""
 msgid "Form could not be created"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/submissions.php:80
-#: oc-admin/themes/modern/fields/submissions.php:87
-#: oc-includes/osclass/classes/AdminMenu.php:104
-msgid "Form submissions"
-msgstr ""
-
 #: oc-admin/themes/modern/fields/index.php:47
 #: oc-admin/themes/modern/fields/index.php:737
 #: oc-admin/themes/modern/fields/submissions.php:79
-#: oc-includes/osclass/classes/AdminMenu.php:94
+#: oc-includes/osclass/classes/AdminMenu.php:172
 msgid "Forms"
 msgstr ""
 
@@ -3757,12 +3750,12 @@ msgstr ""
 msgid "Frequency"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Fri"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:182
-#: oc-includes/osclass/helpers/hUtils.php:341
+#: oc-includes/osclass/helpers/hUtils.php:343
 msgid "Friday"
 msgstr ""
 
@@ -3823,7 +3816,7 @@ msgstr ""
 msgid "Garage Sale"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:210
+#: oc-includes/osclass/classes/AdminMenu.php:318
 msgid "General"
 msgstr ""
 
@@ -3859,15 +3852,11 @@ msgstr ""
 msgid "Go!"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:355
-msgid "Google Analytics"
-msgstr ""
-
 #: oc-admin/themes/modern/items/settings.php:284
 msgid "Google Maps"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:368
+#: oc-admin/themes/modern/settings/index.php:357
 msgid "Google Maps key"
 msgstr ""
 
@@ -4195,7 +4184,7 @@ msgid "Import a language from the catalog or upload a package to add one."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/import.php:50
-#: oc-includes/osclass/classes/AdminMenu.php:392
+#: oc-includes/osclass/classes/AdminMenu.php:433
 msgid "Import data"
 msgstr ""
 
@@ -4493,11 +4482,11 @@ msgstr ""
 msgid "JSON"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:322
+#: oc-includes/osclass/helpers/hUtils.php:324
 msgid "Jan"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:307
+#: oc-includes/osclass/helpers/hUtils.php:309
 msgid "January"
 msgstr ""
 
@@ -4513,19 +4502,19 @@ msgstr ""
 msgid "Jobs"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:328
+#: oc-includes/osclass/helpers/hUtils.php:330
 msgid "Jul"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:313
+#: oc-includes/osclass/helpers/hUtils.php:315
 msgid "July"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:327
+#: oc-includes/osclass/helpers/hUtils.php:329
 msgid "Jun"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:312
+#: oc-includes/osclass/helpers/hUtils.php:314
 msgid "June"
 msgstr ""
 
@@ -4596,7 +4585,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php:105
 #: oc-admin/themes/modern/settings/keywordBlock.php:15
-#: oc-includes/osclass/classes/AdminMenu.php:259
+#: oc-includes/osclass/classes/AdminMenu.php:361
 msgid "Keyword blocklist"
 msgstr ""
 
@@ -4636,7 +4625,7 @@ msgstr ""
 msgid "Language package (.zip)"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:430
+#: oc-admin/themes/modern/settings/index.php:419
 #: oc-includes/osclass/functions.php:786
 msgid "Language updates"
 msgstr ""
@@ -4647,7 +4636,7 @@ msgid "Language url: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:238
+#: oc-includes/osclass/classes/AdminMenu.php:332
 msgid "Languages"
 msgstr ""
 
@@ -4710,8 +4699,8 @@ msgstr ""
 msgid "Last checked %s."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:449
-#: oc-admin/themes/modern/settings/index.php:479
+#: oc-admin/themes/modern/settings/index.php:438
+#: oc-admin/themes/modern/settings/index.php:468
 msgid "Last checked on "
 msgstr ""
 
@@ -4750,7 +4739,7 @@ msgid "Latest listings shown: this field must only contain numeric characters"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/searches.php:82
-#: oc-includes/osclass/classes/AdminMenu.php:280
+#: oc-includes/osclass/classes/AdminMenu.php:368
 msgid "Latest searches"
 msgstr ""
 
@@ -4801,7 +4790,7 @@ msgstr ""
 msgid "Lets anyone currently refused try again straight away, "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:113
+#: oc-includes/osclass/classes/AdminMenu.php:148
 msgid "Library"
 msgstr ""
 
@@ -4955,8 +4944,8 @@ msgstr ""
 #: oc-admin/themes/modern/main/index.php:220
 #: oc-admin/themes/modern/settings/currencies.php:17
 #: oc-admin/themes/modern/settings/locations.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:166
-#: oc-includes/osclass/classes/AdminMenu.php:40
+#: oc-includes/osclass/classes/AdminMenu.php:232
+#: oc-includes/osclass/classes/AdminMenu.php:53
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php:117
 msgid "Listings"
 msgstr ""
@@ -5068,17 +5057,14 @@ msgid "Location"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php:77
+#: oc-admin/themes/modern/tools/locations.php:84
 msgid "Location stats"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php:19
 #: oc-admin/themes/modern/settings/locations.php:33
-#: oc-includes/osclass/classes/AdminMenu.php:71
+#: oc-includes/osclass/classes/AdminMenu.php:84
 msgid "Locations"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/locations.php:84
-msgid "Locations stats"
 msgstr ""
 
 #: oc-admin/gui/forgot_password.php:46
@@ -5110,7 +5096,7 @@ msgid "Login url: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/functions.php:509
-#: oc-includes/osclass/helpers/hUtils.php:396
+#: oc-includes/osclass/helpers/hUtils.php:398
 msgid "Logout"
 msgstr ""
 
@@ -5144,21 +5130,22 @@ msgstr ""
 msgid "Mail from"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:231
+#: oc-includes/osclass/classes/AdminMenu.php:383
 msgid "Mail server"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/maintenance.php:29
 #: oc-admin/themes/modern/tools/maintenance.php:37
+#: oc-includes/osclass/classes/AdminMenu.php:260
 msgid "Maintenance"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php:607
-#: oc-includes/osclass/classes/AdminMenu.php:420
+#: oc-includes/osclass/classes/AdminMenu.php:454
 msgid "Maintenance mode"
 msgstr ""
 
-#: oc-includes/osclass/functions.php:926
+#: oc-includes/osclass/functions.php:902
 msgid "Maintenance mode is on — only signed-in admins can see the site right now."
 msgstr ""
 
@@ -5166,7 +5153,7 @@ msgstr ""
 msgid "Maintenance mode is: <strong>%s</strong>"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:399
+#: oc-admin/themes/modern/settings/index.php:388
 msgid "Major - new features"
 msgstr ""
 
@@ -5207,9 +5194,15 @@ msgstr ""
 msgid "Manage ban rules"
 msgstr ""
 
+#: oc-admin/themes/modern/fields/index.php:48
+#: oc-admin/themes/modern/fields/index.php:706
+#: oc-includes/osclass/classes/AdminMenu.php:175
+msgid "Manage forms"
+msgstr ""
+
 #: oc-admin/themes/modern/items/index.php:18
 #: oc-admin/themes/modern/items/index.php:83
-#: oc-includes/osclass/classes/AdminMenu.php:43
+#: oc-includes/osclass/classes/AdminMenu.php:56
 msgid "Manage listings"
 msgstr ""
 
@@ -5226,7 +5219,7 @@ msgid "Manage pages"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php:62
-#: oc-includes/osclass/classes/AdminMenu.php:151
+#: oc-includes/osclass/classes/AdminMenu.php:306
 msgid "Manage plugins"
 msgstr ""
 
@@ -5246,24 +5239,25 @@ msgid ""
 "users must register or if "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:135
+#: oc-includes/osclass/classes/AdminMenu.php:285
 msgid "Manage themes"
 msgstr ""
 
 #: oc-admin/themes/modern/users/index.php:18
 #: oc-admin/themes/modern/users/index.php:79
+#: oc-includes/osclass/classes/AdminMenu.php:111
 msgid "Manage users"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:142
+#: oc-includes/osclass/classes/AdminMenu.php:292
 msgid "Manage widgets"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:394
+#: oc-includes/osclass/helpers/hUtils.php:396
 msgid "Manage your alerts"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:393
+#: oc-includes/osclass/helpers/hUtils.php:395
 msgid "Manage your listings"
 msgstr ""
 
@@ -5284,15 +5278,15 @@ msgid "Manufacturing - Operations"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php:274
-#: oc-admin/themes/modern/settings/index.php:366
+#: oc-admin/themes/modern/settings/index.php:355
 msgid "Maps"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:324
+#: oc-includes/osclass/helpers/hUtils.php:326
 msgid "Mar"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:309
+#: oc-includes/osclass/helpers/hUtils.php:311
 msgid "March"
 msgstr ""
 
@@ -5378,8 +5372,8 @@ msgstr ""
 msgid "Maximum size: this field must only contain numeric characters"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:311
-#: oc-includes/osclass/helpers/hUtils.php:326
+#: oc-includes/osclass/helpers/hUtils.php:313
+#: oc-includes/osclass/helpers/hUtils.php:328
 msgid "May"
 msgstr ""
 
@@ -5388,7 +5382,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/media-picker.php:36
 #: oc-admin/themes/modern/settings/media.php:115
 #: oc-admin/themes/modern/tools/system-info.php:403
-#: oc-includes/osclass/classes/AdminMenu.php:110
+#: oc-includes/osclass/classes/AdminMenu.php:145
 msgid "Media"
 msgstr ""
 
@@ -5423,7 +5417,7 @@ msgstr ""
 msgid "Men looking for Women"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:58
+#: oc-admin/themes/modern/parts/header.php:59
 msgid "Menu"
 msgstr ""
 
@@ -5453,7 +5447,7 @@ msgstr ""
 msgid "Minimum"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:401
+#: oc-admin/themes/modern/settings/index.php:390
 msgid "Minor - bug fixes"
 msgstr ""
 
@@ -5516,12 +5510,12 @@ msgstr ""
 msgid "Modify your site's header or footer here."
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Mon"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:170
-#: oc-includes/osclass/helpers/hUtils.php:337
+#: oc-includes/osclass/helpers/hUtils.php:339
 msgid "Monday"
 msgstr ""
 
@@ -5598,7 +5592,7 @@ msgstr ""
 msgid "My listings"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:395
+#: oc-includes/osclass/helpers/hUtils.php:397
 msgid "My profile"
 msgstr ""
 
@@ -6139,11 +6133,11 @@ msgstr ""
 msgid "Notify admin when a new listing is added"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:332
+#: oc-includes/osclass/helpers/hUtils.php:334
 msgid "Nov"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:317
+#: oc-includes/osclass/helpers/hUtils.php:319
 msgid "November"
 msgstr ""
 
@@ -6217,11 +6211,11 @@ msgstr ""
 msgid "Object cache"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:331
+#: oc-includes/osclass/helpers/hUtils.php:333
 msgid "Oct"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:316
+#: oc-includes/osclass/helpers/hUtils.php:318
 msgid "October"
 msgstr ""
 
@@ -6347,7 +6341,7 @@ msgstr ""
 msgid "OpenStreetMaps"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:378
+#: oc-admin/themes/modern/settings/index.php:367
 msgid "OpenStreetMaps key"
 msgstr ""
 
@@ -6401,7 +6395,7 @@ msgid "Order saved"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php:47
-#: oc-includes/osclass/classes/AdminMenu.php:368
+#: oc-includes/osclass/classes/AdminMenu.php:202
 msgid "Orders"
 msgstr ""
 
@@ -6460,7 +6454,7 @@ msgstr ""
 msgid "PHP version >= 8.0.0"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:346
+#: oc-includes/osclass/helpers/hUtils.php:348
 msgid "PM"
 msgstr ""
 
@@ -6534,7 +6528,7 @@ msgstr ""
 #: oc-admin/themes/modern/pages/frm.php:70
 #: oc-admin/themes/modern/pages/index.php:17
 #: oc-admin/themes/modern/pages/index.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:303
+#: oc-includes/osclass/classes/AdminMenu.php:162
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php:119
 msgid "Pages"
 msgstr ""
@@ -6633,7 +6627,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/permalinks.php:350
 #: oc-admin/themes/modern/settings/permalinks.php:359
-#: oc-includes/osclass/classes/AdminMenu.php:245
+#: oc-includes/osclass/classes/AdminMenu.php:325
 msgid "Permalinks"
 msgstr ""
 
@@ -6690,7 +6684,7 @@ msgstr ""
 msgid "Plugin package (.zip)"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:406
+#: oc-admin/themes/modern/settings/index.php:395
 #: oc-includes/osclass/functions.php:641
 msgid "Plugin updates"
 msgstr ""
@@ -6702,7 +6696,7 @@ msgstr ""
 #: oc-admin/themes/modern/plugins/index.php:18
 #: oc-admin/themes/modern/plugins/view.php:18
 #: oc-admin/themes/modern/plugins/view.php:19
-#: oc-includes/osclass/classes/AdminMenu.php:148
+#: oc-includes/osclass/classes/AdminMenu.php:303
 msgid "Plugins"
 msgstr ""
 
@@ -6826,7 +6820,7 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:387
+#: oc-includes/osclass/helpers/hUtils.php:389
 msgid "Public Profile"
 msgstr ""
 
@@ -6921,6 +6915,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php:7
 msgid "Real estate"
+msgstr ""
+
+#: oc-includes/osclass/classes/AdminMenu.php:270
+msgid "Recalculate category stats"
+msgstr ""
+
+#: oc-includes/osclass/classes/AdminMenu.php:263
+msgid "Recalculate location stats"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php:130
@@ -7101,14 +7103,6 @@ msgstr ""
 msgid "Removed by admin"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:201
-msgid "Renew category stats"
-msgstr ""
-
-#: oc-includes/osclass/classes/AdminMenu.php:194
-msgid "Renew location stats"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/widgets.php:119
 msgid "Reorder %s"
 msgstr ""
@@ -7161,11 +7155,11 @@ msgstr ""
 #: oc-admin/themes/modern/items/reported.php:29
 #: oc-admin/themes/modern/main/index.php:175
 #: oc-admin/themes/modern/tools/cleanup.php:23
-#: oc-includes/osclass/classes/AdminMenu.php:50
+#: oc-includes/osclass/classes/AdminMenu.php:63
 msgid "Reported listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:173
+#: oc-includes/osclass/classes/AdminMenu.php:239
 msgid "Reports"
 msgstr ""
 
@@ -7313,12 +7307,12 @@ msgstr ""
 msgid "Sales"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Sat"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:185
-#: oc-includes/osclass/helpers/hUtils.php:342
+#: oc-includes/osclass/helpers/hUtils.php:344
 msgid "Saturday"
 msgstr ""
 
@@ -7665,7 +7659,7 @@ msgstr ""
 msgid "Send to a friend"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:330
+#: oc-includes/osclass/helpers/hUtils.php:332
 msgid "Sep"
 msgstr ""
 
@@ -7673,7 +7667,7 @@ msgstr ""
 msgid "Separate options with commas"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:315
+#: oc-includes/osclass/helpers/hUtils.php:317
 msgid "September"
 msgstr ""
 
@@ -7749,7 +7743,7 @@ msgstr ""
 #: oc-admin/themes/modern/languages/frm.php:18
 #: oc-admin/themes/modern/languages/index.php:17
 #: oc-admin/themes/modern/media/index.php:33
-#: oc-admin/themes/modern/parts/header.php:92
+#: oc-admin/themes/modern/parts/header.php:93
 #: oc-admin/themes/modern/settings/advanced.php:38
 #: oc-admin/themes/modern/settings/billing.php:14
 #: oc-admin/themes/modern/settings/comments.php:70
@@ -7768,10 +7762,11 @@ msgstr ""
 #: oc-admin/themes/modern/users/ban.php:29
 #: oc-admin/themes/modern/users/index.php:30
 #: oc-admin/themes/modern/users/settings.php:32
-#: oc-includes/osclass/classes/AdminMenu.php:120
-#: oc-includes/osclass/classes/AdminMenu.php:207
-#: oc-includes/osclass/classes/AdminMenu.php:382
-#: oc-includes/osclass/classes/AdminMenu.php:85
+#: oc-includes/osclass/classes/AdminMenu.php:139
+#: oc-includes/osclass/classes/AdminMenu.php:155
+#: oc-includes/osclass/classes/AdminMenu.php:216
+#: oc-includes/osclass/classes/AdminMenu.php:314
+#: oc-includes/osclass/classes/AdminMenu.php:98
 msgid "Settings"
 msgstr ""
 
@@ -7944,7 +7939,7 @@ msgstr ""
 msgid "Showing %s to %s of %s results (filtered from %s total results)"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:95
+#: oc-admin/themes/modern/parts/header.php:96
 msgid "Sign out"
 msgstr ""
 
@@ -7958,6 +7953,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php:191
 msgid "Signed URLs"
+msgstr ""
+
+#: oc-includes/osclass/classes/AdminMenu.php:315
+msgid "Site"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php:74
@@ -7974,7 +7973,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php:15
 #: oc-admin/themes/modern/settings/sitemap.php:46
-#: oc-includes/osclass/classes/AdminMenu.php:266
+#: oc-includes/osclass/classes/AdminMenu.php:339
 msgid "Sitemap"
 msgstr ""
 
@@ -8002,7 +8001,7 @@ msgstr ""
 msgid "Slug"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:387
+#: oc-admin/themes/modern/settings/index.php:376
 msgid "Software updates"
 msgstr ""
 
@@ -8055,7 +8054,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php:26
 #: oc-admin/themes/modern/settings/spamNbots.php:33
-#: oc-includes/osclass/classes/AdminMenu.php:252
+#: oc-includes/osclass/classes/AdminMenu.php:354
 msgid "Spam and bots"
 msgstr ""
 
@@ -8083,7 +8082,7 @@ msgstr ""
 #: oc-admin/themes/modern/stats/users.php:45
 #: oc-admin/themes/modern/tools/category.php:26
 #: oc-admin/themes/modern/tools/locations.php:76
-#: oc-includes/osclass/classes/AdminMenu.php:158
+#: oc-includes/osclass/classes/AdminMenu.php:224
 msgid "Statistics"
 msgstr ""
 
@@ -8120,7 +8119,7 @@ msgstr ""
 msgid "Stopwords"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:273
+#: oc-includes/osclass/classes/AdminMenu.php:391
 msgid "Storage"
 msgstr ""
 
@@ -8158,6 +8157,12 @@ msgstr ""
 msgid "Submission"
 msgstr ""
 
+#: oc-admin/themes/modern/fields/submissions.php:80
+#: oc-admin/themes/modern/fields/submissions.php:87
+#: oc-includes/osclass/classes/AdminMenu.php:182
+msgid "Submissions"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php:67
 #: oc-includes/osclass/helpers/hForms.php:71
 msgid "Submit"
@@ -8172,12 +8177,12 @@ msgstr ""
 msgid "Substring"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Sun"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:167
-#: oc-includes/osclass/helpers/hUtils.php:343
+#: oc-includes/osclass/helpers/hUtils.php:345
 msgid "Sunday"
 msgstr ""
 
@@ -8205,9 +8210,13 @@ msgstr ""
 msgid "Switching this off later hides the Billing menu but keeps every order "
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php:388
+msgid "System"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php:142
 #: oc-admin/themes/modern/tools/system-info.php:154
-#: oc-includes/osclass/classes/AdminMenu.php:441
+#: oc-includes/osclass/classes/AdminMenu.php:468
 msgid "System info"
 msgstr ""
 
@@ -8544,7 +8553,7 @@ msgstr ""
 msgid "Theme package (.zip)"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:418
+#: oc-admin/themes/modern/settings/index.php:407
 #: oc-includes/osclass/functions.php:716
 msgid "Theme updates"
 msgstr ""
@@ -8807,7 +8816,7 @@ msgstr ""
 msgid "Thousands separator: this field is required"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Thu"
 msgstr ""
 
@@ -8824,7 +8833,7 @@ msgid "Thumbnail size: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:179
-#: oc-includes/osclass/helpers/hUtils.php:340
+#: oc-includes/osclass/helpers/hUtils.php:342
 msgid "Thursday"
 msgstr ""
 
@@ -8902,8 +8911,8 @@ msgid ""
 "shell:"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:66
 #: oc-admin/themes/modern/parts/header.php:67
+#: oc-admin/themes/modern/parts/header.php:68
 msgid "Toggle dark mode"
 msgstr ""
 
@@ -8913,7 +8922,7 @@ msgstr ""
 msgid "Toggle subcategories"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:651
+#: oc-includes/osclass/classes/AdminMenu.php:752
 msgid "Toggle the %s submenu"
 msgstr ""
 
@@ -8934,7 +8943,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info.php:141
 #: oc-admin/themes/modern/tools/upgrade.php:193
 #: oc-admin/themes/modern/upgrade/index.php:17
-#: oc-includes/osclass/classes/AdminMenu.php:389
+#: oc-includes/osclass/classes/AdminMenu.php:416
 msgid "Tools"
 msgstr ""
 
@@ -8968,10 +8977,6 @@ msgstr ""
 msgid "Toys - Games - Hobbies"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:357
-msgid "Tracking ID"
-msgstr ""
-
 #: oc-includes/osclass/installer/basic_data.php:39
 msgid "Trucks - Commercial Vehicles"
 msgstr ""
@@ -8980,12 +8985,12 @@ msgstr ""
 msgid "Try a different status or payment method."
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Tue"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:173
-#: oc-includes/osclass/helpers/hUtils.php:338
+#: oc-includes/osclass/helpers/hUtils.php:340
 msgid "Tuesday"
 msgstr ""
 
@@ -9275,7 +9280,7 @@ msgstr ""
 msgid "Upgrade Now to "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:406
+#: oc-includes/osclass/classes/AdminMenu.php:419
 msgid "Upgrade Shopclass"
 msgstr ""
 
@@ -9413,13 +9418,12 @@ msgstr ""
 msgid "User ID"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:74
+#: oc-admin/themes/modern/parts/header.php:75
 msgid "User Menu"
 msgstr ""
 
 #: oc-admin/themes/modern/users/settings.php:18
 #: oc-admin/themes/modern/users/settings.php:25
-#: oc-includes/osclass/classes/AdminMenu.php:320
 msgid "User Settings"
 msgstr ""
 
@@ -9598,9 +9602,8 @@ msgstr ""
 #: oc-admin/themes/modern/users/frm.php:48
 #: oc-admin/themes/modern/users/index.php:17
 #: oc-admin/themes/modern/users/settings.php:17
-#: oc-includes/osclass/classes/AdminMenu.php:180
-#: oc-includes/osclass/classes/AdminMenu.php:310
-#: oc-includes/osclass/classes/AdminMenu.php:313
+#: oc-includes/osclass/classes/AdminMenu.php:108
+#: oc-includes/osclass/classes/AdminMenu.php:246
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php:119
 msgid "Users"
 msgstr ""
@@ -9719,7 +9722,7 @@ msgstr ""
 msgid "View page on site"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php:36
+#: oc-admin/themes/modern/parts/header.php:37
 msgid "View your site"
 msgstr ""
 
@@ -9807,12 +9810,12 @@ msgstr ""
 msgid "Website URL"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:345
+#: oc-includes/osclass/helpers/hUtils.php:347
 msgid "Wed"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:176
-#: oc-includes/osclass/helpers/hUtils.php:339
+#: oc-includes/osclass/helpers/hUtils.php:341
 msgid "Wednesday"
 msgstr ""
 
@@ -10011,10 +10014,6 @@ msgstr ""
 msgid "Your MySQL username."
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:334
-msgid "Your Profile"
-msgstr ""
-
 #: oc-includes/osclass/install-functions.php:1073
 msgid "Your Shopclass installation at %s is up and running."
 msgstr ""
@@ -10131,7 +10130,7 @@ msgstr ""
 msgid "allow_url_fopen"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:346
+#: oc-includes/osclass/helpers/hUtils.php:348
 msgid "am"
 msgstr ""
 
@@ -10287,7 +10286,7 @@ msgstr ""
 msgid "mysqli"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php:451
+#: oc-admin/themes/modern/settings/index.php:440
 msgid "never"
 msgstr ""
 
@@ -10342,7 +10341,7 @@ msgstr ""
 msgid "plugins"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUtils.php:346
+#: oc-includes/osclass/helpers/hUtils.php:348
 msgid "pm"
 msgstr ""
 

@@ -367,7 +367,7 @@ msgstr ""
 msgid "Connection test succeeded"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:81
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:80
 msgid "Contact email field is required"
 msgstr ""
 
@@ -565,8 +565,8 @@ msgstr ""
 msgid "Friendly URLs successfully deactivated"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:140
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:142
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:144
 msgid "General settings have been updated"
 msgstr ""
 
@@ -729,7 +729,7 @@ msgstr ""
 msgid "Maintenance mode is ON"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:87
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:86
 msgid "Max latest listings has to be a numeric value"
 msgstr ""
 
@@ -850,15 +850,15 @@ msgstr ""
 msgid "Number of expiration days has to be a numeric value"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:84
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:83
 msgid "Number of listings in the RSS has to be a numeric value"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:116
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:115
 msgid "Number of listings in the RSS must be an integer"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:90
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:89
 msgid "Number of listings on search has to be a numeric value"
 msgstr ""
 
@@ -870,7 +870,7 @@ msgstr ""
 msgid "Number of moderated listings must only contain numeric characters"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:125
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:124
 msgid "Number of recent listings displayed at home must be an integer"
 msgstr ""
 
@@ -1011,7 +1011,7 @@ msgstr ""
 msgid "Order #%d is recorded as refunded and the credits have been taken back"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:78
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php:77
 msgid "Page title field is required"
 msgstr ""
 
