@@ -81,7 +81,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="locations-stats-setting">
     <!-- settings form -->
     <div id="">
-        <?php osc_admin_page_head(__('Locations stats')); ?>
+        <?php osc_admin_page_head(__('Location stats')); ?>
         <?php if ($worktodo > 0) { ?>
             <p>
                 <span id="percent">0</span> % <?php _e('Complete'); ?> <span class="spinner-border spinner-border-sm text-primary"></span>

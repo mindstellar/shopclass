@@ -13401,18 +13401,24 @@ div.widget-box-content-no-wrapp li a {
   color: var(--osc-bronze);
   font-weight: 600;
 }
+.dashboard-sidebar #dashboard-menu > .nav-item-band {
+  border-block-start: 1px solid var(--osc-chrome-edge);
+  margin-block-start: 0.5rem;
+  padding-block-start: 0.5rem;
+}
 
 .dashboard-sidebar .sidebar-submenu {
   background-color: transparent;
   border: 0;
   font-size: 0.875rem;
-  margin: 0;
-  padding: 0;
+  margin: 0.25rem 0 0;
+  padding: 0 0 0.4rem;
 }
 .dashboard-sidebar .sidebar-submenu a {
   border-radius: 4px;
   color: var(--osc-nav-label);
   font-size: 0.875rem;
+  min-height: 2rem;
   margin-block: 0.1rem;
   padding: 0.3rem 0.6rem 0.3rem 2.35rem;
   position: relative;
@@ -13450,12 +13456,23 @@ div.widget-box-content-no-wrapp li a {
   outline-offset: 2px;
 }
 .dashboard-sidebar .sidebar-submenu .submenu-divide {
-  color: var(--osc-nav-label);
+  border-block-start: 1px solid var(--osc-chrome-edge);
+  color: var(--osc-ink-emphasis);
   font-size: 0.8125rem;
   font-weight: 600;
-  margin-block-start: 0.55rem;
-  padding-block: 0.25rem;
-  padding-inline-start: 2.35rem;
+  margin-block-start: 0.4rem;
+  padding-block: 0.4rem 0.2rem;
+  margin-inline-start: 1.05rem;
+}
+.dashboard-sidebar .sidebar-submenu .submenu-divide:first-child {
+  border-block-start: 0;
+  margin-block-start: 0;
+  padding-block-start: 0.15rem;
+}
+.dashboard-sidebar .sidebar-submenu .rail-flyout-title + .submenu-divide {
+  border-block-start: 0;
+  margin-block-start: 0;
+  padding-block-start: 0.15rem;
 }
 
 .sidebar-brand {
@@ -13812,7 +13829,6 @@ div.widget-box-content-no-wrapp li a {
     min-width: 12rem;
     overflow-y: auto;
     padding: 0.35rem;
-    padding-inline-start: 0.35rem;
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-submenu a {
     padding-inline-start: 1.4rem;
@@ -13821,7 +13837,7 @@ div.widget-box-content-no-wrapp li a {
     inset-inline-start: 0.5rem;
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-submenu .submenu-divide {
-    padding-inline-start: 1.4rem;
+    margin-inline-start: 0.5rem;
   }
   [data-osc-sidebar=collapsed] .dashboard-sidebar .sidebar-flyout {
     border-radius: 4px;
@@ -13852,6 +13868,9 @@ div.widget-box-content-no-wrapp li a {
 @media (max-width: 1024px) {
   .sidebar-collapse-toggle {
     display: none;
+  }
+  .dashboard-sidebar .sidebar-submenu a {
+    min-height: 2.5rem;
   }
 }
 .table {

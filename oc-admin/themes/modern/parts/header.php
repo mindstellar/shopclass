@@ -30,7 +30,8 @@ if ($oscSidebar !== 'collapsed') {
 <body class="<?php echo implode(' ', osc_apply_filter('admin_body_class', array())); ?>">
 <div id="content" class="container-fluid">
     <div class="row flex-nowrap">
-        <nav id="sidebar-wrapper" class="col-auto dashboard-sidebar">
+        <nav id="sidebar-wrapper" class="col-auto dashboard-sidebar"
+             aria-label="<?php echo osc_esc_html(__('Admin sections')); ?>">
             <a id="osc_toolbar_home" class="sidebar-brand" target="_blank" rel="noopener"
                href="<?php echo osc_base_url(); ?>"
                title="<?php echo osc_esc_html(__('View your site')); ?>">
@@ -87,7 +88,7 @@ if ($oscSidebar !== 'collapsed') {
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item"
                                href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
-                                <i class="bi bi-person"></i> <?php _e('Edit Profile'); ?></a>
+                                <i class="bi bi-person"></i> <?php _e('Edit profile'); ?></a>
                             <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
                                 <i class="bi bi-gear"></i> <?php _e('Settings'); ?></a>
                             <div class="dropdown-divider"></div>

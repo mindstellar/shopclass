@@ -77,14 +77,14 @@ if (!function_exists('submission_value_display')) {
 
 osc_admin_page(array(
     'section' => __('Forms'),
-    'title'   => __('Form submissions'),
+    'title'   => __('Submissions'),
 ));
 
 $base = osc_admin_base_url(true) . '?page=cfields&action=submissions';
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <?php osc_admin_page_head(__('Form submissions')); ?>
+    <?php osc_admin_page_head(__('Submissions')); ?>
 
     <div class="relative">
         <?php if (count($forms) > 0) {
