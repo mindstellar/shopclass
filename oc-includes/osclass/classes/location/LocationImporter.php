@@ -109,8 +109,11 @@ final class LocationImporter
 
     private function importCountryRow(array $data): void
     {
-        $table   = DB_TABLE_PREFIX . 't_country';
-        $code    = strtolower($data['s_country_code']);
+        $table = DB_TABLE_PREFIX . 't_country';
+        // Stored with the casing the catalog publishes (upper), which is what every
+        // pre-existing row uses. The region/city foreign keys are lowercased, as they
+        // always have been; the column collation is case-insensitive, so they still join.
+        $code    = (string) $data['s_country_code'];
         $current = osc_db_select_one(
             'SELECT pk_c_code, s_name, s_slug FROM ' . $table . ' WHERE pk_c_code = ?',
             array($code)
