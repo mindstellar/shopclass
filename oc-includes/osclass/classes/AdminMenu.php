@@ -535,6 +535,10 @@ class AdminMenu
         $priority        = 0;
         $urlLength       = 0;
         foreach ($aMenu as $key => $value) {
+            if (!self::isSection($value)) {
+                continue;
+            }
+
             // --- submenu section
             if (array_key_exists('sub', $value)) {
                 $aSubmenu = $value['sub'];
@@ -612,6 +616,24 @@ class AdminMenu
     }
 
     /**
+     * Is this array a real section, or the husk add_submenu() leaves behind?
+     *
+     * Handing add_submenu() a menu id that was never registered still creates
+     * `$aMenu[$id]['sub'][…]`, producing an entry with a submenu but no title, url or
+     * capability. Rendering that gives a blank, clickable row, and reading its missing
+     * indices warns on PHP 8 — so both render paths skip it and the plugin author sees
+     * their item missing rather than the whole sidebar growing an empty section.
+     *
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    private static function isSection($value)
+    {
+        return is_array($value) && isset($value[0], $value[1]) && $value[0] !== '';
+    }
+
+    /**
      * @return \AdminMenu
      */
     public static function newInstance()
@@ -645,6 +667,10 @@ class AdminMenu
      */
     private function renderMenu($menuId, $value, $activeMenu, $activeSubmenu)
     {
+        if (!self::isSection($value)) {
+            return '';
+        }
+
         $is_moderator = osc_is_moderator();
         $str          = '';
         //If user is moderator and menu access is not available don't print menu
@@ -808,7 +834,12 @@ class AdminMenu
      */
     public function add_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
     {
-        $this->add_submenu('categories', $submenu_title, $url, $submenu_id, $capability, $icon_url);
+        // Categories is an entry under Listings and has never been a section of its own,
+        // so there is no 'categories' menu to attach to. Naming one anyway left behind a
+        // menu entry holding nothing but a 'sub' key — no title, no url, no capability —
+        // which rendered as a blank clickable row at the foot of the sidebar. Put the
+        // item where Categories actually lives instead.
+        $this->add_submenu('items', $submenu_title, $url, $submenu_id, $capability, $icon_url);
     }
 
     /**
