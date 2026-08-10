@@ -2,6 +2,22 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.2.0
+
+Google Analytics is no longer wired into the core. Analytics is one vendor's product among
+many, and shipping a field for one of them meant every site carried the code for a service
+most of them do not use — so it now goes in the same place as any other third-party tag.
+
+### Breaking
+
+- **Google Analytics has been removed from core.** The **Tracking ID** field is gone from
+  Settings → General and no measurement snippet is rendered on public pages any more. Sites
+  that were using it should paste their own snippet into a **Custom Code** widget under
+  Appearance → Widgets, or install a plugin that provides it.
+- `osc_google_analytics_id()` is deprecated. It still returns whatever measurement ID was
+  saved before the upgrade — the stored value is left untouched, so a theme that prints its
+  own snippet keeps working — but core no longer reads it and nothing can set it.
+
 ## Shopclass 6.1.0
 
 Plugins and themes can now be found, installed and updated from inside the admin. Packages

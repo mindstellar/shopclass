@@ -796,30 +796,6 @@ function osc_admin_toolbar_update_languages($force = false)
     }
 }
 
-function osc_ga_analytics_footer()
-{
-    $id = osc_google_analytics_id();
-    if ($id) {
-        ?>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo osc_esc_html($id); ?>"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-
-            function gtag() {
-                dataLayer.push(arguments);
-            }
-
-            gtag('js', new Date());
-            gtag('config', '<?php echo osc_esc_js($id); ?>');
-        </script>
-        <?php
-    }
-}
-
-if (osc_google_analytics_id()) {
-    osc_add_hook('footer', 'osc_ga_analytics_footer');
-}
-
 function osc_item_tinymce_header()
 {
     if (!osc_is_publish_page() && !osc_is_edit_page()) {

@@ -11,6 +11,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\utility\Deprecate;
+
 /**
  * Helper Utils
  *
@@ -958,12 +960,19 @@ function osc_get_subdomain_params()
 }
 
 /**
- * Get Google Analytics tracking ID.
+ * Get the Google Analytics measurement ID a previous release stored.
  *
+ * Core no longer renders a tracking snippet and no longer offers a field to set
+ * this, so the value is whatever was saved before the setting was removed. Kept
+ * only so themes that print their own snippet do not fatal on upgrade.
+ *
+ * @deprecated since 6.2.0
  * @return string
  */
 function osc_google_analytics_id()
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '6.2.0');
+
     return osc_get_preference('ga_tracking_id');
 }
 

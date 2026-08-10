@@ -352,17 +352,6 @@ foreach ($timeFormats as $tfIndex => $tf) {
                             </span>
                         </div>
                     </div>
-                    <?php osc_admin_page_head(__('Google Analytics')); ?>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Tracking ID'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="xlarge" name="ga_tracking_id"
-                                   value="<?php echo osc_esc_html(osc_google_analytics_id()); ?>"/>
-                            <div class="help-box">
-                                <?php _e('Add your Google Analytics measurement ID. Example: G-XXXXXXXXXX'); ?>
-                            </div>
-                        </div>
-                    </div>
                     <?php osc_admin_page_head(__('Maps')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Google Maps key'); ?></div>
