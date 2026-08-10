@@ -42,7 +42,9 @@ not a prerequisite that blocks the feature behind an API key and a backfill.
 
 ## 2. Schema
 
-One new table, five columns, one index. Migration `0023_geo_search.php`.
+One new table, nine columns, two indexes. Migration `0023_geo_search.php`. The
+`i_source_id` columns on `t_region` and `t_city` belong to the same migration but are
+specified in §5, where the reason for them lives.
 
 ### `t_city` and `t_region` — centroids
 
@@ -54,7 +56,7 @@ ALTER TABLE t_city
 ```
 
 Nullable: an install whose location data predates centroids keeps working, at `region`
-precision or with no coordinate at all, until it re-syncs (§4).
+precision or with no coordinate at all, until it re-syncs (§5).
 
 ### `t_item_location` — resolved coordinate and its provenance
 
@@ -193,27 +195,119 @@ compliance by using a theme that forgot.
 
 `mindstellar/geodata` derives from
 [`dr5hn/countries-states-cities-database`](https://github.com/dr5hn/countries-states-cities-database),
-**which already carries `latitude` and `longitude` for every city and state**. The current
-normalisation drops those fields. Restoring them is the entire data task.
+**which already carries `latitude` and `longitude` for every city and state**. The old
+normalisation dropped those fields; restoring them is the entire data task, and the geodata
+build now emits them as `d_coord_lat` / `d_coord_long` on both regions and cities, to six
+decimal places, matching the `DECIMAL(10,6)` columns they land in.
 
-Three coordinated changes:
+Coverage of the regenerated dataset: **153,991 cities across 229 countries, every one with
+a coordinate.** Regions without an upstream coordinate fall back to the mean of their
+cities, so no region is left without one either.
 
-1. **`mindstellar/geodata`** — keep `latitude`/`longitude` through normalisation and emit
-   them as `d_coord_lat` / `d_coord_long` in each country JSON. Confirm the upstream
-   licence and record the attribution the repo owes.
-2. **Installer** — `osc_install_json_locations()` reads the two new keys when present and
-   ignores them when absent, so an older geodata snapshot still installs.
-3. **Existing installs** — `geo:sync-centroids` (§8) re-fetches the country files an install
-   already has and fills centroids by slug match, without touching names, slugs or ids.
-   Also offered as a one-click action on the admin screen.
-
-Cities that still have no centroid after a sync fall back to their region's; listings in
-those cities resolve at `region` precision. Nothing is ever left uncoordinated because of a
-data gap alone.
+The installer reads the two keys when present and ignores them when absent, so an older
+geodata snapshot still installs — an install is never blocked on the data being current.
 
 ---
 
-## 5. Search
+## 5. Location data is upgradable
+
+This section exists because the obvious implementation destroys data.
+
+`osc_install_json_locations()` today inserts a country, region or city **only if a row with
+the same name does not already exist**, and never updates one that does. Re-running it is
+therefore not an upgrade: existing rows never gain a centroid, and anything upstream
+renamed arrives as a brand-new row beside the old one.
+
+That is not a theoretical concern. Comparing the previously published dataset with current
+upstream:
+
+| | |
+|---|---|
+| Region **slugs** that still exist | **31%** |
+| City **slugs** that still exist | **45%** |
+| Region **ids** that still exist | **91%** |
+| City **ids** that still exist | **94%** |
+| Surviving regions that kept their **name** | **33%** |
+
+The churn is overwhelmingly **renames, not deletions** — upstream steadily normalises
+"Somali Region" into "Somali", "Berat County" and "Berat District" into "Berat". A
+name-matched or slug-matched import reads every one of those as a deletion plus an
+insertion. Run naively against an existing site it would add roughly 4,700 duplicate
+regions and 86,000 duplicate cities, leave every existing listing pointing at a city that
+no longer appears in any picker, and break every URL built from the old slug.
+
+### Identity is `i_source_id`, never a name or a slug
+
+geodata now emits the upstream id on every region and city. That is the only thing stable
+enough to match on.
+
+```sql
+ALTER TABLE t_region
+    ADD COLUMN i_source_id INT UNSIGNED NULL,
+    ADD UNIQUE INDEX idx_source (fk_c_country_code, i_source_id);
+-- same on t_city, keyed (fk_i_region_id, i_source_id)
+```
+
+Countries need nothing: `pk_c_code` is already the ISO-3166 code, which is stable. Their
+*display names* do change (`Korea North` → `North Korea`), and an upgrade updates them.
+
+### The five rules
+
+1. **`pk_i_id` is never reassigned.** Every `fk_i_city_id` on `t_item_location` points at
+   it. This is the rule the other four exist to protect.
+2. **Match on `i_source_id` within the parent.** Name and slug are attributes to be
+   updated, not identity.
+3. **Rows are updated in place, not replaced.** A renamed region keeps its id, its
+   listings, and its statistics; it gains a new name, slug and centroid.
+4. **Nothing is ever deleted.** A row whose `i_source_id` vanished upstream is set
+   `b_active = 0` *only if it holds no listings*; one that still holds listings is left
+   fully active, because the seller's location did not stop existing just because an
+   administrative boundary was redrawn.
+5. **Old slugs keep resolving.** A rename writes the previous slug to the slug-history
+   table, exactly as category renames already do (migration `0019`), so indexed URLs
+   301 rather than 404.
+
+### First upgrade: adopting ids
+
+Existing installs have no `i_source_id` on any row. The first sync backfills it:
+
+1. Match by `i_source_id` — nothing matches yet.
+2. Fall back to `(parent, s_slug)`, then to `(parent, s_name)`. Every row that matches
+   adopts the incoming `i_source_id` and centroid.
+3. Rows that match nothing are reported, not touched.
+
+That is a one-time reconciliation, and it is the only time name matching is ever used.
+Because it runs against the *previously published* dataset rather than a stranger's, the
+~31%/45% figures above are the worst case and only apply to installs skipping a full
+upstream generation. Whatever fails to match keeps working exactly as it does today — it
+simply resolves at `region` precision until an admin resolves it by hand.
+
+### Knowing an upgrade is available
+
+The geodata manifest carries a content-derived `s_version` and a per-country `s_sha256`, so
+an install can answer *"is my data current?"* with one small request and no downloads. The
+version changes only when the data does, so a monthly rebuild that finds nothing new
+produces no upgrade prompt.
+
+Per-country state is stored as a preference: the `s_sha256` installed and the date it was
+installed. **Settings → Location** lists installed countries with *current* or *update
+available*, and the update is opt-in — never applied automatically, because it renames
+places that appear in a seller's listing.
+
+### Dry run first
+
+`location:update --country=IN --dry-run` prints what would change — rows updated, renamed,
+deactivated, and any that matched nothing — without writing. The admin screen shows the
+same summary behind a confirmation. A location upgrade touches rows that public URLs and
+live listings depend on; it is not something to discover the effects of afterwards.
+
+The whole sync runs in one transaction per country and inserts in chunks. A large country
+is 150,000 cities; a row-at-a-time importer with a `SELECT` before every `INSERT` — which is
+what exists today — is not viable at that size.
+
+---
+
+## 6. Search
 
 ### The API
 
@@ -279,7 +373,7 @@ So the canonical radius URL carries a **snapped origin and a banded distance**:
 /search?near=bandra-mumbai&lat=19.06&lng=72.83&within=25
 ```
 
-- Origin rounded to **2 decimal places** (~1.1 km). Also exactly the privacy rule in §6, so
+- Origin rounded to **2 decimal places** (~1.1 km). Also exactly the privacy rule in §7, so
   the URL never carries a finer coordinate than the page is allowed to display.
 - `within` from a fixed set — 5, 10, 25, 50, 100 — interpreted in the site's configured
   distance unit. Anything else redirects to the nearest band.
@@ -301,7 +395,7 @@ site-constant is not worth the cache cost.
 
 ---
 
-## 6. What the public sees
+## 7. What the public sees
 
 The stored coordinate is exact. **What leaves the server is not.**
 
@@ -334,7 +428,7 @@ street-level precision. Called out in the release notes as a change, not a break
 
 ---
 
-## 7. Admin surface
+## 8. Admin surface
 
 The two map settings blocks merge into **one** screen — today the provider lives under
 Settings → Listings and the keys under Settings → General, which is how the MapQuest field
@@ -356,14 +450,20 @@ thing on the screen, not a diagnostic buried in Tools.
 
 ---
 
-## 8. CLI and cron
+## 9. CLI and cron
 
 ```
-geo:sync-centroids   Fill city/region centroids from the location data source
+location:status      Per-country installed version vs available
+location:update      Re-sync a country's regions and cities, centroids included
+                     (--country=IN|--all) [--dry-run]
 geo:backfill         Geocode listings that lack address-level coordinates
                      [--limit=N] [--force] [--dry-run]
 geo:stats            Print coverage by precision
 ```
+
+`location:update` is the §5 sync — matched on `i_source_id`, updating in place, deleting
+nothing. `--dry-run` is not an afterthought here: it is how an admin sees which places are
+about to be renamed before agreeing to it.
 
 `geo:backfill` is resumable, respects `rateLimit()`, stops on repeated provider errors
 rather than burning the day's quota, and increments `i_geocode_attempts` on every failure.
@@ -381,7 +481,7 @@ within the hour.
 
 ---
 
-## 9. Extension points
+## 10. Extension points
 
 Core provides the seams. It does not provide, test, or support what plugs into them.
 
@@ -408,44 +508,51 @@ core.
 
 ---
 
-## 10. Out of scope
+## 11. Out of scope
 
 - **Reverse geocoding** (coordinate → address). Nothing in core needs it.
 - **Drawn or polygon search areas.** Circles only.
 - **Routing, drive time, isochrones.** Straight-line distance only.
 - **Geocoding user profiles.** `t_user.d_coord_lat` exists and stays as it is.
-- **Any bundled Manticore or Elasticsearch integration** — §9.
-- **Per-listing precision opt-in.** The rounding in §6 is site-wide. A "show my exact
+- **Any bundled Manticore or Elasticsearch integration** — §10.
+- **Per-listing precision opt-in.** The rounding in §7 is site-wide. A "show my exact
   location" checkbox for business listings is a reasonable later addition; the
   `item_coord_precision` filter is the seam it would use.
 
 ---
 
-## 11. Phases
+## 12. Phases
 
 Each phase ships something usable on its own.
 
 | # | Delivers | Depends on |
 |---|---|---|
-| **1** | Centroid coverage: geodata carries coordinates, schema migration, installer reads them, `geo:sync-centroids`, resolution on publish/edit | geodata repo change |
-| **2** | Search: `addRadius()` / `orderByDistance()`, canonical URLs, banded distances, public rounding and helpers | 1 |
-| **3** | Search UI: location box with autocomplete, distance selector, "use my location", distance on result cards | 2 |
-| **4** | Address-level geocoding: provider contract and registry, LocationIQ + Google + Nominatim, `t_geocode_cache`, cron drain, `geo:backfill`, admin Location screen with coverage | 1 |
-| **5** | Cleanup: remove MapQuest and `openstreet_api_key`, merge the map settings blocks, drop `sensor=false`, timeout the remaining outbound calls | 4 |
+| **0** | geodata carries `d_coord_lat`/`d_coord_long` and `i_source_id`, deterministic build, validation guard, monthly refresh workflow | — **done** |
+| **1** | Upgradable import: `i_source_id` columns, id-matched upsert, slug history, `location:status` / `location:update` with `--dry-run`, chunked and transactional | 0 |
+| **2** | Centroid coverage: schema migration, installer reads coordinates, resolution on publish/edit, `geo:stats` | 1 |
+| **3** | Search: `addRadius()` / `orderByDistance()`, canonical URLs, banded distances, public rounding and helpers | 2 |
+| **4** | Search UI: location box with autocomplete, distance selector, "use my location", distance on result cards | 3 |
+| **5** | Address-level geocoding: provider contract and registry, LocationIQ + Google + Nominatim, `t_geocode_cache`, cron drain, `geo:backfill`, admin Location screen with coverage | 2 |
+| **6** | Cleanup: remove MapQuest and `openstreet_api_key`, merge the map settings blocks, drop `sensor=false`, timeout the remaining outbound calls | 5 |
 
-Phases 1–3 need no provider, no API key and no outbound HTTP. A site gets working radius
-search from them alone. Phase 4 is an accuracy upgrade, which is the correct shape for
+**Phase 1 gates the geodata release.** The regenerated dataset is built and validated but
+must not reach geodata's default branch until an install can consume it: a site fetching it
+through today's name-matched importer would duplicate its entire location tree rather than
+update it (§5). Phases 0 and 1 land together or not at all.
+
+Phases 2–4 need no provider, no API key and no outbound HTTP. A site gets working radius
+search from them alone. Phase 5 is an accuracy upgrade, which is the correct shape for
 something that costs money and quota.
 
 ---
 
-## 12. Compatibility
+## 13. Compatibility
 
 Under the rules in [MARKET.md](MARKET.md), the surface a third party can see:
 
 **Kept.** `osc_item_latitude()`, `osc_item_longitude()`, `osc_item_map_type()`,
 `osc_google_maps_api_key()` — same names, same signatures. The two coordinate helpers
-return a rounded value (§6); the rest are unchanged.
+return a rounded value (§7); the rest are unchanged.
 
 **Deprecated, not removed.** `osc_openstreet_api_key()` and
 `osc_openstreet_geocode_url()` — they keep returning what they always did, gain a
@@ -457,9 +564,18 @@ return a rounded value (§6); the rest are unchanged.
 `ItemActions::getItemCoordinates()`. No helper disappears; a plugin reading the preference
 directly gets an empty string, which is what an unconfigured install already returns.
 
-**Schema.** Additive only — new nullable columns, one new index, one new table. No column
+**Schema.** Additive only — new nullable columns, two new indexes, one new table. No column
 is dropped or retyped, so a rollback is `DROP` and nothing else. Themes selecting `*` from
 `t_item_location` see extra columns, which is not a break.
+
+**Location rows.** No `pk_i_id` is ever reassigned and no row is ever deleted (§5), so a
+plugin holding a city id keeps resolving it. Names and slugs do change on a location
+update, which is why old slugs are written to the slug-history table — code that stored a
+slug instead of an id still resolves, via a redirect.
+
+**DAO surface.** `City` and `Region` gain public methods for id-matched lookup and bulk
+upsert. `tests/models/locationstmp.php` pins a byte-identical method map, so it is updated
+in the same commit or the model-contracts check fails.
 
 **Themes.** `storefront` should call `osc_geocode_attribution()` and can stop geocoding
 client-side, since listings now arrive with coordinates. Neither is required — an untouched
