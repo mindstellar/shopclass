@@ -234,6 +234,36 @@ class Region extends DAO
     }
 
     /**
+     * Find a region by its upstream source id
+     *
+     * i_source_id is the identifier the upstream location dataset uses for this row, and
+     * it is the only stable way to match a region across dataset updates, because names
+     * and slugs are renamed upstream constantly. It is unique table-wide, not scoped to
+     * a country.
+     *
+     * @access public
+     *
+     * @param $sourceId
+     *
+     * @return array
+     * @since  6.2.0
+     */
+    public function findBySourceId($sourceId)
+    {
+        try {
+            $row = osc_db_table($this->getTableName())->where('i_source_id', $sourceId)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
+    }
+
+    /**
      * Find a locations with no slug
      *
      * @access public

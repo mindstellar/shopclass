@@ -201,6 +201,7 @@ pin('findByName signature is unchanged', 'public findByName($name, $country = NU
 pin('ajax signature is unchanged', 'public ajax($query, $country = NULL)', harness_method_signature('Region', 'ajax'));
 pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($pk)', harness_method_signature('Region', 'deleteByPrimaryKey'));
 pin('findBySlug signature is unchanged', 'public findBySlug($slug)', harness_method_signature('Region', 'findBySlug'));
+pin('findBySourceId signature is unchanged', 'public findBySourceId($sourceId)', harness_method_signature('Region', 'findBySourceId'));
 pin('listByEmptySlug signature is unchanged', 'public listByEmptySlug()', harness_method_signature('Region', 'listByEmptySlug'));
 pin('newInstance signature is unchanged', 'public static newInstance()', harness_method_signature('Region', 'newInstance'));
 check('Region still extends DAO', is_subclass_of('Region', 'DAO'));
@@ -216,13 +217,13 @@ pin(
     'the model adds exactly these methods of its own',
     array(
         '__construct', 'ajax', 'deleteByPrimaryKey', 'findByCountry', 'findByName',
-        'findBySlug', 'getByCountry', 'listByEmptySlug', 'newInstance',
+        'findBySlug', 'findBySourceId', 'getByCountry', 'listByEmptySlug', 'newInstance',
     ),
     array_values(array_intersect(
         array_keys(harness_public_method_map('Region')),
         array(
             '__construct', 'newInstance', 'getByCountry', 'findByCountry', 'findByName',
-            'ajax', 'deleteByPrimaryKey', 'findBySlug', 'listByEmptySlug',
+            'ajax', 'deleteByPrimaryKey', 'findBySlug', 'findBySourceId', 'listByEmptySlug',
         )
     ))
 );
@@ -248,7 +249,7 @@ check('only the requested country comes back', is_array($rows), describe($rows))
 pin('exactly two US regions', 2, count($rows));
 pin(
     'each row carries exactly the SELECT * columns in table order',
-    array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active'),
+    array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'),
     array_keys($rows[0])
 );
 check('every value in every row is a string or null (C4)', all_rows_string($rows), describe($rows));
@@ -288,7 +289,7 @@ harness_section('Region::findByName — match, no country filter');
 
 $row = $model->findByName('Alpha');
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the SELECT * columns in table order', array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active'), array_keys($row));
+pin('the row carries exactly the SELECT * columns in table order', array('pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'), array_keys($row));
 pin('pk_i_id round-trips', (string) $regionAlphaUs, $row['pk_i_id']);
 check('every value in the row is a string or null (C4)', all_values_string($row), describe($row));
 

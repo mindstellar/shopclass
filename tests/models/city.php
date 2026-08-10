@@ -127,6 +127,11 @@ pin(
     harness_method_signature('City', 'findBySlug')
 );
 pin(
+    'findBySourceId signature is unchanged',
+    'public findBySourceId($sourceId)',
+    harness_method_signature('City', 'findBySourceId')
+);
+pin(
     'listByEmptySlug signature is unchanged',
     'public listByEmptySlug()',
     harness_method_signature('City', 'listByEmptySlug')
@@ -146,7 +151,7 @@ pin(
     $model->getFields()
 );
 pin(
-    'the model adds exactly eight methods of its own',
+    'the model adds exactly nine methods of its own',
     array(
         '__construct',
         'ajax',
@@ -154,6 +159,7 @@ pin(
         'findByName',
         'findByRegion',
         'findBySlug',
+        'findBySourceId',
         'getByRegion',
         'listAll',
         'listByEmptySlug',
@@ -171,6 +177,7 @@ pin(
             'listAll',
             'deleteByPrimaryKey',
             'findBySlug',
+            'findBySourceId',
             'listByEmptySlug',
         )
     ))
