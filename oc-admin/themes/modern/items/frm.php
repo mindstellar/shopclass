@@ -50,14 +50,9 @@ if ($new_item) {
     $options = array(-1, 0, 1, 3, 5, 7, 10, 15, 30);
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php echo customText('title'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => static fn () => customText('title'),
+));
 
 /**
  * @param $string
@@ -158,7 +153,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminItemForm" class="col-xl-10">
     <div class="row ">
         <div class="col">
-                <h2 class="render-title"><?php echo customText('subtitle'); ?></h2>
+                <?php osc_admin_page_head(customText('subtitle')); ?>
                 <?php if (!$new_item) { ?>
                     <a href="<?php echo osc_item_url(); ?>"><?php _e('View listing on front'); ?><i class="bi
                     bi-arrow-up-right-square ms-1"></i></a>
@@ -316,12 +311,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <?php if (!$new_item) { ?>
-                            <a href="javascript:history.go(-1)" class="btn btn-dim"><?php _e('Cancel'); ?></a>
-                        <?php } ?>
-                        <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(customText('button')); ?></button>
-                    </div>
+                    <?php
+                    $formActions = array();
+                    if (!$new_item) {
+                        $formActions[] = array('label' => __('Cancel'), 'url' => 'javascript:history.go(-1)', 'variant' => 'dim');
+                    }
+                    $formActions[] = array('label' => customText('button'), 'type' => 'submit', 'variant' => 'primary');
+                    osc_admin_form_actions($formActions);
+                    ?>
                 </form>
             </div>
         </div>

@@ -96,45 +96,19 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
-              . "the default currency or how lists of listings are displayed. <strong>Be careful</strong> when modifying default "
-              . "values if you're not sure what you're doing!")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('General Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('General Settings'),
+    'help'    => __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
+                    . "the default currency or how lists of listings are displayed. <strong>Be careful</strong> when modifying default "
+                    . "values if you're not sure what you're doing!"),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="general-settings">
-        <h2 class="render-title"><?php _e('General Settings'); ?></h2>
+        <?php osc_admin_page_head(__('General Settings')); ?>
         <ul id="error_list"></ul>
         <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
@@ -335,34 +309,30 @@ foreach ($timeFormats as $tfIndex => $tf) {
                             <?php _e('listings at most'); ?>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Category settings'); ?></h2>
+                    <?php osc_admin_page_head(__('Category settings')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Parent categories'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_selectable_parent_categories()
-    ? 'checked="checked"' : ''); ?> name="selectable_parent_categories" value="1"/>
-                                    <?php _e('Allow users to select a parent category as a category
-                                    when inserting or editing a listing '); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'selectable_parent_categories',
+                                'label'   => __('Allow users to select a parent category as a category
+                                    when inserting or editing a listing '),
+                                'checked' => osc_selectable_parent_categories(),
+                            )); ?>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Contact Settings'); ?></h2>
+                    <?php osc_admin_page_head(__('Contact Settings')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Attachments'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_contact_attachment() ? 'checked="checked"'
-    : ''); ?> name="enabled_attachment" value="1"/>
-                                    <?php _e('Allow people to attach a file to the contact form'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'enabled_attachment',
+                                'label'   => __('Allow people to attach a file to the contact form'),
+                                'checked' => osc_contact_attachment(),
+                            )); ?>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Cron Settings'); ?></h2>
+                    <?php osc_admin_page_head(__('Cron Settings')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Automatic cron process'); ?></div>
                         <div class="form-controls">
@@ -382,7 +352,7 @@ foreach ($timeFormats as $tfIndex => $tf) {
                             </span>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Google Analytics'); ?></h2>
+                    <?php osc_admin_page_head(__('Google Analytics')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Tracking ID'); ?></div>
                         <div class="form-controls">
@@ -393,7 +363,7 @@ foreach ($timeFormats as $tfIndex => $tf) {
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Maps'); ?></h2>
+                    <?php osc_admin_page_head(__('Maps')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Google Maps key'); ?></div>
                         <div class="form-controls">
@@ -414,7 +384,7 @@ foreach ($timeFormats as $tfIndex => $tf) {
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title separate-top"><?php _e('Software updates'); ?></h2>
+                    <?php osc_admin_page_head(__('Software updates')); ?>
                     <?php
                     /**
                      *
@@ -485,21 +455,15 @@ echo __('Last checked on ') . ($last_version_check > 0
                     <div class="form-row">
                         <div class="form-label"><?php _e('Allow Prerelease'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php
-    echo osc_get_preference('allow_update_prerelease') ? 'checked="checked"' : '';
-?> name="allow_update_prerelease" value="1"/>
-                                    <?php _e('Allow prerelease update'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'allow_update_prerelease',
+                                'label'   => __('Allow prerelease update'),
+                                'checked' => osc_get_preference('allow_update_prerelease'),
+                            )); ?>
                         </div>
                     </div>
                     <div class="clear"></div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(); ?>
                 </div>
             </fieldset>
         </form>

@@ -13,39 +13,23 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-        . __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.')
-        . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;action=settings" class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=items&action=post'; ?>" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add listing'); ?>"><i class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-<?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Manage listings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Manage listings'),
+    'help'    => __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=items&amp;action=post',
+            'title' => __('Add listing'),
+        ),
+        array(
+            'icon'  => 'bi-gear-fill',
+            'url'   => osc_admin_base_url(true) . '?page=items&amp;action=settings',
+            'title' => __('Settings'),
+        ),
+    ),
+));
 
 //customize Head
 function customHead()
@@ -75,15 +59,6 @@ function customHead()
                 });
             });
 
-            // check_all bulkactions
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
         });
     </script>
 <?php
@@ -105,7 +80,7 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php _e('Manage listings'); ?></h2>
+<?php osc_admin_page_head(__('Manage listings')); ?>
 <div class="relative">
     <div id="listing-toolbar">
         <div class="d-flex justify-content-end gap-1">
@@ -155,47 +130,13 @@ $classItemId        = 'hide'; ?>
                     </button>
                 </div>
             </form>
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
-                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                    <?php if ($key !== 'iDisplayLength') { ?>
-                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
-                <?php }
-                    } ?>
-                <select name="iDisplayLength" class="form-select form-select-sm" onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
-                    <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 25); ?></option>
-                    <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 50); ?></option>
-                    <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 100); ?></option>
-                    <option value="250" <?php if (Params::getParam('iDisplayLength') == 250) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 250); ?></option>
-                    <option value="500" <?php if (Params::getParam('iDisplayLength') == 500) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 500); ?></option>
-                </select>
-            </form>
+            <?php osc_admin_per_page(array('label' => __('%d Listings'), 'current' => $iDisplayLength)); ?>
         </div>
     </div>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
-        <div id="bulk-actions">
-            <div class="input-group input-group-sm">
-                <?php osc_print_bulk_actions(
-                    'bulk_actions',
-                    'bulk_actions',
-                    __get('bulk_options'),
-                    'select-box-extra'
-                ); ?>
-                <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>" />
-            </div>
-        </div>
+        <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -228,18 +169,27 @@ $classItemId        = 'hide'; ?>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
-                    <?php } else { ?>
-                        <tr>
-                            <td colspan="<?php echo count($columns); ?>" class="empty-listings text-center">
-                                <?php if ($withFilters) { ?>
-                                    <p><?php _e('No listings match these filters.'); ?></p>
-                                    <a class="btn btn-secondary btn-sm" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
-                                <?php } else { ?>
-                                    <p><?php _e('No listings found.'); ?></p>
-                                <?php } ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
+                    <?php } elseif ($withFilters) {
+                        osc_admin_table_empty(count($columns), array(
+                            'icon'   => 'bi-filter',
+                            'title'  => __('No listings match these filters'),
+                            'action' => array(
+                                'label' => __('Reset filters'),
+                                'url'   => osc_admin_base_url(true) . '?page=items',
+                            ),
+                        ));
+                    } else {
+                        osc_admin_table_empty(count($columns), array(
+                            'icon'  => 'bi-card-list',
+                            'title' => __('No listings found'),
+                            'text'  => __('Listings published by your users appear here, and you can post one yourself.'),
+                            'action' => array(
+                                'label'   => __('Add listing'),
+                                'url'     => osc_admin_base_url(true) . '?page=items&amp;action=post',
+                                'variant' => 'primary',
+                            ),
+                        ));
+                    } ?>
                 </tbody>
             </table>
             <div id="table-row-actions"></div> <!-- used for table actions -->
@@ -247,22 +197,7 @@ $classItemId        = 'hide'; ?>
     </form>
 </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
-        (Params::getParam('iPage') - 1)
-            * $aData['iDisplayLength'] + 1,
-        ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-            + count($aData['aRows']),
-        $aData['iTotalDisplayRecords'],
-        $aData['iTotalRecords']
-    )
-        . '</span></li></ul>';
-}
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
 <dialog id="display-filters" class="osc-dialog osc-dialog-wide">
     <form method="get" action="<?php echo osc_admin_base_url(true); ?>" nocsrf>
@@ -401,34 +336,15 @@ osc_show_pagination_admin($aData);
             </div>
     </form>
 </dialog>
-<dialog id="itemDeleteModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="items" />
-        <input type="hidden" name="action" value="delete" />
-        <input type="hidden" name="id[]" value="" />
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php _e('Delete listing'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this listing?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="itemDeleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
-        </div>
-    </form>
-</dialog>
-<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-        <p class="osc-dialog-text"></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-    </div>
-</dialog>
+<?php osc_admin_confirm_dialog(array(
+    'id'      => 'itemDeleteModal',
+    'method'  => 'get',
+    'fields'  => array('page' => 'items', 'action' => 'delete', 'id[]' => ''),
+    'title'   => __('Delete listing'),
+    'text'    => __('This permanently deletes the listing and its photos. This cannot be undone.'),
+    'confirm' => __('Delete'),
+)); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
     var filterSelect = document.getElementById("filter-select")
     filterSelect.onchange = function() {

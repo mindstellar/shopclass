@@ -13,25 +13,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 $file = __get('file');
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php echo osc_apply_filter('custom_plugin_title', __('Plugins')); ?></h1>
-    <?php
-}
 
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Plugins &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => static fn () => osc_apply_filter('custom_plugin_title', __('Plugins')),
+    'title'   => __('Plugins'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- theme files -->

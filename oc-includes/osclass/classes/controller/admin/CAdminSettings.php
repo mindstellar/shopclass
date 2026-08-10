@@ -32,7 +32,6 @@ class CAdminSettings
         switch (Params::getParam('action')) {
             case ('advanced'):
             case ('advanced_post'):
-            case ('advanced_cache_flush'):
                 $do = new CAdminSettingsAdvanced();
                 break;
             case ('comments'):

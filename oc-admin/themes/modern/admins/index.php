@@ -13,59 +13,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-        . __('Add users who can manage your page. You can add admins or moderators: '
-            . 'admins have access to the whole admin panel while moderators can only modify listings and see stats.')
-        . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Admins &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true); ?>?page=admins&amp;action=add" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add admin'); ?>"><i class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => __('Users'),
+    'title'   => __('Admins'),
+    'help'    => __('Add users who can manage your page. You can add admins or moderators: '
+                    . 'admins have access to the whole admin panel while moderators can only modify listings and see stats.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=admins&amp;action=add',
+            'title' => __('Add admin'),
+        ),
+    ),
+));
 
 $iDisplayLength = __get('iDisplayLength');
 $aData          = __get('aAdmins');
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php _e('Manage admins'); ?></h2>
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_page_head(__('Manage admins')); ?>
 <div class="relative">
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="admins" />
-        <div id="bulk-actions">
-            <div class="input-group input-group-sm">
-                <?php osc_print_bulk_actions(
-                    'bulk_actions',
-                    'action',
-                    __get('bulk_options'),
-                    'select-box-extra form-select'
-                ); ?>
-                <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>" />
-            </div>
-        </div>
+        <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -97,13 +67,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
-                    <?php } else { ?>
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
-                            </td>
-                        </tr>
-                    <?php } ?>
+                    <?php } else {
+                        osc_admin_table_empty(4, array(
+                            'icon'   => 'bi-person-badge',
+                            'title'  => __('No admins yet'),
+                            'text'   => __('Admins manage the whole panel; moderators only handle listings and stats.'),
+                            'action' => array(
+                                'label'   => __('Add admin'),
+                                'url'     => osc_admin_base_url(true) . '?page=admins&amp;action=add',
+                                'variant' => 'primary',
+                            ),
+                        ));
+                    } ?>
                 </tbody>
             </table>
             <div id="table-row-actions"></div><!-- used for table actions -->
@@ -111,50 +86,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </form>
 </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aAdmins');
-    echo '<ul class="showing-results"><li><span>'
-        . osc_pagination_showing(
-            (Params::getParam('iPage') - 1)
-                * $aData['iDisplayLength'] + 1,
-            ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-                + count($aData['aaData']),
-            $aData['iTotalDisplayRecords']
-        ) . '</span></li></ul>';
-}
+osc_admin_pagination($aData);
 
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
-?>
-<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="admins" />
-        <input type="hidden" name="action" value="delete" />
-        <input type="hidden" name="id[]" value="" />
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php _e('Delete admin'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this admin?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php _e('Delete'); ?></button>
-        </div>
-    </form>
-</dialog>
-<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-        <p class="osc-dialog-text"></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-    </div>
-</dialog>
+osc_admin_confirm_dialog(array(
+    'id'      => 'deleteModal',
+    'method'  => 'get',
+    'fields'  => array('page' => 'admins', 'action' => 'delete', 'id[]' => ''),
+    'title'   => __('Delete admin'),
+    'text'    => __('This removes the account from the admin panel. Their listings and the site itself are untouched.'),
+    'confirm' => __('Delete'),
+)); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
     function delete_dialog(id) {
         var deleteModal = document.getElementById('deleteModal');
@@ -163,17 +105,5 @@ osc_show_pagination_admin($aData);
         deleteModal.showModal();
         return false;
     }
-</script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-        var checkAll = document.getElementById('check_all');
-        if (checkAll) {
-            checkAll.addEventListener('change', function () {
-                document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                    cb.checked = checkAll.checked;
-                });
-            });
-        }
-    });
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

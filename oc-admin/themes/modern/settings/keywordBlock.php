@@ -10,43 +10,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
-              . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
-              . 'below before it does anything.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=keyword_block_add'; ?>"
-           class="text-success ms-1 float-end" title="<?php _e('Add new'); ?>">
-            <i class="bi bi-plus-circle-fill"></i>
-        </a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Keyword blocklist &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Keyword blocklist'),
+    'help'    => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
+                    . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
+                    . 'below before it does anything.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=settings&action=keyword_block_add',
+            'title' => __('Add new'),
+        ),
+    ),
+));
 
 //customize Head
 function customHead()
@@ -59,14 +36,6 @@ function customHead()
             var keywordDelete = document.getElementById('dialog-keyword-delete');
 
             // Select-all toggles every row checkbox.
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
 
             // Cancel buttons and a backdrop click close their <dialog>.
             document.querySelectorAll('[data-osc-dialog-close]').forEach(function (btn) {
@@ -133,7 +102,7 @@ $scopeOptions = array(
 
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Keyword blocklist'); ?></h2>
+    <?php osc_admin_page_head(__('Keyword blocklist')); ?>
 
     <div id="keyword-block-settings">
         <h3 class="render-title"><?php _e('Moderation'); ?></h3>
@@ -197,9 +166,7 @@ $scopeOptions = array(
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(); ?>
             </fieldset>
         </form>
     </div>
@@ -229,9 +196,9 @@ $scopeOptions = array(
                         </select>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" value="<?php echo osc_esc_html(__('Import')); ?>" class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Import'), 'type' => 'submit'),
+                )); ?>
             </fieldset>
         </form>
     </div>
@@ -241,12 +208,7 @@ $scopeOptions = array(
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
 
-            <div id="bulk-actions">
-                <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions('bulk_actions', 'action', __get('bulk_options'), 'select-box-extra'); ?>
-                    <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-                </div>
-            </div>
+            <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
             <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
@@ -269,13 +231,13 @@ $scopeOptions = array(
                                 <?php } ?>
                             </tr>
                         <?php } ?>
-                    <?php } else { ?>
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
-                            </td>
-                        </tr>
-                    <?php } ?>
+                    <?php } else {
+                        osc_admin_table_empty(count($columns), array(
+                            'icon'  => 'bi-chat-left-text',
+                            'title' => __('No blocked keywords yet'),
+                            'text'  => __('Add a keyword above, or import a list, to start quarantining matching listings.'),
+                        ));
+                    } ?>
                     </tbody>
                 </table>
                 <div id="table-row-actions"></div> <!-- used for table actions -->
@@ -283,42 +245,17 @@ $scopeOptions = array(
         </form>
     </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing(
-             (Params::getParam('iPage') - 1)
-                                  * $aData['iDisplayLength'] + 1,
-             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-                                  + count($aData['aRows']),
-             $aData['iTotalDisplayRecords'],
-             $aData['iTotalRecords']
-         )
-         . '</span></li></ul>';
-}
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
-    <dialog id="dialog-keyword-delete" class="osc-dialog osc-dialog-danger">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="keyword_block_delete"/>
-            <input type="hidden" name="id[]" value=""/>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <?php _e('Delete keyword'); ?>
-                </p>
-                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this keyword?'); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button id="keyword-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
-            </div>
-        </form>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+        'id'         => 'dialog-keyword-delete',
+        'method'     => 'get',
+        'fields'     => array('page' => 'settings', 'action' => 'keyword_block_delete', 'id[]' => ''),
+        'title'      => __('Delete keyword'),
+        'text'       => __('Listings already flagged by this keyword stay as they are; only future matching stops.'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'keyword-delete-submit',
+    )); ?>
     <dialog id="dialog-bulk-actions" class="osc-dialog">
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>

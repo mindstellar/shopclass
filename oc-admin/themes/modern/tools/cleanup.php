@@ -10,30 +10,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>' . __('Remove stale content in bulk — expired, unactivated, spam, blocked and '
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Cleanup'),
+    'help'    => __('Remove stale content in bulk — expired, unactivated, spam, blocked and '
                     . 'reported listings, and unactivated users. Choose what to clean and how old '
-                    . 'it must be, then run it now or let the daily task handle it.') . '</p>';
-}
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-function customPageTitle($string)
-{
-    return sprintf(__('Cleanup &raquo; %s'), $string);
-}
-osc_add_filter('admin_title', 'customPageTitle');
+                    . 'it must be, then run it now or let the daily task handle it.'),
+));
 
 // Rule metadata, in run order. `days` = whether the rule has an age threshold.
 $cleanup_rules = array(
@@ -52,12 +35,11 @@ if ($batch_limit < 1) {
 }
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Cleanup'); ?></h2>
+    <?php osc_admin_page_head(__('Cleanup')); ?>
 
     <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
         <input type="hidden" name="page" value="tools"/>
         <input type="hidden" name="action" value="cleanup_post"/>
-        <?php osc_csrf_token_form(); ?>
         <div class="widget-box">
             <div class="widget-box-content">
                 <div class="table-responsive">
@@ -169,19 +151,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php _e('Enabled rules also run automatically once a day.'); ?>
     </p>
 
-    <dialog id="cleanup-run-dialog" class="osc-dialog osc-dialog-danger">
-        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="tools"/>
-            <input type="hidden" name="action" value="cleanup_run"/>
-            <?php osc_csrf_token_form(); ?>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php _e('Run cleanup now?'); ?></p>
-                <p class="osc-dialog-text"><?php _e("This permanently deletes the matching listings and users for every enabled rule (up to the per-run limit). This can't be undone."); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button type="submit" class="btn btn-danger btn-sm"><?php _e('Delete matching items'); ?></button>
-            </div>
-        </form>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+            'id'      => 'cleanup-run-dialog',
+            'method'  => 'post',
+            'fields'  => array('page' => 'tools', 'action' => 'cleanup_run'),
+            'title'   => __('Run cleanup now?'),
+            'text'    => __("This permanently deletes the matching listings and users for every enabled rule (up to the per-run limit). This can't be undone."),
+            'confirm' => __('Delete matching items'),
+        )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

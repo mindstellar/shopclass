@@ -45,15 +45,6 @@
   transform: translateY(-50%);
 }
 
-// `.separate-top` sets margin-block-start, but `.render-title`'s `margin: 0 0 20px`
-// shorthand is declared later at equal specificity and zeroes it again — so a section
-// heading asking for the 40px gap silently got none. (`h3.separate-top` carries an
-// element selector and always won, which is why only the h2 headings looked wrong —
-// this makes both levels behave the same.)
-.render-title.separate-top {
-  margin-block-start: 40px;
-}
-
 .panel-subtitle {
   color: var(--osc-ink-muted);
   margin-block-end: 1rem;
@@ -181,6 +172,20 @@
   flex-wrap: wrap;
   gap: .5rem 1rem;
   margin-block-end: 1rem;
+}
+
+// Controls that belong together inside a toolbar — a set of filters on one side,
+// away from whatever sits on the other.
+.osc-toolbar-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  // A form-select is width:100% by default, which would make every filter stretch.
+  .form-select {
+    width: auto;
+  }
 }
 
 .osc-toolbar-between {

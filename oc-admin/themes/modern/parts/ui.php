@@ -686,6 +686,54 @@ if (!function_exists('osc_admin_bulk_confirm_dialog')) {
     }
 }
 
+if (!function_exists('osc_admin_per_page')) {
+    /**
+     * The "how many rows" select that sits above a list.
+     *
+     * Submits on change and carries every other GET parameter through as hidden inputs, so
+     * changing the page size keeps the filter, sort and search the admin already set. The
+     * form is marked `nocsrf`: it is a GET navigation, and the shutdown injector would
+     * otherwise put a token in the query string of every link.
+     *
+     * Keys: 'label' => a printf format taking the count (e.g. "%d listings"),
+     *       'options' => int[], 'name' => query parameter (default iDisplayLength),
+     *       'current' => the page size actually in effect.
+     *
+     * Pass `current`. Without it the select falls back to the request parameter, which is
+     * absent on a first visit -- so the browser shows the first option while the
+     * controller is using its own default, and the control states a number that is not
+     * the one on screen.
+     *
+     * @param array $opts
+     */
+    function osc_admin_per_page(array $opts = array())
+    {
+        $name    = $opts['name'] ?? 'iDisplayLength';
+        $options = $opts['options'] ?? array(10, 25, 50, 100, 250, 500);
+        $label   = $opts['label'] ?? __('%d per page');
+        $current = (int) ($opts['current'] ?? Params::getParam($name) ?: 0); ?>
+        <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>" class="inline nocsrf">
+            <?php foreach (Params::getParamsAsArray('get') as $key => $value) {
+                if ($key === $name || is_array($value)) {
+                    continue;
+                } ?>
+                <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
+                       value="<?php echo osc_esc_html($value); ?>"/>
+            <?php } ?>
+            <label class="visually-hidden" for="osc-per-page"><?php _e('Rows per page'); ?></label>
+            <select id="osc-per-page" name="<?php echo osc_esc_html($name); ?>"
+                    class="form-select form-select-sm" onchange="this.form.submit();">
+                <?php foreach ($options as $n) { ?>
+                    <option value="<?php echo (int) $n; ?>"<?php echo $current === (int) $n ? ' selected' : ''; ?>>
+                        <?php printf($label, (int) $n); ?>
+                    </option>
+                <?php } ?>
+            </select>
+        </form>
+        <?php
+    }
+}
+
 if (!function_exists('osc_admin_pagination')) {
     /**
      * The range line and page controls under a DataTables-shaped list.

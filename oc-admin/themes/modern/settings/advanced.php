@@ -34,69 +34,19 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Change advanced configuration of your Shopclass. "
-              . "<strong>Be careful</strong> when modifying default values if you're not sure what you're doing!")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Advanced Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Advanced Settings'),
+    'help'    => __("Change advanced configuration of your Shopclass. "
+                    . "<strong>Be careful</strong> when modifying default values if you're not sure what you're doing!"),
+));
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="general-settings">
-        <?php
-        $cache_type = Object_Cache_Factory::newInstance()->_get_cache();
-if ($cache_type !== 'default') { ?>
-            <!--    Cache flush    -->
-            <h2 class="render-title"><?php _e('Flush cache'); ?></h2>
-            <form id="cache_flush" name="cache_flush" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                <input type="hidden" name="page" value="settings"/>
-                <input type="hidden" name="action" value="advanced_cache_flush"/>
-                <fieldset>
-                    <div class="form-horizontal">
-                        <div class="form-row">
-                            <div class="form-label"><?php _e('Flush cache'); ?></div>
-                            <div class="form-controls"><input type="submit"
-                                                              value="<?php echo osc_esc_html(__('Flush cache')); ?>"
-                                                              class="btn btn-submit"/>
-                                <div class="help-box"><?php _e('Remove all data from cache.'); ?>
-                                    <b><?php echo $cache_type; ?></b></div>
-                            </div>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-        <?php } ?>
-        <h2 class="render-title"><?php _e('Advanced Settings'); ?></h2>
+        <?php osc_admin_page_head(__('Advanced Settings')); ?>
         <ul id="error_list"></ul>
         <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
@@ -140,10 +90,7 @@ if ($cache_type !== 'default') { ?>
                         </div>
                     </div>
                     <div class="clear"></div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(); ?>
                 </div>
             </fieldset>
         </form>

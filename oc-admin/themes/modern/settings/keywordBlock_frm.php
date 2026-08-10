@@ -35,14 +35,9 @@ function customFrmText()
     return $return;
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => __('Settings'),
+));
 
 /**
  * @param $string
@@ -61,7 +56,7 @@ osc_add_filter('admin_title', 'customPageTitle');
 $aux = customFrmText();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php echo osc_esc_html($aux['title']); ?></h2>
+<?php osc_admin_page_head($aux['title']); ?>
 <div class="settings-user">
     <ul id="error_list"></ul>
     <form name="keyword_block_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">

@@ -10,29 +10,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>' . __('A record of admin and listing activity — who did what, and when. '
-                    . 'Use the settings below to keep it pruned automatically or turn it off entirely.') . '</p>';
-}
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-function customPageTitle($string)
-{
-    return sprintf(__('Activity log &raquo; %s'), $string);
-}
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Activity log'),
+    'help'    => __('A record of admin and listing activity — who did what, and when. '
+                    . 'Use the settings below to keep it pruned automatically or turn it off entirely.'),
+));
 
 $aData      = __get('aData');
 $sections   = __get('sections');
@@ -48,14 +31,13 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Activity log'); ?></h2>
+    <?php osc_admin_page_head(__('Activity log')); ?>
 
     <div id="log-settings">
         <h3 class="render-title"><?php _e('Logging'); ?></h3>
         <form name="log_settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="tools"/>
             <input type="hidden" name="action" value="logs_settings_post"/>
-            <?php osc_csrf_token_form(); ?>
             <fieldset class="form-horizontal">
                 <div class="form-row">
                     <div class="form-label"><?php _e('Record activity'); ?></div>
@@ -83,9 +65,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(); ?>
             </fieldset>
         </form>
     </div>
@@ -137,57 +117,40 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <?php } ?>
                         </tr>
                     <?php } ?>
-                <?php } else { ?>
-                    <tr>
-                        <td colspan="<?php echo count($columns); ?>" class="empty-listings text-center">
-                            <?php if ($hasFilter) { ?>
-                                <p><?php _e('No entries match your filter.'); ?></p>
-                                <a class="btn btn-secondary btn-sm"
-                                   href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
-                            <?php } else { ?>
-                                <p><?php _e('No activity has been logged yet.'); ?></p>
-                            <?php } ?>
-                        </td>
-                    </tr>
-                <?php } ?>
+                <?php } elseif ($hasFilter) {
+                    osc_admin_table_empty(count($columns), array(
+                        'icon'   => 'bi-search',
+                        'title'  => __('No entries match your filter.'),
+                        'action' => array(
+                            'label'   => __('Reset'),
+                            'url'     => osc_admin_base_url(true) . '?page=tools&amp;action=logs',
+                            'variant' => 'secondary',
+                        ),
+                    ));
+                } else {
+                    osc_admin_table_empty(count($columns), array(
+                        'icon'  => 'bi-clock-history',
+                        'title' => __('No activity has been logged yet.'),
+                    ));
+                } ?>
                 </tbody>
             </table>
             <div id="table-row-actions"></div>
         </div>
     </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing(
-             (Params::getParam('iPage') - 1) * $aData['iDisplayLength'] + 1,
-             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength']) + count($aData['aRows']),
-             $aData['iTotalDisplayRecords'],
-             $aData['iTotalRecords']
-         )
-         . '</span></li></ul>';
-}
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
     <div class="form-actions">
         <button type="button" class="btn btn-danger btn-sm" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
     </div>
 
-    <dialog id="logs-clear-dialog" class="osc-dialog osc-dialog-danger">
-        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="tools"/>
-            <input type="hidden" name="action" value="logs_clear"/>
-            <?php osc_csrf_token_form(); ?>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php _e('Clear the activity log?'); ?></p>
-                <p class="osc-dialog-text"><?php _e("This permanently deletes every log entry. This can't be undone."); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button type="submit" class="btn btn-danger btn-sm"><?php _e('Delete all entries'); ?></button>
-            </div>
-        </form>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+        'id'      => 'logs-clear-dialog',
+        'method'  => 'post',
+        'fields'  => array('page' => 'tools', 'action' => 'logs_clear'),
+        'title'   => __('Clear the activity log?'),
+        'text'    => __("This permanently deletes every log entry. This can't be undone."),
+        'confirm' => __('Delete all entries'),
+    )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

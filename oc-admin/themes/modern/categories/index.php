@@ -19,42 +19,24 @@ osc_enqueue_script('admin-categories');
 
 $categories = __get('categories');
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Add, edit or delete the categories in which users post listings. Drag a row by its handle to '
-              . 'reorder it, or drop it onto another category to nest it as a subcategory.')
-         . '</p>';
-    echo '<p>'
-         . __('Deleting a category also deletes every listing filed under it and its subcategories.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box"
-           data-bs-toggle="collapse"></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Categories &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+// Same URL the empty state offers; built here because the header registration runs
+// before the page body.
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Categories'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => $add_url,
+            'title' => __('Add category'),
+        ),
+    ),
+    'help'    => static function () { ?>
+        <p><?php _e('Add, edit or delete the categories in which users post listings. Drag a row by its handle to '
+                    . 'reorder it, or drop it onto another category to nest it as a subcategory.'); ?></p>
+        <p><?php _e('Deleting a category also deletes every listing filed under it and its subcategories.'); ?></p>
+    <?php },
+));
 
 /**
  * One tree node: the row (handle, disclosure, name, counts, status, actions)
@@ -155,7 +137,7 @@ function drawCategory($category)
 $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Categories'); ?></h2>
+    <?php osc_admin_page_head(__('Categories')); ?>
 
     <div class="categories-app"
          data-edit-url="<?php echo osc_esc_html(osc_admin_base_url(true)
@@ -185,23 +167,21 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
         <div class="cat-toolbar">
             <button type="button" class="cat-tool-btn" data-cat-act="expand-all"><?php _e('Expand all'); ?></button>
             <button type="button" class="cat-tool-btn" data-cat-act="collapse-all"><?php _e('Collapse all'); ?></button>
-            <div class="cat-toolbar-spacer"></div>
-            <a class="btn btn-primary btn-sm" href="<?php echo $add_url; ?>">
-                <i class="bi bi-plus-lg"></i> <?php _e('Add category'); ?>
-            </a>
         </div>
 
         <?php if (empty($categories)) { ?>
-            <div class="cat-empty">
-                <i class="bi bi-diagram-3"></i>
-                <p class="cat-empty-title"><?php _e('No categories yet'); ?></p>
-                <p class="cat-empty-hint">
-                    <?php _e('Categories are the sections people browse and file listings under. Add your first one to get started.'); ?>
-                </p>
-                <a class="btn btn-primary btn-sm" href="<?php echo $add_url; ?>">
-                    <i class="bi bi-plus-lg"></i> <?php _e('Add category'); ?>
-                </a>
-            </div>
+            <?php osc_admin_empty(array(
+                'icon'   => 'bi-diagram-3',
+                'title'  => __('No categories yet'),
+                'text'   => __('Categories are the sections people browse and file listings under. '
+                               . 'Add your first one to get started.'),
+                'action' => array(
+                    'label'   => __('Add category'),
+                    'url'     => $add_url,
+                    'icon'    => 'bi-plus-lg',
+                    'variant' => 'primary',
+                ),
+            )); ?>
         <?php } else { ?>
             <ul class="cat-tree">
                 <?php foreach ($categories as $category) {

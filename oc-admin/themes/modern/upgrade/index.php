@@ -13,13 +13,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?></h1>
-    <?php
-}
+osc_admin_page(array(
+    'section' => __('Tools'),
+));
 
 /**
  * @param $string
@@ -128,7 +124,7 @@ function upgradeReleaseNotes()
 osc_current_admin_theme_path('parts/header.php'); ?>
 
 <div id="backup-settings">
-    <h2 class="render-title"><?php _e('Upgrade'); ?></h2>
+    <?php osc_admin_page_head(__('Upgrade')); ?>
     <div id="result">
         <div id="output" style="display:none">
             <span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>
@@ -160,7 +156,7 @@ if (!empty($whatsNew)) {
     <section class="whatsnew" aria-labelledby="whatsnew-title">
         <header class="whatsnew-head">
             <div>
-                <h2 id="whatsnew-title" class="whatsnew-heading"><?php _e("What's new"); ?></h2>
+                <h3 id="whatsnew-title" class="whatsnew-heading"><?php _e("What's new"); ?></h3>
                 <p class="whatsnew-sub">
                     <?php printf(__('Highlights from %s'), osc_esc_html($release['label'])); ?>
                 </p>

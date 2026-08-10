@@ -24,46 +24,17 @@ function render_offset()
 }
 
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Show a "Site in maintenance mode" message to your users while you\'re updating your site or modifying its configuration.')
-         . '</p>';
-}
-
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Maintenance &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Maintenance'),
+    'help'    => __('Show a "Site in maintenance mode" message to your users while you\'re updating your site or modifying its configuration.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-setting">
     <!-- settings form -->
     <div id="backup-settings">
-        <h2 class="render-title"><?php _e('Maintenance'); ?></h2>
+        <?php osc_admin_page_head(__('Maintenance')); ?>
         <form>
             <fieldset>
                 <div class="form-horizontal">

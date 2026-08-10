@@ -14,44 +14,23 @@
  */
 $aCountries = __get('aCountries');
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
-              . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
-              . "until they're recalculated. Modify only if you're sure what you're doing!")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a id="b_import" class="ms-1 text-success float-end" href="#" title="<?php _e('Import new'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Locations &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Locations'),
+    'help'    => __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
+                    . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
+                    . "until they're recalculated. Modify only if you're sure what you're doing!"),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => '#',
+            'title' => __('Import new'),
+            'attrs' => array('id' => 'b_import'),
+        ),
+    ),
+));
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <!-- container -->
-    <h1 class="render-title"><?php _e('Locations'); ?></h1>
-    <!-- grid close -->
+    <?php osc_admin_page_head(__('Locations')); ?>
     <!-- settings form -->
     <div id="settings_form" class="locations">
         <div class="row g-1">
@@ -144,7 +123,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
             <div class="osc-dialog-actions">
                 <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button class="btn btn-primary btn-sm" type="submit"><?php echo __('Delete'); ?></button>
+                <button class="btn btn-submit btn-sm" type="submit"></button>
             </div>
         </form>
     </dialog>

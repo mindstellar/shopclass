@@ -48,19 +48,16 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=currencies&type=add'; ?>"
-           class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=settings&action=currencies&type=add',
+            'title' => __('Add'),
+        ),
+    ),
+));
 
 $typeForm = __get('typeForm');
 /**
@@ -102,7 +99,7 @@ $aCurrency = View::newInstance()->_get('aCurrency');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="add-currency-settings">
-        <h2 class="render-title"><?php echo customText('title'); ?></h2>
+        <?php osc_admin_page_head(customText('title')); ?>
         <ul id="error_list"></ul>
         <form name="currency_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>

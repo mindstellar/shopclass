@@ -108,7 +108,7 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php osc_admin_definition($rows); ?>
             <?php osc_admin_panel_close(); ?>
 
-            <h3 class="render-title separate-top"><?php _e('Credit movements'); ?></h3>
+            <h3 class="render-title"><?php _e('Credit movements'); ?></h3>
             <?php if (empty($entries)) {
                 osc_admin_empty(array(
                     'icon'  => 'bi-arrow-left-right',

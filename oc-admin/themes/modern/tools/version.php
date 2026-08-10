@@ -14,20 +14,16 @@
  */
 
 
-$customPageHeader = static function () { ?>
-    <h1><?php printf(__('Shopclass %s'), OSCLASS_VERSION); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-    </h1>
-    <?php
-};
-osc_add_hook('admin_page_header', $customPageHeader);
+osc_admin_page(array(
+    'section' => static fn () => sprintf(__('Shopclass %s'), OSCLASS_VERSION),
+));
 
 $customPageTitle = static function ($string) {
     return sprintf(__('Shopclass %s &raquo; %s'), OSCLASS_VERSION, $string);
 };
 osc_add_filter('admin_title', $customPageTitle);
 
-unset($customPageTitle, $customPageHeader);
+unset($customPageTitle);
 
 osc_current_admin_theme_path('parts/header.php');
 ?>

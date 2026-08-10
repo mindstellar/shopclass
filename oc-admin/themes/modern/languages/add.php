@@ -13,29 +13,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?></h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Add language &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Add language'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div class="appearance">
-    <h2 class="render-title"><?php _e('Add language'); ?></h2>
+    <?php osc_admin_page_head(__('Add language')); ?>
     <div id="upload-language">
         <div class="form-horizontal">
             <?php if (is_writable(osc_translations_path())) { ?>
@@ -50,9 +35,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-label-checkbox"><input type="file" name="package" id="package"/></div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(__('Upload')); ?></button>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Upload'), 'type' => 'submit', 'variant' => 'primary'),
+                    )); ?>
                 </form>
             <?php } else { ?>
                 <div class="flashmessage flashmessage-error">

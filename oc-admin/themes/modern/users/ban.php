@@ -13,43 +13,23 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Add, edit or delete ban rules. Keep in mind that ban rules prevent users to register, publish or comment on listings.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=settings'; ?>"
-           class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=create_ban_rule'; ?>"
-           class="text-success ms-1 float-end" title="<?php _e('Add new'); ?>">
-            <i class="bi bi-plus-circle-fill"></i>
-        </a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Manage ban rules &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Users'),
+    'title'   => __('Manage ban rules'),
+    'help'    => __('Add, edit or delete ban rules. Keep in mind that ban rules prevent users to register, publish or comment on listings.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
+            'title' => __('Add new'),
+        ),
+        array(
+            'icon'  => 'bi-gear-fill',
+            'url'   => osc_admin_base_url(true) . '?page=users&action=settings',
+            'title' => __('Settings'),
+        ),
+    ),
+));
 
 //customize Head
 function customHead()
@@ -62,14 +42,6 @@ function customHead()
             var banDelete = document.getElementById('dialog-ban-delete');
 
             // Select-all toggles every row checkbox.
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
 
             // Cancel buttons and a backdrop click close their <dialog>.
             document.querySelectorAll('[data-osc-dialog-close]').forEach(function (btn) {
@@ -128,22 +100,12 @@ $rows    = $aData['aRows'];
 
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Manage ban rules'); ?></h2>
+    <?php osc_admin_page_head(__('Manage ban rules')); ?>
     <div class="relative">
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
 
-            <div id="bulk-actions">
-                <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions(
-                        'bulk_actions',
-                        'action',
-                        __get('bulk_options'),
-                        'select-box-extra'
-                    ); ?>
-                    <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-                </div>
-            </div>
+            <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
             <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
@@ -167,11 +129,16 @@ $rows    = $aData['aRows'];
                             </tr>
                         <?php } ?>
                     <?php } else { ?>
-                        <tr>
-                            <td colspan="5" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
-                            </td>
-                        </tr>
+                        <?php osc_admin_table_empty(count($columns), array(
+                            'icon'   => 'bi-shield-slash',
+                            'title'  => __('No ban rules yet'),
+                            'text'   => __('Ban rules block registration, listings or comments matching an IP or e-mail pattern.'),
+                            'action' => array(
+                                'label'   => __('Add new'),
+                                'url'     => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
+                                'variant' => 'primary',
+                            ),
+                        )); ?>
                     <?php } ?>
                     </tbody>
                 </table>
@@ -180,42 +147,17 @@ $rows    = $aData['aRows'];
         </form>
     </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing(
-             (Params::getParam('iPage') - 1)
-                                  * $aData['iDisplayLength'] + 1,
-             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-                                  + count($aData['aRows']),
-             $aData['iTotalDisplayRecords'],
-             $aData['iTotalRecords']
-         )
-         . '</span></li></ul>';
-}
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
-    <dialog id="dialog-ban-delete" class="osc-dialog osc-dialog-danger">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="users"/>
-            <input type="hidden" name="action" value="delete_ban_rule"/>
-            <input type="hidden" name="id[]" value=""/>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <?php _e('Delete rule'); ?>
-                </p>
-                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this ban rule?'); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button id="ban-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
-            </div>
-        </form>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+        'id'         => 'dialog-ban-delete',
+        'method'     => 'get',
+        'fields'     => array('page' => 'users', 'action' => 'delete_ban_rule', 'id[]' => ''),
+        'title'      => __('Delete rule'),
+        'text'       => __('Users, listings and comments matching this rule will no longer be blocked.'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'ban-delete-submit',
+    )); ?>
     <dialog id="dialog-bulk-actions" class="osc-dialog">
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>

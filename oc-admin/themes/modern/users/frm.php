@@ -44,14 +44,9 @@ function customFrmText()
     return $return;
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => __('Users'),
+));
 
 /**
  * @param $string
@@ -175,7 +170,7 @@ $aux = customFrmText();
         <div class="row">
             <div class="col">
                 <div class="row-wrapper">
-                    <h2 class="render-title"><?php echo $aux['title']; ?></h2>
+                    <?php osc_admin_page_head($aux['title']); ?>
                 </div>
             </div>
             <div class="col">
@@ -356,9 +351,9 @@ $aux = customFrmText();
                                 } ?>
 
                                 <div class="clear"></div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-submit"><?php echo osc_esc_html($aux['btn_text']); ?></button>
-                                </div>
+                                <?php osc_admin_form_actions(array(
+                                    array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary'),
+                                )); ?>
                             </div>
                         </fieldset>
                     </form>

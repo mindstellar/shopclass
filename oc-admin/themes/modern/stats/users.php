@@ -41,38 +41,12 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Stay up-to-date on the number of users registered on your site. You can also see a breakdown of the '
-              . 'countries and regions where users live among those available on your site.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Statistics'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('User Statistics &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Statistics'),
+    'title'   => __('User Statistics'),
+    'help'    => __('Stay up-to-date on the number of users registered on your site. You can also see a breakdown of the '
+                    . 'countries and regions where users live among those available on your site.'),
+));
 
 function customHead()
 {
@@ -158,35 +132,26 @@ osc_add_hook('admin_header', 'customHead', 10);
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <div class="row g-3 align-items-center mb-1">
-        <div class="col-md-6">
-            <h2 class="render-title mb-0"><?php _e('User Statistics'); ?></h2>
-        </div>
-        <div class="col-md-6 text-md-end">
-            <div class="btn-group btn-group-sm">
-                <?php
-                $comments_stats_intervals = ['month', 'week', 'day'];
-if (!$type) {
-    $type = 'day';
-}
-foreach ($comments_stats_intervals as $k => $v) {
-    echo '<a id="' . $v . '" class="btn btn-outline-primary';
-    if ($type === $v) {
-        echo ' active';
-    }
-    echo '" href="' . osc_admin_base_url(true) . '?page=stats&amp;action=users&amp;type_stat=' . $v . '">';
-    if ($v === 'month') {
-        echo __('Last 10 months');
-    } elseif ($v === 'week') {
-        echo __('Last 10 weeks');
-    } elseif ($v === 'day') {
-        echo __('Last 10 days');
-    }
-    echo '</a>';
-} ?>
-            </div>
-        </div>
-    </div>
+<?php
+$stats_ranges = array(
+    'month' => __('Last 10 months'),
+    'week'  => __('Last 10 weeks'),
+    'day'   => __('Last 10 days'),
+);
+$active_range = $type ?: 'day';
+osc_admin_page_head(__('User Statistics'), array(), array(
+    'actions_html' => static function () use ($stats_ranges, $active_range) {
+        $links = array();
+        foreach ($stats_ranges as $key => $label) {
+            $links[] = array(
+                'label'  => $label,
+                'url'    => osc_admin_base_url(true) . '?page=stats&amp;action=users&amp;type_stat=' . $key,
+                'active' => $active_range === $key,
+            );
+        }
+        osc_admin_link_group($links);
+    },
+)); ?>
     <div class="row g-3" id="stats-page">
         <div class="col-md-6">
             <div class="widget-box">

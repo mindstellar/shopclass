@@ -53,7 +53,7 @@ $gateways       = __get('gateways');
         </fieldset>
     </form>
 
-    <?php osc_admin_page_head(__('Payment methods'), array(), array('class' => 'separate-top'));
+    <?php osc_admin_page_head(__('Payment methods'));
 
     if (empty($gateways)) {
         osc_admin_empty(array(

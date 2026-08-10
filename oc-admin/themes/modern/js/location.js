@@ -422,7 +422,7 @@ function deleteMultipleLocations(type) {
     }
 
     // toggle locationModal
-    toggleLocationModal(stringDeleteTitle, "", stringDelete);
+    toggleLocationModal(stringDeleteTitle, "", stringDelete, true);
 
     // Create form body from formInputs array using getHiddenInputs
     let hiddenInputs = getHiddenInputs(formInputs);
@@ -634,7 +634,8 @@ function deleteLocations(element, editType) {
     toggleLocationModal(
         stringDelete + editType,
         "",
-        stringDelete
+        stringDelete,
+        true
     );
     // Create form body from formInputs array using getHiddenInputs
     let hiddenInputs = getHiddenInputs(formInputs);
@@ -665,12 +666,19 @@ function fetchData(url, credentials = null) {
     });
 }
 
-// Toggle location modal with given title,body and submit button title
-function toggleLocationModal(title, body, submitTitle) {
+// Toggle location modal with given title, body and submit button title.
+// The dialog is shared by add, edit and delete, so the submit button has to take the
+// tone of whichever action opened it — a delete that confirms through a brand-coloured
+// button reads as routine, and deleting a country cascades.
+function toggleLocationModal(title, body, submitTitle, destructive) {
     let locationModal = document.getElementById("locationModal");
+    let submit = locationModal.querySelector("button[type='submit']");
     locationModal.querySelector(".osc-dialog-content").textContent = body;
     locationModal.querySelector(".osc-dialog-title").textContent = title;
-    locationModal.querySelector("button[type='submit']").textContent = submitTitle;
+    submit.textContent = submitTitle;
+    submit.classList.toggle("btn-danger", !!destructive);
+    submit.classList.toggle("btn-submit", !destructive);
+    locationModal.classList.toggle("osc-dialog-danger", !!destructive);
     locationModal.showModal();
 }
 

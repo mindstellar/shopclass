@@ -191,6 +191,41 @@ input.btn-mini {
 // Primary submit is Workshop Bronze — the one action the owner came to do. Written with
 // var(--osc-bronze)/--osc-ink-inverse (not @extend .btn-primary) so the fill lightens under
 // data-bs-theme="dark"; Bootstrap compiles .btn-primary to a frozen light-mode hex.
+// Bootstrap compiles .btn-primary's fill from the Sass $primary at build time, so it froze
+// at the light-mode teal and stayed there under data-bs-theme="dark" — two different teals
+// on one screen wherever a .btn-primary sat beside a .btn-submit. Re-pointing the same
+// custom properties .btn-secondary already overrides fixes it once, for admin templates and
+// for third-party plugins that reach for the Bootstrap class without knowing about ours.
+.btn-primary {
+  --#{$prefix}btn-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-bg: var(--osc-bronze);
+  --#{$prefix}btn-border-color: var(--osc-bronze);
+  --#{$prefix}btn-hover-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-hover-bg: var(--osc-bronze-deep);
+  --#{$prefix}btn-hover-border-color: var(--osc-bronze-deep);
+  --#{$prefix}btn-active-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-active-bg: var(--osc-bronze-deep);
+  --#{$prefix}btn-active-border-color: var(--osc-bronze-deep);
+  --#{$prefix}btn-disabled-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-disabled-bg: var(--osc-bronze);
+  --#{$prefix}btn-disabled-border-color: var(--osc-bronze);
+  --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
+}
+
+.btn-outline-primary {
+  --#{$prefix}btn-color: var(--osc-bronze);
+  --#{$prefix}btn-border-color: var(--osc-bronze);
+  --#{$prefix}btn-hover-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-hover-bg: var(--osc-bronze);
+  --#{$prefix}btn-hover-border-color: var(--osc-bronze);
+  --#{$prefix}btn-active-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-active-bg: var(--osc-bronze);
+  --#{$prefix}btn-active-border-color: var(--osc-bronze);
+  --#{$prefix}btn-disabled-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-border-color: var(--osc-rule-strong);
+  --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
+}
+
 .btn-submit {
   background-color: var(--osc-bronze);
   border-color: var(--osc-bronze);

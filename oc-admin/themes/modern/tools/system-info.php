@@ -137,34 +137,12 @@ if (!function_exists('oscsi_row')) {
     }
 }
 
-function addHelp()
-{
-    echo '<p>' . __('A checked view of the environment Shopclass is running on: what it needs, what it can and cannot do, and where a quiet misconfiguration would bite.') . '</p>';
-}
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('System info'),
+    'help'    => __('A checked view of the environment Shopclass is running on: what it needs, what it can and cannot do, and where a quiet misconfiguration would bite.'),
+));
 
-
-osc_add_hook('help_box', 'addHelp');
-function customPageHeader()
-{
-    ?>
-    <h1>
-        <?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function customPageTitle($string)
-{
-    return sprintf(__('System info &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
 osc_current_admin_theme_path('parts/header.php');
 
 $infoType     = Params::getParam('info-type');
@@ -173,7 +151,7 @@ $phpInfoUrl   = osc_admin_base_url(true) . '?' . http_build_query(array('page' =
 $settingsUrl  = osc_admin_base_url(true) . '?page=settings';
 $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
 ?>
-    <h2 class="render-title"><?php _e('System info'); ?></h2>
+    <?php osc_admin_page_head(__('System info')); ?>
     <div id="system-info">
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">

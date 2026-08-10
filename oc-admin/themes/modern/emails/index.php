@@ -13,45 +13,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Modify the emails your site's users receive when they join your site,"
-              . " when someone shows interest in their ad, to recover their password... "
-              . "<strong>Be careful</strong>: don't modify any of the words that appear within brackets.")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Email templates &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Email templates'),
+    'help'    => __("Modify the emails your site's users receive when they join your site,"
+                    . " when someone shows interest in their ad, to recover their password... "
+                    . "<strong>Be careful</strong>: don't modify any of the words that appear within brackets."),
+));
 
 $aData = __get('aEmails');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Emails templates'); ?></h2>
+    <?php osc_admin_page_head(__('Emails templates')); ?>
     <div id="email-templates" class="table-contains-actions">
         <table class="table" cellpadding="0" cellspacing="0">
             <thead>
@@ -73,17 +46,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </tr>
                 <?php } ?>
             <?php } else { ?>
-                <tr>
-                    <td colspan="6" class="text-center">
-                        <p><?php _e('No data available in table'); ?></p>
-                    </td>
-                </tr>
+                <?php osc_admin_table_empty(2, array(
+                    'icon'  => 'bi-envelope',
+                    'title' => __('No email templates'),
+                    'text'  => __('Email templates are registered by the core and by installed plugins.'),
+                )); ?>
             <?php } ?>
             </tbody>
         </table>
         <div id="table-row-actions"></div> <!-- used for table actions -->
     </div>
 <?php
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

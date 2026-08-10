@@ -75,42 +75,16 @@ $storage_js = static function () use ($providers) {
 
 osc_add_hook('admin_footer', $storage_js, 10);
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Configure S3-compatible object storage for listing images. When enabled, uploads are moved to your '
-              . 'bucket by the background storage queue; the local disk stays the default until you switch it on.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Storage Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Storage Settings'),
+    'help'    => __('Configure S3-compatible object storage for listing images. When enabled, uploads are moved to your '
+                    . 'bucket by the background storage queue; the local disk stays the default until you switch it on.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="storage-settings">
-        <h2 class="render-title"><?php _e('Storage Settings'); ?></h2>
+        <?php osc_admin_page_head(__('Storage Settings')); ?>
 
         <?php if ($betterS3Active) { ?>
             <div class="flashmessage flashmessage-error">
@@ -244,16 +218,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                     <div class="clear"></div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(); ?>
                 </div>
             </fieldset>
         </form>
 
         <div class="form-horizontal">
-            <h2 class="render-title"><?php _e('Connection test'); ?></h2>
+            <?php osc_admin_page_head(__('Connection test')); ?>
             <div class="form-row">
                 <div class="form-controls">
                     <p><?php _e('Runs a small write/read/delete probe against the saved connection settings above.'); ?></p>
@@ -265,7 +236,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
             </div>
 
-            <h2 class="render-title"><?php _e('Storage queue'); ?></h2>
+            <?php osc_admin_page_head(__('Storage queue')); ?>
             <div class="form-row">
                 <div class="form-controls">
                     <p>
@@ -297,34 +268,28 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
             </div>
 
-            <h2 class="render-title"><?php _e('Migration'); ?></h2>
+            <?php osc_admin_page_head(__('Migration')); ?>
             <div class="form-row">
                 <div class="form-controls">
                     <p><?php _e('Backfill existing images between local disk and remote storage. Each action queues '
                                  . 'jobs processed by the storage queue above (or by cron) rather than running immediately.'); ?></p>
 
-                    <form name="storage_offload_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
-                          onsubmit="return confirm('<?php echo osc_esc_js(__('Queue every local image for upload to remote storage?')); ?>');">
+                    <form name="storage_offload_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
                         <input type="hidden" name="page" value="settings"/>
                         <input type="hidden" name="action" value="storage_migrate_post"/>
                         <input type="hidden" name="op" value="offload_all"/>
-                        <input type="submit"
-                               value="<?php echo osc_esc_html(__('Offload all local images to remote storage')); ?>"
-                               class="btn btn-dim"/>
+                        <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-offload-dialog"><?php echo osc_esc_html(__('Offload all local images to remote storage')); ?></button>
                     </form>
                     <div class="help-box">
                         <?php _e('Backfills every image still on local disk to the active remote storage backend. '
                                  . 'Existing images are queued for upload; new uploads are already handled automatically.'); ?>
                     </div>
 
-                    <form name="storage_restore_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
-                          onsubmit="return confirm('<?php echo osc_esc_js(__('Download every remote image back to local disk?')); ?>');">
+                    <form name="storage_restore_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
                         <input type="hidden" name="page" value="settings"/>
                         <input type="hidden" name="action" value="storage_migrate_post"/>
                         <input type="hidden" name="op" value="restore_all"/>
-                        <input type="submit"
-                               value="<?php echo osc_esc_html(__('Download all remote images back to local (offline copy)')); ?>"
-                               class="btn btn-dim"/>
+                        <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-restore-dialog"><?php echo osc_esc_html(__('Download all remote images back to local (offline copy)')); ?></button>
                     </form>
                     <div class="help-box">
                         <?php _e('Brings every remote image back to local disk and switches it back to local storage. '
@@ -332,14 +297,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </div>
 
                     <?php if ($betterS3Configured) { ?>
-                        <form name="storage_adopt_better_s3_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
-                              onsubmit="return confirm('<?php echo osc_esc_js(__('Import your Better S3 settings and adopt images already in that bucket?')); ?>');">
+                        <form name="storage_adopt_better_s3_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
                             <input type="hidden" name="page" value="settings"/>
                             <input type="hidden" name="action" value="storage_migrate_post"/>
                             <input type="hidden" name="op" value="adopt_better_s3"/>
-                            <input type="submit"
-                                   value="<?php echo osc_esc_html(__('Adopt existing Better S3 images')); ?>"
-                                   class="btn btn-dim"/>
+                            <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-adopt-dialog"><?php echo osc_esc_html(__('Adopt existing Better S3 images')); ?></button>
                         </form>
                         <div class="help-box">
                             <?php _e('Imports your Better S3 connection settings and marks images already uploaded to that '
@@ -350,4 +312,35 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
         </div>
     </div>
+
+<?php
+osc_admin_confirm_dialog(array(
+    'id'      => 'storage-offload-dialog',
+    'tone'    => 'plain',
+    'fields'  => array('page' => 'settings', 'action' => 'storage_migrate_post', 'op' => 'offload_all'),
+    'title'   => __('Queue every local image for upload?'),
+    'text'    => __('Each image still on local disk is queued for upload to the active remote backend. '
+                    . 'The jobs run through the storage queue rather than immediately, and a local file is '
+                    . 'only dropped once its upload has succeeded.'),
+    'confirm' => __('Queue uploads'),
+));
+osc_admin_confirm_dialog(array(
+    'id'      => 'storage-restore-dialog',
+    'tone'    => 'plain',
+    'fields'  => array('page' => 'settings', 'action' => 'storage_migrate_post', 'op' => 'restore_all'),
+    'title'   => __('Download every remote image back to local disk?'),
+    'text'    => __('Each remote image is queued for download and switched back to local storage. '
+                    . 'Check this server has room for them first.'),
+    'confirm' => __('Queue downloads'),
+));
+osc_admin_confirm_dialog(array(
+    'id'      => 'storage-adopt-dialog',
+    'tone'    => 'plain',
+    'fields'  => array('page' => 'settings', 'action' => 'storage_migrate_post', 'op' => 'adopt_better_s3'),
+    'title'   => __('Import Better S3 settings?'),
+    'text'    => __('Your Better S3 configuration is copied into these settings and images already in that '
+                    . 'bucket are adopted as remote. Nothing in the bucket is moved or deleted.'),
+    'confirm' => __('Import settings'),
+));
+?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

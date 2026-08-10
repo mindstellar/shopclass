@@ -13,41 +13,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Add new currencies or edit existing currencies so users can publish listings in their country's currency.")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=currencies&type=add'; ?>"
-           class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Currencies &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Currencies'),
+    'help'    => __("Add new currencies or edit existing currencies so users can publish listings in their country's currency."),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=settings&action=currencies&type=add',
+            'title' => __('Add'),
+        ),
+    ),
+));
 
 $aCurrencies = __get('aCurrencies');
 
@@ -72,7 +49,7 @@ foreach ($aCurrencies as $currency) {
 }
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Currencies'); ?></h2>
+    <?php osc_admin_page_head(__('Currencies')); ?>
     <div class="relative">
         <div id="currencies-toolbar" class="table-toolbar">
         </div>
@@ -80,20 +57,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="page" value="settings"/>
             <input type="hidden" name="action" value="currencies"/>
             <input type="hidden" name="type" value="delete"/>
-            <div id="bulk-actions">
-                <div class="input-group input-group-sm">
-                    <select id="bulk_actions" name="bulk_actions" class="select-box-extra form-select">
-                        <option value=""><?php _e('Bulk actions'); ?></option>
-                        <option value="delete_all"
-                                data-dialog-content="<?php printf(
-                                    __('Are you sure you want to %s the selected currencies?'),
-                                    strtolower(__('Delete'))
-                                ); ?>"><?php _e('Delete'); ?>
-                        </option>
-                    </select> <input type="submit" id="bulk_apply" class="btn btn-primary"
-                                     value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-                </div>
-            </div>
+            <?php osc_admin_bulk_actions(array('options_html' => static function () { ?>
+                <select id="bulk_actions" name="bulk_actions" class="select-box-extra form-select">
+                    <option value=""><?php _e('Bulk actions'); ?></option>
+                    <option value="delete_all"
+                            data-dialog-content="<?php printf(
+                                __('Are you sure you want to %s the selected currencies?'),
+                                strtolower(__('Delete'))
+                            ); ?>"><?php _e('Delete'); ?>
+                    </option>
+                </select>
+            <?php })); ?>
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                 <tr>
@@ -127,46 +101,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </table>
         </form>
     </div>
-    <dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="currencies"/>
-            <input type="hidden" name="type" value="delete"/>
-            <input type="hidden" name="code" value=""/>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <?php _e('Delete currency'); ?>
-                </p>
-                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this currency?'); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php _e('Delete'); ?></button>
-            </div>
-        </form>
-    </dialog>
-    <dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-            <p class="osc-dialog-text"></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-        </div>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+        'id'         => 'deleteModal',
+        'method'     => 'get',
+        'fields'     => array('page' => 'settings', 'action' => 'currencies', 'type' => 'delete', 'code' => ''),
+        'title'      => __('Delete currency'),
+        'text'       => __('Listings priced in this currency keep their stored amount but lose a way to display it consistently.'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'deleteSubmit',
+    )); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
-        });
 
         function delete_dialog(id) {
             var deleteModal = document.getElementById("deleteModal");

@@ -43,26 +43,13 @@ foreach ($fields as $f) {
     $fieldsById[(int)$f['pk_i_id']] = $f;
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Build reusable forms by dragging fields from the palette on the right into a form on the left. '
-              . 'A field can be placed in any number of forms. Each form is attached to categories and renders '
-              . 'as a section on the listing form.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Forms'); ?>
-        <a href="#" class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
-    </h1>
-    <?php
-}
+osc_admin_page(array(
+    'section' => __('Forms'),
+    'title'   => __('Custom forms'),
+    'help'    => __('Build reusable forms by dragging fields from the palette on the right into a form on the left. '
+                    . 'A field can be placed in any number of forms. Each form is attached to categories and renders '
+                    . 'as a section on the listing form.'),
+));
 
 if (!function_exists('cfields_type_label')) {
     /**
@@ -171,8 +158,6 @@ if (!function_exists('cfields_form_cat_summary')) {
         return '<span class="form-card-cats">' . $label . '</span>';
     }
 }
-
-osc_add_hook('admin_page_header', 'customPageHeader');
 
 function customHead()
 {
@@ -716,16 +701,9 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-function customPageTitle($string)
-{
-    return sprintf(__('Custom forms &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <h2 class="render-title"><?php _e('Custom forms'); ?></h2>
+    <?php osc_admin_page_head(__('Custom forms')); ?>
 
     <?php
     // A one-click bridge for installs upgraded from before the forms builder: their

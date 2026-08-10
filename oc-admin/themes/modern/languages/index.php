@@ -13,54 +13,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-        . __("Add, edit or delete the language in which your Shopclass is displayed, "
-            . "both the part that's viewable by users and the admin panel.")
-        . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="#" onclick="languageModal()" class="ms-1 text-success float-end" title="<?php _e('Download language'); ?>">
-            <i class="bi bi-arrow-down-circle-fill"></i>
-        </a>
-        <a href="<?php echo osc_admin_base_url(true); ?>?page=languages&amp;action=add" class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Upload language');
-    ?>"><i class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function customPageTitle($string)
-{
-    return sprintf(__('Languages &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Languages'),
+    'help'    => __("Add, edit or delete the language in which your Shopclass is displayed, "
+                    . "both the part that's viewable by users and the admin panel."),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=languages&amp;action=add',
+            'title' => __('Upload language'),
+        ),
+        array(
+            'icon'    => 'bi-arrow-down-circle-fill',
+            'url'     => '#',
+            'onclick' => 'languageModal()',
+            'title'   => __('Download language'),
+        ),
+    ),
+));
 
 function customHead()
 {
     ?>
-    <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
-        });
-    </script>
     <?php
 }
 
@@ -71,18 +46,11 @@ $aData          = __get('aLanguages');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-<h2 class="render-title">
-    <?php _e('Manage Languages'); ?>
-</h2>
+<?php osc_admin_page_head(__('Manage Languages')); ?>
 <div class="relative">
     <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="languages" />
-        <div id="bulk-actions">
-            <div class="input-group input-group-sm">
-                <?php osc_print_bulk_actions('bulk_actions', 'action', __get('bulk_options'), 'select-box-extra'); ?>
-                <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>" />
-            </div>
-        </div>
+        <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -118,11 +86,16 @@ osc_current_admin_theme_path('parts/header.php');
                             </tr>
                         <?php } ?>
                     <?php } else { ?>
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
-                            </td>
-                        </tr>
+                        <?php osc_admin_table_empty(6, array(
+                            'icon'   => 'bi-translate',
+                            'title'  => __('No languages yet'),
+                            'text'   => __('Import a language from the catalog or upload a package to add one.'),
+                            'action' => array(
+                                'label'   => __('Upload language'),
+                                'url'     => osc_admin_base_url(true) . '?page=languages&amp;action=add',
+                                'variant' => 'primary',
+                            ),
+                        )); ?>
                     <?php } ?>
                 </tbody>
             </table>
@@ -131,7 +104,7 @@ osc_current_admin_theme_path('parts/header.php');
     </form>
 </div>
 
-<?php osc_show_pagination_admin($aData); ?>
+<?php osc_admin_pagination($aData); ?>
 <dialog id="languageModal" class="osc-dialog">
     <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
         <input type="hidden" name="page" value="languages" />
@@ -153,34 +126,16 @@ osc_current_admin_theme_path('parts/header.php');
         </div>
     </form>
 </dialog>
-<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="languages" />
-        <input type="hidden" name="action" value="delete" />
-        <input type="hidden" name="id[]" value="" />
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php echo __('Delete language'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this language?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
-        </div>
-    </form>
-</dialog>
-<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-        <p class="osc-dialog-text"></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-    </div>
-</dialog>
+<?php osc_admin_confirm_dialog(array(
+    'id'         => 'deleteModal',
+    'method'     => 'get',
+    'fields'     => array('page' => 'languages', 'action' => 'delete', 'id[]' => ''),
+    'title'      => __('Delete language'),
+    'text'       => __('The site falls back to the default language for any content that relied on this one.'),
+    'confirm'    => __('Delete'),
+    'confirm_id' => 'deleteSubmit',
+)); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
     var aExistingLanguages = <?php echo json_encode(OSCLocale::newInstance()->listAll()); ?>;
     var localeImportUrl = '<?php echo osc_esc_js(osc_get_i18n_repository_url()) ?>';

@@ -345,45 +345,18 @@ function render_offset()
     return 'row-offset';
 }
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function addHelp()
-{
-    echo '<p>'
-         . __("Activate this option if you want your site's URLs to be more attractive to search engines and intelligible for users."
-              . " <strong>Be careful</strong>: depending on your hosting service, this might not work correctly.")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Permalinks &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Permalinks'),
+    'help'    => __("Activate this option if you want your site's URLs to be more attractive to search engines and intelligible for users."
+                    . " <strong>Be careful</strong>: depending on your hosting service, this might not work correctly."),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="mail-setting">
         <!-- settings form -->
         <div id="mail-settings">
-            <h2 class="render-title"><?php _e('Permalinks'); ?></h2>
+            <?php osc_admin_page_head(__('Permalinks')); ?>
             <p class="settings-lead"><?php _e('By default Shopclass uses web URLs which have question marks and lots of numbers in them. '
                      . 'However, Shopclass offers you friendly urls. This can improve the aesthetics, usability, '
                      . 'and forward-compatibility of your links'); ?></p>
@@ -764,10 +737,7 @@ HTACCESS;
                                 </div>
                             <?php }
                             } ?>
-                        <div class="form-actions">
-                            <input type="submit" id="save_changes"
-                                   value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit"/>
-                        </div>
+                        <?php osc_admin_form_actions(); ?>
                     </div>
                 </fieldset>
             </form>
