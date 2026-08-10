@@ -22,7 +22,7 @@ if (!defined('ABS_PATH')) {
 class CAdminEmails extends AdminSecBaseModel
 {
     //specific for this class
-    private $emailManager;
+    private Page $emailManager;
 
     public function __construct()
     {

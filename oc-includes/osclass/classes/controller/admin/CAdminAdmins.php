@@ -22,7 +22,7 @@ if (!defined('ABS_PATH')) {
 class CAdminAdmins extends AdminSecBaseModel
 {
     //specific for this class
-    private $adminManager;
+    private Admin $adminManager;
 
     public function __construct()
     {

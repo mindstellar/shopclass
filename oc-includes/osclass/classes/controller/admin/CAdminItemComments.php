@@ -21,7 +21,7 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminItemComments extends AdminSecBaseModel
 {
-    private $itemCommentManager;
+    private ItemComment $itemCommentManager;
 
     public function __construct()
     {
