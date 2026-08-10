@@ -294,6 +294,14 @@ $sidebar-gutter: 2.35rem;
     }
   }
 
+  // A group boundary with nothing to name, closing core's last group ahead of the entries
+  // a plugin or theme appended. Same hairline and inset as a subhead, minus the label.
+  .submenu-break {
+    border-block-start: 1px solid var(--osc-chrome-edge);
+    margin-block-start: .4rem;
+    margin-inline-start: 1.05rem;
+  }
+
   // …and the rail flyout's injected title is the panel's real first child — hidden in
   // the expanded menu, but still occupying :first-child — so a divider opening the list
   // is only ever the second. Without this it draws a boundary above nothing. The rule

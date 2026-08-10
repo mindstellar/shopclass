@@ -35,6 +35,9 @@ class AdminMenu
     private static $instance;
     private $aMenu;
 
+    /** Submenu keys per section as core left them, before anyone else registered. */
+    private $aCoreSubmenus = array();
+
     public function __construct()
     {
         $this->aMenu = array();
@@ -467,6 +470,13 @@ class AdminMenu
             'tools_system_info',
             'administrator'
         );
+        // Snapshot what core registered, so the renderer can tell a plugin's or a theme's
+        // entries from ours. Both arrive after this line — plugins on the hook below, the
+        // admin theme's functions.php once oc-load has finished here.
+        foreach ($this->aMenu as $menuId => $value) {
+            $this->aCoreSubmenus[$menuId] = isset($value['sub']) ? array_keys($value['sub']) : array();
+        }
+
         osc_run_hook('admin_menu_init');
     }
 
@@ -634,6 +644,45 @@ class AdminMenu
     }
 
     /**
+     * Key of the first entry in this section that core did not register, or null.
+     *
+     * Only meaningful where core grouped the section under headings — elsewhere there is
+     * no group for an appended entry to be mistaken for, and a rule would be noise. An
+     * entry that brings its own heading needs no rule either: the heading is the boundary.
+     *
+     * @param string $menuId
+     * @param array  $visible list of array($isDivider, $entry, $key)
+     *
+     * @return string|null
+     */
+    private function firstAddedKey($menuId, array $visible)
+    {
+        $core = $this->aCoreSubmenus[$menuId] ?? null;
+        if ($core === null) {
+            return null;
+        }
+
+        $grouped = false;
+        foreach ($visible as $entry) {
+            if ($entry[0] && in_array($entry[2], $core, true)) {
+                $grouped = true;
+                break;
+            }
+        }
+        if (!$grouped) {
+            return null;
+        }
+
+        foreach ($visible as $entry) {
+            if (!in_array($entry[2], $core, true)) {
+                return $entry[0] ? null : $entry[2];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return \AdminMenu
      */
     public static function newInstance()
@@ -742,7 +791,7 @@ class AdminMenu
         // a heading whose whole group was filtered out stayed behind titling nothing. Its
         // visibility is decided below, by what actually follows it.
         $visible = array();
-        foreach ($subMenu as $arrSubMenu) {
+        foreach ($subMenu as $key => $arrSubMenu) {
             $isDivider = strpos($arrSubMenu[1], 'divider_') === 0;
             if (!$isDivider) {
                 $capability = $arrSubMenu[4] ?? $arrSubMenu[3];
@@ -750,10 +799,20 @@ class AdminMenu
                     continue;
                 }
             }
-            $visible[] = array($isDivider, $arrSubMenu);
+            $visible[] = array($isDivider, $arrSubMenu, $key);
         }
 
-        foreach ($visible as $i => list($isDivider, $arrSubMenu)) {
+        // Entries registered after core finished — by a plugin or the admin theme — are
+        // appended, so in a section that uses headings they fall under whichever one core
+        // happened to write last and read as part of it. A hairline closes core's final
+        // group ahead of them. It carries no label: naming the group would mean inventing
+        // a translated string for "everything else", and the boundary is the whole point.
+        $break = $this->firstAddedKey($parentMenuId, $visible);
+
+        foreach ($visible as $i => list($isDivider, $arrSubMenu, $key)) {
+            if ($break !== null && $key === $break) {
+                $str .= '<li class="submenu-break" aria-hidden="true"></li>' . PHP_EOL;
+            }
             if ($isDivider) {
                 // Keep it only if a real item follows before the next heading.
                 $next = $visible[$i + 1] ?? null;

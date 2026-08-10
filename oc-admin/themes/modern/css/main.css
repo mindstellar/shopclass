@@ -13469,6 +13469,11 @@ div.widget-box-content-no-wrapp li a {
   margin-block-start: 0;
   padding-block-start: 0.15rem;
 }
+.dashboard-sidebar .sidebar-submenu .submenu-break {
+  border-block-start: 1px solid var(--osc-chrome-edge);
+  margin-block-start: 0.4rem;
+  margin-inline-start: 1.05rem;
+}
 .dashboard-sidebar .sidebar-submenu .rail-flyout-title + .submenu-divide {
   border-block-start: 0;
   margin-block-start: 0;
