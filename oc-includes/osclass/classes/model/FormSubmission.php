@@ -128,7 +128,9 @@ class FormSubmission
     {
         $q = $this->table()->where('fk_i_group_id', $formId);
         if ($status !== null && self::isValidStatus($status)) {
-            $q->where('s_status', $status);
+            // QueryBuilder is immutable: where() returns a clone, so the result has to
+            // be kept or the condition is silently dropped.
+            $q = $q->where('s_status', $status);
         }
 
         return $q->orderBy('dt_created', 'DESC')->limit($limit)->offset($offset)->get();
@@ -138,7 +140,9 @@ class FormSubmission
     {
         $q = $this->table()->where('fk_i_group_id', $formId);
         if ($status !== null && self::isValidStatus($status)) {
-            $q->where('s_status', $status);
+            // QueryBuilder is immutable: where() returns a clone, so the result has to
+            // be kept or the condition is silently dropped.
+            $q = $q->where('s_status', $status);
         }
 
         return $q->count();
