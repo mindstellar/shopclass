@@ -207,17 +207,42 @@ cities, so no region is left without one either.
 The installer reads the two keys when present and ignores them when absent, so an older
 geodata snapshot still installs — an install is never blocked on the data being current.
 
-**Attribution.** The upstream dataset is published under the Open Database License (ODbL)
-v1.0, which requires attribution wherever the data is used publicly. `mindstellar/geodata`
-licenses `src/` under ODbL to match. Core therefore ships a second attribution helper
-alongside the geocoding one in §3:
+### Attribution is declared by the data, not hard-coded
 
-```php
-osc_location_data_attribution();   // names the location data source and its licence
+Location datasets differ in what they oblige a site to display, and that obligation belongs
+to the data rather than to core. So **the catalog manifest declares its own licence** and
+core renders whatever that licence requires:
+
+```json
+{
+    "s_version": "dbcc0cfa2b78e5d0",
+    "s_license": "CC0-1.0",
+    "s_source":  "https://…",
+    "locations": [ … ]
+}
 ```
 
-Rendered once in the site footer, not per listing. The obligation follows the data, so it
-applies to every install regardless of which geocoding provider — if any — is configured.
+```php
+osc_location_data_attribution();   // the notice the installed data requires, or nothing
+```
+
+Rendered once in the site footer, never per listing, and **empty for a public-domain
+dataset**. A site that imports its own locations owes nothing and displays nothing.
+
+This indirection is the whole point. An ODbL or CC-BY dataset forces a credit onto every
+public page of every install — which is not a decision core should be making on a site
+owner's behalf, and not one they can opt out of while using that data. Reading it from the
+manifest means the obligation can be removed for everyone by changing the *data*, with no
+core release and no per-site setting.
+
+It also removes the temptation to ship a switch that hides the notice. There is no
+compliant way to do that: a site owner cannot consent their way out of a licence term, and
+a toggle that suppresses a required credit is a licence breach with our name on it. The
+supported way to owe nothing is to install data that requires nothing.
+
+The direction of travel is a **CC0** location dataset, which obliges no one. Until that
+lands, `s_license` carries whatever the published data actually is, and the helper tells
+the truth about it.
 
 ---
 
