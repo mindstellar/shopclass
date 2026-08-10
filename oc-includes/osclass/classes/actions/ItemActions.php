@@ -1388,20 +1388,33 @@ class ItemActions
     /**
      * Set premium value depending on $on, for a given item id
      *
-     * @param int  $id
-     * @param bool $on
+     * $days makes the upgrade time-limited: the listing stops being premium once
+     * dt_premium_expiration passes and the hourly sweep flips it back. Omitting it keeps
+     * the historical behaviour of a permanent, admin-granted upgrade with no end date.
+     *
+     * @param int      $id
+     * @param bool     $on
+     * @param int|null $days Days the upgrade lasts, or null for no expiry
      *
      * @return bool
      */
-    public function premium($id, $on = true)
+    public function premium($id, $on = true, $days = null)
     {
         $value = 0;
         if ($on) {
             $value = 1;
         }
 
+        $set = array('b_premium' => $value);
+
+        // Turning premium off always clears the date, so a later permanent grant does
+        // not inherit a stale expiry and get swept away an hour after it is made.
+        $set['dt_premium_expiration'] = ($on && $days !== null)
+            ? date('Y-m-d H:i:s', time() + ((int) $days * 86400))
+            : null;
+
         $result = $this->manager->update(
-            array('b_premium' => $value),
+            $set,
             array('pk_i_id' => $id)
         );
         // updated correctly

@@ -236,6 +236,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     s_contact_phone VARCHAR(40) NULL,
     s_ip VARCHAR(64) NOT NULL DEFAULT '',
     b_premium TINYINT(1) NOT NULL DEFAULT 0,
+    dt_premium_expiration DATETIME NULL,
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
     b_active TINYINT(1) NOT NULL DEFAULT 0,
     b_spam TINYINT(1) NOT NULL DEFAULT 0,
@@ -680,5 +681,64 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
 
         PRIMARY KEY (pk_i_id),
         INDEX idx_token (s_token),
+        INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Credit balance per user. The ledger below is the source of truth. This row is a
+-- cache that keeps a balance read off a SUM(), and is the row a debit locks.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_wallet (
+    fk_i_user_id INT UNSIGNED NOT NULL,
+    i_balance BIGINT NOT NULL DEFAULT 0,
+    dt_mod_date DATETIME NOT NULL,
+
+        PRIMARY KEY (fk_i_user_id),
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Append-only credit ledger. Never updated, never deleted -- a refund is a new
+-- negative row. Deliberately carries no foreign key to t_user: the audit trail has
+-- to outlive the account it describes, and a cascade would erase the accounting
+-- history of every deleted user.
+--
+-- s_idempotency_key is UNIQUE because gateways retry webhooks. A replayed callback
+-- must insert nothing rather than credit twice, and the constraint makes the double
+-- credit unrepresentable instead of merely unlikely.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_ledger (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_user_id INT UNSIGNED NOT NULL,
+    i_amount BIGINT NOT NULL,
+    i_balance_after BIGINT NOT NULL,
+    s_reason VARCHAR(32) NOT NULL DEFAULT '',
+    s_ref_type VARCHAR(32) NULL,
+    i_ref_id INT UNSIGNED NULL,
+    s_idempotency_key VARCHAR(191) NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_idempotency (s_idempotency_key),
+        INDEX idx_user_date (fk_i_user_id, dt_date),
+        INDEX idx_ref (s_ref_type, i_ref_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Payment intents. Core records them and fulfils them, while a gateway plugin drives
+-- the status transitions. i_amount is in micros (value x 1000000), like t_item.i_price
+-- -- money is never stored as a float. No foreign key to t_user, for the same reason
+-- as the ledger.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_user_id INT UNSIGNED NOT NULL,
+    s_gateway VARCHAR(64) NOT NULL DEFAULT '',
+    s_external_ref VARCHAR(191) NULL,
+    i_amount BIGINT NOT NULL DEFAULT 0,
+    s_currency CHAR(3) NOT NULL DEFAULT '',
+    i_credits INT UNSIGNED NOT NULL DEFAULT 0,
+    s_status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    s_meta TEXT NULL,
+    dt_date DATETIME NOT NULL,
+    dt_paid_date DATETIME NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_gateway_ref (s_gateway, s_external_ref),
+        INDEX idx_user_status (fk_i_user_id, s_status),
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

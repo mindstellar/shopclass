@@ -282,6 +282,15 @@ class AdminMenu
             'settings_searches',
             'administrator'
         );
+        // Always listed, unlike the Billing section itself: this is where the switch is,
+        // so it has to be reachable while billing is off.
+        $this->add_submenu(
+            'settings',
+            __('Billing'),
+            osc_admin_base_url(true) . '?page=settings&action=billing',
+            'settings_billing',
+            'administrator'
+        );
         $this->add_submenu(
             'settings',
             __('Advanced'),
@@ -341,6 +350,41 @@ class AdminMenu
             'users_ban',
             'administrator'
         );
+
+        // Billing appears only once an admin has switched it on. Most sites never sell
+        // anything, and a permanent menu entry for a feature they will not use is the
+        // clutter that makes an admin panel feel like someone else's product. The switch
+        // itself lives under Settings, which is always visible, so this is reversible.
+        if (osc_billing_enabled()) {
+            $this->add_menu(
+                __('Billing'),
+                osc_admin_base_url(true) . '?page=billing',
+                'billing',
+                'administrator',
+                'bi bi-receipt'
+            );
+            $this->add_submenu(
+                'billing',
+                __('Orders'),
+                osc_admin_base_url(true) . '?page=billing',
+                'billing_orders',
+                'administrator'
+            );
+            $this->add_submenu(
+                'billing',
+                __('Credits'),
+                osc_admin_base_url(true) . '?page=billing&action=credits',
+                'billing_credits',
+                'administrator'
+            );
+            $this->add_submenu(
+                'billing',
+                __('Settings'),
+                osc_admin_base_url(true) . '?page=settings&action=billing',
+                'billing_settings',
+                'administrator'
+            );
+        }
 
         $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=import', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(

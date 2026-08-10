@@ -75,6 +75,10 @@ class CAdminSettings
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();
                 break;
+            case ('billing'):
+            case ('billing_post'):
+                $do = new CAdminSettingsBilling();
+                break;
             case ('mailserver'):
             case ('mailserver_post'):
                 $do = new CAdminSettingsMailserver();

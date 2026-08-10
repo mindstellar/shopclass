@@ -299,7 +299,14 @@
 
 @each $state, $spec in $status-badge {
   .status-#{$state} {
-    .osc-status {
+    // Two forms, one look. The descendant form is the original — a `.status-x` row or
+    // container holding a badge — and every existing screen and third-party plugin uses
+    // it. The self form (`<span class="osc-status status-x">`) is what a badge rendered
+    // outside a table needs: a detail screen has no row to hang the state on, and
+    // wrapping one span in another purely to satisfy a selector is markup apologising
+    // for a stylesheet.
+    .osc-status,
+    &.osc-status {
       background-color: map-get($spec, tint);
       color: map-get($spec, ink);
 

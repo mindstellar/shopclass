@@ -52,6 +52,7 @@ class Item extends DAO
             's_contact_email',
             's_contact_phone',
             'b_premium',
+            'dt_premium_expiration',
             's_ip',
             'b_enabled',
             'b_active',

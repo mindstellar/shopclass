@@ -905,6 +905,17 @@ function osc_run_cleanup()
 }
 osc_add_hook('cron_daily', 'osc_run_cleanup');
 
+/**
+ * End time-limited premium upgrades whose date has passed, returning how many were ended.
+ *
+ * @return int
+ */
+function osc_expire_premium_items()
+{
+    return \mindstellar\billing\Premium::expire();
+}
+osc_add_hook('cron_hourly', 'osc_expire_premium_items');
+
 function osc_show_maintenance()
 {
     if (defined('__OSC_MAINTENANCE__')) { ?>
