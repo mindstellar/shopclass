@@ -1,0 +1,13 @@
+{
+  "$schema": "../../schema/package.schema.json",
+  "slug": "sample-forms",
+  "type": "plugin",
+  "categories": ["content-widgets", "anti-spam"],
+  "tags": ["forms", "reference", "developer", "spam-filter"],
+  "short_description": "Reference plugin demonstrating the Forms platform: contexts, field filters, spam veto, and submission hooks.",
+  "license": "GPL-3.0-or-later",
+  "support": {
+    "issues": "https://github.com/mindstellar/osclass/issues",
+    "docs": "https://github.com/mindstellar/osclass/blob/develop/docs/PACKAGE-SPEC.md"
+  }
+}
