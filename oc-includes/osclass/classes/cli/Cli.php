@@ -57,6 +57,8 @@ class Cli
         'market:info'         => ['cmdMarketInfo', 'Show catalog details for a package (<slug> [--type=plugin|theme])'],
         'market:install'      => ['cmdMarketInstall', 'Install a package from the catalog (<slug> [--type=plugin|theme])'],
         'market:update'       => ['cmdMarketUpdate', 'Update installed packages from the catalog (<slug>|--all [--type=plugin|theme])'],
+        'location:status'     => ['cmdLocationStatus', 'Show installed location data against the published catalog'],
+        'location:update'     => ['cmdLocationUpdate', 'Install or update country locations (--country=IN|--all) [--dry-run]'],
         'doctor'              => ['cmdDoctor', 'Run environment and health checks'],
         'version'             => ['cmdVersion', 'Print the installed Shopclass version'],
         'help'                => ['cmdHelp', 'Show this help'],
@@ -1137,6 +1139,143 @@ class Cli
         }
 
         return 0;
+    }
+
+    private function cmdLocationStatus(array $args): int
+    {
+        $catalog = new \mindstellar\location\LocationCatalog();
+        $rows    = $catalog->status(array_key_exists('refresh', $args));
+        if ($rows === array()) {
+            $this->err("Could not read the location catalog.\n");
+
+            return 1;
+        }
+
+        $installed = array_values(array_filter($rows, static function ($row) {
+            return $row['installed'];
+        }));
+
+        $this->out(sprintf("%d countries in the catalog, %d installed here.\n\n", count($rows), count($installed)));
+        if ($installed === array()) {
+            $this->out("Install one with: location:update --country=<ISO2>\n");
+
+            return 0;
+        }
+
+        $stale = 0;
+        foreach ($installed as $row) {
+            $state = $row['current'] ? 'current' : 'update available';
+            $stale += $row['current'] ? 0 : 1;
+            $this->out(sprintf("  %-4s %-34s %-16s %7d cities\n", $row['code'], $row['name'], $state, $row['rows']));
+        }
+        if ($stale > 0) {
+            $this->out(sprintf(
+                "\n%d with an update available. Preview one with:"
+                . "\n  location:update --country=<ISO2> --dry-run\n",
+                $stale
+            ));
+        }
+
+        return 0;
+    }
+
+    private function cmdLocationUpdate(array $args): int
+    {
+        $all     = array_key_exists('all', $args);
+        $country = isset($args['country']) && is_string($args['country']) ? strtoupper($args['country']) : '';
+        if (!$all && $country === '') {
+            $this->err("Usage: location:update (--country=IN | --all) [--dry-run]\n");
+
+            return 2;
+        }
+
+        $dryRun  = array_key_exists('dry-run', $args);
+        $catalog = new \mindstellar\location\LocationCatalog();
+        $rows    = $catalog->status();
+        if ($rows === array()) {
+            $this->err("Could not read the location catalog.\n");
+
+            return 1;
+        }
+
+        // --all means every country already installed here, never all 250 in the catalog:
+        // this command updates what a site has, it does not decide what it should have.
+        $targets = array();
+        foreach ($rows as $row) {
+            if ($all ? $row['installed'] : $row['code'] === $country) {
+                $targets[] = $row;
+            }
+        }
+        if ($targets === array()) {
+            $this->err($all
+                ? "No countries are installed yet.\n"
+                : sprintf("The catalog has no country '%s'.\n", $country));
+
+            return 1;
+        }
+
+        if ($dryRun) {
+            $this->out("Dry run: every change is computed and then rolled back.\n\n");
+        }
+
+        $failed = 0;
+        foreach ($targets as $row) {
+            $this->out(sprintf("%s (%s)\n", $row['name'], $row['code']));
+            $data = $catalog->countryFile($row['file']);
+            if ($data === null) {
+                $this->err(sprintf("  could not download %s\n", $row['file']));
+                $failed++;
+                continue;
+            }
+
+            $report = (new \mindstellar\location\LocationImporter($dryRun))->import($data);
+            if (isset($report['error'])) {
+                $this->err(sprintf("  %s\n", $report['error']));
+                $failed++;
+                continue;
+            }
+
+            $this->out('  regions  ' . $this->locationCounts($report['regions']) . "\n");
+            $this->out('  cities   ' . $this->locationCounts($report['cities']) . "\n");
+            foreach (array_slice($report['renames'], 0, 10) as $rename) {
+                $this->out(sprintf("  renamed  %-6s %s -> %s\n", $rename['type'], $rename['from'], $rename['to']));
+            }
+            if (count($report['renames']) > 10) {
+                $this->out(sprintf("  ... and %d more renames\n", count($report['renames']) - 10));
+            }
+            if ($report['regions']['kept_stale'] > 0 || $report['cities']['kept_stale'] > 0) {
+                $this->out(sprintf(
+                    "  kept live though dropped upstream (they hold listings): %d region(s), %d cities\n",
+                    $report['regions']['kept_stale'],
+                    $report['cities']['kept_stale']
+                ));
+            }
+
+            if (!$dryRun && $row['sha'] !== '') {
+                $catalog->markInstalled($row['code'], $row['sha']);
+            }
+        }
+
+        if ($dryRun) {
+            $this->out("\nNothing was written. Re-run without --dry-run to apply.\n");
+        }
+
+        return $failed > 0 ? 1 : 0;
+    }
+
+    /**
+     * @param array<string, int> $counts
+     */
+    private function locationCounts(array $counts): string
+    {
+        $parts = array();
+        foreach ($counts as $label => $value) {
+            if ($value > 0) {
+                $parts[] = $value . ' ' . str_replace('_', ' ', $label);
+            }
+        }
+
+        return $parts === array() ? 'no changes' : implode(', ', $parts);
     }
 
     private function out(string $text): void

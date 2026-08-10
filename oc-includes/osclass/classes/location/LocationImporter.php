@@ -455,8 +455,12 @@ final class LocationImporter
             if (isset($claimed[$id]) || !isset($rows[$id])) {
                 continue;
             }
-            // Adoption only. A row that already has a source id belongs to that id.
-            if ($rows[$id]['i_source_id'] !== null) {
+            // Never steal a row that already answers to a different upstream id — that is
+            // two distinct places sharing a slug, and the incoming one needs its own row.
+            // An incoming row with no id at all makes no competing claim, so it may still
+            // match: that is a catalog file published before source ids existed, and it
+            // must update the row it describes rather than duplicate it.
+            if ($rows[$id]['i_source_id'] !== null && $sourceId !== null) {
                 continue;
             }
 
