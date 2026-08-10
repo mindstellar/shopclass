@@ -569,7 +569,56 @@ core.
 
 ---
 
-## 12. Phases
+## 12. Choosing a location at scale
+
+A public-domain dataset is far denser than the one it replaces, and density breaks the
+picker before it breaks anything else.
+
+Cities are always chosen within a region, never listed globally, so the number that matters
+is cities *per region*. The median region is small — 47 in Albania, 472 in India, 1,776 in
+the US. The tail is not: **Bavaria has 41,536 cities and West Bengal 39,784**. A `<select>`
+with 41,536 options is several megabytes of markup and will hang a browser.
+
+So the picker becomes **search-first with paged loading**, and the model gains a query that
+can actually serve it.
+
+### The query
+
+`City::ajax()` today has **no `LIMIT`**. Against the current data that is merely wasteful;
+against a few million rows it is an availability problem — one request for a common prefix
+returns tens of thousands of rows. It gets a bounded default, and a new paged method backs
+the picker:
+
+```php
+City::search(string $q, int $regionId, ?string $after = null, int $limit = 50): array
+```
+
+**Keyset, not offset.** Infinite scroll invites `OFFSET 20000`, which makes MySQL walk and
+discard every skipped row. Paging on `WHERE s_name > :after ORDER BY s_name` uses
+`idx_s_name` and costs the same on page 400 as on page 1.
+
+**Prefix match, not contains.** `LIKE 'ber%'` uses the index; `LIKE '%ber%'` scans the
+table. On millions of rows that difference is the whole feature. If mid-word matching is
+wanted later it needs a fulltext index, not a wildcard.
+
+### The control
+
+Progressive enhancement, because the `<select>` that `ItemForm`, `UserForm` and
+`ManageItemsForm` render is what every theme and plugin already builds against:
+
+- **Without JavaScript** the existing `<select>` still renders, populated with a bounded
+  first page. It stays usable, just not exhaustive.
+- **With JavaScript** it is enhanced into a combobox — type to filter, scroll to load the
+  next page. Standard ARIA combobox semantics, keyboard-navigable, announcing result counts.
+- The submitted field name and value are unchanged, so nothing downstream — validation,
+  `Params`, plugins reading `cityId` — notices the difference.
+
+Region pickers get the same treatment: Uganda's 133 regions are fine, but nothing should
+assume a region list is small either.
+
+---
+
+## 13. Phases
 
 Each phase ships something usable on its own.
 
@@ -578,6 +627,7 @@ Each phase ships something usable on its own.
 | **0** | geodata carries `d_coord_lat`/`d_coord_long` and `i_source_id`, deterministic build, validation guard, monthly refresh workflow | — **done** |
 | **1** | Upgradable import: `i_source_id` columns, id-matched upsert, slug history, `location:status` / `location:update` with `--dry-run`, chunked and transactional | 0 |
 | **2** | Centroid coverage: schema migration, installer reads coordinates, resolution on publish/edit, `geo:stats` | 1 |
+| **2b** | Location picker at scale: `City::search()` keyset paging, bounded `ajax()`, combobox enhancement over the existing select | 1 |
 | **3** | Search: `addRadius()` / `orderByDistance()`, canonical URLs, banded distances, public rounding and helpers | 2 |
 | **4** | Search UI: location box with autocomplete, distance selector, "use my location", distance on result cards | 3 |
 | **5** | Address-level geocoding: provider contract and registry, LocationIQ + Google + Nominatim, `t_geocode_cache`, cron drain, `geo:backfill`, admin Location screen with coverage | 2 |
@@ -594,7 +644,7 @@ something that costs money and quota.
 
 ---
 
-## 13. Compatibility
+## 14. Compatibility
 
 Under the rules in [MARKET.md](MARKET.md), the surface a third party can see:
 
