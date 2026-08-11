@@ -117,3 +117,8 @@ jobs:
         run: php tests/run-models.php
       - name: Delete cascades
         run: php tests/delete-cascade.php
+      # The upgrade screen and upgradeDB() are replaced at different moments — an
+      # opcode cache can serve the previous class behind the new template — so the
+      # screen has to stay truthful when the answer predates it.
+      - name: Upgrade payload contract
+        run: php tests/upgrade-payload-contract.php

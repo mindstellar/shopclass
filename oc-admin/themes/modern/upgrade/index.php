@@ -113,6 +113,15 @@ function customHead()
                 var applied = Array.isArray(data.applied) ? data.applied : [];
                 var repairs = Array.isArray(data.repairs) ? data.repairs : [];
 
+                // Whether the answer came from a version of upgradeDB() that itemises
+                // its work at all. During a deploy this page can be the new one while
+                // the class behind it is still the previous build out of the opcode
+                // cache, and that older one answers with a message and nothing else.
+                // Absent is not the same as empty: an upgrade that applied twenty
+                // updates would otherwise be reported as having changed nothing.
+                var itemised = Object.prototype.hasOwnProperty.call(data, 'applied')
+                    || Object.prototype.hasOwnProperty.call(data, 'repairs');
+
                 var section = el('section', 'upgrade-report' + (failed ? ' upgrade-report-failed' : ''));
                 section.setAttribute('aria-labelledby', 'upgrade-report-title');
 
@@ -160,7 +169,11 @@ function customHead()
                             repairs
                         ));
                     }
-                    if (!applied.length && !repairs.length) {
+                    if (!itemised) {
+                        // Nothing to enumerate, so pass on what the server did say
+                        // rather than asserting an outcome we were not told.
+                        list.appendChild(row('done', String(data.message || T.titleDone), null, null));
+                    } else if (!applied.length && !repairs.length) {
                         list.appendChild(row('done', T.nothing, T.nothingNote, null));
                     }
                 }
