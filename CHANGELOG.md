@@ -32,6 +32,13 @@ most of them do not use — so it now goes in the same place as any other third-
   definition padded between a column's name and its type to keep them aligned, the reconciler
   read the type as empty, decided it differed from the live one and issued a `CHANGE COLUMN`
   for it — rebuilding the table on every upgrade to arrive back where it started.
+- Several schema changes made between 5.0 and 6.0 had never been written as migrations and
+  reached an upgrading site only because the reconciler noticed they were missing: the
+  storage-offload table and its column on listing images, right-to-left locale support, the
+  numeric custom-field type, per-field settings, and the widening of the two user IP columns
+  that truncated every IPv6 address. They are migrations now, so the upgrade no longer depends
+  on the repair pass to arrive at a complete schema. Sites already on 5.2 or later are
+  unaffected — every step checks first and does nothing where the change is already present.
 
 ### Changed
 
