@@ -1,0 +1,122 @@
+# Dependency update PRs.
+#
+# Security alerts arrive with or without this file; what it adds is routine version
+# updates, and which manifests they are opened against.
+#
+# The thing to know before merging one: two of these ecosystems have their installed
+# output COMMITTED, so Dependabot's PR is only half the change.
+#
+#   oc-includes/vendor/  is committed and the release does NOT reinstall it — the
+#   release workflow builds npm assets but never runs `composer install`, so whatever
+#   is committed is what ships. A root composer bump therefore has to be completed with
+#   `composer install` and the resulting vendor/ committed onto the same PR. Merging
+#   the lockfile alone ships the old library under a manifest that claims the new one.
+#
+#   oc-includes/assets/ and the compiled admin CSS/JS are committed too, but .build.sh
+#   layers freshly built output over the archive, so a release cannot ship stale ones.
+#   The repository still drifts from package.json until someone runs `npm run build`
+#   and commits it, which matters for installs taken straight from git.
+#
+# tools/lint/ and the workflow actions have nothing committed behind them, so those
+# PRs are complete as they arrive.
+#
+# The bundled theme and plugins under oc-content/ are not tracked here — they live in
+# their own repositories and are updated there.
+
+version: 2
+
+updates:
+  # Workflow actions. Nothing vendored, nothing to rebuild.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # The formatting and PHP-floor linters. tools/lint/vendor is not committed — CI
+  # installs it — so these merge as they come.
+  - package-ecosystem: composer
+    directory: /tools/lint
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(lint)"
+    groups:
+      linters:
+        patterns:
+          - "*"
+
+  # Runtime libraries. See the note above: vendor/ is committed and the release does
+  # not reinstall it, so every one of these PRs needs `composer install` committed onto it
+  # before merging. Kept ungrouped and to a low limit deliberately — each is a manual
+  # completion, and a batch of ten is how they get merged without one.
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - needs-vendor-rebuild
+    ignore:
+      # Pinned to a minor line in composer.json on purpose; a major is a migration,
+      # not an update, and should be opened by hand when someone intends to do it.
+      - dependency-name: ezyang/htmlpurifier
+        update-types: ["version-update:semver-major"]
+      - dependency-name: phpseclib/phpseclib
+        update-types: ["version-update:semver-major"]
+      - dependency-name: pclzip/pclzip
+        update-types: ["version-update:semver-major"]
+      - dependency-name: gettext/gettext
+        update-types: ["version-update:semver-major"]
+
+  # Build toolchain and the vendored front-end libraries. A release rebuilds these, so
+  # a stale merge cannot ship — but `npm run build` still has to be committed to keep
+  # the repository honest for git installs.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - needs-asset-rebuild
+    groups:
+      # Build-only, and nothing of theirs is copied into the tree.
+      build-tooling:
+        patterns:
+          - esbuild
+          - eslint
+          - sass-embedded
+          - gettext-parser
+    ignore:
+      # jQuery and its plugins are on the way out rather than being kept current, and
+      # a bump would only enlarge what has to be removed.
+      - dependency-name: jquery
+      - dependency-name: jquery-ui-dist
+      - dependency-name: jquery-validation
+      # Bootstrap majors move class names, which are a published API here.
+      - dependency-name: bootstrap
+        update-types: ["version-update:semver-major"]
+
+  # The production image's base.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(docker)"
