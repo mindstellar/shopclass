@@ -62,19 +62,21 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Breaking
 
-- **Back up your database before upgrading, and give the upgrade time to finish.** This
-  release rebuilds foreign keys on twenty-four tables so the database removes dependent
-  rows with their parent. On a small site it passes in seconds. On a large one each key
-  is revalidated against the whole table, so the upgrade can run for several minutes, and
-  a web server sitting in front of PHP may show a timeout page while it is still working
-  — the upgrade continues regardless. Sites with shell access can avoid the wait entirely
-  by running `php oc-cli.php db:upgrade`, which has no such limit.
+- **Back up your database before upgrading.** This release rebuilds foreign keys on
+  twenty-four tables so that the database removes dependent rows along with their parent.
+  Each key is checked against the whole table as it is rebuilt, so the time it takes
+  follows the number of rows: measured over a quarter of a million listings and three
+  quarters of a million custom-field values, the whole rebuild took about six seconds.
+  A much larger site, or one on slow shared hosting, should expect longer, though not the
+  kind of wait that needs planning around. If a timeout page appears, the upgrade is
+  still running and will finish; sites with shell access can sidestep that entirely with
+  `php oc-cli.php db:upgrade`.
   Before each key is rebuilt, any row still pointing at a parent that no longer exists is
   removed. A healthy database has none. If yours does, they are rows nothing could reach
   and the new key could not be added while they remained — the backup is what lets you
   look at them afterwards if you want to.
-  An upgrade that is interrupted is safe to resume: each step is recorded as it
-  completes and every step can be re-run, so starting the upgrade again finishes it.
+  An upgrade that is interrupted is safe to resume: each step is recorded as it completes
+  and every step can be re-run, so starting the upgrade again finishes it.
 
 - **Google Analytics has been removed from core.** The **Tracking ID** field is gone from
   Settings → General and no measurement snippet is rendered on public pages any more. Sites
