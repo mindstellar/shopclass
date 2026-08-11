@@ -87,6 +87,15 @@ class Osclass extends UpgradePackage
     public static function upgradeDB($skip_db = false, $skip_reconcile = false)
     {
         set_time_limit(0);
+        // Rebuilding a foreign key or widening a column on a large table can outlast
+        // the browser's patience, and a proxy in front of PHP will hand the owner a
+        // gateway timeout long before the work is done. That much is survivable -- the
+        // ledger records each migration as it succeeds and every migration is written
+        // to be safe to replay, so an interrupted upgrade is finished by running it
+        // again. What this prevents is the interruption in the first place: without it
+        // PHP ends the request the moment it notices the browser has gone, which on a
+        // tab closed halfway through leaves the schema mid-migration for no reason.
+        ignore_user_abort(true);
 
         $repairs = array();
 

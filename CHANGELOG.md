@@ -62,6 +62,20 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Breaking
 
+- **Back up your database before upgrading, and give the upgrade time to finish.** This
+  release rebuilds foreign keys on twenty-four tables so the database removes dependent
+  rows with their parent. On a small site it passes in seconds. On a large one each key
+  is revalidated against the whole table, so the upgrade can run for several minutes, and
+  a web server sitting in front of PHP may show a timeout page while it is still working
+  — the upgrade continues regardless. Sites with shell access can avoid the wait entirely
+  by running `php oc-cli.php db:upgrade`, which has no such limit.
+  Before each key is rebuilt, any row still pointing at a parent that no longer exists is
+  removed. A healthy database has none. If yours does, they are rows nothing could reach
+  and the new key could not be added while they remained — the backup is what lets you
+  look at them afterwards if you want to.
+  An upgrade that is interrupted is safe to resume: each step is recorded as it
+  completes and every step can be re-run, so starting the upgrade again finishes it.
+
 - **Google Analytics has been removed from core.** The **Tracking ID** field is gone from
   Settings → General and no measurement snippet is rendered on public pages any more. Sites
   that were using it should paste their own snippet into a **Custom Code** widget under
