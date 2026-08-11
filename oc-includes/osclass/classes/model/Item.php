@@ -1238,11 +1238,12 @@ class Item extends DAO
             $isAdmin = true;
         }
 
-        // Runs before the transaction because it reads t_item_resource to learn which
-        // files to unlink, and the transaction is about to remove those rows. Deleting
-        // files cannot be rolled back in any case, so this step is outside the atomic
-        // part by nature rather than by choice.
-        ItemActions::deleteResourcesFromHD($id, $isAdmin);
+        // Read now, unlinked further down once the transaction has committed. The rows
+        // are the only record of which files belong to the listing and the transaction
+        // is about to remove them, but deleting a file cannot be undone — so a delete
+        // that rolls back has to leave the listing with its images intact rather than
+        // stranding it with none.
+        $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
 
         // t_item_moderation_log and t_item_report_log carry no foreign key to the
         // item, so nothing blocked the delete and nothing removed them either: an
@@ -1266,11 +1267,25 @@ class Item extends DAO
                     osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
 
-                return parent::deleteByPrimaryKey($id);
+                $removed = parent::deleteByPrimaryKey($id);
+                if ($removed === false) {
+                    // The legacy DAO reports a failed delete by returning false instead
+                    // of raising. Returned as-is it would look like an ordinary result,
+                    // the transaction would commit, and the listing would be left in
+                    // place with its description, images and stats already deleted --
+                    // the exact outcome the transaction is here to prevent. Raising is
+                    // what turns it into a rollback.
+                    throw new \RuntimeException('Deleting item ' . (int)$id . ' failed');
+                }
+
+                return $removed;
             });
         } catch (\Throwable $e) {
             return false;
         }
+
+        // The row is gone for good, so the files can go too.
+        ItemActions::deleteResourcesFromHD($id, $isAdmin, $resources);
 
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and

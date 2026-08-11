@@ -274,6 +274,55 @@ foreach (
 }
 
 /* ---------------------------------------------------------------------------
+ * The rollback. This is the guarantee the transaction exists for, and the one that
+ * used to be missing: before it, a delete that could not finish had already removed
+ * the listing's description, comments, images and stats by the time the parent delete
+ * failed, leaving a listing that was still there but stripped of everything.
+ *
+ * The failure is provoked with a table outside the cascade holding a RESTRICT
+ * reference, which is what a third-party plugin's own foreign key looks like from
+ * here — the model clears the children it knows about and is then refused the parent.
+ * ------------------------------------------------------------------------ */
+
+harness_section('Item::deleteByPrimaryKey — a delete that cannot finish changes nothing');
+
+$admin->query(
+    "CREATE TABLE {$prefix}t_delete_blocker (
+        fk_i_item_id INT UNSIGNED NOT NULL,
+        PRIMARY KEY (fk_i_item_id),
+        FOREIGN KEY (fk_i_item_id) REFERENCES {$prefix}t_item (pk_i_id)
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
+);
+
+$blocked = seed_item($admin, $cat, $user, 'A listing that cannot be deleted');
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path, s_storage)
+     VALUES (?, 'photo', 'jpg', 'image/jpeg', 'oc-content/uploads/', 'local')",
+    'i',
+    array($blocked)
+);
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_delete_blocker (fk_i_item_id) VALUES (?)",
+    'i',
+    array($blocked)
+);
+
+$refused = Item::newInstance()->deleteByPrimaryKey($blocked);
+
+pin('the delete reports failure rather than a row count', false, $refused);
+pin('the listing is still there', 1, $rows('t_item', "pk_i_id = $blocked"));
+pin('its description survived the rollback', 1, $rows('t_item_description', "fk_i_item_id = $blocked"));
+// The row surviving is also what keeps the files: they are unlinked only after the
+// commit, from rows read before it, so a rollback never reaches the filesystem.
+pin('its images survived the rollback', 1, $rows('t_item_resource', "fk_i_item_id = $blocked"));
+pin('its location survived the rollback', 1, $rows('t_item_location', "fk_i_item_id = $blocked"));
+pin('its stats survived the rollback', 1, $rows('t_item_stats', "fk_i_item_id = $blocked"));
+
+$admin->query("DROP TABLE {$prefix}t_delete_blocker");
+
+/* ---------------------------------------------------------------------------
  * Category, including a subcategory and the custom-field assignments that broke
  * this delete before.
  * ------------------------------------------------------------------------ */

@@ -42,9 +42,14 @@ class ItemActions
      * @param int  $itemId
      * @param bool $is_admin
      */
-    public static function deleteResourcesFromHD($itemId, $is_admin = false)
+    public static function deleteResourcesFromHD($itemId, $is_admin = false, $resources = null)
     {
-        $resources = ItemResource::newInstance()->getAllResourcesFromItem($itemId);
+        // $resources lets the caller supply rows it read earlier. The item delete reads
+        // them before its transaction and calls this after the commit, when the rows are
+        // gone and a fresh lookup would find nothing to unlink.
+        if (!is_array($resources)) {
+            $resources = ItemResource::newInstance()->getAllResourcesFromItem($itemId);
+        }
         Log::newInstance()
             ->insertLog(
                 'itemActions',
@@ -56,7 +61,7 @@ class ItemActions
             );
         $log_ids = '';
         foreach ($resources as $resource) {
-            osc_deleteResource($resource['pk_i_id'], $is_admin);
+            osc_deleteResource($resource['pk_i_id'], $is_admin, $resource);
             $log_ids .= $resource['pk_i_id'] . ',';
         }
         Log::newInstance()->insertLog(

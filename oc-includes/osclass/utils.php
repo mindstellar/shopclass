@@ -43,7 +43,7 @@ function osc_isExpired($dt_expiration)
  *
  * @return bool|void
  */
-function osc_deleteResource($id, $admin)
+function osc_deleteResource($id, $admin, $resource = null)
 {
     if (defined('DEMO')) {
         return false;
@@ -51,7 +51,13 @@ function osc_deleteResource($id, $admin)
     if (is_array($id)) {
         $id = $id[0];
     }
-    $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+    // $resource lets a caller hand over the row it already read. Deleting a listing
+    // removes the resource rows inside a transaction and only unlinks the files once
+    // that commits, by which point this could no longer look the row up — and without
+    // the row there are no paths to remove and no resource to hand to the hook.
+    if (!is_array($resource)) {
+        $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+    }
     if ($resource !== null) {
         Log::newInstance()->insertLog(
             'item',
