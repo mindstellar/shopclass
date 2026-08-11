@@ -1,3 +1,182 @@
+// What the upgrade did, reported back in the owner's terms. Same flat bench panel as
+// the "What's new" block below, so the two read as one screen.
+//
+// Each outcome carries a tint, an icon SHAPE and a sentence — The Three Signal Rule —
+// and the statements behind it fold away into a disclosure. The owner is not a
+// developer: the sentence says what happened to their site, and the SQL is there for
+// whoever wants it without being the first thing anybody reads.
+
+.upgrade-running {
+  align-items: flex-start;
+  background: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  color: var(--osc-ink);
+  display: flex;
+  gap: .75rem;
+  padding: 1rem;
+}
+
+.upgrade-running-spinner {
+  block-size: 1.1rem;
+  border-width: .15em;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  inline-size: 1.1rem;
+  margin-block-start: .15rem;
+}
+
+.upgrade-running-line {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.upgrade-running-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  line-height: 1.5;
+  margin: .15rem 0 0;
+  max-inline-size: 60ch;
+}
+
+.upgrade-report {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.upgrade-report-head {
+  background: var(--osc-bench-warm);
+  border-block-end: 1px solid var(--osc-rule);
+  padding: .85rem 1rem;
+}
+
+.upgrade-report-heading {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.upgrade-report-sub {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  letter-spacing: .01em;
+  margin: .1rem 0 0;
+}
+
+.upgrade-report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.upgrade-report-item {
+  align-items: start;
+  border-block-end: 1px solid var(--osc-rule);
+  column-gap: .7rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  padding: .9rem 1rem;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+}
+
+// The shape half of the three signals, from the same icon font the flash messages
+// and status badges use.
+.upgrade-report-icon::before {
+  font-family: "bootstrap-icons";
+  font-size: 1.05rem;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+.upgrade-report-item-done .upgrade-report-icon::before {
+  color: var(--osc-success);
+  content: "\f26a"; // check-circle-fill
+}
+
+// A repair is not a failure and not a routine success: something had drifted and was
+// corrected. Warning tokens, so it reads as worth noticing without alarming anyone.
+.upgrade-report-item-repaired .upgrade-report-icon::before {
+  color: var(--osc-warning-deep);
+  content: "\f33a"; // exclamation-triangle-fill
+}
+
+.upgrade-report-item-failed .upgrade-report-icon::before {
+  color: var(--osc-danger);
+  content: "\f336"; // exclamation-octagon-fill
+}
+
+.upgrade-report-line {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.upgrade-report-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  line-height: 1.55;
+  margin: .2rem 0 0;
+  max-inline-size: 68ch;
+}
+
+.upgrade-report-detail {
+  margin-block-start: .5rem;
+
+  summary {
+    border-radius: 4px;
+    color: var(--osc-bronze);
+    cursor: pointer;
+    display: inline-block;
+    font-size: .8125rem;
+    font-weight: 500;
+    letter-spacing: .01em;
+
+    &:hover {
+      color: var(--osc-bronze-deep);
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 2px;
+    }
+  }
+}
+
+// The statements themselves. Monospace because they ARE code, and recessed so the
+// panel still reads sentence-first.
+.upgrade-report-detail-list {
+  background: var(--osc-bench-sunk);
+  border-radius: 4px;
+  color: var(--osc-ink-emphasis);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .8125rem;
+  line-height: 1.6;
+  list-style: none;
+  margin: .5rem 0 0;
+  max-block-size: 16rem;
+  overflow: auto;
+  padding: .6rem .75rem;
+  overflow-wrap: anywhere;
+
+  li + li {
+    border-block-start: 1px solid var(--osc-rule);
+    margin-block-start: .35rem;
+    padding-block-start: .35rem;
+  }
+}
+
 // "What's new" highlights on the upgrade screen — the newest release's changelog
 // entries, tagged by category. A flat bench panel (no shadow): a bench-warm header
 // carrying the release label and a count, a tag/text list, and a footer link out to

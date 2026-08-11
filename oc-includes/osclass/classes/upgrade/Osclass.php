@@ -158,7 +158,12 @@ class Osclass extends UpgradePackage
             return json_encode([
                 'error'   => 0,
                 'message' => __('Shopclass DB Upgraded Successfully'),
+                // What the upgrade actually did, for the screen to report back. Both
+                // are normally empty on a site that is already current, which is worth
+                // saying out loud rather than leaving the owner to guess.
+                'applied' => array_values($migrated['applied']),
                 'repairs' => $repairs,
+                'version' => self::newVersionOnDisk(),
             ]);
         }
 

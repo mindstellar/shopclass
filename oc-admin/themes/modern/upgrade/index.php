@@ -32,29 +32,141 @@ osc_add_filter('admin_title', 'customPageTitle');
 //customize Head
 function customHead()
 {
+    // The screen reports back in the owner's terms, not the database's. Two things
+    // can happen during an upgrade and both are worth naming: updates that bring the
+    // data in line with the new version, and repairs where the database did not match
+    // what Shopclass expected. Neither is a normal thing for a site owner to reason
+    // about, so each gets a plain sentence saying what it means for them, and the
+    // statements themselves sit behind a disclosure for whoever does want them.
+    $strings = array(
+        'titleDone'     => __('Your database is up to date'),
+        'titleFailed'   => __('The upgrade did not finish'),
+        'nothing'       => __('Nothing needed changing.'),
+        'nothingNote'   => __('Your database already matched this version of Shopclass.'),
+        // Both forms are handed over rather than a "%s update(s)" fudge: the count is
+        // only known once the request comes back, so _n() cannot pick here.
+        'updatesOne'    => __('Applied one update.'),
+        'updatesMany'   => __('Applied %s updates.'),
+        'updatesNote'   => __('These bring your existing data in line with the new version.'),
+        'repairsOne'    => __('Repaired one difference.'),
+        'repairsMany'   => __('Repaired %s differences.'),
+        'repairsNote'   => __('Parts of your database did not match what Shopclass expected, and have been put right. This usually follows a plugin change or an upgrade that was interrupted.'),
+        'failedNote'    => __('Your site has not been changed. Nothing was left half-done.'),
+        'detail'        => __('Show technical detail'),
+        'runningTitle'  => __('Updating your database'),
+        'runningNote'   => __('This can take a minute on a large site. Please leave this page open until it finishes.'),
+    );
     ?>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function () {
-            <?php if (Params::getParam('confirm') === 'true') {?>
+            <?php if (Params::getParam('confirm') === 'true') { ?>
+            var T = <?php echo json_encode($strings, JSON_UNESCAPED_UNICODE); ?>;
+
             var output = document.getElementById('output');
             if (output) { output.style.display = ''; }
             var tohide = document.getElementById('tohide');
             if (tohide) { tohide.style.display = 'none'; }
 
-            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo Params::getParam('skipdb')?>&<?php echo osc_csrf_token_url(); ?>', {
+            function el(tag, cls, text) {
+                var n = document.createElement(tag);
+                if (cls) { n.className = cls; }
+                if (text !== undefined && text !== null) { n.textContent = text; }
+                return n;
+            }
+
+            /* One reported outcome: a sentence, what it means, and the raw statements
+               folded away. `state` picks the tint and the icon shape. */
+            function row(state, line, note, detail) {
+                var li = el('li', 'upgrade-report-item upgrade-report-item-' + state);
+                li.appendChild(el('span', 'upgrade-report-icon'))
+                    .setAttribute('aria-hidden', 'true');
+
+                var body = el('div', 'upgrade-report-body');
+                body.appendChild(el('p', 'upgrade-report-line', line));
+                if (note) { body.appendChild(el('p', 'upgrade-report-note', note)); }
+
+                if (detail && detail.length) {
+                    var d = el('details', 'upgrade-report-detail');
+                    d.appendChild(el('summary', null, T.detail));
+                    var ul = el('ul', 'upgrade-report-detail-list');
+                    detail.forEach(function (entry) {
+                        ul.appendChild(el('li', null, String(entry)));
+                    });
+                    d.appendChild(ul);
+                    body.appendChild(d);
+                }
+
+                li.appendChild(body);
+                return li;
+            }
+
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo osc_esc_js(Params::getParam('skipdb')); ?>&<?php echo osc_csrf_token_url(); ?>', {
                 credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).then(function (r) {
                 return r.json();
             }).then(function (data) {
-                var loading = document.getElementById('loading_image');
-                if (loading) { loading.style.display = 'none'; }
                 var result = document.getElementById('result');
-                if (result) {
-                    result.innerHTML = (data.error === 1)
-                        ? 'Error: ' + data.message.replace(/\n/g, '<br />')
-                        : 'Success: ' + data.message + '<br />';
+                if (!result) { return; }
+
+                var failed = Number(data.error) !== 0;
+                var applied = Array.isArray(data.applied) ? data.applied : [];
+                var repairs = Array.isArray(data.repairs) ? data.repairs : [];
+
+                var section = el('section', 'upgrade-report' + (failed ? ' upgrade-report-failed' : ''));
+                section.setAttribute('aria-labelledby', 'upgrade-report-title');
+
+                var head = el('header', 'upgrade-report-head');
+                var h = el('h3', 'upgrade-report-heading', failed ? T.titleFailed : T.titleDone);
+                h.id = 'upgrade-report-title';
+                head.appendChild(h);
+                if (!failed && data.version) {
+                    head.appendChild(el('p', 'upgrade-report-sub', 'Shopclass ' + data.version));
                 }
+                section.appendChild(head);
+
+                var list = el('ul', 'upgrade-report-list');
+
+                if (failed) {
+                    var li = el('li', 'upgrade-report-item upgrade-report-item-failed');
+                    li.appendChild(el('span', 'upgrade-report-icon')).setAttribute('aria-hidden', 'true');
+                    var body = el('div', 'upgrade-report-body');
+                    /* Server-composed, and for error 2 it carries the markup that
+                       offers to continue past a false positive — same trust as before. */
+                    var msg = el('div', 'upgrade-report-line');
+                    msg.innerHTML = String(data.message || '').replace(/\n/g, '<br />');
+                    body.appendChild(msg);
+                    body.appendChild(el('p', 'upgrade-report-note', T.failedNote));
+                    li.appendChild(body);
+                    list.appendChild(li);
+                } else {
+                    var count = function (n, one, many) {
+                        return n === 1 ? one : many.replace('%s', n);
+                    };
+
+                    if (applied.length) {
+                        list.appendChild(row(
+                            'done',
+                            count(applied.length, T.updatesOne, T.updatesMany),
+                            T.updatesNote,
+                            applied
+                        ));
+                    }
+                    if (repairs.length) {
+                        list.appendChild(row(
+                            'repaired',
+                            count(repairs.length, T.repairsOne, T.repairsMany),
+                            T.repairsNote,
+                            repairs
+                        ));
+                    }
+                    if (!applied.length && !repairs.length) {
+                        list.appendChild(row('done', T.nothing, T.nothingNote, null));
+                    }
+                }
+
+                section.appendChild(list);
+                result.replaceChildren(section);
             });
             <?php } ?>
         });
@@ -126,9 +238,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-settings">
     <?php osc_admin_page_head(__('Upgrade')); ?>
     <div id="result">
-        <div id="output" style="display:none">
-            <span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>
-            <?php _e('Upgrading your Shopclass installation (this could take a while): '); ?>
+        <div id="output" class="upgrade-running" style="display:none" role="status" aria-live="polite">
+            <span class="spinner-border upgrade-running-spinner" aria-hidden="true"></span>
+            <div>
+                <p class="upgrade-running-line"><?php _e('Updating your database'); ?></p>
+                <p class="upgrade-running-note">
+                    <?php _e('This can take a minute on a large site. Please leave this page open until it finishes.'); ?>
+                </p>
+            </div>
         </div>
         <div id="tohide">
             <p>

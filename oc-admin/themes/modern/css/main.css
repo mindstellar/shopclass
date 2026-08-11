@@ -15600,6 +15600,166 @@ code {
   cursor: pointer;
 }
 
+.upgrade-running {
+  align-items: flex-start;
+  background: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  color: var(--osc-ink);
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.upgrade-running-spinner {
+  block-size: 1.1rem;
+  border-width: 0.15em;
+  color: var(--osc-bronze);
+  flex: 0 0 auto;
+  inline-size: 1.1rem;
+  margin-block-start: 0.15rem;
+}
+
+.upgrade-running-line {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.upgrade-running-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0.15rem 0 0;
+  max-inline-size: 60ch;
+}
+
+.upgrade-report {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.upgrade-report-head {
+  background: var(--osc-bench-warm);
+  border-block-end: 1px solid var(--osc-rule);
+  padding: 0.85rem 1rem;
+}
+
+.upgrade-report-heading {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.upgrade-report-sub {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  margin: 0.1rem 0 0;
+}
+
+.upgrade-report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.upgrade-report-item {
+  align-items: start;
+  border-block-end: 1px solid var(--osc-rule);
+  column-gap: 0.7rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  padding: 0.9rem 1rem;
+}
+.upgrade-report-item:last-child {
+  border-block-end: 0;
+}
+
+.upgrade-report-icon::before {
+  font-family: "bootstrap-icons";
+  font-size: 1.05rem;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+.upgrade-report-item-done .upgrade-report-icon::before {
+  color: var(--osc-success);
+  content: "\f26a";
+}
+
+.upgrade-report-item-repaired .upgrade-report-icon::before {
+  color: var(--osc-warning-deep);
+  content: "\f33a";
+}
+
+.upgrade-report-item-failed .upgrade-report-icon::before {
+  color: var(--osc-danger);
+  content: "\f336";
+}
+
+.upgrade-report-line {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.upgrade-report-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin: 0.2rem 0 0;
+  max-inline-size: 68ch;
+}
+
+.upgrade-report-detail {
+  margin-block-start: 0.5rem;
+}
+.upgrade-report-detail summary {
+  border-radius: 4px;
+  color: var(--osc-bronze);
+  cursor: pointer;
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.upgrade-report-detail summary:hover {
+  color: var(--osc-bronze-deep);
+  text-decoration: underline;
+}
+.upgrade-report-detail summary:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
+.upgrade-report-detail-list {
+  background: var(--osc-bench-sunk);
+  border-radius: 4px;
+  color: var(--osc-ink-emphasis);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  max-block-size: 16rem;
+  overflow: auto;
+  padding: 0.6rem 0.75rem;
+  overflow-wrap: anywhere;
+}
+.upgrade-report-detail-list li + li {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 0.35rem;
+  padding-block-start: 0.35rem;
+}
+
 .whatsnew {
   background: var(--osc-bench);
   border: 1px solid var(--osc-rule);
