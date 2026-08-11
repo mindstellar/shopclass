@@ -83,30 +83,52 @@ jobs:
           mkdir -p /tmp/baselines
           : > /tmp/baselines/index
 
-          TAGS=$(git tag --sort=v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
-          if [ -z "$TAGS" ]; then
-            echo "::notice::No stable release tag found — skipping schema-drift check (no baseline to diff against yet)."
+          # Candidates come from two places, merged and then deduplicated by content:
+          # the committed fixtures, which cover releases whose tags were never pushed
+          # and so cannot be read out of git here, and every reachable release tag,
+          # which keeps new releases covered without anyone remembering to add a file.
+          # Fixtures are read first so that where the two overlap, the run is labelled
+          # with the older of the two.
+          CANDIDATES=''
+          for FIXTURE in tests/fixtures/schema-baselines/*.sql; do
+            [ -f "$FIXTURE" ] || continue
+            NAME=$(basename "$FIXTURE" .sql)
+            CANDIDATES="$CANDIDATES $NAME=$FIXTURE"
+          done
+
+          for TAG in $(git tag --sort=v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true); do
+            # sort -V puts the floor first only when the tag is at or above it.
+            OLDEST=$(printf '%s\n%s\n' "$TAG" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
+            [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
+            git show "$TAG:oc-includes/osclass/installer/struct.sql" > "/tmp/struct-$TAG.sql" 2>/dev/null || continue
+            CANDIDATES="$CANDIDATES $TAG=/tmp/struct-$TAG.sql"
+          done
+
+          if [ -z "$CANDIDATES" ]; then
+            echo "::notice::No release baseline found — skipping schema-drift check (nothing to diff against yet)."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          for TAG in $TAGS; do
-            # sort -V puts the floor first only when the tag is at or above it.
-            OLDEST=$(printf '%s\n%s\n' "$TAG" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
+          for CANDIDATE in $CANDIDATES; do
+            LABEL=${CANDIDATE%%=*}
+            FILE=${CANDIDATE#*=}
+
+            OLDEST=$(printf '%s\n%s\n' "$LABEL" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
             [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
 
-            git show "$TAG:oc-includes/osclass/installer/struct.sql" > "/tmp/struct-$TAG.sql" 2>/dev/null || continue
-            SUM=$(sha1sum "/tmp/struct-$TAG.sql" | cut -d' ' -f1)
-
+            SUM=$(sha1sum "$FILE" | cut -d' ' -f1)
             if [ -f "/tmp/baselines/$SUM.sql" ]; then
-              # Same schema as an earlier tag. Appended, so the oldest tag stays
+              # Same schema as one already queued. Appended, so the first label stays
               # first and is the one reported as the baseline actually run.
-              sed -i "s|^$SUM .*|& $TAG|" /tmp/baselines/index
+              grep -q "^$SUM .*\b$LABEL\b" /tmp/baselines/index || sed -i "s|^$SUM .*|& $LABEL|" /tmp/baselines/index
               continue
             fi
-            cp "/tmp/struct-$TAG.sql" "/tmp/baselines/$SUM.sql"
-            echo "$SUM $TAG" >> /tmp/baselines/index
+            cp "$FILE" "/tmp/baselines/$SUM.sql"
+            echo "$SUM $LABEL" >> /tmp/baselines/index
           done
+
+          sort -V -k2 -o /tmp/baselines/index /tmp/baselines/index
 
           echo "Distinct schemas to check:"
           while read -r SUM TAGS_FOR_SUM; do
