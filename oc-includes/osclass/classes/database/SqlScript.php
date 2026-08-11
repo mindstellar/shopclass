@@ -43,6 +43,7 @@ final class SqlScript
         // stripping comments ahead of substitution would erase them.
         $sql = self::substituteTokens($sql);
         $sql = self::stripBlockComments($sql);
+        $sql = self::stripLineComments($sql);
 
         $statements = array();
         foreach (self::split($sql, ';') as $statement) {
@@ -88,6 +89,83 @@ final class SqlScript
     private static function stripBlockComments(string $sql): string
     {
         return (string)preg_replace('#/\*(?:[^*]*(?:\*(?!/))*)*\*/#', '', $sql);
+    }
+
+    /**
+     * Remove `--` and `#` comments, leaving their line break in place.
+     *
+     * Block comments were stripped long before this existed, line comments never
+     * were, and callers that read a statement's text rather than just executing it
+     * saw the comment as part of it. The schema reconciler takes a table's column
+     * list as everything between the first `(` and the last `)` of the statement,
+     * so a comment above a CREATE TABLE that merely happened to contain a bracket
+     * -- `SUM()`, `(value x 1000000)` -- started the column list early, and the
+     * prose that followed was read as column definitions and issued as ALTER TABLE
+     * ADD COLUMN. Comments describing the schema are the whole point of writing
+     * them, so they are removed here rather than being banned from struct.sql.
+     *
+     * Quote-aware, because this also parses locale mail templates and dumps
+     * uploaded through the admin importer, where `--` inside a string literal is
+     * ordinary text and must survive. `--` only opens a comment when whitespace or
+     * end-of-input follows it, which is what MySQL requires and what keeps `5--3`
+     * intact. Backslash escapes and doubled quotes are both handled.
+     *
+     * @param string $sql
+     *
+     * @return string
+     */
+    private static function stripLineComments(string $sql): string
+    {
+        $out    = '';
+        $length = strlen($sql);
+        $quote  = null;
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+
+            if ($quote !== null) {
+                $out .= $char;
+                // Backslash escaping applies inside quoted values, not inside the
+                // backtick-quoted identifiers that only double their delimiter.
+                if ($char === '\\' && $quote !== '`' && $i + 1 < $length) {
+                    $out .= $sql[++$i];
+                    continue;
+                }
+                if ($char === $quote) {
+                    // A doubled delimiter re-opens the literal on the next pass,
+                    // which leaves the text between them untouched either way.
+                    $quote = null;
+                }
+                continue;
+            }
+
+            if ($char === "'" || $char === '"' || $char === '`') {
+                $quote = $char;
+                $out  .= $char;
+                continue;
+            }
+
+            $opensComment = $char === '#'
+                || ($char === '-'
+                    && $i + 1 < $length
+                    && $sql[$i + 1] === '-'
+                    && ($i + 2 >= $length || $sql[$i + 2] === ' ' || $sql[$i + 2] === "\t"
+                        || $sql[$i + 2] === "\r" || $sql[$i + 2] === "\n"));
+
+            if ($opensComment) {
+                while ($i < $length && $sql[$i] !== "\n") {
+                    $i++;
+                }
+                // The newline is kept: statements are split on ';' and a comment
+                // sitting between two of them must not join their text together.
+                $out .= "\n";
+                continue;
+            }
+
+            $out .= $char;
+        }
+
+        return $out;
     }
 
     /**
