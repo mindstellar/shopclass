@@ -569,12 +569,21 @@ harness_section('listRegions — any other order column selects nothing, so the 
 
 $flush();
 $list = $model->listRegions('%%%%', '>', 's_name ASC');
+/* Spelled out rather than derived, and it has to be updated whenever t_region
+ * gains a column -- which is the point. This branch selects the whole row, so a
+ * column added to the table starts being handed to every caller of listRegions()
+ * the moment it exists, and having to come here is how that gets noticed. The
+ * order is t_region's columns then t_region_stats', matching FROM ... CROSS JOIN.
+ * The last three arrived with the location import. */
 pin('the projection is every column of both joined tables', array(
     'pk_i_id',
     'fk_c_country_code',
     's_name',
     's_slug',
     'b_active',
+    'i_source_id',
+    'd_coord_lat',
+    'd_coord_long',
     'fk_i_region_id',
     'i_num_items',
 ), array_keys($list[0]));
