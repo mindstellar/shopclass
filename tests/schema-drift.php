@@ -189,7 +189,20 @@ function normalise_ddl($ddl)
     foreach (explode("\n", $body) as $line) {
         $line = trim(rtrim(trim($line), ','));
         if ($line !== '') {
-            $lines[] = $line;
+            // struct.sql declares its foreign keys anonymously, so MySQL names them
+            // `<table>_ibfk_<n>` by creation order. A migration that rebuilds a key
+            // drops it and adds it back, which takes the next free number -- so the
+            // same key is _ibfk_1 on a fresh install and _ibfk_6 on an upgraded one.
+            // The number records the order the keys happened to be created in, not
+            // anything about the schema, and no code refers to it (constraints are
+            // resolved through information_schema), so it is flattened rather than
+            // reported as drift. A difference that matters -- a key present on one
+            // path only, or pointing somewhere else, or carrying a different ON
+            // DELETE rule -- still shows, because the rest of the line is kept.
+            //
+            // Flattened BEFORE the sort, or the lines sort by a number that is about
+            // to be erased and two identical schemas come out in different orders.
+            $lines[] = preg_replace('/_ibfk_\d+`/', '_ibfk_N`', $line);
         }
     }
     sort($lines, SORT_STRING);

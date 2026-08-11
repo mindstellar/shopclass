@@ -527,8 +527,11 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'delete_group':
                 osc_csrf_check();
+                // Row count, not just "did not throw": deleteByPrimaryKey() reports 0
+                // for an id that matched nothing, and reporting that as a success left
+                // the deleted form sitting in the list until the page was reloaded.
                 $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
-                if ($res !== false) {
+                if ($res > 0) {
                     echo json_encode(array('ok' => __('The field group has been deleted')));
                 } else {
                     echo json_encode(array('error' => __('An error occurred while deleting')));

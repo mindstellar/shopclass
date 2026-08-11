@@ -398,24 +398,27 @@ class User extends DAO
 
             ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
 
-            // The dependent deletes discarded their own result before, so a
-            // failure on any one must not stop the rest; only the final user
-            // delete's count decides the return.
-            foreach (
-                array('t_user_email_tmp', 't_user_description', 't_alerts') as $depTable
-            ) {
-                try {
-                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
-                } catch (\mindstellar\database\DbException $e) {
-                    // discarded, as before
-                }
-            }
+            // t_alerts carries no foreign key to the user, so only this removes it.
+            // The other two are covered by ON DELETE CASCADE as well, and stay listed
+            // for installs whose foreign keys were never created. t_billing_ledger and
+            // t_billing_order are deliberately left alone: the accounting record has to
+            // outlive the account, which is why neither has a foreign key either.
+            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts');
 
             try {
-                $deleted = osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
-            } catch (\mindstellar\database\DbException $e) {
+                $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                    foreach ($dependents as $depTable) {
+                        osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
+                    }
+
+                    return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+                });
+            } catch (\Throwable $e) {
+                // Rolled back together, so a user who cannot be removed keeps their
+                // profile and alerts rather than being left as a bare login row.
                 $deleted = 0;
             }
+
             if ($deleted === 1) {
                 osc_run_hook('after_delete_user', $id);
 

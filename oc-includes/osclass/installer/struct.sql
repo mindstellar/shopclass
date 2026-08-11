@@ -1,5 +1,19 @@
 SET NAMES 'utf8mb4';
 
+-- Referential policy. A foreign key carries ON DELETE CASCADE when the child row is
+-- meaningless without its parent and removing it has no side effect: descriptions,
+-- stats, slug history, meta values and link tables. The database then guarantees the
+-- cleanup even if a caller forgets, and a parent delete can no longer half-succeed.
+--
+-- Everything else stays RESTRICT on purpose. A child that is an entity in its own
+-- right -- t_item, t_item_comment, t_item_resource, and the location hierarchy --
+-- has files on disk, counter updates or lifecycle hooks attached to its removal, so
+-- it must go through the model that performs them. There, RESTRICT is the safety
+-- net: it turns a forgotten cascade into a loud failure instead of orphaned files.
+--
+-- t_billing_ledger and t_billing_order deliberately carry no foreign key at all, for
+-- the reason given in the note above each of them.
+
 CREATE TABLE /*TABLE_PREFIX*/t_locale (
     pk_c_code CHAR(5) NOT NULL,
     s_name VARCHAR(100) NOT NULL,
@@ -170,8 +184,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_description (
     s_info TEXT NULL,
 
         PRIMARY KEY (fk_i_user_id, fk_c_locale_code),
-        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id),
-        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
@@ -180,7 +194,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_email_tmp (
     dt_date DATETIME NOT NULL,
 
         PRIMARY KEY (fk_i_user_id),
-        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id)
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category (
@@ -207,8 +221,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_description (
 
         PRIMARY KEY (fk_i_category_id, fk_c_locale_code),
         INDEX idx_s_slug (s_slug),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
-        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
@@ -216,7 +230,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_stats (
     i_num_items INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
@@ -227,7 +241,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_category_slug_history (
 
         PRIMARY KEY (s_slug, fk_c_locale_code),
         INDEX idx_hist_cat (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item (
@@ -293,7 +307,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_location (
     d_coord_long DECIMAL(10,6),
 
         PRIMARY KEY (fk_i_item_id),
-        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
@@ -313,7 +327,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
 
         PRIMARY KEY (fk_i_item_id),
         INDEX i_num_spam (i_num_spam),
-        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_stats_daily (
@@ -427,8 +441,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
     s_text TEXT,
 
         PRIMARY KEY (fk_i_pages_id, fk_c_locale_code),
-        FOREIGN KEY (fk_i_pages_id) REFERENCES /*TABLE_PREFIX*/t_pages (pk_i_id),
-        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code)
+        FOREIGN KEY (fk_i_pages_id) REFERENCES /*TABLE_PREFIX*/t_pages (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
@@ -436,7 +450,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
     fk_i_category_id INT UNSIGNED NOT NULL,
 
         INDEX fk_i_category_id (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
@@ -502,8 +516,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
 
         PRIMARY KEY (fk_i_group_id, fk_i_category_id),
         INDEX idx_group_cat_category (fk_i_category_id),
-        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id)
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_group_fields (
@@ -513,8 +527,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_group_fields (
 
         PRIMARY KEY (fk_i_group_id, fk_i_field_id),
         INDEX idx_group_fields_field (fk_i_field_id),
-        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id),
-        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
@@ -542,7 +556,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (
         PRIMARY KEY (fk_i_submission_id, fk_i_field_id, s_multi),
         INDEX idx_field (fk_i_field_id),
         FOREIGN KEY (fk_i_submission_id) REFERENCES /*TABLE_PREFIX*/t_form_submission (pk_i_id) ON DELETE CASCADE,
-        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
@@ -550,8 +564,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_categories (
     fk_i_field_id INT UNSIGNED NOT NULL,
 
         PRIMARY KEY (fk_i_category_id, fk_i_field_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id),
-        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_meta (
@@ -562,8 +576,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_meta (
 
         PRIMARY KEY (fk_i_item_id, fk_i_field_id, s_multi),
         INDEX s_value (s_value(255)),
-        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id),
-        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id)
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_field_id) REFERENCES /*TABLE_PREFIX*/t_meta_fields (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_log (
@@ -583,7 +597,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
 
         PRIMARY KEY (fk_i_city_id),
         INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id)
+        FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
@@ -592,7 +606,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_region_stats (
 
         PRIMARY KEY (fk_i_region_id),
         INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id)
+        FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
@@ -601,7 +615,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
 
         PRIMARY KEY (fk_c_country_code),
         INDEX idx_num_items (i_num_items),
-        FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
+        FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_locations_tmp (

@@ -120,9 +120,12 @@ class CAdminAppearance extends AdminSecBaseModel
                 break;
             case ('delete_widget'):
                 osc_csrf_check();
+                $widgetId = Params::getParamInt('id');
+                osc_run_hook('before_delete_widget', $widgetId);
                 Widget::newInstance()->delete(
-                    array('pk_i_id' => Params::getParam('id'))
+                    array('pk_i_id' => $widgetId)
                 );
+                osc_run_hook('after_delete_widget', $widgetId);
                 osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
                 $this->redirectTo($this->widgetReturnUrl());
                 break;

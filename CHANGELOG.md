@@ -8,6 +8,47 @@ Google Analytics is no longer wired into the core. Analytics is one vendor's pro
 many, and shipping a field for one of them meant every site carried the code for a service
 most of them do not use — so it now goes in the same place as any other third-party tag.
 
+### Fixed
+
+- **Deleting a custom field that had been submitted through a form failed.** The delete
+  removed the field's values, its category assignments and its form memberships, then hit a
+  foreign key on the submitted values it had not cleared and stopped — leaving the field in
+  place but stripped of everything attached to it. The submitted values are now removed with
+  it. This is the same fault that stopped categories being deleted when they had custom
+  fields assigned.
+- Every delete cascade now runs in a transaction, so a delete that cannot finish leaves the
+  record exactly as it was instead of removing its children and failing on the parent.
+- Deleting a form now removes the submissions made through it, deleting a listing removes its
+  report and moderation history, and deleting a region or city removes its recorded slug
+  history. None of these tables has a foreign key, so nothing was clearing them: the rows
+  stayed behind, and an id later reused by a new record inherited them.
+- A listing's counts are now decremented once it has actually been removed. A delete that
+  failed still took the listing out of every category, location and user total.
+- Deleting a form reported success when it had removed nothing.
+- Running a database upgrade repeatedly no longer adds a duplicate copy of a foreign key each
+  time. The schema reconciler compared keys including their `ON DELETE` clause, so a key whose
+  rule had changed read as missing and was appended rather than replaced.
+
+### Changed
+
+- Foreign keys on dependent tables — descriptions, stats, slug history, custom-field values
+  and link tables — now declare `ON DELETE CASCADE`, so the database removes them with their
+  parent. Tables whose removal has side effects (listings, comments, uploaded files, the
+  location hierarchy) deliberately keep the previous behaviour and are still removed by the
+  code that performs those side effects. Existing installs are converted on upgrade.
+
+### New
+
+- Delete hooks for the records that had none: `before_delete_field` / `after_delete_field`,
+  `before_delete_field_group` / `after_delete_field_group`, `before_delete_page` /
+  `after_delete_page`, `before_delete_country` / `after_delete_country`,
+  `before_delete_region` / `after_delete_region`, `before_delete_city` / `after_delete_city`,
+  `before_delete_city_area` / `after_delete_city_area`, `before_delete_form_submission` /
+  `after_delete_form_submission`, `before_delete_widget` / `after_delete_widget`, and
+  `after_delete_category` to pair with the existing `delete_category`. Each `before_` hook
+  runs before the delete's transaction opens and each `after_` hook only once it has
+  committed, so a plugin's own database work is never rolled back with a failed delete.
+
 ### Breaking
 
 - **Google Analytics has been removed from core.** The **Tracking ID** field is gone from

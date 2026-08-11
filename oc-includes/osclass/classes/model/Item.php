@@ -1233,6 +1233,48 @@ class Item extends DAO
             return false;
         }
 
+        $isAdmin = false;
+        if (defined('OC_ADMIN') && OC_ADMIN) {
+            $isAdmin = true;
+        }
+
+        // Runs before the transaction because it reads t_item_resource to learn which
+        // files to unlink, and the transaction is about to remove those rows. Deleting
+        // files cannot be rolled back in any case, so this step is outside the atomic
+        // part by nature rather than by choice.
+        ItemActions::deleteResourcesFromHD($id, $isAdmin);
+
+        // t_item_moderation_log and t_item_report_log carry no foreign key to the
+        // item, so nothing blocked the delete and nothing removed them either: an
+        // id reused by a later listing would inherit the old listing's report and
+        // moderation history. The rest are covered by ON DELETE CASCADE as well,
+        // and stay listed for installs whose foreign keys were never created.
+        $dependents = array(
+            't_item_description',
+            't_item_comment',
+            't_item_resource',
+            't_item_location',
+            't_item_stats',
+            't_item_meta',
+            't_item_moderation_log',
+            't_item_report_log',
+        );
+
+        try {
+            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                foreach ($dependents as $depTable) {
+                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
+                }
+
+                return parent::deleteByPrimaryKey($id);
+            });
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        // Counters are decremented only once the row is really gone. Doing it first
+        // meant a delete that failed still took the listing out of every total, and
+        // the numbers stayed wrong until the next stats rebuild.
         if ($item['b_active'] == 1 && $item['b_enabled'] == 1 && $item['b_spam'] == 0
             && !osc_isExpired($item['dt_expiration'])
         ) {
@@ -1244,28 +1286,10 @@ class Item extends DAO
             RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
             CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
         }
-        $isAdmin = false;
-        if (defined('OC_ADMIN') && OC_ADMIN) {
-            $isAdmin = true;
-        }
-        ItemActions::deleteResourcesFromHD($id, $isAdmin);
-
-        // Each dependent-table delete had its result discarded, and legacy
-        // dao->delete() returned false on failure without throwing — so every one
-        // ran regardless of any other failing. The builder throws, so each keeps
-        // its own swallowed catch; only the final parent delete decides the return
-        // (amendment K).
-        foreach (array('t_item_description', 't_item_comment', 't_item_resource', 't_item_location', 't_item_stats', 't_item_meta') as $depTable) {
-            try {
-                osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
-            } catch (\mindstellar\database\DbException $e) {
-                // ignore: a failed dependent delete never aborted the cascade
-            }
-        }
 
         Plugins::runHook('delete_item', $id);
 
-        return parent::deleteByPrimaryKey($id);
+        return $deleted;
     }
 
     /**

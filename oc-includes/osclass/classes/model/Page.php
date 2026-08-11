@@ -248,22 +248,36 @@ class Page extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        $row   = $this->findByPrimaryKey($id);
-        $order = $row['i_order'];
+        $row = $this->findByPrimaryKey($id);
 
-        $this->reOrderPages($order);
+        osc_run_hook('before_delete_page', $id);
 
-        try {
-            osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // Discarded before this conversion too; the page delete below still runs.
-        }
+        // An id that matches nothing still runs the delete and reports zero rows
+        // removed, which callers tell apart from the false a failure returns. Only
+        // the reorder is skipped, since there is no gap to close.
+        $order = isset($row['i_order']) ? $row['i_order'] : null;
 
         try {
-            return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
-        } catch (\mindstellar\database\DbException $e) {
+            $deleted = osc_db_transaction(function () use ($id, $order) {
+                if ($order !== null) {
+                    // Inside the transaction so a failed delete does not renumber
+                    // the pages that are still there.
+                    $this->reOrderPages($order);
+                }
+
+                osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
+
+                return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
+            });
+        } catch (\Throwable $e) {
             return false;
         }
+
+        if ($deleted > 0) {
+            osc_run_hook('after_delete_page', $id);
+        }
+
+        return $deleted;
     }
 
     /**

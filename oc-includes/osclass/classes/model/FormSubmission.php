@@ -218,11 +218,15 @@ class FormSubmission
      */
     public function delete(int $id): bool
     {
+        osc_run_hook('before_delete_form_submission', $id);
+
         try {
             $this->table()->where('pk_i_id', $id)->delete();
         } catch (Throwable $e) {
             return false;
         }
+
+        osc_run_hook('after_delete_form_submission', $id);
 
         return true;
     }

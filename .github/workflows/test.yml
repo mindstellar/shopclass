@@ -115,3 +115,5 @@ jobs:
         run: php tests/dao-contract.php
       - name: Model contracts
         run: php tests/run-models.php
+      - name: Delete cascades
+        run: php tests/delete-cascade.php
