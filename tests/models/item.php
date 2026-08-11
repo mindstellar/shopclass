@@ -864,8 +864,8 @@ check('deleteByPrimaryKey returns the affected-row count', is_int($directRet) ||
 check('the item is gone', !$itemExists($directDoom));
 pin('its resource rows are gone', 0, $countRows($resTable, 'fk_i_item_id', $directDoom));
 // findByPrimaryKey(unknown) returns array() (not null), so the null-guard is not
-// taken; the cascade runs over zero rows and parent::deleteByPrimaryKey() reports
-// int 0 affected.
+// taken; the cascade runs over zero rows and the delete reports int 0 affected.
+// Zero rows matched is not a failure, so it does not roll the transaction back.
 pin('deleting an unknown id returns int 0 (the null-guard sees array(), not null)', 0, $model->deleteByPrimaryKey(999999));
 
 harness_section('Item::deleteByCity / deleteByRegion / deleteByCountry / deleteByCityArea — empty scopes');

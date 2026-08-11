@@ -1267,18 +1267,14 @@ class Item extends DAO
                     osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
 
-                $removed = parent::deleteByPrimaryKey($id);
-                if ($removed === false) {
-                    // The legacy DAO reports a failed delete by returning false instead
-                    // of raising. Returned as-is it would look like an ordinary result,
-                    // the transaction would commit, and the listing would be left in
-                    // place with its description, images and stats already deleted --
-                    // the exact outcome the transaction is here to prevent. Raising is
-                    // what turns it into a rollback.
-                    throw new \RuntimeException('Deleting item ' . (int)$id . ' failed');
-                }
-
-                return $removed;
+                // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
+                // delete by returning false rather than raising, and a plain return
+                // inside a transaction reads as success — so the dependent deletes above
+                // would commit and leave the listing in place with everything attached
+                // to it already gone. This is the same statement the DAO would run, from
+                // the layer that raises, which is what makes the rollback real. It still
+                // reports 0 for an id that matched nothing, which is not a failure.
+                return osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
             });
         } catch (\Throwable $e) {
             return false;
