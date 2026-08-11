@@ -15,11 +15,26 @@
  *
  *   FRESH    empty DB  ->  import current struct.sql
  *   UPGRADE  empty DB  ->  import BASELINE struct.sql (last release)
- *                          ->  updateDB(current struct.sql)   (additive reconcile)
- *                          ->  MigrationRunner::run()         (everything additive can't do)
+ *                          ->  MigrationRunner::run()
  *
- * If the normalised schemas differ, the current struct.sql was changed in a way the
- * upgrade path does not reproduce — i.e. a migration is owed (or struct.sql is wrong).
+ * The upgrade path deliberately does NOT run the schema reconciler. Migrations alone
+ * have to reproduce struct.sql, and this is what holds them to it.
+ *
+ * That matters because the reconciler derives its work from struct.sql by inspection,
+ * so it silently absorbs any additive change nobody wrote a migration for. With it in
+ * this path the check passed either way, and there was no way to tell a schema the
+ * migrations actually build from one the reconciler was quietly repairing on every
+ * upgrade. Keeping it out draws the line: struct.sql changes, a migration is owed.
+ *
+ * A second assertion follows the comparison. Once the migrations have run, the
+ * reconciler is asked what it would still do, and the answer must be nothing. That is
+ * the same property stated from the other side, and it fails with the exact ALTER
+ * statements the missing migration should contain rather than with a schema diff.
+ *
+ * The reconciler itself is unchanged and still runs on a real upgrade, where it stays
+ * useful for repairing an install that has drifted by other means -- a hand-edited
+ * column, a plugin's leftovers, an upgrade interrupted half way. What it no longer is
+ * is load-bearing.
  *
  * Usage:  php tests/schema-drift.php <baseline-struct.sql>
  * Env:    DRIFT_DB_HOST DRIFT_DB_USER DRIFT_DB_PASS  (DB must allow CREATE/DROP DATABASE)
@@ -111,15 +126,9 @@ function connection_for($db)
 $fresh = comm_for($freshDb);
 $fresh->importSQL($currentStruct);
 
-// ---- UPGRADE -------------------------------------------------------------
+// ---- UPGRADE (migrations only — the reconciler is deliberately not run) ----
 $upgrade = comm_for($upgradeDb);
 $upgrade->importSQL($baselineStruct);
-$reconciled = str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $currentStruct);
-$result = $upgrade->updateDB($reconciled);
-if (!$result[0]) {
-    fwrite(STDERR, "updateDB reported failing queries:\n" . implode("\n", $result[2]) . "\n");
-    exit(2);
-}
 $runner = new MigrationRunner(connection_for($upgradeDb), $migrationsDir);
 $runner->ensureLedger();
 $migrated = $runner->run();
@@ -132,17 +141,38 @@ if (!$migrated['ok']) {
 $a = dump_schema($host, $user, $pass, $freshDb);
 $b = dump_schema($host, $user, $pass, $upgradeDb);
 
+// ---- WHAT THE RECONCILER WOULD STILL DO ----------------------------------
+// Runs after both schemas have been read, because it writes to the upgraded one.
+// struct.sql carries no INSERT or UPDATE, so on a schema the migrations have
+// fully built this returns nothing at all; anything it does return is a change
+// present in struct.sql that no migration reproduces.
+$reconciled = str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $currentStruct);
+$leftover   = $upgrade->updateDB($reconciled);
+$pending    = array_values($leftover[1]);
+
 $admin->query("DROP DATABASE IF EXISTS `$freshDb`");
 $admin->query("DROP DATABASE IF EXISTS `$upgradeDb`");
 
-if ($a === $b) {
-    echo "OK — fresh install and upgrade path produce identical schemas.\n";
+if ($a === $b && $pending === array()) {
+    echo "OK — migrations alone reproduce struct.sql, and the reconciler has nothing left to do.\n";
     exit(0);
 }
 
-fwrite(STDERR, "SCHEMA DRIFT DETECTED — fresh install and upgrade path diverge.\n");
+fwrite(STDERR, "SCHEMA DRIFT DETECTED — migrations do not reproduce struct.sql.\n");
 fwrite(STDERR, "A migration is owed for the change in struct.sql (or struct.sql is wrong).\n\n");
-fwrite(STDERR, unified_diff($a, $b) . "\n");
+
+if ($pending !== array()) {
+    fwrite(STDERR, "The reconciler would still run these — this is the migration you owe:\n");
+    foreach ($pending as $query) {
+        fwrite(STDERR, '  ' . preg_replace('/\s+/', ' ', trim($query)) . "\n");
+    }
+    fwrite(STDERR, "\n");
+}
+
+if ($a !== $b) {
+    fwrite(STDERR, unified_diff($a, $b) . "\n");
+}
+
 exit(1);
 
 /**

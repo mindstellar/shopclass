@@ -266,15 +266,25 @@ class SchemaReconciler
             //Every field should we on the definition, so else SHOULD never happen,
             // unless a very aggressive plugin modify our tables
             if (array_key_exists(strtolower($tbl_field['Field']), $normal_fields)) {
+                // The declaration is "<name> <type> ...", but struct.sql is free to pad
+                // between the two to keep a table's types in a column. Matching a single
+                // literal space made the type of every aligned declaration come out
+                // empty, which never equals the live type, so the reconciler proposed a
+                // CHANGE COLUMN that changed nothing on every upgrade. Anchored to the
+                // start of the declaration as well, so a name appearing again later in
+                // it -- inside a DEFAULT, say -- cannot be mistaken for the type.
+                $declaration = $normal_fields[strtolower($tbl_field['Field'])];
+                $fieldName   = preg_quote($tbl_field['Field'], '|');
+
                 // Take the of the field
                 if (preg_match(
-                    '|' . $tbl_field['Field'] . " (ENUM\s*\(([^\)]*)\))|i",
-                    $normal_fields[strtolower($tbl_field['Field'])],
+                    '|^' . $fieldName . "\s+(ENUM\s*\(([^\)]*)\))|i",
+                    $declaration,
                     $match
                 )
                     || preg_match(
-                        '|' . $tbl_field['Field'] . ' ([^ ]*( unsigned)?)|i',
-                        $normal_fields[strtolower($tbl_field['Field'])],
+                        '|^' . $fieldName . '\s+([^ ]+(\s+unsigned)?)|i',
+                        $declaration,
                         $match
                     )
                 ) {

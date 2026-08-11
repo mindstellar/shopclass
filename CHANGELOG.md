@@ -28,6 +28,10 @@ most of them do not use — so it now goes in the same place as any other third-
 - Running a database upgrade repeatedly no longer adds a duplicate copy of a foreign key each
   time. The schema reconciler compared keys including their `ON DELETE` clause, so a key whose
   rule had changed read as missing and was appended rather than replaced.
+- A database upgrade no longer rewrites columns that had not changed. Where a table's
+  definition padded between a column's name and its type to keep them aligned, the reconciler
+  read the type as empty, decided it differed from the live one and issued a `CHANGE COLUMN`
+  for it — rebuilding the table on every upgrade to arrive back where it started.
 
 ### Changed
 

@@ -1,7 +1,11 @@
 # Verifies that a fresh install (struct.sql) and an upgraded install
-# (last release's struct.sql -> updateDB -> migrations) converge to the
-# same database schema. A failure means struct.sql changed in a way the
-# upgrade path does not reproduce — i.e. a migration is owed.
+# (last release's struct.sql -> migrations) converge to the same database
+# schema. A failure means struct.sql changed in a way the migrations do not
+# reproduce — i.e. a migration is owed.
+#
+# The upgrade path deliberately excludes the schema reconciler, which would
+# otherwise absorb any additive change nobody wrote a migration for and let
+# the check pass on a schema it was quietly repairing on every upgrade.
 name: Schema Drift
 on:
   # develop and master are excluded here because the release workflow calls this
