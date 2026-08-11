@@ -58,22 +58,54 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Upgrade Shopclass Database
+     * Upgrade Shopclass Database.
      *
-     * @param bool $skip_db
+     * The migrations are what build the schema. Every change to struct.sql is
+     * required to have a migration behind it, and tests/schema-drift.php holds each
+     * release to that by rebuilding the schema from migrations alone and refusing to
+     * pass if the reconciler is left with anything to do.
+     *
+     * The reconciler still runs first, and still repairs. What it is for is an install
+     * that has drifted by some route the migrations cannot know about -- a
+     * hand-edited column, a plugin's leftovers, an upgrade interrupted half way -- and
+     * on an install in good order it now finds nothing and issues nothing. Anything it
+     * does apply is reported back in `repairs` rather than being applied silently,
+     * because on a healthy install that list is expected to be empty and a non-empty
+     * one is worth seeing.
+     *
+     * It runs before the migrations rather than after, which is the order this has
+     * always used: an install coming from a much older release runs the whole
+     * migration sequence in one go, and repairing the schema first is what has made
+     * that work. The drift check covers the last release only, so there is no evidence
+     * to justify reversing it.
+     *
+     * @param bool $skip_db        continue even when the reconciler reports failed statements
+     * @param bool $skip_reconcile run the migrations alone, without the repair pass
      *
      * @return false|string
      */
-    public static function upgradeDB($skip_db = false)
+    public static function upgradeDB($skip_db = false, $skip_reconcile = false)
     {
         set_time_limit(0);
 
-        if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
-            $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
+        $repairs = array();
 
-            $result = (new SchemaReconciler(Connection::instance()))
-                ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
-            list($status, $message, $errorQueries) = $result;
+        if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
+            if ($skip_reconcile) {
+                $status       = true;
+                $message      = array();
+                $errorQueries = array();
+            } else {
+                $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
+
+                $result = (new SchemaReconciler(Connection::instance()))
+                    ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
+                list($status, $message, $errorQueries) = $result;
+
+                // The second element is every statement the pass ran, keyed by table
+                // where it creates one. Only the ones that succeeded are a repair.
+                $repairs = array_values(array_diff(array_values($message), $errorQueries));
+            }
         }
         if (isset($status, $message, $errorQueries)) {
             if (!$skip_db && count($errorQueries) > 0) {
@@ -123,7 +155,11 @@ class Osclass extends UpgradePackage
 
             Utils::changeOsclassVersionTo(self::newVersionOnDisk());
 
-            return json_encode(['error' => 0, 'message' => __('Shopclass DB Upgraded Successfully')]);
+            return json_encode([
+                'error'   => 0,
+                'message' => __('Shopclass DB Upgraded Successfully'),
+                'repairs' => $repairs,
+            ]);
         }
 
         return json_encode(['error' => 1, 'message' => __('Unable to upgrade Database')]);

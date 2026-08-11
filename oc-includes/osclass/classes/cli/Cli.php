@@ -41,7 +41,7 @@ class Cli
     private array $commands = [
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
-        'db:upgrade'          => ['cmdDbUpgrade', 'Reconcile schema and run pending migrations (--skip-db)'],
+        'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
@@ -344,16 +344,35 @@ class Cli
      */
     private function cmdDbUpgrade(array $args): int
     {
-        $result  = \mindstellar\upgrade\Osclass::upgradeDB(array_key_exists('skip-db', $args));
+        $skipReconcile = array_key_exists('skip-reconcile', $args);
+
+        $result  = \mindstellar\upgrade\Osclass::upgradeDB(
+            array_key_exists('skip-db', $args),
+            $skipReconcile
+        );
         $decoded = json_decode((string) $result, true);
         $error   = is_array($decoded) ? (int) ($decoded['error'] ?? 1) : 1;
         $message = is_array($decoded) ? (string) ($decoded['message'] ?? $result) : (string) $result;
+        $repairs = is_array($decoded) && isset($decoded['repairs']) ? (array) $decoded['repairs'] : [];
 
         // upgradeDB() builds messages for the admin screen, so strip the markup
         // and collapse whitespace for a terminal.
         $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
 
         if ($error === 0) {
+            // The repair pass is expected to find nothing: the migrations build the
+            // schema and a release cannot ship unless they reproduce it on their own.
+            // So anything here describes an install that had drifted by some other
+            // route, and saying so is more use than applying it quietly.
+            if ($repairs !== []) {
+                $this->out(sprintf("Repaired %d schema difference(s):\n", count($repairs)));
+                foreach ($repairs as $query) {
+                    $this->out('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
+                }
+            } elseif (!$skipReconcile) {
+                $this->out("Schema already matched — nothing to repair.\n");
+            }
+
             $this->out($message . "\n");
 
             return 0;
