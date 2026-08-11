@@ -1,11 +1,22 @@
 # Verifies that a fresh install (struct.sql) and an upgraded install
-# (last release's struct.sql -> migrations) converge to the same database
+# (a past release's struct.sql -> migrations) converge to the same database
 # schema. A failure means struct.sql changed in a way the migrations do not
 # reproduce — i.e. a migration is owed.
 #
 # The upgrade path deliberately excludes the schema reconciler, which would
 # otherwise absorb any additive change nobody wrote a migration for and let
 # the check pass on a schema it was quietly repairing on every upgrade.
+#
+# Every supported release is checked, not just the most recent one. A migration
+# only has to be wrong for an older starting point to break upgrades from it
+# while the latest baseline still passes, which is exactly how the pre-5.2 gap
+# went unnoticed: the sequence failed outright from 5.0 for several releases.
+#
+# The list is deduplicated by struct.sql content, so what is actually tested is
+# one baseline per distinct schema rather than one per tag. Patch releases within
+# a line are usually byte-identical, so this is a handful of runs, and it stays
+# that way as releases accumulate — a new tag only adds a run if it changed the
+# schema.
 name: Schema Drift
 on:
   # develop and master are excluded here because the release workflow calls this
@@ -61,23 +72,71 @@ jobs:
           php-version: '8.2'
           extensions: mysqli
 
-      - name: Resolve baseline (latest stable release tag)
-        id: baseline
+      - name: Resolve baselines (one per distinct schema at or above the supported floor)
+        id: baselines
+        env:
+          # The oldest release an upgrade is supported from. Raising this is a
+          # deliberate decision to stop supporting upgrades from older installs,
+          # not a way to quieten a failing baseline.
+          SUPPORTED_UPGRADE_FLOOR: '5.0.0'
         run: |
-          TAG=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -z "$TAG" ]; then
+          mkdir -p /tmp/baselines
+          : > /tmp/baselines/index
+
+          TAGS=$(git tag --sort=v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [ -z "$TAGS" ]; then
             echo "::notice::No stable release tag found — skipping schema-drift check (no baseline to diff against yet)."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "Using baseline tag: $TAG"
-          git show "$TAG:oc-includes/osclass/installer/struct.sql" > /tmp/baseline-struct.sql
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Schema drift check (baseline ${{ steps.baseline.outputs.tag }} -> current)
-        if: ${{ steps.baseline.outputs.skip != 'true' }}
+          for TAG in $TAGS; do
+            # sort -V puts the floor first only when the tag is at or above it.
+            OLDEST=$(printf '%s\n%s\n' "$TAG" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
+            [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
+
+            git show "$TAG:oc-includes/osclass/installer/struct.sql" > "/tmp/struct-$TAG.sql" 2>/dev/null || continue
+            SUM=$(sha1sum "/tmp/struct-$TAG.sql" | cut -d' ' -f1)
+
+            if [ -f "/tmp/baselines/$SUM.sql" ]; then
+              # Same schema as an earlier tag. Appended, so the oldest tag stays
+              # first and is the one reported as the baseline actually run.
+              sed -i "s|^$SUM .*|& $TAG|" /tmp/baselines/index
+              continue
+            fi
+            cp "/tmp/struct-$TAG.sql" "/tmp/baselines/$SUM.sql"
+            echo "$SUM $TAG" >> /tmp/baselines/index
+          done
+
+          echo "Distinct schemas to check:"
+          while read -r SUM TAGS_FOR_SUM; do
+            echo "  $(echo "$TAGS_FOR_SUM" | awk '{print $1}')  (also: $(echo "$TAGS_FOR_SUM" | cut -d' ' -f2- | tr ' ' ',' | sed 's/,$//'))"
+          done < /tmp/baselines/index
+
+      - name: Schema drift check (every supported baseline)
+        if: ${{ steps.baselines.outputs.skip != 'true' }}
         env:
           DRIFT_DB_HOST: 127.0.0.1
           DRIFT_DB_USER: root
           DRIFT_DB_PASS: root
-        run: php tests/schema-drift.php /tmp/baseline-struct.sql
+        run: |
+          FAILED=''
+          while read -r SUM TAGS_FOR_SUM; do
+            REPRESENTATIVE=$(echo "$TAGS_FOR_SUM" | awk '{print $1}')
+            echo "::group::baseline $REPRESENTATIVE -> current"
+            # Every baseline is run before anything fails the job: knowing that
+            # upgrades break from 5.0 but not 5.2 is what locates the bad migration.
+            if php tests/schema-drift.php "/tmp/baselines/$SUM.sql"; then
+              echo "OK ($REPRESENTATIVE, covering: $TAGS_FOR_SUM)"
+            else
+              FAILED="$FAILED $REPRESENTATIVE"
+              echo "::error::Upgrading from $REPRESENTATIVE does not reproduce struct.sql (covers: $TAGS_FOR_SUM)"
+            fi
+            echo "::endgroup::"
+          done < /tmp/baselines/index
+
+          if [ -n "$FAILED" ]; then
+            echo "Schema drift on baseline(s):$FAILED"
+            exit 1
+          fi
+          echo "All supported baselines reproduce struct.sql from migrations alone."
