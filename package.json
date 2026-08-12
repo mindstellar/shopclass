@@ -15,12 +15,13 @@
     "js": "esbuild oc-admin/themes/modern/js/location.js --minify --sourcemap --outfile=oc-admin/themes/modern/js/location.min.js",
     "i18n": "node scripts/build-i18n.mjs",
     "watch": "node scripts/build-css.mjs --watch",
-    "dev": "docker compose up -d",
-    "dev:build": "docker compose up -d --build",
-    "dev:down": "docker compose down",
-    "dev:logs": "docker compose logs -f",
+    "dev": "npm run env:init && docker compose up -d",
+    "dev:build": "npm run env:init && docker compose up -d --build",
+    "dev:down": "npm run env:init && docker compose down",
+    "dev:logs": "npm run env:init && docker compose logs -f",
     "lint": "eslint oc-admin/themes/modern/js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "env:init": "node -e \"const f=require('fs');f.existsSync('.env')||f.copyFileSync('.env.example','.env')\""
   },
   "repository": "git+https://github.com/mindstellar/shopclass.git",
   "keywords": [

@@ -26,6 +26,7 @@
 /Dockerfile export-ignore
 /.dockerignore export-ignore
 /.docker export-ignore
-/docker-compose.yml export-ignore
-/docker-compose.override.yml export-ignore
+/.env.example export-ignore
+/docker-compose.dev.yml export-ignore
+/docker-compose.local.yml export-ignore
 /docker-compose.prod.yml export-ignore

@@ -1,29 +1,25 @@
 # Docker Compose configuration for the Shopclass local development stack.
 #
-#   docker compose up -d --build      first run (builds the php-fpm image)
-#   docker compose up -d              start
-#   docker compose down               stop
+#   npm run dev:build     first run (builds the php-fpm image)
+#   npm run dev           start
+#   npm run dev:down      stop
+#   npm run dev:logs      follow
 #
-# or npm run dev / dev:build / dev:down / dev:logs, which are the same thing.
+# Named .dev, not docker-compose.yml, so the filename says which stack it is beside
+# docker-compose.prod.yml. The npm scripts pass -f for you; to use plain
+# `docker compose` instead, set COMPOSE_FILE in a .env — see .env.example.
 #
 # Then open http://localhost:8000 and run the installer with:
 #   Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
 #
-# Override any default by exporting the matching variable (or using a .env file).
+# Every default here can be changed from .env; copy .env.example to start one.
 #
 # Public themes are NOT mounted from here. oc-content/themes is gitignored (each theme
 # has its own repository), so a mount to a sibling checkout only resolves on the machine
 # that has it — and everywhere else Docker creates an empty directory at the mount point,
-# which the theme loader reads as a broken theme rather than an absent one. Anything
-# machine-specific belongs in docker-compose.override.yml, which compose merges over this
-# file on its own and which is gitignored. Two services need the mount — php-fpm renders
-# a theme, nginx serves its assets — so one added to only php-fpm gives a page with no CSS:
-#
-#   services:
-#     php-fpm:
-#       volumes: [ "../theme-storefront:/application/oc-content/themes/storefront" ]
-#     webserver:
-#       volumes: [ "../theme-storefront:/application/oc-content/themes/storefront" ]
+# which the theme loader reads as a broken theme rather than an absent one. Put those in
+# docker-compose.local.yml (gitignored) and add it to COMPOSE_FILE; .env.example shows
+# the shape, including that a theme has to be mounted into both services.
 #
 # For a theme without a local checkout, install one into the running stack instead:
 #   docker compose exec php-fpm php oc-cli.php market:install storefront --type=theme
