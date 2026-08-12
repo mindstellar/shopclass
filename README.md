@@ -167,7 +167,7 @@ docker compose exec php-fpm php oc-cli.php market:install storefront --type=them
 ```
 
 To work on a theme or plugin you have checked out locally, copy
-`docker-compose.override.yml.example` to `docker-compose.override.yml` and add the mounts
+`docker-compose.override.yml` and add the mounts (the file header shows the shape)
 there. It is gitignored, and compose merges it automatically — machine-specific paths
 never belong in the committed file, because where the path is missing Docker creates an
 empty directory at the mount point rather than failing.

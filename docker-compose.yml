@@ -16,7 +16,14 @@
 # that has it — and everywhere else Docker creates an empty directory at the mount point,
 # which the theme loader reads as a broken theme rather than an absent one. Anything
 # machine-specific belongs in docker-compose.override.yml, which compose merges over this
-# file on its own; copy docker-compose.override.yml.example to start one.
+# file on its own and which is gitignored. Two services need the mount — php-fpm renders
+# a theme, nginx serves its assets — so one added to only php-fpm gives a page with no CSS:
+#
+#   services:
+#     php-fpm:
+#       volumes: [ "../theme-storefront:/application/oc-content/themes/storefront" ]
+#     webserver:
+#       volumes: [ "../theme-storefront:/application/oc-content/themes/storefront" ]
 #
 # For a theme without a local checkout, install one into the running stack instead:
 #   docker compose exec php-fpm php oc-cli.php market:install storefront --type=theme
@@ -59,13 +66,19 @@ services:
         condition: service_started
     command: php-fpm
 
-  # MariaDB database — image, data volume and healthcheck come from compose.db.yml;
-  # the dev-specific name, credentials and host port stay here.
+  # MariaDB database. Kept in step with the prod stack's `db` service by hand — the
+  # nine shared lines are not worth a third compose file and an `extends` indirection
+  # to carry them.
   mariadb:
-    extends:
-      file: compose.db.yml
-      service: mariadb
+    image: mariadb:11
     container_name: shopclass-mariadb
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     environment:
       - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
       - MARIADB_DATABASE=${SHOPCLASS_DATABASE_NAME:-shopclass}

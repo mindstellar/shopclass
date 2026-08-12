@@ -28,6 +28,4 @@
 /.docker export-ignore
 /docker-compose.yml export-ignore
 /docker-compose.override.yml export-ignore
-/docker-compose.override.yml.example export-ignore
 /docker-compose.prod.yml export-ignore
-/compose.db.yml export-ignore
