@@ -1,5 +1,5 @@
-# Personal additions to the dev stack. Copy to docker-compose.local.yml (gitignored)
-# and edit; npm run dev / dev:build / dev:down pick it up automatically when it exists.
+# Personal additions to the dev stack. Copy to docker-compose.override.yml (gitignored)
+# and edit — compose merges it over docker-compose.yml on its own, with no extra flag.
 #
 # This is where anything machine-specific goes. The committed docker-compose.dev.yml can
 # only describe what every checkout has, and a path to a sibling directory is not that:

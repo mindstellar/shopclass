@@ -153,25 +153,24 @@ change.
 ### Run it with Docker
 
 A full local stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
-ships in `docker-compose.dev.yml`:
+ships in `docker-compose.yml`:
 
 ```bash
-npm run dev:build     # first run — builds the PHP-FPM image
-npm run dev           # start
-npm run dev:down      # stop
-npm run dev:logs      # follow the logs
+docker compose up -d --build
 ```
 
 Public themes live in their own repositories and `oc-content/themes` is gitignored, so a
 fresh checkout starts without one. Install the default theme into the running stack:
 
 ```bash
-npm run dev -- exec php-fpm php oc-cli.php market:install storefront --type=theme
+docker compose exec php-fpm php oc-cli.php market:install storefront --type=theme
 ```
 
 To work on a theme or plugin you have checked out locally, copy
-`docker-compose.local.yml.example` to `docker-compose.local.yml` and add the mounts
-there — it is gitignored, and the dev commands pick it up automatically.
+`docker-compose.override.yml.example` to `docker-compose.override.yml` and add the mounts
+there. It is gitignored, and compose merges it automatically — machine-specific paths
+never belong in the committed file, because where the path is missing Docker creates an
+empty directory at the mount point rather than failing.
 
 Then open **http://localhost:8000** and run the installer with these database
 details (leave the admin password blank on step 3 for a generated one):

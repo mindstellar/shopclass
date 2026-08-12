@@ -1,13 +1,10 @@
 # Docker Compose configuration for the Shopclass local development stack.
 #
-# Named .dev so it sits beside docker-compose.prod.yml rather than being the one
-# `docker compose` picks up by default — which means every command needs `-f`, so
-# npm carries it:
+#   docker compose up -d --build      first run (builds the php-fpm image)
+#   docker compose up -d              start
+#   docker compose down               stop
 #
-#   npm run dev:build     first run (builds the php-fpm image)
-#   npm run dev           start
-#   npm run dev:down      stop
-#   npm run dev:logs      follow
+# or npm run dev / dev:build / dev:down / dev:logs, which are the same thing.
 #
 # Then open http://localhost:8000 and run the installer with:
 #   Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
@@ -18,11 +15,11 @@
 # has its own repository), so a mount to a sibling checkout only resolves on the machine
 # that has it — and everywhere else Docker creates an empty directory at the mount point,
 # which the theme loader reads as a broken theme rather than an absent one. Anything
-# machine-specific belongs in docker-compose.local.yml, which npm run dev picks up when
-# present; copy docker-compose.local.yml.example to start one.
+# machine-specific belongs in docker-compose.override.yml, which compose merges over this
+# file on its own; copy docker-compose.override.yml.example to start one.
 #
 # For a theme without a local checkout, install one into the running stack instead:
-#   npm run dev -- exec php-fpm php oc-cli.php market:install storefront --type=theme
+#   docker compose exec php-fpm php oc-cli.php market:install storefront --type=theme
 name: shopclass
 
 services:
