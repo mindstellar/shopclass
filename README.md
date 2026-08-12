@@ -153,10 +153,13 @@ change.
 ### Run it with Docker
 
 A full local stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
-ships in `docker-compose.yml`:
+ships in `docker-compose.dev.yml`:
 
 ```bash
-docker compose up -d --build
+npm run dev:build     # first run — builds the PHP-FPM image
+npm run dev           # start
+npm run dev:down      # stop
+npm run dev:logs      # follow the logs
 ```
 
 Then open **http://localhost:8000** and run the installer with these database

@@ -35,6 +35,68 @@ write_real_ip_conf() {
 }
 write_real_ip_conf
 
+# The public-page micro-cache and the request rate limit. Both are off unless asked
+# for, so an existing deployment upgrading to this image behaves exactly as before.
+#
+#   OSC_MICROCACHE       set to 1/on/true to cache public pages in nginx.
+#   OSC_RATE_LIMIT       requests per second per client IP, e.g. "10r/s". Unset = off.
+#   OSC_RATE_LIMIT_BURST burst allowance, default 20.
+#
+# The cache stores nothing the application has not already marked cacheable: no
+# fastcgi_ignore_headers is set, so a response carrying `private, no-store` — which
+# is what a session-starting page emits — is passed through and never stored. What
+# nginx decides on its own is only whether a request may be SERVED from cache, and
+# that is keyed on core's own personalization cookies. Third-party analytics and ads
+# cookies are ignored on purpose: matching any cookie at all would make every real
+# visitor a miss, which is how a micro-cache ends up doing nothing. Keep the four
+# names in step with .docker/nginx/microcache.conf, which documents the contract.
+write_microcache_conf() {
+    http_conf=/etc/nginx/microcache_http.conf
+    php_conf=/etc/nginx/microcache_php.conf
+    : > "$http_conf"
+    : > "$php_conf"
+
+    case "${OSC_MICROCACHE:-}" in
+        1|on|true|yes|On|TRUE|YES)
+            mkdir -p /var/cache/nginx/microcache
+            chown -R nginx:nginx /var/cache/nginx 2>/dev/null || true
+            cat >> "$http_conf" <<'CONF'
+fastcgi_cache_path /var/cache/nginx/microcache levels=1:2 keys_zone=MICROCACHE:10m
+                   max_size=200m inactive=60s use_temp_path=off;
+map $http_cookie $mc_private {
+    default 0;
+    "~(^|;\s*)(osclass|oc_userId|oc_adminId|oc_userLocale)=" 1;
+}
+CONF
+            cat >> "$php_conf" <<'CONF'
+fastcgi_cache            MICROCACHE;
+fastcgi_cache_key        "$scheme$request_method$host$request_uri";
+fastcgi_cache_bypass     $mc_private;
+fastcgi_no_cache         $mc_private;
+fastcgi_cache_lock       on;
+fastcgi_cache_use_stale  updating error timeout http_500 http_503;
+fastcgi_cache_background_update on;
+add_header X-Cache $upstream_cache_status always;
+CONF
+            echo "entrypoint: public-page micro-cache on."
+            ;;
+    esac
+
+    rate="${OSC_RATE_LIMIT:-}"
+    if [ -n "$rate" ]; then
+        burst="${OSC_RATE_LIMIT_BURST:-20}"
+        # $binary_remote_addr is the real client only because real_ip.conf was
+        # written first; behind a proxy without it every visitor shares one key and
+        # the whole site throttles as though it were a single caller.
+        printf 'limit_req_zone $binary_remote_addr zone=shopclass:10m rate=%s;\n' "$rate" >> "$http_conf"
+        # nodelay: let a burst through immediately rather than queueing it. Queued
+        # requests hold php-fpm workers, which is the 502 this is meant to prevent.
+        printf 'limit_req zone=shopclass burst=%s nodelay;\n' "$burst" >> "$php_conf"
+        echo "entrypoint: rate limit on ($rate, burst $burst)."
+    fi
+}
+write_microcache_conf
+
 # Outbound mail. The image bundles no MTA; msmtp is a send-only client that relays
 # to a smarthost. So mail works when a relay is configured, and — crucially — is
 # LOUD rather than silent when it is not: PHP mail() otherwise hands off to a

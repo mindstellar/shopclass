@@ -1,9 +1,16 @@
 # Docker Compose configuration for the Shopclass local development stack.
 #
-# Quick start:
-#   docker compose up -d --build
-#   open http://localhost:8000  and run the installer with:
-#     Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
+# Named .dev so it sits beside docker-compose.prod.yml rather than being the one
+# `docker compose` picks up by default — which means every command needs `-f`, so
+# npm carries it:
+#
+#   npm run dev:build     first run (builds the php-fpm image)
+#   npm run dev           start
+#   npm run dev:down      stop
+#   npm run dev:logs      follow
+#
+# Then open http://localhost:8000 and run the installer with:
+#   Host = mariadb   Database = shopclass   User = shopclass   Password = shopclass
 #
 # Override any default by exporting the matching variable (or using a .env file).
 name: shopclass

@@ -79,9 +79,15 @@ RUN mkdir -p /application/oc-content/uploads /application/oc-content/downloads \
 
 COPY .docker/prod/nginx.conf      /etc/nginx/nginx.conf
 COPY .docker/prod/supervisord.conf /etc/supervisord.conf
-# Empty default so nginx's `include /etc/nginx/real_ip.conf` is a no-op until the
-# entrypoint (re)generates it from OSC_REAL_IP_HEADER.
-RUN : > /etc/nginx/real_ip.conf
+# Empty defaults so nginx's includes are no-ops until the entrypoint (re)generates
+# them: real_ip.conf from OSC_REAL_IP_HEADER, and the two micro-cache/rate-limit
+# halves from OSC_MICROCACHE / OSC_RATE_LIMIT. nginx will not start if an included
+# file is missing, so these have to exist even when the features are off.
+RUN : > /etc/nginx/real_ip.conf \
+    && : > /etc/nginx/microcache_http.conf \
+    && : > /etc/nginx/microcache_php.conf \
+    && mkdir -p /var/cache/nginx/microcache \
+    && chown -R nginx:nginx /var/cache/nginx
 
 # Configure entirely from the environment by default: ignore any config.php and
 # read DB settings from DB_* / WEB_PATH. Override per-deploy as needed.

@@ -1,4 +1,4 @@
-# Shared MariaDB definition for the dev (docker-compose.yml) and prod
+# Shared MariaDB definition for the dev (docker-compose.dev.yml) and prod
 # (docker-compose.prod.yml) stacks. Each stack extends this service and layers on
 # its own specifics — container name, published port, restart policy, credentials.
 #
