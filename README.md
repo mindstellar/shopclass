@@ -162,6 +162,17 @@ npm run dev:down      # stop
 npm run dev:logs      # follow the logs
 ```
 
+Public themes live in their own repositories and `oc-content/themes` is gitignored, so a
+fresh checkout starts without one. Install the default theme into the running stack:
+
+```bash
+npm run dev -- exec php-fpm php oc-cli.php market:install storefront --type=theme
+```
+
+To work on a theme or plugin you have checked out locally, copy
+`docker-compose.local.yml.example` to `docker-compose.local.yml` and add the mounts
+there — it is gitignored, and the dev commands pick it up automatically.
+
 Then open **http://localhost:8000** and run the installer with these database
 details (leave the admin password blank on step 3 for a generated one):
 

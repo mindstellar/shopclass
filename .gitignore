@@ -92,3 +92,6 @@ deprecated-api.json
 
 # Runtime rollback archives written by the market installer
 oc-content/downloads/backups/
+
+# Personal dev-stack additions (theme/plugin mounts from sibling checkouts).
+docker-compose.local.yml

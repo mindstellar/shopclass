@@ -1,0 +1,30 @@
+# Personal additions to the dev stack. Copy to docker-compose.local.yml (gitignored)
+# and edit; npm run dev / dev:build / dev:down pick it up automatically when it exists.
+#
+# This is where anything machine-specific goes. The committed docker-compose.dev.yml can
+# only describe what every checkout has, and a path to a sibling directory is not that:
+# where the directory is missing, Docker creates an empty one at the mount point rather
+# than failing, and an empty oc-content/themes/<name> looks to the theme loader like a
+# theme that is broken instead of one that was never installed.
+#
+# Themes need mounting into BOTH services — php-fpm renders them, nginx serves their
+# static assets — so a mount added to only one gives a page with no CSS.
+
+services:
+  php-fpm:
+    volumes:
+      # A theme checked out next to this repository:
+      # - ../theme-storefront:/application/oc-content/themes/storefront
+
+      # A theme kept somewhere else entirely (absolute paths are fine here):
+      # - /path/to/your/theme:/application/oc-content/themes/your-theme
+
+      # A plugin you are developing:
+      # - ../my-plugin:/application/oc-content/plugins/my-plugin
+      []
+
+  webserver:
+    volumes:
+      # - ../theme-storefront:/application/oc-content/themes/storefront
+      # - /path/to/your/theme:/application/oc-content/themes/your-theme
+      []

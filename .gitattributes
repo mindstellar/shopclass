@@ -27,5 +27,7 @@
 /.dockerignore export-ignore
 /.docker export-ignore
 /docker-compose.dev.yml export-ignore
+/docker-compose.local.yml export-ignore
+/docker-compose.local.yml.example export-ignore
 /docker-compose.prod.yml export-ignore
 /compose.db.yml export-ignore
