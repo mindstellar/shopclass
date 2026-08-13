@@ -58,13 +58,22 @@ $pointer = array(
     'manifest'    => 'releases/2026-08-13/manifest.json',
     'regions'     => 4401,
     'released'    => '2026-08-13T14:29:20+00:00',
+    's_version'   => '9d2dac64384c439b',
     'settlements' => 1745357,
     'version'     => '2026-08-13',
 );
 
-/* The manifest it names: `countries` is the LIST. */
+/*
+ * The manifest it names: `countries` is the LIST.
+ *
+ * `version` is not the release label here. The pointer calls the release 2026-08-13 and
+ * puts the content hash in `s_version`; the manifest puts that same hash in `version`. The
+ * label an install reports comes from the pointer for that reason, and this fixture
+ * carries the published values rather than the tidier ones, so nothing here can come to
+ * depend on the two agreeing.
+ */
 $manifest = array(
-    'version'   => '2026-08-13',
+    'version'   => '9d2dac64384c439b',
     'license'   => 'CC0-1.0',
     'countries' => array(
         array(
@@ -116,7 +125,7 @@ check(
  */
 $norm = LocationCatalog::normalizeManifest($manifest);
 
-check('normalising keeps the release version', $norm['version'] === '2026-08-13');
+check('normalising keeps whatever the manifest calls its version', $norm['version'] === '9d2dac64384c439b');
 check('normalising keeps one row per country', count($norm['countries']) === 1);
 
 $mt = $norm['countries'][0];
