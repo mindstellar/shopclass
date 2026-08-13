@@ -1025,7 +1025,17 @@ function osc_openstreet_geocode_url($address)
  */
 function osc_get_locations_json_url()
 {
-    return 'https://raw.githubusercontent.com/mindstellar/geodata/master/src/json-list.json';
+    // Overridable so a staging install, a local mirror or a pinned release can
+    // be pointed at without editing core. Falls back to the published catalog.
+    $override = getenv('OSC_LOCATIONS_JSON_URL');
+    if (is_string($override) && $override !== '') {
+        return $override;
+    }
+
+    return osc_apply_filter(
+        'locations_json_url',
+        'https://raw.githubusercontent.com/mindstellar/geodata/master/src/json-list.json'
+    );
 }
 
 /**

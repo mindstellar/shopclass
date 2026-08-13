@@ -78,7 +78,7 @@ final class LocationImporter
             foreach ($data['regions'] as $region) {
                 $regionId = $this->importRegion($data['s_country_code'], $region);
                 if ($regionId !== null) {
-                    $this->importCities($regionId, $region['cities'] ?? array());
+                    $this->importCities($regionId, $region['cities'] ?? array(), $data['s_country_code']);
                 }
             }
             $this->deactivateVanishedRegions($data['s_country_code']);
@@ -269,16 +269,17 @@ final class LocationImporter
     /**
      * @param array<int, array> $incomingCities
      */
-    private function importCities(int $regionId, array $incomingCities): void
+    private function importCities(int $regionId, array $incomingCities, string $countryCode): void
     {
         if ($incomingCities === array()) {
             return;
         }
 
-        // Looked up by source id across the whole table, not just this region: upstream
-        // re-parents cities between regions, and finding the row wherever it currently
-        // sits turns that into an UPDATE of fk_i_region_id instead of a duplicate.
-        $bySource = $this->citiesBySourceId($incomingCities);
+        // Looked up by source id across this country rather than just this region:
+        // upstream re-parents cities between regions, and finding the row wherever it
+        // currently sits turns that into an UPDATE of fk_i_region_id instead of a
+        // duplicate. Country-wide and not table-wide — see citiesBySourceId().
+        $bySource = $this->citiesBySourceId($incomingCities, $countryCode);
 
         $rows    = osc_db_select(
             'SELECT pk_i_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
@@ -302,6 +303,7 @@ final class LocationImporter
                 $this->report['cities']['inserted']++;
                 $pending[] = array(
                     $regionId,
+                    $countryCode,
                     $sourceId,
                     $name,
                     $slug,
@@ -332,13 +334,31 @@ final class LocationImporter
     }
 
     /**
-     * Existing rows for the incoming source ids, wherever in the table they currently live.
+     * Existing rows for the incoming source ids, anywhere in THIS country.
+     *
+     * Scoped to the country, and this is load-bearing rather than tidiness. A source id
+     * only identifies a row within the source that issued it, and this table has held
+     * ids from more than one: the previous dataset numbered cities 57,584–147,939 while
+     * Wikidata QIDs run from 1 upwards, so the two ranges overlap almost entirely.
+     * Searching the whole table matched an Indian city against a Northern Irish one that
+     * merely shared the integer, renamed it and moved it to a British region — silent
+     * corruption of data the import was not supposed to touch.
+     *
+     * The country comes from the region rather than t_city.fk_c_country_code, because
+     * rows this importer inserted before it began setting that column have it NULL and
+     * would otherwise look like they belong to no country, be missed here, and be
+     * re-inserted as duplicates.
+     *
+     * Scoping this way keeps what the table-wide search was for — a city re-parented
+     * between regions is still found and updated rather than duplicated — and gives up
+     * only cross-country moves, which upstream does not do and which should not happen
+     * silently if it ever did.
      *
      * @param array<int, array> $incomingCities
      *
      * @return array<int, array> i_source_id => row
      */
-    private function citiesBySourceId(array $incomingCities): array
+    private function citiesBySourceId(array $incomingCities, string $countryCode): array
     {
         $ids = array();
         foreach ($incomingCities as $incoming) {
@@ -353,10 +373,13 @@ final class LocationImporter
         $found = array();
         foreach (array_chunk(array_unique($ids), self::SELECT_CHUNK) as $chunk) {
             $rows = osc_db_select(
-                'SELECT pk_i_id, fk_i_region_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
-                . ' FROM ' . DB_TABLE_PREFIX . 't_city'
-                . ' WHERE i_source_id IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')',
-                $chunk
+                'SELECT c.pk_i_id, c.fk_i_region_id, c.i_source_id, c.s_name, c.s_slug,'
+                . ' c.d_coord_lat, c.d_coord_long, c.b_active'
+                . ' FROM ' . DB_TABLE_PREFIX . 't_city c'
+                . ' JOIN ' . DB_TABLE_PREFIX . 't_region r ON r.pk_i_id = c.fk_i_region_id'
+                . ' WHERE c.i_source_id IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')'
+                . ' AND r.fk_c_country_code = ?',
+                array_merge($chunk, array($countryCode))
             );
             foreach ($rows as $row) {
                 $found[(int) $row['i_source_id']] = $row;
@@ -382,10 +405,14 @@ final class LocationImporter
                     $params[] = $value;
                 }
             }
+            // fk_c_country_code is written rather than left to default: the column exists
+            // on t_city, themes and search read it, and rows inserted without it were
+            // arriving NULL — a city belonging to no country.
             osc_db_execute(
                 'INSERT INTO ' . DB_TABLE_PREFIX . 't_city'
-                . ' (fk_i_region_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active)'
-                . ' VALUES ' . implode(',', array_fill(0, count($chunk), '(?, ?, ?, ?, ?, ?, 1)')),
+                . ' (fk_i_region_id, fk_c_country_code, i_source_id, s_name, s_slug,'
+                . ' d_coord_lat, d_coord_long, b_active)'
+                . ' VALUES ' . implode(',', array_fill(0, count($chunk), '(?, ?, ?, ?, ?, ?, ?, 1)')),
                 $params
             );
         }

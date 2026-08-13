@@ -70,7 +70,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
         INDEX fk_c_country_code (fk_c_country_code),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
-        UNIQUE KEY uq_region_source (i_source_id),
+        -- Scoped to the country, not global: a source id identifies a row within the
+        -- dataset that issued it, and this column has held ids from more than one.
+        UNIQUE KEY uq_region_source (fk_c_country_code, i_source_id),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
@@ -90,7 +92,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
         INDEX fk_i_region_id (fk_i_region_id),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
-        UNIQUE KEY uq_city_source (i_source_id),
+        -- See t_region: unique per country, so two countries may legitimately carry
+        -- the same upstream id without one import overwriting the other's rows.
+        UNIQUE KEY uq_city_source (fk_c_country_code, i_source_id),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
