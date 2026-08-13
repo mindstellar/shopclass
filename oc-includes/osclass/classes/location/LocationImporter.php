@@ -73,6 +73,13 @@ final class LocationImporter
             return $this->report;
         }
 
+        $this->noteIncomingRegions(array_map(
+            function ($region) {
+                return $this->normalizeRow($region, 'region');
+            },
+            $data['regions']
+        ));
+
         $regions = (function () use ($data) {
             foreach ($data['regions'] as $region) {
                 $cities = array();
@@ -112,6 +119,7 @@ final class LocationImporter
             }
             // Fall through: a catalog that lists ndjson but cannot serve it should still
             // import, rather than failing when the whole-file form is sitting right there.
+            $fellBack = true;
         }
 
         $data = $catalog->countryFile((string) $entry['file']);
@@ -122,7 +130,17 @@ final class LocationImporter
             return $this->report;
         }
 
-        return $this->import($data);
+        $report = $this->import($data);
+
+        // Said out loud, because the two published forms of a country are not always the
+        // same data: one catalog release described Great Britain as 259 regions in ndjson
+        // and 5 in the whole-file form. Falling back on a checksum failure then imports a
+        // different shape of the same country, and without this nothing says so.
+        if (isset($fellBack)) {
+            $report['fell_back'] = (string) $entry['ndjson'];
+        }
+
+        return $report;
     }
 
     /**
@@ -166,6 +184,14 @@ final class LocationImporter
             return $this->report;
         }
 
+        // The regions are read once on their own before the import starts. Deciding whether
+        // a stored row is about to be claimed by an incoming id, or is an orphan from a
+        // source this catalog no longer speaks, needs the whole set of incoming ids — and
+        // the first region is imported long before the last one has been streamed. Only
+        // region lines are decoded, so this costs a pass over the file and no memory worth
+        // counting: a country has tens of regions and hundreds of thousands of settlements.
+        $this->noteIncomingRegions($this->scanRegions($path));
+
         $regions = (function () use ($handle) {
             $region = null;
             $cities = array();
@@ -206,6 +232,83 @@ final class LocationImporter
         } finally {
             fclose($handle);
         }
+    }
+
+    /**
+     * The region rows of an ndjson country file, without reading its settlements.
+     *
+     * @return array<int, array> normalised region rows
+     */
+    private function scanRegions(string $path): array
+    {
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return array();
+        }
+
+        $regions = array();
+        try {
+            while (($line = fgets($handle)) !== false) {
+                // Decoding every settlement to discover it is not a region is the whole
+                // cost of this pass, and a cheap string test skips almost all of it.
+                if (strpos($line, '"region"') === false) {
+                    continue;
+                }
+                $row = json_decode(trim($line), true);
+                if (is_array($row) && ($row['type'] ?? '') === 'region') {
+                    $regions[] = $this->normalizeRow($row, 'region');
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        return $regions;
+    }
+
+    /**
+     * Record which region ids this import brings and which region names it repeats.
+     *
+     * @param array<int, array> $regions normalised region rows
+     */
+    private function noteIncomingRegions(array $regions): void
+    {
+        $this->incomingRegionIds = $this->regionAmbiguous = array();
+
+        $seen = array();
+        foreach ($regions as $region) {
+            if (isset($region['i_source_id'])) {
+                $this->incomingRegionIds[(int) $region['i_source_id']] = true;
+            }
+            foreach (self::comparisonKeys($region['s_region_name'], $region['s_region_slug']) as $key) {
+                if (isset($seen[$key])) {
+                    $this->regionAmbiguous[$key] = true;
+                }
+                $seen[$key] = true;
+            }
+        }
+    }
+
+    /**
+     * The distinct keys one row answers to, from its name and its slug.
+     *
+     * Deduplicated, because a row's slug is usually its own name with the spaces replaced
+     * and both reduce to the same key. Counting that as the name being used twice makes
+     * every row ambiguous with itself, and nothing matches anything.
+     *
+     * @return array<int, string>
+     */
+    private static function comparisonKeys($name, $slug): array
+    {
+        $keys = array();
+        foreach (array((string) $name, (string) $slug) as $value) {
+            $key = self::normalizeKey($value);
+            if ($key !== '' && !in_array($key, $keys, true)) {
+                $keys[] = $key;
+            }
+        }
+
+        return $keys;
     }
 
     /**
@@ -271,6 +374,16 @@ final class LocationImporter
         $run = function () use ($country, $regions, $countryCode) {
             $this->importCountryRow($country);
             foreach ($regions as [$region, $cities]) {
+                // A region with nothing in it is a dead end: picking it offers an empty
+                // list of cities. They are not places the catalog forgot to fill — they
+                // are abolished councils and overlapping tiers of the hierarchy, whose
+                // settlements sit correctly under the units that replaced them. Skipped
+                // rather than imported, and any already stored is left unclaimed, so it
+                // is retired by the same pass that retires anything else upstream dropped.
+                if ($cities === array()) {
+                    $this->report['regions']['skipped_empty']++;
+                    continue;
+                }
                 $regionId = $this->importRegion($countryCode, $region);
                 if ($regionId !== null) {
                     $this->importCities($regionId, $cities, $countryCode);
@@ -354,6 +467,12 @@ final class LocationImporter
     private $regionBySlug;
     private $regionByName;
 
+    /** @var array<int, true> source ids this import brings, for regions */
+    private $incomingRegionIds = array();
+
+    /** @var array<string, true> region names or slugs this import uses more than once */
+    private $regionAmbiguous = array();
+
     private function importRegion(string $countryCode, array $incoming): ?int
     {
         $this->loadRegions($countryCode);
@@ -370,7 +489,9 @@ final class LocationImporter
             $this->regionBySlug,
             $this->regionByName,
             $this->regionRows,
-            $this->regionClaimed
+            $this->regionClaimed,
+            $this->incomingRegionIds,
+            $this->regionAmbiguous
         );
 
         if ($match === null) {
@@ -388,7 +509,9 @@ final class LocationImporter
             $sourceId,
             $name,
             $slug,
-            $incoming
+            $incoming,
+            null,
+            $how
         );
 
         return (int) $row['pk_i_id'];
@@ -490,6 +613,22 @@ final class LocationImporter
             $this->indexRow($row, $indexed, $inRegion, $bySlug, $byName);
         }
 
+        // Which ids this import is bringing, and which names it brings more than once.
+        // A name the catalog itself uses twice inside one region cannot identify a stored
+        // row: 117 of India's villages are called Gopalpur and they share a region.
+        $incomingIds = $ambiguous = $seen = array();
+        foreach ($incomingCities as $incoming) {
+            if (isset($incoming['i_source_id'])) {
+                $incomingIds[(int) $incoming['i_source_id']] = true;
+            }
+            foreach (self::comparisonKeys($incoming['s_city_name'], $incoming['s_city_slug']) as $key) {
+                if (isset($seen[$key])) {
+                    $ambiguous[$key] = true;
+                }
+                $seen[$key] = true;
+            }
+        }
+
         $claimed = array();
         $pending = array();
         foreach ($incomingCities as $incoming) {
@@ -497,7 +636,18 @@ final class LocationImporter
             $name     = (string) $incoming['s_city_name'];
             $slug     = (string) $incoming['s_city_slug'];
 
-            $match = $this->matchRow($sourceId, $slug, $name, $bySource, $bySlug, $byName, $indexed, $claimed);
+            $match = $this->matchRow(
+                $sourceId,
+                $slug,
+                $name,
+                $bySource,
+                $bySlug,
+                $byName,
+                $indexed,
+                $claimed,
+                $incomingIds,
+                $ambiguous
+            );
             if ($match === null) {
                 $this->report['cities']['inserted']++;
                 $pending[] = array(
@@ -524,7 +674,8 @@ final class LocationImporter
                 $name,
                 $slug,
                 $incoming,
-                $regionId
+                $regionId,
+                $how
             );
         }
 
@@ -666,7 +817,9 @@ final class LocationImporter
         array $bySlug,
         array $byName,
         array $rows,
-        array $claimed
+        array $claimed,
+        array $incomingIds = array(),
+        array $ambiguous = array()
     ): ?array {
         if ($sourceId !== null && isset($bySource[$sourceId])) {
             $row = $bySource[$sourceId];
@@ -675,21 +828,30 @@ final class LocationImporter
             }
         }
 
-        foreach (array(array($bySlug, $slug, self::MATCH_SLUG), array($byName, mb_strtolower($name), self::MATCH_NAME)) as $attempt) {
+        foreach (array(
+            array($bySlug, self::normalizeKey($slug), self::MATCH_SLUG),
+            array($byName, self::normalizeKey($name), self::MATCH_NAME),
+        ) as $attempt) {
             [$index, $key, $how] = $attempt;
             if ($key === '' || !isset($index[$key])) {
                 continue;
             }
+            // false means the key is held by more than one stored row, or by more than one
+            // incoming row: either way it names no particular place and cannot match.
             $id = $index[$key];
-            if (isset($claimed[$id]) || !isset($rows[$id])) {
+            if ($id === false || isset($ambiguous[$key]) || isset($claimed[$id]) || !isset($rows[$id])) {
                 continue;
             }
-            // Never steal a row that already answers to a different upstream id — that is
-            // two distinct places sharing a slug, and the incoming one needs its own row.
-            // An incoming row with no id at all makes no competing claim, so it may still
-            // match: that is a catalog file published before source ids existed, and it
-            // must update the row it describes rather than duplicate it.
-            if ($rows[$id]['i_source_id'] !== null && $sourceId !== null) {
+            // Never steal a row an incoming id is going to claim in its own right — that is
+            // two distinct places sharing a name, and the incoming one needs its own row.
+            //
+            // A stored id that appears nowhere in what is being imported is a different
+            // matter: it was issued by a source this catalog no longer speaks, so nothing
+            // will ever claim it and the row would be retired and replaced by an identical
+            // one. Adopting it instead is what carries a place across a change of source,
+            // and is why the previous dataset's ids do not strand every row that held one.
+            $storedId = $rows[$id]['i_source_id'];
+            if ($storedId !== null && $sourceId !== null && isset($incomingIds[(int) $storedId])) {
                 continue;
             }
 
@@ -711,7 +873,8 @@ final class LocationImporter
         string $name,
         string $slug,
         array $incoming,
-        ?int $newParentId = null
+        ?int $newParentId = null,
+        string $how = self::MATCH_SOURCE
     ): void {
         $id  = (int) $row[$pk];
         $lat = $incoming['d_coord_lat'] ?? null;
@@ -730,7 +893,18 @@ final class LocationImporter
             $this->sample('renames', array('type' => $type, 'id' => $id, 'from' => $row['s_slug'], 'to' => $slug));
             $this->report[$type === 'REGION' ? 'regions' : 'cities']['renamed']++;
         }
-        if ($sourceId !== null && $row['i_source_id'] === null) {
+        // The id is taken over on adoption, not only when the row has none.
+        //
+        // A row matched by name rather than by id is one whose id came from a source this
+        // catalog no longer speaks, and leaving that id in place means the row is found by
+        // its name again on every future import — a match this deliberately treats as the
+        // last resort, standing in permanently for the one that should be first. Writing
+        // the new id is what actually completes the move to a new source; the row is
+        // identified by id from then on. No other row can hold that id, because the id
+        // lookup is what failed to find one just now.
+        $adopting = $sourceId !== null
+            && ($row['i_source_id'] === null || ($how !== self::MATCH_SOURCE && (int) $row['i_source_id'] !== $sourceId));
+        if ($adopting) {
             $set[]    = 'i_source_id = ?';
             $params[] = $sourceId;
         }
@@ -831,16 +1005,57 @@ final class LocationImporter
         if ($row['i_source_id'] !== null) {
             $bySource[(int) $row['i_source_id']] = $row;
         }
-        // First row wins on a duplicate slug or name; the loser stays unclaimed and is
-        // evaluated for deactivation like any other row upstream no longer lists.
-        $slug = (string) $row['s_slug'];
-        if ($slug !== '' && !isset($bySlug[$slug])) {
-            $bySlug[$slug] = $id;
+
+        // A name or slug held by more than one row identifies nothing, so the key is
+        // poisoned rather than won by whichever row was read first. India publishes 117
+        // distinct villages called Gopalpur inside a single region; letting the first of
+        // them answer for the name would update one row and retire the other 116.
+        $slug = self::normalizeKey((string) $row['s_slug']);
+        if ($slug !== '') {
+            $bySlug[$slug] = array_key_exists($slug, $bySlug) ? false : $id;
         }
-        $name = mb_strtolower((string) $row['s_name']);
-        if ($name !== '' && !isset($byName[$name])) {
-            $byName[$name] = $id;
+
+        $name = self::normalizeKey((string) $row['s_name']);
+        if ($name !== '') {
+            $byName[$name] = array_key_exists($name, $byName) ? false : $id;
         }
+    }
+
+    /**
+     * The form a name or slug is compared in, which is not the form it is stored in.
+     *
+     * Stored names keep the capitalisation and the accents the catalog publishes, because
+     * that is what a visitor reads. Matching them has to ignore both, along with the
+     * spacing and punctuation that move between snapshots: "Villeneuve-d'Ascq" and
+     * "Villeneuve d Ascq" are one place written twice, and a comparison that says
+     * otherwise imports it twice.
+     */
+    private static function normalizeKey(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        // Accents fold to their base letter, so "Málaga" and "Malaga" compare equal.
+        if (function_exists('transliterator_transliterate')) {
+            $folded = transliterator_transliterate('Any-Latin; Latin-ASCII', $value);
+            if (is_string($folded) && $folded !== '') {
+                $value = $folded;
+            }
+        } elseif (function_exists('iconv')) {
+            $folded = @iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+            if (is_string($folded) && $folded !== '') {
+                $value = $folded;
+            }
+        }
+
+        $value = mb_strtolower($value);
+        // Hyphens, apostrophes and the like are separators here, not characters: what is
+        // left is the run of letters and digits, joined by single spaces.
+        $value = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $value);
+
+        return trim((string) $value);
     }
 
     private function countMatch(string $bucket, string $how): void
@@ -868,6 +1083,8 @@ final class LocationImporter
             'reparented'  => 0,
             'deactivated' => 0,
             'kept_stale'  => 0,
+            // Regions only: offered by the catalog with no settlements under them.
+            'skipped_empty' => 0,
         );
 
         $this->report = array(

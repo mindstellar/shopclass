@@ -127,3 +127,9 @@ jobs:
       # the catalog twice, both times hidden by a warm cache.
       - name: Location catalog shapes
         run: php tests/location-catalog-shapes.php
+      # Identity is the upstream id; names are the fallback that carries a place across a
+      # change of source. Both halves are easy to get subtly wrong -- a row that counts as
+      # ambiguous with itself matches nothing and re-imports a whole country, and a name
+      # shared by 117 villages matching one of them retires the other 116.
+      - name: Location matching
+        run: php tests/location-matching.php
