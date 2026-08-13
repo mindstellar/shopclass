@@ -1032,9 +1032,16 @@ function osc_get_locations_json_url()
         return $override;
     }
 
+    // A pointer at the current data release, not a manifest: LocationCatalog follows it,
+    // so a corrected place name reaches installs without a core release. Pinning a
+    // release here would tie the data to the version of Shopclass that shipped it.
+    //
+    // The dataset behind it is built from Wikidata and published CC0, replacing the
+    // ODbL-licensed one this used to point at — no attribution or share-alike condition
+    // travels with the data a site imports.
     return osc_apply_filter(
         'locations_json_url',
-        'https://raw.githubusercontent.com/mindstellar/geodata/master/src/json-list.json'
+        'https://geo.mindstellar.com/releases/latest.json'
     );
 }
 
