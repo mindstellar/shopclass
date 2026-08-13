@@ -9,13 +9,9 @@
  * const sCountryCode = Params::getParam('country_code');
  * const sRegionId = Params::getParam('region');
  * const baseUrl = osc_admin_base_url();
- * const jsonExistingCountries = json_encode(Country::newInstance()->listNames());
- * const locationJsonUrl = osc_get_locations_json_url();
  *
  // Location constant
  var baseUrl = "<?php echo osc_admin_base_url(); ?>";
- var jsonExistingCountries = <?php echo json_encode(Country::newInstance()->listNames()) ?>;
- var locationJsonUrl = "<?php echo osc_get_locations_json_url() ?>";
  var sCountry = "<?php echo Params::getParam('country')?>";
  var sCountryCode = "<?php echo Params::getParam('country_code')?>";
  var sRegionId = "<?php echo Params::getParam('region')?>";
@@ -120,32 +116,57 @@ document.getElementById("b_import").addEventListener("click", function () {
         }
     ];
 
-    fetchData(locationJsonUrl)
-        .then((data) => {
-            countries = data.locations;
-            const importSelect = document.createElement("select");
-            importSelect.setAttribute("class", "form-select form-select-sm");
-            importSelect.setAttribute("name", "location");
-            importSelect.setAttribute("id", "imported-location");
-            importSelect.setAttribute("required", "required");
-
-            const placeholder = document.createElement("option");
-            placeholder.value = "";
-            placeholder.textContent = stringSelectOption;
-            importSelect.appendChild(placeholder);
-            for (i = 0, l = countries.length; i < l; i++) {
-                if (!jsonExistingCountries.includes(countries[i].s_country_name)) {
-                    const opt = document.createElement("option");
-                    opt.value = countries[i].s_file_name;
-                    opt.textContent = countries[i].s_country_name;
-                    importSelect.appendChild(opt);
-                }
-            }
-
-            hiddenInputs.appendChild(importSelect);
-        });
     // Create form body from formInputs array using getHiddenInputs
     let hiddenInputs = getHiddenInputs(formInputs);
+
+    const importSelect = document.createElement("select");
+    importSelect.setAttribute("class", "form-select form-select-sm");
+    importSelect.setAttribute("name", "location");
+    importSelect.setAttribute("id", "imported-location");
+    importSelect.setAttribute("required", "required");
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = stringLoading;
+    importSelect.appendChild(placeholder);
+    importSelect.disabled = true;
+
+    // The catalog is read server-side: the published URL names the current release
+    // rather than listing countries, and following it is cached work the browser
+    // should not repeat.
+    fetchData(baseUrl + "index.php?page=ajax&action=location_catalog")
+        .then((data) => {
+            countries = (data && data.countries) || [];
+            placeholder.textContent = countries.length ? stringSelectOption : stringCatalogUnavailable;
+            importSelect.disabled = countries.length === 0;
+
+            // Countries already held are offered again only when the catalog has moved
+            // on, in which case importing is an update rather than a duplicate.
+            const groups = {};
+            for (i = 0, l = countries.length; i < l; i++) {
+                const country = countries[i];
+                if (country.installed && country.current) {
+                    continue;
+                }
+                const label = country.installed ? stringUpdateAvailable : stringNotInstalled;
+                if (!groups[label]) {
+                    groups[label] = document.createElement("optgroup");
+                    groups[label].setAttribute("label", label);
+                }
+                const opt = document.createElement("option");
+                opt.value = country.code;
+                opt.textContent = country.name;
+                groups[label].appendChild(opt);
+            }
+            // Updates first: they are the shorter list and the more likely intent.
+            [stringUpdateAvailable, stringNotInstalled].forEach((label) => {
+                if (groups[label]) {
+                    importSelect.appendChild(groups[label]);
+                }
+            });
+        });
+
+    hiddenInputs.appendChild(importSelect);
     document.getElementById("locationModal").querySelector('.osc-dialog-content').appendChild(hiddenInputs);
 });
 // Open location modal for country add

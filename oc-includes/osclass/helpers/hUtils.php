@@ -1065,12 +1065,18 @@ function osc_get_locations_sql_url($location)
  */
 function osc_get_i18n_repository_url($path = '')
 {
+    // The version of the code, not the one recorded in the database: this is asked during
+    // installation, when there is no database to record anything yet, and after an upgrade
+    // has replaced the files but before the schema has caught up. Which branch of the
+    // translations to read from follows the code either way.
+    $installed = defined('OSCLASS_VERSION') ? OSCLASS_VERSION : osc_version();
+
     // Check if version tring contain dev,alpha,beta,RC set is_dev to 1
     $is_dev = false;
     // try str_replace to remove all version tags from string if string changed than it's dev
-    $version = str_replace(array('dev', 'alpha', 'beta', 'rc'), '', strtolower(osc_version()));
+    $version = str_replace(array('dev', 'alpha', 'beta', 'rc'), '', strtolower($installed));
     // if version string changed than it's dev
-    if ($version !== osc_version()) {
+    if ($version !== strtolower($installed)) {
         $is_dev = true;
     }
     if ($is_dev) {
@@ -1082,8 +1088,9 @@ function osc_get_i18n_repository_url($path = '')
     if ($path === '') {
         $path = 'locale_list.json';
     }
-    ltrim($path, '/');
-    $path = rawurlencode($path);
+    // Encoded a segment at a time: encoding the whole path turns its separators into
+    // %2F, which asks the repository for one long file name instead of a nested path.
+    $path = implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
 
     return $repoUrl . $path;
 }

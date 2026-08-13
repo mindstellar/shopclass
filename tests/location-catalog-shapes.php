@@ -106,6 +106,67 @@ check(
     !LocationCatalog::isPointerDocument(array('manifest' => array('nested' => true)))
 );
 
+/*
+ * Normalising into the cache.
+ *
+ * The cached manifest is a file holding only what an import reads, because the preference
+ * row it replaced was loaded on every request — front-end page views included — to spare
+ * an admin screen a network call. Everything the normaliser drops is therefore something
+ * no longer available later, and everything it keeps is paid for on every read.
+ */
+$norm = LocationCatalog::normalizeManifest($manifest);
+
+check('normalising keeps the release version', $norm['version'] === '2026-08-13');
+check('normalising keeps one row per country', count($norm['countries']) === 1);
+
+$mt = $norm['countries'][0];
+check('the country code survives', $mt['code'] === 'MT');
+check('the country name survives', $mt['name'] === 'Malta');
+check('the streaming file survives', $mt['data'] === 'data/MT.ndjson');
+check('the whole-file form survives', $mt['json'] === 'json/MT.json');
+check('the data checksum survives', $mt['sha'] === str_repeat('a', 64));
+
+// The published manifest describes four formats per country with a checksum and a byte
+// count for each; two are read. Carrying the rest is pure per-read cost.
+check(
+    'formats this install cannot import are dropped',
+    !isset($mt['csv']) && !isset($mt['bytes']) && !isset($mt['id']) && !isset($mt['slug'])
+);
+
+// On this catalog the two checksums are the same string, and storing it twice for every
+// country is a sixth of the cached file for nothing.
+check('a checksum equal to the data checksum is not stored twice', !isset($mt['dsha']));
+
+$legacyNorm = LocationCatalog::normalizeManifest($legacyManifest);
+check('the older manifest normalises to the same shape', $legacyNorm['countries'][0]['code'] === 'MT');
+check('the older manifest keeps its file name', $legacyNorm['countries'][0]['json'] === 'MT-Malta.json');
+
+// The older catalog published the two forms as independent files, so the checksum that
+// verifies the streamed download is not the one that marks the installed version.
+$twoHash = LocationCatalog::normalizeManifest(array(
+    'locations' => array(
+        array(
+            's_country_code'   => 'MT',
+            's_country_name'   => 'Malta',
+            's_file_name'      => 'MT-Malta.json',
+            's_sha256'         => str_repeat('b', 64),
+            's_file_ndjson'    => 'MT-Malta.ndjson',
+            's_sha256_ndjson'  => str_repeat('c', 64),
+        ),
+    ),
+));
+check('two differing checksums are both kept', $twoHash['countries'][0]['sha'] === str_repeat('b', 64)
+    && $twoHash['countries'][0]['dsha'] === str_repeat('c', 64));
+
+// A country with no code cannot be imported or matched against the database.
+$junk = LocationCatalog::normalizeManifest(array('countries' => array(
+    array('name' => 'Nowhere'),
+    'not-an-entry',
+    array('code' => 'MT', 'name' => 'Malta'),
+)));
+check('entries without a code are dropped', count($junk['countries']) === 1);
+check('a manifest with no countries normalises to an empty list', LocationCatalog::normalizeManifest(array())['countries'] === array());
+
 echo "\n----------------------------------------\n";
 echo "RESULT: $ok passed, $failed failed\n";
 

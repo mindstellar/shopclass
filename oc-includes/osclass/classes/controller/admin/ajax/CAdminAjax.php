@@ -53,6 +53,34 @@ class CAdminAjax extends AdminSecBaseModel
                 $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
                 echo json_encode($cities);
                 break;
+            case 'location_catalog': // Countries the published catalog offers for import
+                header('Content-Type: application/json');
+                // Read through the catalog rather than letting the browser fetch the
+                // published URL: that URL names the current release rather than listing
+                // countries, and following it is server-side work that is cached here.
+                $catalog = new \mindstellar\location\LocationCatalog();
+                $rows    = array();
+                foreach ($catalog->status(Params::getParamInt('refresh') === 1) as $row) {
+                    if ($row['file'] === '' && $row['ndjson'] === '') {
+                        continue;
+                    }
+                    // Only what the dialog draws. A country is named by its code rather
+                    // than by a file path, so the list survives the catalog rearranging
+                    // its files; the checksums are the bulk of a row and the browser has
+                    // no use for them.
+                    $rows[] = array(
+                        'code'      => $row['code'],
+                        'name'      => $row['name'],
+                        'installed' => (bool) $row['installed'],
+                        'current'   => (bool) $row['current'],
+                        'rows'      => (int) $row['rows'],
+                    );
+                }
+                echo json_encode(array(
+                    'release'   => $catalog->release(),
+                    'countries' => $rows,
+                ));
+                break;
             case 'location': // This is the autocomplete AJAX
                 $cities = City::newInstance()->ajax(Params::getParam('term'));
                 echo json_encode($cities);

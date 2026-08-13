@@ -361,12 +361,14 @@ function osc_install_json_locations($location = null)
 
     $catalog = new \mindstellar\location\LocationCatalog();
 
-    // Callers pass the published file name, so the catalog row is found by that. Going
-    // through the row rather than straight to countryFile() is what lets the import
-    // stream the country where the catalog offers a streamable copy of it.
+    // A country is named either by its code or by the published file name. The code is
+    // what the admin and installer send, because it survives the catalog rearranging its
+    // files; the file name is what older callers pass and still works. Going through the
+    // catalog row rather than straight to countryFile() is what lets the import stream
+    // the country where the catalog offers a streamable copy of it.
     $entry = null;
     foreach ($catalog->status() as $row) {
-        if ($row['file'] === (string) $location) {
+        if ($row['file'] === (string) $location || strcasecmp($row['code'], (string) $location) === 0) {
             $entry = $row;
             break;
         }

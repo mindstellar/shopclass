@@ -25,8 +25,7 @@ final class LocationCatalog
     /** Where installed checksums live: one JSON object, not 250 preference rows. */
     private const PREF_INSTALLED = 'location_data_installed';
 
-    /** Cached manifest and when it was fetched, so an admin screen is not a network call. */
-    private const PREF_CACHE     = 'location_catalog_cache';
+    /** When the manifest was last fetched, so an admin screen is not a network call. */
     private const PREF_CHECKED   = 'location_catalog_checked';
     /** Which catalog URL the cached manifest came from. */
     private const PREF_SOURCE    = 'location_catalog_source';
@@ -35,6 +34,17 @@ final class LocationCatalog
     private const PREF_RELEASE   = 'location_catalog_release';
 
     private const CACHE_TTL = 21600;
+
+    /**
+     * The cached manifest is a file, not a preference.
+     *
+     * Preferences are loaded whole on every request — front-end page views included — so a
+     * preference holding the manifest put a six-figure byte count of country checksums into
+     * every one of them to spare an admin screen that is opened a handful of times in a
+     * site's life. It lives next to the uploads because that is the one directory an install
+     * is already required to be able to write to.
+     */
+    private const CACHE_FILE = 'location-catalog.json';
 
     /** Outbound calls are capped: a slow catalog must not hang an admin request. */
     private const TIMEOUT = 20;
@@ -54,7 +64,7 @@ final class LocationCatalog
         }
 
         $checked = (int) osc_get_preference(self::PREF_CHECKED);
-        $cached  = osc_get_preference(self::PREF_CACHE);
+        $cached  = $this->readCache();
 
         // The cache belongs to the catalog it came from. Pointing the install at another
         // one — a staging catalog, a local mirror, a pinned release — otherwise keeps
@@ -62,14 +72,11 @@ final class LocationCatalog
         // reads as the new catalog offering the old one's countries.
         $source = md5(osc_get_locations_json_url());
         if (osc_get_preference(self::PREF_SOURCE) !== $source) {
-            $cached = '';
+            $cached = null;
         }
 
-        if (!$refresh && $cached !== '' && (time() - $checked) < self::CACHE_TTL) {
-            $decoded = json_decode($cached, true);
-            if (is_array($decoded)) {
-                return $this->manifest = $decoded;
-            }
+        if (!$refresh && $cached !== null && (time() - $checked) < self::CACHE_TTL) {
+            return $this->manifest = $cached;
         }
 
         $configured  = osc_get_locations_json_url();
@@ -99,12 +106,12 @@ final class LocationCatalog
         if (!is_array($data) || !is_array($listed)) {
             // Serve whatever was last cached rather than reporting "no countries
             // available" because the catalog host was briefly unreachable.
-            $decoded = $cached !== '' ? json_decode($cached, true) : null;
-
-            return $this->manifest = is_array($decoded) ? $decoded : null;
+            return $this->manifest = $cached;
         }
 
-        osc_set_preference(self::PREF_CACHE, json_encode($data));
+        $data = self::normalizeManifest($data);
+
+        $this->writeCache($data);
         osc_set_preference(self::PREF_CHECKED, (string) time());
         osc_set_preference(self::PREF_SOURCE, $source);
         // Country files are addressed relative to the manifest, not to the pointer, so
@@ -114,6 +121,139 @@ final class LocationCatalog
         osc_set_preference(self::PREF_RELEASE, $release);
 
         return $this->manifest = $data;
+    }
+
+    /**
+     * The published manifest reduced to the fields this install reads.
+     *
+     * The catalog describes every country in four formats with a checksum and a byte count
+     * for each; an import reads two of them. Normalising on the way into the cache is what
+     * keeps the stored copy a third of the published size, and it settles the old-catalog
+     * field names here instead of at every point of use.
+     *
+     * @param array $data a decoded manifest, either generation
+     *
+     * @return array the canonical shape: version, license, and a countries list
+     */
+    public static function normalizeManifest(array $data): array
+    {
+        $entries = $data['countries'] ?? $data['locations'] ?? array();
+
+        $countries = array();
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $code = (string) ($entry['code'] ?? $entry['s_country_code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+
+            $files  = is_array($entry['files'] ?? null) ? $entry['files'] : array();
+            $hashes = is_array($entry['sha256'] ?? null) ? $entry['sha256'] : array();
+
+            $sha  = (string) ($hashes['data'] ?? $entry['s_sha256'] ?? '');
+            $dsha = (string) ($hashes['data'] ?? $entry['s_sha256_ndjson'] ?? '');
+
+            $country = array(
+                'code' => $code,
+                'name' => (string) ($entry['name'] ?? $entry['s_country_name'] ?? $code),
+                'json' => (string) ($files['json'] ?? $entry['s_file_name'] ?? ''),
+                // The same country as one JSON object per line. Empty on a catalog that
+                // publishes only the whole-file form; where it is offered the import reads
+                // it a line at a time instead of decoding a whole country at once.
+                'data' => (string) ($files['data'] ?? $entry['s_file_ndjson'] ?? ''),
+                // The streaming file's checksum stands for "this country's data", because
+                // it is the copy an import actually reads. It moves when the data moves.
+                'sha'  => $sha,
+                'rows' => (int) ($entry['settlements'] ?? $entry['i_cities'] ?? 0),
+            );
+
+            // The older catalog published the two forms as separate files with independent
+            // checksums, so the one that verifies the streamed download is not always the
+            // one that marks the installed version. Carried only when they differ: on this
+            // catalog they are the same string, and storing it twice for every country is
+            // a sixth of the cached file for nothing.
+            if ($dsha !== '' && $dsha !== $sha) {
+                $country['dsha'] = $dsha;
+            }
+
+            $countries[] = $country;
+        }
+
+        return array(
+            'version'   => (string) ($data['version'] ?? ''),
+            'license'   => (string) ($data['license'] ?? ''),
+            'countries' => $countries,
+        );
+    }
+
+    /**
+     * The cached manifest, or null when there is none to read.
+     */
+    private function readCache(): ?array
+    {
+        $path = self::cachePath();
+        if ($path === null || !is_readable($path)) {
+            return null;
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) && is_array($decoded['countries'] ?? null) ? $decoded : null;
+    }
+
+    /**
+     * Replace the cached manifest. Silent on failure: an install that cannot write here
+     * fetches the catalog every time rather than losing the feature.
+     */
+    private function writeCache(array $manifest): void
+    {
+        $path = self::cachePath();
+        if ($path === null) {
+            return;
+        }
+
+        // Written aside and moved into place, so a reader never sees half a manifest.
+        $tmp = $path . '.' . bin2hex(random_bytes(4));
+        if (@file_put_contents($tmp, json_encode($manifest)) === false) {
+            @unlink($tmp);
+
+            return;
+        }
+
+        if (!@rename($tmp, $path)) {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * Where the cached manifest lives, or null before the uploads path is known.
+     */
+    private static function cachePath(): ?string
+    {
+        if (!function_exists('osc_uploads_path')) {
+            return null;
+        }
+
+        $dir = osc_uploads_path();
+
+        return $dir === '' ? null : rtrim($dir, '/') . '/' . self::CACHE_FILE;
+    }
+
+    /**
+     * Forget the cached manifest, so the next read goes to the catalog.
+     */
+    public function clearCache(): void
+    {
+        $path = self::cachePath();
+        if ($path !== null && is_file($path)) {
+            @unlink($path);
+        }
+
+        $this->manifest = null;
+        osc_set_preference(self::PREF_CHECKED, '0');
     }
 
     /**
@@ -290,42 +430,25 @@ final class LocationCatalog
         $installed = $this->installed();
         $present   = $this->countriesInDatabase();
 
-        // The catalog lists its countries under `countries`; the older one said
-        // `locations`. Every per-country field moved too, so each is read through a
-        // fallback rather than the file being read twice.
-        $entries = $manifest['countries'] ?? $manifest['locations'] ?? array();
-
         $out = array();
-        foreach ($entries as $entry) {
-            $code = (string) ($entry['code'] ?? $entry['s_country_code'] ?? '');
-            if ($code === '') {
-                continue;
-            }
-
-            $files  = is_array($entry['files'] ?? null) ? $entry['files'] : array();
-            $hashes = is_array($entry['sha256'] ?? null) ? $entry['sha256'] : array();
-
-            // The streaming file's checksum stands for "this country's data", because it
-            // is the copy an import actually reads. It moves whenever the data moves.
-            $sha  = (string) ($hashes['data'] ?? $entry['s_sha256'] ?? '');
+        foreach ($manifest['countries'] as $entry) {
+            $code = (string) $entry['code'];
+            $sha  = (string) $entry['sha'];
             $have = $installed[strtoupper($code)] ?? null;
             // "Installed" means rows exist, not merely that a checksum was recorded: an
             // install that predates this bookkeeping has the data and no checksum, and
             // must still be offered the update rather than an install.
             $isInstalled = isset($present[strtolower($code)]);
             $out[]       = array(
-                'code'      => $code,
-                'name'      => (string) ($entry['name'] ?? $entry['s_country_name'] ?? $code),
-                'file'      => (string) ($files['json'] ?? $entry['s_file_name'] ?? ''),
-                'sha'       => $sha,
-                // The same country as one JSON object per line. Empty on a catalog that
-                // publishes only the whole-file form; where it is offered the import
-                // reads it a line at a time instead of decoding a whole country at once.
-                'ndjson'     => (string) ($files['data'] ?? $entry['s_file_ndjson'] ?? ''),
-                'ndjson_sha' => (string) ($hashes['data'] ?? $entry['s_sha256_ndjson'] ?? ''),
-                'installed' => $isInstalled,
-                'current'   => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
-                'rows'      => (int) ($entry['settlements'] ?? $entry['i_cities'] ?? 0),
+                'code'       => $code,
+                'name'       => (string) $entry['name'],
+                'file'       => (string) $entry['json'],
+                'sha'        => $sha,
+                'ndjson'     => (string) $entry['data'],
+                'ndjson_sha' => (string) ($entry['dsha'] ?? $sha),
+                'installed'  => $isInstalled,
+                'current'    => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
+                'rows'       => (int) $entry['rows'],
             );
         }
 

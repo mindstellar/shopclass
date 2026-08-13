@@ -131,8 +131,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <script>
         // Location constant
         var baseUrl = "<?php echo osc_admin_base_url(); ?>";
-        var jsonExistingCountries = <?php echo json_encode(Country::newInstance()->listNames()) ?>;
-        var locationJsonUrl = "<?php echo osc_get_locations_json_url() ?>";
         var sCountry = "<?php echo Params::getParam('country')?>";
         var sCountryCode = "<?php echo Params::getParam('country_code')?>";
         var sRegionId = "<?php echo Params::getParam('region')?>";
@@ -140,6 +138,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringAddCity = '<?php echo osc_esc_js(__('Add city')); ?>';
         var stringAddCountry = '<?php echo osc_esc_js(__('Add country')); ?>';
         var stringAddRegion = '<?php echo osc_esc_js(__('Add region')); ?>';
+        var stringCatalogUnavailable = '<?php echo osc_esc_js(__('No countries available right now')); ?>';
         var stringCity = '<?php echo osc_esc_js(__('City')); ?>';
         var stringCityName = "<?php echo osc_esc_js(__('City Name')); ?>";
         var stringCountry = '<?php echo osc_esc_js(__('Country')); ?>';
@@ -153,9 +152,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringEnter = '<?php echo osc_esc_js(__('Enter')); ?>';
         var stringImport = '<?php echo osc_esc_js(__('Import')); ?>';
         var stringImportLocations = '<?php echo osc_esc_js(__('Import locations')); ?>';
-        var stringImportWarning = "<?php echo osc_esc_js(__("Import a country with it's regions and cities from our database. "
-                                . "Already imported countries aren't shown.")); ?>";
+        var stringImportWarning = "<?php echo osc_esc_js(__('Import a country with its regions and cities. Countries you '
+                                . 'already have appear only when newer data is available for them.')); ?>";
+        var stringLoading = '<?php echo osc_esc_js(__('Loading countries…')); ?>';
         var stringName = '<?php echo osc_esc_js(__("Name")); ?>';
+        var stringNotInstalled = '<?php echo osc_esc_js(__('Not installed')); ?>';
         var stringRegion = '<?php echo osc_esc_js(__("Region")); ?>';
         var stringRegionName = '<?php echo osc_esc_js(__("Region name")); ?>';
         var stringSave = '<?php echo osc_esc_js(__("Save")); ?>';
@@ -163,6 +164,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringSlug = '<?php echo osc_esc_js(__("Slug")); ?>';
         var stringSlugError = "<?php echo osc_esc_js(__("The slug is not unique."));?>";
         var stringSlugWarning = "<?php echo osc_esc_js(__("The slug has to be a unique string, could be left blank"));?>"
+        var stringUpdateAvailable = '<?php echo osc_esc_js(__('Update available')); ?>';
         var stringViewMore = "<?php echo osc_esc_js(__("View more")); ?>";
     </script>
 <?php
