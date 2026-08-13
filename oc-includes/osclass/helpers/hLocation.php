@@ -360,21 +360,39 @@ function osc_install_json_locations($location = null)
     }
 
     $catalog = new \mindstellar\location\LocationCatalog();
-    $data    = $catalog->countryFile((string) $location);
-    if ($data === null) {
-        return false;
+
+    // Callers pass the published file name, so the catalog row is found by that. Going
+    // through the row rather than straight to countryFile() is what lets the import
+    // stream the country where the catalog offers a streamable copy of it.
+    $entry = null;
+    foreach ($catalog->status() as $row) {
+        if ($row['file'] === (string) $location) {
+            $entry = $row;
+            break;
+        }
     }
 
-    $report = (new \mindstellar\location\LocationImporter())->import($data);
+    if ($entry === null) {
+        // Not in the manifest — a hand-supplied file name. Import it the old way rather
+        // than refusing, since that is all this function could ever do before.
+        $data = $catalog->countryFile((string) $location);
+        if ($data === null) {
+            return false;
+        }
+        $report = (new \mindstellar\location\LocationImporter())->import($data);
+
+        return !isset($report['error']);
+    }
+
+    $report = (new \mindstellar\location\LocationImporter())->importCountry($catalog, $entry);
     if (isset($report['error'])) {
         return false;
     }
 
     // Record which published version this install now holds, so the admin can be told
     // when it goes stale without downloading anything to find out.
-    $entry = $catalog->entry((string) $data['s_country_code']);
-    if ($entry !== null && $entry['sha'] !== '') {
-        $catalog->markInstalled((string) $data['s_country_code'], $entry['sha']);
+    if ($entry['sha'] !== '') {
+        $catalog->markInstalled((string) $entry['code'], (string) $entry['sha']);
     }
 
     return true;

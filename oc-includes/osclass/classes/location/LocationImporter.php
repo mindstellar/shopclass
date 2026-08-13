@@ -70,18 +70,165 @@ final class LocationImporter
             return $this->report;
         }
 
+        $regions = (function () use ($data) {
+            foreach ($data['regions'] as $region) {
+                yield array($region, $region['cities'] ?? array());
+            }
+        })();
+
+        return $this->runImport($data, $regions);
+    }
+
+    /**
+     * Import one country from the catalog, streaming it where the catalog allows.
+     *
+     * The choice of format lives here rather than in each caller: a catalog that
+     * publishes ndjson is read a line at a time, and one that does not falls back to
+     * decoding the whole country. The older published catalog offers only the latter, so
+     * both paths stay live.
+     *
+     * @param LocationCatalog $catalog
+     * @param array           $entry   a row from LocationCatalog::status()
+     *
+     * @return array the report, carrying 'error' when the country could not be fetched
+     */
+    public function importCountry(LocationCatalog $catalog, array $entry): array
+    {
+        if (($entry['ndjson'] ?? '') !== '') {
+            $path = $catalog->countryNdjsonFile((string) $entry['ndjson'], (string) ($entry['ndjson_sha'] ?? ''));
+            if ($path !== null) {
+                try {
+                    return $this->importNdjson($path);
+                } finally {
+                    @unlink($path);
+                }
+            }
+            // Fall through: a catalog that lists ndjson but cannot serve it should still
+            // import, rather than failing when the whole-file form is sitting right there.
+        }
+
+        $data = $catalog->countryFile((string) $entry['file']);
+        if ($data === null) {
+            $this->resetReport((string) ($entry['code'] ?? ''));
+            $this->report['error'] = 'could not download ' . (string) $entry['file'];
+
+            return $this->report;
+        }
+
+        return $this->import($data);
+    }
+
+    /**
+     * Import a country from ndjson: one JSON object per line, the country first, then
+     * each region followed by its own cities.
+     *
+     * Read a line at a time so memory stays flat whatever the country's size — the whole
+     * reason this format is published. Only one region's cities are held at once, since
+     * a region's cities arrive together and are written when the next region begins.
+     *
+     * @param string $path a local file, as written by LocationCatalog::countryNdjsonFile()
+     *
+     * @return array the same report import() returns
+     */
+    public function importNdjson(string $path): array
+    {
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            $this->resetReport('');
+            $this->report['error'] = 'could not read the downloaded country file';
+
+            return $this->report;
+        }
+
+        // The country is the first line, and everything after it needs it, so it is read
+        // before the transaction opens rather than streamed with the rest.
+        $country = null;
+        while (($line = fgets($handle)) !== false) {
+            $row = json_decode(trim($line), true);
+            if (is_array($row) && ($row['type'] ?? '') === 'country') {
+                $country = $row;
+                break;
+            }
+        }
+
+        if ($country === null) {
+            fclose($handle);
+            $this->resetReport('');
+            $this->report['error'] = 'malformed country file';
+
+            return $this->report;
+        }
+
+        $regions = (function () use ($handle) {
+            $region = null;
+            $cities = array();
+
+            while (($line = fgets($handle)) !== false) {
+                $row = json_decode(trim($line), true);
+                if (!is_array($row)) {
+                    continue; // a blank or unreadable line is skipped, not fatal
+                }
+
+                if (($row['type'] ?? '') === 'region') {
+                    if ($region !== null) {
+                        yield array($region, $cities);
+                    }
+                    $region = $row;
+                    $cities = array();
+                    continue;
+                }
+
+                if (($row['type'] ?? '') === 'city' && $region !== null) {
+                    $cities[] = $row;
+                }
+            }
+
+            if ($region !== null) {
+                yield array($region, $cities); // the last region has no successor to flush it
+            }
+        })();
+
+        try {
+            return $this->runImport($country, $regions);
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * The body both entry points share: one country, then regions with their cities.
+     *
+     * @param array    $country the country row, in either format's field names
+     * @param iterable $regions yields [regionRow, citiesRows]
+     *
+     * @return array
+     */
+    private function runImport(array $country, iterable $regions): array
+    {
+        $countryCode = (string) ($country['s_country_code'] ?? '');
+        if ($countryCode === '') {
+            $this->resetReport('');
+            $this->report['error'] = 'malformed country file';
+
+            return $this->report;
+        }
+
+        // Reset here rather than only in the callers, so the counts belong to this run
+        // whichever entry point started it.
+        $this->resetReport($countryCode);
+
         // One transaction for the whole country. A half-imported country is worse than a
         // long transaction: it leaves regions whose cities never arrived, and the admin
         // has no way to tell how far it got.
-        $run = function () use ($data) {
-            $this->importCountryRow($data);
-            foreach ($data['regions'] as $region) {
-                $regionId = $this->importRegion($data['s_country_code'], $region);
+        $run = function () use ($country, $regions, $countryCode) {
+            $this->importCountryRow($country);
+            foreach ($regions as [$region, $cities]) {
+                $regionId = $this->importRegion($countryCode, $region);
                 if ($regionId !== null) {
-                    $this->importCities($regionId, $region['cities'] ?? array(), $data['s_country_code']);
+                    $this->importCities($regionId, $cities, $countryCode);
                 }
             }
-            $this->deactivateVanishedRegions($data['s_country_code']);
+            $this->deactivateVanishedRegions($countryCode);
         };
 
         if ($this->dryRun) {

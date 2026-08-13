@@ -28,6 +28,8 @@ final class LocationCatalog
     /** Cached manifest and when it was fetched, so an admin screen is not a network call. */
     private const PREF_CACHE     = 'location_catalog_cache';
     private const PREF_CHECKED   = 'location_catalog_checked';
+    /** Which catalog URL the cached manifest came from. */
+    private const PREF_SOURCE    = 'location_catalog_source';
 
     private const CACHE_TTL = 21600;
 
@@ -51,6 +53,15 @@ final class LocationCatalog
         $checked = (int) osc_get_preference(self::PREF_CHECKED);
         $cached  = osc_get_preference(self::PREF_CACHE);
 
+        // The cache belongs to the catalog it came from. Pointing the install at another
+        // one — a staging catalog, a local mirror, a pinned release — otherwise keeps
+        // serving the previous catalog's manifest until the six hours are up, which
+        // reads as the new catalog offering the old one's countries.
+        $source = md5(osc_get_locations_json_url());
+        if (osc_get_preference(self::PREF_SOURCE) !== $source) {
+            $cached = '';
+        }
+
         if (!$refresh && $cached !== '' && (time() - $checked) < self::CACHE_TTL) {
             $decoded = json_decode($cached, true);
             if (is_array($decoded)) {
@@ -70,6 +81,7 @@ final class LocationCatalog
 
         osc_set_preference(self::PREF_CACHE, json_encode($data));
         osc_set_preference(self::PREF_CHECKED, (string) time());
+        osc_set_preference(self::PREF_SOURCE, $source);
 
         return $this->manifest = $data;
     }
@@ -86,6 +98,38 @@ final class LocationCatalog
         $data = is_string($body) ? json_decode($body, true) : null;
 
         return (is_array($data) && isset($data['s_country_code'], $data['regions'])) ? $data : null;
+    }
+
+    /**
+     * Download one country's ndjson to a local file and return its path.
+     *
+     * Written to disk rather than returned as a string, and read back a line at a time,
+     * because the point of this format is that no step ever holds a whole country. The
+     * largest country decodes to roughly ten times its file size as PHP arrays -- about
+     * a gigabyte for Mexico -- which the default 128M memory limit cannot survive.
+     *
+     * The caller owns the returned file and should delete it.
+     *
+     * @param string $fileName as published in the manifest's s_file_ndjson
+     * @param string $sha256   s_sha256_ndjson; checked when given, so a truncated
+     *                         download fails here rather than importing part of a country
+     *
+     * @return string|null null when it cannot be fetched or fails its checksum
+     */
+    public function countryNdjsonFile(string $fileName, string $sha256 = ''): ?string
+    {
+        $base = str_replace('json-list.json', 'ndjson/', osc_get_locations_json_url());
+        $path = osc_uploads_path() . 'locations-' . bin2hex(random_bytes(8)) . '.ndjson';
+
+        $ok = (new \mindstellar\utility\FileSystem())->downloadFile(
+            $base . rawurlencode($fileName),
+            $path,
+            null,
+            true,
+            $sha256 !== '' ? $sha256 : null
+        );
+
+        return $ok === false ? null : $path;
     }
 
     /**
@@ -117,6 +161,11 @@ final class LocationCatalog
                 'name'      => (string) $entry['s_country_name'],
                 'file'      => (string) $entry['s_file_name'],
                 'sha'       => $sha,
+                // The same country as one JSON object per line. Empty on a catalog that
+                // publishes only the whole-file form; where it is offered the import
+                // reads it a line at a time instead of decoding a whole country at once.
+                'ndjson'     => (string) ($entry['s_file_ndjson'] ?? ''),
+                'ndjson_sha' => (string) ($entry['s_sha256_ndjson'] ?? ''),
                 'installed' => $isInstalled,
                 'current'   => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
                 'rows'      => (int) ($entry['i_cities'] ?? 0),

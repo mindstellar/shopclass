@@ -1240,14 +1240,7 @@ class Cli
         $failed = 0;
         foreach ($targets as $row) {
             $this->out(sprintf("%s (%s)\n", $row['name'], $row['code']));
-            $data = $catalog->countryFile($row['file']);
-            if ($data === null) {
-                $this->err(sprintf("  could not download %s\n", $row['file']));
-                $failed++;
-                continue;
-            }
-
-            $report = (new \mindstellar\location\LocationImporter($dryRun))->import($data);
+            $report = (new \mindstellar\location\LocationImporter($dryRun))->importCountry($catalog, $row);
             if (isset($report['error'])) {
                 $this->err(sprintf("  %s\n", $report['error']));
                 $failed++;
