@@ -62,9 +62,12 @@ final class LocationImporter
      */
     public function import(array $data): array
     {
-        $this->resetReport($data['s_country_code'] ?? '');
+        $this->resetReport((string) ($data['code'] ?? $data['s_country_code'] ?? ''));
 
-        if (!isset($data['s_country_code'], $data['regions']) || !is_array($data['regions'])) {
+        // `code` in the published catalog, `s_country_code` in the older one.
+        if (!isset($data['regions']) || !is_array($data['regions'])
+            || (!isset($data['code']) && !isset($data['s_country_code']))
+        ) {
             $this->report['error'] = 'malformed country file';
 
             return $this->report;
@@ -72,7 +75,11 @@ final class LocationImporter
 
         $regions = (function () use ($data) {
             foreach ($data['regions'] as $region) {
-                yield array($region, $region['cities'] ?? array());
+                $cities = array();
+                foreach ($region['settlements'] ?? $region['cities'] ?? array() as $city) {
+                    $cities[] = $this->normalizeRow($city, 'city');
+                }
+                yield array($this->normalizeRow($region, 'region'), $cities);
             }
         })();
 
@@ -173,13 +180,19 @@ final class LocationImporter
                     if ($region !== null) {
                         yield array($region, $cities);
                     }
-                    $region = $row;
+                    $region = $this->normalizeRow($row, 'region');
                     $cities = array();
                     continue;
                 }
 
-                if (($row['type'] ?? '') === 'city' && $region !== null) {
-                    $cities[] = $row;
+                // 'settlement' in the published catalog, 'city' in the older one.
+                $type = $row['type'] ?? '';
+                if (($type === 'settlement' || $type === 'city') && $region !== null) {
+                    // Reduced here rather than after the region is complete: the published
+                    // rows carry some twenty fields apiece — alternative names, sitelinks,
+                    // elevation — and a large region holds tens of thousands of them, so
+                    // buffering them whole is what the streaming format exists to avoid.
+                    $cities[] = $this->normalizeRow($row, 'city');
                 }
             }
 
@@ -196,6 +209,40 @@ final class LocationImporter
     }
 
     /**
+     * Put an upstream row into the field names the rest of this class works in.
+     *
+     * The published catalog names a place `name`/`slug`/`id`/`latitude`/`longitude`; an
+     * earlier one used the column names themselves. Both are read here so a mirror of the
+     * older catalog keeps importing, and so the mapping lives in one place rather than
+     * being spread across the region and city paths.
+     *
+     * `source` names the upstream a row's id came from. It is one value today, and the
+     * reason it exists is that an id only identifies a row within its own source — which
+     * is what made ids from two datasets overwrite each other's rows. Carried here so
+     * that a second source can be told apart without revisiting every call site.
+     *
+     * @param array  $row
+     * @param string $kind 'region' or 'city'
+     *
+     * @return array
+     */
+    private function normalizeRow(array $row, string $kind): array
+    {
+        $nameKey = $kind === 'region' ? 's_region_name' : 's_city_name';
+        $slugKey = $kind === 'region' ? 's_region_slug' : 's_city_slug';
+
+        return array(
+            $nameKey       => (string) ($row['name'] ?? $row[$nameKey] ?? ''),
+            $slugKey       => (string) ($row['slug'] ?? $row[$slugKey] ?? ''),
+            'i_source_id'  => isset($row['id']) ? (int) $row['id']
+                : (isset($row['i_source_id']) ? (int) $row['i_source_id'] : null),
+            'd_coord_lat'  => $row['latitude'] ?? $row['d_coord_lat'] ?? null,
+            'd_coord_long' => $row['longitude'] ?? $row['d_coord_long'] ?? null,
+            's_source'     => (string) ($row['source'] ?? ''),
+        );
+    }
+
+    /**
      * The body both entry points share: one country, then regions with their cities.
      *
      * @param array    $country the country row, in either format's field names
@@ -205,7 +252,8 @@ final class LocationImporter
      */
     private function runImport(array $country, iterable $regions): array
     {
-        $countryCode = (string) ($country['s_country_code'] ?? '');
+        // `code` in the published catalog, `s_country_code` in the older one.
+        $countryCode = (string) ($country['code'] ?? $country['s_country_code'] ?? '');
         if ($countryCode === '') {
             $this->resetReport('');
             $this->report['error'] = 'malformed country file';
@@ -260,7 +308,11 @@ final class LocationImporter
         // Stored with the casing the catalog publishes (upper), which is what every
         // pre-existing row uses. The region/city foreign keys are lowercased, as they
         // always have been; the column collation is case-insensitive, so they still join.
-        $code    = (string) $data['s_country_code'];
+        // `code`/`name`/`slug` in the published catalog, the column names themselves in
+        // the older one — same fallback the region and city rows go through.
+        $code    = (string) ($data['code'] ?? $data['s_country_code'] ?? '');
+        $name    = (string) ($data['name'] ?? $data['s_country_name'] ?? '');
+        $slug    = (string) ($data['slug'] ?? $data['s_country_slug'] ?? '');
         $current = osc_db_select_one(
             'SELECT pk_c_code, s_name, s_slug FROM ' . $table . ' WHERE pk_c_code = ?',
             array($code)
@@ -270,7 +322,7 @@ final class LocationImporter
             $this->report['country_inserted'] = true;
             osc_db_execute(
                 'INSERT INTO ' . $table . ' (pk_c_code, s_name, s_slug) VALUES (?, ?, ?)',
-                array($code, $data['s_country_name'], $data['s_country_slug'])
+                array($code, $name, $slug)
             );
 
             return;
@@ -278,11 +330,11 @@ final class LocationImporter
 
         // Country names do drift upstream ("Korea North" became "North Korea"), and
         // pk_c_code is the ISO code, so the rename is safe to apply.
-        if ($current['s_name'] !== $data['s_country_name'] || $current['s_slug'] !== $data['s_country_slug']) {
+        if ($current['s_name'] !== $name || $current['s_slug'] !== $slug) {
             $this->report['country_renamed'] = true;
             osc_db_execute(
                 'UPDATE ' . $table . ' SET s_name = ?, s_slug = ? WHERE pk_c_code = ?',
-                array($data['s_country_name'], $data['s_country_slug'], $code)
+                array($name, $slug, $code)
             );
         }
     }

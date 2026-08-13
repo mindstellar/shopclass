@@ -83,7 +83,15 @@ final class LocationCatalog
         // document naming the current release. Following it is what lets a data release
         // reach installs on its own — pinning the manifest instead would mean shipping a
         // core release to correct a place name.
-        if (is_array($data) && !isset($data['locations']) && isset($data['manifest'])) {
+        // A pointer names a manifest and lists no countries of its own. Both absences are
+        // required: isset() with two arguments asks whether BOTH are set, so testing them
+        // together would call a document carrying countries AND a manifest key a pointer.
+        $isPointer = is_array($data)
+            && isset($data['manifest'])
+            && !isset($data['countries'])
+            && !isset($data['locations']);
+
+        if ($isPointer) {
             $release     = (string) ($data['version'] ?? '');
             $manifestUrl = $this->resolveAgainstOrigin($configured, (string) $data['manifest']);
 
@@ -93,7 +101,10 @@ final class LocationCatalog
             $data = is_string($body) ? json_decode($body, true) : null;
         }
 
-        if (!is_array($data) || !isset($data['locations']) || !is_array($data['locations'])) {
+        // A manifest lists its countries under `countries`; the older one said
+        // `locations`. Either makes this a manifest rather than a failed fetch.
+        $listed = $data['countries'] ?? $data['locations'] ?? null;
+        if (!is_array($data) || !is_array($listed)) {
             // Serve whatever was last cached rather than reporting "no countries
             // available" because the catalog host was briefly unreachable.
             $decoded = $cached !== '' ? json_decode($cached, true) : null;
@@ -184,11 +195,40 @@ final class LocationCatalog
      */
     public function countryFile(string $fileName): ?array
     {
-        $base = str_replace('json-list.json', 'json/', $this->manifestUrl());
-        $body = osc_file_get_contents($base . rawurlencode($fileName), null, true, self::TIMEOUT);
+        $body = osc_file_get_contents($this->fileUrl($fileName), null, true, self::TIMEOUT);
         $data = is_string($body) ? json_decode($body, true) : null;
+        if (!is_array($data) || !isset($data['regions'])) {
+            return null;
+        }
 
-        return (is_array($data) && isset($data['s_country_code'], $data['regions'])) ? $data : null;
+        // Accepted in either shape: the catalog names a country `code` where the older
+        // one said `s_country_code`, and its regions carry `settlements` where the older
+        // one said `cities`. LocationImporter normalises the rest.
+        return (isset($data['code']) || isset($data['s_country_code'])) ? $data : null;
+    }
+
+    /**
+     * The absolute URL of a file the manifest names.
+     *
+     * Manifest entries give a path relative to the manifest itself (`data/MT.ndjson`),
+     * so it resolves against the manifest's directory — unlike the pointer's manifest
+     * path, which is relative to the host root. An older catalog names a bare file that
+     * lives in a sibling directory, which is what the second branch reconstructs.
+     */
+    private function fileUrl(string $fileNameOrPath): string
+    {
+        $manifest = $this->manifestUrl();
+
+        if (strpos($fileNameOrPath, '/') !== false) {
+            $dir = substr($manifest, 0, strrpos($manifest, '/') + 1);
+
+            return $dir . implode('/', array_map('rawurlencode', explode('/', $fileNameOrPath)));
+        }
+
+        // Old catalog: json-list.json beside json/ and ndjson/.
+        $sub = substr($fileNameOrPath, -7) === '.ndjson' ? 'ndjson/' : 'json/';
+
+        return str_replace('json-list.json', $sub, $manifest) . rawurlencode($fileNameOrPath);
     }
 
     /**
@@ -209,11 +249,10 @@ final class LocationCatalog
      */
     public function countryNdjsonFile(string $fileName, string $sha256 = ''): ?string
     {
-        $base = str_replace('json-list.json', 'ndjson/', $this->manifestUrl());
         $path = osc_uploads_path() . 'locations-' . bin2hex(random_bytes(8)) . '.ndjson';
 
         $ok = (new \mindstellar\utility\FileSystem())->downloadFile(
-            $base . rawurlencode($fileName),
+            $this->fileUrl($fileName),
             $path,
             null,
             true,
@@ -238,10 +277,24 @@ final class LocationCatalog
         $installed = $this->installed();
         $present   = $this->countriesInDatabase();
 
+        // The catalog lists its countries under `countries`; the older one said
+        // `locations`. Every per-country field moved too, so each is read through a
+        // fallback rather than the file being read twice.
+        $entries = $manifest['countries'] ?? $manifest['locations'] ?? array();
+
         $out = array();
-        foreach ($manifest['locations'] as $entry) {
-            $code = (string) $entry['s_country_code'];
-            $sha  = (string) ($entry['s_sha256'] ?? '');
+        foreach ($entries as $entry) {
+            $code = (string) ($entry['code'] ?? $entry['s_country_code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+
+            $files  = is_array($entry['files'] ?? null) ? $entry['files'] : array();
+            $hashes = is_array($entry['sha256'] ?? null) ? $entry['sha256'] : array();
+
+            // The streaming file's checksum stands for "this country's data", because it
+            // is the copy an import actually reads. It moves whenever the data moves.
+            $sha  = (string) ($hashes['data'] ?? $entry['s_sha256'] ?? '');
             $have = $installed[strtoupper($code)] ?? null;
             // "Installed" means rows exist, not merely that a checksum was recorded: an
             // install that predates this bookkeeping has the data and no checksum, and
@@ -249,17 +302,17 @@ final class LocationCatalog
             $isInstalled = isset($present[strtolower($code)]);
             $out[]       = array(
                 'code'      => $code,
-                'name'      => (string) $entry['s_country_name'],
-                'file'      => (string) $entry['s_file_name'],
+                'name'      => (string) ($entry['name'] ?? $entry['s_country_name'] ?? $code),
+                'file'      => (string) ($files['json'] ?? $entry['s_file_name'] ?? ''),
                 'sha'       => $sha,
                 // The same country as one JSON object per line. Empty on a catalog that
                 // publishes only the whole-file form; where it is offered the import
                 // reads it a line at a time instead of decoding a whole country at once.
-                'ndjson'     => (string) ($entry['s_file_ndjson'] ?? ''),
-                'ndjson_sha' => (string) ($entry['s_sha256_ndjson'] ?? ''),
+                'ndjson'     => (string) ($files['data'] ?? $entry['s_file_ndjson'] ?? ''),
+                'ndjson_sha' => (string) ($hashes['data'] ?? $entry['s_sha256_ndjson'] ?? ''),
                 'installed' => $isInstalled,
                 'current'   => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
-                'rows'      => (int) ($entry['i_cities'] ?? 0),
+                'rows'      => (int) ($entry['settlements'] ?? $entry['i_cities'] ?? 0),
             );
         }
 
