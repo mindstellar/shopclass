@@ -122,3 +122,8 @@ jobs:
       # screen has to stay truthful when the answer predates it.
       - name: Upgrade payload contract
         run: php tests/upgrade-payload-contract.php
+      # Needs no database or network: the catalog's pointer and its manifest both carry a
+      # `countries` key, and telling them apart on presence rather than type has broken
+      # the catalog twice, both times hidden by a warm cache.
+      - name: Location catalog shapes
+        run: php tests/location-catalog-shapes.php

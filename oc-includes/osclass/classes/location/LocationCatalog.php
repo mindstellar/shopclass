@@ -83,15 +83,7 @@ final class LocationCatalog
         // document naming the current release. Following it is what lets a data release
         // reach installs on its own — pinning the manifest instead would mean shipping a
         // core release to correct a place name.
-        // A pointer names a manifest and lists no countries of its own. Both absences are
-        // required: isset() with two arguments asks whether BOTH are set, so testing them
-        // together would call a document carrying countries AND a manifest key a pointer.
-        $isPointer = is_array($data)
-            && isset($data['manifest'])
-            && !isset($data['countries'])
-            && !isset($data['locations']);
-
-        if ($isPointer) {
+        if (is_array($data) && self::isPointerDocument($data)) {
             $release     = (string) ($data['version'] ?? '');
             $manifestUrl = $this->resolveAgainstOrigin($configured, (string) $data['manifest']);
 
@@ -122,6 +114,27 @@ final class LocationCatalog
         osc_set_preference(self::PREF_RELEASE, $release);
 
         return $this->manifest = $data;
+    }
+
+    /**
+     * Whether a fetched document names a manifest rather than being one.
+     *
+     * Decided on types, not on which keys are present. Both documents carry a `countries`
+     * key: the manifest's is the list of them, the pointer's is how many there are. Asking
+     * only whether the key exists reads the pointer as a manifest and then finds an
+     * integer where the list should be — which is exactly the failure this had twice, both
+     * times hidden by a cached manifest until the cache went cold.
+     *
+     * A pointer names a path; a manifest carries a list.
+     *
+     * @param array $data a decoded catalog document
+     */
+    public static function isPointerDocument(array $data): bool
+    {
+        return isset($data['manifest'])
+            && is_string($data['manifest'])
+            && !is_array($data['countries'] ?? null)
+            && !is_array($data['locations'] ?? null);
     }
 
     /**
