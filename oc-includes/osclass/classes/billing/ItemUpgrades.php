@@ -245,7 +245,17 @@ final class ItemUpgrades
             ? $row['dt_expiration']
             : $now;
 
-        return date('Y-m-d H:i:s', strtotime($base) + ($days ?? 0) * 86400 + ($hours ?? 0) * 3600);
+        // Days are calendar arithmetic -- a 30-day purchase expires 30 calendar days
+        // later regardless of a DST change in between, not 30 * 86400 raw seconds.
+        // Hours stay literal * 3600: the bump cooldown means wait N real hours, not
+        // "until this time tomorrow", so it must not shift with the clocks either.
+        $ts = strtotime($base);
+        if ($days !== null) {
+            $ts = strtotime('+' . $days . ' days', $ts);
+        }
+        $ts += ($hours ?? 0) * 3600;
+
+        return date('Y-m-d H:i:s', $ts);
     }
 
     private static function tableName(): string

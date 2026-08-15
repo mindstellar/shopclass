@@ -41,10 +41,17 @@ class CWebBillingNonSecure extends BaseModel
 
     /**
      * Resolve the gateway, hand it the request, and act on what it reports -- then
-     * answer with the exact same short body no matter what happened. An unknown
-     * gateway, no matching order, a mismatched amount and a genuine success all have
-     * to look identical from the outside, or the response itself becomes a way to
-     * probe whether an order exists.
+     * answer with the exact same short body no matter what happened. No matching
+     * order, a mismatched amount and a genuine success all have to look identical
+     * from the outside, or the response itself becomes a way to probe whether an
+     * order exists.
+     *
+     * The status code is the one exception, and a deliberate one: a callback core
+     * could not process at all (no gateway registered -- typically billing switched
+     * off) answers 503 so the provider retries, rather than 200, which it would read
+     * as delivered and never send again. Every outcome core did decide on, including
+     * a deliberate ignore, still answers 200 -- the body never changes, so the code
+     * alone reveals nothing about any particular order.
      */
     private function callback()
     {
@@ -63,10 +70,10 @@ class CWebBillingNonSecure extends BaseModel
             }
         }
 
-        Billing::handleCallback($gatewayId, $payload);
+        $result = Billing::handleCallback($gatewayId, $payload);
 
         header('Content-Type: text/plain; charset=UTF-8');
-        http_response_code(200);
+        http_response_code($result->isRetryable() ? 503 : 200);
         echo 'OK';
         exit;
     }

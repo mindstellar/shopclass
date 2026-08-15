@@ -283,9 +283,19 @@ class ItemActions
             }
 
             // Only after the insert has actually landed -- a listing that failed
-            // validation above never reaches here and never burns a credit.
-            if ($needsCredit) {
-                \mindstellar\billing\Entitlements::consume($aItem['userId'], 'listing.publish', 1);
+            // validation above never reaches here and never burns a credit. The post
+            // is never refused at this point even if consume() fails: the listing
+            // already exists, and undoing it here would be a worse outcome than the
+            // leak. A false return means the entitlement lapsed between the check
+            // above and this insert, or a concurrent post took the last unit -- the
+            // seller got a free listing and quota is leaking, so make that visible to
+            // an operator rather than let it pass unnoticed.
+            if ($needsCredit && !\mindstellar\billing\Entitlements::consume($aItem['userId'], 'listing.publish', 1)) {
+                trigger_error(
+                    'Entitlements::consume() failed for listing.publish after item '
+                    . $itemId . ' (user ' . $aItem['userId'] . ') was already published; quota may be leaking.',
+                    E_USER_WARNING
+                );
             }
 
             if (!$this->is_admin) {
@@ -1456,8 +1466,10 @@ class ItemActions
 
         // Turning premium off always clears the date, so a later permanent grant does
         // not inherit a stale expiry and get swept away an hour after it is made.
+        // Calendar arithmetic, not $days * 86400: a 30-day upgrade must expire 30
+        // calendar days later, not 720 raw hours, or a DST change moves it an hour.
         $set['dt_premium_expiration'] = ($on && $days !== null)
-            ? date('Y-m-d H:i:s', time() + ((int) $days * 86400))
+            ? date('Y-m-d H:i:s', strtotime('+' . (int) $days . ' days'))
             : null;
 
         $result = $this->manager->update(

@@ -301,11 +301,32 @@ pin(
     Order::STATUS_PENDING,
     Orders::find($rivalTarget->getId())->getStatus()
 );
+/* A mismatch core looked at and decided on is not the same as core never getting
+ * to look at all -- only the latter should make a provider retry. */
+check('a cross-gateway mismatch is a decision core made, not retryable', $result->isRetryable() === false);
 
-pin(
-    'an unknown gateway is ignored',
-    CallbackResult::OUTCOME_IGNORED,
-    Billing::handleCallback('nope', array())->getOutcome()
+/* ----------------------------------------------------------------------------
+ * A callback core could not process at all -- no gateway registered, which is
+ * what happens while billing is switched off -- must be retryable, or a real
+ * payment arriving during that window is acknowledged and never retried.
+ * ------------------------------------------------------------------------- */
+$unknownGatewayResult = Billing::handleCallback('nope', array());
+pin('an unknown gateway is ignored', CallbackResult::OUTCOME_IGNORED, $unknownGatewayResult->getOutcome());
+check(
+    'an unknown gateway is retryable -- core never resolved the callback at all',
+    $unknownGatewayResult->isRetryable() === true
+);
+
+/* Every outcome CallbackResult can carry other than an unresolvable ignore must
+ * default to not-retryable -- paid/failed/refunded and a deliberate ignore all
+ * answer 200 on replay, or a provider would retry forever. */
+check('paid() is never retryable', CallbackResult::paid(1)->isRetryable() === false);
+check('failed() is never retryable', CallbackResult::failed(1)->isRetryable() === false);
+check('refunded() is never retryable', CallbackResult::refunded(1)->isRetryable() === false);
+check('ignored() defaults to not retryable', CallbackResult::ignored('anything')->isRetryable() === false);
+check(
+    'ignored() is retryable only when explicitly told so',
+    CallbackResult::ignored('unresolvable', true)->isRetryable() === true
 );
 
 /* ----------------------------------------------------------------------------
@@ -326,6 +347,44 @@ check(
     Billing::refund(Orders::find($order->getId())) === false
 );
 pin('a repeated refund takes nothing further', $balance, Wallet::balance($userId));
+
+/* ----------------------------------------------------------------------------
+ * Reopening a failed order. Orders::settle()/Billing::markPaid() are guarded on
+ * pending by default -- a gateway retrying its own callback must never revive a
+ * failed order by itself. The admin "mark paid" escape hatch is the one caller
+ * allowed to widen that guard, because a person is confirming a real retried
+ * payment, not a replayed webhook doing it unattended.
+ * ------------------------------------------------------------------------- */
+harness_section('Orders/Billing: a failed order can be reopened, but only by the admin path');
+
+$failedOrder = Orders::create($userId, 'fake', 1_000_000, 'USD', 15);
+check('an order can be moved to failed', Orders::settle($failedOrder->getId(), Order::STATUS_FAILED, 'ext_6'));
+pin('the order reads back as failed', Order::STATUS_FAILED, Orders::find($failedOrder->getId())->getStatus());
+
+$balanceBeforeReopen = Wallet::balance($userId);
+check(
+    'the default (gateway-callback) guard refuses to settle a failed order',
+    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6') === false
+);
+pin('a refused reopen mints nothing', $balanceBeforeReopen, Wallet::balance($userId));
+pin(
+    'a refused reopen leaves the order failed',
+    Order::STATUS_FAILED,
+    Orders::find($failedOrder->getId())->getStatus()
+);
+
+check(
+    'the admin-only path (allowFailed) settles a failed order',
+    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6', true) === true
+);
+pin('reopening a failed order mints its credits', $balanceBeforeReopen + 15, Wallet::balance($userId));
+pin('the reopened order reads back as paid', Order::STATUS_PAID, Orders::find($failedOrder->getId())->getStatus());
+
+check(
+    'reopening an order that is already paid reports no change even with allowFailed',
+    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6', true) === false
+);
+pin('a repeated reopen mints nothing further', $balanceBeforeReopen + 15, Wallet::balance($userId));
 
 /* ----------------------------------------------------------------------------
  * Registry.
@@ -555,6 +614,51 @@ pin(
     $expirationOf($entUserId, 'test.dur')
 );
 pin('the duration extension still writes exactly one row, not a second', 1, $entCount($entUserId, 'test.dur'));
+
+/* ----------------------------------------------------------------------------
+ * Calendar-correct day arithmetic. Entitlements::addDays() and
+ * ItemUpgrades::nextExpiration() must add calendar days, not days * 86400 raw
+ * seconds, or a purchase made near a DST boundary expires an hour early or
+ * late. Set explicitly rather than trusting the host's zone, which may not
+ * observe DST at all -- the property below only shows up in one that does.
+ * ------------------------------------------------------------------------- */
+harness_section('Calendar-correct day arithmetic across a DST boundary');
+
+$previousTz = date_default_timezone_get();
+date_default_timezone_set('America/New_York');
+
+// 2024-03-10 is the US spring-forward transition: 02:00 EST becomes 03:00 EDT.
+// A base 30 calendar days before it, at 10:00 local, must still read 10:00
+// local 30 days later. days * 86400 instead lands on 11:00 -- the 30*86400
+// raw seconds span one hour less of wall-clock offset than 30 calendar days
+// actually cover once the clocks spring forward partway through.
+$addDays = new ReflectionMethod(Entitlements::class, 'addDays');
+$addDays->setAccessible(true);
+pin(
+    'Entitlements::addDays() preserves wall-clock time across a DST boundary',
+    '2024-03-10 10:00:00',
+    $addDays->invoke(null, '2024-02-09 10:00:00', 30)
+);
+
+$nextExpiration = new ReflectionMethod(ItemUpgrades::class, 'nextExpiration');
+$nextExpiration->setAccessible(true);
+pin(
+    'ItemUpgrades::nextExpiration() days offset preserves wall-clock time across the same boundary',
+    '2024-03-10 10:00:00',
+    $nextExpiration->invoke(null, null, 30, null, '2024-02-09 10:00:00')
+);
+
+// Hours are the deliberate exception: a 24-hour bump cooldown means 24 real
+// elapsed hours, not "this time tomorrow", so it must NOT track the wall clock
+// across the same boundary -- 24 hours after 2024-03-09 10:00 is 11:00 local
+// the next day, once the clocks have sprung forward in between.
+pin(
+    'ItemUpgrades::nextExpiration() hours offset stays literal elapsed seconds across the same boundary',
+    '2024-03-10 11:00:00',
+    $nextExpiration->invoke(null, null, null, 24, '2024-03-09 10:00:00')
+);
+
+date_default_timezone_set($previousTz);
 
 /* ----------------------------------------------------------------------------
  * Entitlements: consuming. consume() is a single conditional UPDATE -- the

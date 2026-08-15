@@ -65,7 +65,12 @@ final class Billing
     {
         $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
         if ($gateway === null) {
-            return CallbackResult::ignored('unknown gateway');
+            // Gateways register only while billing is enabled, so this is usually an
+            // "off" window rather than a bogus request -- core never got to look at
+            // the payload at all. Retryable, so the provider tries again once billing
+            // (and the gateway) is back, instead of marking a real payment delivered
+            // and forgetting it.
+            return CallbackResult::ignored('unknown gateway', true);
         }
 
         $result = $gateway->handleCallback($request);
@@ -105,12 +110,22 @@ final class Billing
      * marked paid without its credits landing, and the credit is keyed on the order id
      * so a retried callback cannot mint twice.
      *
+     * @param bool $allowFailed Also settle an order currently `failed`, not only
+     *                          `pending` -- the admin "mark paid" escape hatch only,
+     *                          for a provider retrying payment after an earlier
+     *                          failure. No gateway callback route may ever pass true
+     *                          here; a webhook re-deciding a failed order by itself
+     *                          is not the ordinary case a human confirming it is.
+     *
      * @return bool whether this call settled the order (false if it was already settled)
      */
-    public static function markPaid(Order $order, ?string $externalRef = null): bool
+    public static function markPaid(Order $order, ?string $externalRef = null, bool $allowFailed = false): bool
     {
-        $settled = osc_db_transaction(static function () use ($order, $externalRef): bool {
-            if (!Orders::settle($order->getId(), Order::STATUS_PAID, $externalRef)) {
+        $settled = osc_db_transaction(static function () use ($order, $externalRef, $allowFailed): bool {
+            $from = $allowFailed
+                ? array(Order::STATUS_PENDING, Order::STATUS_FAILED)
+                : array(Order::STATUS_PENDING);
+            if (!Orders::settle($order->getId(), Order::STATUS_PAID, $externalRef, $from)) {
                 return false;
             }
 

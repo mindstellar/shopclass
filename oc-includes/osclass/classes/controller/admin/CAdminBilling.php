@@ -152,6 +152,12 @@ class CAdminBilling extends AdminSecBaseModel
      * The offline path (bank transfer, cash) has no callback to wait for, and a gateway
      * whose webhook never arrived leaves an order stuck pending with the money already
      * taken. Both need a person to be able to say "this was paid".
+     *
+     * This is also the one path allowed to reopen a `failed` order -- a provider
+     * retrying payment on the same order after an earlier failure is ordinary, and an
+     * admin confirming it by hand is the deliberate act that makes it safe. Nothing
+     * about a gateway callback ever grants that; Billing::markPaid()'s $allowFailed
+     * is passed true only here.
      */
     private function orderPaidPost()
     {
@@ -163,14 +169,18 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
         }
 
-        if (Billing::markPaid($order, $order->getExternalRef())) {
+        $wasFailed = $order->getStatus() === Order::STATUS_FAILED;
+
+        if (Billing::markPaid($order, $order->getExternalRef(), true)) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId()),
+                $wasFailed
+                    ? sprintf(_m('Order #%d was marked failed and is now marked paid; the credits have been added'), $order->getId())
+                    : sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId()),
                 'admin'
             );
         } else {
-            // markPaid() is guarded on the order still being pending, so this is the
-            // benign double-submit rather than a failure.
+            // markPaid() is guarded on the order still being pending or failed, so
+            // this is the benign double-submit rather than a failure.
             osc_add_flash_warning_message(_m('That order had already been settled'), 'admin');
         }
 

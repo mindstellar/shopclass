@@ -316,7 +316,10 @@ final class Entitlements
 
     private static function addDays(string $datetime, int $days): string
     {
-        return date('Y-m-d H:i:s', strtotime($datetime) + ($days * 86400));
+        // Calendar arithmetic, not $days * 86400: a 30-day grant made just before a
+        // DST transition must still read as 30 calendar days later, not 720 raw
+        // hours, or the expiry lands an hour off the moment the clocks change.
+        return date('Y-m-d H:i:s', strtotime('+' . $days . ' days', strtotime($datetime)));
     }
 
     private static function table(): string
