@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\billing\Billing;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
+use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 
@@ -75,6 +76,18 @@ class CAdminBilling extends AdminSecBaseModel
                 break;
             case ('wallet_adjust'):
                 $this->walletAdjustPost();
+                break;
+            case ('packages'):
+                $this->packagesView();
+                break;
+            case ('package'):
+                $this->packageView();
+                break;
+            case ('package_post'):
+                $this->packagePost();
+                break;
+            case ('package_delete'):
+                $this->packageDeletePost();
                 break;
             default:
                 $this->ordersView();
@@ -279,6 +292,120 @@ class CAdminBilling extends AdminSecBaseModel
 
         osc_add_flash_ok_message(sprintf(_m('%d credits removed'), $amount), 'admin');
         $this->redirectTo($back);
+    }
+
+    /**
+     * The package catalogue -- what a buyer can choose at checkout.
+     */
+    private function packagesView()
+    {
+        $this->_exportVariableToView('packages', Packages::all());
+        $this->doView('billing/packages.php');
+    }
+
+    /**
+     * Add or edit one package.
+     */
+    private function packageView()
+    {
+        $id      = Params::getParamInt('id');
+        $package = $id > 0 ? Packages::find($id) : null;
+        if ($id > 0 && $package === null) {
+            osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+        }
+
+        $this->_exportVariableToView('package', $package);
+        $this->doView('billing/package.php');
+    }
+
+    /**
+     * Create or update a package.
+     *
+     * The amount arrives as decimal currency and is validated before it is converted
+     * to micros -- Orders::create() trusts this row completely at checkout, so a bad
+     * amount has to be caught here, never there.
+     */
+    private function packagePost()
+    {
+        osc_csrf_check();
+
+        $id        = Params::getParamInt('id');
+        $back      = osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : '');
+        $name      = trim(Params::getParamString('name'));
+        $amountRaw = trim(Params::getParamString('amount'));
+        $currency  = strtoupper(trim(Params::getParamString('currency')));
+        $credits   = Params::getParamInt('credits');
+        $position  = Params::getParamInt('position');
+        $enabled   = Params::getParam('enabled') != '' ? 1 : 0;
+
+        if ($name === '') {
+            osc_add_flash_error_message(_m('Enter a name for this package'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if ($amountRaw === '' || !is_numeric($amountRaw) || (float) $amountRaw < 0) {
+            osc_add_flash_error_message(_m('Enter a valid amount, 0 or more'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if ($credits < 1) {
+            osc_add_flash_error_message(_m('Credits must be at least 1'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+            osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        $data = array(
+            's_name'     => $name,
+            // Money is entered as decimal currency and stored as micros -- integer
+            // maths only, the value is never kept as a float past this line.
+            'i_amount'   => (int) round((float) $amountRaw * 1000000),
+            's_currency' => $currency,
+            'i_credits'  => $credits,
+            'i_position' => max(0, $position),
+            'b_enabled'  => $enabled,
+        );
+
+        try {
+            if ($id > 0) {
+                if (Packages::find($id) === null) {
+                    osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+                }
+                Packages::update($id, $data);
+                osc_add_flash_ok_message(_m('Package updated'), 'admin');
+            } else {
+                Packages::create($data);
+                osc_add_flash_ok_message(_m('Package created'), 'admin');
+            }
+        } catch (InvalidArgumentException $e) {
+            osc_add_flash_error_message(_m('That package could not be saved'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+    }
+
+    /**
+     * Remove a package from the catalogue. Orders already placed against it carry
+     * their own copy of the amount and credits, so deleting it never touches history.
+     */
+    private function packageDeletePost()
+    {
+        osc_csrf_check();
+
+        $id = Params::getParamInt('id');
+        if (Packages::delete($id)) {
+            osc_add_flash_ok_message(_m('Package deleted'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
     }
 
     /**

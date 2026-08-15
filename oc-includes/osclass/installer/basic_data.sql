@@ -148,7 +148,15 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'keyword_spam_enabled', '0', 'BOOLEAN')
     ,('osclass', 'keyword_spam_hard_block', '0', 'BOOLEAN')
     ,('osclass', 'report_autoblock', '1', 'BOOLEAN')
-    ,('osclass', 'report_threshold', '5', 'INTEGER');
+    ,('osclass', 'report_threshold', '5', 'INTEGER')
+    ,('osclass', 'billing_free_posts_per_period', '0', 'INTEGER')
+    ,('osclass', 'billing_period_days', '30', 'INTEGER')
+    ,('osclass', 'billing_publish_credits', '1', 'INTEGER')
+    ,('osclass', 'billing_premium_credits', '0', 'INTEGER')
+    ,('osclass', 'billing_premium_days', '30', 'INTEGER')
+    ,('osclass', 'billing_currency', 'USD', 'STRING')
+    ,('osclass', 'billing_offline_enabled', '0', 'BOOLEAN')
+    ,('osclass', 'billing_offline_instructions', '', 'STRING');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

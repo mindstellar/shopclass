@@ -214,6 +214,19 @@ class ItemActions
         osc_run_hook('pre_item_add', $aItem, $flash_error);
         $flash_error = osc_apply_filter('pre_item_add_error', $flash_error, $aItem);
 
+        // The one choke point for the posting quota. Guest posts (no user id) have no
+        // wallet to charge and admin posts are never metered, so both skip enforcement
+        // entirely. $needsCredit is captured before the insert below -- checking after
+        // would count the very row this request is about to create.
+        $needsCredit = false;
+        if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
+            $needsCredit = !\mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
+            if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem))) {
+                $flash_error .= _m('You have used all your listings for this period. Add credits to post more.')
+                    . PHP_EOL;
+            }
+        }
+
         // Handle error
         if ($flash_error) {
             $success = $flash_error;
@@ -255,6 +268,12 @@ class ItemActions
                 );
 
                 return _m('Your listing could not be saved. Please try again.');
+            }
+
+            // Only after the insert has actually landed -- a listing that failed
+            // validation above never reaches here and never burns a credit.
+            if ($needsCredit) {
+                \mindstellar\billing\Entitlements::consume($aItem['userId'], 'listing.publish', 1);
             }
 
             if (!$this->is_admin) {

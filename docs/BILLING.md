@@ -185,35 +185,52 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `Order` | Immutable payment intent |
 | `Orders` | Persistence for `t_billing_order` |
 | `Wallet` | `balance()` / `credit()` / `debit()` / `reverse()` / `history()` |
-| `Billing` | `checkout()` / `handleCallback()` / `markPaid()` / `refund()` |
+| `Billing` | `checkout()` / `handleCallback()` / `markPaid()` / `refund()` / `spend()` |
 | `Premium` | `expire()` — the sweep behind the hourly cron |
+| `Feature` | One registered feature spec — `price()` / `duration()` / `apply()` |
+| `FeatureRegistry` | `instance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
+| `Entitlements` | `grant()` / `has()` / `quantity()` / `consume()` / `canPublish()` — what a user holds |
+| `Packages` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
+| `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
 
 `Wallet::reverse()` is the chargeback path and is deliberately not `debit()`: by the time a
 provider claws a payment back the user has usually spent what it bought, so a reversal that
 refused to overdraw would simply not happen and the site would have given the goods away. A
 negative balance is the honest record, and it blocks further spending until settled.
 
-### `BillingFeatureRegistry`
+### `FeatureRegistry`
 
-*Phase 2 — not yet built.*
-
-What credits can be spent on. Core registers the built-ins; plugins may add their own.
+Singleton, matching `PaymentGatewayRegistry`'s own shape so the two registries read the
+same to a plugin author. Core registers the built-ins on load; a plugin adds its own, or
+replaces one of core's by registering the same id again — that is how a site overrides a
+built-in feature's price or effect.
 
 ```php
-[
-  'id'      => 'listing.premium',
-  'label'   => 'Featured listing',
-  'consumes'=> 'duration',              // 'quantity' | 'duration'
-  'apply'   => callable(int $userId, array $ctx): bool,
-]
+FeatureRegistry::instance()->register('listing.premium', array(
+    'label'       => 'Featured listing',
+    'description' => '',                             // optional
+    'consumes'    => Feature::CONSUMES_DURATION,      // ::CONSUMES_QUANTITY | ::CONSUMES_DURATION
+    'price'       => 0,                               // int, or callable(): int
+    'duration'    => 0,                               // int, or callable(): int; quantity features leave this at 0
+    'apply'       => function (int $userId, array $ctx): bool { /* … */ },
+));
 ```
 
-Built-ins core ships:
+`Billing::spend()` resolves `price` (and `duration`, for a duration feature) through the
+`billing_feature_price` filter before charging, so a site can reprice a feature — including
+one of core's own — without touching this array.
 
-| Feature | Effect |
-|---|---|
-| `listing.publish` | One more listing allowed in the current period |
-| `listing.premium` | `ItemActions::premium()` + `dt_premium_expiration` = now + N days |
+Built-ins core ships, both registered unconditionally (like the core widget and field
+types) so they exist and are overridable whether or not billing is switched on:
+
+| Feature | Consumes | Effect |
+|---|---|---|
+| `listing.publish` | quantity | Grants one more `listing.publish` entitlement — one extra listing beyond the free quota |
+| `listing.premium` | duration | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
+
+`listing.premium`'s `apply` requires `$ctx['itemId']` and does **not** check ownership —
+that is the caller's job (the public `upgrade` route, §7), because a feature only knows how
+to apply itself once asked to, not who is allowed to ask.
 
 ---
 
@@ -258,8 +275,12 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_enabled` | `0` | Master switch |
 | `billing_free_posts_per_period` | `0` | 0 = unlimited |
 | `billing_period_days` | `30` | Quota window |
-| `billing_premium_credits` | `0` | Price of a featured listing |
+| `billing_publish_credits` | `1` | Price of one extra listing beyond the free quota |
+| `billing_premium_credits` | `0` | Price of a featured listing; 0 = not for sale |
 | `billing_premium_days` | `30` | Duration granted |
+| `billing_currency` | `USD` | ISO 4217 code credits are priced in |
+| `billing_offline_enabled` | `0` | Whether the bundled bank-transfer gateway is offered at checkout |
+| `billing_offline_instructions` | *(empty)* | Admin-authored payment instructions shown at checkout; empty means the gateway offers itself nowhere, since there is nothing to tell a buyer to pay |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -269,29 +290,67 @@ until an admin turns it on.
 
 ## 6. Admin surface
 
-- **Settings → Billing** — the switches above
+- **Settings → Billing** — the master switch, a pricing section (free-quota size, listing
+  and featured-listing prices, currency), and the bundled bank-transfer gateway's own
+  enable switch and instructions text
+- **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
+  credits, position, enabled
 - **Billing → Orders** — read-only list: user, gateway, amount, status, external ref
 - **Users** — balance column, plus manual credit/debit writing a `grant`/`revoke` ledger row
 - **Items** — the existing mark/unmark premium row action, now showing the expiry date
 
-## 7. Cron
+## 7. Public routes
 
-One job: flip `b_premium` off where `dt_premium_expiration < NOW() AND b_premium = 1`.
-Slots into the existing scheduled-cleanup infrastructure.
+Everything a buyer does lives under `?page=billing`, and every one of those actions needs a
+logged-in user except the one route a payment provider's own server hits directly:
 
-## 8. Hooks
+| `action` | Method | Auth | What |
+|---|---|---|---|
+| *(default)* | GET | logged in | Wallet balance and ledger |
+| `buy` | GET | logged in | Enabled packages plus the configured payment methods |
+| `checkout` | POST, CSRF | logged in | Start paying for a package |
+| `orders` | GET | logged in | The buyer's own past orders |
+| `upgrade` | POST, CSRF | logged in | Feature one of the buyer's own listings |
+| `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
+
+Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
+with a flash error when it is off, so nothing downstream has to repeat that check.
+
+`callback` is the deliberate exception, served by a separate controller
+(`CWebBillingNonSecure`) rather than a branch of the logged-in one, precisely so it can
+never accidentally pick up a CSRF check or a login redirect. `Billing::handleCallback()`
+re-verifies the amount and currency against the stored order instead (§3), and the response
+is the same short `OK` body for every outcome — success, failure, an unknown gateway, or an
+order that does not exist — so the endpoint itself cannot be used to probe whether an order
+is real.
+
+**The callback URL is a compatibility contract.** A gateway plugin gives this URL —
+`?page=billing&action=callback&gateway=<id>` — to its payment provider once, often typed by
+hand into a dashboard. Renaming the route, the `gateway` parameter, or the non-secure split
+would silently break every already-configured gateway on every site that installed it, with
+nothing failing loudly until the next payment does not settle. Treat it like an `osc_*`
+helper: changing it is a breaking change, not a refactor.
+
+## 8. Cron
+
+One job: flip `b_premium` off where `dt_premium_expiration < NOW() AND b_premium = 1`, and
+purge entitlement rows whose own expiration has passed. Both are pure housekeeping with no
+fulfilment side effects, so they share the existing hourly slot rather than adding a second.
+
+## 9. Hooks
 
 | Hook | Kind | Fired |
 |---|---|---|
 | `billing_order_paid` | action | Order transitions to paid, after credits are minted |
 | `billing_order_refunded` | action | Reversal recorded |
 | `billing_credits_changed` | action | Any ledger write |
-| `billing_can_publish` | filter | Veto or override the quota decision |
+| `billing_feature_applied` | action | `Billing::spend()` succeeds, after the feature's effect lands |
+| `billing_can_publish` | filter | Veto or override the quota decision, on every call including billing-off |
 | `billing_feature_price` | filter | Override a feature's credit price |
 
 ---
 
-## 9. Out of scope
+## 10. Out of scope
 
 Deliberately not in core, so the security and regulatory surface stays where it belongs:
 
@@ -301,19 +360,19 @@ Deliberately not in core, so the security and regulatory surface stays where it 
 - **Refund initiation.** Core records a refund the gateway reports; it never calls out to
   request one.
 
-## 10. Phases
+## 11. Phases
 
 | Phase | Contents |
 |---|---|
-| **1** | Wallet, ledger, orders, `PaymentGateway` + registry, `dt_premium_expiration`, expiry cron. No enforcement. *Built; admin orders/balance UI still outstanding.* |
-| **2** | Entitlements, `listing.publish` quota, the `ItemActions::add()` choke point, settings. |
-| **3** | Feature registry generalisation; theme helpers (`osc_user_credits()`, buy/wallet pages). |
-| **4** | Reference gateway: **offline / bank transfer**. No external dependency, no API keys — an admin marks the order paid. It proves the interface end to end and is genuinely useful for markets where card payment is not the norm. |
+| **1** | Wallet, ledger, orders, `PaymentGateway` + registry, `dt_premium_expiration`, expiry cron, admin orders/balance UI. No enforcement. *Built.* |
+| **2** | Entitlements, `listing.publish` quota, the `ItemActions::add()` choke point, settings. *Built.* |
+| **3** | Feature registry generalisation; theme helpers (`osc_user_credits()`, buy/wallet pages). *Core's half is built: `FeatureRegistry`, the theme-facing helpers (`osc_user_credits()`, `osc_billing_packages()`, `osc_billing_wallet_url()`/`buy_url()`/`orders_url()`/`upgrade_url()`, `osc_item_can_be_featured()`), and core's own fallback wallet/buy/orders views under `oc-includes/osclass/gui/billing/`. Still open: the bundled theme is its own external repository, and does not yet ship its own `user-billing-*.php` templates — until it does, every site sees core's plain fallback rather than a themed one.* |
+| **4** | Reference gateway: **offline / bank transfer**, plus the package catalogue admins price it against. No external dependency, no API keys — an admin marks the order paid. It proves the interface end to end and is genuinely useful for markets where card payment is not the norm. *Built.* |
 
 Phase 1 is the keystone: it is the part third-party plugins compile against, and it ships
 without changing any existing behaviour.
 
-## 11. Compatibility
+## 12. Compatibility
 
 Every change here is **additive** — new tables via migration, new classes, new helpers, new
 preference keys. No CSS class, `osc_*` helper or asset path is renamed or removed, so

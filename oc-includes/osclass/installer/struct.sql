@@ -769,6 +769,40 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+-- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades
+-- with the user, unlike the ledger and orders above -- an entitlement without an
+-- account means nothing.
+CREATE TABLE /*TABLE_PREFIX*/t_user_entitlement (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_user_id INT UNSIGNED NOT NULL,
+    s_feature VARCHAR(64) NOT NULL DEFAULT '',
+    i_quantity INT NULL,
+    dt_expiration DATETIME NULL,
+    s_source VARCHAR(32) NOT NULL DEFAULT 'purchase',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_user_feature (fk_i_user_id, s_feature),
+        INDEX idx_expiration (dt_expiration),
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- The price list an admin sells credits from. A row here is edited and removed by an
+-- admin, not appended to like the ledger, so it carries no history requirement.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_package (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_name VARCHAR(120) NOT NULL DEFAULT '',
+    i_amount BIGINT NOT NULL DEFAULT 0,
+    s_currency CHAR(3) NOT NULL DEFAULT '',
+    i_credits INT UNSIGNED NOT NULL DEFAULT 0,
+    i_position INT UNSIGNED NOT NULL DEFAULT 0,
+    b_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_enabled_position (b_enabled, i_position)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 -- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id
 -- ({slug}-r{id}) and self-heals on rename, but subdomain-based location routing
 -- resolves purely by slug and has no such fallback, so a rename needs recorded

@@ -123,6 +123,14 @@ switch (Params::getParam('page')) {
         $do = new CWebItem();
         $do->doModel();
         break;
+    case ('billing'):   // wallet, checkout, orders, and the gateway callback
+        if (Params::getParam('action') === 'callback') {
+            $do = new CWebBillingNonSecure();
+        } else {
+            $do = new CWebBilling();
+        }
+        $do->doModel();
+        break;
     case ('resource'):  // resource download (friendly Content-Disposition name)
         $do = new CWebResource();
         $do->doModel();

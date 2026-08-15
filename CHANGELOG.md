@@ -59,6 +59,16 @@ most of them do not use — so it now goes in the same place as any other third-
   `after_delete_category` to pair with the existing `delete_category`. Each `before_` hook
   runs before the delete's transaction opens and each `after_` hook only once it has
   committed, so a plugin's own database work is never rolled back with a failed delete.
+- **Sites can now sell credits and charge for listings.** Off by default, so nothing changes
+  until you turn it on. Once enabled from **Settings → Billing**, you choose how many
+  listings are free per period, and price extra listings and featured listings in credits.
+  A built-in **bank transfer** option lets buyers pay by wire or cash — write your own
+  payment instructions and settle each order by hand once the money arrives, with no card
+  processor or API keys involved. **Billing → Packages** is where you define the credit
+  bundles buyers choose from at checkout.
+- Buyers get a wallet page showing their credit balance and history, a page to buy credit
+  bundles, and a page listing their own past orders — plus a **Feature this listing** action
+  that spends credits to run a listing as featured for a set number of days.
 
 ### Breaking
 

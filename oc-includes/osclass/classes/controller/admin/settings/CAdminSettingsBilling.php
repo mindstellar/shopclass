@@ -33,6 +33,15 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         osc_run_hook('init_admin_settings_billing');
     }
 
+    /** Integer preferences the Pricing section writes, with their minimum value. */
+    private const PRICING_INT_PREFS = array(
+        'billing_free_posts_per_period' => 0,
+        'billing_period_days'           => 1,
+        'billing_publish_credits'       => 0,
+        'billing_premium_credits'       => 0,
+        'billing_premium_days'          => 1,
+    );
+
     //Business Layer...
     public function doModel()
     {
@@ -49,6 +58,51 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                 osc_reset_preferences();
 
                 osc_add_flash_ok_message(_m('Billing settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
+                break;
+            case ('billing_pricing_post'):
+                osc_csrf_check();
+
+                $currency = strtoupper(trim(Params::getParamString('billing_currency')));
+                if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+                    osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
+
+                    return;
+                }
+
+                foreach (self::PRICING_INT_PREFS as $key => $min) {
+                    osc_set_preference(
+                        $key,
+                        max($min, Params::getParamInt($key)),
+                        Billing::PREF_GROUP,
+                        'INTEGER'
+                    );
+                }
+                osc_set_preference('billing_currency', $currency, Billing::PREF_GROUP, 'STRING');
+                osc_reset_preferences();
+
+                osc_add_flash_ok_message(_m('Pricing settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
+                break;
+            case ('billing_offline_post'):
+                osc_csrf_check();
+
+                osc_set_preference(
+                    'billing_offline_enabled',
+                    Params::getParam('billing_offline_enabled') != '' ? 1 : 0,
+                    Billing::PREF_GROUP,
+                    'BOOLEAN'
+                );
+                osc_set_preference(
+                    'billing_offline_instructions',
+                    Params::getParamString('billing_offline_instructions'),
+                    Billing::PREF_GROUP,
+                    'STRING'
+                );
+                osc_reset_preferences();
+
+                osc_add_flash_ok_message(_m('Bank transfer settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
                 break;
             default:

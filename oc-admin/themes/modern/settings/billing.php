@@ -53,6 +53,103 @@ $gateways       = __get('gateways');
         </fieldset>
     </form>
 
+    <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
+        <input type="hidden" name="page" value="settings"/>
+        <input type="hidden" name="action" value="billing_pricing_post"/>
+        <fieldset>
+            <div class="form-horizontal">
+                <?php osc_admin_page_head(__('Pricing')); ?>
+
+                <p class="form-intro">
+                    <?php _e('What posting costs once the free quota runs out, and what a featured '
+                             . 'listing costs. These apply whether a payment plugin is installed or an '
+                             . 'admin grants credits by hand.'); ?>
+                </p>
+
+                <?php osc_admin_form_row_open(__('Free listings per period'), array('for' => 'billing_free_posts_per_period')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_free_posts_per_period"
+                           name="billing_free_posts_per_period"
+                           value="<?php echo osc_esc_html((string) osc_billing_free_posts_per_period()); ?>"/>
+                    <div class="help-box"><?php _e('0 means unlimited free posting.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Period length (days)'), array('for' => 'billing_period_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_period_days"
+                           name="billing_period_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_period_days()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Extra listing price (credits)'), array('for' => 'billing_publish_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_publish_credits"
+                           name="billing_publish_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_publish_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Featured listing price (credits)'), array('for' => 'billing_premium_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_premium_credits"
+                           name="billing_premium_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_premium_credits()); ?>"/>
+                    <div class="help-box"><?php _e('0 means featured listings are not for sale.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Featured listing duration (days)'), array('for' => 'billing_premium_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_premium_days"
+                           name="billing_premium_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_premium_days()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Currency'), array('for' => 'billing_currency')); ?>
+                    <input type="text" maxlength="3" class="input-small" id="billing_currency"
+                           name="billing_currency"
+                           value="<?php echo osc_esc_html(osc_billing_currency()); ?>"/>
+                    <div class="help-box"><?php _e('A 3-letter ISO 4217 code, e.g. USD, EUR.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save pricing'), 'type' => 'submit'),
+                )); ?>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
+        <input type="hidden" name="page" value="settings"/>
+        <input type="hidden" name="action" value="billing_offline_post"/>
+        <fieldset>
+            <div class="form-horizontal">
+                <?php osc_admin_page_head(__('Bank transfer')); ?>
+
+                <p class="form-intro">
+                    <?php _e('Core\'s built-in payment method — no card processor, no API keys. A buyer '
+                             . 'sees these instructions at checkout and pays outside the site; you settle '
+                             . 'the order by hand once the money arrives.'); ?>
+                </p>
+
+                <?php osc_admin_form_row_open(__('Availability')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_offline_enabled',
+                        'name'    => 'billing_offline_enabled',
+                        'label'   => __('Accept bank transfer / cash payment'),
+                        'checked' => osc_billing_offline_enabled(),
+                        'help'    => __('Stays hidden at checkout until instructions are written below — '
+                                        . 'there is nothing for a buyer to pay if they do not know where to send it.'),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Payment instructions'), array('for' => 'billing_offline_instructions')); ?>
+                    <textarea id="billing_offline_instructions" name="billing_offline_instructions" rows="5"
+                              class="form-control"><?php echo osc_esc_html(osc_billing_offline_instructions()); ?></textarea>
+                    <div class="help-box"><?php _e('Bank details, or wherever a buyer sends the money. Shown to the '
+                                                    . 'buyer exactly as written here.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save bank transfer settings'), 'type' => 'submit'),
+                )); ?>
+            </div>
+        </fieldset>
+    </form>
+
     <?php osc_admin_page_head(__('Payment methods'));
 
     if (empty($gateways)) {

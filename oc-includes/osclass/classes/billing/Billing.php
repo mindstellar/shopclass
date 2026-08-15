@@ -11,6 +11,7 @@
 
 namespace mindstellar\billing;
 
+use DomainException;
 use Log;
 
 /**
@@ -169,6 +170,57 @@ final class Billing
         }
 
         return $reversed;
+    }
+
+    /**
+     * Spend credits on a registered feature.
+     *
+     * The debit and the feature's own effect are one transaction: if apply() reports
+     * failure, an exception is the only thing that rolls the debit back (Db::transaction
+     * commits on a normal return, whatever value it carries), so failure is signalled by
+     * throwing rather than returning false from inside the closure. A zero-price feature
+     * skips the debit but still applies -- price and enforcement are independent.
+     *
+     * @param int    $userId
+     * @param string $featureId Id registered with FeatureRegistry
+     * @param array  $ctx       Passed to the feature's apply(); 'ref_type'/'ref_id' also
+     *                          become the ledger row's reference when present
+     *
+     * @return bool false on an unknown feature, insufficient credit, or a failed apply --
+     *              all normal outcomes, not exceptions
+     */
+    public static function spend(int $userId, string $featureId, array $ctx = array()): bool
+    {
+        $feature = FeatureRegistry::instance()->get($featureId);
+        if ($feature === null) {
+            return false;
+        }
+
+        $price   = $feature->price();
+        $refType = isset($ctx['ref_type']) ? (string) $ctx['ref_type'] : null;
+        $refId   = isset($ctx['ref_id']) ? (int) $ctx['ref_id'] : null;
+
+        try {
+            $applied = osc_db_transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
+                if ($price > 0 && !Wallet::debit($userId, $price, Wallet::REASON_SPEND, null, $refType, $refId)) {
+                    return false; // insufficient credit -- nothing was written
+                }
+
+                if (!$feature->apply($userId, $ctx)) {
+                    throw new DomainException('billing_feature_apply_failed');
+                }
+
+                return true;
+            });
+        } catch (DomainException $e) {
+            return false;
+        }
+
+        if ($applied) {
+            osc_run_hook('billing_feature_applied', $featureId, $userId, $price);
+        }
+
+        return $applied;
     }
 
     /**
