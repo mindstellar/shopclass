@@ -196,7 +196,7 @@ final class Billing
             return false;
         }
 
-        $price   = $feature->price();
+        $price   = $feature->price($userId);
         $refType = isset($ctx['ref_type']) ? (string) $ctx['ref_type'] : null;
         $refId   = isset($ctx['ref_id']) ? (int) $ctx['ref_id'] : null;
 

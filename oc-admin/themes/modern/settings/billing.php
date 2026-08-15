@@ -150,6 +150,90 @@ $gateways       = __get('gateways');
         </fieldset>
     </form>
 
+    <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
+        <input type="hidden" name="page" value="settings"/>
+        <input type="hidden" name="action" value="billing_upgrades_post"/>
+        <fieldset>
+            <div class="form-horizontal">
+                <?php osc_admin_page_head(__('Upgrades')); ?>
+
+                <p class="form-intro">
+                    <?php _e('Bump, highlight and urgent are optional item upgrades, each priced and switched '
+                             . 'on separately. Every one ships off — turning it on with a price of 0 makes it '
+                             . 'free to every seller, not the same as leaving it off.'); ?>
+                </p>
+
+                <?php osc_admin_form_row_open(__('Bump to top')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_bump_enabled',
+                        'name'    => 'billing_bump_enabled',
+                        'label'   => __('Sell bump to top'),
+                        'checked' => osc_billing_bump_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Bump price (credits)'), array('for' => 'billing_bump_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_bump_credits"
+                           name="billing_bump_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_bump_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Cooldown (hours)'), array('for' => 'billing_bump_cooldown_hours')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_bump_cooldown_hours"
+                           name="billing_bump_cooldown_hours"
+                           value="<?php echo osc_esc_html((string) osc_billing_bump_cooldown_hours()); ?>"/>
+                    <div class="help-box"><?php _e('How long a listing must wait before it can be bumped again.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Highlight')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_highlight_enabled',
+                        'name'    => 'billing_highlight_enabled',
+                        'label'   => __('Sell highlighting'),
+                        'checked' => osc_billing_highlight_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Highlight price (credits)'), array('for' => 'billing_highlight_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_highlight_credits"
+                           name="billing_highlight_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_highlight_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Highlight duration (days)'), array('for' => 'billing_highlight_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_highlight_days"
+                           name="billing_highlight_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_highlight_days()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Urgent')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_urgent_enabled',
+                        'name'    => 'billing_urgent_enabled',
+                        'label'   => __('Sell marking a listing urgent'),
+                        'checked' => osc_billing_urgent_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Urgent price (credits)'), array('for' => 'billing_urgent_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_urgent_credits"
+                           name="billing_urgent_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_urgent_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Urgent duration (days)'), array('for' => 'billing_urgent_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_urgent_days"
+                           name="billing_urgent_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_urgent_days()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save upgrade settings'), 'type' => 'submit'),
+                )); ?>
+            </div>
+        </fieldset>
+    </form>
+
     <?php osc_admin_page_head(__('Payment methods'));
 
     if (empty($gateways)) {

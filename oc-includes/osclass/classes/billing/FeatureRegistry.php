@@ -53,6 +53,11 @@ final class FeatureRegistry
      *   'consumes'    => Feature::CONSUMES_* Required.
      *   'price'       => int|callable(): int Optional, defaults to 0.
      *   'duration'    => int|callable(): int Optional, defaults to 0.
+     *   'scope'       => Feature::SCOPE_*    Optional, defaults to SCOPE_USER. SCOPE_ITEM
+     *                                        is what lets a route spend this feature
+     *                                        against an item id taken from the request
+     *                                        (see CWebBilling::upgradePost()) -- every
+     *                                        other feature stays unreachable that way.
      *   'apply'       => callable(int $userId, array $ctx): bool  Required.
      *
      * @throws InvalidArgumentException on an invalid id or an incomplete spec
@@ -71,6 +76,12 @@ final class FeatureRegistry
         if ($consumes !== Feature::CONSUMES_QUANTITY && $consumes !== Feature::CONSUMES_DURATION) {
             throw new InvalidArgumentException(
                 'FeatureRegistry: feature "' . $id . '" needs consumes = quantity|duration'
+            );
+        }
+
+        if (isset($spec['scope']) && $spec['scope'] !== Feature::SCOPE_USER && $spec['scope'] !== Feature::SCOPE_ITEM) {
+            throw new InvalidArgumentException(
+                'FeatureRegistry: feature "' . $id . '" needs scope = user|item'
             );
         }
 

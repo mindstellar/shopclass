@@ -67,6 +67,7 @@ use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\Entitlements;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
+use mindstellar\billing\ItemUpgrades;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
 use mindstellar\billing\Packages;
@@ -584,6 +585,190 @@ $packageOrder = Orders::create(
 pin('the order amount comes from the package row', 5_000_000, $packageOrder->getAmount());
 pin('the order credits come from the package row', 250, $packageOrder->getCredits());
 pin('the order currency comes from the package row', 'USD', $packageOrder->getCurrency());
+
+/* ----------------------------------------------------------------------------
+ * ItemUpgrades: granting. The unique key on (item, upgrade) is the point of the
+ * table -- a second purchase has to extend the row that already exists, never
+ * grow a second one, and the extension has to compound onto whatever time is
+ * left rather than discard it.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemUpgrades: grant upserts and compounds');
+
+$upgradeItemCount = static function (int $itemId, string $upgrade) use ($admin): int {
+    $res = $admin->query(
+        'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . 't_item_upgrade'
+        . ' WHERE fk_i_item_id = ' . $itemId . " AND s_upgrade = '" . $upgrade . "'"
+    );
+
+    return (int) $res->fetch_assoc()['c'];
+};
+$upgradeExpiration = static function (int $itemId, string $upgrade) use ($admin): ?string {
+    $res = $admin->query(
+        'SELECT dt_expiration FROM ' . DB_TABLE_PREFIX . 't_item_upgrade'
+        . ' WHERE fk_i_item_id = ' . $itemId . " AND s_upgrade = '" . $upgrade . "'"
+    );
+
+    return $res->fetch_assoc()['dt_expiration'] ?? null;
+};
+
+$grantItemId = seed_item($admin, $categoryId, $userId, 'Grant target');
+
+check('a fresh grant creates a row', ItemUpgrades::grant($grantItemId, 'test.upgrade', 10, null));
+pin('the fresh grant writes exactly one row', 1, $upgradeItemCount($grantItemId, 'test.upgrade'));
+$firstUpgradeExpiration = $upgradeExpiration($grantItemId, 'test.upgrade');
+check('the fresh grant has an expiration', $firstUpgradeExpiration !== null);
+
+check('granting the same upgrade again succeeds', ItemUpgrades::grant($grantItemId, 'test.upgrade', 5, null));
+pin('a second grant still writes exactly one row, not a second', 1, $upgradeItemCount($grantItemId, 'test.upgrade'));
+pin(
+    'the extension compounds onto the current expiry, not onto now',
+    date('Y-m-d H:i:s', strtotime($firstUpgradeExpiration) + 5 * 86400),
+    $upgradeExpiration($grantItemId, 'test.upgrade')
+);
+
+/* ----------------------------------------------------------------------------
+ * ItemUpgrades: reading. has()/active() must show a live or permanent row and
+ * ignore a lapsed one, whether the item was primed or read cold.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemUpgrades: has()/active() ignore a lapsed row');
+
+$readItemId = seed_item($admin, $categoryId, $userId, 'Read target');
+
+ItemUpgrades::grant($readItemId, 'test.live', 10, null);
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
+    . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
+    . ' VALUES (' . $readItemId . ", 'test.lapsed', '"
+    . date('Y-m-d H:i:s', time() - 3600) . "', NOW())"
+);
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
+    . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
+    . ' VALUES (' . $readItemId . ", 'test.permanent', NULL, NOW())"
+);
+
+check('a live row is held', ItemUpgrades::has($readItemId, 'test.live'));
+check('a permanent row is held', ItemUpgrades::has($readItemId, 'test.permanent'));
+check('a lapsed row is not held', ItemUpgrades::has($readItemId, 'test.lapsed') === false);
+
+$active = ItemUpgrades::active($readItemId);
+check('active() includes the live upgrade', in_array('test.live', $active, true));
+check('active() includes the permanent upgrade', in_array('test.permanent', $active, true));
+check('active() excludes the lapsed upgrade', !in_array('test.lapsed', $active, true));
+
+pin(
+    'expiresAt() returns the raw value even for a lapsed row',
+    $upgradeExpiration($readItemId, 'test.lapsed'),
+    ItemUpgrades::expiresAt($readItemId, 'test.lapsed')
+);
+pin('expiresAt() reads null for an upgrade the item never had', null, ItemUpgrades::expiresAt($readItemId, 'test.never'));
+
+/* ----------------------------------------------------------------------------
+ * ItemUpgrades: purge. Only a lapsed row is fair game -- a live one and a
+ * permanent one both have to survive the sweep untouched.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemUpgrades: purge');
+
+$purged = ItemUpgrades::purge();
+check('purge removes at least the one lapsed row seeded above', $purged >= 1);
+pin('the lapsed row is gone', 0, $upgradeItemCount($readItemId, 'test.lapsed'));
+pin('the live row survives the sweep', 1, $upgradeItemCount($readItemId, 'test.live'));
+pin('the permanent row survives the sweep', 1, $upgradeItemCount($readItemId, 'test.permanent'));
+pin('a second purge finds nothing left to remove', 0, ItemUpgrades::purge());
+
+/* ----------------------------------------------------------------------------
+ * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
+ * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
+ * a failed apply -- an item that does not exist -- has to roll both back.
+ * ------------------------------------------------------------------------- */
+harness_section('Billing: item.bump');
+
+// hBilling.php registers item.bump only when billing_bump_enabled was already on at
+// load time, which it was not for this process -- flipping the preference here needs
+// the same registration re-run the admin Upgrades save triggers.
+osc_set_preference('billing_bump_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
+osc_set_preference('billing_bump_cooldown_hours', '24', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_item_upgrades();
+
+$bumpUserId = seed_user($admin, 'bumper', 'bumper@example.test');
+Wallet::credit($bumpUserId, 100, Wallet::REASON_GRANT);
+$bumpItemId = seed_item($admin, $categoryId, $bumpUserId, 'Bump target');
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY)'
+    . ' WHERE pk_i_id = ' . $bumpItemId
+);
+
+$pubDateOf = static function (int $itemId) use ($admin): string {
+    return $admin->query(
+        'SELECT dt_pub_date FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $itemId
+    )->fetch_assoc()['dt_pub_date'];
+};
+
+$balanceBeforeBump = Wallet::balance($bumpUserId);
+$pubDateBeforeBump = $pubDateOf($bumpItemId);
+
+check('bump.item registers once its preference is on', FeatureRegistry::instance()->get('item.bump') !== null);
+check(
+    'spending on item.bump succeeds',
+    Billing::spend($bumpUserId, 'item.bump', array('itemId' => $bumpItemId, 'ref_type' => 'item', 'ref_id' => $bumpItemId))
+);
+check('bump moves dt_pub_date forward', $pubDateOf($bumpItemId) > $pubDateBeforeBump);
+pin('bump debits its price', $balanceBeforeBump - 5, Wallet::balance($bumpUserId));
+check('the bump leaves a live cooldown row', ItemUpgrades::has($bumpItemId, 'item.bump'));
+
+// The cooldown is enforced by callers reading has() before allowing another bump
+// (CWebBilling::upgradePost()'s already-held check) -- not by spend() itself, which
+// has no opinion on cooldowns. This pins the primitive that check relies on.
+check('the cooldown blocks while the row is live', ItemUpgrades::has($bumpItemId, 'item.bump') === true);
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item_upgrade SET dt_expiration = \''
+    . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $bumpItemId . " AND s_upgrade = 'item.bump'"
+);
+check('the cooldown lifts once the row lapses', ItemUpgrades::has($bumpItemId, 'item.bump') === false);
+
+$balanceBeforeBogus = Wallet::balance($bumpUserId);
+check(
+    'bumping an item that does not exist fails',
+    Billing::spend($bumpUserId, 'item.bump', array('itemId' => 999999999, 'ref_type' => 'item', 'ref_id' => 999999999)) === false
+);
+pin('a failed bump apply leaves the balance untouched', $balanceBeforeBogus, Wallet::balance($bumpUserId));
+
+osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
+ * The price filter now carries the spending user. Billing::spend() already
+ * knows who is spending; the filter has to be told, not left to guess through
+ * osc_logged_user_id(), which is wrong for an admin or a cron acting on
+ * someone else's behalf.
+ * ------------------------------------------------------------------------- */
+harness_section('Feature: price() threads the user id through the filter');
+
+$capturedPriceUserId = 'not called';
+osc_add_hook('billing_feature_price', static function ($price, $featureId, $userId) use (&$capturedPriceUserId) {
+    if ($featureId === 'test.price.witness') {
+        $capturedPriceUserId = $userId;
+    }
+
+    return $price;
+});
+
+FeatureRegistry::instance()->register('test.price.witness', array(
+    'label'    => 'Price filter witness',
+    'consumes' => Feature::CONSUMES_QUANTITY,
+    'price'    => 7,
+    'apply'    => static function (int $userId) {
+        return true;
+    },
+));
+
+$witnessUserId = seed_user($admin, 'witness', 'witness@example.test');
+Wallet::credit($witnessUserId, 20, Wallet::REASON_GRANT);
+Billing::spend($witnessUserId, 'test.price.witness');
+
+pin('the price filter receives the spending user id', $witnessUserId, $capturedPriceUserId);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

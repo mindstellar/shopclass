@@ -13,6 +13,7 @@ use mindstellar\billing\Entitlements;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\gateway\OfflineGateway;
+use mindstellar\billing\ItemUpgrades;
 use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
@@ -110,6 +111,78 @@ function osc_billing_offline_instructions(): string
     return $v === null ? '' : (string) $v;
 }
 
+/*
+ * Item upgrades: bump, highlight, urgent. Every one of the three ships disabled --
+ * *_enabled and *_credits are deliberately separate preferences, because an enabled
+ * upgrade priced at 0 credits is free to every seller, not switched off.
+ */
+
+/** Whether bump-to-top is registered as a purchasable upgrade at all. */
+function osc_billing_bump_enabled(): bool
+{
+    return osc_get_bool_preference('billing_bump_enabled', 'osclass');
+}
+
+/** Credit price of a bump. 0 with billing_bump_enabled on means free, not off. */
+function osc_billing_bump_credits(): int
+{
+    $v = osc_get_preference('billing_bump_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. */
+function osc_billing_bump_cooldown_hours(): int
+{
+    $v = osc_get_preference('billing_bump_cooldown_hours', 'osclass');
+
+    return $v === '' || $v === null ? 24 : max(1, (int) $v);
+}
+
+/** Whether highlighting is registered as a purchasable upgrade at all. */
+function osc_billing_highlight_enabled(): bool
+{
+    return osc_get_bool_preference('billing_highlight_enabled', 'osclass');
+}
+
+/** Credit price of highlighting a listing. */
+function osc_billing_highlight_credits(): int
+{
+    $v = osc_get_preference('billing_highlight_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Days a highlight runs for. */
+function osc_billing_highlight_days(): int
+{
+    $v = osc_get_preference('billing_highlight_days', 'osclass');
+
+    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+}
+
+/** Whether marking a listing urgent is registered as a purchasable upgrade at all. */
+function osc_billing_urgent_enabled(): bool
+{
+    return osc_get_bool_preference('billing_urgent_enabled', 'osclass');
+}
+
+/** Credit price of marking a listing urgent. */
+function osc_billing_urgent_credits(): int
+{
+    $v = osc_get_preference('billing_urgent_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Days an urgent mark runs for. */
+function osc_billing_urgent_days(): int
+{
+    $v = osc_get_preference('billing_urgent_days', 'osclass');
+
+    return $v === '' || $v === null ? 7 : max(1, (int) $v);
+}
+
 /**
  * A user's credit balance -- the logged-in buyer's own by default. Callers that pass
  * $userId explicitly must own that decision themselves; the wallet page never does,
@@ -189,10 +262,96 @@ function osc_item_can_be_featured(?array $item = null): bool
 }
 
 /*
- * Core's two built-in features. Registered unconditionally, like the core widget and
- * field types, so they exist -- and are overridable by a site -- whether or not billing
- * is switched on; Entitlements::canPublish() is what actually gates enforcement on
- * osc_billing_enabled().
+ * Item upgrades, read side. Themes are external repositories and cannot be edited
+ * from here, so this is the whole surface core exposes: state only, no markup, no
+ * CSS class, no template. All five default to the current loop item, the same
+ * convention osc_item_field() and osc_item_premium_expiration() follow.
+ */
+
+/**
+ * Upgrade ids currently in force on an item.
+ *
+ * @return string[]
+ */
+function osc_item_upgrades(?array $item = null): array
+{
+    $item = $item ?? osc_item();
+    if (!is_array($item) || empty($item['pk_i_id'])) {
+        return array();
+    }
+
+    return ItemUpgrades::active((int) $item['pk_i_id']);
+}
+
+function osc_item_has_upgrade(string $upgrade, ?array $item = null): bool
+{
+    return in_array($upgrade, osc_item_upgrades($item), true);
+}
+
+function osc_item_is_highlighted(?array $item = null): bool
+{
+    return osc_item_has_upgrade('item.highlight', $item);
+}
+
+function osc_item_is_urgent(?array $item = null): bool
+{
+    return osc_item_has_upgrade('item.urgent', $item);
+}
+
+/**
+ * Whether an item may be bumped right now: bump is switched on, the item belongs to
+ * the logged-in user, and there is no live cooldown row. Bump has no state of its
+ * own beyond that row -- the cooldown IS the row's expiry, not a second concept.
+ */
+function osc_item_can_bump(?array $item = null): bool
+{
+    if (!osc_billing_enabled() || !osc_billing_bump_enabled()) {
+        return false;
+    }
+
+    $item = $item ?? osc_item();
+    if (!is_array($item) || empty($item['pk_i_id'])) {
+        return false;
+    }
+
+    $userId = osc_logged_user_id();
+    if (empty($userId) || (int) ($item['fk_i_user_id'] ?? 0) !== (int) $userId) {
+        return false;
+    }
+
+    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump');
+}
+
+/**
+ * The POST target for applying $feature to $itemId. Generalises
+ * osc_billing_upgrade_url() to any item-scoped feature; that one is kept, unchanged,
+ * for the listing.premium links already out there.
+ */
+function osc_item_upgrade_url(int $itemId, string $feature): string
+{
+    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+}
+
+/**
+ * Raw expiration datetime of an item's $upgrade row, or null when there is no row
+ * at all -- the same "raw value regardless of active state" convention
+ * osc_item_premium_expiration() follows.
+ */
+function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?string
+{
+    $item = $item ?? osc_item();
+    if (!is_array($item) || empty($item['pk_i_id'])) {
+        return null;
+    }
+
+    return ItemUpgrades::expiresAt((int) $item['pk_i_id'], $upgrade);
+}
+
+/*
+ * Core's two built-in user-scoped features. Registered unconditionally, like the core
+ * widget and field types, so they exist -- and are overridable by a site -- whether or
+ * not billing is switched on; Entitlements::canPublish() is what actually gates
+ * enforcement on osc_billing_enabled().
  */
 osc_register_billing_feature('listing.publish', array(
     'label'    => 'Extra listing',
@@ -208,6 +367,7 @@ osc_register_billing_feature('listing.publish', array(
 osc_register_billing_feature('listing.premium', array(
     'label'    => 'Featured listing',
     'consumes' => Feature::CONSUMES_DURATION,
+    'scope'    => Feature::SCOPE_ITEM,
     'price'    => static function () {
         return osc_billing_premium_credits();
     },
@@ -225,6 +385,94 @@ osc_register_billing_feature('listing.premium', array(
         return (bool) (new ItemActions())->premium((int) $itemId, true, osc_billing_premium_days());
     },
 ));
+
+/**
+ * Register the three built-in item upgrades, each gated on its own *_enabled
+ * preference so a disabled upgrade is not merely unpriced but absent from the
+ * registry entirely. Called once below, and callable again by anything that
+ * changes those preferences without a fresh request (the admin settings save).
+ */
+function osc_register_billing_item_upgrades(): void
+{
+    if (osc_billing_bump_enabled()) {
+        osc_register_billing_feature('item.bump', array(
+            'label'    => 'Bump to top',
+            'consumes' => Feature::CONSUMES_QUANTITY,
+            'scope'    => Feature::SCOPE_ITEM,
+            'price'    => static function () {
+                return osc_billing_bump_credits();
+            },
+            // No ownership check here either, for the same reason as listing.premium.
+            'apply'    => static function (int $userId, array $ctx): bool {
+                $itemId = $ctx['itemId'] ?? null;
+                if (empty($itemId)) {
+                    return false;
+                }
+                $itemId = (int) $itemId;
+
+                // Bump re-sorts the listing by moving the date every "newest first"
+                // query already orders by. It carries no state of its own beyond
+                // that -- the row below exists purely so the cooldown is enforceable.
+                $moved = osc_db_table(DB_TABLE_PREFIX . 't_item')
+                    ->where('pk_i_id', $itemId)
+                    ->update(array('dt_pub_date' => date('Y-m-d H:i:s')));
+                if ($moved !== 1) {
+                    return false;
+                }
+
+                ItemUpgrades::grant($itemId, 'item.bump', null, osc_billing_bump_cooldown_hours());
+                osc_run_hook('item_bumped', $itemId);
+
+                return true;
+            },
+        ));
+    }
+
+    if (osc_billing_highlight_enabled()) {
+        osc_register_billing_feature('item.highlight', array(
+            'label'    => 'Highlighted listing',
+            'consumes' => Feature::CONSUMES_DURATION,
+            'scope'    => Feature::SCOPE_ITEM,
+            'price'    => static function () {
+                return osc_billing_highlight_credits();
+            },
+            'duration' => static function () {
+                return osc_billing_highlight_days();
+            },
+            'apply'    => static function (int $userId, array $ctx): bool {
+                $itemId = $ctx['itemId'] ?? null;
+                if (empty($itemId)) {
+                    return false;
+                }
+
+                return ItemUpgrades::grant((int) $itemId, 'item.highlight', osc_billing_highlight_days());
+            },
+        ));
+    }
+
+    if (osc_billing_urgent_enabled()) {
+        osc_register_billing_feature('item.urgent', array(
+            'label'    => 'Urgent listing',
+            'consumes' => Feature::CONSUMES_DURATION,
+            'scope'    => Feature::SCOPE_ITEM,
+            'price'    => static function () {
+                return osc_billing_urgent_credits();
+            },
+            'duration' => static function () {
+                return osc_billing_urgent_days();
+            },
+            'apply'    => static function (int $userId, array $ctx): bool {
+                $itemId = $ctx['itemId'] ?? null;
+                if (empty($itemId)) {
+                    return false;
+                }
+
+                return ItemUpgrades::grant((int) $itemId, 'item.urgent', osc_billing_urgent_days());
+            },
+        ));
+    }
+}
+osc_register_billing_item_upgrades();
 
 /*
  * Core's reference gateway -- bank transfer settled by hand from the admin order

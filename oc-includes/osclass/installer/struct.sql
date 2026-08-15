@@ -803,6 +803,25 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_package (
         INDEX idx_enabled_position (b_enabled, i_position)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+-- One row per (item, upgrade): bump, highlight, urgent, and whatever a site registers
+-- later, all behind a single registry id instead of a column each. Not a JSON column
+-- on t_item -- the expiry sweep needs an indexed dt_expiration, and two upgrades bought
+-- on one listing at once would be a read-modify-write race on a shared blob. The unique
+-- key is the point: buying the same upgrade twice extends the row rather than growing a
+-- second one. Cascades with the item -- an upgrade on a deleted listing means nothing.
+CREATE TABLE /*TABLE_PREFIX*/t_item_upgrade (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_upgrade VARCHAR(64) NOT NULL DEFAULT '',
+    dt_expiration DATETIME NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_item_upgrade (fk_i_item_id, s_upgrade),
+        INDEX idx_expiration (dt_expiration),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 -- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id
 -- ({slug}-r{id}) and self-heals on rename, but subdomain-based location routing
 -- resolves purely by slug and has no such fallback, so a rename needs recorded

@@ -10,6 +10,9 @@
  */
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\Feature;
+use mindstellar\billing\FeatureRegistry;
+use mindstellar\billing\ItemUpgrades;
 use mindstellar\billing\Orders;
 use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -184,14 +187,30 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
-     * Feature one of the user's own listings.
+     * Feature or upgrade one of the user's own listings.
+     *
+     * 'feature' defaults to listing.premium so links minted before this route took
+     * other features keep working unchanged. Whatever the request names, it is
+     * validated against the item-scoped allow-list before it ever reaches
+     * Billing::spend() -- a feature id is attacker-reachable input, and only a
+     * feature a site has explicitly marked Feature::SCOPE_ITEM may be spent this
+     * way (see FeatureRegistry::register()'s 'scope' key).
      */
     private function upgradePost()
     {
         osc_csrf_check();
 
-        $userId = osc_logged_user_id();
-        $itemId = Params::getParamInt('itemId');
+        $userId    = osc_logged_user_id();
+        $itemId    = Params::getParamInt('itemId');
+        $featureId = Params::getParamString('feature');
+        if ($featureId === '') {
+            $featureId = 'listing.premium';
+        }
+
+        if (!in_array($featureId, self::itemScopedFeatureIds(), true)) {
+            osc_add_flash_error_message(_m('That upgrade is not available'));
+            $this->redirectTo(osc_user_list_items_url());
+        }
 
         $item = Item::newInstance()->findByPrimaryKey($itemId);
         if (empty($item) || (int) $item['fk_i_user_id'] !== $userId) {
@@ -199,32 +218,68 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        if (!empty($item['b_premium'])) {
-            osc_add_flash_warning_message(_m('This listing is already featured'));
+        if (self::alreadyHolds($featureId, $item)) {
+            osc_add_flash_warning_message(_m('This listing already has that upgrade'));
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        if (osc_billing_premium_credits() <= 0) {
-            osc_add_flash_error_message(_m('Featuring a listing is not available right now'));
+        $feature = FeatureRegistry::instance()->get($featureId);
+        // listing.premium keeps its historical "0 credits means unavailable" gate --
+        // an enabled-but-free upgrade is a deliberate feature of the newer ones, not
+        // a behaviour extended backward onto this one. Any other feature id in the
+        // allow-list is simply unregistered when its own *_enabled preference is off.
+        $unavailable = $feature === null
+            || ($featureId === 'listing.premium' && osc_billing_premium_credits() <= 0);
+        if ($unavailable) {
+            osc_add_flash_error_message(_m('This upgrade is not available right now'));
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        $spent = Billing::spend($userId, 'listing.premium', array(
+        $spent = Billing::spend($userId, $featureId, array(
             'itemId'   => $itemId,
             'ref_type' => 'item',
             'ref_id'   => $itemId,
         ));
 
         if ($spent) {
-            osc_add_flash_ok_message(sprintf(_m('Listing featured for %d days'), osc_billing_premium_days()));
+            osc_add_flash_ok_message(sprintf(_m('%s applied to this listing'), $feature->getLabel()));
         } else {
             osc_add_flash_error_message(sprintf(
-                _m('Not enough credits to feature this listing. <a href="%s">Buy more credits</a>'),
+                _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
                 osc_esc_html(osc_billing_buy_url())
             ));
         }
 
         $this->redirectTo(osc_user_list_items_url());
+    }
+
+    /**
+     * Feature ids reachable through this route: every feature a site has marked
+     * Feature::SCOPE_ITEM, built-in or plugin-registered. Anything else -- a
+     * user-scoped feature like listing.publish included -- is refused before it
+     * reaches Billing::spend(), no matter what the request names.
+     *
+     * @return string[]
+     */
+    private static function itemScopedFeatureIds(): array
+    {
+        $ids = array();
+        foreach (FeatureRegistry::instance()->all() as $id => $feature) {
+            if ($feature->getScope() === Feature::SCOPE_ITEM) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    private static function alreadyHolds(string $featureId, array $item): bool
+    {
+        if ($featureId === 'listing.premium') {
+            return !empty($item['b_premium']);
+        }
+
+        return ItemUpgrades::has((int) $item['pk_i_id'], $featureId);
     }
 
     private function url(string $action = ''): string

@@ -134,6 +134,26 @@ predicate for free.
 Generalised item upgrades (bump-to-top, highlight, extra photos) come later as their own
 table, because none of them sit in the visibility predicate.
 
+### `t_item_upgrade`
+
+One table for every item upgrade, present and future — `s_upgrade` is a registry id, so a
+new one is a row, never a schema change.
+
+```
+pk_i_id       INT UNSIGNED  PK AUTO_INCREMENT
+fk_i_item_id  INT UNSIGNED  NOT NULL
+s_upgrade     VARCHAR(64)   NOT NULL           -- registry id: item.bump, item.highlight, ...
+dt_expiration DATETIME      NULL               -- NULL = never lapses
+dt_date       DATETIME      NOT NULL
+UNIQUE (fk_i_item_id, s_upgrade)
+INDEX (dt_expiration)
+FOREIGN KEY (fk_i_item_id) REFERENCES t_item (pk_i_id) ON DELETE CASCADE
+```
+
+The unique key is the point: one row per `(item, upgrade)`, extended on repurchase rather
+than duplicated. Cascades with the item, unlike the ledger and orders — an upgrade on a
+deleted listing means nothing. See §3 for what the three built-in upgrades do with it.
+
 ---
 
 ## 3. Contracts
@@ -190,6 +210,7 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `Feature` | One registered feature spec — `price()` / `duration()` / `apply()` |
 | `FeatureRegistry` | `instance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
 | `Entitlements` | `grant()` / `has()` / `quantity()` / `consume()` / `canPublish()` — what a user holds |
+| `ItemUpgrades` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
 | `Packages` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
 | `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
 
@@ -210,6 +231,7 @@ FeatureRegistry::instance()->register('listing.premium', array(
     'label'       => 'Featured listing',
     'description' => '',                             // optional
     'consumes'    => Feature::CONSUMES_DURATION,      // ::CONSUMES_QUANTITY | ::CONSUMES_DURATION
+    'scope'       => Feature::SCOPE_ITEM,             // ::SCOPE_USER (default) | ::SCOPE_ITEM
     'price'       => 0,                               // int, or callable(): int
     'duration'    => 0,                               // int, or callable(): int; quantity features leave this at 0
     'apply'       => function (int $userId, array $ctx): bool { /* … */ },
@@ -217,20 +239,60 @@ FeatureRegistry::instance()->register('listing.premium', array(
 ```
 
 `Billing::spend()` resolves `price` (and `duration`, for a duration feature) through the
-`billing_feature_price` filter before charging, so a site can reprice a feature — including
-one of core's own — without touching this array.
+`billing_feature_price` (and `billing_feature_duration`) filter before charging, so a site
+can reprice a feature — including one of core's own — without touching this array. Both
+filters are told which user the resolution is for (`null` when none is in scope yet), so a
+plan or an admin acting on someone's behalf can be priced correctly instead of always
+reading the currently logged-in user.
 
-Built-ins core ships, both registered unconditionally (like the core widget and field
-types) so they exist and are overridable whether or not billing is switched on:
+`scope` marks whether a feature is spent against the buyer's own account (`SCOPE_USER`,
+the default) or against one of the buyer's items (`SCOPE_ITEM`). It exists so the public
+`upgrade` route (§7) can build an allow-list of feature ids it may spend on behalf of an
+item id taken from the request — a feature that never declares `SCOPE_ITEM` is simply
+unreachable through that route, no matter what the request names.
 
-| Feature | Consumes | Effect |
-|---|---|---|
-| `listing.publish` | quantity | Grants one more `listing.publish` entitlement — one extra listing beyond the free quota |
-| `listing.premium` | duration | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
+Built-ins core ships, registered unconditionally (like the core widget and field types)
+so they exist and are overridable whether or not billing is switched on:
 
-`listing.premium`'s `apply` requires `$ctx['itemId']` and does **not** check ownership —
-that is the caller's job (the public `upgrade` route, §7), because a feature only knows how
-to apply itself once asked to, not who is allowed to ask.
+| Feature | Consumes | Scope | Effect |
+|---|---|---|---|
+| `listing.publish` | quantity | user | Grants one more `listing.publish` entitlement — one extra listing beyond the free quota |
+| `listing.premium` | duration | item | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
+
+Three more ship registered conditionally — each only when its own `billing_<name>_enabled`
+preference is on, so a disabled upgrade is absent from the registry entirely, not merely
+free or unpriced (`osc_register_billing_item_upgrades()` in `hBilling.php` re-runs the
+gate; the admin Upgrades save calls it again so a toggle takes effect without a fresh
+request):
+
+| Feature | Consumes | Scope | Effect |
+|---|---|---|---|
+| `item.bump` | quantity | item | Sets `dt_pub_date = NOW()` — moves the listing to the top of every "newest first" query — and grants an `item.bump` row expiring `billing_bump_cooldown_hours` hours out, which **is** the cooldown |
+| `item.highlight` | duration | item | Grants an `item.highlight` row expiring `billing_highlight_days` days out |
+| `item.urgent` | duration | item | Grants an `item.urgent` row expiring `billing_urgent_days` days out |
+
+All three persist through `ItemUpgrades` (`oc-includes/osclass/classes/billing/ItemUpgrades.php`),
+backed by `t_item_upgrade` — one row per `(item, upgrade)`, extended on repurchase rather
+than duplicated, thanks to a unique key on that pair. Deliberately not a JSON column on
+`t_item`: the expiry sweep needs an indexed `dt_expiration`, and two upgrades bought on one
+listing at once would be a read-modify-write race on a shared blob. Deliberately not in
+`t_item` at all, unlike `dt_premium_expiration` — none of the three sit in the
+listing-visibility predicate every search/category/home query runs, so a join table costs
+nothing on that hot path. `ItemUpgrades::prime(array $itemIds)` batch-loads a request-scoped
+cache so a theme helper called inside a listing loop costs one query per page rather than
+one per item; `active()`/`has()`/`expiresAt()` read that cache when an id was primed and
+fall back to a fresh single-item query otherwise, so they are correct even when nothing was
+ever primed.
+
+Every one of the three ships disabled, and *enabled* and *credits* are deliberately separate
+preferences: an enabled upgrade priced at 0 credits is free to every seller, not switched
+off. `listing.premium` keeps its own, older rule unchanged — `billing_premium_credits <= 0`
+still means "not for sale", not "free" — which is an intentional inconsistency between the
+two generations of upgrade, left for a deliberate call rather than papered over here.
+
+Every `apply` above requires `$ctx['itemId']` and does **not** check ownership — that is
+the caller's job (the public `upgrade` route, §7), because a feature only knows how to
+apply itself once asked to, not who is allowed to ask.
 
 ---
 
@@ -281,6 +343,15 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_currency` | `USD` | ISO 4217 code credits are priced in |
 | `billing_offline_enabled` | `0` | Whether the bundled bank-transfer gateway is offered at checkout |
 | `billing_offline_instructions` | *(empty)* | Admin-authored payment instructions shown at checkout; empty means the gateway offers itself nowhere, since there is nothing to tell a buyer to pay |
+| `billing_bump_enabled` | `0` | Whether bump-to-top is registered as a feature at all |
+| `billing_bump_credits` | `0` | Price of a bump |
+| `billing_bump_cooldown_hours` | `24` | How long a listing must wait before it can be bumped again |
+| `billing_highlight_enabled` | `0` | Whether highlighting is registered as a feature at all |
+| `billing_highlight_credits` | `0` | Price of highlighting a listing |
+| `billing_highlight_days` | `30` | Duration a highlight runs for |
+| `billing_urgent_enabled` | `0` | Whether marking a listing urgent is registered as a feature at all |
+| `billing_urgent_credits` | `0` | Price of marking a listing urgent |
+| `billing_urgent_days` | `7` | Duration an urgent mark runs for |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -291,8 +362,9 @@ until an admin turns it on.
 ## 6. Admin surface
 
 - **Settings → Billing** — the master switch, a pricing section (free-quota size, listing
-  and featured-listing prices, currency), and the bundled bank-transfer gateway's own
-  enable switch and instructions text
+  and featured-listing prices, currency), an Upgrades section (enabled/price/duration for
+  bump, highlight and urgent), and the bundled bank-transfer gateway's own enable switch
+  and instructions text
 - **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
   credits, position, enabled
 - **Billing → Orders** — read-only list: user, gateway, amount, status, external ref
@@ -310,7 +382,7 @@ logged-in user except the one route a payment provider's own server hits directl
 | `buy` | GET | logged in | Enabled packages plus the configured payment methods |
 | `checkout` | POST, CSRF | logged in | Start paying for a package |
 | `orders` | GET | logged in | The buyer's own past orders |
-| `upgrade` | POST, CSRF | logged in | Feature one of the buyer's own listings |
+| `upgrade` | POST, CSRF | logged in | Apply an item-scoped feature (`feature`, default `listing.premium`) to one of the buyer's own listings (`itemId`) |
 | `callback` | GET/POST | **none** — no session, no CSRF | A gateway's webhook or return-URL hit |
 
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
@@ -334,8 +406,9 @@ helper: changing it is a breaking change, not a refactor.
 ## 8. Cron
 
 One job: flip `b_premium` off where `dt_premium_expiration < NOW() AND b_premium = 1`, and
-purge entitlement rows whose own expiration has passed. Both are pure housekeeping with no
-fulfilment side effects, so they share the existing hourly slot rather than adding a second.
+purge entitlement and item-upgrade rows whose own expiration has passed. All three are pure
+housekeeping with no fulfilment side effects, so they share the existing hourly slot rather
+than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/functions.php`).
 
 ## 9. Hooks
 
@@ -345,8 +418,10 @@ fulfilment side effects, so they share the existing hourly slot rather than addi
 | `billing_order_refunded` | action | Reversal recorded |
 | `billing_credits_changed` | action | Any ledger write |
 | `billing_feature_applied` | action | `Billing::spend()` succeeds, after the feature's effect lands |
+| `item_bumped` | action | `item.bump`'s `apply` succeeds, after `dt_pub_date` moves. Receives the item id, the same way `item_premium_on` does |
 | `billing_can_publish` | filter | Veto or override the quota decision, on every call including billing-off |
-| `billing_feature_price` | filter | Override a feature's credit price |
+| `billing_feature_price` | filter | Override a feature's credit price. Receives `($price, $featureId, $userId)` — `$userId` is who the price is being resolved for, and is `null` when no user is in scope (e.g. listing a feature's price with nobody buying yet) |
+| `billing_feature_duration` | filter | Override a duration feature's granted days. Receives `($days, $featureId, $userId)`, same `$userId` convention as `billing_feature_price` |
 
 ---
 

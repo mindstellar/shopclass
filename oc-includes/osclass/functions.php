@@ -884,15 +884,17 @@ osc_add_hook('cron_daily', 'osc_run_cleanup');
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.
  *
- * Also sweeps expired entitlement rows on the same hourly tick -- a second job for one
- * row would be overkill when both are pure housekeeping with no fulfilment side effects.
- * The return value stays premium-only; nothing reads it as an entitlement count.
+ * Also sweeps expired entitlement and item-upgrade rows on the same hourly tick -- a
+ * second job for one row each would be overkill when all three are pure housekeeping
+ * with no fulfilment side effects. The return value stays premium-only; nothing reads
+ * it as an entitlement or item-upgrade count.
  *
  * @return int
  */
 function osc_expire_premium_items()
 {
     \mindstellar\billing\Entitlements::purge();
+    \mindstellar\billing\ItemUpgrades::purge();
 
     return \mindstellar\billing\Premium::expire();
 }
