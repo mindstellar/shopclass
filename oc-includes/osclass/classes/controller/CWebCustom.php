@@ -58,10 +58,13 @@ class CWebCustom extends BaseModel
         // point at a file in the theme root, so a theme can serve its own controllers without a
         // parallel router; the deprecated, request-controlled ?file= param is NOT granted the
         // theme-root path and stays limited to the plugins directories as before. The traversal /
-        // admin-folder guard above applies to every branch.
+        // admin-folder guard above applies to every branch. $file may also name a registered
+        // render target (see osc_register_render_target()): the request supplies only an id
+        // there, never a path, so it carries none of the traversal risk the checks above guard.
         if (!file_exists(osc_plugins_path() . $file)
             && !file_exists(osc_themes_path() . osc_theme() . '/plugins/' . $file)
             && !($fromRoute && file_exists(osc_themes_path() . osc_theme() . '/' . $file))
+            && osc_render_target($file) === null
         ) {
             $this->do404();
 

@@ -39,6 +39,16 @@ class CWebBilling extends WebSecBaseModel
         'user-billing-orders.php' => 'orders.php',
     );
 
+    /**
+     * Theme view => registered render-target id, for doView()'s middle
+     * resolution step (a theme's own user-custom.php, given the content).
+     */
+    private const RENDER_TARGETS = array(
+        'user-billing-wallet.php' => 'billing/wallet',
+        'user-billing-buy.php'    => 'billing/buy',
+        'user-billing-orders.php' => 'billing/orders',
+    );
+
     public function __construct()
     {
         parent::__construct();
@@ -227,10 +237,17 @@ class CWebBilling extends WebSecBaseModel
     //hopefully generic...
 
     /**
-     * Renders through the theme when it supplies the file, and through core's own
-     * fallback under oc-includes/osclass/gui/billing/ otherwise -- the bundled theme is
-     * an external repository (see osc_current_web_theme_path()) and may not carry these
-     * views yet, but a site must not be left with a dead wallet/buy/orders page for that.
+     * Three-step resolution, in order:
+     *   1. the active theme ships $file itself (e.g. user-billing-wallet.php) --
+     *      it fully owns the page;
+     *   2. else the active theme ships user-custom.php -- the theme's account
+     *      chrome renders the registered billing render target, the same way it
+     *      already renders a plugin's page (see CWebCustom::doModel());
+     *   3. else core's own standalone fallback under
+     *      oc-includes/osclass/gui/billing/ -- the bundled theme is an external
+     *      repository (see osc_current_web_theme_path()) and may not carry any
+     *      of the above yet, but a site must not be left with a dead
+     *      wallet/buy/orders page for that.
      *
      * @param $file
      *
@@ -240,8 +257,16 @@ class CWebBilling extends WebSecBaseModel
     {
         osc_run_hook('before_html');
 
-        if (isset(self::FALLBACK_VIEWS[$file]) && !$this->themeProvides($file)) {
-            $this->doFallbackView(self::FALLBACK_VIEWS[$file]);
+        if (isset(self::FALLBACK_VIEWS[$file])) {
+            if ($this->themeProvides($file)) {
+                osc_current_web_theme_path($file);
+            } elseif ($this->themeProvides('user-custom.php')) {
+                $this->_exportVariableToView('file', self::RENDER_TARGETS[$file]);
+                Params::setParam('in_user_menu', true);
+                osc_current_web_theme_path('user-custom.php');
+            } else {
+                $this->doFallbackView(self::FALLBACK_VIEWS[$file]);
+            }
         } else {
             osc_current_web_theme_path($file);
         }

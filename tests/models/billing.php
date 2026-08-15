@@ -49,6 +49,14 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
+// hBilling.php also registers the wallet/buy/orders render targets, which needs
+// osc_register_render_target() from hTheme.php -- a no-op stand-in keeps that
+// registration harmless without pulling in hTheme.php.
+if (!function_exists('osc_register_render_target')) {
+    function osc_register_render_target($id, $path)
+    {
+    }
+}
 // Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_posts_per_period()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';

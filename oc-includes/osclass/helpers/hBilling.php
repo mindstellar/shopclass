@@ -239,6 +239,15 @@ osc_add_hook('init', static function () {
 });
 
 /*
+ * The content of the wallet/buy/orders pages, registered as render targets so a
+ * theme's user-custom.php can include them (see CWebBilling::doView()) and so
+ * they are reachable, by id only, through ?page=custom&file=billing/<page>.
+ */
+osc_register_render_target('billing/wallet', ABS_PATH . 'oc-includes/osclass/gui/billing/wallet-content.php');
+osc_register_render_target('billing/buy', ABS_PATH . 'oc-includes/osclass/gui/billing/buy-content.php');
+osc_register_render_target('billing/orders', ABS_PATH . 'oc-includes/osclass/gui/billing/orders-content.php');
+
+/*
  * Wallet/buy links on the account menu. This runs through the same 'user_menu_filter'
  * a theme's own account sidebar already applies its options through (see
  * osc_private_user_menu()), so it reaches every theme without either of them editing
