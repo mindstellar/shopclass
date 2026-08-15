@@ -165,7 +165,16 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'billing_highlight_days', '30', 'INTEGER')
     ,('osclass', 'billing_urgent_enabled', '0', 'BOOLEAN')
     ,('osclass', 'billing_urgent_credits', '0', 'INTEGER')
-    ,('osclass', 'billing_urgent_days', '7', 'INTEGER');
+    ,('osclass', 'billing_urgent_days', '7', 'INTEGER')
+    ,('osclass', 'billing_photos_enabled', '0', 'BOOLEAN')
+    ,('osclass', 'billing_photos_credits', '0', 'INTEGER')
+    ,('osclass', 'billing_photos_quantity', '10', 'INTEGER')
+    ,('osclass', 'billing_no_wait_enabled', '0', 'BOOLEAN')
+    ,('osclass', 'billing_no_wait_credits', '0', 'INTEGER')
+    ,('osclass', 'billing_no_wait_days', '30', 'INTEGER')
+    ,('osclass', 'billing_runtime_enabled', '0', 'BOOLEAN')
+    ,('osclass', 'billing_runtime_credits', '0', 'INTEGER')
+    ,('osclass', 'billing_runtime_days', '30', 'INTEGER');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

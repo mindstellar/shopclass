@@ -60,6 +60,24 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         'billing_urgent_days'         => 1,
     );
 
+    /** Boolean preferences the Seller limits section writes. */
+    private const LIMITS_BOOL_PREFS = array(
+        'billing_photos_enabled',
+        'billing_no_wait_enabled',
+        'billing_runtime_enabled',
+    );
+
+    /** Integer preferences the Seller limits section writes, with their minimum
+     *  value: prices clamp at 0, quantity/day counts clamp at 1. */
+    private const LIMITS_INT_PREFS = array(
+        'billing_photos_credits'  => 0,
+        'billing_photos_quantity' => 1,
+        'billing_no_wait_credits' => 0,
+        'billing_no_wait_days'    => 1,
+        'billing_runtime_credits' => 0,
+        'billing_runtime_days'    => 1,
+    );
+
     //Business Layer...
     public function doModel()
     {
@@ -148,6 +166,33 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                 osc_register_billing_item_upgrades();
 
                 osc_add_flash_ok_message(_m('Upgrade settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
+                break;
+            case ('billing_limits_post'):
+                osc_csrf_check();
+
+                foreach (self::LIMITS_BOOL_PREFS as $key) {
+                    osc_set_preference(
+                        $key,
+                        Params::getParam($key) != '' ? 1 : 0,
+                        Billing::PREF_GROUP,
+                        'BOOLEAN'
+                    );
+                }
+                foreach (self::LIMITS_INT_PREFS as $key => $min) {
+                    osc_set_preference(
+                        $key,
+                        max($min, Params::getParamInt($key)),
+                        Billing::PREF_GROUP,
+                        'INTEGER'
+                    );
+                }
+                osc_reset_preferences();
+                // Re-run registration under the new preference values so a toggle
+                // takes effect immediately, not only on the next request.
+                osc_register_billing_seller_limits();
+
+                osc_add_flash_ok_message(_m('Seller limit settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');
                 break;
             default:

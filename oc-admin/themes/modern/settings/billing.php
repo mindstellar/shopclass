@@ -234,6 +234,91 @@ $gateways       = __get('gateways');
         </fieldset>
     </form>
 
+    <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
+        <input type="hidden" name="page" value="settings"/>
+        <input type="hidden" name="action" value="billing_limits_post"/>
+        <fieldset>
+            <div class="form-horizontal">
+                <?php osc_admin_page_head(__('Seller limits')); ?>
+
+                <p class="form-intro">
+                    <?php _e('Photo count, the posting wait, and listing runtime are global limits by '
+                             . 'default. Turning one of these on lets a seller raise their own ceiling by '
+                             . 'buying it — everyone else keeps the global limit unchanged.'); ?>
+                </p>
+
+                <?php osc_admin_form_row_open(__('Extra photos')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_photos_enabled',
+                        'name'    => 'billing_photos_enabled',
+                        'label'   => __('Sell a raised photo cap'),
+                        'checked' => osc_billing_photos_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Price (credits)'), array('for' => 'billing_photos_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_photos_credits"
+                           name="billing_photos_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_photos_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Photo cap'), array('for' => 'billing_photos_quantity')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_photos_quantity"
+                           name="billing_photos_quantity"
+                           value="<?php echo osc_esc_html((string) osc_billing_photos_quantity()); ?>"/>
+                    <div class="help-box"><?php _e('Photos allowed per listing while the entitlement is held.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Skip the posting wait')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_no_wait_enabled',
+                        'name'    => 'billing_no_wait_enabled',
+                        'label'   => __('Sell waiving the flood wait'),
+                        'checked' => osc_billing_no_wait_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Price (credits)'), array('for' => 'billing_no_wait_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_no_wait_credits"
+                           name="billing_no_wait_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_no_wait_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Duration (days)'), array('for' => 'billing_no_wait_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_no_wait_days"
+                           name="billing_no_wait_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_no_wait_days()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Extra listing runtime')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_runtime_enabled',
+                        'name'    => 'billing_runtime_enabled',
+                        'label'   => __('Sell extra runtime beyond the category limit'),
+                        'checked' => osc_billing_runtime_enabled(),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Price (credits)'), array('for' => 'billing_runtime_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_runtime_credits"
+                           name="billing_runtime_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_runtime_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Extra days'), array('for' => 'billing_runtime_days')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_runtime_days"
+                           name="billing_runtime_days"
+                           value="<?php echo osc_esc_html((string) osc_billing_runtime_days()); ?>"/>
+                    <div class="help-box"><?php _e('Added on top of the category\'s own expiration ceiling.'); ?></div>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save limits'), 'type' => 'submit'),
+                )); ?>
+            </div>
+        </fieldset>
+    </form>
+
     <?php osc_admin_page_head(__('Payment methods'));
 
     if (empty($gateways)) {

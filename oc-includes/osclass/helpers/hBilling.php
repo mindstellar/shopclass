@@ -183,6 +183,154 @@ function osc_billing_urgent_days(): int
     return $v === '' || $v === null ? 7 : max(1, (int) $v);
 }
 
+/*
+ * Seller limits: an optional entitlement raising an otherwise-global posting limit.
+ * Same enabled/credits split as the item upgrades above, for the same reason -- an
+ * enabled limit priced at 0 credits is free to every seller, not switched off. See
+ * osc_max_images_for_user()/osc_items_wait_time_for_user()/osc_item_extra_runtime_days()
+ * below for the read side third-party code should call.
+ */
+
+/** Whether raising a seller's photo cap is registered as a purchasable limit at all. */
+function osc_billing_photos_enabled(): bool
+{
+    return osc_get_bool_preference('billing_photos_enabled', 'osclass');
+}
+
+/** Credit price of the raised photo cap. */
+function osc_billing_photos_credits(): int
+{
+    $v = osc_get_preference('billing_photos_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Photo cap granted while the entitlement is held. */
+function osc_billing_photos_quantity(): int
+{
+    $v = osc_get_preference('billing_photos_quantity', 'osclass');
+
+    return $v === '' || $v === null ? 10 : max(1, (int) $v);
+}
+
+/** Whether waiving the flood wait is registered as a purchasable limit at all. */
+function osc_billing_no_wait_enabled(): bool
+{
+    return osc_get_bool_preference('billing_no_wait_enabled', 'osclass');
+}
+
+/** Credit price of waiving the flood wait. */
+function osc_billing_no_wait_credits(): int
+{
+    $v = osc_get_preference('billing_no_wait_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Days the waiver holds once bought. */
+function osc_billing_no_wait_days(): int
+{
+    $v = osc_get_preference('billing_no_wait_days', 'osclass');
+
+    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+}
+
+/** Whether extra listing runtime is registered as a purchasable limit at all. */
+function osc_billing_runtime_enabled(): bool
+{
+    return osc_get_bool_preference('billing_runtime_enabled', 'osclass');
+}
+
+/** Credit price of the extra runtime. */
+function osc_billing_runtime_credits(): int
+{
+    $v = osc_get_preference('billing_runtime_credits', 'osclass');
+
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Extra days over the category ceiling granted while the entitlement is held. */
+function osc_billing_runtime_days(): int
+{
+    $v = osc_get_preference('billing_runtime_days', 'osclass');
+
+    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+}
+
+/*
+ * Entitlement-aware siblings of osc_max_images_per_item()/osc_items_wait_time(), the
+ * two preference helpers that raw-read a global limit and are called by third-party
+ * themes and plugins we cannot see -- their return values must never change. Each
+ * sibling here falls back to the plain preference value when billing is off or no
+ * user (or an entitlement-less one) is given, so on a site selling none of this the
+ * new helper and the old one always agree.
+ */
+
+/**
+ * The photo cap in force for $userId, raised by a listing.photos entitlement.
+ * Defaults to osc_logged_user_id(). -1 means unlimited -- treat it that way, never
+ * compare it numerically. Falls back to osc_max_images_per_item() (where 0, not -1,
+ * is that helper's own "unlimited") whenever billing is off, no user is known, or
+ * the user holds nothing.
+ */
+function osc_max_images_for_user(?int $userId = null): int
+{
+    $default = osc_max_images_per_item();
+    if (!osc_billing_enabled()) {
+        return $default;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return $default;
+    }
+
+    return Entitlements::capacity((int) $userId, 'listing.photos', $default);
+}
+
+/**
+ * Seconds $userId must wait between posts -- 0 while a listing.no_wait entitlement is
+ * held, osc_items_wait_time() otherwise. Defaults to osc_logged_user_id(). Guests
+ * (no user id) always read the global wait: this is an anti-flood control and
+ * anonymous posting has no entitlements to check.
+ */
+function osc_items_wait_time_for_user(?int $userId = null): int
+{
+    $default = osc_items_wait_time();
+    if (!osc_billing_enabled()) {
+        return $default;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return $default;
+    }
+
+    return Entitlements::has((int) $userId, 'listing.no_wait') ? 0 : $default;
+}
+
+/**
+ * Extra days $userId may run a listing beyond its category's expiration ceiling,
+ * raised by a listing.runtime entitlement. 0 (not osc_items_wait_time_for_user()'s
+ * "no preference to fall back to") when billing is off, no user is known, or the
+ * user holds nothing -- there is no old global preference this one overrides, so 0
+ * is simply "no extra". -1 means unlimited extra runtime; treat it that way, never
+ * compare it numerically.
+ */
+function osc_item_extra_runtime_days(?int $userId = null): int
+{
+    if (!osc_billing_enabled()) {
+        return 0;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return 0;
+    }
+
+    return Entitlements::capacity((int) $userId, 'listing.runtime', 0);
+}
+
 /**
  * A user's credit balance -- the logged-in buyer's own by default. Callers that pass
  * $userId explicitly must own that decision themselves; the wallet page never does,
@@ -473,6 +621,63 @@ function osc_register_billing_item_upgrades(): void
     }
 }
 osc_register_billing_item_upgrades();
+
+/**
+ * Register the three optional seller-limit entitlements, each gated on its own
+ * *_enabled preference for the same reason as osc_register_billing_item_upgrades():
+ * a disabled limit is absent from the registry entirely, not merely unpriced. Called
+ * once below, and callable again by the admin Seller limits save.
+ */
+function osc_register_billing_seller_limits(): void
+{
+    if (osc_billing_photos_enabled()) {
+        osc_register_billing_feature('listing.photos', array(
+            'label'    => 'Extra photo capacity',
+            'consumes' => Feature::CONSUMES_CAPACITY,
+            'price'    => static function () {
+                return osc_billing_photos_credits();
+            },
+            // Capacity is granted, not deducted -- the wallet debit above this
+            // callable already happened once; this only mints the entitlement
+            // Entitlements::capacity() will read back as the raised cap.
+            'apply'    => static function (int $userId, array $ctx): bool {
+                return Entitlements::grant($userId, 'listing.photos', osc_billing_photos_quantity(), null);
+            },
+        ));
+    }
+
+    if (osc_billing_no_wait_enabled()) {
+        osc_register_billing_feature('listing.no_wait', array(
+            'label'    => 'Skip the posting wait',
+            'consumes' => Feature::CONSUMES_DURATION,
+            'price'    => static function () {
+                return osc_billing_no_wait_credits();
+            },
+            'duration' => static function () {
+                return osc_billing_no_wait_days();
+            },
+            'apply'    => static function (int $userId, array $ctx): bool {
+                return Entitlements::grant($userId, 'listing.no_wait', null, osc_billing_no_wait_days());
+            },
+        ));
+    }
+
+    if (osc_billing_runtime_enabled()) {
+        osc_register_billing_feature('listing.runtime', array(
+            'label'    => 'Extra listing runtime',
+            'consumes' => Feature::CONSUMES_CAPACITY,
+            'price'    => static function () {
+                return osc_billing_runtime_credits();
+            },
+            // Capacity again: the granted quantity IS the number of extra days
+            // over the category ceiling, read by osc_item_extra_runtime_days().
+            'apply'    => static function (int $userId, array $ctx): bool {
+                return Entitlements::grant($userId, 'listing.runtime', osc_billing_runtime_days(), null);
+            },
+        ));
+    }
+}
+osc_register_billing_seller_limits();
 
 /*
  * Core's reference gateway -- bank transfer settled by hand from the admin order

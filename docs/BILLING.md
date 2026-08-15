@@ -209,7 +209,7 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `Premium` | `expire()` — the sweep behind the hourly cron |
 | `Feature` | One registered feature spec — `price()` / `duration()` / `apply()` |
 | `FeatureRegistry` | `instance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
-| `Entitlements` | `grant()` / `has()` / `quantity()` / `consume()` / `canPublish()` — what a user holds |
+| `Entitlements` | `grant()` / `has()` / `quantity()` / `capacity()` / `consume()` / `canPublish()` — what a user holds |
 | `ItemUpgrades` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
 | `Packages` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
 | `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
@@ -230,7 +230,7 @@ built-in feature's price or effect.
 FeatureRegistry::instance()->register('listing.premium', array(
     'label'       => 'Featured listing',
     'description' => '',                             // optional
-    'consumes'    => Feature::CONSUMES_DURATION,      // ::CONSUMES_QUANTITY | ::CONSUMES_DURATION
+    'consumes'    => Feature::CONSUMES_DURATION,      // ::CONSUMES_QUANTITY | ::CONSUMES_DURATION | ::CONSUMES_CAPACITY
     'scope'       => Feature::SCOPE_ITEM,             // ::SCOPE_USER (default) | ::SCOPE_ITEM
     'price'       => 0,                               // int, or callable(): int
     'duration'    => 0,                               // int, or callable(): int; quantity features leave this at 0
@@ -250,6 +250,17 @@ the default) or against one of the buyer's items (`SCOPE_ITEM`). It exists so th
 `upgrade` route (§7) can build an allow-list of feature ids it may spend on behalf of an
 item id taken from the request — a feature that never declares `SCOPE_ITEM` is simply
 unreachable through that route, no matter what the request names.
+
+`consumes = Feature::CONSUMES_CAPACITY` is a third kind, alongside quantity (spent down by
+`consume()`) and duration (expires): a ceiling that is *read*, never spent. Buying "10
+photos" does not mean ten uploads against a shrinking balance; it means the cap is 10 for as
+long as the entitlement is live. `Entitlements::capacity(int $userId, string $feature, int
+$default = 0): int` returns the largest `i_quantity` among the user's unexpired rows for
+that feature, or `$default` when there is none. A row with `i_quantity IS NULL` (unlimited)
+returns `-1` — every caller must treat `-1` as unlimited rather than compare it numerically,
+or unlimited reads as "less than everything". A capacity feature's own `apply` grants the
+entitlement (`Entitlements::grant()`), the same as a quantity or duration feature's does;
+nothing calls `consume()` on a capacity row, and nothing should.
 
 Built-ins core ships, registered unconditionally (like the core widget and field types)
 so they exist and are overridable whether or not billing is switched on:
@@ -293,6 +304,46 @@ two generations of upgrade, left for a deliberate call rather than papered over 
 Every `apply` above requires `$ctx['itemId']` and does **not** check ownership — that is
 the caller's job (the public `upgrade` route, §7), because a feature only knows how to
 apply itself once asked to, not who is allowed to ask.
+
+### Seller limits
+
+Three more features, user-scoped, each an optional entitlement over a limit that is
+otherwise a single global preference. Same conditional-registration pattern as the item
+upgrades — each only when its own `billing_<name>_enabled` preference is on
+(`osc_register_billing_seller_limits()` in `hBilling.php`; the admin Seller limits save
+re-runs it) — and every one ships disabled, so an upgraded install behaves identically
+until an admin turns one on:
+
+| Feature | Consumes | Raises | Preference it overrides |
+|---|---|---|---|
+| `listing.photos` | capacity | Photos allowed per listing | `osc_max_images_per_item()` (`numImages@items`) |
+| `listing.no_wait` | duration | Skips the flood wait entirely while held | `osc_items_wait_time()` |
+| `listing.runtime` | capacity | Extra days of listing runtime, on top of the category's `i_expiration_days` ceiling | The category expiration ceiling |
+
+These are *raised ceilings*, not new limits: nothing changes for a seller who holds none of
+the three, and the global preference is exactly what an upgraded site enforces until an
+admin turns one on. Themes and plugins read the entitlement-aware siblings, never the
+entitlement directly:
+
+```php
+osc_max_images_for_user(?int $userId = null): int      // -1 = unlimited
+osc_items_wait_time_for_user(?int $userId = null): int  // 0 while listing.no_wait is held
+osc_item_extra_runtime_days(?int $userId = null): int   // 0 with no listing.runtime entitlement
+```
+
+Each falls back to the plain preference helper (`osc_max_images_per_item()` /
+`osc_items_wait_time()`) whenever billing is off, no user is given, or the user holds
+nothing — so on a site selling none of this, the new helper and the old one always agree.
+`osc_max_images_per_item()` and `osc_items_wait_time()` themselves are unchanged and must
+stay that way: third-party themes and plugins call them directly and their return values
+are a compatibility contract core does not control.
+
+Enforcement lives in three places, all in `ItemActions`: the photo cap in
+`uploadItemResources()` (resolved from the item's own owner, not the session, so an admin
+uploading on a seller's behalf applies the seller's allowance), the flood wait in `add()`
+(guests always get the global wait — this is an anti-flood control and anonymous posting
+has no entitlements), and the category expiration ceiling in `prepareData()` (the admin path
+and the "keep the old expiration on edit" path are both untouched by this).
 
 ---
 
@@ -352,6 +403,15 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_urgent_enabled` | `0` | Whether marking a listing urgent is registered as a feature at all |
 | `billing_urgent_credits` | `0` | Price of marking a listing urgent |
 | `billing_urgent_days` | `7` | Duration an urgent mark runs for |
+| `billing_photos_enabled` | `0` | Whether a raised photo cap is registered as a feature at all |
+| `billing_photos_credits` | `0` | Price of the raised cap |
+| `billing_photos_quantity` | `10` | Photo cap granted while held |
+| `billing_no_wait_enabled` | `0` | Whether waiving the flood wait is registered as a feature at all |
+| `billing_no_wait_credits` | `0` | Price of the waiver |
+| `billing_no_wait_days` | `30` | Duration the waiver holds once bought |
+| `billing_runtime_enabled` | `0` | Whether extra listing runtime is registered as a feature at all |
+| `billing_runtime_credits` | `0` | Price of the extra runtime |
+| `billing_runtime_days` | `30` | Extra days over the category ceiling granted while held |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -363,8 +423,9 @@ until an admin turns it on.
 
 - **Settings → Billing** — the master switch, a pricing section (free-quota size, listing
   and featured-listing prices, currency), an Upgrades section (enabled/price/duration for
-  bump, highlight and urgent), and the bundled bank-transfer gateway's own enable switch
-  and instructions text
+  bump, highlight and urgent), a Seller limits section (enabled/price/quantity-or-days for
+  the raised photo cap, the flood-wait waiver, and extra listing runtime), and the bundled
+  bank-transfer gateway's own enable switch and instructions text
 - **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
   credits, position, enabled
 - **Billing → Orders** — read-only list: user, gateway, amount, status, external ref

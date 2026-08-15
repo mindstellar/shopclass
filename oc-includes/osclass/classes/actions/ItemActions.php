@@ -192,12 +192,17 @@ class ItemActions
 
         $flash_error .= $this->validateCommonInput($flash_error, $aItem);
 
+        // The wait is the global preference unless the posting user holds a
+        // listing.no_wait entitlement -- osc_items_wait_time_for_user() falls back to
+        // the global value for a guest (no userId), so anonymous posting is never
+        // weakened by this check.
+        $waitTime = osc_items_wait_time_for_user($aItem['userId'] ?? null);
         $flash_error .= ((!$this->is_admin
-            && osc_items_wait_time() > 0
+            && $waitTime > 0
             && LoginAttempt::newInstance()->countByIpContext(
                 'item_post',
                 (string)Params::getServerParam('REMOTE_ADDR'),
-                date('Y-m-d H:i:s', time() - osc_items_wait_time())
+                date('Y-m-d H:i:s', time() - $waitTime)
             ) > 0)
             ? _m('Too fast. You should wait a little to publish your ad.')
             . PHP_EOL : '');
@@ -887,10 +892,21 @@ class ItemActions
             $itemResourceManager = ItemResource::newInstance();
             $folder              = osc_uploads_path() . floor($itemId / 100) . '/';
 
-            $maxImagesPerItem = osc_max_images_per_item();
+            // The cap is the global preference unless the item's own owner (not the
+            // session -- an admin may be uploading on a seller's behalf) holds a
+            // listing.photos entitlement. -1 (from the entitlement) and 0 (the
+            // preference's own convention) both mean unlimited here.
+            $itemOwner        = $this->manager->findByPrimaryKey($itemId);
+            $maxImagesPerItem = osc_max_images_for_user(
+                !empty($itemOwner['fk_i_user_id']) ? (int) $itemOwner['fk_i_user_id'] : null
+            );
             $totalItemImages  = $itemResourceManager->countResources($itemId);
             foreach ($aResources['error'] as $key => $error) {
-                if ($maxImagesPerItem == 0 || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)) {
+                if (
+                    $maxImagesPerItem == -1
+                    || $maxImagesPerItem == 0
+                    || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)
+                ) {
                     if ($error == UPLOAD_ERR_OK) {
                         $tmpName   = $aResources['tmp_name'][$key];
                         $imgres    = ImageProcessing::fromFile($tmpName);
@@ -1969,6 +1985,12 @@ class ItemActions
         }
 
         if ($is_add || $this->is_admin) {
+            // The ceiling is the category's own i_expiration_days unless the poster
+            // holds a listing.runtime entitlement, which raises it by their extra
+            // days -- -1 means unlimited extra runtime, so the clamp below is skipped
+            // entirely for that user, the same as it already is for an admin.
+            $extraRuntimeDays = osc_item_extra_runtime_days($aItem['userId'] ?? null);
+
             $dt_expiration = Params::getParam('dt_expiration');
             if ($dt_expiration == -1) {
                 $aItem['dt_expiration'] = '';
@@ -1986,9 +2008,17 @@ class ItemActions
             ) {
                 $aItem['dt_expiration'] = $dt_expiration;
                 $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
+                // A category of 0 days never expires, so it is already the most generous
+                // ceiling there is -- raising it by an entitlement's days would start
+                // expiring listings that never did.
+                $expirationCeiling = $categoryDays;
+                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
+                    $expirationCeiling = $extraRuntimeDays === -1 ? null : $categoryDays + $extraRuntimeDays;
+                }
                 if (ctype_digit($dt_expiration)) {
-                    if (!$this->is_admin && $dt_expiration > $_category['i_expiration_days']) {
-                        $aItem['dt_expiration'] = $_category['i_expiration_days'];
+                    if (!$this->is_admin && $expirationCeiling !== null && $dt_expiration > $expirationCeiling) {
+                        $aItem['dt_expiration'] = $expirationCeiling;
                     }
                 } else {
                     if (preg_match('|^([0-9]{4})-([0-9]{2})-([0-9]{2})$|', $dt_expiration, $match)) {
@@ -1996,14 +2026,22 @@ class ItemActions
                     }
                     if (
                         !$this->is_admin
-                        && strtotime($dt_expiration) > (time() + $_category['i_expiration_days'] * 24 * 3600)
+                        && $expirationCeiling !== null
+                        && strtotime($dt_expiration) > (time() + $expirationCeiling * 24 * 3600)
                     ) {
-                        $aItem['dt_expiration'] = $_category['i_expiration_days'];
+                        $aItem['dt_expiration'] = $expirationCeiling;
                     }
                 }
             } else {
+                // No expiration asked for, which is every public posting form -- the
+                // runtime a seller paid for has to land here or it never applies at all.
                 $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
                 $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
+
+                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
+                    $aItem['dt_expiration'] = $extraRuntimeDays === -1 ? '' : $categoryDays + $extraRuntimeDays;
+                }
             }
             unset($dt_expiration);
         } else {

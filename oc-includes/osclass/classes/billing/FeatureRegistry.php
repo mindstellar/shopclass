@@ -50,7 +50,7 @@ final class FeatureRegistry
      * $spec keys:
      *   'label'       => string             Required.
      *   'description' => string             Optional.
-     *   'consumes'    => Feature::CONSUMES_* Required.
+     *   'consumes'    => Feature::CONSUMES_* Required; QUANTITY|DURATION|CAPACITY.
      *   'price'       => int|callable(): int Optional, defaults to 0.
      *   'duration'    => int|callable(): int Optional, defaults to 0.
      *   'scope'       => Feature::SCOPE_*    Optional, defaults to SCOPE_USER. SCOPE_ITEM
@@ -73,9 +73,13 @@ final class FeatureRegistry
         }
 
         $consumes = $spec['consumes'] ?? null;
-        if ($consumes !== Feature::CONSUMES_QUANTITY && $consumes !== Feature::CONSUMES_DURATION) {
+        if (
+            $consumes !== Feature::CONSUMES_QUANTITY
+            && $consumes !== Feature::CONSUMES_DURATION
+            && $consumes !== Feature::CONSUMES_CAPACITY
+        ) {
             throw new InvalidArgumentException(
-                'FeatureRegistry: feature "' . $id . '" needs consumes = quantity|duration'
+                'FeatureRegistry: feature "' . $id . '" needs consumes = quantity|duration|capacity'
             );
         }
 

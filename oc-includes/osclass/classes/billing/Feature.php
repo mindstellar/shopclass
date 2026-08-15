@@ -23,6 +23,8 @@ final class Feature
 {
     public const CONSUMES_QUANTITY = 'quantity';
     public const CONSUMES_DURATION = 'duration';
+    /** A ceiling that is read, never spent -- see Entitlements::capacity(). */
+    public const CONSUMES_CAPACITY = 'capacity';
 
     /** Spends against the buyer's own account -- listing.publish, listing.premium's default. */
     public const SCOPE_USER = 'user';

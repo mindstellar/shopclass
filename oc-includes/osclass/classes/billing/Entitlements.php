@@ -142,6 +142,15 @@ final class Entitlements
             return true;
         }
 
+        // A capacity feature is a ceiling that is read, not spent -- refuse before
+        // touching a row at all, so a mistaken call (ours or a plugin's) cannot drain
+        // one. A feature id with no registry entry cannot be checked this way and
+        // falls through to the ordinary spend below, same as before this guard.
+        $registered = FeatureRegistry::instance()->get($feature);
+        if ($registered !== null && $registered->getConsumes() === Feature::CONSUMES_CAPACITY) {
+            return false;
+        }
+
         $now   = date('Y-m-d H:i:s');
         $table = self::table();
 
@@ -170,6 +179,40 @@ final class Entitlements
             . ' AND (dt_expiration IS NULL OR dt_expiration > ?) LIMIT 1',
             array($userId, $feature, $now)
         );
+    }
+
+    /**
+     * The largest i_quantity among $userId's unexpired rows for $feature, or $default
+     * when there is none.
+     *
+     * Read-only: this never calls consume(), and a capacity row is not meant to be
+     * spendable by anything else either -- it is a ceiling, checked on every read,
+     * not a balance that runs out. A row with i_quantity IS NULL (unlimited) returns
+     * -1; every caller MUST treat -1 as unlimited rather than compare it numerically,
+     * or unlimited reads as "less than everything."
+     */
+    public static function capacity(int $userId, string $feature, int $default = 0): int
+    {
+        $rows = osc_db_table(self::table())
+            ->where('fk_i_user_id', $userId)
+            ->where('s_feature', $feature)
+            ->whereRaw('(dt_expiration IS NULL OR dt_expiration > ?)', array(date('Y-m-d H:i:s')))
+            ->get();
+
+        if ($rows === array()) {
+            return $default;
+        }
+
+        $best = null;
+        foreach ($rows as $row) {
+            if ($row['i_quantity'] === null) {
+                return -1; // unlimited beats any finite quantity among the rest
+            }
+            $q    = (int) $row['i_quantity'];
+            $best = $best === null ? $q : max($best, $q);
+        }
+
+        return $best;
     }
 
     /**

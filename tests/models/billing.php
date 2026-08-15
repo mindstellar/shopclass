@@ -770,6 +770,97 @@ Billing::spend($witnessUserId, 'test.price.witness');
 
 pin('the price filter receives the spending user id', $witnessUserId, $capturedPriceUserId);
 
+/* ----------------------------------------------------------------------------
+ * Entitlements: capacity(). A ceiling that is read, never spent -- the default
+ * with nothing held, the granted quantity once one exists, -1 for an unlimited
+ * row, and a lapsed row must not count at all. consume() has to refuse a
+ * feature the registry declares capacity, so nothing can drain a ceiling by
+ * mistake.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: capacity()');
+
+$capUserId = seed_user($admin, 'capuser', 'capuser@example.test');
+
+pin('capacity with no entitlement reads the default', 7, Entitlements::capacity($capUserId, 'test.capacity', 7));
+
+Entitlements::grant($capUserId, 'test.capacity', 15, null);
+pin('capacity reads the granted quantity', 15, Entitlements::capacity($capUserId, 'test.capacity', 7));
+
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
+    . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
+    . ' VALUES (' . $capUserId . ", 'test.capacity.unlimited', NULL, NULL, 'grant', NOW())"
+);
+pin('capacity reads -1 for an unlimited row', -1, Entitlements::capacity($capUserId, 'test.capacity.unlimited', 0));
+
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
+    . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
+    . ' VALUES (' . $capUserId . ", 'test.capacity.lapsed', 99, '"
+    . date('Y-m-d H:i:s', time() - 3600) . "', 'grant', NOW())"
+);
+pin('a lapsed row does not count toward capacity', 3, Entitlements::capacity($capUserId, 'test.capacity.lapsed', 3));
+
+FeatureRegistry::instance()->register('test.capacity.guarded', array(
+    'label'    => 'Guarded capacity feature',
+    'consumes' => Feature::CONSUMES_CAPACITY,
+    'apply'    => static function (int $userId) {
+        return true;
+    },
+));
+Entitlements::grant($capUserId, 'test.capacity.guarded', 20, null);
+check(
+    'consume() refuses a feature the registry declares capacity',
+    Entitlements::consume($capUserId, 'test.capacity.guarded', 1) === false
+);
+pin(
+    'the refused consume leaves the ceiling exactly as granted',
+    20,
+    Entitlements::capacity($capUserId, 'test.capacity.guarded', 0)
+);
+
+/* ----------------------------------------------------------------------------
+ * hBilling: the entitlement-aware siblings of osc_max_images_per_item() and
+ * osc_items_wait_time(). The two old helpers are a compatibility contract with
+ * every third-party theme and plugin, so the new ones must read back exactly
+ * the same value whenever billing is off or the user holds nothing, and only
+ * diverge once an entitlement is actually granted.
+ * ------------------------------------------------------------------------- */
+harness_section('hBilling: entitlement-aware limit helpers');
+
+$limitUserId = seed_user($admin, 'limituser', 'limituser@example.test');
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+pin(
+    'photo cap matches the plain preference while billing is off',
+    osc_max_images_per_item(),
+    osc_max_images_for_user($limitUserId)
+);
+pin(
+    'the posting wait matches the plain preference while billing is off',
+    osc_items_wait_time(),
+    osc_items_wait_time_for_user($limitUserId)
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+pin(
+    'photo cap still matches the plain preference for a user holding nothing',
+    osc_max_images_per_item(),
+    osc_max_images_for_user($limitUserId)
+);
+check(
+    'the posting wait still matches the plain preference for a user holding nothing',
+    osc_items_wait_time_for_user($limitUserId) === osc_items_wait_time()
+);
+
+Entitlements::grant($limitUserId, 'listing.photos', 25, null);
+pin('a listing.photos entitlement raises the cap', 25, osc_max_images_for_user($limitUserId));
+
+Entitlements::grant($limitUserId, 'listing.no_wait', null, 30);
+pin('a listing.no_wait entitlement waives the wait entirely', 0, osc_items_wait_time_for_user($limitUserId));
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
