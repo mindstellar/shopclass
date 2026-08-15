@@ -45,33 +45,38 @@ function osc_billing_features(): array
 }
 
 /**
- * Free listings allowed per period before a credit is required. 0 = unlimited, which
- * is also what an unset preference reads as -- an upgraded install stays unlimited.
+ * Free listing slots: how many of a seller's listings may be live (published, not
+ * yet expired -- see Entitlements::liveListings()) at once before a listing.slot
+ * entitlement is needed. 0 = unlimited, which is also what an unset preference
+ * reads as -- an upgraded install stays unlimited.
  */
-function osc_billing_free_posts_per_period(): int
+function osc_billing_free_live_listings(): int
 {
-    $v = osc_get_preference('billing_free_posts_per_period', 'osclass');
+    $v = osc_get_preference('billing_free_live_listings', 'osclass');
 
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/**
- * Length of the free-quota window, in days. (int) '' is 0, which would make the quota
- * window vanish rather than default it, so an unset or empty preference reads as 30.
- */
-function osc_billing_period_days(): int
+/** Whether buying an extra listing slot is registered as a purchasable feature at all. */
+function osc_billing_slot_enabled(): bool
 {
-    $v = osc_get_preference('billing_period_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_bool_preference('billing_slot_enabled', 'osclass');
 }
 
-/** Credit price of one extra listing beyond the free quota. */
-function osc_billing_publish_credits(): int
+/** Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free. */
+function osc_billing_slot_credits(): int
 {
-    $v = osc_get_preference('billing_publish_credits', 'osclass');
+    $v = osc_get_preference('billing_slot_credits', 'osclass');
 
-    return $v === '' || $v === null ? 1 : (int) $v;
+    return $v === '' || $v === null ? 0 : (int) $v;
+}
+
+/** Slots granted per listing.slot purchase. */
+function osc_billing_slot_quantity(): int
+{
+    $v = osc_get_preference('billing_slot_quantity', 'osclass');
+
+    return $v === '' || $v === null ? 1 : max(1, (int) $v);
 }
 
 /** Whether featuring a listing is registered as a purchasable feature at all. */
@@ -88,7 +93,7 @@ function osc_billing_premium_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Days a featured listing runs for. Same (int) '' = 0 trap as the period days above. */
+/** Days a featured listing runs for. (int) '' is 0, so an unset preference defaults to 30. */
 function osc_billing_premium_days(): int
 {
     $v = osc_get_preference('billing_premium_days', 'osclass');
@@ -549,23 +554,36 @@ function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?str
     return ItemUpgrades::expiresAt((int) $item['pk_i_id'], $upgrade);
 }
 
-/*
- * Core's built-in listing.publish feature. Registered unconditionally, like the core
- * widget and field types, so it exists -- and is overridable by a site -- whether or
- * not billing is switched on; Entitlements::canPublish() is what actually gates
- * enforcement on osc_billing_enabled(). listing.premium, right below, is the same idea
- * but gated on its own *_enabled preference, the same as every feature past it.
+/**
+ * Register listing.slot -- the feature that raises a seller's listing-slot ceiling
+ * -- only while billing_slot_enabled is on, the same conditional-registration
+ * pattern osc_register_billing_seller_limits() uses: a disabled feature is absent
+ * from the registry entirely, not merely free or unpriced. CONSUMES_CAPACITY
+ * because it raises the seller's slot ceiling while held and is never spent --
+ * Entitlements::withinFreeQuota() reads it back through capacity(), the same way
+ * listing.photos raises osc_max_images_for_user(). Called once below, and callable
+ * again by the admin Pricing save.
  */
-osc_register_billing_feature('listing.publish', array(
-    'label'    => 'Extra listing',
-    'consumes' => Feature::CONSUMES_QUANTITY,
-    'price'    => static function () {
-        return osc_billing_publish_credits();
-    },
-    'apply'    => static function (int $userId, array $ctx): bool {
-        return Entitlements::grant($userId, 'listing.publish', 1, null, Entitlements::SOURCE_PURCHASE);
-    },
-));
+function osc_register_billing_slot(): void
+{
+    if (!osc_billing_slot_enabled()) {
+        return;
+    }
+
+    osc_register_billing_feature('listing.slot', array(
+        'label'    => 'Extra listing slot',
+        'consumes' => Feature::CONSUMES_CAPACITY,
+        'price'    => static function () {
+            return osc_billing_slot_credits();
+        },
+        // Capacity is granted, not deducted -- same reasoning as listing.photos'
+        // apply() in osc_register_billing_seller_limits() below.
+        'apply'    => static function (int $userId, array $ctx): bool {
+            return Entitlements::grant($userId, 'listing.slot', osc_billing_slot_quantity(), null);
+        },
+    ));
+}
+osc_register_billing_slot();
 
 /**
  * Register listing.premium, gated on its own billing_premium_enabled preference --

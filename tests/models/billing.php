@@ -76,7 +76,7 @@ if (!function_exists('osc_base_url')) {
         return WEB_PATH . ($with_index ? 'index.php' : '');
     }
 }
-// Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_posts_per_period()
+// Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_live_listings()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
 
@@ -724,37 +724,20 @@ check(
 );
 
 /* ----------------------------------------------------------------------------
- * Entitlements: the publish choke point. canPublish() has to track three
- * states in order -- inside the free quota, over quota with nothing bought,
- * and over quota with an entitlement in hand -- because ItemActions::add()
- * trusts this single answer.
+ * Entitlements: canPublish()'s optional $withinFreeQuota parameter.
+ * ItemActions::add() computes the same COUNT withinFreeQuota() would otherwise
+ * run again internally, and hands the answer back in rather than paying for it
+ * twice per post -- an explicit value must win over whatever a fresh
+ * computation would say, in both directions.
  * ------------------------------------------------------------------------- */
-harness_section('Entitlements: canPublish');
+harness_section('Entitlements: canPublish() $withinFreeQuota override');
 
-$quotaUserId = seed_user($admin, 'quotauser', 'quotauser@example.test');
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
-osc_set_preference('billing_free_posts_per_period', '1', 'osclass', 'INTEGER');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
 
-check('under the free quota, publishing is allowed', Entitlements::canPublish($quotaUserId));
-
-seed_item($admin, $categoryId, $quotaUserId, 'Uses up the free quota');
-check(
-    'once the free quota is used and nothing was bought, publishing is refused',
-    Entitlements::canPublish($quotaUserId) === false
-);
-
-Entitlements::grant($quotaUserId, 'listing.publish', 1, null);
-check(
-    'an entitlement restores publishing once the free quota is spent',
-    Entitlements::canPublish($quotaUserId) === true
-);
-
-/* canPublish()'s optional $withinFreeQuota lets ItemActions::add() hand in the
- * withinFreeQuota() answer it already computed for $needsCredit, instead of
- * running that COUNT a second time per post. An explicit value must win over
- * whatever a fresh computation would say, in both directions. */
 $overrideUserId = seed_user($admin, 'canpublishoverride', 'canpublishoverride@example.test');
-seed_item($admin, $categoryId, $overrideUserId, 'Uses up the free quota (override user)');
+seed_item($admin, $categoryId, $overrideUserId, 'Fills the one free slot');
 check(
     'over quota with nothing bought, publishing is refused with no override',
     Entitlements::canPublish($overrideUserId) === false
@@ -769,37 +752,7 @@ check(
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
-
-/* ----------------------------------------------------------------------------
- * Entitlements: publishQuotaUsed() counts publication events, not the sort key.
- * item.bump's own apply() moves dt_pub_date on purpose, to resort the listing --
- * it must never also refill the free quota dt_first_pub_date exists to protect.
- * ------------------------------------------------------------------------- */
-harness_section('Entitlements: publishQuotaUsed() counts publish events, not bumps');
-
-$firstPubUserId = seed_user($admin, 'firstpub', 'firstpub@example.test');
-$firstPubItemId = seed_item($admin, $categoryId, $firstPubUserId, 'Publish event target');
-
-// Push the listing's publish event outside the (default 30-day) quota window --
-// both columns, matching what a real old post looks like -- so the pin below
-// actually distinguishes the two columns rather than agreeing by coincidence
-// (a bump that lands inside the same window either way proves nothing).
-$admin->query(
-    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 40 DAY),'
-    . ' dt_first_pub_date = DATE_SUB(NOW(), INTERVAL 40 DAY) WHERE pk_i_id = ' . $firstPubItemId
-);
-pin('an old post outside the window does not count toward the quota', 0, Entitlements::publishQuotaUsed($firstPubUserId));
-
-// Simulates exactly what item.bump's apply() does: move dt_pub_date and nothing
-// else. dt_first_pub_date, set once at insert, is untouched -- so this old
-// listing must NOT reappear in the quota just because it was resorted.
-$admin->query(
-    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = NOW() WHERE pk_i_id = ' . $firstPubItemId
-);
-pin('bumping an old listing back to the top does not refill the quota', 0, Entitlements::publishQuotaUsed($firstPubUserId));
-
-seed_item($admin, $categoryId, $firstPubUserId, 'A second, genuine post');
-pin('a genuine new post does count toward the quota', 1, Entitlements::publishQuotaUsed($firstPubUserId));
+osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
  * Billing::spend(). The debit and the feature's effect have to move together:
@@ -1100,15 +1053,9 @@ check(
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
-/* ----------------------------------------------------------------------------
- * ItemActions::add(): the consume-after-insert choke point. consume() runs only
- * once the insert has landed -- see the comment beside it in ItemActions.php for
- * why a listing that already exists is never undone by a failed consume(). This
- * exercises both outcomes: a real entitlement being spent, and the race where
- * the entitlement is gone by the time consume() runs even though canPublish()
- * said yes -- the exact case the trigger_error() warning exists to surface.
- * ------------------------------------------------------------------------- */
-harness_section('ItemActions::add(): consume-after-insert');
+// Fixtures for the ItemActions::add() tests below: sanitisation/validation helpers,
+// a real (non-root) category, an item-data builder and a warnings-capturing harness,
+// all reused by more than one section from here on.
 
 // ItemActions::add() reaches sanitisation, validation and Item::updateExpirationDate()
 // (-> osc_isExpired()) -- none of hValidate.php/hSanitize.php/hSecurity.php/utils.php
@@ -1171,53 +1118,129 @@ $captureWarnings = static function () use (&$chokeWarnings): void {
     });
 };
 
+/* ----------------------------------------------------------------------------
+ * Entitlements: a listing occupies one of the seller's slots from the moment it
+ * publishes until it expires or is deleted. Pending moderation (b_active = 0)
+ * and admin-disabled (b_enabled = 0) listings still occupy one -- the
+ * surprising half of the rule, and deliberate: otherwise a seller could queue
+ * an unlimited number of ads awaiting approval, each free because none of them
+ * "count" yet, and flood the site the moment every one is approved at once.
+ * Charging for the slot at creation, not at visibility, is what makes that
+ * impossible. Expiry is the one thing that DOES free a slot for free, with no
+ * delete and no sweep, because Entitlements::liveListings() simply stops
+ * counting a row the instant its own expiry test says so.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: slot quota -- occupancy, expiry, deletion');
+
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
-osc_set_preference('billing_free_posts_per_period', '1', 'osclass', 'INTEGER');
-osc_set_preference('billing_period_days', '30', 'osclass', 'INTEGER');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
 osc_reset_preferences();
 
-/* Happy path: the seller is over quota, really holds the entitlement, and
- * consume() spends it -- no warning, because nothing was lost. */
-$consumeOkUser = seed_user($admin, 'chokeok', 'chokeok@example.test');
-seed_item($admin, $chokeCat, $consumeOkUser, 'Uses up the free quota (choke ok)');
-Entitlements::grant($consumeOkUser, 'listing.publish', 1, null);
+$slotUserId = seed_user($admin, 'slotuser', 'slotuser@example.test');
+pin('a fresh seller with no listings occupies zero slots', 0, Entitlements::liveListings($slotUserId));
+check('under the free slot, publishing is allowed', Entitlements::canPublish($slotUserId));
 
-$captureWarnings();
-$okAction       = new ItemActions(false);
-$okAction->data = $makeChokeItemData($consumeOkUser, $chokeCat, 'Choke happy path');
-$okResult       = $okAction->add();
-restore_error_handler();
+$slotItemId = seed_item($admin, $categoryId, $slotUserId, 'Occupies the one free slot');
+pin('a published listing occupies one slot', 1, Entitlements::liveListings($slotUserId));
+check('the free slot is now taken, and nothing was bought', Entitlements::canPublish($slotUserId) === false);
 
-check('add() reports success when the entitlement is spent cleanly', $okResult === 2);
-pin('consume() actually spent the entitlement', 0, Entitlements::quantity($consumeOkUser, 'listing.publish'));
-pin('a clean consume raises no quota-leak warning', array(), $chokeWarnings);
+Item::newInstance()->deleteByPrimaryKey($slotItemId);
+pin('deleting the listing frees its slot', 0, Entitlements::liveListings($slotUserId));
+check('the freed slot allows publishing again', Entitlements::canPublish($slotUserId));
 
-/* The race: canPublish() is told (via the documented billing_can_publish filter)
- * to allow a post from a user who holds no listing.publish entitlement at all --
- * standing in for the entitlement lapsing, or a concurrent post taking the last
- * unit, between the check inside add() and the insert a few lines later. There
- * is no way to land a real two-request race deterministically in this harness,
- * so the filter forces the same disagreement between "allowed" and "spendable"
- * that a genuine race would produce. */
-$raceUser = seed_user($admin, 'chokerace', 'chokerace@example.test');
-seed_item($admin, $chokeCat, $raceUser, 'Uses up the free quota (choke race)');
+$expiringItemId = seed_item($admin, $categoryId, $slotUserId, 'Occupies the slot, then expires');
+pin('a second published listing occupies the slot again', 1, Entitlements::liveListings($slotUserId));
 
-osc_add_hook('billing_can_publish', static function ($allowed, $userId) use ($raceUser) {
-    return $userId === $raceUser ? true : $allowed;
-});
-
-$captureWarnings();
-$raceAction       = new ItemActions(false);
-$raceAction->data = $makeChokeItemData($raceUser, $chokeCat, 'Choke race path');
-$raceResult       = $raceAction->add();
-restore_error_handler();
-
-check('a listing still publishes even when consume() finds nothing to spend', $raceResult === 2);
-check(
-    'the failed consume is reported as a warning, not swallowed',
-    count($chokeWarnings) === 1
-    && str_contains($chokeWarnings[0], 'Entitlements::consume() failed for listing.publish')
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 DAY)'
+    . ' WHERE pk_i_id = ' . $expiringItemId
 );
+pin('letting the listing expire frees its slot too, with no delete and no sweep', 0, Entitlements::liveListings($slotUserId));
+check('the expired listing\'s slot is available again', Entitlements::canPublish($slotUserId));
+
+$pendingItemId = seed_item($admin, $categoryId, $slotUserId, 'Pending moderation', 19.50, 0, 1);
+pin('a pending (not yet active) listing still occupies a slot', 1, Entitlements::liveListings($slotUserId));
+Item::newInstance()->deleteByPrimaryKey($pendingItemId);
+
+$disabledItemId = seed_item($admin, $categoryId, $slotUserId, 'Admin-disabled', 19.50, 1, 0);
+pin('an admin-disabled listing still occupies a slot', 1, Entitlements::liveListings($slotUserId));
+Item::newInstance()->deleteByPrimaryKey($disabledItemId);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
+ * Entitlements: a listing.slot capacity entitlement raises the ceiling
+ * (osc_billing_free_live_listings() + capacity()), and an unlimited one (NULL
+ * quantity, read back as -1) means unlimited -- never folded into the
+ * arithmetic sum, or unlimited would read as some other finite ceiling.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: a listing.slot entitlement raises the ceiling');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+$capacityUserId = seed_user($admin, 'slotcapacity', 'slotcapacity@example.test');
+seed_item($admin, $categoryId, $capacityUserId, 'Fills the one free slot');
+check('with the one free slot filled, publishing is refused', Entitlements::canPublish($capacityUserId) === false);
+
+Entitlements::grant($capacityUserId, 'listing.slot', 2, null);
+pin('capacity() reads the bought entitlement back', 2, Entitlements::capacity($capacityUserId, 'listing.slot', 0));
+check(
+    'a listing.slot entitlement (+2) raises the ceiling to 3, so publishing is allowed again',
+    Entitlements::canPublish($capacityUserId)
+);
+
+seed_item($admin, $categoryId, $capacityUserId, 'Second, using the bought slot');
+seed_item($admin, $categoryId, $capacityUserId, 'Third, using the bought slot');
+check('three live listings exactly fill 1 free + 2 bought', Entitlements::canPublish($capacityUserId) === false);
+
+// billing_free_live_listings is raised to 3 (rather than left at 1) specifically so
+// that naively folding capacity()'s -1 into the arithmetic sum (3 + -1 = 2, a real,
+// finite ceiling) would visibly disagree with the pin below once 3 listings are live
+// -- at free=1 the naive sum would land at 0 and the <=0 "unlimited" fallback would
+// mask the bug by coincidence, proving nothing.
+$unlimitedSlotUserId = seed_user($admin, 'slotunlimited', 'slotunlimited@example.test');
+osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
+Entitlements::grant($unlimitedSlotUserId, 'listing.slot', null, null);
+pin('capacity() reads an unlimited listing.slot entitlement as -1', -1, Entitlements::capacity($unlimitedSlotUserId, 'listing.slot', 0));
+seed_item($admin, $categoryId, $unlimitedSlotUserId, 'First of many, unlimited slots');
+seed_item($admin, $categoryId, $unlimitedSlotUserId, 'Second of many, unlimited slots');
+seed_item($admin, $categoryId, $unlimitedSlotUserId, 'Third of many, unlimited slots');
+check(
+    'an unlimited (-1) listing.slot entitlement means unlimited, not "less than everything"'
+    . ' (3 free + unlimited must allow a 4th, not stop at 3 + (-1) = 2)',
+    Entitlements::canPublish($unlimitedSlotUserId)
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
+ * ItemActions::add(): publishing consumes nothing. A slot is occupied by the
+ * row existing, not spent by the insert -- there is no consume-after-insert
+ * path at all, and so nothing to warn about if one were to fail.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions::add(): publishing consumes no entitlement quantity');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '5', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+$noConsumeUser = seed_user($admin, 'noconsume', 'noconsume@example.test');
+Entitlements::grant($noConsumeUser, 'listing.slot', 3, null);
+
+$captureWarnings();
+$noConsumeAction       = new ItemActions(false);
+$noConsumeAction->data = $makeChokeItemData($noConsumeUser, $chokeCat, 'Publish, nothing spent');
+$noConsumeResult       = $noConsumeAction->add();
+restore_error_handler();
+$noConsumeWarnings = $chokeWarnings;
+
+check('the post succeeds', $noConsumeResult === 2);
+pin('the listing.slot capacity entitlement is untouched by publishing', 3, Entitlements::capacity($noConsumeUser, 'listing.slot', 0));
+pin('no warning fired -- there is no consume() call in the publish path to fail', array(), $noConsumeWarnings);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();

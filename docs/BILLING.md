@@ -21,7 +21,7 @@ Three concepts, in dependency order:
 |---|---|---|
 | **Order** | core record, plugin drives | An intent to pay: user, amount, currency, gateway, status |
 | **Credits** | core | A signed integer balance per user, backed by an append-only ledger |
-| **Entitlement** | core | A capability a user holds: `listing.publish` ×5, `listing.premium` until *date* |
+| **Entitlement** | core | A capability a user holds: `listing.slot` capacity, `listing.premium` until *date* |
 
 The flow is always the same, and every arrow but one is inside core:
 
@@ -135,16 +135,14 @@ before the key existed, nothing enforced it.
 
 ### `t_item.dt_first_pub_date DATETIME NULL`
 
-The free posting quota's own timestamp, distinct from `dt_pub_date` — the column
-`item.bump` moves on purpose, to resort a listing to the top of every "newest first"
-query. `ItemActions::add()`'s insert is the *only* place that ever writes it, and nothing
-else may: `Entitlements::publishQuotaUsed()` counts `dt_first_pub_date` (falling back to
-`dt_pub_date` for a row some other path wrote directly), so a bump can move a listing to
-the top of the site without also refilling the free-quota window it exists to move past.
-An upgraded install backfills it from the existing `dt_pub_date`, which is exactly why an
-existing seller's quota reads the same the day this column appears as it did the day
-before. Indexed together with `fk_i_user_id`, since the quota COUNT had only the user id
-to filter on before this and scanned every listing the seller ever posted.
+Set once, at insert, by `ItemActions::add()`, and never again — `item.bump` moves
+`dt_pub_date` on purpose, to resort a listing to the top of every "newest first" query,
+and would silently erase the record of when the listing first went live if the two
+shared a column. Nothing in this layer reads the column back: the listing quota (§13)
+counts live rows through `dt_expiration`, not publish history. It stays anyway — a bump
+is a one-way trip, and once `dt_pub_date` moves there is no other record of the original
+publish date left to recover, and a nullable, unindexed datetime costs nothing to keep
+on the chance a future feature needs it.
 
 ### `t_item.dt_premium_expiration DATETIME NULL`
 
@@ -310,21 +308,16 @@ entitlement (`Entitlements::grant()`), the same as a quantity or duration featur
 nothing calls `consume()` on a capacity row, and nothing should. The grant itself carries
 no duration — see "Seller limits" below for what that means on repurchase.
 
-Core's one unconditional built-in (like the core widget and field types) — it exists and
-is overridable whether or not billing is switched on:
-
-| Feature | Consumes | Scope | Effect |
-|---|---|---|---|
-| `listing.publish` | quantity | user | Grants one more `listing.publish` entitlement — one extra listing beyond the free quota |
-
-Four more ship registered conditionally — each only when its own `billing_<name>_enabled`
+Five more ship registered conditionally — each only when its own `billing_<name>_enabled`
 preference is on, so a disabled feature is absent from the registry entirely, not merely
-free or unpriced. `listing.premium` follows this rule too, via its own
-`osc_register_billing_premium()` (the admin Pricing save re-runs it); the item upgrades
-below share `osc_register_billing_item_upgrades()` (the admin Upgrades save re-runs it):
+free or unpriced. `listing.slot` and `listing.premium` follow this rule via their own
+`osc_register_billing_slot()` / `osc_register_billing_premium()` (the admin Pricing save
+re-runs both); the item upgrades below share `osc_register_billing_item_upgrades()` (the
+admin Upgrades save re-runs it):
 
 | Feature | Consumes | Scope | Effect |
 |---|---|---|---|
+| `listing.slot` | capacity | user | Raises the seller's listing-slot ceiling (§13) — never spent, read back through `capacity()` |
 | `listing.premium` | duration | item | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
 | `item.bump` | quantity | item | Sets `dt_pub_date = NOW()` — moves the listing to the top of every "newest first" query — and grants an `item.bump` row expiring `billing_bump_cooldown_hours` hours out, which **is** the cooldown |
 | `item.highlight` | duration | item | Grants an `item.highlight` row expiring `billing_highlight_days` days out |
@@ -424,17 +417,21 @@ Exactly one choke point, because a quota with two enforcement sites has none.
 
 `Entitlements::canPublish(int $userId, array $ctx): bool` is consulted in
 `ItemActions::add()`, beside the existing `pre_item_add` hook, and failure flows into the
-same `$flash_error` that plugins already hook. Consumption happens **after** a successful
-insert, never before — a listing that fails validation must not burn a credit. That
-ordering means the entitlement can, rarely, have lapsed or been spent by a concurrent post
-in the gap between the check and the insert; `Entitlements::consume()` failing at that
-point never undoes the listing — it already exists, and undoing it would be a worse
-outcome than the leak — but `ItemActions::add()` raises an `E_USER_WARNING` naming the
-item and user so the leak is visible to an operator instead of silent.
+same `$flash_error` that plugins already hook.
 
-The quota itself counts **publication events** (`t_item.dt_first_pub_date`, §2), not the
-`dt_pub_date` sort key `item.bump` is free to move — bumping three old listings must not
-fill the same free-quota window a genuine new post would.
+Nothing is consumed on a successful post. The quota is a slot ceiling
+(`osc_billing_free_live_listings()` plus whatever `listing.slot` capacity a seller holds,
+§13), not a balance — `withinFreeQuota()` already checked it before the insert, and there
+is nothing left to spend afterwards. A listing occupies its slot simply by existing and
+not having expired (`Entitlements::liveListings()`); it is freed the same way, by
+expiring or being deleted, with no sweep and no bookkeeping on either side.
+
+**Setting a limit never touches an existing listing.** Lowering
+`billing_free_live_listings`, or a seller losing a bought `listing.slot` entitlement,
+never expires, disables or deletes anything already live — it only changes whether the
+*next* post is allowed. A seller who is already over a newly-lowered limit keeps every
+listing they have; they simply cannot post another one until they free a slot themselves,
+by deletion or expiry.
 
 Premium fulfilment reuses `ItemActions::premium($id, $on)` unchanged. Everything
 downstream of that method — search ranking, the premium home/category blocks, expiry
@@ -477,9 +474,10 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | Key | Default | Meaning |
 |---|---|---|
 | `billing_enabled` | `0` | Master switch |
-| `billing_free_posts_per_period` | `0` | 0 = unlimited |
-| `billing_period_days` | `30` | Quota window |
-| `billing_publish_credits` | `1` | Price of one extra listing beyond the free quota |
+| `billing_free_live_listings` | `0` | Free listing slots per seller; 0 = unlimited |
+| `billing_slot_enabled` | `0` | Whether buying an extra listing slot is registered as a feature at all |
+| `billing_slot_credits` | `0` | Price of one `listing.slot` purchase |
+| `billing_slot_quantity` | `1` | Slots granted per purchase |
 | `billing_premium_enabled` | `0` | Whether featuring a listing is registered as a feature at all |
 | `billing_premium_credits` | `0` | Price of a featured listing |
 | `billing_premium_days` | `30` | Duration granted |
@@ -634,7 +632,7 @@ Deliberately not in core, so the security and regulatory surface stays where it 
 | Phase | Contents |
 |---|---|
 | **1** | Wallet, ledger, orders, `PaymentGateway` + registry, `dt_premium_expiration`, expiry cron, admin orders/balance UI. No enforcement. *Built.* |
-| **2** | Entitlements, `listing.publish` quota, the `ItemActions::add()` choke point, settings. *Built.* |
+| **2** | Entitlements, the listing-slot quota, the `ItemActions::add()` choke point, settings. *Built.* |
 | **3** | Feature registry generalisation; theme helpers (`osc_user_credits()`, buy/wallet pages). *Core's half is built: `FeatureRegistry`, the theme-facing helpers (`osc_user_credits()`, `osc_billing_packages()`, `osc_billing_wallet_url()`/`buy_url()`/`orders_url()`/`upgrade_url()`, `osc_item_can_be_featured()`), and core's own fallback wallet/buy/orders views under `oc-includes/osclass/gui/billing/`. Still open: the bundled theme is its own external repository, and does not yet ship its own `user-billing-*.php` templates — until it does, every site sees core's plain fallback rather than a themed one.* |
 | **4** | Reference gateway: **offline / bank transfer**, plus the package catalogue admins price it against. No external dependency, no API keys — an admin marks the order paid. It proves the interface end to end and is genuinely useful for markets where card payment is not the norm. *Built.* |
 
@@ -649,3 +647,35 @@ existing third-party plugins and themes are unaffected.
 
 Theme-facing helpers introduced in Phase 3 land in external theme repositories as well as
 core, and need coordinating across those repos.
+
+## 13. The listing quota
+
+The free quota is a limit on how many of a seller's listings may be live at once — "N
+listings live at once", not "N publications per M days". It prices shelf space, the way
+a physical noticeboard would: a space is either taken or it is not, and it is freed the
+moment the listing leaves, by expiry or by deletion. There is nothing to reset and
+nothing to count over time; the ceiling is `osc_billing_free_live_listings()` plus
+whatever `listing.slot` capacity a seller holds, and `Entitlements::liveListings()` is
+just a `COUNT(*)` against `t_item` at the instant it is asked.
+
+**What occupies a slot:** a listing occupies one from the moment it publishes until it
+expires or is deleted — full stop. A listing pending moderation (`b_active = 0`) or
+disabled by an admin (`b_enabled = 0`) still occupies a slot. This is the surprising
+half, and it is deliberate: if a pending listing did not count, a seller could queue
+fifty ads awaiting approval — each one free because none of them "count" yet — and flood
+the site the instant every one is approved at once. Charging for the slot the moment the
+listing is created, not the moment it becomes publicly visible, is what makes that
+impossible. Expiry is the one thing that *does* free a slot for free, because an expired
+listing is already gone from every page a visitor can reach; there is nothing left to
+protect by continuing to charge for it.
+
+**Setting a limit never touches an existing listing.** Lowering
+`billing_free_live_listings`, or a seller losing a bought `listing.slot` entitlement,
+never expires, disables or deletes anything already live — it only changes whether the
+*next* post is allowed (§4). A seller who is already over a newly-lowered limit keeps
+every listing they have; they simply cannot post another one until they free a slot
+themselves, by deletion or expiry.
+
+**What buys more:** `listing.slot` — a capacity entitlement that raises the ceiling
+while held and is never spent, because a slot is a ceiling, not a balance. Nothing is
+consumed on publish (§4); there is nothing there to consume.

@@ -281,7 +281,7 @@ class CWebBilling extends WebSecBaseModel
     /**
      * Feature ids reachable through this route: every feature a site has marked
      * Feature::SCOPE_ITEM, built-in or plugin-registered. Anything else -- a
-     * user-scoped feature like listing.publish included -- is refused before it
+     * user-scoped feature like listing.slot included -- is refused before it
      * reaches Billing::spend(), no matter what the request names.
      *
      * @return string[]

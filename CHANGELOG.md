@@ -61,7 +61,8 @@ most of them do not use — so it now goes in the same place as any other third-
   committed, so a plugin's own database work is never rolled back with a failed delete.
 - **Sites can now sell credits and charge for listings.** Off by default, so nothing changes
   until you turn it on. Once enabled from **Settings → Billing**, you choose how many
-  listings are free per period, and price extra listings and featured listings in credits.
+  listings a seller may have live at once for free, and price extra listing slots and
+  featured listings in credits.
   A built-in **bank transfer** option lets buyers pay by wire or cash — write your own
   payment instructions and settle each order by hand once the money arrives, with no card
   processor or API keys involved. **Billing → Packages** is where you define the credit

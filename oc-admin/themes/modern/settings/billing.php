@@ -66,23 +66,39 @@ $gateways       = __get('gateways');
                              . 'admin grants credits by hand.'); ?>
                 </p>
 
-                <?php osc_admin_form_row_open(__('Free listings per period'), array('for' => 'billing_free_posts_per_period')); ?>
-                    <input type="number" min="0" class="input-small" id="billing_free_posts_per_period"
-                           name="billing_free_posts_per_period"
-                           value="<?php echo osc_esc_html((string) osc_billing_free_posts_per_period()); ?>"/>
-                    <div class="help-box"><?php _e('0 means unlimited free posting.'); ?></div>
+                <?php osc_admin_form_row_open(__('Free listings per seller'), array('for' => 'billing_free_live_listings')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_free_live_listings"
+                           name="billing_free_live_listings"
+                           value="<?php echo osc_esc_html((string) osc_billing_free_live_listings()); ?>"/>
+                    <div class="help-box"><?php _e('How many of a seller\'s listings may be live '
+                                                    . '(published, not yet expired) at once. 0 means '
+                                                    . 'unlimited. A pending or admin-disabled listing '
+                                                    . 'still counts -- only expiry or deletion frees a slot. '
+                                                    . 'Lowering this never touches a listing a seller already '
+                                                    . 'has -- it only changes whether their next post is allowed.'); ?></div>
                 <?php osc_admin_form_row_close(); ?>
 
-                <?php osc_admin_form_row_open(__('Period length (days)'), array('for' => 'billing_period_days')); ?>
-                    <input type="number" min="1" class="input-small" id="billing_period_days"
-                           name="billing_period_days"
-                           value="<?php echo osc_esc_html((string) osc_billing_period_days()); ?>"/>
+                <?php osc_admin_form_row_open(__('Extra slots')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_slot_enabled',
+                        'name'    => 'billing_slot_enabled',
+                        'label'   => __('Sell extra listing slots'),
+                        'checked' => osc_billing_slot_enabled(),
+                        'help'    => __('Enabled with a price of 0 means every seller can raise their '
+                                        . 'own slot ceiling for free.'),
+                    )); ?>
                 <?php osc_admin_form_row_close(); ?>
 
-                <?php osc_admin_form_row_open(__('Extra listing price (credits)'), array('for' => 'billing_publish_credits')); ?>
-                    <input type="number" min="0" class="input-small" id="billing_publish_credits"
-                           name="billing_publish_credits"
-                           value="<?php echo osc_esc_html((string) osc_billing_publish_credits()); ?>"/>
+                <?php osc_admin_form_row_open(__('Slot price in credits'), array('for' => 'billing_slot_credits')); ?>
+                    <input type="number" min="0" class="input-small" id="billing_slot_credits"
+                           name="billing_slot_credits"
+                           value="<?php echo osc_esc_html((string) osc_billing_slot_credits()); ?>"/>
+                <?php osc_admin_form_row_close(); ?>
+
+                <?php osc_admin_form_row_open(__('Slots per purchase'), array('for' => 'billing_slot_quantity')); ?>
+                    <input type="number" min="1" class="input-small" id="billing_slot_quantity"
+                           name="billing_slot_quantity"
+                           value="<?php echo osc_esc_html((string) osc_billing_slot_quantity()); ?>"/>
                 <?php osc_admin_form_row_close(); ?>
 
                 <?php osc_admin_form_row_open(__('Featured listings')); ?>

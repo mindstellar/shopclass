@@ -261,62 +261,78 @@ final class Entitlements
     }
 
     /**
-     * Whether $userId is still inside the free posting quota for the current period.
-     * Always true when the quota is off (0 = unlimited).
+     * Whether $userId is still inside the free listing quota: a slot model. The
+     * ceiling is the free tier (osc_billing_free_live_listings()) plus whatever a
+     * listing.slot entitlement adds on top (capacity() -- see its own docblock for
+     * why -1 there means unlimited and is never folded into the arithmetic sum
+     * below). 0 or less, with nothing bought, is unlimited.
      */
     public static function withinFreeQuota(int $userId): bool
     {
-        $limit = osc_billing_free_posts_per_period();
+        $bought = self::capacity($userId, 'listing.slot', 0);
+        if ($bought === -1) {
+            return true; // -1 is unlimited -- never added to a finite ceiling below.
+        }
+
+        $limit = osc_billing_free_live_listings() + $bought;
         if ($limit <= 0) {
             return true;
         }
 
-        return self::publishQuotaUsed($userId) < $limit;
+        return self::liveListings($userId) < $limit;
     }
 
     /**
-     * Listings $userId has published within the current billing_period_days window.
+     * How many of $userId's listings currently occupy a live-mode slot.
      *
-     * Counts publication events (dt_first_pub_date), not the sort key (dt_pub_date)
-     * -- item.bump moves dt_pub_date on purpose, to resort the listing, and must not
-     * also refill the free quota it exists to move past. COALESCE(dt_first_pub_date,
-     * dt_pub_date) is the fallback for a row written by a path other than
-     * ItemActions::add() (a plugin inserting into t_item directly), so it still
-     * counts rather than silently vanishing from the quota.
+     * A slot is claimed the moment a listing publishes and released only by
+     * expiry or deletion -- deliberately NOT by moderation state. This method does
+     * NOT exclude b_active = 0 (pending moderation) or b_enabled = 0
+     * (admin-disabled): a seller who queued fifty ads awaiting approval would
+     * otherwise pay for none of them right up until every one is approved at
+     * once and floods the site. Counting them from the moment they are created
+     * is what makes that impossible. b_spam is left uncounted for the same
+     * reason -- a spam flag is a moderation state, not an expiry.
+     *
+     * "Not expired" reuses Item::liveConditions()'s own expiry test
+     * (b_premium = 1 || dt_expiration >= now), so a featured listing is never
+     * treated as expired here either, the same as everywhere else that predicate
+     * is built. A deleted listing has no row at all, so it is never counted --
+     * which is the whole point of a slot model: deletion frees the slot by
+     * construction, with no sweep and no bookkeeping.
+     *
+     * Rides the plain fk_i_user_id index on t_item: the WHERE clause leads with
+     * an equality match on it, narrowing to one seller's rows before the OR on
+     * b_premium/dt_expiration is ever evaluated.
      */
-    public static function publishQuotaUsed(int $userId): int
+    public static function liveListings(int $userId): int
     {
-        $cutoff = date('Y-m-d H:i:s', strtotime('-' . osc_billing_period_days() . ' days'));
-
         return (int) osc_db_scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
-            . ' WHERE fk_i_user_id = ? AND COALESCE(dt_first_pub_date, dt_pub_date) >= ?',
-            array($userId, $cutoff)
+            . ' WHERE fk_i_user_id = ? AND (b_premium = 1 OR dt_expiration >= ?)',
+            array($userId, date('Y-m-d H:i:s'))
         );
     }
 
     /**
      * The one choke point ItemActions::add() consults. True immediately when billing
-     * is off; otherwise true within the free quota, or with a listing.publish
-     * entitlement once it is exhausted. The billing_can_publish filter runs on every
-     * path, including the billing-off one, so a plugin can veto or override either way.
+     * is off; otherwise true exactly when withinFreeQuota() is. The billing_can_publish
+     * filter runs on every path, including the billing-off one, so a plugin can veto or
+     * override either way. There is nothing to fall back on beyond the quota itself --
+     * a listing.slot entitlement already raised the ceiling withinFreeQuota() checked,
+     * so an answer of false here means the seller is at that ceiling, bought slots
+     * included.
      *
      * @param bool|null $withinFreeQuota The caller's own withinFreeQuota() answer,
      *                                    when it already has one -- ItemActions::add()
-     *                                    needs that same COUNT for $needsCredit, and
-     *                                    passing it here avoids running it twice per
-     *                                    post. Null (the default) computes it here, so
-     *                                    every other caller is unaffected.
+     *                                    needs that same COUNT for its own flash-error
+     *                                    branch, and passing it here avoids running it
+     *                                    twice per post. Null (the default) computes it
+     *                                    here, so every other caller is unaffected.
      */
     public static function canPublish(int $userId, array $ctx = array(), ?bool $withinFreeQuota = null): bool
     {
-        if (!osc_billing_enabled()) {
-            $allowed = true;
-        } elseif ($withinFreeQuota ?? self::withinFreeQuota($userId)) {
-            $allowed = true;
-        } else {
-            $allowed = self::has($userId, 'listing.publish');
-        }
+        $allowed = !osc_billing_enabled() || ($withinFreeQuota ?? self::withinFreeQuota($userId));
 
         return (bool) osc_apply_filter('billing_can_publish', $allowed, $userId, $ctx);
     }

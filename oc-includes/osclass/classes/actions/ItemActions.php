@@ -219,19 +219,17 @@ class ItemActions
         osc_run_hook('pre_item_add', $aItem, $flash_error);
         $flash_error = osc_apply_filter('pre_item_add_error', $flash_error, $aItem);
 
-        // The one choke point for the posting quota. Guest posts (no user id) have no
+        // The one choke point for the listing quota. Guest posts (no user id) have no
         // wallet to charge and admin posts are never metered, so both skip enforcement
-        // entirely. $needsCredit is captured before the insert below -- checking after
-        // would count the very row this request is about to create. withinFreeQuota()
-        // is the same COUNT canPublish() would otherwise run again internally, so it is
-        // computed once here and handed to canPublish() rather than paying for it twice
-        // on every post.
-        $needsCredit = false;
+        // entirely. withinFreeQuota() is the same COUNT canPublish() would otherwise run
+        // again internally, so it is computed once here and handed to canPublish() rather
+        // than paying for it twice on every post. Nothing is ever consumed here: a
+        // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
+        // checked, so there is nothing left to spend once a post is allowed through.
         if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
-            $needsCredit     = !$withinFreeQuota;
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                $flash_error .= _m('You have used all your listings for this period. Add credits to post more.')
+                $flash_error .= _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.')
                     . PHP_EOL;
             }
         }
@@ -247,11 +245,10 @@ class ItemActions
             // Capture the new id from the insert itself (see DAO::insertGetId), not a later
             // decoupled read of the shared connection's insert_id, which intermittently came
             // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
-            // dt_first_pub_date is the quota's own timestamp, distinct from dt_pub_date
-            // (the sort key a bump is free to move). This insert is the ONLY place
-            // that ever writes it -- Entitlements::publishQuotaUsed() depends on that
-            // being true, or a paid bump would silently refill the free quota it
-            // exists to move past.
+            // dt_first_pub_date records the listing's original publish date, distinct from
+            // dt_pub_date (the sort key a bump is free to move) -- this insert is the ONLY
+            // place that ever writes it, so it stays the one durable record of when the
+            // listing first went live even after a later bump moves dt_pub_date forward.
             $publishedAt = date('Y-m-d H:i:s');
             $itemId = $this->manager->insertGetId(array(
                 'fk_i_user_id'       => $aItem['userId'],
@@ -284,22 +281,6 @@ class ItemActions
                 );
 
                 return _m('Your listing could not be saved. Please try again.');
-            }
-
-            // Only after the insert has actually landed -- a listing that failed
-            // validation above never reaches here and never burns a credit. The post
-            // is never refused at this point even if consume() fails: the listing
-            // already exists, and undoing it here would be a worse outcome than the
-            // leak. A false return means the entitlement lapsed between the check
-            // above and this insert, or a concurrent post took the last unit -- the
-            // seller got a free listing and quota is leaking, so make that visible to
-            // an operator rather than let it pass unnoticed.
-            if ($needsCredit && !\mindstellar\billing\Entitlements::consume($aItem['userId'], 'listing.publish', 1)) {
-                trigger_error(
-                    'Entitlements::consume() failed for listing.publish after item '
-                    . $itemId . ' (user ' . $aItem['userId'] . ') was already published; quota may be leaking.',
-                    E_USER_WARNING
-                );
             }
 
             if (!$this->is_admin) {

@@ -253,8 +253,12 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     fk_i_user_id INT UNSIGNED NULL,
     fk_i_category_id INT UNSIGNED NOT NULL,
     dt_pub_date DATETIME NOT NULL,
-    -- Set once, at insert, and never again -- the free posting quota's own
-    -- timestamp, distinct from dt_pub_date (the sort key a bump is free to move).
+    -- Set once, at insert, and never again -- item.bump moves dt_pub_date on purpose
+    -- to resort the listing, and would overwrite the only record of when it first
+    -- went live if it shared a column. Nothing currently reads this column back (the
+    -- listing quota counts live rows through dt_expiration, below), but it stays
+    -- anyway -- a bump is a one-way trip and the original publish date is otherwise
+    -- unrecoverable once dt_pub_date moves.
     dt_first_pub_date DATETIME NULL,
     dt_mod_date DATETIME NULL,
     f_price FLOAT NULL,
@@ -285,7 +289,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX fk_c_currency_code (fk_c_currency_code),
         INDEX idx_pub_date (dt_pub_date),
         INDEX idx_price (i_price),
-        INDEX idx_user_first_pub (fk_i_user_id, dt_first_pub_date)
+        -- What Entitlements::liveListings() filters on: a seller's rows not yet expired.
+        INDEX idx_user_expiration (fk_i_user_id, dt_expiration)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (

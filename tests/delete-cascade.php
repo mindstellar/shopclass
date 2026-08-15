@@ -426,7 +426,7 @@ seed_exec(
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_user_entitlement (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)
-     VALUES (?, 'listing.publish', 1, NULL, 'grant', NOW())",
+     VALUES (?, 'listing.slot', 1, NULL, 'grant', NOW())",
     'i',
     array($owner)
 );

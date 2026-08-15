@@ -26,7 +26,7 @@ final class Feature
     /** A ceiling that is read, never spent -- see Entitlements::capacity(). */
     public const CONSUMES_CAPACITY = 'capacity';
 
-    /** Spends against the buyer's own account -- listing.publish, listing.premium's default. */
+    /** Spends against the buyer's own account -- listing.slot, listing.premium's default. */
     public const SCOPE_USER = 'user';
     /** Spends against one of the buyer's items -- the only scope a route may spend
      *  on behalf of an item id taken from the request. See FeatureRegistry::register(). */

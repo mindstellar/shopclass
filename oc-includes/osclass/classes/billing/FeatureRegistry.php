@@ -18,7 +18,7 @@ use InvalidArgumentException;
  *
  * Deliberately mirrors PaymentGatewayRegistry (and mindstellar\widgets\WidgetRegistry,
  * mindstellar\fields\FieldTypeRegistry) so the three registries read the same to a
- * plugin author. Core registers listing.publish and listing.premium; a plugin may add
+ * plugin author. Core registers listing.slot and listing.premium; a plugin may add
  * its own or replace either by re-registering the same id.
  *
  * @package mindstellar\billing
