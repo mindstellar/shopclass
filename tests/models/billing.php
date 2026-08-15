@@ -57,6 +57,25 @@ if (!function_exists('osc_register_render_target')) {
     {
     }
 }
+// Category's constructor branches on OC_ADMIN and reaches osc_base_url() through its
+// cache-key builder (osc_validate_category(), reached by the ItemActions::add()
+// choke-point section below, goes through Category) -- the same stand-ins
+// tests/models/item.php uses for the same reason.
+if (!defined('OC_ADMIN')) {
+    define('OC_ADMIN', false);
+}
+if (!defined('WEB_PATH')) {
+    define('WEB_PATH', 'http://localhost/');
+}
+if (!defined('OSC_CACHE_TTL')) {
+    define('OSC_CACHE_TTL', 60);
+}
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($with_index = false)
+    {
+        return WEB_PATH . ($with_index ? 'index.php' : '');
+    }
+}
 // Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_posts_per_period()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
@@ -1082,6 +1101,128 @@ osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
+ * ItemActions::add(): the consume-after-insert choke point. consume() runs only
+ * once the insert has landed -- see the comment beside it in ItemActions.php for
+ * why a listing that already exists is never undone by a failed consume(). This
+ * exercises both outcomes: a real entitlement being spent, and the race where
+ * the entitlement is gone by the time consume() runs even though canPublish()
+ * said yes -- the exact case the trigger_error() warning exists to surface.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions::add(): consume-after-insert');
+
+// ItemActions::add() reaches sanitisation, validation and Item::updateExpirationDate()
+// (-> osc_isExpired()) -- none of hValidate.php/hSanitize.php/hSecurity.php/utils.php
+// is pulled in by the requires above, unlike tests/models/item.php's stand-ins, because
+// nothing else in this file needed them until now.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php'; // Category::__construct() -> osc_current_user_locale()
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';  // Category::__construct() -> toTree() -> the category cache
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';  // Log::insertLog() -> osc_logged_user_id()
+require_once ABS_PATH . 'oc-includes/osclass/utils.php';
+
+// osc_validate_category() requires a non-root category (or osc_selectable_parent_categories()),
+// so the fixture needs a parent, unlike $categoryId above.
+$chokeParentCat = seed_category($admin, 'Choke parent');
+$chokeCat       = seed_category($admin, 'Choke child', $chokeParentCat);
+
+$makeChokeItemData = static function (int $userId, int $catId, string $title): array {
+    return array(
+        'title'         => array('en_US' => $title),
+        'description'   => array('en_US' => $title . ' has a description long enough to pass validation.'),
+        'catId'         => $catId,
+        'price'         => 10,
+        'currency'      => 'USD',
+        'contactName'   => 'Choke Tester',
+        'contactEmail'  => 'choke@example.test',
+        'contactPhone'  => '',
+        'cityArea'      => '',
+        'address'       => '',
+        'countryId'     => 'US',
+        'countryName'   => 'United States',
+        'regionId'      => null,
+        'regionName'    => '',
+        'cityId'        => null,
+        'cityName'      => '',
+        'd_coord_lat'   => null,
+        'd_coord_long'  => null,
+        's_zip'         => '',
+        'photos'        => array(),
+        'showEmail'     => 1,
+        'active'        => 'ACTIVE',
+        'userId'        => $userId,
+        's_ip'          => '127.0.0.1',
+        // A digit string, not a date: Item::updateExpirationDate() reads "0" as
+        // never-expires, the same convention a category with no expiration ceiling uses.
+        'dt_expiration' => '0',
+    );
+};
+
+$chokeWarnings   = array();
+$captureWarnings = static function () use (&$chokeWarnings): void {
+    $chokeWarnings = array();
+    set_error_handler(static function (int $errno, string $errstr) use (&$chokeWarnings): bool {
+        if ($errno === E_USER_WARNING) {
+            $chokeWarnings[] = $errstr;
+        }
+
+        return true;
+    });
+};
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_posts_per_period', '1', 'osclass', 'INTEGER');
+osc_set_preference('billing_period_days', '30', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+/* Happy path: the seller is over quota, really holds the entitlement, and
+ * consume() spends it -- no warning, because nothing was lost. */
+$consumeOkUser = seed_user($admin, 'chokeok', 'chokeok@example.test');
+seed_item($admin, $chokeCat, $consumeOkUser, 'Uses up the free quota (choke ok)');
+Entitlements::grant($consumeOkUser, 'listing.publish', 1, null);
+
+$captureWarnings();
+$okAction       = new ItemActions(false);
+$okAction->data = $makeChokeItemData($consumeOkUser, $chokeCat, 'Choke happy path');
+$okResult       = $okAction->add();
+restore_error_handler();
+
+check('add() reports success when the entitlement is spent cleanly', $okResult === 2);
+pin('consume() actually spent the entitlement', 0, Entitlements::quantity($consumeOkUser, 'listing.publish'));
+pin('a clean consume raises no quota-leak warning', array(), $chokeWarnings);
+
+/* The race: canPublish() is told (via the documented billing_can_publish filter)
+ * to allow a post from a user who holds no listing.publish entitlement at all --
+ * standing in for the entitlement lapsing, or a concurrent post taking the last
+ * unit, between the check inside add() and the insert a few lines later. There
+ * is no way to land a real two-request race deterministically in this harness,
+ * so the filter forces the same disagreement between "allowed" and "spendable"
+ * that a genuine race would produce. */
+$raceUser = seed_user($admin, 'chokerace', 'chokerace@example.test');
+seed_item($admin, $chokeCat, $raceUser, 'Uses up the free quota (choke race)');
+
+osc_add_hook('billing_can_publish', static function ($allowed, $userId) use ($raceUser) {
+    return $userId === $raceUser ? true : $allowed;
+});
+
+$captureWarnings();
+$raceAction       = new ItemActions(false);
+$raceAction->data = $makeChokeItemData($raceUser, $chokeCat, 'Choke race path');
+$raceResult       = $raceAction->add();
+restore_error_handler();
+
+check('a listing still publishes even when consume() finds nothing to spend', $raceResult === 2);
+check(
+    'the failed consume is reported as a warning, not swallowed',
+    count($chokeWarnings) === 1
+    && str_contains($chokeWarnings[0], 'Entitlements::consume() failed for listing.publish')
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
  * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
  * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
  * a failed apply -- an item that does not exist -- has to roll both back.
@@ -1144,10 +1285,21 @@ pin(
     $bumpHookInTxn
 );
 
-// The cooldown is enforced by callers reading has() before allowing another bump
-// (CWebBilling::upgradePost()'s already-held check) -- not by spend() itself, which
-// has no opinion on cooldowns. This pins the primitive that check relies on.
-check('the cooldown blocks while the row is live', ItemUpgrades::has($bumpItemId, 'item.bump') === true);
+// The cooldown is enforced by upgradePost()'s decideUpgrade() -- not by spend()
+// itself, which has no opinion on cooldowns. upgradePost() cannot be driven directly
+// (osc_csrf_check()/redirectTo() would end the test process), so this reaches its
+// pure, static decision logic through reflection, the same way the DST pins above
+// reach Entitlements::addDays() and ItemUpgrades::nextExpiration(). item.bump
+// consumes a quantity, not a duration, so a live cooldown row must still refuse a
+// repurchase outright rather than extend it -- extending would let a seller re-bump
+// on demand and defeat the cooldown's entire point.
+$decideUpgrade   = new ReflectionMethod(CWebBilling::class, 'decideUpgrade');
+$cWebBillingRefl = new ReflectionClass(CWebBilling::class);
+check(
+    'the cooldown blocks while the row is live -- decideUpgrade() refuses, it does not extend',
+    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::instance()->get('item.bump'), array('pk_i_id' => $bumpItemId))
+    === $cWebBillingRefl->getConstant('DECISION_REFUSE_HELD')
+);
 
 // A separate item, read via has() for the first time only after its cooldown
 // row is fast-forwarded into the past. $bumpItemId above was already read (and
@@ -1173,6 +1325,11 @@ $admin->query(
     . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $lapsedBumpItemId . " AND s_upgrade = 'item.bump'"
 );
 check('the cooldown lifts once the row lapses', ItemUpgrades::has($lapsedBumpItemId, 'item.bump') === false);
+check(
+    'once the cooldown has lapsed, decideUpgrade() proceeds with a fresh bump rather than refusing',
+    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::instance()->get('item.bump'), array('pk_i_id' => $lapsedBumpItemId))
+    === $cWebBillingRefl->getConstant('DECISION_PROCEED')
+);
 pin(
     'the lapse-target bump also fired item_bumped, so both successful spends announced',
     array($bumpItemId, $lapsedBumpItemId),
@@ -1192,6 +1349,103 @@ pin(
 );
 
 osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
+ * CWebBilling::decideUpgrade(): the rest of the route-level decision -- a
+ * duration feature held live is extended rather than refused, a permanent hold
+ * has nothing to extend, and listing.premium's own already-held check reads
+ * dt_premium_expiration rather than the b_premium flag, so a listing does not
+ * read as premium (and un-refeaturable) for the whole window between its
+ * expiry and the next hourly sweep.
+ * ------------------------------------------------------------------------- */
+harness_section('CWebBilling::decideUpgrade(): extend a live duration, refuse a permanent one');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_highlight_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_premium_enabled', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+osc_register_billing_item_upgrades();
+osc_register_billing_premium();
+
+$decideUser        = seed_user($admin, 'decideuser', 'decideuser@example.test');
+$highlightFeature  = FeatureRegistry::instance()->get('item.highlight');
+$premiumFeature    = FeatureRegistry::instance()->get('listing.premium');
+
+$liveHighlightItem = seed_item($admin, $categoryId, $decideUser, 'Live highlight');
+ItemUpgrades::grant($liveHighlightItem, 'item.highlight', 10, null);
+check(
+    'a live duration hold (item.highlight) is extended, not refused',
+    $decideUpgrade->invoke(null, 'item.highlight', $highlightFeature, array('pk_i_id' => $liveHighlightItem))
+    === $cWebBillingRefl->getConstant('DECISION_EXTEND')
+);
+
+$permanentHighlightItem = seed_item($admin, $categoryId, $decideUser, 'Permanent highlight');
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
+    . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
+    . ' VALUES (' . $permanentHighlightItem . ", 'item.highlight', NULL, NOW())"
+);
+check(
+    'a permanent hold has nothing to extend, so decideUpgrade() refuses it',
+    $decideUpgrade->invoke(null, 'item.highlight', $highlightFeature, array('pk_i_id' => $permanentHighlightItem))
+    === $cWebBillingRefl->getConstant('DECISION_REFUSE_PERMANENT')
+);
+
+$freshHighlightItem = seed_item($admin, $categoryId, $decideUser, 'No highlight yet');
+check(
+    'an item that never held the feature at all proceeds as a fresh grant',
+    $decideUpgrade->invoke(null, 'item.highlight', $highlightFeature, array('pk_i_id' => $freshHighlightItem))
+    === $cWebBillingRefl->getConstant('DECISION_PROCEED')
+);
+
+/* listing.premium lives on t_item's own columns rather than t_item_upgrade --
+ * this is the fix for the bug in the "already held" check reading the b_premium
+ * flag instead of dt_premium_expiration. */
+$livePremiumItem = seed_item($admin, $categoryId, $decideUser, 'Live premium');
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_premium = 1, dt_premium_expiration = '
+    . "'" . date('Y-m-d H:i:s', time() + 86400) . "' WHERE pk_i_id = " . $livePremiumItem
+);
+check(
+    'a live premium spot is extended, not refused',
+    $decideUpgrade->invoke(
+        null,
+        'listing.premium',
+        $premiumFeature,
+        array('pk_i_id' => $livePremiumItem, 'b_premium' => 1, 'dt_premium_expiration' => date('Y-m-d H:i:s', time() + 86400))
+    ) === $cWebBillingRefl->getConstant('DECISION_EXTEND')
+);
+
+$permanentPremiumItem = seed_item($admin, $categoryId, $decideUser, 'Permanent premium (decide)');
+check(
+    'a permanent (admin-granted, no expiration) premium spot has nothing to extend',
+    $decideUpgrade->invoke(
+        null,
+        'listing.premium',
+        $premiumFeature,
+        array('pk_i_id' => $permanentPremiumItem, 'b_premium' => 1, 'dt_premium_expiration' => null)
+    ) === $cWebBillingRefl->getConstant('DECISION_REFUSE_PERMANENT')
+);
+
+/* The bug this phase fixes: b_premium stays 1 from the moment a time-limited
+ * premium spot expires until the next hourly sweep runs (Premium::expire()).
+ * Reading that flag alone would refuse to re-feature the listing for that
+ * entire window; reading dt_premium_expiration instead sees it has already
+ * lapsed and treats the listing as available again. */
+$lapsedPremiumItem = seed_item($admin, $categoryId, $decideUser, 'Lapsed premium, not yet swept');
+check(
+    'a b_premium flag left stale by an unswept expiry does not block re-featuring',
+    $decideUpgrade->invoke(
+        null,
+        'listing.premium',
+        $premiumFeature,
+        array('pk_i_id' => $lapsedPremiumItem, 'b_premium' => 1, 'dt_premium_expiration' => date('Y-m-d H:i:s', time() - 3600))
+    ) === $cWebBillingRefl->getConstant('DECISION_PROCEED')
+);
+
+osc_set_preference('billing_highlight_enabled', '0', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_premium_enabled', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------

@@ -104,7 +104,13 @@ dt_date           DATETIME      NOT NULL
 dt_paid_date      DATETIME      NULL
 UNIQUE (s_gateway, s_external_ref)
 INDEX (fk_i_user_id, s_status)
+INDEX (s_status, dt_date)
 ```
+
+The `(s_status, dt_date)` index exists for the admin orders screen (§6): three of its four
+summary counts filter on `s_status` alone, and `search()`'s default listing orders by
+`dt_date DESC, pk_i_id DESC` — both table scans without it once an install has any real
+order volume.
 
 ### `t_user_entitlement`
 
@@ -116,8 +122,29 @@ i_quantity      INT           NULL               -- NULL = unlimited
 dt_expiration   DATETIME      NULL               -- NULL = never
 s_source        VARCHAR(32)   NOT NULL           -- purchase|grant|plan|default
 dt_date         DATETIME      NOT NULL
-INDEX (fk_i_user_id, s_feature)
+UNIQUE (fk_i_user_id, s_feature)
+INDEX (dt_expiration)
 ```
+
+`uq_user_feature` is what makes `Entitlements::grant()` a single atomic
+`INSERT … ON DUPLICATE KEY UPDATE` rather than a SELECT-then-UPDATE: two concurrent
+purchases of the same feature can no longer race each other into losing one grant, because
+MySQL applies the merge itself. It is also what keeps the one-row-per-`(user, feature)`
+invariant every reader here (`has()`, `quantity()`, `capacity()`) already assumed true —
+before the key existed, nothing enforced it.
+
+### `t_item.dt_first_pub_date DATETIME NULL`
+
+The free posting quota's own timestamp, distinct from `dt_pub_date` — the column
+`item.bump` moves on purpose, to resort a listing to the top of every "newest first"
+query. `ItemActions::add()`'s insert is the *only* place that ever writes it, and nothing
+else may: `Entitlements::publishQuotaUsed()` counts `dt_first_pub_date` (falling back to
+`dt_pub_date` for a row some other path wrote directly), so a bump can move a listing to
+the top of the site without also refilling the free-quota window it exists to move past.
+An upgraded install backfills it from the existing `dt_pub_date`, which is exactly why an
+existing seller's quota reads the same the day this column appears as it did the day
+before. Indexed together with `fk_i_user_id`, since the quota COUNT had only the user id
+to filter on before this and scanned every listing the seller ever posted.
 
 ### `t_item.dt_premium_expiration DATETIME NULL`
 
@@ -219,6 +246,20 @@ provider claws a payment back the user has usually spent what it bought, so a re
 refused to overdraw would simply not happen and the site would have given the goods away. A
 negative balance is the honest record, and it blocks further spending until settled.
 
+**`Billing::refund()` reverses credits and nothing else.** It marks the order `refunded`
+and calls `Wallet::reverse()` for the credits it minted; it does not touch a single
+entitlement, item upgrade, or premium flag those credits bought. A seller who spent the
+credits before the refund lands keeps the highlight, the extra listing, the featured spot
+— whatever `apply()` already granted stays granted. This is a deliberate policy, not an
+oversight: unwinding a purchase's *effects* would mean walking every feature's own
+`apply()` in reverse (un-feature a listing mid-lifecycle, claw back a bump nobody
+remembers, shrink a photo cap out from under photos already uploaded), each with its own
+failure modes, for a path (chargebacks, refund requests) that is already the exceptional
+case. A refund therefore costs the site both the money and whatever the credits bought —
+the same trade `Wallet::reverse()`'s negative balance already makes, extended to the goods
+side of the same transaction. A site that wants stricter behaviour (e.g. revoking a
+still-live upgrade on refund) has to build it as a `billing_order_refunded` hook.
+
 ### `FeatureRegistry`
 
 Singleton, matching `PaymentGatewayRegistry`'s own shape so the two registries read the
@@ -255,12 +296,19 @@ unreachable through that route, no matter what the request names.
 `consume()`) and duration (expires): a ceiling that is *read*, never spent. Buying "10
 photos" does not mean ten uploads against a shrinking balance; it means the cap is 10 for as
 long as the entitlement is live. `Entitlements::capacity(int $userId, string $feature, int
-$default = 0): int` returns the largest `i_quantity` among the user's unexpired rows for
-that feature, or `$default` when there is none. A row with `i_quantity IS NULL` (unlimited)
-returns `-1` — every caller must treat `-1` as unlimited rather than compare it numerically,
-or unlimited reads as "less than everything". A capacity feature's own `apply` grants the
+$default = 0): int` returns the **larger** of `$default` and the biggest `i_quantity` among
+the user's unexpired rows for that feature — `$default` is a floor, not merely the answer
+for "no row at all". A capacity entitlement can therefore only ever *raise* a seller's
+limit, never lower it: without the floor, a global cap of 20 plus a bought entitlement of
+10 would leave the paying seller worse off than a seller who bought nothing, and a global
+cap read as unlimited by the caller's own convention (`0`, for `osc_max_images_per_item()`)
+would be capped outright by the very upsell meant to raise it. A row with `i_quantity IS
+NULL` (unlimited) returns `-1` unconditionally — it already beats any finite `$default` —
+and every caller must treat `-1` as unlimited rather than compare it numerically, or
+unlimited reads as "less than everything". A capacity feature's own `apply` grants the
 entitlement (`Entitlements::grant()`), the same as a quantity or duration feature's does;
-nothing calls `consume()` on a capacity row, and nothing should.
+nothing calls `consume()` on a capacity row, and nothing should. The grant itself carries
+no duration — see "Seller limits" below for what that means on repurchase.
 
 Core's one unconditional built-in (like the core widget and field types) — it exists and
 is overridable whether or not billing is switched on:
@@ -293,7 +341,19 @@ nothing on that hot path. `ItemUpgrades::prime(array $itemIds)` batch-loads a re
 cache so a theme helper called inside a listing loop costs one query per page rather than
 one per item; `active()`/`has()`/`expiresAt()` read that cache when an id was primed and
 fall back to a fresh single-item query otherwise, so they are correct even when nothing was
-ever primed.
+ever primed. Two helpers called back to back on the same *unprimed* item (e.g.
+`osc_item_is_highlighted()` then `osc_item_is_urgent()`) still cost one query between them,
+not two — the single-item fallback memoizes its own read into the same cache `prime()`
+fills, keeping "primed with no rows" distinct from "never looked up".
+
+`osc_prime_item_upgrades(array $items): void` is the theme-facing entry point —
+`ItemUpgrades::prime()` itself is not exported by name, so a theme with no `osc_*` helper
+to reach it had no way to batch at all. It accepts item rows or bare ids in the same call,
+whichever a theme already has to hand, and is a no-op while `osc_billing_enabled()` is off,
+so a site that never turned billing on pays nothing for it. Core calls it itself wherever a
+result set is built (search, category and home listings) so the common case needs no theme
+change; a theme rendering its own custom loop should call it too, once, before the loop —
+calling it per item defeats the point.
 
 Every one of the three ships disabled, and *enabled* and *credits* are deliberately separate
 preferences: an enabled upgrade priced at 0 credits is free to every seller, not switched
@@ -318,6 +378,18 @@ until an admin turns one on:
 | `listing.photos` | capacity | Photos allowed per listing | `osc_max_images_per_item()` (`numImages@items`) |
 | `listing.no_wait` | duration | Skips the flood wait entirely while held | `osc_items_wait_time()` |
 | `listing.runtime` | capacity | Extra days of listing runtime, on top of the category's `i_expiration_days` ceiling | The category expiration ceiling |
+
+**A capacity grant is permanent, and a repurchase adds rather than renews.** Both
+`apply` callables above call `Entitlements::grant()` with `$days = null`, so the row's
+`dt_expiration` is never set and the entitlement never lapses on its own — there is no
+"30-day photo cap" the way `listing.highlight` has a 30-day highlight. Buying the raised
+cap a second time does not restart a clock; it adds another `osc_billing_photos_quantity()`
+on top of whatever the seller already holds (`i_quantity = i_quantity + …`, the same merge
+`Entitlements::grant()` uses everywhere), so five separate 10-photo purchases leave a
+seller holding 50, forever, not 10 with a later expiry. `Entitlements::capacity()` still
+floors at the global default rather than reading this figure as an absolute cap (above), so
+none of this can ever go backwards either. Price a capacity feature with this in mind: it
+is a one-way, permanent upsell, not a subscription.
 
 These are *raised ceilings*, not new limits: nothing changes for a seller who holds none of
 the three, and the global preference is exactly what an upgraded site enforces until an
@@ -353,12 +425,32 @@ Exactly one choke point, because a quota with two enforcement sites has none.
 `Entitlements::canPublish(int $userId, array $ctx): bool` is consulted in
 `ItemActions::add()`, beside the existing `pre_item_add` hook, and failure flows into the
 same `$flash_error` that plugins already hook. Consumption happens **after** a successful
-insert, never before — a listing that fails validation must not burn a credit.
+insert, never before — a listing that fails validation must not burn a credit. That
+ordering means the entitlement can, rarely, have lapsed or been spent by a concurrent post
+in the gap between the check and the insert; `Entitlements::consume()` failing at that
+point never undoes the listing — it already exists, and undoing it would be a worse
+outcome than the leak — but `ItemActions::add()` raises an `E_USER_WARNING` naming the
+item and user so the leak is visible to an operator instead of silent.
+
+The quota itself counts **publication events** (`t_item.dt_first_pub_date`, §2), not the
+`dt_pub_date` sort key `item.bump` is free to move — bumping three old listings must not
+fill the same free-quota window a genuine new post would.
 
 Premium fulfilment reuses `ItemActions::premium($id, $on)` unchanged. Everything
 downstream of that method — search ranking, the premium home/category blocks, expiry
 exemption, `i_num_premium_views`, the whole `hPremium.php` theme surface — already works
 and is not touched by this layer.
+
+### Calendar-correct expiry
+
+Every duration this layer grants — a premium spot, a highlight, an entitlement's
+`dt_expiration` — is computed with calendar arithmetic (`strtotime('+N days', $base)`),
+never `$days * 86400` raw seconds: a 30-day purchase must expire 30 calendar days later
+even when a daylight-saving transition falls in between, not an hour early or late. The one
+deliberate exception is `item.bump`'s cooldown, which is specified in **hours**
+(`billing_bump_cooldown_hours`) and stays literal elapsed seconds (`$hours * 3600`) on
+purpose: "wait 24 real hours" must not itself drift across a clock change the way a
+calendar-day duration should.
 
 ### Atomic debit
 
@@ -428,9 +520,17 @@ until an admin turns it on.
   bank-transfer gateway's own enable switch and instructions text
 - **Billing → Packages** — the price list a buyer chooses from at checkout: name, price,
   credits, position, enabled
-- **Billing → Orders** — read-only list: user, gateway, amount, status, external ref
-- **Users** — balance column, plus manual credit/debit writing a `grant`/`revoke` ledger row
-- **Items** — the existing mark/unmark premium row action, now showing the expiry date
+- **Billing → Orders** — list plus a per-order detail view with two hand-actions: mark an
+  order paid (also the one path allowed to reopen a `failed` order — a provider retrying
+  payment on the same order after an earlier failure is ordinary, and this is the admin
+  confirming it by hand; the flash message says which happened, "marked paid" or "was
+  failed and is now marked paid") and record a refund a provider has already made (core
+  never calls out to request one — see the refund policy note in §3)
+- **Billing → Credits** — every user's wallet balance, and a per-user page an admin uses to
+  credit or debit it by hand, writing a `grant`/`revoke` ledger row. Not on the Users
+  screen — this is its own menu item, hidden entirely (menu and all) while billing is off
+- **Items** — the existing mark/unmark premium row action, unchanged; the row carries no
+  expiry date of its own to show
 
 ## 7. Public routes
 
@@ -449,13 +549,46 @@ logged-in user except the one route a payment provider's own server hits directl
 Every logged-in action checks `osc_billing_enabled()` first and bounces to the site root
 with a flash error when it is off, so nothing downstream has to repeat that check.
 
+**`upgrade` extends a live hold instead of refusing it.** A listing that already holds
+the feature is not simply turned away: a duration feature (`listing.premium`,
+`item.highlight`, `item.urgent`) still in force lets the purchase go through, and the
+flash message says "extended" rather than "applied" on that path — because a seller
+topping up a highlight before it lapses is a better outcome than making them wait it out
+first. `item.highlight` and `item.urgent` genuinely compound: `ItemUpgrades::grant()`
+extends from whichever is later, now or the row's current expiry, so the seller keeps
+whatever time was left plus what they just bought. `listing.premium` does not — it goes
+through `ItemActions::premium()` unchanged (§4), which always sets the expiration to a
+flat `billing_premium_days` days from *now*, not from the current expiry. In the ordinary
+case that still reads as "extended" (a fresh 30 days from now lands later than the few
+days that were left), but a site that reconfigures `billing_premium_days` down after
+sellers already hold longer premium spots should know a repurchase can shorten what they
+already had, not just top it up. Two cases refuse outright regardless: a *permanent* hold
+(an admin-granted `listing.premium` with no expiry, or any upgrade row with a `NULL`
+`dt_expiration`) has nothing to extend, and `item.bump` — which consumes a quantity, not a
+duration — keeps refusing while its cooldown row is live, because "extending" a bump would
+mean re-bumping the listing on demand and defeating the cooldown's entire point.
+`listing.premium`'s own already-held check reads `dt_premium_expiration`, not the
+`b_premium` flag: the flag stays `1` from the moment a time-limited feature lapses until
+the next hourly sweep (§8), and reading it alone would refuse to re-feature the listing
+for that whole window.
+
 `callback` is the deliberate exception, served by a separate controller
 (`CWebBillingNonSecure`) rather than a branch of the logged-in one, precisely so it can
 never accidentally pick up a CSRF check or a login redirect. `Billing::handleCallback()`
-re-verifies the amount and currency against the stored order instead (§3), and the response
-is the same short `OK` body for every outcome — success, failure, an unknown gateway, or an
+re-verifies the amount and currency against the stored order instead (§3), and the body is
+the same short `OK` text for every outcome — success, failure, an unknown gateway, or an
 order that does not exist — so the endpoint itself cannot be used to probe whether an order
 is real.
+
+**The status code is the one exception, and it is not about probing.** A callback core
+never got to look at — no gateway registered, which is what happens when it arrives during
+a window with billing switched off — answers **503**, not 200, so the provider's own retry
+logic tries again later instead of marking a real payment "delivered" and never sending it
+a second time. Every outcome core *did* resolve, including a deliberate ignore (an amount
+mismatch, a cross-gateway attempt, a replay of an already-settled event), still answers
+200 — replaying a decided outcome must not make a provider retry forever. `CallbackResult`
+carries this as `isRetryable()`, decided once by whichever code path built it rather than
+guessed from the reason string in the controller.
 
 **The callback URL is a compatibility contract.** A gateway plugin gives this URL —
 `?page=billing&action=callback&gateway=<id>` — to its payment provider once, often typed by

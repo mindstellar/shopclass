@@ -27,6 +27,11 @@
  *  - A child table with no foreign key at all, which nothing blocks and nothing
  *    cleans up: t_alerts, t_item_report_log, t_item_moderation_log,
  *    t_location_slug_history, t_form_submission.
+ *  - t_billing_ledger and t_billing_order carry no foreign key either, but for the
+ *    opposite reason: they are deliberately never cleaned up. The audit trail has to
+ *    outlive the account it describes, so a row referencing a deleted user is meant
+ *    to survive as an orphan -- pinned as a survival, not swept for orphans, in the
+ *    User::deleteUser() section below.
  *
  * The final sweep walks every foreign key in information_schema and asserts that
  * no child row points at a missing parent, which covers the tables no pin names.
@@ -253,6 +258,15 @@ seed_exec(
     'i',
     array($item)
 );
+// t_item_upgrade's FK is ON DELETE CASCADE, but nothing exercises it unless a row is
+// seeded here -- an empty table would pass the orphan sweep below vacuously.
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_item_upgrade (fk_i_item_id, s_upgrade, dt_expiration, dt_date)
+     VALUES (?, 'item.highlight', NULL, NOW())",
+    'i',
+    array($item)
+);
 
 $deleted = Item::newInstance()->deleteByPrimaryKey($item);
 
@@ -268,6 +282,7 @@ foreach (
         't_item_meta',
         't_item_report_log',
         't_item_moderation_log',
+        't_item_upgrade',
     ) as $child
 ) {
     pin("$child has nothing left for the item", 0, $rows($child, "fk_i_item_id = $item"));
@@ -399,6 +414,42 @@ seed_exec(
     'i',
     array($owner)
 );
+// t_billing_wallet and t_user_entitlement both carry a real ON DELETE CASCADE FK to
+// t_user -- seeded here so that cascade is actually exercised rather than passing
+// vacuously against an empty table.
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_billing_wallet (fk_i_user_id, i_balance, dt_mod_date) VALUES (?, 100, NOW())",
+    'i',
+    array($owner)
+);
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_user_entitlement (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)
+     VALUES (?, 'listing.publish', 1, NULL, 'grant', NOW())",
+    'i',
+    array($owner)
+);
+// t_billing_ledger and t_billing_order carry no foreign key at all, and deliberately
+// nothing cleans them up either: the audit trail has to outlive the account it
+// describes (see struct.sql's own comment on t_billing_ledger), so a row still
+// naming this user after the delete is the correct outcome, not a leak.
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_billing_ledger
+     (fk_i_user_id, i_amount, i_balance_after, s_reason, s_ref_type, i_ref_id, dt_date)
+     VALUES (?, 100, 100, 'grant', NULL, NULL, NOW())",
+    'i',
+    array($owner)
+);
+seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_billing_order
+     (fk_i_user_id, s_gateway, s_external_ref, i_amount, s_currency, i_credits, s_status, dt_date)
+     VALUES (?, 'offline', 'owner-order-1', 1000000, 'USD', 100, 'paid', NOW())",
+    'i',
+    array($owner)
+);
 
 $ok = User::newInstance()->deleteUser($owner);
 
@@ -408,6 +459,10 @@ pin('their listings went with them', 0, $rows('t_item', "pk_i_id = $owned"));
 pin('their alerts went with them', 0, $rows('t_alerts', "fk_i_user_id = $owner"));
 pin('their profile went with them', 0, $rows('t_user_description', "fk_i_user_id = $owner"));
 pin('their pending email change went with them', 0, $rows('t_user_email_tmp', "fk_i_user_id = $owner"));
+pin('their wallet went with them', 0, $rows('t_billing_wallet', "fk_i_user_id = $owner"));
+pin('their entitlements went with them', 0, $rows('t_user_entitlement', "fk_i_user_id = $owner"));
+pin('their ledger history survives -- deliberately, it is the audit trail', 1, $rows('t_billing_ledger', "fk_i_user_id = $owner"));
+pin('their order history survives -- deliberately, for the same reason', 1, $rows('t_billing_order', "fk_i_user_id = $owner"));
 
 /* ---------------------------------------------------------------------------
  * Locations -- the slug history has no foreign key and nothing else clears it.

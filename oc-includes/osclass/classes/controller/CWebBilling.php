@@ -32,6 +32,22 @@ class CWebBilling extends WebSecBaseModel
     /** Rows per page of the wallet ledger and the orders list. */
     private const PER_PAGE = 25;
 
+    /** upgradeState(): the item does not currently hold the feature. */
+    private const HELD_NOT = 'not_held';
+    /** upgradeState(): held, with a live expiration -- extendable. */
+    private const HELD_LIVE = 'live';
+    /** upgradeState(): held forever -- nothing to extend. */
+    private const HELD_PERMANENT = 'permanent';
+
+    /** decideUpgrade(): not held (or a lapsed hold) -- spend() runs as a fresh grant. */
+    private const DECISION_PROCEED = 'proceed';
+    /** decideUpgrade(): held, live, and worth topping up. */
+    private const DECISION_EXTEND = 'extend';
+    /** decideUpgrade(): held forever -- refuse, nothing to extend. */
+    private const DECISION_REFUSE_PERMANENT = 'refuse_permanent';
+    /** decideUpgrade(): held and live, but not a duration to extend (item.bump's cooldown). */
+    private const DECISION_REFUSE_HELD = 'refuse_held';
+
     /**
      * Theme view => core fallback, for the pages a theme may not know about yet.
      * See doView().
@@ -218,11 +234,6 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        if (self::alreadyHolds($featureId, $item)) {
-            osc_add_flash_warning_message(_m('This listing already has that upgrade'));
-            $this->redirectTo(osc_user_list_items_url());
-        }
-
         // A feature id in the allow-list is simply unregistered when its own
         // *_enabled preference is off -- listing.premium included, now that it
         // follows the same split as every other feature here.
@@ -232,6 +243,20 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
+        $decision = self::decideUpgrade($featureId, $feature, $item);
+
+        if ($decision === self::DECISION_REFUSE_PERMANENT) {
+            osc_add_flash_warning_message(_m('This listing already has that upgrade, permanently -- there is nothing to extend'));
+            $this->redirectTo(osc_user_list_items_url());
+        }
+
+        if ($decision === self::DECISION_REFUSE_HELD) {
+            osc_add_flash_warning_message(_m('This listing already has that upgrade'));
+            $this->redirectTo(osc_user_list_items_url());
+        }
+
+        $extending = $decision === self::DECISION_EXTEND;
+
         $spent = Billing::spend($userId, $featureId, array(
             'itemId'   => $itemId,
             'ref_type' => 'item',
@@ -239,7 +264,10 @@ class CWebBilling extends WebSecBaseModel
         ));
 
         if ($spent) {
-            osc_add_flash_ok_message(sprintf(_m('%s applied to this listing'), $feature->getLabel()));
+            $message = $extending
+                ? sprintf(_m('%s extended on this listing'), $feature->getLabel())
+                : sprintf(_m('%s applied to this listing'), $feature->getLabel());
+            osc_add_flash_ok_message($message);
         } else {
             osc_add_flash_error_message(sprintf(
                 _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
@@ -270,13 +298,66 @@ class CWebBilling extends WebSecBaseModel
         return $ids;
     }
 
-    private static function alreadyHolds(string $featureId, array $item): bool
+    /**
+     * Whether to let a purchase through as a fresh grant, extend a live hold, or
+     * refuse -- and if it refuses, why.
+     *
+     * A held-but-live duration feature (a highlight or a premium spot about to
+     * lapse) is the case this exists to allow: a seller topping it up before it
+     * runs out is a better outcome than making them wait for it to lapse first,
+     * which is why upgradeState() == HELD_LIVE is not a blanket refusal. Two
+     * exceptions stay refused: a permanent hold has nothing to extend, and
+     * item.bump's hold is not a benefit at all -- it is the cooldown that stops
+     * a listing being re-bumped to the top on a timer, so a feature that does
+     * not consume a duration keeps being refused while its row is live, exactly
+     * as before this method existed.
+     */
+    private static function decideUpgrade(string $featureId, Feature $feature, array $item): string
     {
-        if ($featureId === 'listing.premium') {
-            return !empty($item['b_premium']);
+        $state = self::upgradeState($featureId, $item);
+
+        if ($state === self::HELD_NOT) {
+            return self::DECISION_PROCEED;
+        }
+        if ($state === self::HELD_PERMANENT) {
+            return self::DECISION_REFUSE_PERMANENT;
         }
 
-        return ItemUpgrades::has((int) $item['pk_i_id'], $featureId);
+        return $feature->getConsumes() === Feature::CONSUMES_DURATION
+            ? self::DECISION_EXTEND
+            : self::DECISION_REFUSE_HELD;
+    }
+
+    /**
+     * Whether $item currently holds $featureId, and whether that hold is live
+     * (has an expiration still ahead of it) or permanent (nothing to extend).
+     *
+     * listing.premium reads the item row's own columns -- it predates
+     * t_item_upgrade and still lives directly on t_item. dt_premium_expiration,
+     * not b_premium alone, decides "still held": the flag stays set from the
+     * moment it lapses until the hourly sweep runs, and reading the flag alone
+     * would refuse to re-feature the listing for that entire window.
+     */
+    private static function upgradeState(string $featureId, array $item): string
+    {
+        if ($featureId === 'listing.premium') {
+            if (empty($item['b_premium'])) {
+                return self::HELD_NOT;
+            }
+            $expiresAt = $item['dt_premium_expiration'] ?? null;
+            if ($expiresAt === null) {
+                return self::HELD_PERMANENT;
+            }
+
+            return $expiresAt > date('Y-m-d H:i:s') ? self::HELD_LIVE : self::HELD_NOT;
+        }
+
+        $itemId = (int) $item['pk_i_id'];
+        if (!ItemUpgrades::has($itemId, $featureId)) {
+            return self::HELD_NOT;
+        }
+
+        return ItemUpgrades::expiresAt($itemId, $featureId) === null ? self::HELD_PERMANENT : self::HELD_LIVE;
     }
 
     private function url(string $action = ''): string

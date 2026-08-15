@@ -1475,11 +1475,33 @@ class ItemActions
 
         // Turning premium off always clears the date, so a later permanent grant does
         // not inherit a stale expiry and get swept away an hour after it is made.
-        // Calendar arithmetic, not $days * 86400: a 30-day upgrade must expire 30
-        // calendar days later, not 720 raw hours, or a DST change moves it an hour.
-        $set['dt_premium_expiration'] = ($on && $days !== null)
-            ? date('Y-m-d H:i:s', strtotime('+' . (int) $days . ' days'))
-            : null;
+        $set['dt_premium_expiration'] = null;
+
+        if ($on && $days !== null) {
+            // Just the two columns, not findByPrimaryKey(): that hydrates locales and
+            // resources this decision has no use for.
+            $current = osc_db_select_one(
+                'SELECT b_premium, dt_premium_expiration FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
+                array((int) $id)
+            );
+
+            if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
+                // Already premium with no end date. A dated purchase must not turn an
+                // open-ended upgrade into one that expires.
+                unset($set['dt_premium_expiration']);
+            } else {
+                // Extend from whatever time is left, never from now: a repurchase must
+                // add to the spot the seller already paid for rather than replace it,
+                // which a shortened billing_premium_days would otherwise make a downgrade.
+                // Calendar arithmetic, not $days * 86400, so a DST change cannot move it.
+                $remaining = isset($current['dt_premium_expiration'])
+                    ? strtotime((string) $current['dt_premium_expiration'])
+                    : false;
+                $base      = ($remaining !== false && $remaining > time()) ? $remaining : time();
+
+                $set['dt_premium_expiration'] = date('Y-m-d H:i:s', strtotime('+' . (int) $days . ' days', $base));
+            }
+        }
 
         $result = $this->manager->update(
             $set,
