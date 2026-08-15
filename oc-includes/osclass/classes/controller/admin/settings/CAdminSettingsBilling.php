@@ -33,6 +33,11 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         osc_run_hook('init_admin_settings_billing');
     }
 
+    /** Boolean preferences the Pricing section writes. */
+    private const PRICING_BOOL_PREFS = array(
+        'billing_premium_enabled',
+    );
+
     /** Integer preferences the Pricing section writes, with their minimum value. */
     private const PRICING_INT_PREFS = array(
         'billing_free_posts_per_period' => 0,
@@ -107,6 +112,14 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                     return;
                 }
 
+                foreach (self::PRICING_BOOL_PREFS as $key) {
+                    osc_set_preference(
+                        $key,
+                        Params::getParam($key) != '' ? 1 : 0,
+                        Billing::PREF_GROUP,
+                        'BOOLEAN'
+                    );
+                }
                 foreach (self::PRICING_INT_PREFS as $key => $min) {
                     osc_set_preference(
                         $key,
@@ -117,6 +130,9 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                 }
                 osc_set_preference('billing_currency', $currency, Billing::PREF_GROUP, 'STRING');
                 osc_reset_preferences();
+                // Re-run registration under the new preference value so a toggle
+                // takes effect immediately, not only on the next request.
+                osc_register_billing_premium();
 
                 osc_add_flash_ok_message(_m('Pricing settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=billing');

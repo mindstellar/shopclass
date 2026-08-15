@@ -73,7 +73,13 @@ function osc_billing_publish_credits(): int
     return $v === '' || $v === null ? 1 : (int) $v;
 }
 
-/** Credit price of featuring a listing. 0 means the feature is not for sale. */
+/** Whether featuring a listing is registered as a purchasable feature at all. */
+function osc_billing_premium_enabled(): bool
+{
+    return osc_get_bool_preference('billing_premium_enabled', 'osclass');
+}
+
+/** Credit price of featuring a listing. 0 with billing_premium_enabled on means free, not off. */
 function osc_billing_premium_credits(): int
 {
     $v = osc_get_preference('billing_premium_credits', 'osclass');
@@ -395,12 +401,14 @@ function osc_item_premium_expiration(?array $item = null): ?string
 }
 
 /**
- * Whether a listing is eligible to be featured for credits: billing switched on, a
- * price actually set for it, and the listing not already featured.
+ * Whether a listing is eligible to be featured for credits: billing switched on,
+ * featuring itself switched on, and the listing not already featured. A price of 0
+ * with billing_premium_enabled on means every seller can feature for free -- it does
+ * not mean unavailable.
  */
 function osc_item_can_be_featured(?array $item = null): bool
 {
-    if (!osc_billing_enabled() || osc_billing_premium_credits() <= 0) {
+    if (!osc_billing_enabled() || !osc_billing_premium_enabled()) {
         return false;
     }
 
@@ -496,10 +504,11 @@ function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?str
 }
 
 /*
- * Core's two built-in user-scoped features. Registered unconditionally, like the core
- * widget and field types, so they exist -- and are overridable by a site -- whether or
+ * Core's built-in listing.publish feature. Registered unconditionally, like the core
+ * widget and field types, so it exists -- and is overridable by a site -- whether or
  * not billing is switched on; Entitlements::canPublish() is what actually gates
- * enforcement on osc_billing_enabled().
+ * enforcement on osc_billing_enabled(). listing.premium, right below, is the same idea
+ * but gated on its own *_enabled preference, the same as every feature past it.
  */
 osc_register_billing_feature('listing.publish', array(
     'label'    => 'Extra listing',
@@ -512,27 +521,42 @@ osc_register_billing_feature('listing.publish', array(
     },
 ));
 
-osc_register_billing_feature('listing.premium', array(
-    'label'    => 'Featured listing',
-    'consumes' => Feature::CONSUMES_DURATION,
-    'scope'    => Feature::SCOPE_ITEM,
-    'price'    => static function () {
-        return osc_billing_premium_credits();
-    },
-    'duration' => static function () {
-        return osc_billing_premium_days();
-    },
-    // Ownership is the caller's job (the public "feature this listing" action), not
-    // this feature's -- it only knows how to apply itself once asked to.
-    'apply'    => static function (int $userId, array $ctx): bool {
-        $itemId = $ctx['itemId'] ?? null;
-        if (empty($itemId)) {
-            return false;
-        }
+/**
+ * Register listing.premium, gated on its own billing_premium_enabled preference --
+ * the same split every newer feature below uses, so a disabled premium feature is
+ * absent from the registry entirely, not merely priced at 0. Called once below, and
+ * callable again by the admin Pricing save so a toggle takes effect without a fresh
+ * request.
+ */
+function osc_register_billing_premium(): void
+{
+    if (!osc_billing_premium_enabled()) {
+        return;
+    }
 
-        return (bool) (new ItemActions())->premium((int) $itemId, true, osc_billing_premium_days());
-    },
-));
+    osc_register_billing_feature('listing.premium', array(
+        'label'    => 'Featured listing',
+        'consumes' => Feature::CONSUMES_DURATION,
+        'scope'    => Feature::SCOPE_ITEM,
+        'price'    => static function () {
+            return osc_billing_premium_credits();
+        },
+        'duration' => static function () {
+            return osc_billing_premium_days();
+        },
+        // Ownership is the caller's job (the public "feature this listing" action), not
+        // this feature's -- it only knows how to apply itself once asked to.
+        'apply'    => static function (int $userId, array $ctx): bool {
+            $itemId = $ctx['itemId'] ?? null;
+            if (empty($itemId)) {
+                return false;
+            }
+
+            return (bool) (new ItemActions())->premium((int) $itemId, true, osc_billing_premium_days());
+        },
+    ));
+}
+osc_register_billing_premium();
 
 /**
  * Register the three built-in item upgrades, each gated on its own *_enabled

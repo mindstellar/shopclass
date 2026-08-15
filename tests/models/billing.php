@@ -407,6 +407,83 @@ pin('the swept row has its date cleared', null, $admin->query(
 pin('a second sweep finds nothing', 0, Premium::expire());
 
 /* ----------------------------------------------------------------------------
+ * listing.premium: the enabled/credits split. Registered only when
+ * billing_premium_enabled is on, the same rule every other purchasable feature
+ * in this file follows -- an enabled feature priced at 0 credits is free to
+ * every seller, not switched off. This is the property osc_item_can_be_featured()
+ * and CWebBilling::upgradePost() both had to stop reading billing_premium_credits()
+ * for.
+ * ------------------------------------------------------------------------- */
+harness_section('Billing: listing.premium enabled/credits split');
+
+// hBilling.php's own require (above) is the only place in this process that ever
+// runs the load-time registration, against a freshly-truncated t_preference table
+// where billing_premium_enabled reads unset -- i.e. off, the same default a fresh
+// install ships with. So this is the pristine "disabled" state, not one manufactured
+// by this test.
+$premiumUserId = seed_user($admin, 'premium', 'premium@example.test');
+$premiumItemId = seed_item($admin, $categoryId, $premiumUserId, 'Premium target');
+
+check('listing.premium is unregistered while disabled', FeatureRegistry::instance()->get('listing.premium') === null);
+check(
+    'spending on listing.premium while disabled fails',
+    Billing::spend($premiumUserId, 'listing.premium', array('itemId' => $premiumItemId, 'ref_type' => 'item', 'ref_id' => $premiumItemId)) === false
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_premium_credits', '25', 'osclass', 'INTEGER');
+osc_reset_preferences();
+check(
+    'osc_item_can_be_featured() follows the enabled flag, not a price sitting unused',
+    osc_item_can_be_featured(array('pk_i_id' => $premiumItemId, 'b_premium' => 0)) === false
+);
+
+// Flipping the preference here needs the same registration re-run the admin
+// Pricing save triggers -- hBilling.php only re-evaluates the gate when asked.
+osc_set_preference('billing_premium_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_premium_credits', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_premium_days', '30', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_premium();
+
+check('listing.premium registers once its preference is on', FeatureRegistry::instance()->get('listing.premium') !== null);
+check(
+    'osc_item_can_be_featured() is true once enabled, even at 0 credits',
+    osc_item_can_be_featured(array('pk_i_id' => $premiumItemId, 'b_premium' => 0)) === true
+);
+
+$balanceBeforePremium = Wallet::balance($premiumUserId);
+check(
+    'spending on a free (0-credit) but enabled listing.premium succeeds',
+    Billing::spend($premiumUserId, 'listing.premium', array('itemId' => $premiumItemId, 'ref_type' => 'item', 'ref_id' => $premiumItemId))
+);
+pin('a free premium spend debits nothing', $balanceBeforePremium, Wallet::balance($premiumUserId));
+pin('the free spend still marks the item premium', '1', $admin->query(
+    'SELECT b_premium FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $premiumItemId
+)->fetch_assoc()['b_premium']);
+check(
+    'osc_item_can_be_featured() is false once the item already holds it',
+    osc_item_can_be_featured(array('pk_i_id' => $premiumItemId, 'b_premium' => 1)) === false
+);
+
+// Billing off is the master switch: a feature left enabled and priced at 0 must not
+// become a free upgrade for anyone who reaches spend() directly. The public route
+// redirects, but a plugin calling spend() has to meet the same refusal.
+$offItemId = seed_item($admin, $categoryId, $premiumUserId, 'Premium while billing is off');
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+check(
+    'a free feature does not apply while billing is switched off',
+    Billing::spend($premiumUserId, 'listing.premium', array('itemId' => $offItemId)) === false
+);
+pin('the item is untouched by a spend made while billing is off', '0', $admin->query(
+    'SELECT b_premium FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $offItemId
+)->fetch_assoc()['b_premium']);
+
+osc_set_preference('billing_premium_enabled', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
  * Entitlements: granting. grant() merges into the unexpired row for a feature
  * rather than appending, so quantity() and quantity() must show a single
  * combined figure and the table must carry exactly one row for it.
@@ -685,7 +762,9 @@ harness_section('Billing: item.bump');
 
 // hBilling.php registers item.bump only when billing_bump_enabled was already on at
 // load time, which it was not for this process -- flipping the preference here needs
-// the same registration re-run the admin Upgrades save triggers.
+// the same registration re-run the admin Upgrades save triggers. Billing itself goes
+// back on because spend() refuses outright while the master switch is off.
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_set_preference('billing_bump_enabled', '1', 'osclass', 'BOOLEAN');
 osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
 osc_set_preference('billing_bump_cooldown_hours', '24', 'osclass', 'INTEGER');

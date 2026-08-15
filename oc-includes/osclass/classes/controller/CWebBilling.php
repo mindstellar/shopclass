@@ -223,14 +223,11 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
+        // A feature id in the allow-list is simply unregistered when its own
+        // *_enabled preference is off -- listing.premium included, now that it
+        // follows the same split as every other feature here.
         $feature = FeatureRegistry::instance()->get($featureId);
-        // listing.premium keeps its historical "0 credits means unavailable" gate --
-        // an enabled-but-free upgrade is a deliberate feature of the newer ones, not
-        // a behaviour extended backward onto this one. Any other feature id in the
-        // allow-list is simply unregistered when its own *_enabled preference is off.
-        $unavailable = $feature === null
-            || ($featureId === 'listing.premium' && osc_billing_premium_credits() <= 0);
-        if ($unavailable) {
+        if ($feature === null) {
             osc_add_flash_error_message(_m('This upgrade is not available right now'));
             $this->redirectTo(osc_user_list_items_url());
         }

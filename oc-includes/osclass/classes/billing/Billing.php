@@ -186,11 +186,19 @@ final class Billing
      * @param array  $ctx       Passed to the feature's apply(); 'ref_type'/'ref_id' also
      *                          become the ledger row's reference when present
      *
-     * @return bool false on an unknown feature, insufficient credit, or a failed apply --
-     *              all normal outcomes, not exceptions
+     * @return bool false when billing is off, on an unknown feature, insufficient credit,
+     *              or a failed apply -- all normal outcomes, not exceptions
      */
     public static function spend(int $userId, string $featureId, array $ctx = array()): bool
     {
+        // Nothing is purchasable while billing is switched off, and a zero-priced feature
+        // would otherwise apply for free to anyone who reached this method. The public
+        // route already refuses, but this is the seam every caller goes through -- a
+        // plugin calling spend() directly has to hit the same wall.
+        if (!osc_billing_enabled()) {
+            return false;
+        }
+
         $feature = FeatureRegistry::instance()->get($featureId);
         if ($feature === null) {
             return false;

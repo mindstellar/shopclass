@@ -85,11 +85,20 @@ $gateways       = __get('gateways');
                            value="<?php echo osc_esc_html((string) osc_billing_publish_credits()); ?>"/>
                 <?php osc_admin_form_row_close(); ?>
 
+                <?php osc_admin_form_row_open(__('Featured listings')); ?>
+                    <?php osc_admin_checkbox(array(
+                        'id'      => 'billing_premium_enabled',
+                        'name'    => 'billing_premium_enabled',
+                        'label'   => __('Sell featured listings'),
+                        'checked' => osc_billing_premium_enabled(),
+                        'help'    => __('Enabled with a price of 0 means every seller can feature a listing for free.'),
+                    )); ?>
+                <?php osc_admin_form_row_close(); ?>
+
                 <?php osc_admin_form_row_open(__('Featured listing price (credits)'), array('for' => 'billing_premium_credits')); ?>
                     <input type="number" min="0" class="input-small" id="billing_premium_credits"
                            name="billing_premium_credits"
                            value="<?php echo osc_esc_html((string) osc_billing_premium_credits()); ?>"/>
-                    <div class="help-box"><?php _e('0 means featured listings are not for sale.'); ?></div>
                 <?php osc_admin_form_row_close(); ?>
 
                 <?php osc_admin_form_row_open(__('Featured listing duration (days)'), array('for' => 'billing_premium_days')); ?>

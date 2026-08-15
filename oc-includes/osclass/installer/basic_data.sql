@@ -152,6 +152,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'billing_free_posts_per_period', '0', 'INTEGER')
     ,('osclass', 'billing_period_days', '30', 'INTEGER')
     ,('osclass', 'billing_publish_credits', '1', 'INTEGER')
+    ,('osclass', 'billing_premium_enabled', '0', 'BOOLEAN')
     ,('osclass', 'billing_premium_credits', '0', 'INTEGER')
     ,('osclass', 'billing_premium_days', '30', 'INTEGER')
     ,('osclass', 'billing_currency', 'USD', 'STRING')

@@ -262,22 +262,22 @@ or unlimited reads as "less than everything". A capacity feature's own `apply` g
 entitlement (`Entitlements::grant()`), the same as a quantity or duration feature's does;
 nothing calls `consume()` on a capacity row, and nothing should.
 
-Built-ins core ships, registered unconditionally (like the core widget and field types)
-so they exist and are overridable whether or not billing is switched on:
+Core's one unconditional built-in (like the core widget and field types) — it exists and
+is overridable whether or not billing is switched on:
 
 | Feature | Consumes | Scope | Effect |
 |---|---|---|---|
 | `listing.publish` | quantity | user | Grants one more `listing.publish` entitlement — one extra listing beyond the free quota |
-| `listing.premium` | duration | item | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
 
-Three more ship registered conditionally — each only when its own `billing_<name>_enabled`
-preference is on, so a disabled upgrade is absent from the registry entirely, not merely
-free or unpriced (`osc_register_billing_item_upgrades()` in `hBilling.php` re-runs the
-gate; the admin Upgrades save calls it again so a toggle takes effect without a fresh
-request):
+Four more ship registered conditionally — each only when its own `billing_<name>_enabled`
+preference is on, so a disabled feature is absent from the registry entirely, not merely
+free or unpriced. `listing.premium` follows this rule too, via its own
+`osc_register_billing_premium()` (the admin Pricing save re-runs it); the item upgrades
+below share `osc_register_billing_item_upgrades()` (the admin Upgrades save re-runs it):
 
 | Feature | Consumes | Scope | Effect |
 |---|---|---|---|
+| `listing.premium` | duration | item | `ItemActions::premium($itemId, true, $days)` — featured for `billing_premium_days` days |
 | `item.bump` | quantity | item | Sets `dt_pub_date = NOW()` — moves the listing to the top of every "newest first" query — and grants an `item.bump` row expiring `billing_bump_cooldown_hours` hours out, which **is** the cooldown |
 | `item.highlight` | duration | item | Grants an `item.highlight` row expiring `billing_highlight_days` days out |
 | `item.urgent` | duration | item | Grants an `item.urgent` row expiring `billing_urgent_days` days out |
@@ -297,9 +297,8 @@ ever primed.
 
 Every one of the three ships disabled, and *enabled* and *credits* are deliberately separate
 preferences: an enabled upgrade priced at 0 credits is free to every seller, not switched
-off. `listing.premium` keeps its own, older rule unchanged — `billing_premium_credits <= 0`
-still means "not for sale", not "free" — which is an intentional inconsistency between the
-two generations of upgrade, left for a deliberate call rather than papered over here.
+off. `listing.premium` follows the identical rule via `billing_premium_enabled` — this is
+now the one rule that holds for every purchasable feature core ships, with no exception.
 
 Every `apply` above requires `$ctx['itemId']` and does **not** check ownership — that is
 the caller's job (the public `upgrade` route, §7), because a feature only knows how to
@@ -389,7 +388,8 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_free_posts_per_period` | `0` | 0 = unlimited |
 | `billing_period_days` | `30` | Quota window |
 | `billing_publish_credits` | `1` | Price of one extra listing beyond the free quota |
-| `billing_premium_credits` | `0` | Price of a featured listing; 0 = not for sale |
+| `billing_premium_enabled` | `0` | Whether featuring a listing is registered as a feature at all |
+| `billing_premium_credits` | `0` | Price of a featured listing |
 | `billing_premium_days` | `30` | Duration granted |
 | `billing_currency` | `USD` | ISO 4217 code credits are priced in |
 | `billing_offline_enabled` | `0` | Whether the bundled bank-transfer gateway is offered at checkout |
@@ -422,7 +422,7 @@ until an admin turns it on.
 ## 6. Admin surface
 
 - **Settings → Billing** — the master switch, a pricing section (free-quota size, listing
-  and featured-listing prices, currency), an Upgrades section (enabled/price/duration for
+  price, currency, and featured-listing enabled/price/duration), an Upgrades section (enabled/price/duration for
   bump, highlight and urgent), a Seller limits section (enabled/price/quantity-or-days for
   the raised photo cap, the flood-wait waiver, and extra listing runtime), and the bundled
   bank-transfer gateway's own enable switch and instructions text
