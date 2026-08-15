@@ -184,7 +184,9 @@ final class Billing
      * @param int    $userId
      * @param string $featureId Id registered with FeatureRegistry
      * @param array  $ctx       Passed to the feature's apply(); 'ref_type'/'ref_id' also
-     *                          become the ledger row's reference when present
+     *                          become the ledger row's reference when present, and
+     *                          'days' is overwritten with the registry's own resolved
+     *                          duration (see Feature::duration()) before apply() runs
      *
      * @return bool false when billing is off, on an unknown feature, insufficient credit,
      *              or a failed apply -- all normal outcomes, not exceptions
@@ -204,9 +206,14 @@ final class Billing
             return false;
         }
 
-        $price   = $feature->price($userId);
-        $refType = isset($ctx['ref_type']) ? (string) $ctx['ref_type'] : null;
-        $refId   = isset($ctx['ref_id']) ? (int) $ctx['ref_id'] : null;
+        $price = $feature->price($userId);
+        // Resolved once here, through billing_feature_duration, so every apply() uses
+        // the duration the registry actually settled on rather than re-reading its own
+        // preference -- see Feature::duration(). A quantity feature's duration is 0 and
+        // simply goes unused by an apply() that has no concept of days.
+        $ctx['days'] = $feature->duration($userId);
+        $refType     = isset($ctx['ref_type']) ? (string) $ctx['ref_type'] : null;
+        $refId       = isset($ctx['ref_id']) ? (int) $ctx['ref_id'] : null;
 
         try {
             $applied = osc_db_transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {

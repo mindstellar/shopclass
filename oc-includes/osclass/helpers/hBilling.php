@@ -435,6 +435,41 @@ function osc_item_can_be_featured(?array $item = null): bool
  */
 
 /**
+ * Batch-load item-upgrade state for $items into the request cache
+ * ItemUpgrades::prime() fills, so osc_item_upgrades()/osc_item_is_highlighted()/
+ * osc_item_is_urgent() called inside a listing loop cost one query for the whole
+ * page rather than one per card. Call this where a result set is built (core
+ * already does, for search/category/home); a theme working a custom loop can
+ * call it too.
+ *
+ * $items may be item rows (as a search returns) or bare ids, since a caller has
+ * whichever is already to hand -- a row's 'pk_i_id' is read when present,
+ * otherwise the value itself is taken as the id. A no-op while billing is off,
+ * since nothing reads ItemUpgrades in that state and the query would be waste.
+ *
+ * @param array $items item rows and/or int ids, mixed within one call is fine
+ */
+function osc_prime_item_upgrades(array $items): void
+{
+    if (!osc_billing_enabled() || $items === array()) {
+        return;
+    }
+
+    $ids = array();
+    foreach ($items as $item) {
+        if (is_array($item)) {
+            if (!empty($item['pk_i_id'])) {
+                $ids[] = (int) $item['pk_i_id'];
+            }
+        } elseif (is_numeric($item)) {
+            $ids[] = (int) $item;
+        }
+    }
+
+    ItemUpgrades::prime($ids);
+}
+
+/**
  * Upgrade ids currently in force on an item.
  *
  * @return string[]
@@ -561,8 +596,12 @@ function osc_register_billing_premium(): void
             if (empty($itemId)) {
                 return false;
             }
+            // Billing::spend() resolves the duration (billing_feature_duration
+            // included) and threads it through $ctx; a plugin calling apply()
+            // directly with no context still gets the preference's own answer.
+            $days = $ctx['days'] ?? osc_billing_premium_days();
 
-            return (bool) (new ItemActions())->premium((int) $itemId, true, osc_billing_premium_days());
+            return (bool) (new ItemActions())->premium((int) $itemId, true, $days);
         },
     ));
 }
@@ -626,8 +665,10 @@ function osc_register_billing_item_upgrades(): void
                 if (empty($itemId)) {
                     return false;
                 }
+                // Same fallback convention as listing.premium's apply() above.
+                $days = $ctx['days'] ?? osc_billing_highlight_days();
 
-                return ItemUpgrades::grant((int) $itemId, 'item.highlight', osc_billing_highlight_days());
+                return ItemUpgrades::grant((int) $itemId, 'item.highlight', $days);
             },
         ));
     }
@@ -648,8 +689,10 @@ function osc_register_billing_item_upgrades(): void
                 if (empty($itemId)) {
                     return false;
                 }
+                // Same fallback convention as listing.premium's apply() above.
+                $days = $ctx['days'] ?? osc_billing_urgent_days();
 
-                return ItemUpgrades::grant((int) $itemId, 'item.urgent', osc_billing_urgent_days());
+                return ItemUpgrades::grant((int) $itemId, 'item.urgent', $days);
             },
         ));
     }
@@ -691,7 +734,10 @@ function osc_register_billing_seller_limits(): void
                 return osc_billing_no_wait_days();
             },
             'apply'    => static function (int $userId, array $ctx): bool {
-                return Entitlements::grant($userId, 'listing.no_wait', null, osc_billing_no_wait_days());
+                // Same fallback convention as listing.premium's apply() above.
+                $days = $ctx['days'] ?? osc_billing_no_wait_days();
+
+                return Entitlements::grant($userId, 'listing.no_wait', null, $days);
             },
         ));
     }

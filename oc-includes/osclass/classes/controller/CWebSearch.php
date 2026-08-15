@@ -571,6 +571,14 @@ class CWebSearch extends BaseModel
 
         $aItems = osc_apply_filter('pre_show_items', $aItems);
 
+        // Batch-load highlight/urgent/bump state for the whole page in one query,
+        // instead of the two per card osc_item_is_highlighted()/osc_item_is_urgent()
+        // would otherwise cost inside the theme's listing loop. Gated so a site with
+        // billing off never runs the query at all.
+        if (osc_billing_enabled()) {
+            osc_prime_item_upgrades($aItems);
+        }
+
         $iStart    = $p_iPage * $p_iPageSize;
         $iEnd      = min(($p_iPage + 1) * $p_iPageSize, $iTotalItems);
         $iNumPages = ceil($iTotalItems / $p_iPageSize);

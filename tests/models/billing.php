@@ -810,6 +810,134 @@ pin('the permanent row survives the sweep', 1, $upgradeItemCount($readItemId, 't
 pin('a second purge finds nothing left to remove', 0, ItemUpgrades::purge());
 
 /* ----------------------------------------------------------------------------
+ * ItemUpgrades: prime() and the memoized single-item fallback. The property
+ * that matters is that a primed (or once-read) item costs no further query --
+ * proved here by deleting the underlying row with raw SQL after the read and
+ * showing the cached answer does not notice, while an item that was never
+ * read at all sees the delete immediately.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemUpgrades: prime() batches, and a cached read issues no further query');
+
+$primeUserId = seed_user($admin, 'primeuser', 'primeuser@example.test');
+$primeItemA  = seed_item($admin, $categoryId, $primeUserId, 'Primed A');
+$primeItemB  = seed_item($admin, $categoryId, $primeUserId, 'Primed B');
+$primeItemC  = seed_item($admin, $categoryId, $primeUserId, 'Never primed');
+
+ItemUpgrades::grant($primeItemA, 'test.prime', 10, null);
+ItemUpgrades::grant($primeItemB, 'test.prime', 10, null);
+ItemUpgrades::grant($primeItemC, 'test.prime', 10, null);
+
+ItemUpgrades::prime(array($primeItemA, $primeItemB));
+
+check('a primed item with a row reports it held', ItemUpgrades::has($primeItemA, 'test.prime'));
+check('a second primed item with a row reports it held', ItemUpgrades::has($primeItemB, 'test.prime'));
+
+$admin->query(
+    'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.prime'"
+    . ' AND fk_i_item_id IN (' . $primeItemA . ', ' . $primeItemB . ', ' . $primeItemC . ')'
+);
+
+check(
+    'a primed item still reads its upgrade after the row is deleted underneath it -- it read the cache, not a fresh query',
+    ItemUpgrades::has($primeItemA, 'test.prime') === true
+);
+check('the second primed item is unaffected too', ItemUpgrades::has($primeItemB, 'test.prime') === true);
+check(
+    'an item never primed reflects the delete immediately -- its read was not cached',
+    ItemUpgrades::has($primeItemC, 'test.prime') === false
+);
+
+/* The single-item fallback (an item nothing ever primed) has to memoize its own
+ * first read too, so a second helper called on the same item right after the
+ * first costs nothing further -- proved the same way. */
+$fallbackItemId = seed_item($admin, $categoryId, $primeUserId, 'Fallback memoized');
+ItemUpgrades::grant($fallbackItemId, 'test.fallback', 10, null);
+
+check('a fresh (unprimed) read finds the row', ItemUpgrades::has($fallbackItemId, 'test.fallback'));
+
+$admin->query(
+    'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.fallback' AND fk_i_item_id = "
+    . $fallbackItemId
+);
+
+check(
+    'a second call for the same never-primed item is memoized -- it still reads held, not the row just deleted',
+    ItemUpgrades::has($fallbackItemId, 'test.fallback') === true
+);
+
+/* prime() has to populate the cache for every id given in one call, including
+ * an id with no rows at all -- "primed, holds nothing" must not fall through
+ * to a fresh query just because there was nothing to remember. */
+$emptyItemId = seed_item($admin, $categoryId, $primeUserId, 'No upgrades at all');
+ItemUpgrades::prime(array($emptyItemId));
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
+    . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
+    . ' VALUES (' . $emptyItemId . ", 'test.sneaked_in', NULL, NOW())"
+);
+check(
+    'an item primed with no rows stays "no upgrades" even if a row appears afterward -- it read the cache, not the table',
+    ItemUpgrades::active($emptyItemId) === array()
+);
+
+/* A write has to invalidate the cache entry it affects, or a purchase made
+ * right after a primed read would be invisible to the very next read in the
+ * same request -- the cache must never paper over the seller's own purchase. */
+$writeInvalidatesId = seed_item($admin, $categoryId, $primeUserId, 'Write invalidates cache');
+ItemUpgrades::prime(array($writeInvalidatesId));
+check('primed with nothing before the grant', ItemUpgrades::has($writeInvalidatesId, 'test.invalidate') === false);
+ItemUpgrades::grant($writeInvalidatesId, 'test.invalidate', 10, null);
+check(
+    'a grant right after a primed read is visible on the very next read, not stale',
+    ItemUpgrades::has($writeInvalidatesId, 'test.invalidate') === true
+);
+
+/* ----------------------------------------------------------------------------
+ * osc_prime_item_upgrades(): the public helper. Accepts item rows and bare ids
+ * in the same call, since a theme has whichever is already to hand, and must
+ * cost a site with billing switched off nothing at all.
+ * ------------------------------------------------------------------------- */
+harness_section('osc_prime_item_upgrades(): rows or ids, no-op while billing is off');
+
+$helperItemId  = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by id');
+$helperItemId2 = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by row');
+ItemUpgrades::grant($helperItemId, 'test.helper', 10, null);
+ItemUpgrades::grant($helperItemId2, 'test.helper', 10, null);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+osc_prime_item_upgrades(array($helperItemId));
+$admin->query(
+    'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.helper' AND fk_i_item_id = "
+    . $helperItemId
+);
+check(
+    'osc_prime_item_upgrades() is a no-op while billing is off -- the delete is visible, nothing was cached',
+    ItemUpgrades::has($helperItemId, 'test.helper') === false
+);
+ItemUpgrades::grant($helperItemId, 'test.helper', 10, null); // restore for the next check
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+osc_prime_item_upgrades(array(
+    $helperItemId,                        // bare id
+    array('pk_i_id' => $helperItemId2),   // item row, the shape a search result comes in
+));
+$admin->query(
+    'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.helper'"
+    . ' AND fk_i_item_id IN (' . $helperItemId . ', ' . $helperItemId2 . ')'
+);
+check('a bare id in the array is primed', ItemUpgrades::has($helperItemId, 'test.helper') === true);
+check(
+    'an item row (pk_i_id) in the same array is primed too',
+    ItemUpgrades::has($helperItemId2, 'test.helper') === true
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
  * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
  * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
  * a failed apply -- an item that does not exist -- has to roll both back.
@@ -857,11 +985,31 @@ check('the bump leaves a live cooldown row', ItemUpgrades::has($bumpItemId, 'ite
 // (CWebBilling::upgradePost()'s already-held check) -- not by spend() itself, which
 // has no opinion on cooldowns. This pins the primitive that check relies on.
 check('the cooldown blocks while the row is live', ItemUpgrades::has($bumpItemId, 'item.bump') === true);
+
+// A separate item, read via has() for the first time only after its cooldown
+// row is fast-forwarded into the past. $bumpItemId above was already read (and
+// is now memoized) before this rewrite, and a raw SQL edit of dt_expiration --
+// there is no real-world equivalent; wall-clock time simply passes over the
+// row untouched -- does not retroactively invalidate an already-cached read.
+// A never-read item's first read still has to see the row as it stands.
+$lapsedBumpItemId = seed_item($admin, $categoryId, $bumpUserId, 'Bump target, lapses');
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY)'
+    . ' WHERE pk_i_id = ' . $lapsedBumpItemId
+);
+check(
+    'spending on item.bump succeeds for the lapse target too',
+    Billing::spend(
+        $bumpUserId,
+        'item.bump',
+        array('itemId' => $lapsedBumpItemId, 'ref_type' => 'item', 'ref_id' => $lapsedBumpItemId)
+    )
+);
 $admin->query(
     'UPDATE ' . DB_TABLE_PREFIX . 't_item_upgrade SET dt_expiration = \''
-    . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $bumpItemId . " AND s_upgrade = 'item.bump'"
+    . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $lapsedBumpItemId . " AND s_upgrade = 'item.bump'"
 );
-check('the cooldown lifts once the row lapses', ItemUpgrades::has($bumpItemId, 'item.bump') === false);
+check('the cooldown lifts once the row lapses', ItemUpgrades::has($lapsedBumpItemId, 'item.bump') === false);
 
 $balanceBeforeBogus = Wallet::balance($bumpUserId);
 check(
@@ -904,6 +1052,85 @@ Wallet::credit($witnessUserId, 20, Wallet::REASON_GRANT);
 Billing::spend($witnessUserId, 'test.price.witness');
 
 pin('the price filter receives the spending user id', $witnessUserId, $capturedPriceUserId);
+
+/* ----------------------------------------------------------------------------
+ * Feature::duration() / Billing::spend(): the resolved duration has to reach
+ * apply() through $ctx['days'], filter included -- otherwise a plugin changing
+ * billing_feature_duration has no effect on what a purchase actually grants,
+ * because every built-in apply() would keep reading its own preference instead.
+ * ------------------------------------------------------------------------- */
+harness_section('Feature: duration() reaches apply() through spend(), filter included');
+
+$capturedDays = 'not called';
+osc_add_hook('billing_feature_duration', static function ($days, $featureId, $userId) {
+    if ($featureId === 'test.duration.witness') {
+        return 99; // override whatever the spec declared, proving the filter fires
+    }
+
+    return $days;
+});
+
+FeatureRegistry::instance()->register('test.duration.witness', array(
+    'label'    => 'Duration filter witness',
+    'consumes' => Feature::CONSUMES_DURATION,
+    'price'    => 0,
+    'duration' => 10,
+    'apply'    => static function (int $userId, array $ctx) use (&$capturedDays) {
+        $capturedDays = $ctx['days'] ?? null;
+
+        return true;
+    },
+));
+
+$durationUserId = seed_user($admin, 'durationwitness', 'durationwitness@example.test');
+Billing::spend($durationUserId, 'test.duration.witness');
+
+pin(
+    'a registered billing_feature_duration filter changes how many days a purchase grants',
+    99,
+    $capturedDays
+);
+pin(
+    'Feature::duration() itself reflects the filter, matching what spend() threaded through',
+    99,
+    FeatureRegistry::instance()->get('test.duration.witness')->duration($durationUserId)
+);
+
+/* A plugin calling apply() directly still has to work -- it never goes through
+ * spend(), so $ctx carries no 'days' key at all, and the witness above simply
+ * records whatever it was given. */
+$capturedDays = 'not called';
+FeatureRegistry::instance()->get('test.duration.witness')->apply($durationUserId, array());
+pin('apply() called directly with no context sees no days key at all', null, $capturedDays);
+
+/* The same fallback has to hold for a real built-in, not only the witness:
+ * item.highlight's own apply() must fall back to osc_billing_highlight_days()
+ * when it is called with no 'days' in context, exactly as a plugin calling
+ * apply() directly would see. */
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_highlight_enabled', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('billing_highlight_credits', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_highlight_days', '12', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_register_billing_item_upgrades();
+
+$fallbackItemId = seed_item($admin, $categoryId, $userId, 'Highlight fallback target');
+$beforeFallback = time();
+FeatureRegistry::instance()->get('item.highlight')->apply($userId, array('itemId' => $fallbackItemId));
+$afterFallback = time();
+
+$highlightExpiresAt = ItemUpgrades::expiresAt($fallbackItemId, 'item.highlight');
+check('apply() called directly grants the highlight at all', $highlightExpiresAt !== null);
+$highlightExpiresTs = $highlightExpiresAt !== null ? strtotime($highlightExpiresAt) : 0;
+check(
+    'apply() called directly with no context falls back to the preference (12 days), not zero',
+    $highlightExpiresTs >= $beforeFallback + 12 * 86400 - 2
+    && $highlightExpiresTs <= $afterFallback + 12 * 86400 + 2
+);
+
+osc_set_preference('billing_highlight_enabled', '0', 'osclass', 'BOOLEAN');
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
  * Entitlements: capacity(). A ceiling that is read, never spent -- the default

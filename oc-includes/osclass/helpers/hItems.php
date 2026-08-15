@@ -1310,10 +1310,13 @@ function osc_has_latest_items($total_latest_items = null, $options = array(), $w
             $total_latest_items = osc_max_latest_items();
         }
 
-        View::newInstance()->_exportVariableToView(
-            'latestItems',
-            $search->getLatestItems($total_latest_items, $options, $withPicture)
-        );
+        $items = $search->getLatestItems($total_latest_items, $options, $withPicture);
+        // Batch-load item-upgrade state for the home page's listing the same way
+        // the search/category path does -- gated so billing off costs nothing.
+        if (osc_billing_enabled()) {
+            osc_prime_item_upgrades($items);
+        }
+        View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 
     // keys we want to erase from View
@@ -1368,8 +1371,11 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
         } elseif ($options == null) {
             $options = array();
         }
-        View::newInstance()
-            ->_exportVariableToView('latestItems', $search->getLatestItems($total_latest_items, $options));
+        $items = $search->getLatestItems($total_latest_items, $options);
+        if (osc_billing_enabled()) {
+            osc_prime_item_upgrades($items);
+        }
+        View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 
     return (int)View::newInstance()->_count('latestItems');

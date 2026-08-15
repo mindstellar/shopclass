@@ -24,10 +24,13 @@ use mindstellar\database\QueryBuilder;
  * one, so the expiry sweep never has to reconcile duplicates.
  *
  * prime() is the request-scoped batch cache that keeps a theme helper called inside a
- * listing loop to one query per page. It is opt-in: active()/has()/expiresAt() read the
- * primed set when one exists for the item, and fall back to a fresh single-item query
- * otherwise -- correct even when nothing was ever primed, at the cost of the query
- * prime() exists to save.
+ * listing loop to one query per page. active()/has()/expiresAt() read the primed set
+ * when one exists for the item, and fall back to a single-item query otherwise -- that
+ * fallback result is written into the same cache (see rowsFor()), so two helpers
+ * called back to back on the same unprimed item (osc_item_is_highlighted() then
+ * osc_item_is_urgent()) cost one query between them, not two. A write (grant())
+ * invalidates the item's cached entry, so a later read in the same request still
+ * reflects it rather than the state from before the write.
  *
  * @package mindstellar\billing
  */
@@ -62,7 +65,7 @@ final class ItemUpgrades
     {
         $now = date('Y-m-d H:i:s');
 
-        return (bool) osc_db_transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
+        $granted = (bool) osc_db_transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
             $row = self::table()
                 ->where('fk_i_item_id', $itemId)
                 ->where('s_upgrade', $upgrade)
@@ -98,6 +101,16 @@ final class ItemUpgrades
 
             return true;
         });
+
+        if ($granted) {
+            // A write must invalidate any cached read for this item -- otherwise a
+            // caller that reads the item's upgrades again later in the same request
+            // (a hook firing right after grant(), for instance) would see the
+            // pre-grant state instead of what it just paid for.
+            unset(self::$primed[$itemId]);
+        }
+
+        return $granted;
     }
 
     /**
@@ -187,10 +200,10 @@ final class ItemUpgrades
 
     /**
      * upgrade => dt_expiration for $itemId, from the primed cache when one exists
-     * for this id, or a fresh single-item query otherwise. The fresh-query path is
-     * deliberately not cached -- it exists so an ad-hoc call reflects the current
-     * row even when something else in the same request changed it after priming
-     * would have run.
+     * for this id, or a fresh single-item query otherwise. The fresh-query result is
+     * written into the same cache prime() fills -- an item never primed still costs
+     * only its first read, not one query per helper called on it (grant() invalidates
+     * the entry it writes, so this does not go stale after a purchase).
      *
      * @return array<string,?string>
      */
@@ -205,6 +218,8 @@ final class ItemUpgrades
         foreach ($rows as $row) {
             $out[(string) $row['s_upgrade']] = $row['dt_expiration'];
         }
+
+        self::$primed[$itemId] = $out;
 
         return $out;
     }
