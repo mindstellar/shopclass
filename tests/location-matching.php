@@ -245,6 +245,53 @@ check('an incoming row with no id may still match by name', $result !== null && 
 $result = $match->invoke($importer, 5001, 'malaga', 'Malaga', $bySource, $bySlug, $byName, $rows, array(), array(5001 => true), array());
 check('accents do not stop a match', $result !== null && (int) $result[0]['pk_i_id'] === 21);
 
+/* ---------------------------------------------------------------- *
+ * Names too long to be a location in a list.
+ * ---------------------------------------------------------------- */
+
+/*
+ * The catalog publishes places whose label is not a name anyone picks from a dropdown:
+ * heritage listings that enumerate street addresses, and villages carrying a
+ * parenthesised administrative division because a region holds several of that name.
+ * Both are skipped rather than stored.
+ *
+ * The cutoff also keeps every stored value inside the 60-character columns. A longer name
+ * was truncated by the database, so the next import compared what it sent against what
+ * came back, saw a difference, and wrote the row again — on every run, for ever.
+ */
+$tooLong = $class->getMethod('nameTooLong');
+$tooLong->setAccessible(true);
+$long = static function (string $name) use ($tooLong): bool {
+    return $tooLong->invoke(null, $name);
+};
+
+check('an ordinary name is kept', !$long('Gopalpur'));
+check('a long-ish name is still kept', !$long(str_repeat('a', 55)));
+check('one character past the limit is dropped', $long(str_repeat('a', 56)));
+check('an empty name is not counted as too long', !$long(''));
+
+check(
+    'a heritage listing is dropped',
+    $long('Greta Bridge Roman fort, vicus and section of Roman road')
+);
+// A real place, dropped for the length its qualifier gives it. This is the cost of the
+// rule and not an accident of it: the qualifier is there because the region holds more
+// than one village of the name, so the row it identifies is one a seller might live in.
+check(
+    'a village qualified past the limit is dropped too',
+    $long('Naoabad (northwest Thakurpukur Maheshtala community development block)')
+);
+check(
+    'a village whose qualifier fits is kept',
+    !$long('Gopalpur (Ausgram II community development block)')
+);
+
+// Measured in characters, not bytes: an accented name must not be judged too long merely
+// because its accents occupy two bytes each.
+$accented = str_repeat('é', 55);
+check('length is counted in characters, not bytes', !$long($accented), strlen($accented) . ' bytes');
+check('and one character past the limit still fails', $long(str_repeat('é', 56)));
+
 echo "\n----------------------------------------\n";
 echo "RESULT: $ok passed, $failed failed\n";
 

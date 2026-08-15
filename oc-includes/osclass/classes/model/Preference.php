@@ -226,6 +226,13 @@ class Preference extends DAO
             return false;
         }
 
+        // The map this class answers reads from is loaded once per request, so without
+        // this a value written here stays invisible to the code that wrote it until the
+        // next request. That reads as a stale preference rather than a missing write: the
+        // location catalog refreshes to a new release, records where that release lives,
+        // then builds its download URLs from the previous one and fails every checksum.
+        $this->set($key, $value, $section);
+
         return true;
     }
 }

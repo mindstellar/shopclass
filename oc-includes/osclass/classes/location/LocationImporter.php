@@ -42,6 +42,21 @@ final class LocationImporter
     /** Renames and unmatched rows recorded in the report before it stops collecting. */
     private const SAMPLE_LIMIT = 50;
 
+    /**
+     * The longest place name this install will store.
+     *
+     * A name past this length is not a place a seller picks out of a list -- upstream it
+     * is a heritage listing enumerating street addresses, or a village whose name needed
+     * a parenthesised administrative division to tell it from its namesakes. Neither
+     * reads as a location in a dropdown, so the row is not imported at all.
+     *
+     * It also keeps every stored value inside the 60-character columns. Longer names were
+     * silently truncated by the database, which made the next import see a difference
+     * between what it sent and what came back, write the row again, and file another
+     * slug-history entry -- on every run, for ever.
+     */
+    private const MAX_NAME = 55;
+
     /** @var bool When true, everything is computed and counted but nothing is written. */
     private $dryRun;
 
@@ -384,6 +399,12 @@ final class LocationImporter
                     $this->report['regions']['skipped_empty']++;
                     continue;
                 }
+                // A region skipped for its name takes its cities with it, so it is decided
+                // before they are imported rather than leaving them without a parent.
+                if (self::nameTooLong((string) $region['s_region_name'])) {
+                    $this->report['regions']['skipped_long']++;
+                    continue;
+                }
                 $regionId = $this->importRegion($countryCode, $region);
                 if ($regionId !== null) {
                     $this->importCities($regionId, $cities, $countryCode);
@@ -611,6 +632,28 @@ final class LocationImporter
         $inRegion = $bySlug = $byName = $indexed = array();
         foreach ($rows as $row) {
             $this->indexRow($row, $indexed, $inRegion, $bySlug, $byName);
+        }
+
+        // Names too long to be picked out of a list are dropped before anything else, so
+        // they are absent from the id and ambiguity indexes too: a row that will not be
+        // imported must not reserve a name or claim a stored row on its way past.
+        $tooLong = 0;
+        $incomingCities = array_values(array_filter(
+            $incomingCities,
+            static function (array $incoming) use (&$tooLong): bool {
+                if (self::nameTooLong((string) $incoming['s_city_name'])) {
+                    $tooLong++;
+
+                    return false;
+                }
+
+                return true;
+            }
+        ));
+        $this->report['cities']['skipped_long'] += $tooLong;
+
+        if ($incomingCities === array()) {
+            return;
         }
 
         // Which ids this import is bringing, and which names it brings more than once.
@@ -1022,6 +1065,17 @@ final class LocationImporter
     }
 
     /**
+     * Whether a row names something this install will not store.
+     *
+     * Measured in characters rather than bytes, so a name is judged by its length as read
+     * and not by how many bytes its accents happen to occupy.
+     */
+    private static function nameTooLong(string $name): bool
+    {
+        return mb_strlen($name) > self::MAX_NAME;
+    }
+
+    /**
      * The form a name or slug is compared in, which is not the form it is stored in.
      *
      * Stored names keep the capitalisation and the accents the catalog publishes, because
@@ -1085,6 +1139,8 @@ final class LocationImporter
             'kept_stale'  => 0,
             // Regions only: offered by the catalog with no settlements under them.
             'skipped_empty' => 0,
+            // Offered with a name too long to be picked out of a list.
+            'skipped_long'  => 0,
         );
 
         $this->report = array(
