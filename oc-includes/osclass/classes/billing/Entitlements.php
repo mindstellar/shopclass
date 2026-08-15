@@ -35,11 +35,17 @@ final class Entitlements
      * Add to or extend a user's entitlement for $feature, creating the row if none
      * exists yet.
      *
-     * A quantity adds to whatever the unexpired row already holds. A duration extends
+     * A quantity adds to whatever the row already holds; unlimited (NULL) absorbs a
+     * quantity grant and stays unlimited -- a buyer already holding "unlimited" is
+     * never knocked down to a finite number by topping up. A duration extends
      * dt_expiration from whichever is later, now or the row's current expiry, so
      * buying more time while some remains is additive rather than a discount. A row
      * whose expiration is already NULL ("never") stays NULL -- a duration grant cannot
      * shorten a permanent entitlement into a time-limited one.
+     *
+     * One statement, not a read then a write: uq_user_feature on (fk_i_user_id,
+     * s_feature) means the merge itself is what MySQL applies atomically, so two
+     * concurrent purchases can no longer lose one to the other.
      */
     public static function grant(
         int $userId,
@@ -48,44 +54,49 @@ final class Entitlements
         ?int $days = null,
         string $source = self::SOURCE_PURCHASE
     ): bool {
-        $now = date('Y-m-d H:i:s');
+        $now   = date('Y-m-d H:i:s');
+        $table = self::table();
 
-        return (bool) osc_db_transaction(static function () use ($userId, $feature, $quantity, $days, $source, $now): bool {
-            $row = osc_db_table(self::table())
-                ->where('fk_i_user_id', $userId)
-                ->where('s_feature', $feature)
-                ->whereRaw('(dt_expiration IS NULL OR dt_expiration > ?)', array($now))
-                ->orderBy('pk_i_id', 'DESC')
-                ->first();
+        $params = array(
+            $userId,
+            $feature,
+            $quantity,
+            $days !== null ? self::addDays($now, $days) : null,
+            $source,
+            $now,
+        );
 
-            if ($row === null) {
-                osc_db_table(self::table())->insert(array(
-                    'fk_i_user_id'  => $userId,
-                    's_feature'     => $feature,
-                    'i_quantity'    => $quantity,
-                    'dt_expiration' => $days !== null ? self::addDays($now, $days) : null,
-                    's_source'      => $source,
-                    'dt_date'       => $now,
-                ));
+        $setParts = array();
+        if ($quantity !== null) {
+            $setParts[] = 'i_quantity = IF(i_quantity IS NULL, NULL, i_quantity + ?)';
+            $params[]   = $quantity;
+        }
+        if ($days !== null) {
+            // GREATEST(NULL, ?) is NULL in MySQL, so a permanent row (dt_expiration
+            // already NULL) is left untouched by this assignment and stays NULL.
+            // Otherwise extend from whichever is later, now or the row's current
+            // expiry -- the same rule the docblock above describes, computed here
+            // instead of read-then-written so it stays inside the one statement.
+            $setParts[] = 'dt_expiration = DATE_ADD(GREATEST(dt_expiration, ?), INTERVAL ? DAY)';
+            $params[]   = $now;
+            $params[]   = $days;
+        }
+        if ($setParts === array()) {
+            // A grant supplying neither quantity nor days still has to be valid SQL
+            // and still has to insert a row when none exists; this no-op keeps the
+            // statement legal without touching an existing row.
+            $setParts[] = 'pk_i_id = pk_i_id';
+        }
 
-                return true;
-            }
+        osc_db_execute(
+            'INSERT INTO ' . $table
+            . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
+            . ' VALUES (?, ?, ?, ?, ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $setParts),
+            $params
+        );
 
-            $data = array();
-            if ($quantity !== null) {
-                $data['i_quantity'] = $row['i_quantity'] === null ? $quantity : (int) $row['i_quantity'] + $quantity;
-            }
-            if ($days !== null && $row['dt_expiration'] !== null) {
-                $base                  = $row['dt_expiration'] > $now ? $row['dt_expiration'] : $now;
-                $data['dt_expiration'] = self::addDays($base, $days);
-            }
-
-            if ($data !== array()) {
-                osc_db_table(self::table())->where('pk_i_id', $row['pk_i_id'])->update($data);
-            }
-
-            return true;
-        });
+        return true;
     }
 
     /**
@@ -182,14 +193,21 @@ final class Entitlements
     }
 
     /**
-     * The largest i_quantity among $userId's unexpired rows for $feature, or $default
-     * when there is none.
+     * The larger of $default and the largest i_quantity among $userId's unexpired
+     * rows for $feature.
+     *
+     * A capacity entitlement can only ever RAISE a limit, never lower one: $default
+     * is a floor, not merely a fallback for "no row at all". Without that floor, a
+     * global cap of 20 plus a bought entitlement of 10 would leave the paying seller
+     * with 10, and a global cap read as unlimited by the caller's own convention
+     * would be capped outright by the upsell.
      *
      * Read-only: this never calls consume(), and a capacity row is not meant to be
      * spendable by anything else either -- it is a ceiling, checked on every read,
      * not a balance that runs out. A row with i_quantity IS NULL (unlimited) returns
-     * -1; every caller MUST treat -1 as unlimited rather than compare it numerically,
-     * or unlimited reads as "less than everything."
+     * -1 unconditionally (it already beats any finite $default); every caller MUST
+     * treat -1 as unlimited rather than compare it numerically, or unlimited reads
+     * as "less than everything."
      */
     public static function capacity(int $userId, string $feature, int $default = 0): int
     {
@@ -206,13 +224,13 @@ final class Entitlements
         $best = null;
         foreach ($rows as $row) {
             if ($row['i_quantity'] === null) {
-                return -1; // unlimited beats any finite quantity among the rest
+                return -1; // unlimited beats any finite quantity among the rest, and $default
             }
             $q    = (int) $row['i_quantity'];
             $best = $best === null ? $q : max($best, $q);
         }
 
-        return $best;
+        return max($best, $default);
     }
 
     /**
@@ -258,13 +276,21 @@ final class Entitlements
 
     /**
      * Listings $userId has published within the current billing_period_days window.
+     *
+     * Counts publication events (dt_first_pub_date), not the sort key (dt_pub_date)
+     * -- item.bump moves dt_pub_date on purpose, to resort the listing, and must not
+     * also refill the free quota it exists to move past. COALESCE(dt_first_pub_date,
+     * dt_pub_date) is the fallback for a row written by a path other than
+     * ItemActions::add() (a plugin inserting into t_item directly), so it still
+     * counts rather than silently vanishing from the quota.
      */
     public static function publishQuotaUsed(int $userId): int
     {
         $cutoff = date('Y-m-d H:i:s', strtotime('-' . osc_billing_period_days() . ' days'));
 
         return (int) osc_db_scalar(
-            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ? AND dt_pub_date >= ?',
+            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
+            . ' WHERE fk_i_user_id = ? AND COALESCE(dt_first_pub_date, dt_pub_date) >= ?',
             array($userId, $cutoff)
         );
     }

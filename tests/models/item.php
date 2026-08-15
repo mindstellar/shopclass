@@ -214,14 +214,17 @@ check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBComm
 pin('table name is unchanged', $itemTable, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 /* dt_premium_expiration joined the list when premium upgrades became sellable by
- * duration. Adding a column is additive for consumers — every existing key keeps its
- * meaning and every row gains one — so it is a deliberate change to this pin rather
- * than a regression it caught. Removing or renaming one is not: themes and plugins
- * read these keys straight off the row. */
+ * duration, and dt_first_pub_date joined it so ItemActions::add()'s insert (gated
+ * by this same allowlist via DAO::checkFieldKeys()) can write it. Adding a column
+ * is additive for consumers — every existing key keeps its meaning and every row
+ * gains one — so it is a deliberate change to this pin rather than a regression it
+ * caught. Removing or renaming one is not: themes and plugins read these keys
+ * straight off the row. */
 pin(
     'field allowlist is unchanged',
     array(
-        'pk_i_id', 'fk_i_user_id', 'fk_i_category_id', 'dt_pub_date', 'dt_mod_date', 'f_price', 'i_price',
+        'pk_i_id', 'fk_i_user_id', 'fk_i_category_id', 'dt_pub_date', 'dt_first_pub_date', 'dt_mod_date',
+        'f_price', 'i_price',
         'fk_c_currency_code', 's_contact_name', 's_contact_email', 's_contact_phone', 'b_premium',
         'dt_premium_expiration', 's_ip',
         'b_enabled', 'b_active', 'b_spam', 's_secret', 'b_show_email', 'dt_expiration',

@@ -286,6 +286,16 @@ function osc_max_images_for_user(?int $userId = null): int
         return $default;
     }
 
+    // 0 is osc_max_images_per_item()'s own "unlimited" -- the ItemActions::
+    // uploadItemResources() enforcement site already treats it that way, and it is
+    // already the most permissive cap that site understands, so no entitlement can
+    // raise it further. Consulting capacity() here would do the opposite: a finite
+    // entitlement would read back as a NEW, lower cap for a seller who currently has
+    // none at all.
+    if ($default === 0) {
+        return 0;
+    }
+
     $userId = $userId ?? osc_logged_user_id();
     if (empty($userId)) {
         return $default;

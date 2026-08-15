@@ -243,9 +243,16 @@ class ItemActions
             // Capture the new id from the insert itself (see DAO::insertGetId), not a later
             // decoupled read of the shared connection's insert_id, which intermittently came
             // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
+            // dt_first_pub_date is the quota's own timestamp, distinct from dt_pub_date
+            // (the sort key a bump is free to move). This insert is the ONLY place
+            // that ever writes it -- Entitlements::publishQuotaUsed() depends on that
+            // being true, or a paid bump would silently refill the free quota it
+            // exists to move past.
+            $publishedAt = date('Y-m-d H:i:s');
             $itemId = $this->manager->insertGetId(array(
                 'fk_i_user_id'       => $aItem['userId'],
-                'dt_pub_date'        => date('Y-m-d H:i:s'),
+                'dt_pub_date'        => $publishedAt,
+                'dt_first_pub_date'  => $publishedAt,
                 'fk_i_category_id'   => $aItem['catId'],
                 'i_price'            => $aItem['price'],
                 'fk_c_currency_code' => $aItem['currency'],

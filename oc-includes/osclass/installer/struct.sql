@@ -253,6 +253,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     fk_i_user_id INT UNSIGNED NULL,
     fk_i_category_id INT UNSIGNED NOT NULL,
     dt_pub_date DATETIME NOT NULL,
+    -- Set once, at insert, and never again -- the free posting quota's own
+    -- timestamp, distinct from dt_pub_date (the sort key a bump is free to move).
+    dt_first_pub_date DATETIME NULL,
     dt_mod_date DATETIME NULL,
     f_price FLOAT NULL,
     i_price BIGINT(20) NULL,
@@ -281,7 +284,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX fk_i_category_id (fk_i_category_id),
         INDEX fk_c_currency_code (fk_c_currency_code),
         INDEX idx_pub_date (dt_pub_date),
-        INDEX idx_price (i_price)
+        INDEX idx_price (i_price),
+        INDEX idx_user_first_pub (fk_i_user_id, dt_first_pub_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (
@@ -771,7 +775,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
 
 -- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades
 -- with the user, unlike the ledger and orders above -- an entitlement without an
--- account means nothing.
+-- account means nothing. One row per (user, feature): the unique key is what lets
+-- Entitlements::grant() merge atomically via INSERT ... ON DUPLICATE KEY UPDATE
+-- instead of a read-then-write that two concurrent purchases could race.
 CREATE TABLE /*TABLE_PREFIX*/t_user_entitlement (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_user_id INT UNSIGNED NOT NULL,
@@ -782,7 +788,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user_entitlement (
     dt_date DATETIME NOT NULL,
 
         PRIMARY KEY (pk_i_id),
-        INDEX idx_user_feature (fk_i_user_id, s_feature),
+        UNIQUE KEY uq_user_feature (fk_i_user_id, s_feature),
         INDEX idx_expiration (dt_expiration),
         FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

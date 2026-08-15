@@ -44,6 +44,7 @@ class Item extends DAO
             'fk_i_user_id',
             'fk_i_category_id',
             'dt_pub_date',
+            'dt_first_pub_date',
             'dt_mod_date',
             'f_price',
             'i_price',

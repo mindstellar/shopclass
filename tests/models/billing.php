@@ -515,7 +515,31 @@ pin('the fresh grant reads back as its own quantity', 5, Entitlements::quantity(
 
 check('granting the same feature again succeeds', Entitlements::grant($entUserId, 'test.qty', 3, null));
 pin('a quantity grant merges into the existing row', 8, Entitlements::quantity($entUserId, 'test.qty'));
-pin('the merge writes exactly one row, not a second', 1, $entCount($entUserId, 'test.qty'));
+pin(
+    'the merge writes exactly one row, not a second -- the unique key on (user, feature) enforces it',
+    1,
+    $entCount($entUserId, 'test.qty')
+);
+
+/* Unlimited (i_quantity IS NULL) has to absorb a quantity grant and stay
+ * unlimited -- a buyer already holding "unlimited" must never be knocked down to
+ * a finite number by topping up. */
+$unlimitedGrantUserId = seed_user($admin, 'unlimitedgrant', 'unlimitedgrant@example.test');
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
+    . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
+    . ' VALUES (' . $unlimitedGrantUserId . ", 'test.qty.unlimited', NULL, NULL, 'grant', NOW())"
+);
+check(
+    'a quantity grant onto an unlimited row still reports success',
+    Entitlements::grant($unlimitedGrantUserId, 'test.qty.unlimited', 5, null)
+);
+pin(
+    'a quantity grant onto an unlimited row leaves it unlimited',
+    -1,
+    Entitlements::quantity($unlimitedGrantUserId, 'test.qty.unlimited')
+);
+pin('the grant onto the unlimited row still writes exactly one row', 1, $entCount($unlimitedGrantUserId, 'test.qty.unlimited'));
 
 /* A duration grant while time remains has to compound onto that remaining time,
  * not discard it -- otherwise buying 30 more days while 10 remain would be a
@@ -530,6 +554,7 @@ pin(
     date('Y-m-d H:i:s', strtotime($firstExpiration) + 5 * 86400),
     $expirationOf($entUserId, 'test.dur')
 );
+pin('the duration extension still writes exactly one row, not a second', 1, $entCount($entUserId, 'test.dur'));
 
 /* ----------------------------------------------------------------------------
  * Entitlements: consuming. consume() is a single conditional UPDATE -- the
@@ -581,6 +606,37 @@ check(
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+
+/* ----------------------------------------------------------------------------
+ * Entitlements: publishQuotaUsed() counts publication events, not the sort key.
+ * item.bump's own apply() moves dt_pub_date on purpose, to resort the listing --
+ * it must never also refill the free quota dt_first_pub_date exists to protect.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: publishQuotaUsed() counts publish events, not bumps');
+
+$firstPubUserId = seed_user($admin, 'firstpub', 'firstpub@example.test');
+$firstPubItemId = seed_item($admin, $categoryId, $firstPubUserId, 'Publish event target');
+
+// Push the listing's publish event outside the (default 30-day) quota window --
+// both columns, matching what a real old post looks like -- so the pin below
+// actually distinguishes the two columns rather than agreeing by coincidence
+// (a bump that lands inside the same window either way proves nothing).
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 40 DAY),'
+    . ' dt_first_pub_date = DATE_SUB(NOW(), INTERVAL 40 DAY) WHERE pk_i_id = ' . $firstPubItemId
+);
+pin('an old post outside the window does not count toward the quota', 0, Entitlements::publishQuotaUsed($firstPubUserId));
+
+// Simulates exactly what item.bump's apply() does: move dt_pub_date and nothing
+// else. dt_first_pub_date, set once at insert, is untouched -- so this old
+// listing must NOT reappear in the quota just because it was resorted.
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = NOW() WHERE pk_i_id = ' . $firstPubItemId
+);
+pin('bumping an old listing back to the top does not refill the quota', 0, Entitlements::publishQuotaUsed($firstPubUserId));
+
+seed_item($admin, $categoryId, $firstPubUserId, 'A second, genuine post');
+pin('a genuine new post does count toward the quota', 1, Entitlements::publishQuotaUsed($firstPubUserId));
 
 /* ----------------------------------------------------------------------------
  * Billing::spend(). The debit and the feature's effect have to move together:
@@ -898,6 +954,17 @@ pin(
     Entitlements::capacity($capUserId, 'test.capacity.guarded', 0)
 );
 
+/* A capacity entitlement can only ever RAISE a limit, never lower one -- $default
+ * is a floor, not merely what to return when there is no row at all. Without this,
+ * a global cap of 20 plus a bought entitlement of 10 would leave the paying seller
+ * with 10. */
+Entitlements::grant($capUserId, 'test.capacity.floor', 3, null);
+pin(
+    'capacity() returns the global default when it is higher than the entitlement',
+    10,
+    Entitlements::capacity($capUserId, 'test.capacity.floor', 10)
+);
+
 /* ----------------------------------------------------------------------------
  * hBilling: the entitlement-aware siblings of osc_max_images_per_item() and
  * osc_items_wait_time(). The two old helpers are a compatibility contract with
@@ -932,8 +999,37 @@ check(
     osc_items_wait_time_for_user($limitUserId) === osc_items_wait_time()
 );
 
+/* The property that matters is "never lowers", not "matches the grant" -- the
+ * scratch database's own global cap (numImages@items is unset here, which reads
+ * as 0 = unlimited) is the case that actually catches a regression: a capacity
+ * entitlement must not turn an unlimited global cap into a finite one. */
+pin('the global photo cap in this fixture is unlimited', 0, osc_max_images_per_item());
 Entitlements::grant($limitUserId, 'listing.photos', 25, null);
-pin('a listing.photos entitlement raises the cap', 25, osc_max_images_for_user($limitUserId));
+pin(
+    'an unlimited global photo cap stays unlimited for a seller holding a photos entitlement',
+    0,
+    osc_max_images_for_user($limitUserId)
+);
+
+/* With a finite global cap, the entitlement may raise it... */
+$raisedCapUserId = seed_user($admin, 'raisedcap', 'raisedcap@example.test');
+osc_set_preference('numImages@items', '4', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin(
+    'a finite global cap applies to a user holding nothing',
+    4,
+    osc_max_images_for_user($raisedCapUserId)
+);
+Entitlements::grant($raisedCapUserId, 'listing.photos', 20, null);
+pin('a listing.photos entitlement raises a finite global cap', 20, osc_max_images_for_user($raisedCapUserId));
+
+/* ...but a smaller entitlement must never lower it. */
+$belowCapUserId = seed_user($admin, 'belowcap', 'belowcap@example.test');
+Entitlements::grant($belowCapUserId, 'listing.photos', 2, null);
+pin('a capacity entitlement below the global cap never lowers it', 4, osc_max_images_for_user($belowCapUserId));
+
+osc_set_preference('numImages@items', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
 
 Entitlements::grant($limitUserId, 'listing.no_wait', null, 30);
 pin('a listing.no_wait entitlement waives the wait entirely', 0, osc_items_wait_time_for_user($limitUserId));
