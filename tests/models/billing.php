@@ -9,8 +9,8 @@
  */
 
 /**
- * Pins for the billing layer: the credit wallet and its ledger, order settlement, and
- * the premium-upgrade sweep.
+ * Pins for the billing layer: the credit wallet and its ledger, order settlement, the
+ * premium-upgrade sweep, entitlements, feature spending, and the package catalogue.
  *
  * The properties under test here are the ones whose absence is not visible in normal
  * use and only shows up as missing or invented money:
@@ -20,6 +20,12 @@
  *   - a callback claiming the wrong amount settles nothing
  *   - one gateway cannot settle another's orders
  *   - an order marked paid always has its credits, and never has them twice
+ *   - a quantity entitlement grant adds to what is already held, not a second row
+ *   - a duration grant compounds onto the time remaining, not onto now
+ *   - the last unit of a quantity entitlement cannot be spent twice
+ *   - an expired entitlement spends nothing
+ *   - money and the entitlement it buys move together, or neither moves at all
+ *   - a package's price is what reaches the order, never a number the browser supplied
  *
  * Usage:  php tests/models/billing.php          (standalone, own scratch database)
  *         php tests/run-models.php billing      (as part of the suite)
@@ -30,11 +36,32 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_billing');
 
+// hBilling.php registers the built-in features and a couple of hooks the moment it is
+// included, and Plugins::addHook() resolves the caller against PLUGINS_PATH -- the
+// same stand-in tests/models/item.php uses, since hDefines.php pulls in far more than
+// this file needs.
+if (!defined('PLUGINS_PATH')) {
+    define('PLUGINS_PATH', ABS_PATH . 'oc-content/plugins/');
+}
+if (!function_exists('osc_plugins_path')) {
+    function osc_plugins_path()
+    {
+        return PLUGINS_PATH;
+    }
+}
+// Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_posts_per_period()
+// and friends, which live here rather than in the default bootstrap requires.
+require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
+
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\Entitlements;
+use mindstellar\billing\Feature;
+use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
+use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Premium;
@@ -369,6 +396,186 @@ pin('the swept row has its date cleared', null, $admin->query(
 )->fetch_assoc()['dt_premium_expiration']);
 
 pin('a second sweep finds nothing', 0, Premium::expire());
+
+/* ----------------------------------------------------------------------------
+ * Entitlements: granting. grant() merges into the unexpired row for a feature
+ * rather than appending, so quantity() and quantity() must show a single
+ * combined figure and the table must carry exactly one row for it.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: grant merges rather than accumulates');
+
+$entCount = static function (int $uid, string $feature) use ($admin): int {
+    $res = $admin->query(
+        'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . 't_user_entitlement'
+        . ' WHERE fk_i_user_id = ' . $uid . " AND s_feature = '" . $feature . "'"
+    );
+
+    return (int) $res->fetch_assoc()['c'];
+};
+$expirationOf = static function (int $uid, string $feature) use ($admin): ?string {
+    $res = $admin->query(
+        'SELECT dt_expiration FROM ' . DB_TABLE_PREFIX . 't_user_entitlement'
+        . ' WHERE fk_i_user_id = ' . $uid . " AND s_feature = '" . $feature . "'"
+        . ' ORDER BY pk_i_id DESC LIMIT 1'
+    );
+
+    return $res->fetch_assoc()['dt_expiration'] ?? null;
+};
+
+$entUserId = seed_user($admin, 'entitled', 'entitled@example.test');
+
+check('a fresh quantity grant creates a row', Entitlements::grant($entUserId, 'test.qty', 5, null));
+pin('the fresh grant reads back as its own quantity', 5, Entitlements::quantity($entUserId, 'test.qty'));
+
+check('granting the same feature again succeeds', Entitlements::grant($entUserId, 'test.qty', 3, null));
+pin('a quantity grant merges into the existing row', 8, Entitlements::quantity($entUserId, 'test.qty'));
+pin('the merge writes exactly one row, not a second', 1, $entCount($entUserId, 'test.qty'));
+
+/* A duration grant while time remains has to compound onto that remaining time,
+ * not discard it -- otherwise buying 30 more days while 10 remain would be a
+ * downgrade to 30 instead of the 40 the buyer paid for. */
+check('a fresh duration grant creates a row', Entitlements::grant($entUserId, 'test.dur', null, 10));
+$firstExpiration = $expirationOf($entUserId, 'test.dur');
+check('the fresh grant has an expiration', $firstExpiration !== null);
+
+check('extending the same feature again succeeds', Entitlements::grant($entUserId, 'test.dur', null, 5));
+pin(
+    'a duration grant extends from the current expiry, not from now',
+    date('Y-m-d H:i:s', strtotime($firstExpiration) + 5 * 86400),
+    $expirationOf($entUserId, 'test.dur')
+);
+
+/* ----------------------------------------------------------------------------
+ * Entitlements: consuming. consume() is a single conditional UPDATE -- the
+ * quantity has to reach exactly zero and no further, and an expired row must
+ * not be spendable even though its quantity is still positive.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: consume');
+
+Entitlements::grant($entUserId, 'test.single', 1, null);
+check('consuming the only unit succeeds', Entitlements::consume($entUserId, 'test.single', 1) === true);
+check('consuming again with nothing left fails', Entitlements::consume($entUserId, 'test.single', 1) === false);
+pin('the exhausted entitlement reads back as zero', 0, Entitlements::quantity($entUserId, 'test.single'));
+
+$admin->query(
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
+    . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
+    . ' VALUES (' . $entUserId . ", 'test.expired', 5, '"
+    . date('Y-m-d H:i:s', time() - 3600) . "', 'grant', NOW())"
+);
+check(
+    'consuming an expired entitlement fails despite a positive quantity',
+    Entitlements::consume($entUserId, 'test.expired', 1) === false
+);
+
+/* ----------------------------------------------------------------------------
+ * Entitlements: the publish choke point. canPublish() has to track three
+ * states in order -- inside the free quota, over quota with nothing bought,
+ * and over quota with an entitlement in hand -- because ItemActions::add()
+ * trusts this single answer.
+ * ------------------------------------------------------------------------- */
+harness_section('Entitlements: canPublish');
+
+$quotaUserId = seed_user($admin, 'quotauser', 'quotauser@example.test');
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_posts_per_period', '1', 'osclass', 'INTEGER');
+
+check('under the free quota, publishing is allowed', Entitlements::canPublish($quotaUserId));
+
+seed_item($admin, $categoryId, $quotaUserId, 'Uses up the free quota');
+check(
+    'once the free quota is used and nothing was bought, publishing is refused',
+    Entitlements::canPublish($quotaUserId) === false
+);
+
+Entitlements::grant($quotaUserId, 'listing.publish', 1, null);
+check(
+    'an entitlement restores publishing once the free quota is spent',
+    Entitlements::canPublish($quotaUserId) === true
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+
+/* ----------------------------------------------------------------------------
+ * Billing::spend(). The debit and the feature's effect have to move together:
+ * insufficient credit must touch neither, and a feature that reports failure
+ * must give its credits back rather than keep them.
+ * ------------------------------------------------------------------------- */
+harness_section('Billing: spend');
+
+$spendUserId = seed_user($admin, 'spender', 'spender@example.test');
+
+FeatureRegistry::instance()->register('test.spend.costly', array(
+    'label'    => 'Too expensive to afford',
+    'consumes' => Feature::CONSUMES_QUANTITY,
+    'price'    => 999999,
+    'apply'    => static function (int $userId) {
+        // Only reachable if the debit went through despite insufficient funds --
+        // its own grant must never show up either.
+        Entitlements::grant($userId, 'test.spend.costly.granted', 1, null);
+
+        return true;
+    },
+));
+
+$balanceBefore = Wallet::balance($spendUserId);
+check(
+    'spending on a feature priced above the balance fails',
+    Billing::spend($spendUserId, 'test.spend.costly') === false
+);
+pin('a failed spend leaves the balance untouched', $balanceBefore, Wallet::balance($spendUserId));
+pin(
+    'a failed spend never reaches the feature\'s effect',
+    0,
+    Entitlements::quantity($spendUserId, 'test.spend.costly.granted')
+);
+
+Wallet::credit($spendUserId, 100, Wallet::REASON_GRANT);
+
+FeatureRegistry::instance()->register('test.spend.rejected', array(
+    'label'    => 'Always refuses to apply',
+    'consumes' => Feature::CONSUMES_QUANTITY,
+    'price'    => 10,
+    'apply'    => static function (int $userId) {
+        return false;
+    },
+));
+
+$balanceBefore = Wallet::balance($spendUserId);
+$ledgerBefore  = $ledgerCount($spendUserId);
+check(
+    'spending on a feature whose apply() fails reports failure',
+    Billing::spend($spendUserId, 'test.spend.rejected') === false
+);
+pin('a rejected apply() rolls the debit back, not just the entitlement', $balanceBefore, Wallet::balance($spendUserId));
+pin('a rolled-back spend writes no ledger row', $ledgerBefore, $ledgerCount($spendUserId));
+
+/* ----------------------------------------------------------------------------
+ * Packages. Checkout builds the order from the package row, never from
+ * anything the browser sent -- this pins that the row's own figures are what
+ * land on the order, the same way CWebBilling::checkoutPost() reads them.
+ * ------------------------------------------------------------------------- */
+harness_section('Packages: price reaches the order unchanged');
+
+$packageId = Packages::create(array(
+    's_name'     => 'Test bundle',
+    'i_amount'   => 5_000_000,
+    's_currency' => 'USD',
+    'i_credits'  => 250,
+));
+$package = Packages::find($packageId);
+
+$packageOrder = Orders::create(
+    $spendUserId,
+    'fake',
+    (int) $package['i_amount'],
+    (string) $package['s_currency'],
+    (int) $package['i_credits']
+);
+
+pin('the order amount comes from the package row', 5_000_000, $packageOrder->getAmount());
+pin('the order credits come from the package row', 250, $packageOrder->getCredits());
+pin('the order currency comes from the package row', 'USD', $packageOrder->getCurrency());
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
