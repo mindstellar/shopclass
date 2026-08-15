@@ -222,11 +222,15 @@ class ItemActions
         // The one choke point for the posting quota. Guest posts (no user id) have no
         // wallet to charge and admin posts are never metered, so both skip enforcement
         // entirely. $needsCredit is captured before the insert below -- checking after
-        // would count the very row this request is about to create.
+        // would count the very row this request is about to create. withinFreeQuota()
+        // is the same COUNT canPublish() would otherwise run again internally, so it is
+        // computed once here and handed to canPublish() rather than paying for it twice
+        // on every post.
         $needsCredit = false;
         if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
-            $needsCredit = !\mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
-            if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem))) {
+            $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
+            $needsCredit     = !$withinFreeQuota;
+            if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
                 $flash_error .= _m('You have used all your listings for this period. Add credits to post more.')
                     . PHP_EOL;
             }
@@ -1451,11 +1455,16 @@ class ItemActions
      *
      * @param int      $id
      * @param bool     $on
-     * @param int|null $days Days the upgrade lasts, or null for no expiry
+     * @param int|null $days     Days the upgrade lasts, or null for no expiry
+     * @param bool     $fireHook Whether to fire item_premium_on/item_premium_off on
+     *                           success. False lets a caller that will announce the
+     *                           change itself once its own work has fully landed --
+     *                           the billing feature that drives this, once its spend
+     *                           has committed -- skip the immediate one here.
      *
      * @return bool
      */
-    public function premium($id, $on = true, $days = null)
+    public function premium($id, $on = true, $days = null, bool $fireHook = true)
     {
         $value = 0;
         if ($on) {
@@ -1478,10 +1487,12 @@ class ItemActions
         );
         // updated correctly
         if ($result == 1) {
-            if ($on) {
-                osc_run_hook('item_premium_on', $id);
-            } else {
-                osc_run_hook('item_premium_off', $id);
+            if ($fireHook) {
+                if ($on) {
+                    osc_run_hook('item_premium_on', $id);
+                } else {
+                    osc_run_hook('item_premium_off', $id);
+                }
             }
 
             return true;

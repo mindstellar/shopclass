@@ -483,11 +483,25 @@ harness_section('Billing: listing.premium enabled/credits split');
 $premiumUserId = seed_user($admin, 'premium', 'premium@example.test');
 $premiumItemId = seed_item($admin, $categoryId, $premiumUserId, 'Premium target');
 
+// item_premium_on used to fire from inside ItemActions::premium(), called while
+// spend()'s transaction still held the wallet row's lock. It now goes through
+// Billing::deferHook() and fires only once that transaction has committed -- this
+// witness pins both that it still fires exactly once, with the item id, AND that
+// no transaction is open at the moment it runs (osc_db_in_transaction() would be
+// true if the old, immediate-from-inside-apply() call had come back).
+$premiumHookFired = array();
+$premiumHookInTxn = array();
+osc_add_hook('item_premium_on', static function ($itemId) use (&$premiumHookFired, &$premiumHookInTxn) {
+    $premiumHookFired[] = $itemId;
+    $premiumHookInTxn[] = osc_db_in_transaction();
+});
+
 check('listing.premium is unregistered while disabled', FeatureRegistry::instance()->get('listing.premium') === null);
 check(
     'spending on listing.premium while disabled fails',
     Billing::spend($premiumUserId, 'listing.premium', array('itemId' => $premiumItemId, 'ref_type' => 'item', 'ref_id' => $premiumItemId)) === false
 );
+pin('a refused spend fires no item_premium_on', 0, count($premiumHookFired));
 
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_set_preference('billing_premium_credits', '25', 'osclass', 'INTEGER');
@@ -520,6 +534,12 @@ pin('a free premium spend debits nothing', $balanceBeforePremium, Wallet::balanc
 pin('the free spend still marks the item premium', '1', $admin->query(
     'SELECT b_premium FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $premiumItemId
 )->fetch_assoc()['b_premium']);
+pin('a successful spend fires item_premium_on exactly once', array($premiumItemId), $premiumHookFired);
+pin(
+    'item_premium_on fired with no transaction open -- after commit, not from inside apply()',
+    array(false),
+    $premiumHookInTxn
+);
 check(
     'osc_item_can_be_featured() is false once the item already holds it',
     osc_item_can_be_featured(array('pk_i_id' => $premiumItemId, 'b_premium' => 1)) === false
@@ -538,6 +558,7 @@ check(
 pin('the item is untouched by a spend made while billing is off', '0', $admin->query(
     'SELECT b_premium FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $offItemId
 )->fetch_assoc()['b_premium']);
+pin('a spend refused by the master switch still fires no item_premium_on', array($premiumItemId), $premiumHookFired);
 
 osc_set_preference('billing_premium_enabled', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
@@ -707,6 +728,25 @@ Entitlements::grant($quotaUserId, 'listing.publish', 1, null);
 check(
     'an entitlement restores publishing once the free quota is spent',
     Entitlements::canPublish($quotaUserId) === true
+);
+
+/* canPublish()'s optional $withinFreeQuota lets ItemActions::add() hand in the
+ * withinFreeQuota() answer it already computed for $needsCredit, instead of
+ * running that COUNT a second time per post. An explicit value must win over
+ * whatever a fresh computation would say, in both directions. */
+$overrideUserId = seed_user($admin, 'canpublishoverride', 'canpublishoverride@example.test');
+seed_item($admin, $categoryId, $overrideUserId, 'Uses up the free quota (override user)');
+check(
+    'over quota with nothing bought, publishing is refused with no override',
+    Entitlements::canPublish($overrideUserId) === false
+);
+check(
+    'the same user reads as allowed once withinFreeQuota is passed in as true',
+    Entitlements::canPublish($overrideUserId, array(), true) === true
+);
+check(
+    'passing the computed false back in agrees with the no-override refusal',
+    Entitlements::canPublish($overrideUserId, array(), false) === false
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1076,6 +1116,19 @@ $pubDateOf = static function (int $itemId) use ($admin): string {
 $balanceBeforeBump = Wallet::balance($bumpUserId);
 $pubDateBeforeBump = $pubDateOf($bumpItemId);
 
+// item_bumped used to fire from inside item.bump's apply(), called while spend()'s
+// transaction still held the wallet row's lock. It now goes through
+// Billing::deferHook() and fires only once that transaction has committed -- this
+// witness pins both that it still fires, once per successful spend, with the item
+// id, AND that no transaction is open when it runs (see the item_premium_on
+// witness above for why that is the property that actually matters here).
+$bumpHookFired = array();
+$bumpHookInTxn = array();
+osc_add_hook('item_bumped', static function ($itemId) use (&$bumpHookFired, &$bumpHookInTxn) {
+    $bumpHookFired[] = $itemId;
+    $bumpHookInTxn[] = osc_db_in_transaction();
+});
+
 check('bump.item registers once its preference is on', FeatureRegistry::instance()->get('item.bump') !== null);
 check(
     'spending on item.bump succeeds',
@@ -1084,6 +1137,12 @@ check(
 check('bump moves dt_pub_date forward', $pubDateOf($bumpItemId) > $pubDateBeforeBump);
 pin('bump debits its price', $balanceBeforeBump - 5, Wallet::balance($bumpUserId));
 check('the bump leaves a live cooldown row', ItemUpgrades::has($bumpItemId, 'item.bump'));
+pin('a successful bump fires item_bumped exactly once', array($bumpItemId), $bumpHookFired);
+pin(
+    'item_bumped fired with no transaction open -- after commit, not from inside apply()',
+    array(false),
+    $bumpHookInTxn
+);
 
 // The cooldown is enforced by callers reading has() before allowing another bump
 // (CWebBilling::upgradePost()'s already-held check) -- not by spend() itself, which
@@ -1114,6 +1173,11 @@ $admin->query(
     . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $lapsedBumpItemId . " AND s_upgrade = 'item.bump'"
 );
 check('the cooldown lifts once the row lapses', ItemUpgrades::has($lapsedBumpItemId, 'item.bump') === false);
+pin(
+    'the lapse-target bump also fired item_bumped, so both successful spends announced',
+    array($bumpItemId, $lapsedBumpItemId),
+    $bumpHookFired
+);
 
 $balanceBeforeBogus = Wallet::balance($bumpUserId);
 check(
@@ -1121,6 +1185,11 @@ check(
     Billing::spend($bumpUserId, 'item.bump', array('itemId' => 999999999, 'ref_type' => 'item', 'ref_id' => 999999999)) === false
 );
 pin('a failed bump apply leaves the balance untouched', $balanceBeforeBogus, Wallet::balance($bumpUserId));
+pin(
+    'a failed bump apply fires no additional item_bumped',
+    array($bumpItemId, $lapsedBumpItemId),
+    $bumpHookFired
+);
 
 osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();

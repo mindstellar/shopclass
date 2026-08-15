@@ -770,7 +770,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uq_gateway_ref (s_gateway, s_external_ref),
         INDEX idx_user_status (fk_i_user_id, s_status),
-        INDEX idx_date (dt_date)
+        INDEX idx_date (dt_date),
+        INDEX idx_status_date (s_status, dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades

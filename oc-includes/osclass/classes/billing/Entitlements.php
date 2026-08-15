@@ -300,12 +300,19 @@ final class Entitlements
      * is off; otherwise true within the free quota, or with a listing.publish
      * entitlement once it is exhausted. The billing_can_publish filter runs on every
      * path, including the billing-off one, so a plugin can veto or override either way.
+     *
+     * @param bool|null $withinFreeQuota The caller's own withinFreeQuota() answer,
+     *                                    when it already has one -- ItemActions::add()
+     *                                    needs that same COUNT for $needsCredit, and
+     *                                    passing it here avoids running it twice per
+     *                                    post. Null (the default) computes it here, so
+     *                                    every other caller is unaffected.
      */
-    public static function canPublish(int $userId, array $ctx = array()): bool
+    public static function canPublish(int $userId, array $ctx = array(), ?bool $withinFreeQuota = null): bool
     {
         if (!osc_billing_enabled()) {
             $allowed = true;
-        } elseif (self::withinFreeQuota($userId)) {
+        } elseif ($withinFreeQuota ?? self::withinFreeQuota($userId)) {
             $allowed = true;
         } else {
             $allowed = self::has($userId, 'listing.publish');

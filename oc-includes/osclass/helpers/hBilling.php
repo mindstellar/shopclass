@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\Billing;
 use mindstellar\billing\Entitlements;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
@@ -601,7 +602,15 @@ function osc_register_billing_premium(): void
             // directly with no context still gets the preference's own answer.
             $days = $ctx['days'] ?? osc_billing_premium_days();
 
-            return (bool) (new ItemActions())->premium((int) $itemId, true, $days);
+            // The write stays here, inside spend()'s transaction; item_premium_on is
+            // deferred (see Billing::deferHook()) so it fires once that transaction
+            // has committed, not while it still holds the wallet row's lock.
+            if (!(new ItemActions())->premium((int) $itemId, true, $days, false)) {
+                return false;
+            }
+            Billing::deferHook('item_premium_on', array((int) $itemId));
+
+            return true;
         },
     ));
 }
@@ -642,7 +651,10 @@ function osc_register_billing_item_upgrades(): void
                 }
 
                 ItemUpgrades::grant($itemId, 'item.bump', null, osc_billing_bump_cooldown_hours());
-                osc_run_hook('item_bumped', $itemId);
+                // Deferred (see Billing::deferHook()) so it fires once spend()'s
+                // transaction has committed, not while it still holds the wallet
+                // row's lock -- same reasoning as listing.premium's apply() above.
+                Billing::deferHook('item_bumped', array($itemId));
 
                 return true;
             },

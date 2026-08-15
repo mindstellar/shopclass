@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use DomainException;
 use Log;
+use Throwable;
 
 /**
  * The seam between money and entitlements.
@@ -31,6 +32,39 @@ final class Billing
 
     /** Master switch. Off on every existing install, so an upgrade changes nothing. */
     public const PREF_ENABLED = 'billing_enabled';
+
+    /**
+     * Stack of hook batches queued by deferHook(), one per spend() call currently on
+     * the stack -- a plugin's apply() could itself call spend() for another feature,
+     * so this has to nest rather than assume a single caller at a time.
+     *
+     * @var array<int,array<int,array{0:string,1:array}>>
+     */
+    private static array $hookBatches = array();
+
+    /**
+     * Fire $hook now, unless called from inside spend()'s own transaction -- in which
+     * case it is queued and fired only once that transaction has actually committed.
+     *
+     * apply() runs while spend() still holds the wallet row's write lock (see
+     * Wallet::debit(), called just before it in the same transaction), and a hook is
+     * arbitrary plugin code with no business running while that lock is held. The
+     * built-in features that used to fire item_premium_on/item_bumped from inside
+     * their own apply() call this instead. A caller invoking a feature's apply()
+     * directly, outside spend(), sees no difference -- nothing is deferring, so the
+     * hook fires exactly where it always did.
+     */
+    public static function deferHook(string $hook, array $args = array()): void
+    {
+        if (self::$hookBatches === array()) {
+            osc_run_hook($hook, ...$args);
+
+            return;
+        }
+
+        $top = count(self::$hookBatches) - 1;
+        self::$hookBatches[$top][] = array($hook, $args);
+    }
 
     /**
      * Ask the order's gateway what the browser should do next.
@@ -196,6 +230,12 @@ final class Billing
      * throwing rather than returning false from inside the closure. A zero-price feature
      * skips the debit but still applies -- price and enforcement are independent.
      *
+     * apply() runs while the debit above still holds the wallet row's lock. Only the
+     * database writes stay inside that lock: any hook a built-in feature would fire
+     * from apply() (item_premium_on, item_bumped) goes through deferHook() instead and
+     * is announced below, once the transaction has actually committed -- the same
+     * fire-after-commit shape markPaid() already uses for billing_order_paid.
+     *
      * @param int    $userId
      * @param string $featureId Id registered with FeatureRegistry
      * @param array  $ctx       Passed to the feature's apply(); 'ref_type'/'ref_id' also
@@ -230,6 +270,8 @@ final class Billing
         $refType     = isset($ctx['ref_type']) ? (string) $ctx['ref_type'] : null;
         $refId       = isset($ctx['ref_id']) ? (int) $ctx['ref_id'] : null;
 
+        self::$hookBatches[] = array();
+
         try {
             $applied = osc_db_transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
                 if ($price > 0 && !Wallet::debit($userId, $price, Wallet::REASON_SPEND, null, $refType, $refId)) {
@@ -243,10 +285,23 @@ final class Billing
                 return true;
             });
         } catch (DomainException $e) {
+            array_pop(self::$hookBatches); // apply() queued these for writes that just rolled back
+
             return false;
+        } catch (Throwable $e) {
+            // A database failure rolls the transaction back the same way, so the queue goes
+            // with it. Left behind, it would swallow the next hook deferred in this request.
+            array_pop(self::$hookBatches);
+
+            throw $e;
         }
 
+        $deferred = array_pop(self::$hookBatches);
+
         if ($applied) {
+            foreach ($deferred as $queued) {
+                osc_run_hook($queued[0], ...$queued[1]);
+            }
             osc_run_hook('billing_feature_applied', $featureId, $userId, $price);
         }
 
