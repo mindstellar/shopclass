@@ -40,24 +40,6 @@ most of them do not use — so it now goes in the same place as any other third-
   extension already provides. `phpseclib` itself stays: the `mcrypt_*` functions it backs are
   still there for plugins written before PHP 7.2 removed them.
 
-### New
-
-- **People can download a copy of their own data.** Signing in and following the link on the
-  account page returns everything the site holds about them as JSON — profile, listings,
-  comments, saved searches, orders and credit history — streamed straight to the browser
-  rather than written anywhere. Erasure already existed; this is the other half of a
-  data-subject request, and it is the only piece that was missing.
-
-  Which tables hold personal data, whether each is included, and what deleting an account
-  does to each, are recorded in one place (`mindstellar\privacy\PersonalData::map()`) with a
-  reason attached — including for the sections deliberately kept, like the accounting
-  records a sale leaves behind. A test fails if a table with a user column is added to the
-  schema without an entry, because the failure mode otherwise is silent: data nobody can
-  see and nobody knows to look for.
-
-  Password hashes and account secrets are never included; they authenticate rather than
-  describe.
-
 ### Performance
 
 - **Translations are no longer parsed out of their binary catalogue on every request.** Core,
@@ -143,6 +125,23 @@ most of them do not use — so it now goes in the same place as any other third-
 - Buyers get a wallet page showing their credit balance and history, a page to buy credit
   bundles, and a page listing their own past orders — plus a **Feature this listing** action
   that spends credits to run a listing as featured for a set number of days.
+
+
+- **People can download a copy of their own data.** Signing in and following the link on the
+  account page returns everything the site holds about them as JSON — profile, listings,
+  comments, saved searches, orders and credit history — streamed straight to the browser
+  rather than written anywhere. Erasure already existed; this is the other half of a
+  data-subject request, and it is the only piece that was missing.
+
+  Which tables hold personal data, whether each is included, and what deleting an account
+  does to each, are recorded in one place (`mindstellar\privacy\PersonalData::map()`) with a
+  reason attached — including for the sections deliberately kept, like the accounting
+  records a sale leaves behind. A test fails if a table with a user column is added to the
+  schema without an entry, because the failure mode otherwise is silent: data nobody can
+  see and nobody knows to look for.
+
+  Password hashes and account secrets are never included; they authenticate rather than
+  describe.
 
 ### Breaking
 
