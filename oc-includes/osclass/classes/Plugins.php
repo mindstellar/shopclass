@@ -79,7 +79,7 @@ class Plugins
         if (isset(self::$installed)) {
             return self::$installed;
         }
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
         if (is_array($plugins_list)) {
             self::$installed = $plugins_list;
 
@@ -114,7 +114,7 @@ class Plugins
         if (isset(self::$enabled)) {
             return self::$enabled;
         }
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
         if (is_array($plugins_list)) {
             self::$enabled = $plugins_list;
 
@@ -363,7 +363,7 @@ class Plugins
     {
         osc_run_hook('before_plugin_install');
 
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return array('error_code' => 'error_installed');
@@ -429,7 +429,7 @@ class Plugins
     {
         osc_run_hook('before_plugin_activate');
 
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return false;
@@ -521,7 +521,7 @@ class Plugins
     {
         osc_run_hook('before_plugin_uninstall');
 
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
         $path = str_replace(PLUGINS_PATH, '', $path);
         if (!is_array($plugins_list)) {
@@ -562,7 +562,7 @@ class Plugins
     {
         osc_run_hook('before_plugin_deactivate');
 
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
         $path = str_replace(osc_plugins_path(), '', $path);
         // check if there is some plugin enabled
@@ -629,7 +629,7 @@ class Plugins
     {
         $plugin = str_replace(PLUGINS_PATH, '', $path);
         if (stripos($plugin, '.php') === false) {
-            $plugins_list = unserialize(osc_active_plugins());
+            $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
             if (is_array($plugins_list)) {
                 foreach ($plugins_list as $p) {
                     $data = self::getInfo($p);
