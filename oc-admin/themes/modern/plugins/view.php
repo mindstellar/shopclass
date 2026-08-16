@@ -23,7 +23,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- theme files -->
     <div class="theme-files">
         <?php
-        if (strpos($file, '../') === false && strpos($file, '..\\') == false && file_exists($file)) {
+        // Already resolved by the controller, which is the only thing that renders this
+        // view: an absolute path inside the plugins directory, or the view is not reached
+        // at all. The check that used to live here matched the literal '../' and compared
+        // one of its two strpos() results with ==, so a path beginning '..\' — strpos 0,
+        // which == false — passed the test meant to stop it.
+        if (is_string($file) && $file !== '' && is_file($file)) {
             require_once $file;
         }
 ?>
