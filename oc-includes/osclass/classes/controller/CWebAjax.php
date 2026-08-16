@@ -334,7 +334,16 @@ class CWebAjax extends BaseModel
                     break;
                 }
 
-                require_once osc_plugins_path() . $file;
+                // Unauthenticated, and it ends in require_once: resolve the path before
+                // running it -- .php only, and inside the plugins directory once symlinks
+                // are followed.
+                $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved === null) {
+                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    break;
+                }
+
+                require_once $resolved;
                 break;
             case 'check_username_availability':
                 $username = osc_sanitize_username(Params::getParam('s_username'));
