@@ -8,6 +8,39 @@ Google Analytics is no longer wired into the core. Analytics is one vendor's pro
 many, and shipping a field for one of them meant every site carried the code for a service
 most of them do not use — so it now goes in the same place as any other third-party tag.
 
+### Security
+
+- **The `custom` AJAX action would execute any file inside the plugins directory.** It
+  guarded only against `../`, so any path that stayed inside the directory was included and
+  run as PHP regardless of what it was — a README, a lockfile, a language catalogue, or
+  anything a plugin had written there from a request. The front-end copy of the action needs
+  no login at all. The target must now be a `.php` file, and the path is resolved before it is
+  used so that symlinks and encodings cannot land outside the plugins directory. Plugins
+  reached through `osc_ajax_plugin_url()` are unaffected: that helper has always named a
+  `.php` file inside the plugins directory.
+- **Search-alert tokens are now authenticated.** They were AES-256-CTR with no MAC, a
+  malleable combination: anyone holding one valid token had a known plaintext, and could
+  edit the ciphertext into a token for a search of their choosing. Tokens are now AES-256-GCM
+  and a tampered one fails to decrypt rather than decrypting to something chosen. Tokens
+  issued by an earlier release are still accepted, so an alert link in an already-rendered
+  page keeps working.
+- The plugin list read out of preferences is no longer unserialized with object support
+  enabled, matching how the rewrite-rule cache already read its own.
+- Removed a dead fallback in the alert cipher that used Rijndael with the initialisation
+  vector set to the key. It could never run — the openssl extension it tested for is a hard
+  requirement — but it was the only remaining use of `phpseclib` in the core.
+
+### Performance
+
+- **Translations are no longer parsed out of their binary catalogue on every request.** Core,
+  theme, and one catalogue per enabled plugin were each read and rebuilt into one object per
+  translated string before any page logic ran. Each catalogue is now compiled once and read
+  back in a single step, which measures around fourteen times quicker per catalogue on a
+  1,400-string catalogue — and saves the megabyte or so of objects each one left resident,
+  the scarcer of the two on shared hosting. A replaced language pack is picked up on its own;
+  an install that cannot write to its uploads directory simply parses as before, as does one
+  whose cached copy is unreadable.
+
 ### Fixed
 
 - **Deleting a custom field that had been submitted through a form failed.** The delete
