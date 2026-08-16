@@ -53,6 +53,11 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Fixed
 
+- **The package smoke test blamed every submission for preferences it had not created.**
+  Rendering the search page mints a search-alert token, which writes
+  `alert_private_key` and `alert_public_key`; those landed between the harness's before
+  and after snapshots, so the diff attributed them to whatever package was being tested.
+  Core's lazy writes now happen before the baseline is taken.
 - **Plugin fields stopped appearing on the listing edit form.** `plugin_edit_item()` passes
   `edit&itemId=123`, from when the request was built by pasting that into a query string;
   the rewritten script sends it through `URLSearchParams`, which encodes the whole thing as
