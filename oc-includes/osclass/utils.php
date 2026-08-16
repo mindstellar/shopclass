@@ -984,11 +984,32 @@ function osc_zip_folder($archive_folder, $archive_name)
 }
 
 /**
+ * Posted captcha token as the provider sent it.
+ *
+ * Tokens from Cloudflare Turnstile and reCAPTCHA are opaque, not HTML.
+ * Params::getParam() runs them through HTMLPurifier with HTML.Allowed empty,
+ * which can empty or alter the value so siteverify always fails. They are also
+ * POST-only: a query-string copy must not be accepted.
+ *
+ * @param string $name field name (cf-turnstile-response or g-recaptcha-response)
+ *
+ * @return string
+ */
+function osc_posted_captcha_token($name)
+{
+    if (!isset($_POST[$name]) || !is_string($_POST[$name])) {
+        return '';
+    }
+
+    return $_POST[$name];
+}
+
+/**
  * @return bool
  */
 function osc_check_recaptcha()
 {
-    $gReCaptchaResponse = Params::getParam('g-recaptcha-response');
+    $gReCaptchaResponse = osc_posted_captcha_token('g-recaptcha-response');
     if ($gReCaptchaResponse !== '' || $gReCaptchaResponse !== false || $gReCaptchaResponse !== 0) {
         $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
         $resp      = $recaptcha->verify($gReCaptchaResponse, Params::getServerParam('REMOTE_ADDR'));
@@ -1016,7 +1037,7 @@ function osc_check_captcha()
         case 'recaptcha':
             return osc_check_recaptcha();
         case 'turnstile':
-            $token = Params::getParam('cf-turnstile-response');
+            $token = osc_posted_captcha_token('cf-turnstile-response');
             if (!is_string($token) || $token === '' || strlen($token) > 2048) {
                 return false;
             }
