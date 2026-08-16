@@ -29,6 +29,10 @@ most of them do not use — so it now goes in the same place as any other third-
 - Removed a dead fallback in the alert cipher that used Rijndael with the initialisation
   vector set to the key. It could never run — the openssl extension it tested for is a hard
   requirement — but it was the only remaining use of `phpseclib` in the core.
+- Dropped the `pensiero/php-openssl-cryptor` dependency. Nothing calls it now that alert
+  tokens are encrypted directly, and it was an unmaintained wrapper around what the openssl
+  extension already provides. `phpseclib` itself stays: the `mcrypt_*` functions it backs are
+  still there for plugins written before PHP 7.2 removed them.
 
 ### Performance
 

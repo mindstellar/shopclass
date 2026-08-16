@@ -460,43 +460,6 @@
             "install-path": "../pclzip/pclzip"
         },
         {
-            "name": "pensiero/php-openssl-cryptor",
-            "version": "v0.1.0",
-            "version_normalized": "0.1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/pensiero/php-openssl-cryptor.git",
-                "reference": "85f81646a9ec5046a42b9c2259147d98525ce526"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/pensiero/php-openssl-cryptor/zipball/85f81646a9ec5046a42b9c2259147d98525ce526",
-                "reference": "85f81646a9ec5046a42b9c2259147d98525ce526",
-                "shasum": ""
-            },
-            "require": {
-                "ext-openssl": "*",
-                "php": ">=5.6"
-            },
-            "time": "2017-12-30T01:09:54+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "OpensslCryptor\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Simple to use class for encrypting/decrypting using the PHP Openssl library.",
-            "support": {
-                "source": "https://github.com/pensiero/php-openssl-cryptor/tree/v0.1.0"
-            },
-            "install-path": "../pensiero/php-openssl-cryptor"
-        },
-        {
             "name": "phpmailer/phpmailer",
             "version": "v6.12.0",
             "version_normalized": "6.12.0.0",
