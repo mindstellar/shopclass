@@ -10,6 +10,12 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Security
 
+- **The plugin admin-page route would execute any file inside the plugins directory.**
+  `?page=plugins&action=renderplugin&file=…` ends in `require_once`, and decided what to
+  run by looking for the literal `../` — so anything else under the plugins tree was
+  executed as PHP. One of its two checks also compared `strpos()` with `==`, so a path
+  beginning `..\` (offset 0, which `== false`) passed the test meant to stop it. The path
+  is now resolved before it is used, by the same guard the AJAX routes use.
 - **The `custom` AJAX action would execute any file inside the plugins directory.** It
   guarded only against `../`, so any path that stayed inside the directory was included and
   run as PHP regardless of what it was — a README, a lockfile, a language catalogue, or
@@ -46,6 +52,13 @@ most of them do not use — so it now goes in the same place as any other third-
   whose cached copy is unreadable.
 
 ### Fixed
+
+- **Plugin fields stopped appearing on the listing edit form.** `plugin_edit_item()` passes
+  `edit&itemId=123`, from when the request was built by pasting that into a query string;
+  the rewritten script sends it through `URLSearchParams`, which encodes the whole thing as
+  one value. The hook therefore arrived as `item_edit&itemId=123`, matched nothing, and
+  every plugin that renders on the edit form silently rendered nothing. A theme passing the
+  same shape keeps working.
 
 - **Deleting a custom field that had been submitted through a form failed.** The delete
   removed the field's values, its category assignments and its form memberships, then hit a
