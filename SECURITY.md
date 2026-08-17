@@ -8,8 +8,9 @@
 | 6.0.x   | Security fixes only   |
 | < 6.0   | Unsupported           |
 
-Shopclass supports the current minor release plus the one before it. Older installs need to
-upgrade to receive fixes.
+The current release gets full support. The minor before it gets security fixes only — including
+across a major boundary: when 7.0.0 ships, the last 6.x release keeps receiving security fixes.
+Anything older needs an upgrade.
 
 ## Reporting a vulnerability
 
