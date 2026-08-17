@@ -54,6 +54,9 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Two wallet writes in the same second no longer log a failed insert. The balance was always
+  correct; the error was noise.
+
 - **The package smoke test blamed every submission for preferences it had not created.**
   Rendering the search page mints a search-alert token, which writes
   `alert_private_key` and `alert_public_key`; those landed between the harness's before

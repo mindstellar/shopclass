@@ -337,11 +337,13 @@ final class Wallet
      *
      * mysqli reports rows CHANGED, not rows matched, so a value that happens not to
      * change cannot be told apart from "no such row" by the affected-rows count
-     * alone. Writing dt_mod_date here (redundant once the caller's own UPDATE sets it
-     * again moments later) is what makes a real row read back as "affected"; on the
-     * rare coincidence where it does not (called twice inside the same second), the
-     * INSERT below simply meets the duplicate key instead, which is handled the same
-     * way a genuine concurrent race is.
+     * alone. dt_mod_date has second granularity, so any two wallet writes for the same
+     * user inside one second leave it unchanged and the UPDATE reports nothing -- not a
+     * rare coincidence but the normal case for a wallet in use. Asking whether the row
+     * is there costs one SELECT on that path and keeps a routine write out of the error
+     * log; a failed INSERT is recorded whether or not the caller recovers from it, and
+     * an error log that reports healthy behaviour is one nobody reads when it reports
+     * the real thing.
      */
     private static function ensureWallet(int $userId): void
     {
@@ -350,6 +352,12 @@ final class Wallet
             array(date('Y-m-d H:i:s'), $userId)
         );
         if ($touched > 0) {
+            return;
+        }
+
+        // The UPDATE above already X-locked this row if it exists, so nothing can remove
+        // it between that statement and this one.
+        if (osc_db_select_one('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?', array($userId)) !== null) {
             return;
         }
 
