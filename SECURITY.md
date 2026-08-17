@@ -1,25 +1,53 @@
-# Security Policy 🔒
+# Security Policy
 
-## Reporting a Vulnerability 🚨
+## Supported versions
 
-If you believe you have found a security vulnerability in Shopclass, please do not hesitate to contact us immediately at navjottomer@gmail.com.
+| Version | Status                |
+| ------- | --------------------- |
+| 6.1.x   | Full support          |
+| 6.0.x   | Security fixes only   |
+| < 6.0   | Unsupported           |
 
-When reporting a security vulnerability, please include as much information as possible, such as:
+Shopclass supports the current minor release plus the one before it. Older installs need to
+upgrade to receive fixes.
 
-- A clear description of the vulnerability
-- The steps to reproduce the vulnerability
-- The potential impact of the vulnerability
-- Any relevant logs or error messages
-- Any suggested mitigation or remediation steps
+## Reporting a vulnerability
 
-We take security vulnerabilities very seriously and will do our best to respond to your report as soon as possible. We appreciate your help in making Shopclass more secure for everyone.
+**Report privately.** Use
+[GitHub's private vulnerability reporting](https://github.com/mindstellar/shopclass/security/advisories/new),
+or email navjottomer@gmail.com if you cannot.
 
-## Responsible Disclosure 🤝
+Do not open a public issue or pull request for a security bug. Shopclass is self-hosted, so a
+public report exposes every install that has not yet upgraded.
 
-We ask that you do not publicly disclose the details of any security vulnerabilities until we have had a chance to investigate and address the issue. We are committed to addressing all vulnerabilities in a timely and responsible manner.
+Include what you can:
 
-## Bug Bounty Program 💰
+- What the vulnerability is, and the impact
+- Steps to reproduce
+- Affected version
+- Any suggested fix
 
-We currently do not have a bug bounty program in place, but we appreciate and acknowledge all security vulnerability reports we receive.
+## What to expect
 
-Thank you for your help in keeping Shopclass secure! 🙏
+- Acknowledgement within 72 hours
+- An assessment and a target fix version within 7 days
+- Credit in the advisory and the changelog, unless you prefer otherwise
+
+Please give us time to ship a fix and let sites upgrade before publishing details. We will
+agree a disclosure date with you rather than impose one.
+
+## Scope
+
+In scope: the Shopclass core in this repository.
+
+Out of scope:
+
+- Bundled plugins and themes — report those on their own repositories
+- Third-party plugins and themes we do not publish
+- Issues that require a server already misconfigured by its owner (world-writable files,
+  exposed `config.php`, a database open to the internet)
+- Missing hardening headers with no demonstrated impact
+
+## No bug bounty
+
+There is no paid bounty. Reports are credited in the advisory.

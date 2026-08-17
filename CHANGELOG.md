@@ -97,6 +97,10 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Changed
 
+- Security policy now states supported versions, private reporting, response times and scope.
+- Review routing added for security, database, controller, helper, schema, release and
+  build-output paths.
+
 - Foreign keys on dependent tables — descriptions, stats, slug history, custom-field values
   and link tables — now declare `ON DELETE CASCADE`, so the database removes them with their
   parent. Tables whose removal has side effects (listings, comments, uploaded files, the
