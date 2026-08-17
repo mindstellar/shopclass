@@ -4,9 +4,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.2.0
 
-Google Analytics is no longer wired into the core. Analytics is one vendor's product among
-many, and shipping a field for one of them meant every site carried the code for a service
-most of them do not use — so it now goes in the same place as any other third-party tag.
+Back up your database before upgrading: this release rebuilds foreign keys across twenty-four
+tables. It also lets sites sell credits and charge for listings, lets people download a copy of
+their own data, closes three paths that could execute arbitrary files under the plugins
+directory, and removes Google Analytics from the core.
 
 ### Security
 
