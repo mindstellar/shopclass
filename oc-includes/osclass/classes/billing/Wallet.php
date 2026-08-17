@@ -41,6 +41,9 @@ final class Wallet
     /** MySQL's duplicate-entry error number. */
     private const ERR_DUPLICATE = 1062;
 
+    /** MySQL's deadlock-detected error number. */
+    private const ERR_DEADLOCK = 1213;
+
     public const REASON_PURCHASE = 'purchase';
     public const REASON_SPEND    = 'spend';
     public const REASON_REFUND   = 'refund';
@@ -226,69 +229,92 @@ final class Wallet
         $applied = false;
         $settled = false;
 
-        try {
-            osc_db_transaction(static function () use (
-                $userId,
-                $delta,
-                $reason,
-                $idempotencyKey,
-                $refType,
-                $refId,
-                $allowNegative,
-                &$applied,
-                &$settled
-            ): void {
-                // Fast path for the common replay. The unique index below is the real
-                // guard -- this only avoids the write when the answer is already known.
-                if ($idempotencyKey !== null && self::keyExists($idempotencyKey)) {
-                    $settled = true;
-
-                    return;
-                }
-
-                self::ensureWallet($userId);
-
-                $sql    = 'UPDATE ' . self::wallet() . ' SET i_balance = i_balance + ?, dt_mod_date = ?'
-                    . ' WHERE fk_i_user_id = ?';
-                $params = array($delta, date('Y-m-d H:i:s'), $userId);
-
-                if ($delta < 0 && !$allowNegative) {
-                    // Refuse to overdraw, in the same statement that deducts.
-                    $sql     .= ' AND i_balance >= ?';
-                    $params[] = -$delta;
-                }
-
-                if (osc_db_execute($sql, $params) !== 1) {
-                    return; // insufficient funds; $applied stays false
-                }
-
-                osc_db_execute(
-                    'INSERT INTO ' . self::ledger()
-                    . ' (fk_i_user_id, i_amount, i_balance_after, s_reason, s_ref_type, i_ref_id,'
-                    . ' s_idempotency_key, dt_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    array(
-                        $userId,
-                        $delta,
-                        self::balance($userId),
-                        $reason,
-                        $refType,
-                        $refId,
-                        $idempotencyKey,
-                        date('Y-m-d H:i:s'),
-                    )
-                );
-
-                $applied = true;
+        $run = static function () use (
+            $userId,
+            $delta,
+            $reason,
+            $idempotencyKey,
+            $refType,
+            $refId,
+            $allowNegative,
+            &$applied,
+            &$settled
+        ): void {
+            // Fast path for the common replay. The unique index below is the real
+            // guard -- this only avoids the write when the answer is already known.
+            if ($idempotencyKey !== null && self::keyExists($idempotencyKey)) {
                 $settled = true;
-            });
-        } catch (DbException $e) {
-            if ((int) $e->getCode() !== self::ERR_DUPLICATE) {
-                throw $e;
+
+                return;
             }
 
-            // A concurrent request with the same key committed first. The transaction
-            // rolled back, so the balance moved exactly once -- by the other request.
-            return true;
+            self::ensureWallet($userId);
+
+            $sql    = 'UPDATE ' . self::wallet() . ' SET i_balance = i_balance + ?, dt_mod_date = ?'
+                . ' WHERE fk_i_user_id = ?';
+            $params = array($delta, date('Y-m-d H:i:s'), $userId);
+
+            if ($delta < 0 && !$allowNegative) {
+                // Refuse to overdraw, in the same statement that deducts.
+                $sql     .= ' AND i_balance >= ?';
+                $params[] = -$delta;
+            }
+
+            if (osc_db_execute($sql, $params) !== 1) {
+                return; // insufficient funds; $applied stays false
+            }
+
+            osc_db_execute(
+                'INSERT INTO ' . self::ledger()
+                . ' (fk_i_user_id, i_amount, i_balance_after, s_reason, s_ref_type, i_ref_id,'
+                . ' s_idempotency_key, dt_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                array(
+                    $userId,
+                    $delta,
+                    self::balance($userId),
+                    $reason,
+                    $refType,
+                    $refId,
+                    $idempotencyKey,
+                    date('Y-m-d H:i:s'),
+                )
+            );
+
+            $applied = true;
+            $settled = true;
+        };
+
+        // A retry is only safe when this call owns the transaction outright.
+        // InnoDB rolls back a deadlock victim's WHOLE transaction, not merely the
+        // statement that lost -- so retrying while nested inside a caller's own
+        // transaction (Billing::spend() debiting before apply()-ing a feature, for
+        // instance) could silently discard writes that caller already made before
+        // reaching here. A nested call gets the one attempt it always had; only the
+        // outermost caller retries.
+        $attempts = osc_db_in_transaction() ? 1 : 2;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                osc_db_transaction($run);
+                break;
+            } catch (DbException $e) {
+                $code = (int) $e->getCode();
+                if ($code === self::ERR_DEADLOCK && $attempt < $attempts) {
+                    // ensureWallet() runs as this transaction's first write, so a
+                    // deadlock here means the whole (now-discarded) transaction wrote
+                    // nothing yet -- redoing it once from scratch is a retry, not a
+                    // double-apply.
+                    continue;
+                }
+                if ($code !== self::ERR_DUPLICATE) {
+                    throw $e;
+                }
+
+                // A concurrent request with the same key committed first. The
+                // transaction rolled back, so the balance moved exactly once -- by
+                // the other request.
+                return true;
+            }
         }
 
         if ($applied) {
@@ -299,15 +325,55 @@ final class Wallet
     }
 
     /**
-     * Create the wallet row if the user has never transacted. INSERT IGNORE rather
-     * than a check-then-insert, so two concurrent first-time writes cannot race.
+     * Create the wallet row if the user has never transacted.
+     *
+     * UPDATE first, so this takes the row's X-lock directly when it already exists.
+     * The prior INSERT IGNORE took a shared lock on the existing unique-index entry
+     * every time the row was already there, and the balance UPDATE that follows this
+     * call then had to upgrade that S-lock to X -- two concurrent first-time writers
+     * each holding the S-lock the other needs upgraded is the textbook InnoDB
+     * deadlock. A plain UPDATE never acquires anything weaker than X, so there is
+     * nothing left to upgrade.
+     *
+     * mysqli reports rows CHANGED, not rows matched, so a value that happens not to
+     * change cannot be told apart from "no such row" by the affected-rows count
+     * alone. dt_mod_date has second granularity, so any two wallet writes for the same
+     * user inside one second leave it unchanged and the UPDATE reports nothing -- not a
+     * rare coincidence but the normal case for a wallet in use. Asking whether the row
+     * is there costs one SELECT on that path and keeps a routine write out of the error
+     * log; a failed INSERT is recorded whether or not the caller recovers from it, and
+     * an error log that reports healthy behaviour is one nobody reads when it reports
+     * the real thing.
      */
     private static function ensureWallet(int $userId): void
     {
-        osc_db_execute(
-            'INSERT IGNORE INTO ' . self::wallet() . ' (fk_i_user_id, i_balance, dt_mod_date) VALUES (?, 0, ?)',
-            array($userId, date('Y-m-d H:i:s'))
+        $touched = osc_db_execute(
+            'UPDATE ' . self::wallet() . ' SET dt_mod_date = ? WHERE fk_i_user_id = ?',
+            array(date('Y-m-d H:i:s'), $userId)
         );
+        if ($touched > 0) {
+            return;
+        }
+
+        // The UPDATE above already X-locked this row if it exists, so nothing can remove
+        // it between that statement and this one.
+        if (osc_db_select_one('SELECT 1 FROM ' . self::wallet() . ' WHERE fk_i_user_id = ?', array($userId)) !== null) {
+            return;
+        }
+
+        try {
+            osc_db_execute(
+                'INSERT INTO ' . self::wallet() . ' (fk_i_user_id, i_balance, dt_mod_date) VALUES (?, 0, ?)',
+                array($userId, date('Y-m-d H:i:s'))
+            );
+        } catch (DbException $e) {
+            if ((int) $e->getCode() !== self::ERR_DUPLICATE) {
+                throw $e;
+            }
+
+            // Another request created the row in the gap between our UPDATE and this
+            // INSERT -- it exists now, which is all ensureWallet() promises.
+        }
     }
 
     private static function keyExists(string $idempotencyKey): bool

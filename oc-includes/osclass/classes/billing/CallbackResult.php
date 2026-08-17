@@ -46,7 +46,8 @@ final class CallbackResult
         private ?string $externalRef = null,
         private ?int $amount = null,
         private ?string $currency = null,
-        private string $message = ''
+        private string $message = '',
+        private bool $retryable = false
     ) {
     }
 
@@ -79,10 +80,17 @@ final class CallbackResult
     /**
      * Nothing to do. Use this for pings, unrecognised event types, and duplicates --
      * anything the provider should stop retrying but that changes no state here.
+     *
+     * $retryable is for the other case: core could not process the callback at all
+     * (no gateway registered, typically because billing is switched off) rather than
+     * processing it and deciding not to act. Leave it false for a deliberate ignore
+     * (a replay, a mismatched amount) -- the provider must not retry those, since
+     * retrying would not change the answer. Only the caller resolving the gateway
+     * knows which case it has; nothing here infers it from $message.
      */
-    public static function ignored(string $message = ''): self
+    public static function ignored(string $message = '', bool $retryable = false): self
     {
-        return new self(self::OUTCOME_IGNORED, null, null, null, null, $message);
+        return new self(self::OUTCOME_IGNORED, null, null, null, null, $message, $retryable);
     }
 
     public function getOutcome(): string
@@ -114,6 +122,17 @@ final class CallbackResult
     public function getMessage(): string
     {
         return $this->message;
+    }
+
+    /**
+     * Whether the provider should retry delivering this callback. True only for an
+     * ignored() result that means core never got to make a decision at all -- every
+     * other outcome, including a deliberate ignore, is a decision core already acted
+     * on (or deliberately did not), and retrying it changes nothing.
+     */
+    public function isRetryable(): bool
+    {
+        return $this->retryable;
     }
 }
 

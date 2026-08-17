@@ -659,6 +659,31 @@ function osc_user_alerts_url()
 }
 
 /**
+ * Link that downloads the signed-in person a copy of their own data.
+ *
+ * Carries the account id and its secret, the same two the delete link carries and the
+ * same two the action re-checks against the session. Returns '' when nobody is signed
+ * in, so a theme can print it unconditionally and get nothing rather than a link that
+ * cannot work.
+ *
+ * @return string
+ */
+function osc_user_export_url()
+{
+    if (!osc_is_web_user_logged_in()) {
+        return '';
+    }
+
+    $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+    if (empty($user) || !isset($user['s_secret'])) {
+        return '';
+    }
+
+    return osc_base_url(true) . '?page=user&action=export&id=' . (int)$user['pk_i_id']
+        . '&secret=' . rawurlencode($user['s_secret']);
+}
+
+/**
  * Gets current user alert unsubscribe url
  *
  * @param string $id

@@ -9,11 +9,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "x-generator: scripts/build-i18n.mjs\n"
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:89
+#: oc-includes/osclass/classes/upgrade/Osclass.php:130
 msgid " If you're sure that is the case, you can continue with the upgrade."
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:91
+#: oc-includes/osclass/classes/upgrade/Osclass.php:132
 msgid " Or you can ask for help in our community discussions"
 msgstr ""
 
@@ -75,7 +75,7 @@ msgstr ""
 msgid "%d cats · no form"
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:165
+#: oc-admin/themes/modern/upgrade/index.php:295
 msgid "%d change"
 msgid_plural "%d changes"
 msgstr[0] ""
@@ -117,7 +117,7 @@ msgid_plural "%d minutes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/upgrade/index.php:182
+#: oc-admin/themes/modern/upgrade/index.php:312
 msgid "%d more change"
 msgid_plural "%d more changes"
 msgstr[0] ""
@@ -325,6 +325,14 @@ msgstr ""
 msgid "<strong>Remember</strong> that you must configure reCAPTCHA first"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:130
+msgid "A 3-letter ISO 4217 code, e.g. USD, EUR."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/package.php:60
+msgid "A 3-letter ISO 4217 code, e.g. USD."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php:143
 msgid ""
 "A checked view of the environment Shopclass is running on: what it needs, "
@@ -345,6 +353,12 @@ msgstr ""
 msgid "A new comment is posted"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:33
+msgid ""
+"A package is what a buyer picks at checkout. Add one to start selling "
+"credits."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php:16
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
@@ -359,6 +373,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php:277
 msgid "About you"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:157
+msgid "Accept bank transfer / cash payment"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/permalinks.php:396
@@ -389,6 +407,7 @@ msgid "Action"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/credits.php:57
+#: oc-admin/themes/modern/billing/packages.php:45
 #: oc-admin/themes/modern/media/index.php:294
 #: oc-admin/themes/modern/media/index.php:353
 msgid "Actions"
@@ -437,7 +456,7 @@ msgstr ""
 #: oc-admin/themes/modern/comments/frm.php:83
 #: oc-admin/themes/modern/items/index.php:284
 #: oc-admin/themes/modern/users/index.php:207
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:419
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:428
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php:241
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php:477
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php:321
@@ -450,7 +469,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php:15
 #: oc-admin/themes/modern/tools/logs.php:34
-#: oc-includes/osclass/classes/AdminMenu.php:461
+#: oc-includes/osclass/classes/AdminMenu.php:468
 msgid "Activity log"
 msgstr ""
 
@@ -490,7 +509,7 @@ msgstr ""
 msgid "Add category"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:140
+#: oc-admin/themes/modern/settings/locations.php:138
 msgid "Add city"
 msgstr ""
 
@@ -498,7 +517,7 @@ msgstr ""
 msgid "Add comment"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:141
+#: oc-admin/themes/modern/settings/locations.php:139
 msgid "Add country"
 msgstr ""
 
@@ -568,6 +587,13 @@ msgstr ""
 msgid "Add new user"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:34
+#: oc-admin/themes/modern/billing/package.php:84
+#: oc-admin/themes/modern/billing/packages.php:26
+#: oc-admin/themes/modern/billing/packages.php:34
+msgid "Add package"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php:61
 #: oc-admin/themes/modern/pages/frm.php:63
 msgid "Add page"
@@ -580,7 +606,7 @@ msgstr ""
 msgid "Add plugin"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:142
+#: oc-admin/themes/modern/settings/locations.php:140
 msgid "Add region"
 msgstr ""
 
@@ -662,6 +688,10 @@ msgstr ""
 msgid "Added by admin"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:337
+msgid "Added on top of the category's own expiration ceiling."
+msgstr ""
+
 #: oc-admin/themes/modern/users/frm.php:285
 msgid "Additional information"
 msgstr ""
@@ -686,7 +716,7 @@ msgstr ""
 msgid "Admin"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:56
+#: oc-includes/osclass/installer/gui/install-target.php:62
 msgid "Admin account"
 msgstr ""
 
@@ -726,7 +756,7 @@ msgstr ""
 msgid "Adopt existing Better S3 images"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:410
+#: oc-includes/osclass/classes/AdminMenu.php:417
 msgid "Advanced"
 msgstr ""
 
@@ -831,11 +861,15 @@ msgstr ""
 msgid "All credits"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:35
+msgid "All packages"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php:85
 msgid "All sections"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:585
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:617
 msgid "All submissions for this form have been deleted"
 msgstr ""
 
@@ -906,35 +940,35 @@ msgstr ""
 msgid "An account appears here the first time credits are added to it, whether "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:241
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:473
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:575
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:270
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:502
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:607
 msgid "An error occurred"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:421
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:534
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:580
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:585
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:676
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:450
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:566
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:612
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:617
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:708
 msgid "An error occurred while deleting"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:551
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:583
 msgid "An error occurred while saving the form"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:523
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:552
 msgid "An error occurred while saving the group"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:798
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:820
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:838
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:860
 msgid "An error occurred while sending email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:392
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:750
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:421
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:782
 msgid "An error occurred while updating"
 msgstr ""
 
@@ -952,7 +986,7 @@ msgstr ""
 msgid "Animals"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:182
+#: oc-includes/osclass/classes/actions/ItemActions.php:187
 msgid "Anonymous"
 msgstr ""
 
@@ -980,8 +1014,16 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/view.php:19
 #: oc-admin/themes/modern/appearance/widgets.php:24
 #: oc-admin/themes/modern/appearance/widgets.php:25
-#: oc-includes/osclass/classes/AdminMenu.php:277
+#: oc-includes/osclass/classes/AdminMenu.php:284
 msgid "Appearance"
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:49
+msgid "Applied %s updates."
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:48
+msgid "Applied one update."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php:152
@@ -1214,6 +1256,11 @@ msgstr ""
 msgid "Automatically hide a listing once enough distinct visitors have reported it"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:74
+#: oc-admin/themes/modern/settings/billing.php:153
+msgid "Availability"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cache.php:169
 msgid "Available"
 msgstr ""
@@ -1292,7 +1339,7 @@ msgstr ""
 msgid "Backup SQL (store on server)"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:426
+#: oc-includes/osclass/classes/AdminMenu.php:433
 msgid "Backup data"
 msgstr ""
 
@@ -1341,6 +1388,14 @@ msgid ""
 "pattern."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:167
+msgid "Bank details, or wherever a buyer sends the money. Shown to the "
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:145
+msgid "Bank transfer"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php:14
 msgid "Barter"
 msgstr ""
@@ -1361,11 +1416,15 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php:17
 #: oc-admin/themes/modern/billing/order.php:16
 #: oc-admin/themes/modern/billing/order.php:17
+#: oc-admin/themes/modern/billing/package.php:14
+#: oc-admin/themes/modern/billing/package.php:15
+#: oc-admin/themes/modern/billing/packages.php:14
+#: oc-admin/themes/modern/billing/packages.php:15
 #: oc-admin/themes/modern/billing/wallet.php:14
 #: oc-admin/themes/modern/billing/wallet.php:15
 #: oc-admin/themes/modern/settings/billing.php:30
 #: oc-includes/osclass/classes/AdminMenu.php:194
-#: oc-includes/osclass/classes/AdminMenu.php:402
+#: oc-includes/osclass/classes/AdminMenu.php:409
 msgid "Billing"
 msgstr ""
 
@@ -1452,7 +1511,7 @@ msgstr ""
 msgid "Browse"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:65
+#: oc-admin/themes/modern/settings/billing.php:356
 msgid "Browse plugins"
 msgstr ""
 
@@ -1484,8 +1543,22 @@ msgstr ""
 msgid "Bulk actions"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:406
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:409
+#: oc-admin/themes/modern/settings/billing.php:200
+msgid "Bump price (credits)"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:191
+msgid "Bump to top"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:186
+msgid ""
+"Bump, highlight and urgent are optional item upgrades, each priced and "
+"switched "
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:415
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:418
 msgid "By"
 msgstr ""
 
@@ -1501,7 +1574,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php:62
 #: oc-admin/themes/modern/tools/cache.php:67
-#: oc-includes/osclass/classes/AdminMenu.php:440
+#: oc-includes/osclass/classes/AdminMenu.php:447
 msgid "Cache"
 msgstr ""
 
@@ -1548,6 +1621,7 @@ msgstr ""
 #: oc-admin/themes/modern/admins/frm.php:134
 #: oc-admin/themes/modern/appearance/page-block-form.php:94
 #: oc-admin/themes/modern/billing/order.php:216
+#: oc-admin/themes/modern/billing/packages.php:102
 #: oc-admin/themes/modern/categories/iframe.php:56
 #: oc-admin/themes/modern/categories/index.php:157
 #: oc-admin/themes/modern/categories/index.php:220
@@ -1620,11 +1694,11 @@ msgstr ""
 msgid "Casting - Auditions"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1208
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1287
 msgid "Catalog refresh is disabled on this deployment."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1227
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1306
 msgid "Catalog refreshed."
 msgstr ""
 
@@ -1676,11 +1750,11 @@ msgstr ""
 msgid "Category stats"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:741
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:773
 msgid "Category updated correctly"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:745
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:777
 msgid "Category updated correctly, but some titles are empty"
 msgstr ""
 
@@ -1807,13 +1881,13 @@ msgstr ""
 msgid "Check updates"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hItems.php:1448
+#: oc-includes/osclass/helpers/hItems.php:1454
 msgid "Check with seller"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:887
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:891
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:895
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:927
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:931
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:935
 msgid "Checked updates"
 msgstr ""
 
@@ -1851,7 +1925,7 @@ msgstr ""
 msgid "Choose one category"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:87
+#: oc-includes/osclass/installer/gui/install-target.php:93
 msgid "Choose the country your visitors are mostly in. You can change this later."
 msgstr ""
 
@@ -1861,13 +1935,13 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php:269
 #: oc-admin/themes/modern/items/index.php:248
-#: oc-admin/themes/modern/settings/locations.php:143
+#: oc-admin/themes/modern/settings/locations.php:142
 #: oc-admin/themes/modern/users/frm.php:304
 #: oc-admin/themes/modern/users/index.php:248
 msgid "City"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:144
+#: oc-admin/themes/modern/settings/locations.php:143
 msgid "City Name"
 msgstr ""
 
@@ -1894,7 +1968,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php:15
 #: oc-admin/themes/modern/tools/cleanup.php:38
-#: oc-includes/osclass/classes/AdminMenu.php:447
+#: oc-includes/osclass/classes/AdminMenu.php:454
 msgid "Cleanup"
 msgstr ""
 
@@ -1968,7 +2042,7 @@ msgstr ""
 msgid "Clerical - Administrative"
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1537
+#: oc-includes/osclass/classes/form/ItemForm.php:1560
 msgid "Click, or drop images here, to upload"
 msgstr ""
 
@@ -1979,7 +2053,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/header.php:115
 #: oc-admin/themes/modern/parts/market.php:520
 #: oc-admin/themes/modern/parts/market.php:585
-#: oc-includes/osclass/classes/form/ItemForm.php:1566
+#: oc-includes/osclass/classes/form/ItemForm.php:1589
 msgid "Close"
 msgstr ""
 
@@ -2061,8 +2135,8 @@ msgstr ""
 #: oc-admin/themes/modern/comments/index.php:39
 #: oc-admin/themes/modern/stats/comments.php:118
 #: oc-admin/themes/modern/stats/comments.php:70
-#: oc-includes/osclass/classes/AdminMenu.php:253
-#: oc-includes/osclass/classes/AdminMenu.php:347
+#: oc-includes/osclass/classes/AdminMenu.php:260
+#: oc-includes/osclass/classes/AdminMenu.php:354
 #: oc-includes/osclass/classes/AdminMenu.php:70
 msgid "Comments"
 msgstr ""
@@ -2091,7 +2165,7 @@ msgstr ""
 msgid "Community Activities"
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:92
+#: oc-includes/osclass/classes/upgrade/Osclass.php:133
 msgid "Community discussions"
 msgstr ""
 
@@ -2140,7 +2214,7 @@ msgstr ""
 msgid "Conditional logic"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:360
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:369
 msgid "Configure"
 msgstr ""
 
@@ -2207,7 +2281,7 @@ msgstr ""
 msgid "Contact e-mail"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:80
+#: oc-includes/osclass/installer/gui/install-target.php:86
 msgid "Contact email"
 msgstr ""
 
@@ -2239,7 +2313,7 @@ msgstr ""
 msgid "Contact, feed &amp; language"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:344
+#: oc-includes/osclass/classes/AdminMenu.php:351
 msgid "Content"
 msgstr ""
 
@@ -2252,8 +2326,12 @@ msgstr ""
 msgid "Continue"
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:90
+#: oc-includes/osclass/classes/upgrade/Osclass.php:131
 msgid "Continue with upgrade"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:206
+msgid "Cooldown (hours)"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php:42
@@ -2269,8 +2347,12 @@ msgstr ""
 msgid "Core updates"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:877
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:881
+#: oc-admin/themes/modern/settings/billing.php:148
+msgid "Core's built-in payment method — no card processor, no API keys. A buyer "
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:917
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:921
 msgid "Could not check for updates"
 msgstr ""
 
@@ -2320,11 +2402,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php:261
 #: oc-admin/themes/modern/items/index.php:232
-#: oc-admin/themes/modern/settings/locations.php:145
+#: oc-admin/themes/modern/settings/locations.php:144
 #: oc-admin/themes/modern/stats/users.php:96
 #: oc-admin/themes/modern/users/frm.php:292
 #: oc-admin/themes/modern/users/index.php:226
-#: oc-includes/osclass/installer/gui/install-target.php:90
+#: oc-includes/osclass/installer/gui/install-target.php:96
 msgid "Country"
 msgstr ""
 
@@ -2332,11 +2414,11 @@ msgstr ""
 msgid "Country based"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:146
+#: oc-admin/themes/modern/settings/locations.php:145
 msgid "Country code"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:147
+#: oc-admin/themes/modern/settings/locations.php:146
 msgid "Country name"
 msgstr ""
 
@@ -2373,7 +2455,9 @@ msgstr ""
 #: oc-admin/themes/modern/billing/credits.php:29
 #: oc-admin/themes/modern/billing/index.php:117
 #: oc-admin/themes/modern/billing/order.php:60
-#: oc-includes/osclass/classes/AdminMenu.php:209
+#: oc-admin/themes/modern/billing/package.php:63
+#: oc-admin/themes/modern/billing/packages.php:43
+#: oc-includes/osclass/classes/AdminMenu.php:216
 msgid "Credits"
 msgstr ""
 
@@ -2399,11 +2483,16 @@ msgstr ""
 msgid "Cron has run recently — update checks, alerts and cleanup are firing."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:76
+#: oc-admin/themes/modern/settings/billing.php:367
 #: oc-admin/themes/modern/settings/currencies.php:18
 #: oc-admin/themes/modern/settings/currencies.php:52
 #: oc-includes/osclass/classes/AdminMenu.php:91
 msgid "Currencies"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/package.php:57
+#: oc-admin/themes/modern/settings/billing.php:126
+msgid "Currency"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/currency_form.php:114
@@ -2455,8 +2544,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php:121
 #: oc-admin/themes/modern/pages/frm.php:218
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:216
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:245
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:219
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:248
 msgid "Custom HTML"
 msgstr ""
 
@@ -2607,6 +2696,10 @@ msgstr ""
 msgid "December"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:54
+msgid "Decimal currency, e.g. 9.99."
+msgstr ""
+
 #: oc-admin/themes/modern/languages/frm.php:85
 msgid "Decimal point"
 msgstr ""
@@ -2638,6 +2731,8 @@ msgstr ""
 #: oc-admin/themes/modern/admins/index.php:97
 #: oc-admin/themes/modern/appearance/index.php:166
 #: oc-admin/themes/modern/appearance/widgets.php:191
+#: oc-admin/themes/modern/billing/packages.php:103
+#: oc-admin/themes/modern/billing/packages.php:73
 #: oc-admin/themes/modern/categories/index.php:123
 #: oc-admin/themes/modern/comments/index.php:108
 #: oc-admin/themes/modern/fields/index.php:820
@@ -2662,7 +2757,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/currencies.php:67
 #: oc-admin/themes/modern/settings/keywordBlock.php:256
 #: oc-admin/themes/modern/settings/keywordBlock.php:266
-#: oc-admin/themes/modern/settings/locations.php:148
+#: oc-admin/themes/modern/settings/locations.php:147
 #: oc-admin/themes/modern/settings/locations.php:63
 #: oc-admin/themes/modern/settings/locations.php:66
 #: oc-admin/themes/modern/users/alerts.php:127
@@ -2685,7 +2780,7 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php:605
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php:322
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php:324
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:389
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:398
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php:560
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php:562
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php:750
@@ -2702,10 +2797,14 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php:93
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php:211
 #: oc-includes/osclass/classes/form/ItemForm.php:1316
-#: oc-includes/osclass/classes/form/ItemForm.php:1524
-#: oc-includes/osclass/classes/form/ItemForm.php:1531
-#: oc-includes/osclass/classes/form/ItemForm.php:1565
+#: oc-includes/osclass/classes/form/ItemForm.php:1547
+#: oc-includes/osclass/classes/form/ItemForm.php:1554
+#: oc-includes/osclass/classes/form/ItemForm.php:1588
 msgid "Delete"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/packages.php:92
+msgid "Delete \"%s\"?"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php:122
@@ -2833,7 +2932,7 @@ msgstr ""
 msgid "Delete rule"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:149
+#: oc-admin/themes/modern/settings/locations.php:148
 msgid "Delete selected locations"
 msgstr ""
 
@@ -2942,7 +3041,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php:118
 #: oc-admin/themes/modern/categories/index.php:163
 #: oc-admin/themes/modern/users/frm.php:406
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:368
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:377
 msgid "Disable"
 msgstr ""
 
@@ -2969,10 +3068,11 @@ msgstr ""
 msgid "Disable maintenance mode"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:64
 #: oc-admin/themes/modern/categories/index.php:105
 #: oc-admin/themes/modern/categories/index.php:161
 #: oc-admin/themes/modern/settings/index.php:384
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:422
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:431
 #: oc-includes/osclass/classes/utility/SystemInfo.php:270
 #: oc-includes/osclass/classes/utility/SystemInfo.php:280
 #: oc-includes/osclass/classes/utility/SystemInfo.php:290
@@ -3073,6 +3173,10 @@ msgstr ""
 msgid "Duplicated"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:312
+msgid "Duration (days)"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/users.php:210
 msgid "E-Mail"
 msgstr ""
@@ -3126,11 +3230,12 @@ msgid ""
 "right, and drag widgets to reorder them or move them between sections."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:69
 #: oc-admin/themes/modern/categories/index.php:110
 #: oc-admin/themes/modern/pages/frm.php:258
 #: oc-admin/themes/modern/pages/frm.php:261
 #: oc-admin/themes/modern/settings/currencies.php:38
-#: oc-admin/themes/modern/settings/locations.php:152
+#: oc-admin/themes/modern/settings/locations.php:151
 #: oc-admin/themes/modern/settings/locations.php:69
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php:336
 #: oc-includes/osclass/classes/controller/admin/CAdminEmails.php:139
@@ -3145,6 +3250,7 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:34
 #: oc-admin/themes/modern/categories/index.php:109
 msgid "Edit %s"
 msgstr ""
@@ -3250,7 +3356,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php:116
 #: oc-admin/themes/modern/items/index.php:260
 #: oc-admin/themes/modern/users/index.php:180
-#: oc-includes/osclass/classes/AdminMenu.php:373
+#: oc-includes/osclass/classes/AdminMenu.php:380
 msgid "Email"
 msgstr ""
 
@@ -3258,13 +3364,13 @@ msgstr ""
 msgid "Email of the friend who wants send"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:796
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:818
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:836
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:858
 msgid "Email sent successfully"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/index.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:376
+#: oc-includes/osclass/classes/AdminMenu.php:383
 msgid "Email templates"
 msgstr ""
 
@@ -3295,7 +3401,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php:118
 #: oc-admin/themes/modern/categories/index.php:162
 #: oc-admin/themes/modern/users/frm.php:410
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:372
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:381
 msgid "Enable"
 msgstr ""
 
@@ -3338,6 +3444,7 @@ msgstr ""
 msgid "Enable the \"send to a friend\" form"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:64
 #: oc-admin/themes/modern/categories/index.php:105
 #: oc-admin/themes/modern/categories/index.php:160
 #: oc-admin/themes/modern/tools/cleanup.php:49
@@ -3371,6 +3478,14 @@ msgstr ""
 msgid "Enabled rules also run automatically once a day."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:110
+msgid "Enabled with a price of 0 means every seller can feature a listing for free."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:87
+msgid "Enabled with a price of 0 means every seller can raise their "
+msgstr ""
+
 #: oc-admin/themes/modern/settings/mailserver.php:150
 msgid "Encryption"
 msgstr ""
@@ -3387,7 +3502,7 @@ msgstr ""
 msgid "Engineering - Architecture"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:153
+#: oc-admin/themes/modern/settings/locations.php:152
 msgid "Enter"
 msgstr ""
 
@@ -3395,7 +3510,7 @@ msgstr ""
 msgid "Enter a valid contact email address."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:82
+#: oc-includes/osclass/installer/gui/install-target.php:88
 msgid "Enter a valid email address."
 msgstr ""
 
@@ -3438,12 +3553,12 @@ msgstr ""
 msgid "Error"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:355
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:358
 msgid "Error loading theme custom file"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:962
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:990
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1007
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1043
 msgid "Error occurred while upgrading osclass Database."
 msgstr ""
 
@@ -3548,6 +3663,22 @@ msgstr ""
 msgid "Expired listings"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:333
+msgid "Extra days"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:318
+msgid "Extra listing runtime"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:275
+msgid "Extra photos"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:81
+msgid "Extra slots"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php:37
 #: oc-admin/themes/modern/billing/order.php:38
 msgid "Failed"
@@ -3565,6 +3696,18 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php:251
 msgid "Failures from one visitor address, across every account "
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:120
+msgid "Featured listing duration (days)"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:114
+msgid "Featured listing price (credits)"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:104
+msgid "Featured listings"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php:325
@@ -3729,13 +3872,17 @@ msgstr ""
 msgid "Forums"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hItems.php:1451
+#: oc-includes/osclass/helpers/hItems.php:1457
 msgid "Free"
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php:279
 #: oc-admin/themes/modern/tools/system-info.php:512
 msgid "Free disk space"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:69
+msgid "Free listings per seller"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/media.php:252
@@ -3771,7 +3918,7 @@ msgstr ""
 msgid "Friendship - Activity Partners"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hItems.php:1582
+#: oc-includes/osclass/helpers/hItems.php:1588
 msgid "From"
 msgstr ""
 
@@ -3816,7 +3963,7 @@ msgstr ""
 msgid "Garage Sale"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:318
+#: oc-includes/osclass/classes/AdminMenu.php:325
 msgid "General"
 msgstr ""
 
@@ -3931,7 +4078,19 @@ msgstr ""
 msgid "Higher price first"
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:161
+#: oc-admin/themes/modern/settings/billing.php:213
+msgid "Highlight"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:228
+msgid "Highlight duration (days)"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:222
+msgid "Highlight price (credits)"
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:291
 msgid "Highlights from %s"
 msgstr ""
 
@@ -4014,6 +4173,10 @@ msgstr ""
 msgid "How Shopclass talks to the database — the site cannot run without it."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:210
+msgid "How long a listing must wait before it can be bumped again."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php:179
 msgid "How long one request may run. Backups and imports must finish inside it."
 msgstr ""
@@ -4037,6 +4200,10 @@ msgstr ""
 msgid ""
 "How many form fields one request may carry. Large category trees and "
 "settings forms can approach it."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:73
+msgid "How many of a seller's listings may be live "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php:175
@@ -4156,7 +4323,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php:125
 #: oc-admin/themes/modern/settings/keywordBlock.php:200
-#: oc-admin/themes/modern/settings/locations.php:154
+#: oc-admin/themes/modern/settings/locations.php:153
 #: oc-admin/themes/modern/tools/import.php:27
 #: oc-admin/themes/modern/tools/import.php:36
 msgid "Import"
@@ -4166,8 +4333,8 @@ msgstr ""
 msgid "Import Better S3 settings?"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:156
-msgid "Import a country with it's regions and cities from our database. "
+#: oc-admin/themes/modern/settings/locations.php:155
+msgid "Import a country with its regions and cities. Countries you "
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php:113
@@ -4184,7 +4351,7 @@ msgid "Import a language from the catalog or upload a package to add one."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/import.php:50
-#: oc-includes/osclass/classes/AdminMenu.php:433
+#: oc-includes/osclass/classes/AdminMenu.php:440
 msgid "Import data"
 msgstr ""
 
@@ -4192,7 +4359,7 @@ msgstr ""
 msgid "Import keyword list"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:155
+#: oc-admin/themes/modern/settings/locations.php:154
 msgid "Import locations"
 msgstr ""
 
@@ -4248,8 +4415,8 @@ msgid ""
 "deploying a new image or file set; this screen is read-only."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:942
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:970
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1015
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:982
 msgid ""
 "In-app updates are disabled on this installation. Update by deploying a "
 "newer container image; the database is migrated automatically on start."
@@ -4303,7 +4470,7 @@ msgid "Input validation across the core."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php:417
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:384
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:393
 msgid "Install"
 msgstr ""
 
@@ -4360,7 +4527,7 @@ msgid "Invalid Zip package, it's not in valid format."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php:45
-#: oc-includes/osclass/classes/actions/ItemActions.php:1690
+#: oc-includes/osclass/classes/actions/ItemActions.php:1763
 #: oc-includes/osclass/classes/form/AdminForm.php:131
 #: oc-includes/osclass/classes/form/CommentForm.php:128
 #: oc-includes/osclass/classes/form/ContactForm.php:148
@@ -4376,16 +4543,16 @@ msgstr ""
 msgid "Invalid friend's email address"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1262
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1360
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1341
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1439
 #: oc-includes/osclass/classes/market/Installer.php:136
 #: oc-includes/osclass/classes/market/Installer.php:90
 msgid "Invalid package slug."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1195
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1255
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1355
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1274
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1334
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1434
 msgid "Invalid package type."
 msgstr ""
 
@@ -4397,7 +4564,7 @@ msgstr ""
 msgid "Invalid plugin update uri"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:544
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:576
 msgid "Invalid request"
 msgstr ""
 
@@ -4490,7 +4657,7 @@ msgstr ""
 msgid "January"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:46
+#: oc-includes/osclass/installer/gui/install-target.php:52
 msgid "JavaScript is required to complete this step."
 msgstr ""
 
@@ -4585,7 +4752,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php:105
 #: oc-admin/themes/modern/settings/keywordBlock.php:15
-#: oc-includes/osclass/classes/AdminMenu.php:361
+#: oc-includes/osclass/classes/AdminMenu.php:368
 msgid "Keyword blocklist"
 msgstr ""
 
@@ -4636,7 +4803,7 @@ msgid "Language url: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:332
+#: oc-includes/osclass/classes/AdminMenu.php:339
 msgid "Languages"
 msgstr ""
 
@@ -4718,11 +4885,11 @@ msgstr ""
 msgid "Latest comments on the web"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebSearch.php:683
+#: oc-includes/osclass/classes/controller/CWebSearch.php:691
 msgid "Latest listings added"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebSearch.php:685
+#: oc-includes/osclass/classes/controller/CWebSearch.php:693
 msgid "Latest listings added in"
 msgstr ""
 
@@ -4739,7 +4906,7 @@ msgid "Latest listings shown: this field must only contain numeric characters"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/searches.php:82
-#: oc-includes/osclass/classes/AdminMenu.php:368
+#: oc-includes/osclass/classes/AdminMenu.php:375
 msgid "Latest searches"
 msgstr ""
 
@@ -4752,7 +4919,7 @@ msgstr ""
 msgid "Latest users on the web"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:71
+#: oc-includes/osclass/installer/gui/install-target.php:77
 msgid "Leave blank and we'll generate a strong one for you."
 msgstr ""
 
@@ -4944,7 +5111,7 @@ msgstr ""
 #: oc-admin/themes/modern/main/index.php:220
 #: oc-admin/themes/modern/settings/currencies.php:17
 #: oc-admin/themes/modern/settings/locations.php:18
-#: oc-includes/osclass/classes/AdminMenu.php:232
+#: oc-includes/osclass/classes/AdminMenu.php:239
 #: oc-includes/osclass/classes/AdminMenu.php:53
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php:117
 msgid "Listings"
@@ -5031,6 +5198,10 @@ msgstr ""
 msgid "Loaded PHP extensions"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/locations.php:157
+msgid "Loading countries…"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php:560
 msgid "Loading details…"
 msgstr ""
@@ -5052,7 +5223,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php:259
 #: oc-admin/themes/modern/users/frm.php:290
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php:90
-#: oc-includes/osclass/installer/gui/install-target.php:85
+#: oc-includes/osclass/installer/gui/install-target.php:91
 msgid "Location"
 msgstr ""
 
@@ -5117,6 +5288,10 @@ msgstr ""
 msgid "Lost your password"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:71
+msgid "Lower numbers list first at checkout."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php:53
 msgid "Lower price first"
 msgstr ""
@@ -5130,22 +5305,22 @@ msgstr ""
 msgid "Mail from"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:383
+#: oc-includes/osclass/classes/AdminMenu.php:390
 msgid "Mail server"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/maintenance.php:29
 #: oc-admin/themes/modern/tools/maintenance.php:37
-#: oc-includes/osclass/classes/AdminMenu.php:260
+#: oc-includes/osclass/classes/AdminMenu.php:267
 msgid "Maintenance"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php:607
-#: oc-includes/osclass/classes/AdminMenu.php:454
+#: oc-includes/osclass/classes/AdminMenu.php:461
 msgid "Maintenance mode"
 msgstr ""
 
-#: oc-includes/osclass/functions.php:902
+#: oc-includes/osclass/functions.php:910
 msgid "Maintenance mode is on — only signed-in admins can see the site right now."
 msgstr ""
 
@@ -5161,7 +5336,7 @@ msgstr ""
 msgid "Make a backup before changing your robots.txt file."
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1564
+#: oc-includes/osclass/classes/form/ItemForm.php:1587
 msgid "Make primary image"
 msgstr ""
 
@@ -5219,7 +5394,7 @@ msgid "Manage pages"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php:62
-#: oc-includes/osclass/classes/AdminMenu.php:306
+#: oc-includes/osclass/classes/AdminMenu.php:313
 msgid "Manage plugins"
 msgstr ""
 
@@ -5239,7 +5414,7 @@ msgid ""
 "users must register or if "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:285
+#: oc-includes/osclass/classes/AdminMenu.php:292
 msgid "Manage themes"
 msgstr ""
 
@@ -5249,7 +5424,7 @@ msgstr ""
 msgid "Manage users"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:292
+#: oc-includes/osclass/classes/AdminMenu.php:299
 msgid "Manage widgets"
 msgstr ""
 
@@ -5425,7 +5600,7 @@ msgstr ""
 msgid "Message: %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1693
+#: oc-includes/osclass/classes/actions/ItemActions.php:1766
 #: oc-includes/osclass/classes/form/ContactForm.php:144
 #: oc-includes/osclass/classes/form/SendFriendForm.php:127
 msgid "Message: this field is required"
@@ -5439,7 +5614,7 @@ msgstr ""
 msgid "Migration"
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:118
+#: oc-includes/osclass/classes/upgrade/Osclass.php:159
 msgid "Migration failed: %s"
 msgstr ""
 
@@ -5550,7 +5725,7 @@ msgstr ""
 msgid "Move into forms"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:565
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:597
 msgid "Moved %1$d fields into %2$d forms."
 msgstr ""
 
@@ -5604,12 +5779,14 @@ msgstr ""
 msgid "MySQLi extension is required. How to "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:428
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:457
 msgid "NEW custom field"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php:45
 #: oc-admin/themes/modern/admins/index.php:59
+#: oc-admin/themes/modern/billing/package.php:46
+#: oc-admin/themes/modern/billing/packages.php:41
 #: oc-admin/themes/modern/emails/index.php:32
 #: oc-admin/themes/modern/emails/index.php:40
 #: oc-admin/themes/modern/items/frm.php:231
@@ -5694,7 +5871,7 @@ msgid ""
 "reCAPTCHA/Turnstile; otherwise no challenge is shown."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:94
+#: oc-admin/themes/modern/settings/billing.php:385
 msgid "Needs setting up"
 msgstr ""
 
@@ -5726,8 +5903,8 @@ msgstr ""
 msgid "New field"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:483
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:485
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:512
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:514
 msgid "New field group"
 msgstr ""
 
@@ -5785,7 +5962,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cache.php:182
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php:534
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php:535
-#: oc-includes/osclass/helpers/hItems.php:1606
+#: oc-includes/osclass/helpers/hItems.php:1612
 msgid "No"
 msgstr ""
 
@@ -5821,7 +5998,7 @@ msgstr ""
 msgid "No categories yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:607
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:639
 msgid "No category with id %d exists"
 msgstr ""
 
@@ -5833,8 +6010,12 @@ msgstr ""
 msgid "No comments to moderate"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1317
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1396
 msgid "No compatible version is available for this package."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/locations.php:141
+msgid "No countries available right now"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php:52
@@ -5851,7 +6032,7 @@ msgid ""
 "depend on it. Schedule %s to run regularly."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1366
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1445
 msgid "No details are available for this package yet."
 msgstr ""
 
@@ -5867,7 +6048,7 @@ msgstr ""
 msgid "No fields yet. Create one to get started."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:136
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:165
 msgid "No file was received"
 msgstr ""
 
@@ -5883,7 +6064,7 @@ msgstr ""
 msgid "No forms yet. Create one, then drag fields into it from the palette."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:102
+#: oc-includes/osclass/installer/gui/install-target.php:108
 msgid ""
 "No internet connection. You can continue and add your location later from "
 "the admin panel."
@@ -5942,11 +6123,15 @@ msgstr ""
 msgid "No packages match your search."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:32
+msgid "No packages yet"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php:97
 msgid "No pages yet"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:61
+#: oc-admin/themes/modern/settings/billing.php:352
 msgid "No payment methods installed"
 msgstr ""
 
@@ -5969,8 +6154,8 @@ msgstr ""
 msgid "No reported listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:66
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:67
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:95
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:96
 msgid "No results"
 msgstr ""
 
@@ -5995,7 +6180,7 @@ msgstr ""
 msgid "No themes are available right now."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:867
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:907
 msgid "No update available"
 msgstr ""
 
@@ -6003,7 +6188,7 @@ msgstr ""
 msgid "No users yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1270
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1349
 msgid "No version was specified."
 msgstr ""
 
@@ -6025,7 +6210,7 @@ msgstr ""
 msgid "Nobody holds credits yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/model/Category.php:954
+#: oc-includes/osclass/classes/model/Category.php:956
 msgid "Non-Existent Category"
 msgstr ""
 
@@ -6040,7 +6225,7 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:89
+#: oc-admin/themes/modern/settings/billing.php:380
 msgid "None declared"
 msgstr ""
 
@@ -6080,8 +6265,9 @@ msgid ""
 "performance win available, and it is one ini line."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/locations.php:159
 #: oc-admin/themes/modern/tools/cache.php:172
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:415
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:424
 msgid "Not installed"
 msgstr ""
 
@@ -6122,6 +6308,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php:615
 msgid "Nothing here yet"
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:44
+msgid "Nothing needed changing."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php:180
@@ -6250,6 +6440,10 @@ msgstr ""
 #: oc-admin/themes/modern/stats/reports.php:68
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php:658
 msgid "Offensive"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/package.php:78
+msgid "Offer this package at checkout"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php:53
@@ -6389,8 +6583,8 @@ msgstr ""
 msgid "Order #%d"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:243
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:475
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:272
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:504
 msgid "Order saved"
 msgstr ""
 
@@ -6470,7 +6664,7 @@ msgstr ""
 msgid "Package installs are disabled in demo mode."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1283
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1362
 #: oc-includes/osclass/classes/market/Installer.php:128
 msgid "Package installs are disabled on this deployment."
 msgstr ""
@@ -6482,6 +6676,11 @@ msgstr ""
 #: oc-includes/osclass/classes/market/Installer.php:161
 #: oc-includes/osclass/classes/upgrade/Upgrade.php:86
 msgid "Package source host is not on the allowed list for verified downloads."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/packages.php:25
+#: oc-includes/osclass/classes/AdminMenu.php:209
+msgid "Packages"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php:111
@@ -6548,7 +6747,7 @@ msgstr ""
 msgid "Parent categories"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:645
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:677
 msgid "Parent category is disabled, you can not enable that category"
 msgstr ""
 
@@ -6556,12 +6755,19 @@ msgstr ""
 msgid "Parking Spots"
 msgstr ""
 
+#: oc-admin/themes/modern/upgrade/index.php:53
+msgid ""
+"Parts of your database did not match what Shopclass expected, and have been "
+"put right. This usually follows a plugin change or an upgrade that was "
+"interrupted."
+msgstr ""
+
 #: oc-admin/gui/login.php:32
 #: oc-admin/themes/modern/settings/mailserver.php:143
 #: oc-admin/themes/modern/users/frm.php:327
 #: oc-includes/osclass/installer/gui/install-database.php:59
 #: oc-includes/osclass/installer/gui/install-finish.php:73
-#: oc-includes/osclass/installer/gui/install-target.php:63
+#: oc-includes/osclass/installer/gui/install-target.php:69
 msgid "Password"
 msgstr ""
 
@@ -6605,14 +6811,18 @@ msgstr ""
 msgid "Pattern (regex)"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:164
+msgid "Payment instructions"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php:115
 #: oc-admin/themes/modern/billing/index.php:66
 #: oc-admin/themes/modern/billing/order.php:77
-#: oc-admin/themes/modern/settings/billing.php:75
+#: oc-admin/themes/modern/settings/billing.php:366
 msgid "Payment method"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:56
+#: oc-admin/themes/modern/settings/billing.php:347
 msgid "Payment methods"
 msgstr ""
 
@@ -6627,7 +6837,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/permalinks.php:350
 #: oc-admin/themes/modern/settings/permalinks.php:359
-#: oc-includes/osclass/classes/AdminMenu.php:325
+#: oc-includes/osclass/classes/AdminMenu.php:332
 msgid "Permalinks"
 msgstr ""
 
@@ -6640,8 +6850,20 @@ msgstr ""
 msgid "Phone"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:290
+msgid "Photo cap"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:270
+msgid "Photo count, the posting wait, and listing runtime are global limits by "
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php:199
 msgid "Photos"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:294
+msgid "Photos allowed per listing while the entitlement is held."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php:493
@@ -6696,11 +6918,11 @@ msgstr ""
 #: oc-admin/themes/modern/plugins/index.php:18
 #: oc-admin/themes/modern/plugins/view.php:18
 #: oc-admin/themes/modern/plugins/view.php:19
-#: oc-includes/osclass/classes/AdminMenu.php:303
+#: oc-includes/osclass/classes/AdminMenu.php:310
 msgid "Plugins"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:402
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:411
 msgid "Plugins Site"
 msgstr ""
 
@@ -6725,6 +6947,7 @@ msgid ""
 "sets how long, in seconds, a value is kept."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:68
 #: oc-admin/themes/modern/settings/media.php:383
 #: oc-admin/themes/modern/settings/media.php:419
 msgid "Position"
@@ -6783,9 +7006,17 @@ msgstr ""
 msgid "Previous screenshot"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/package.php:51
+#: oc-admin/themes/modern/billing/packages.php:42
 #: oc-admin/themes/modern/items/settings.php:253
 #: oc-includes/osclass/classes/form/admin/Item.php:203
 msgid "Price"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:284
+#: oc-admin/themes/modern/settings/billing.php:306
+#: oc-admin/themes/modern/settings/billing.php:327
+msgid "Price (credits)"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php:1177
@@ -6793,7 +7024,11 @@ msgstr ""
 msgid "Price: no more than 50 characters"
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1563
+#: oc-admin/themes/modern/settings/billing.php:61
+msgid "Pricing"
+msgstr ""
+
+#: oc-includes/osclass/classes/form/ItemForm.php:1586
 msgid "Primary"
 msgstr ""
 
@@ -6802,7 +7037,7 @@ msgid "Problem"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php:177
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:397
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:406
 msgid "Problems with this plugin? Ask for support."
 msgstr ""
 
@@ -6897,7 +7132,7 @@ msgstr ""
 msgid "Read"
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:185
+#: oc-admin/themes/modern/upgrade/index.php:315
 msgid "Read the full release notes on GitHub"
 msgstr ""
 
@@ -6905,7 +7140,7 @@ msgstr ""
 msgid "Read-only, as it should be after install."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:94
+#: oc-admin/themes/modern/settings/billing.php:385
 msgid "Ready"
 msgstr ""
 
@@ -6917,11 +7152,11 @@ msgstr ""
 msgid "Real estate"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:270
+#: oc-includes/osclass/classes/AdminMenu.php:277
 msgid "Recalculate category stats"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:263
+#: oc-includes/osclass/classes/AdminMenu.php:270
 msgid "Recalculate location stats"
 msgstr ""
 
@@ -7017,7 +7252,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php:265
 #: oc-admin/themes/modern/items/index.php:240
-#: oc-admin/themes/modern/settings/locations.php:159
+#: oc-admin/themes/modern/settings/locations.php:160
 #: oc-admin/themes/modern/settings/storage.php:137
 #: oc-admin/themes/modern/stats/users.php:112
 #: oc-admin/themes/modern/users/frm.php:298
@@ -7029,7 +7264,7 @@ msgstr ""
 msgid "Region based"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:160
+#: oc-admin/themes/modern/settings/locations.php:161
 msgid "Region name"
 msgstr ""
 
@@ -7120,6 +7355,14 @@ msgstr ""
 msgid "Repair"
 msgstr ""
 
+#: oc-admin/themes/modern/upgrade/index.php:52
+msgid "Repaired %s differences."
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:51
+msgid "Repaired one difference."
+msgstr ""
+
 #: oc-admin/gui/forgot_password.php:33
 #: oc-admin/gui/forgot_password.php:35
 msgid "Repeat new password"
@@ -7159,7 +7402,7 @@ msgstr ""
 msgid "Reported listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:239
+#: oc-includes/osclass/classes/AdminMenu.php:246
 msgid "Reports"
 msgstr ""
 
@@ -7317,7 +7560,7 @@ msgid "Saturday"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/frm.php:28
-#: oc-admin/themes/modern/settings/locations.php:161
+#: oc-admin/themes/modern/settings/locations.php:162
 msgid "Save"
 msgstr ""
 
@@ -7325,6 +7568,10 @@ msgstr ""
 msgid ""
 "Save a backup of all of your site's information: listings, users and "
 "configuration."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:172
+msgid "Save bank transfer settings"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add_widget.php:122
@@ -7344,6 +7591,18 @@ msgstr ""
 #: oc-admin/themes/modern/settings/spamNbots.php:77
 #: oc-admin/themes/modern/users/settings.php:80
 msgid "Save changes"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:341
+msgid "Save limits"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/package.php:84
+msgid "Save package"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:134
+msgid "Save pricing"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php:192
@@ -7373,12 +7632,16 @@ msgstr ""
 msgid "Save this password now — it won't be shown again. We also emailed it to %s."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:256
+msgid "Save upgrade settings"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/widgets.php:244
 #: oc-admin/themes/modern/fields/index.php:272
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:404
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:525
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:549
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:575
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:433
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:554
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:581
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:607
 msgid "Saved"
 msgstr ""
 
@@ -7608,7 +7871,7 @@ msgstr ""
 msgid "Select category"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:162
+#: oc-admin/themes/modern/settings/locations.php:163
 msgid "Select option"
 msgstr ""
 
@@ -7629,8 +7892,44 @@ msgstr ""
 msgid "Select the categories where you want to apply this group:"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:279
+msgid "Sell a raised photo cap"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:195
+msgid "Sell bump to top"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:85
+msgid "Sell extra listing slots"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:322
+msgid "Sell extra runtime beyond the category limit"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:108
+msgid "Sell featured listings"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:217
+msgid "Sell highlighting"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:238
+msgid "Sell marking a listing urgent"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:301
+msgid "Sell waiving the flood wait"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php:81
 msgid "Seller email"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:267
+msgid "Seller limits"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php:80
@@ -7716,7 +8015,7 @@ msgstr ""
 msgid "Set the API key in Settings -> General."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:108
+#: oc-includes/osclass/installer/gui/install-target.php:114
 msgid "Set up my site"
 msgstr ""
 
@@ -7724,11 +8023,11 @@ msgstr ""
 msgid "Set up payments"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:42
+#: oc-includes/osclass/installer/gui/install-target.php:48
 msgid "Set up your site"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:114
+#: oc-includes/osclass/installer/gui/install-target.php:120
 msgid ""
 "Setting up your site… this can take a minute on shared hosting — don't "
 "close this tab."
@@ -7764,8 +8063,8 @@ msgstr ""
 #: oc-admin/themes/modern/users/settings.php:32
 #: oc-includes/osclass/classes/AdminMenu.php:139
 #: oc-includes/osclass/classes/AdminMenu.php:155
-#: oc-includes/osclass/classes/AdminMenu.php:216
-#: oc-includes/osclass/classes/AdminMenu.php:314
+#: oc-includes/osclass/classes/AdminMenu.php:223
+#: oc-includes/osclass/classes/AdminMenu.php:321
 #: oc-includes/osclass/classes/AdminMenu.php:98
 msgid "Settings"
 msgstr ""
@@ -7800,11 +8099,11 @@ msgstr ""
 msgid "Shopclass %s &raquo; %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:82
+#: oc-includes/osclass/classes/upgrade/Osclass.php:123
 msgid "Shopclass &raquo; Has some errors"
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:126
+#: oc-includes/osclass/classes/upgrade/Osclass.php:169
 msgid "Shopclass DB Upgraded Successfully"
 msgstr ""
 
@@ -7846,7 +8145,7 @@ msgid ""
 "only %2$s files per request and drops the rest. Raise %3$s to at least %4$s."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/billing.php:62
+#: oc-admin/themes/modern/settings/billing.php:353
 msgid "Shopclass never handles card details itself. To take payments, install a "
 msgstr ""
 
@@ -7862,7 +8161,7 @@ msgid ""
 "fixes. Shopclass targets PHP 8.0 and up — move to PHP 8."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:983
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1030
 msgid "Shopclass upgraded successfully."
 msgstr ""
 
@@ -7914,7 +8213,7 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-database.php:62
 #: oc-includes/osclass/installer/gui/install-finish.php:77
-#: oc-includes/osclass/installer/gui/install-target.php:66
+#: oc-includes/osclass/installer/gui/install-target.php:72
 #: oc-includes/osclass/installer/gui/install.php:44
 msgid "Show password"
 msgstr ""
@@ -7925,6 +8224,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php:77
 msgid "Show subcategories"
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:55
+msgid "Show technical detail"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php:41
@@ -7955,11 +8258,11 @@ msgstr ""
 msgid "Signed URLs"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:315
+#: oc-includes/osclass/classes/AdminMenu.php:322
 msgid "Site"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:74
+#: oc-includes/osclass/installer/gui/install-target.php:80
 msgid "Site details"
 msgstr ""
 
@@ -7973,7 +8276,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php:15
 #: oc-admin/themes/modern/settings/sitemap.php:46
-#: oc-includes/osclass/classes/AdminMenu.php:339
+#: oc-includes/osclass/classes/AdminMenu.php:346
 msgid "Sitemap"
 msgstr ""
 
@@ -7991,12 +8294,24 @@ msgstr ""
 msgid "Size in KB"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:92
+#: oc-includes/osclass/installer/gui/install-target.php:98
 msgid "Skip for now"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:297
+msgid "Skip the posting wait"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:92
+msgid "Slot price in credits"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:98
+msgid "Slots per purchase"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php:345
-#: oc-admin/themes/modern/settings/locations.php:163
+#: oc-admin/themes/modern/settings/locations.php:164
 #: oc-includes/osclass/classes/form/CategoryForm.php:213
 msgid "Slug"
 msgstr ""
@@ -8018,11 +8333,11 @@ msgstr ""
 msgid "Something went wrong. Please try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:747
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:779
 msgid "Sorry, including at least a title is mandatory"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:396
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:425
 msgid "Sorry, you already have a field with that name"
 msgstr ""
 
@@ -8054,7 +8369,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php:26
 #: oc-admin/themes/modern/settings/spamNbots.php:33
-#: oc-includes/osclass/classes/AdminMenu.php:354
+#: oc-includes/osclass/classes/AdminMenu.php:361
 msgid "Spam and bots"
 msgstr ""
 
@@ -8082,13 +8397,14 @@ msgstr ""
 #: oc-admin/themes/modern/stats/users.php:45
 #: oc-admin/themes/modern/tools/category.php:26
 #: oc-admin/themes/modern/tools/locations.php:76
-#: oc-includes/osclass/classes/AdminMenu.php:224
+#: oc-includes/osclass/classes/AdminMenu.php:231
 msgid "Statistics"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php:118
 #: oc-admin/themes/modern/billing/index.php:54
 #: oc-admin/themes/modern/billing/order.php:54
+#: oc-admin/themes/modern/billing/packages.php:44
 #: oc-admin/themes/modern/comments/frm.php:80
 #: oc-admin/themes/modern/comments/frm.php:92
 #: oc-admin/themes/modern/fields/submissions.php:102
@@ -8096,7 +8412,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/submissions.php:156
 #: oc-admin/themes/modern/plugins/index.php:124
 #: oc-admin/themes/modern/plugins/index.php:96
-#: oc-admin/themes/modern/settings/billing.php:77
+#: oc-admin/themes/modern/settings/billing.php:368
 #: oc-admin/themes/modern/tools/cache.php:152
 #: oc-admin/themes/modern/tools/cache.php:175
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php:81
@@ -8111,6 +8427,10 @@ msgid ""
 "also see a breakdown of the "
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php:159
+msgid "Stays hidden at checkout until instructions are written below — "
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php:135
 msgid "Step"
 msgstr ""
@@ -8119,7 +8439,7 @@ msgstr ""
 msgid "Stopwords"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:391
+#: oc-includes/osclass/classes/AdminMenu.php:398
 msgid "Storage"
 msgstr ""
 
@@ -8210,13 +8530,13 @@ msgstr ""
 msgid "Switching this off later hides the Billing menu but keeps every order "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:388
+#: oc-includes/osclass/classes/AdminMenu.php:395
 msgid "System"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php:142
 #: oc-admin/themes/modern/tools/system-info.php:154
-#: oc-includes/osclass/classes/AdminMenu.php:468
+#: oc-includes/osclass/classes/AdminMenu.php:475
 msgid "System info"
 msgstr ""
 
@@ -8241,11 +8561,11 @@ msgstr ""
 msgid "Test connection"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:784
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:824
 msgid "Test email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:783
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:823
 msgid "Test email, %s"
 msgstr ""
 
@@ -8320,7 +8640,7 @@ msgstr ""
 msgid "The admin username may only contain letters and numbers."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1327
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1406
 msgid ""
 "The available version has changed since you loaded this page; refresh and "
 "try again."
@@ -8330,15 +8650,15 @@ msgstr ""
 msgid "The catalog entry is missing a version or a download url."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:673
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:705
 msgid "The categories have been deleted"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:634
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:666
 msgid "The category as well as its subcategories have been disabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:630
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:662
 msgid "The category as well as its subcategories have been enabled"
 msgstr ""
 
@@ -8358,7 +8678,7 @@ msgstr ""
 msgid "The current theme does not declare any widget sections."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:419
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:448
 msgid "The custom field has been deleted"
 msgstr ""
 
@@ -8378,6 +8698,12 @@ msgid ""
 "will "
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1250
+msgid ""
+"The database schema had drifted and %d difference(s) were repaired during "
+"the upgrade."
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php:301
 msgid "The database server rejected that username and password. Re-copy them from "
 msgstr ""
@@ -8394,7 +8720,7 @@ msgstr ""
 msgid "The existing package directory is not writable."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:532
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:564
 msgid "The field group has been deleted"
 msgstr ""
 
@@ -8402,7 +8728,7 @@ msgstr ""
 msgid "The file %s doesn't exist"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:148
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:177
 msgid "The file is not a valid image"
 msgstr ""
 
@@ -8499,23 +8825,23 @@ msgid ""
 "when uploading a image."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:165
+#: oc-admin/themes/modern/settings/locations.php:166
 msgid "The slug has to be a unique string, could be left blank"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:164
+#: oc-admin/themes/modern/settings/locations.php:165
 msgid "The slug is not unique."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:657
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:689
 msgid "The subcategory has been disabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:653
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:685
 msgid "The subcategory has been enabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:580
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:612
 msgid "The submission has been deleted"
 msgstr ""
 
@@ -8531,6 +8857,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/add.php:48
 msgid "The translations folder is not writable on your server "
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:43
+msgid "The upgrade did not finish"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php:338
@@ -8588,7 +8918,7 @@ msgstr ""
 msgid "There aren't any uploaded listing yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:562
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:594
 msgid "There were no fields to move."
 msgstr ""
 
@@ -8596,7 +8926,7 @@ msgstr ""
 msgid "There's a new comment on his listing"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:353
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:362
 msgid "There's a new update available"
 msgstr ""
 
@@ -8606,7 +8936,11 @@ msgid ""
 "Shopclass create "
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:88
+#: oc-admin/themes/modern/upgrade/index.php:50
+msgid "These bring your existing data in line with the new version."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/Osclass.php:129
 msgid "These errors could be false-positive errors."
 msgstr ""
 
@@ -8625,30 +8959,37 @@ msgstr ""
 msgid "This action can not be undone."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1202
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1277
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1281
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1356
 msgid "This action can't be done because it's a demo site"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php:1041
 #: oc-includes/osclass/classes/form/ItemForm.php:1262
-#: oc-includes/osclass/classes/form/ItemForm.php:1558
+#: oc-includes/osclass/classes/form/ItemForm.php:1581
 msgid "This action can't be undone. Are you sure you want to continue?"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:150
+#: oc-admin/themes/modern/settings/locations.php:149
 msgid ""
 "This action can't be undone. Items associated to this location will be "
 "deleted. "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:946
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:974
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1019
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:986
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php:123
 msgid "This balance is below zero, usually after a refund of credits that had "
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:259
+#: oc-admin/themes/modern/upgrade/index.php:57
+msgid ""
+"This can take a minute on a large site. Please leave this page open until "
+"it finishes."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php:158
@@ -8723,8 +9064,12 @@ msgstr ""
 msgid "This key is valid"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1575
+#: oc-includes/osclass/classes/actions/ItemActions.php:1648
 msgid "This listing doesn't exist"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/packages.php:97
+msgid "This only removes it from checkout. Orders already placed against it "
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php:209
@@ -8733,11 +9078,11 @@ msgid ""
 "for no email."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1295
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1374
 msgid "This package is already installed; use Update instead."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1306
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1385
 msgid "This package is not installed; use Install instead."
 msgstr ""
 
@@ -8922,11 +9267,11 @@ msgstr ""
 msgid "Toggle subcategories"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:752
+#: oc-includes/osclass/classes/AdminMenu.php:759
 msgid "Toggle the %s submenu"
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1561
+#: oc-includes/osclass/classes/form/ItemForm.php:1584
 msgid "Too many images. The limit is {limit}."
 msgstr ""
 
@@ -8943,7 +9288,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info.php:141
 #: oc-admin/themes/modern/tools/upgrade.php:193
 #: oc-admin/themes/modern/upgrade/index.php:17
-#: oc-includes/osclass/classes/AdminMenu.php:416
+#: oc-includes/osclass/classes/AdminMenu.php:423
 msgid "Tools"
 msgstr ""
 
@@ -9095,7 +9440,7 @@ msgstr ""
 msgid "Unable to unzip package file."
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:129
+#: oc-includes/osclass/classes/upgrade/Osclass.php:179
 msgid "Unable to upgrade Database"
 msgstr ""
 
@@ -9150,7 +9495,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php:217
 #: oc-admin/themes/modern/plugins/index.php:195
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:380
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:389
 msgid "Uninstall"
 msgstr ""
 
@@ -9198,7 +9543,8 @@ msgstr ""
 msgid "Update all (%d)"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:867
+#: oc-admin/themes/modern/settings/locations.php:167
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:907
 msgid "Update available"
 msgstr ""
 
@@ -9256,6 +9602,11 @@ msgstr ""
 msgid "Updates"
 msgstr ""
 
+#: oc-admin/themes/modern/upgrade/index.php:257
+#: oc-admin/themes/modern/upgrade/index.php:56
+msgid "Updating your database"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php:604
 #: oc-admin/themes/modern/parts/market.php:607
 msgid "Updating…"
@@ -9263,7 +9614,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php:194
 #: oc-admin/themes/modern/tools/upgrade.php:203
-#: oc-admin/themes/modern/upgrade/index.php:127
+#: oc-admin/themes/modern/upgrade/index.php:252
 #: oc-admin/themes/modern/upgrade/index.php:27
 msgid "Upgrade"
 msgstr ""
@@ -9280,7 +9631,7 @@ msgstr ""
 msgid "Upgrade Now to "
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php:419
+#: oc-includes/osclass/classes/AdminMenu.php:426
 msgid "Upgrade Shopclass"
 msgstr ""
 
@@ -9296,16 +9647,16 @@ msgstr ""
 msgid "Upgrade is available for (Current version %s)"
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:138
+#: oc-admin/themes/modern/upgrade/index.php:268
 msgid "Upgrade now"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:183
+msgid "Upgrades"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php:107
 msgid "Upgrading your Shopclass installation (this could take a while):"
-msgstr ""
-
-#: oc-admin/themes/modern/upgrade/index.php:131
-msgid "Upgrading your Shopclass installation (this could take a while): "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php:41
@@ -9327,7 +9678,7 @@ msgid ""
 "geographic information to your site. "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:130
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:159
 msgid "Upload target not allowed"
 msgstr ""
 
@@ -9354,6 +9705,18 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php:132
 msgid "Uptime"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:234
+msgid "Urgent"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:249
+msgid "Urgent duration (days)"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:243
+msgid "Urgent price (credits)"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php:43
@@ -9563,7 +9926,7 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php:76
 #: oc-includes/osclass/installer/gui/install-database.php:53
 #: oc-includes/osclass/installer/gui/install-finish.php:60
-#: oc-includes/osclass/installer/gui/install-target.php:58
+#: oc-includes/osclass/installer/gui/install-target.php:64
 msgid "Username"
 msgstr ""
 
@@ -9588,7 +9951,7 @@ msgstr ""
 msgid "Username: this field is required"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:60
+#: oc-includes/osclass/installer/gui/install-target.php:66
 msgid "Usernames can only contain letters and numbers."
 msgstr ""
 
@@ -9603,7 +9966,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/index.php:17
 #: oc-admin/themes/modern/users/settings.php:17
 #: oc-includes/osclass/classes/AdminMenu.php:108
-#: oc-includes/osclass/classes/AdminMenu.php:246
+#: oc-includes/osclass/classes/AdminMenu.php:253
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php:119
 msgid "Users"
 msgstr ""
@@ -9663,7 +10026,7 @@ msgstr ""
 msgid "Version"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:432
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php:441
 msgid "Version:"
 msgstr ""
 
@@ -9705,7 +10068,7 @@ msgstr ""
 msgid "View media"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/locations.php:166
+#: oc-admin/themes/modern/settings/locations.php:168
 #: oc-admin/themes/modern/settings/locations.php:72
 msgid "View more"
 msgstr ""
@@ -9788,7 +10151,7 @@ msgid ""
 "you use watermarks."
 msgstr ""
 
-#: oc-includes/osclass/classes/upgrade/Osclass.php:83
+#: oc-includes/osclass/classes/upgrade/Osclass.php:124
 msgid ""
 "We've encountered some problems while updating the database structure. The "
 "following queries failed:"
@@ -9798,7 +10161,7 @@ msgstr ""
 msgid "Web server"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php:76
+#: oc-includes/osclass/installer/gui/install-target.php:82
 msgid "Web title"
 msgstr ""
 
@@ -9835,6 +10198,10 @@ msgstr ""
 msgid "What \"downloads\" means"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/packages.php:16
+msgid "What a buyer can choose at checkout — a price, a currency and how many "
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php:123
 #: oc-admin/themes/modern/billing/wallet.php:66
 msgid "What happened"
@@ -9842,6 +10209,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/permalinks.php:732
 msgid "What it should look like"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/billing.php:64
+msgid "What posting costs once the free quota runs out, and what a featured "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php:50
@@ -9852,7 +10223,7 @@ msgstr ""
 msgid "What your .htaccess file should look like"
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:159
+#: oc-admin/themes/modern/upgrade/index.php:289
 msgid "What's new"
 msgstr ""
 
@@ -9946,7 +10317,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cache.php:182
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php:534
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php:535
-#: oc-includes/osclass/helpers/hItems.php:1606
+#: oc-includes/osclass/helpers/hItems.php:1612
 msgid "Yes"
 msgstr ""
 
@@ -9968,7 +10339,7 @@ msgid ""
 "dimension of thumbnails, "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1041
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1094
 msgid "You don't have the necessary permissions"
 msgstr ""
 
@@ -9986,7 +10357,7 @@ msgstr ""
 msgid "You have to create the <code>languages</code> folder, i.e.: "
 msgstr ""
 
-#: oc-admin/themes/modern/upgrade/index.php:135
+#: oc-admin/themes/modern/upgrade/index.php:265
 msgid ""
 "You have uploaded a new version of Shopclass, you need to upgrade Shopclass "
 "for it to work correctly."
@@ -10045,15 +10416,23 @@ msgstr ""
 msgid "Your current password"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1586
+#: oc-admin/themes/modern/upgrade/index.php:45
+msgid "Your database already matched this version of Shopclass."
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:42
+msgid "Your database is up to date"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php:1659
 msgid "Your email: invalid email address"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1592
+#: oc-includes/osclass/classes/actions/ItemActions.php:1665
 msgid "Your friend's email: invalid email address"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1589
+#: oc-includes/osclass/classes/actions/ItemActions.php:1662
 msgid "Your friend's name: this field is required"
 msgstr ""
 
@@ -10065,8 +10444,8 @@ msgstr ""
 msgid "Your listing could not be posted. Please review its content and try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php:1583
-#: oc-includes/osclass/classes/actions/ItemActions.php:1687
+#: oc-includes/osclass/classes/actions/ItemActions.php:1656
+#: oc-includes/osclass/classes/actions/ItemActions.php:1760
 #: oc-includes/osclass/classes/form/SendFriendForm.php:115
 msgid "Your name: this field is required"
 msgstr ""
@@ -10091,7 +10470,7 @@ msgid ""
 "complete it."
 msgstr ""
 
-#: oc-includes/osclass/install.php:172
+#: oc-includes/osclass/install.php:192
 msgid "Your session expired — please submit the form again."
 msgstr ""
 
@@ -10099,12 +10478,16 @@ msgstr ""
 msgid "Your session expired. Reload the page and start again."
 msgstr ""
 
-#: oc-includes/osclass/install.php:101
+#: oc-includes/osclass/install.php:121
 msgid "Your session expired. Reload the page and try again."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php:36
 msgid "Your site"
+msgstr ""
+
+#: oc-admin/themes/modern/upgrade/index.php:54
+msgid "Your site has not been changed. Nothing was left half-done."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php:28
@@ -10298,8 +10681,8 @@ msgstr ""
 msgid "nginx does not read .htaccess files. Add the "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebAjax.php:403
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1044
+#: oc-includes/osclass/classes/controller/CWebAjax.php:414
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:1097
 msgid "no action defined"
 msgstr ""
 
@@ -10394,7 +10777,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/form/FieldForm.php:477
 #: oc-includes/osclass/classes/form/FieldForm.php:504
-#: oc-includes/osclass/helpers/hItems.php:1583
+#: oc-includes/osclass/helpers/hItems.php:1589
 msgid "to"
 msgstr ""
 
@@ -10446,15 +10829,15 @@ msgstr ""
 msgid "{WEB_TITLE} - Your site has upgraded to Shopclass {VERSION}"
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1562
+#: oc-includes/osclass/classes/form/ItemForm.php:1585
 msgid "{file} could not be uploaded."
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1559
+#: oc-includes/osclass/classes/form/ItemForm.php:1582
 msgid "{file} has an invalid extension. Valid extension(s): {extensions}."
 msgstr ""
 
-#: oc-includes/osclass/classes/form/ItemForm.php:1560
+#: oc-includes/osclass/classes/form/ItemForm.php:1583
 msgid "{file} is too large."
 msgstr ""
 

@@ -253,6 +253,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     fk_i_user_id INT UNSIGNED NULL,
     fk_i_category_id INT UNSIGNED NOT NULL,
     dt_pub_date DATETIME NOT NULL,
+    -- Set once, at insert, and never again -- item.bump moves dt_pub_date on purpose
+    -- to resort the listing, and would overwrite the only record of when it first
+    -- went live if it shared a column. Nothing currently reads this column back (the
+    -- listing quota counts live rows through dt_expiration, below), but it stays
+    -- anyway -- a bump is a one-way trip and the original publish date is otherwise
+    -- unrecoverable once dt_pub_date moves.
+    dt_first_pub_date DATETIME NULL,
     dt_mod_date DATETIME NULL,
     f_price FLOAT NULL,
     i_price BIGINT(20) NULL,
@@ -281,7 +288,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX fk_i_category_id (fk_i_category_id),
         INDEX fk_c_currency_code (fk_c_currency_code),
         INDEX idx_pub_date (dt_pub_date),
-        INDEX idx_price (i_price)
+        INDEX idx_price (i_price),
+        -- What Entitlements::liveListings() filters on: a seller's rows not yet expired.
+        INDEX idx_user_expiration (fk_i_user_id, dt_expiration)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (
@@ -766,7 +775,63 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uq_gateway_ref (s_gateway, s_external_ref),
         INDEX idx_user_status (fk_i_user_id, s_status),
-        INDEX idx_date (dt_date)
+        INDEX idx_date (dt_date),
+        INDEX idx_status_date (s_status, dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades
+-- with the user, unlike the ledger and orders above -- an entitlement without an
+-- account means nothing. One row per (user, feature): the unique key is what lets
+-- Entitlements::grant() merge atomically via INSERT ... ON DUPLICATE KEY UPDATE
+-- instead of a read-then-write that two concurrent purchases could race.
+CREATE TABLE /*TABLE_PREFIX*/t_user_entitlement (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_user_id INT UNSIGNED NOT NULL,
+    s_feature VARCHAR(64) NOT NULL DEFAULT '',
+    i_quantity INT NULL,
+    dt_expiration DATETIME NULL,
+    s_source VARCHAR(32) NOT NULL DEFAULT 'purchase',
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_user_feature (fk_i_user_id, s_feature),
+        INDEX idx_expiration (dt_expiration),
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- The price list an admin sells credits from. A row here is edited and removed by an
+-- admin, not appended to like the ledger, so it carries no history requirement.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_package (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_name VARCHAR(120) NOT NULL DEFAULT '',
+    i_amount BIGINT NOT NULL DEFAULT 0,
+    s_currency CHAR(3) NOT NULL DEFAULT '',
+    i_credits INT UNSIGNED NOT NULL DEFAULT 0,
+    i_position INT UNSIGNED NOT NULL DEFAULT 0,
+    b_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        INDEX idx_enabled_position (b_enabled, i_position)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- One row per (item, upgrade): bump, highlight, urgent, and whatever a site registers
+-- later, all behind a single registry id instead of a column each. Not a JSON column
+-- on t_item -- the expiry sweep needs an indexed dt_expiration, and two upgrades bought
+-- on one listing at once would be a read-modify-write race on a shared blob. The unique
+-- key is the point: buying the same upgrade twice extends the row rather than growing a
+-- second one. Cascades with the item -- an upgrade on a deleted listing means nothing.
+CREATE TABLE /*TABLE_PREFIX*/t_item_upgrade (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    fk_i_item_id INT UNSIGNED NOT NULL,
+    s_upgrade VARCHAR(64) NOT NULL DEFAULT '',
+    dt_expiration DATETIME NULL,
+    dt_date DATETIME NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_item_upgrade (fk_i_item_id, s_upgrade),
+        INDEX idx_expiration (dt_expiration),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- Mirrors t_category_slug_history: the default search-URL scheme embeds the row id

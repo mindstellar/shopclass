@@ -15,6 +15,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\security\PluginAjaxFile;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
@@ -808,7 +809,15 @@ class CAdminAjax extends AdminSecBaseModel
                     break;
                 }
 
-                require_once osc_plugins_path() . $file;
+                // This ends in require_once, so resolve the path before running it:
+                // .php only, and inside the plugins directory once symlinks are followed.
+                $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved === null) {
+                    echo json_encode(array('error' => 'no valid file'));
+                    break;
+                }
+
+                require_once $resolved;
                 break;
             case 'test_mail':
                 $title = sprintf(__('Test email, %s'), osc_page_title());

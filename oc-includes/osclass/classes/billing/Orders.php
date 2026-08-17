@@ -96,14 +96,23 @@ final class Orders
     /**
      * Move an order to $status, optionally stamping the gateway's reference.
      *
-     * Guarded on the current status being pending, so a replayed webhook cannot
-     * re-settle an order that already settled -- the update matches no row and
+     * Guarded by default on the current status being pending, so a replayed webhook
+     * cannot re-settle an order that already settled -- the update matches no row and
      * returns false. The caller treats that as "already handled", not as an error.
+     *
+     * @param string[] $from Statuses eligible to transition from. Widen this only for
+     *                       the admin "mark paid" escape hatch reopening a `failed`
+     *                       order (Billing::markPaid()'s $allowFailed) -- no gateway
+     *                       callback route passes anything but the default.
      *
      * @return bool whether this call was the one that changed the row
      */
-    public static function settle(int $id, string $status, ?string $externalRef = null): bool
-    {
+    public static function settle(
+        int $id,
+        string $status,
+        ?string $externalRef = null,
+        array $from = array(Order::STATUS_PENDING)
+    ): bool {
         if (!in_array($status, Order::STATUSES, true)) {
             throw new InvalidArgumentException('Orders: unknown status "' . $status . '"');
         }
@@ -119,7 +128,7 @@ final class Orders
         try {
             $changed = self::table()
                 ->where('pk_i_id', $id)
-                ->where('s_status', Order::STATUS_PENDING)
+                ->whereIn('s_status', $from)
                 ->update($data);
         } catch (DbException $e) {
             // uq_gateway_ref: this external reference is already attached to another

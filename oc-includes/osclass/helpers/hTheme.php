@@ -25,9 +25,38 @@ function osc_admin_render_theme_url($file = '')
 }
 
 /**
+ * Register a named render target: an opaque id mapped to an absolute file path.
+ * osc_render_file() checks this registry before its own filesystem lookups, so
+ * core can expose a file outside the theme/plugin directories -- e.g. an
+ * oc-includes/ partial -- to ?page=custom&file=<id>. The request only ever
+ * supplies the id; the path is never request-controlled. Thin wrapper over
+ * \mindstellar\theme\RenderTargetRegistry::register().
+ *
+ * @param string $id   Namespaced slug, [a-z0-9_-]+(/[a-z0-9_-]+)*, max 80 chars.
+ * @param string $path Absolute path to an existing .php file.
+ */
+function osc_register_render_target(string $id, string $path): void
+{
+    \mindstellar\theme\RenderTargetRegistry::instance()->register($id, $path);
+}
+
+/**
+ * Absolute path registered for $id, or null when nothing is registered under it.
+ *
+ * @param string $id
+ *
+ * @return string|null
+ */
+function osc_render_target(string $id): ?string
+{
+    return \mindstellar\theme\RenderTargetRegistry::instance()->get($id);
+}
+
+/**
  * Render the specified file
  *
- * @param string $file must be a relative path, from PLUGINS_PATH
+ * @param string $file must be a relative path, from PLUGINS_PATH, or a registered
+ *                      render target id (see osc_register_render_target())
  */
 function osc_render_file($file = '')
 {
@@ -40,6 +69,14 @@ function osc_render_file($file = '')
                             "..\\",
                             '../'
                         ), '', str_replace('://', '', preg_replace('|http([s]*)|', '', $file)));
+
+    $target = \mindstellar\theme\RenderTargetRegistry::instance()->get($file);
+    if ($target !== null) {
+        include $target;
+
+        return;
+    }
+
     if (file_exists(osc_themes_path() . osc_theme() . '/plugins/' . $file)) {
         include osc_themes_path() . osc_theme() . '/plugins/' . $file;
     } elseif (file_exists(osc_plugins_path() . $file)) {

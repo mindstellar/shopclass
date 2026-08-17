@@ -206,6 +206,13 @@ class AdminMenu
             );
             $this->add_submenu(
                 'billing',
+                __('Packages'),
+                osc_admin_base_url(true) . '?page=billing&action=packages',
+                'billing_packages',
+                'administrator'
+            );
+            $this->add_submenu(
+                'billing',
                 __('Credits'),
                 osc_admin_base_url(true) . '?page=billing&action=credits',
                 'billing_credits',

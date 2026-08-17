@@ -43,10 +43,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
             'Psr\\Cache\\' => 10,
             'PHPMailer\\PHPMailer\\' => 20,
         ),
-        'O' =>
-        array (
-            'OpensslCryptor\\' => 15,
-        ),
         'G' =>
         array (
             'Gettext\\Languages\\' => 18,
@@ -107,10 +103,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'PHPMailer\\PHPMailer\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
-        ),
-        'OpensslCryptor\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src',
         ),
         'Gettext\\Languages\\' =>
         array (
@@ -426,6 +418,8 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'CAdminUpgrade' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/CAdminUpgrade.php',
         'CAdminUsers' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/admin/CAdminUsers.php',
         'CWebAjax' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebAjax.php',
+        'CWebBilling' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebBilling.php',
+        'CWebBillingNonSecure' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebBillingNonSecure.php',
         'CWebContact' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebContact.php',
         'CWebCustom' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebCustom.php',
         'CWebForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/controller/CWebForm.php',
@@ -794,10 +788,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'Object_Cache_default' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_default.php',
         'Object_Cache_memcache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php',
         'Object_Cache_memcached' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php',
-        'OpensslCryptor\\Cryptor' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Cryptor.php',
-        'OpensslCryptor\\Exception\\ProcessException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/ProcessException.php',
-        'OpensslCryptor\\Exception\\UnexpectedResultException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/UnexpectedResultException.php',
-        'OpensslCryptor\\Exception\\UnknownAlgoException' => __DIR__ . '/..' . '/pensiero/php-openssl-cryptor/src/Exception/UnknownAlgoException.php',
         'PHPMailer\\PHPMailer\\DSNConfigurator' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/DSNConfigurator.php',
         'PHPMailer\\PHPMailer\\Exception' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/Exception.php',
         'PHPMailer\\PHPMailer\\OAuth' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuth.php',
@@ -958,12 +948,18 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\billing\\Billing' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Billing.php',
         'mindstellar\\billing\\CallbackResult' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/CallbackResult.php',
         'mindstellar\\billing\\CheckoutIntent' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/CheckoutIntent.php',
+        'mindstellar\\billing\\Entitlements' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Entitlements.php',
+        'mindstellar\\billing\\Feature' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Feature.php',
+        'mindstellar\\billing\\FeatureRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/FeatureRegistry.php',
+        'mindstellar\\billing\\ItemUpgrades' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/ItemUpgrades.php',
         'mindstellar\\billing\\Order' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Order.php',
         'mindstellar\\billing\\Orders' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Orders.php',
+        'mindstellar\\billing\\Packages' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Packages.php',
         'mindstellar\\billing\\PaymentGateway' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/PaymentGateway.php',
         'mindstellar\\billing\\PaymentGatewayRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/PaymentGatewayRegistry.php',
         'mindstellar\\billing\\Premium' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Premium.php',
         'mindstellar\\billing\\Wallet' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Wallet.php',
+        'mindstellar\\billing\\gateway\\OfflineGateway' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/gateway/OfflineGateway.php',
         'mindstellar\\cli\\Cli' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cli/Cli.php',
         'mindstellar\\database\\Connection' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Connection.php',
         'mindstellar\\database\\ConnectionManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/ConnectionManager.php',
@@ -980,6 +976,8 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\forms\\FieldValidator' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FieldValidator.php',
         'mindstellar\\forms\\FormContextRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormContextRegistry.php',
         'mindstellar\\forms\\FormService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormService.php',
+        'mindstellar\\location\\LocationCatalog' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/location/LocationCatalog.php',
+        'mindstellar\\location\\LocationImporter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/location/LocationImporter.php',
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
         'mindstellar\\market\\Catalog' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Catalog.php',
         'mindstellar\\market\\Compatibility' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Compatibility.php',
@@ -994,6 +992,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\ActionThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionThrottle.php',
         'mindstellar\\security\\ActionToken' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionToken.php',
         'mindstellar\\security\\LoginThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/LoginThrottle.php',
+        'mindstellar\\security\\PluginAjaxFile' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
         'mindstellar\\security\\RememberMe' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RememberMe.php',
         'mindstellar\\security\\SigningKey' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SigningKey.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',
@@ -1004,6 +1003,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\storage\\StorageAdapter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/StorageAdapter.php',
         'mindstellar\\storage\\StorageManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/StorageManager.php',
         'mindstellar\\storage\\StorageWorker' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/StorageWorker.php',
+        'mindstellar\\theme\\RenderTargetRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/RenderTargetRegistry.php',
         'mindstellar\\upgrade\\Osclass' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Osclass.php',
         'mindstellar\\upgrade\\Plugin' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Plugin.php',
         'mindstellar\\upgrade\\Theme' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Theme.php',

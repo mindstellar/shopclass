@@ -1,0 +1,35 @@
+# Review routing. Last matching pattern wins.
+# Paths listed here break live installs silently when they go wrong.
+
+*                                           @navjottomer
+
+# Auth, crypto, tokens, throttling.
+/oc-includes/osclass/classes/security/      @navjottomer
+
+# SQL construction and the query layer.
+/oc-includes/osclass/classes/database/      @navjottomer
+/oc-includes/osclass/model/                 @navjottomer
+
+# Request handling: CSRF, sanitisation, permissions.
+/oc-includes/osclass/classes/controller/    @navjottomer
+/oc-includes/osclass/classes/form/          @navjottomer
+
+# Public API for third-party plugins and themes. Renaming breaks them.
+/oc-includes/osclass/helpers/               @navjottomer
+
+# Schema changes reach every install on upgrade.
+/oc-includes/osclass/installer/             @navjottomer
+
+# Release, tagging and publishing.
+/.github/workflows/                         @navjottomer
+/.build.sh                                  @navjottomer
+
+# Parsed by the release workflow and the admin upgrade screen.
+/CHANGELOG.md                               @navjottomer
+
+# Committed build output — edits here ship verbatim to users.
+/oc-includes/assets/                        @navjottomer
+/oc-includes/vendor/                        @navjottomer
+/oc-admin/themes/modern/css/                @navjottomer
+/composer.json                              @navjottomer
+/composer.lock                              @navjottomer

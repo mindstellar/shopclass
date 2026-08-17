@@ -192,12 +192,17 @@ class ItemActions
 
         $flash_error .= $this->validateCommonInput($flash_error, $aItem);
 
+        // The wait is the global preference unless the posting user holds a
+        // listing.no_wait entitlement -- osc_items_wait_time_for_user() falls back to
+        // the global value for a guest (no userId), so anonymous posting is never
+        // weakened by this check.
+        $waitTime = osc_items_wait_time_for_user($aItem['userId'] ?? null);
         $flash_error .= ((!$this->is_admin
-            && osc_items_wait_time() > 0
+            && $waitTime > 0
             && LoginAttempt::newInstance()->countByIpContext(
                 'item_post',
                 (string)Params::getServerParam('REMOTE_ADDR'),
-                date('Y-m-d H:i:s', time() - osc_items_wait_time())
+                date('Y-m-d H:i:s', time() - $waitTime)
             ) > 0)
             ? _m('Too fast. You should wait a little to publish your ad.')
             . PHP_EOL : '');
@@ -214,6 +219,21 @@ class ItemActions
         osc_run_hook('pre_item_add', $aItem, $flash_error);
         $flash_error = osc_apply_filter('pre_item_add_error', $flash_error, $aItem);
 
+        // The one choke point for the listing quota. Guest posts (no user id) have no
+        // wallet to charge and admin posts are never metered, so both skip enforcement
+        // entirely. withinFreeQuota() is the same COUNT canPublish() would otherwise run
+        // again internally, so it is computed once here and handed to canPublish() rather
+        // than paying for it twice on every post. Nothing is ever consumed here: a
+        // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
+        // checked, so there is nothing left to spend once a post is allowed through.
+        if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
+            $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
+            if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
+                $flash_error .= _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.')
+                    . PHP_EOL;
+            }
+        }
+
         // Handle error
         if ($flash_error) {
             $success = $flash_error;
@@ -225,9 +245,15 @@ class ItemActions
             // Capture the new id from the insert itself (see DAO::insertGetId), not a later
             // decoupled read of the shared connection's insert_id, which intermittently came
             // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
+            // dt_first_pub_date records the listing's original publish date, distinct from
+            // dt_pub_date (the sort key a bump is free to move) -- this insert is the ONLY
+            // place that ever writes it, so it stays the one durable record of when the
+            // listing first went live even after a later bump moves dt_pub_date forward.
+            $publishedAt = date('Y-m-d H:i:s');
             $itemId = $this->manager->insertGetId(array(
                 'fk_i_user_id'       => $aItem['userId'],
-                'dt_pub_date'        => date('Y-m-d H:i:s'),
+                'dt_pub_date'        => $publishedAt,
+                'dt_first_pub_date'  => $publishedAt,
                 'fk_i_category_id'   => $aItem['catId'],
                 'i_price'            => $aItem['price'],
                 'fk_c_currency_code' => $aItem['currency'],
@@ -868,10 +894,21 @@ class ItemActions
             $itemResourceManager = ItemResource::newInstance();
             $folder              = osc_uploads_path() . floor($itemId / 100) . '/';
 
-            $maxImagesPerItem = osc_max_images_per_item();
+            // The cap is the global preference unless the item's own owner (not the
+            // session -- an admin may be uploading on a seller's behalf) holds a
+            // listing.photos entitlement. -1 (from the entitlement) and 0 (the
+            // preference's own convention) both mean unlimited here.
+            $itemOwner        = $this->manager->findByPrimaryKey($itemId);
+            $maxImagesPerItem = osc_max_images_for_user(
+                !empty($itemOwner['fk_i_user_id']) ? (int) $itemOwner['fk_i_user_id'] : null
+            );
             $totalItemImages  = $itemResourceManager->countResources($itemId);
             foreach ($aResources['error'] as $key => $error) {
-                if ($maxImagesPerItem == 0 || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)) {
+                if (
+                    $maxImagesPerItem == -1
+                    || $maxImagesPerItem == 0
+                    || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)
+                ) {
                     if ($error == UPLOAD_ERR_OK) {
                         $tmpName   = $aResources['tmp_name'][$key];
                         $imgres    = ImageProcessing::fromFile($tmpName);
@@ -1399,11 +1436,16 @@ class ItemActions
      *
      * @param int      $id
      * @param bool     $on
-     * @param int|null $days Days the upgrade lasts, or null for no expiry
+     * @param int|null $days     Days the upgrade lasts, or null for no expiry
+     * @param bool     $fireHook Whether to fire item_premium_on/item_premium_off on
+     *                           success. False lets a caller that will announce the
+     *                           change itself once its own work has fully landed --
+     *                           the billing feature that drives this, once its spend
+     *                           has committed -- skip the immediate one here.
      *
      * @return bool
      */
-    public function premium($id, $on = true, $days = null)
+    public function premium($id, $on = true, $days = null, bool $fireHook = true)
     {
         $value = 0;
         if ($on) {
@@ -1414,9 +1456,33 @@ class ItemActions
 
         // Turning premium off always clears the date, so a later permanent grant does
         // not inherit a stale expiry and get swept away an hour after it is made.
-        $set['dt_premium_expiration'] = ($on && $days !== null)
-            ? date('Y-m-d H:i:s', time() + ((int) $days * 86400))
-            : null;
+        $set['dt_premium_expiration'] = null;
+
+        if ($on && $days !== null) {
+            // Just the two columns, not findByPrimaryKey(): that hydrates locales and
+            // resources this decision has no use for.
+            $current = osc_db_select_one(
+                'SELECT b_premium, dt_premium_expiration FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
+                array((int) $id)
+            );
+
+            if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
+                // Already premium with no end date. A dated purchase must not turn an
+                // open-ended upgrade into one that expires.
+                unset($set['dt_premium_expiration']);
+            } else {
+                // Extend from whatever time is left, never from now: a repurchase must
+                // add to the spot the seller already paid for rather than replace it,
+                // which a shortened billing_premium_days would otherwise make a downgrade.
+                // Calendar arithmetic, not $days * 86400, so a DST change cannot move it.
+                $remaining = isset($current['dt_premium_expiration'])
+                    ? strtotime((string) $current['dt_premium_expiration'])
+                    : false;
+                $base      = ($remaining !== false && $remaining > time()) ? $remaining : time();
+
+                $set['dt_premium_expiration'] = date('Y-m-d H:i:s', strtotime('+' . (int) $days . ' days', $base));
+            }
+        }
 
         $result = $this->manager->update(
             $set,
@@ -1424,10 +1490,12 @@ class ItemActions
         );
         // updated correctly
         if ($result == 1) {
-            if ($on) {
-                osc_run_hook('item_premium_on', $id);
-            } else {
-                osc_run_hook('item_premium_off', $id);
+            if ($fireHook) {
+                if ($on) {
+                    osc_run_hook('item_premium_on', $id);
+                } else {
+                    osc_run_hook('item_premium_off', $id);
+                }
             }
 
             return true;
@@ -1950,6 +2018,12 @@ class ItemActions
         }
 
         if ($is_add || $this->is_admin) {
+            // The ceiling is the category's own i_expiration_days unless the poster
+            // holds a listing.runtime entitlement, which raises it by their extra
+            // days -- -1 means unlimited extra runtime, so the clamp below is skipped
+            // entirely for that user, the same as it already is for an admin.
+            $extraRuntimeDays = osc_item_extra_runtime_days($aItem['userId'] ?? null);
+
             $dt_expiration = Params::getParam('dt_expiration');
             if ($dt_expiration == -1) {
                 $aItem['dt_expiration'] = '';
@@ -1967,9 +2041,17 @@ class ItemActions
             ) {
                 $aItem['dt_expiration'] = $dt_expiration;
                 $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
+                // A category of 0 days never expires, so it is already the most generous
+                // ceiling there is -- raising it by an entitlement's days would start
+                // expiring listings that never did.
+                $expirationCeiling = $categoryDays;
+                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
+                    $expirationCeiling = $extraRuntimeDays === -1 ? null : $categoryDays + $extraRuntimeDays;
+                }
                 if (ctype_digit($dt_expiration)) {
-                    if (!$this->is_admin && $dt_expiration > $_category['i_expiration_days']) {
-                        $aItem['dt_expiration'] = $_category['i_expiration_days'];
+                    if (!$this->is_admin && $expirationCeiling !== null && $dt_expiration > $expirationCeiling) {
+                        $aItem['dt_expiration'] = $expirationCeiling;
                     }
                 } else {
                     if (preg_match('|^([0-9]{4})-([0-9]{2})-([0-9]{2})$|', $dt_expiration, $match)) {
@@ -1977,14 +2059,22 @@ class ItemActions
                     }
                     if (
                         !$this->is_admin
-                        && strtotime($dt_expiration) > (time() + $_category['i_expiration_days'] * 24 * 3600)
+                        && $expirationCeiling !== null
+                        && strtotime($dt_expiration) > (time() + $expirationCeiling * 24 * 3600)
                     ) {
-                        $aItem['dt_expiration'] = $_category['i_expiration_days'];
+                        $aItem['dt_expiration'] = $expirationCeiling;
                     }
                 }
             } else {
+                // No expiration asked for, which is every public posting form -- the
+                // runtime a seller paid for has to land here or it never applies at all.
                 $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
                 $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
+
+                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
+                    $aItem['dt_expiration'] = $extraRuntimeDays === -1 ? '' : $categoryDays + $extraRuntimeDays;
+                }
             }
             unset($dt_expiration);
         } else {

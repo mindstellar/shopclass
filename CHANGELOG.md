@@ -4,9 +4,53 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.2.0
 
-Google Analytics is no longer wired into the core. Analytics is one vendor's product among
-many, and shipping a field for one of them meant every site carried the code for a service
-most of them do not use — so it now goes in the same place as any other third-party tag.
+Back up your database before upgrading: this release rebuilds foreign keys across twenty-four
+tables. It also lets sites sell credits and charge for listings, lets people download a copy of
+their own data, closes three paths that could execute arbitrary files under the plugins
+directory, and removes Google Analytics from the core.
+
+### Security
+
+- **The plugin admin-page route would execute any file inside the plugins directory.**
+  `?page=plugins&action=renderplugin&file=…` ends in `require_once`, and decided what to
+  run by looking for the literal `../` — so anything else under the plugins tree was
+  executed as PHP. One of its two checks also compared `strpos()` with `==`, so a path
+  beginning `..\` (offset 0, which `== false`) passed the test meant to stop it. The path
+  is now resolved before it is used, by the same guard the AJAX routes use.
+- **The `custom` AJAX action would execute any file inside the plugins directory.** It
+  guarded only against `../`, so any path that stayed inside the directory was included and
+  run as PHP regardless of what it was — a README, a lockfile, a language catalogue, or
+  anything a plugin had written there from a request. The front-end copy of the action needs
+  no login at all. The target must now be a `.php` file, and the path is resolved before it is
+  used so that symlinks and encodings cannot land outside the plugins directory. Plugins
+  reached through `osc_ajax_plugin_url()` are unaffected: that helper has always named a
+  `.php` file inside the plugins directory.
+- **Search-alert tokens are now authenticated.** They were AES-256-CTR with no MAC, a
+  malleable combination: anyone holding one valid token had a known plaintext, and could
+  edit the ciphertext into a token for a search of their choosing. Tokens are now AES-256-GCM
+  and a tampered one fails to decrypt rather than decrypting to something chosen. Tokens
+  issued by an earlier release are still accepted, so an alert link in an already-rendered
+  page keeps working.
+- The plugin list read out of preferences is no longer unserialized with object support
+  enabled, matching how the rewrite-rule cache already read its own.
+- Removed a dead fallback in the alert cipher that used Rijndael with the initialisation
+  vector set to the key. It could never run — the openssl extension it tested for is a hard
+  requirement — but it was the only remaining use of `phpseclib` in the core.
+- Dropped the `pensiero/php-openssl-cryptor` dependency. Nothing calls it now that alert
+  tokens are encrypted directly, and it was an unmaintained wrapper around what the openssl
+  extension already provides. `phpseclib` itself stays: the `mcrypt_*` functions it backs are
+  still there for plugins written before PHP 7.2 removed them.
+
+### Performance
+
+- **Translations are no longer parsed out of their binary catalogue on every request.** Core,
+  theme, and one catalogue per enabled plugin were each read and rebuilt into one object per
+  translated string before any page logic ran. Each catalogue is now compiled once and read
+  back in a single step, which measures around fourteen times quicker per catalogue on a
+  1,400-string catalogue — and saves the megabyte or so of objects each one left resident,
+  the scarcer of the two on shared hosting. A replaced language pack is picked up on its own;
+  an install that cannot write to its uploads directory simply parses as before, as does one
+  whose cached copy is unreadable.
 
 ### Fixed
 
@@ -15,6 +59,21 @@ most of them do not use — so it now goes in the same place as any other third-
   alter the value so every captcha check fails. The posted field is now read
   unpurified via Params::getParamString($name, false, false) on POST only.
   The previous empty-token guard used ORed inequalities and was always true.
+- Two wallet writes in the same second no longer log a failed insert. The balance was always
+  correct; the error was noise.
+
+- **The package smoke test blamed every submission for preferences it had not created.**
+  Rendering the search page mints a search-alert token, which writes
+  `alert_private_key` and `alert_public_key`; those landed between the harness's before
+  and after snapshots, so the diff attributed them to whatever package was being tested.
+  Core's lazy writes now happen before the baseline is taken.
+- **Plugin fields stopped appearing on the listing edit form.** `plugin_edit_item()` passes
+  `edit&itemId=123`, from when the request was built by pasting that into a query string;
+  the rewritten script sends it through `URLSearchParams`, which encodes the whole thing as
+  one value. The hook therefore arrived as `item_edit&itemId=123`, matched nothing, and
+  every plugin that renders on the edit form silently rendered nothing. A theme passing the
+  same shape keeps working.
+
 - **Deleting a custom field that had been submitted through a form failed.** The delete
   removed the field's values, its category assignments and its form memberships, then hit a
   foreign key on the submitted values it had not cleared and stopped — leaving the field in
@@ -47,6 +106,10 @@ most of them do not use — so it now goes in the same place as any other third-
 
 ### Changed
 
+- Security policy now states supported versions, private reporting, response times and scope.
+- Review routing added for security, database, controller, helper, schema, release and
+  build-output paths.
+
 - Foreign keys on dependent tables — descriptions, stats, slug history, custom-field values
   and link tables — now declare `ON DELETE CASCADE`, so the database removes them with their
   parent. Tables whose removal has side effects (listings, comments, uploaded files, the
@@ -64,6 +127,34 @@ most of them do not use — so it now goes in the same place as any other third-
   `after_delete_category` to pair with the existing `delete_category`. Each `before_` hook
   runs before the delete's transaction opens and each `after_` hook only once it has
   committed, so a plugin's own database work is never rolled back with a failed delete.
+- **Sites can now sell credits and charge for listings.** Off by default, so nothing changes
+  until you turn it on. Once enabled from **Settings → Billing**, you choose how many
+  listings a seller may have live at once for free, and price extra listing slots and
+  featured listings in credits.
+  A built-in **bank transfer** option lets buyers pay by wire or cash — write your own
+  payment instructions and settle each order by hand once the money arrives, with no card
+  processor or API keys involved. **Billing → Packages** is where you define the credit
+  bundles buyers choose from at checkout.
+- Buyers get a wallet page showing their credit balance and history, a page to buy credit
+  bundles, and a page listing their own past orders — plus a **Feature this listing** action
+  that spends credits to run a listing as featured for a set number of days.
+
+
+- **People can download a copy of their own data.** Signing in and following the link on the
+  account page returns everything the site holds about them as JSON — profile, listings,
+  comments, saved searches, orders and credit history — streamed straight to the browser
+  rather than written anywhere. Erasure already existed; this is the other half of a
+  data-subject request, and it is the only piece that was missing.
+
+  Which tables hold personal data, whether each is included, and what deleting an account
+  does to each, are recorded in one place (`mindstellar\privacy\PersonalData::map()`) with a
+  reason attached — including for the sections deliberately kept, like the accounting
+  records a sale leaves behind. A test fails if a table with a user column is added to the
+  schema without an entry, because the failure mode otherwise is silent: data nobody can
+  see and nobody knows to look for.
+
+  Password hashes and account secrets are never included; they authenticate rather than
+  describe.
 
 ### Breaking
 
