@@ -988,13 +988,18 @@ function osc_zip_folder($archive_folder, $archive_name)
  */
 function osc_check_recaptcha()
 {
-    $gReCaptchaResponse = Params::getParam('g-recaptcha-response');
-    if ($gReCaptchaResponse !== '' || $gReCaptchaResponse !== false || $gReCaptchaResponse !== 0) {
-        $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
-        $resp      = $recaptcha->verify($gReCaptchaResponse, Params::getServerParam('REMOTE_ADDR'));
-        if ($resp->isSuccess()) {
-            return true;
-        }
+    if (strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) !== 'POST') {
+        return false;
+    }
+    // Opaque token: skip HTMLPurifier (same idiom as installer passwords).
+    $gReCaptchaResponse = Params::getParamString('g-recaptcha-response', false, false);
+    if ($gReCaptchaResponse === '') {
+        return false;
+    }
+    $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
+    $resp      = $recaptcha->verify($gReCaptchaResponse, Params::getServerParam('REMOTE_ADDR'));
+    if ($resp->isSuccess()) {
+        return true;
     }
 
     return false;
@@ -1016,8 +1021,11 @@ function osc_check_captcha()
         case 'recaptcha':
             return osc_check_recaptcha();
         case 'turnstile':
-            $token = Params::getParam('cf-turnstile-response');
-            if (!is_string($token) || $token === '' || strlen($token) > 2048) {
+            if (strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) !== 'POST') {
+                return false;
+            }
+            $token = Params::getParamString('cf-turnstile-response', false, false);
+            if ($token === '' || strlen($token) > 2048) {
                 return false;
             }
             try {

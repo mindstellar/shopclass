@@ -54,6 +54,11 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Cloudflare Turnstile (and reCAPTCHA) tokens were passed through HTMLPurifier
+  before siteverify. The token is opaque, not HTML; purifying it can empty or
+  alter the value so every captcha check fails. The posted field is now read
+  unpurified via Params::getParamString($name, false, false) on POST only.
+  The previous empty-token guard used ORed inequalities and was always true.
 - Two wallet writes in the same second no longer log a failed insert. The balance was always
   correct; the error was noise.
 
