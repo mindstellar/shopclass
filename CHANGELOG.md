@@ -106,6 +106,9 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- Email templates ship as `mail.json` only; the parallel `mail.sql` copy is gone. Installing
+  a language with no templates of its own now imports the bundled English set under that
+  language instead of under `en_US`.
 - Security policy now states supported versions, private reporting, response times and scope.
 - Review routing added for security, database, controller, helper, schema, release and
   build-output paths.
