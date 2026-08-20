@@ -54,6 +54,10 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Sample content is created again on a fresh install. Both installers were missing the
+  billing helper the listing form calls, so seeding stopped with an undefined function
+  and the install finished without it.
+
 - Cloudflare Turnstile (and reCAPTCHA) tokens were passed through HTMLPurifier
   before siteverify. The token is opaque, not HTML; purifying it can empty or
   alter the value so every captcha check fails. The posted field is now read
