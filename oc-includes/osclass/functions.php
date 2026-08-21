@@ -796,30 +796,6 @@ function osc_admin_toolbar_update_languages($force = false)
     }
 }
 
-function osc_ga_analytics_footer()
-{
-    $id = osc_google_analytics_id();
-    if ($id) {
-        ?>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo osc_esc_html($id); ?>"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-
-            function gtag() {
-                dataLayer.push(arguments);
-            }
-
-            gtag('js', new Date());
-            gtag('config', '<?php echo osc_esc_js($id); ?>');
-        </script>
-        <?php
-    }
-}
-
-if (osc_google_analytics_id()) {
-    osc_add_hook('footer', 'osc_ga_analytics_footer');
-}
-
 function osc_item_tinymce_header()
 {
     if (!osc_is_publish_page() && !osc_is_edit_page()) {
@@ -904,6 +880,25 @@ function osc_run_cleanup()
     return $total;
 }
 osc_add_hook('cron_daily', 'osc_run_cleanup');
+
+/**
+ * End time-limited premium upgrades whose date has passed, returning how many were ended.
+ *
+ * Also sweeps expired entitlement and item-upgrade rows on the same hourly tick -- a
+ * second job for one row each would be overkill when all three are pure housekeeping
+ * with no fulfilment side effects. The return value stays premium-only; nothing reads
+ * it as an entitlement or item-upgrade count.
+ *
+ * @return int
+ */
+function osc_expire_premium_items()
+{
+    \mindstellar\billing\Entitlements::purge();
+    \mindstellar\billing\ItemUpgrades::purge();
+
+    return \mindstellar\billing\Premium::expire();
+}
+osc_add_hook('cron_hourly', 'osc_expire_premium_items');
 
 function osc_show_maintenance()
 {

@@ -1404,10 +1404,30 @@ class ItemForm extends Form
     }
 
     /**
-     * @param string $case
+     * @param string $case 'form', 'edit', or the legacy 'edit&itemId=123' form
      */
     public static function plugin_post_item($case = 'form')
     {
+        // plugin_edit_item() has always passed 'edit&itemId=123', from when this was
+        // jQuery concatenating the value straight into a query string. The rewritten
+        // script sends it through URLSearchParams, which encodes the whole thing as one
+        // value — so the hook arrived as 'item_edit&itemId=123', matched no case, and the
+        // edit form silently rendered no plugin fields at all. Split here rather than at
+        // the one call site, because a theme may pass the same shape.
+        $hookExtra = array();
+        if (strpos($case, '&') !== false) {
+            $parts = explode('&', $case);
+            $case  = array_shift($parts);
+            foreach ($parts as $pair) {
+                if (strpos($pair, '=') === false) {
+                    continue;
+                }
+                [$k, $v] = explode('=', $pair, 2);
+                if ($k !== '') {
+                    $hookExtra[$k] = $v;
+                }
+            }
+        }
         ?>
         <script>
             var catPriceEnabled = [];
@@ -1442,8 +1462,11 @@ class ItemForm extends Form
                     var body = new URLSearchParams();
                     body.set('page', 'ajax');
                     body.set('action', 'runhook');
-                    body.set('hook', 'item_<?php echo $case; ?>');
+                    body.set('hook', 'item_<?php echo osc_esc_js($case); ?>');
                     body.set('catId', catId);
+                    <?php foreach ($hookExtra as $hookKey => $hookValue) { ?>
+                    body.set(<?php echo json_encode((string)$hookKey); ?>, <?php echo json_encode((string)$hookValue); ?>);
+                    <?php } ?>
                     fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: body})
                         .then(function (r) { return r.text(); })
                         .then(function (html) {

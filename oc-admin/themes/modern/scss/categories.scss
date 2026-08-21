@@ -1270,35 +1270,8 @@
 }
 
 // ---- Empty state ------------------------------------------------------------
-.cat-empty {
-  align-items: center;
-  border: 1px dashed var(--osc-rule-strong);
-  border-radius: $border-radius-lg;
-  color: var(--osc-ink-muted);
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  padding: 3rem 1.5rem;
-  text-align: center;
 
-  > i {
-    color: var(--osc-ink-muted);
-    font-size: 1.9rem;
-    margin-bottom: .35rem;
-  }
-}
 
-.cat-empty-title {
-  color: var(--osc-ink);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.cat-empty-hint {
-  margin: 0 0 .75rem;
-  max-width: 44ch;
-}
 
 // ---- Slide-over drawer (edit) ----------------------------------------------
 // A drawer is an elevated overlay, so it earns a shadow (one of the system's

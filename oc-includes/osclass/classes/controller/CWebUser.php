@@ -310,6 +310,46 @@ class CWebUser extends WebSecBaseModel
 
                 $this->redirectTo(osc_user_alerts_url());
                 break;
+            case 'export':
+                // A copy of everything held about the person, for their own request.
+                // Gated exactly as 'delete' below is — signed in, and the id and secret
+                // in the link both matching the session — because it hands out the same
+                // data that action destroys, and inventing a second rule for that would
+                // mean two things to keep right instead of one.
+                $id     = Params::getParamInt('id');
+                $secret = Params::getParamString('secret');
+                if (!osc_is_web_user_logged_in()) {
+                    osc_add_flash_error_message(_m('Please sign in to download your data'));
+                    $this->redirectTo(osc_user_login_url());
+                    break;
+                }
+
+                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                if (empty($user) || osc_logged_user_id() != $id || $secret !== $user['s_secret']) {
+                    osc_add_flash_error_message(_m('That link is not valid'));
+                    $this->redirectTo(osc_user_profile_url());
+                    break;
+                }
+
+                $data = \mindstellar\privacy\PersonalData::export(osc_logged_user_id());
+                if ($data === null) {
+                    osc_add_flash_error_message(_m('Your data could not be prepared'));
+                    $this->redirectTo(osc_user_profile_url());
+                    break;
+                }
+
+                // Streamed rather than written somewhere and linked to. A file would need
+                // a location, a name nobody can guess and something to delete it later;
+                // sending the bytes straight to the person who asked needs none of that.
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+                header('Content-Type: application/json; charset=utf-8');
+                header('Content-Disposition: attachment; filename="my-data-' . date('Y-m-d') . '.json"');
+                header('X-Content-Type-Options: nosniff');
+                header('Cache-Control: private, no-store');
+                echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                exit;
             case 'delete':
                 $id     = Params::getParam('id');
                 $secret = Params::getParam('secret');

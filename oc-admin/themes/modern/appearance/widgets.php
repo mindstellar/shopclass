@@ -20,40 +20,16 @@ osc_enqueue_script('sortablejs');
 
 $info = __get('info');
 
-function addHelp()
-{
-    echo '<p>' . __("Modify your site's header or footer here.") . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Appearance'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Appearance &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Appearance'),
+    'title'   => __('Appearance'),
+    'help'    => __("Modify your site's header or footer here."),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="appearance-page">
     <div class="appearance">
-        <h2 class="render-title"><?php _e('Manage Widgets'); ?> </h2>
+        <?php osc_admin_page_head(__('Manage Widgets')); ?>
     </div>
 </div>
 </div> <!-- -->
@@ -206,24 +182,15 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
 <?php } ?>
 </div>
 </div>
-<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="appearance"/>
-        <input type="hidden" name="action" value="delete_widget"/>
-        <input type="hidden" name="id" value=""/>
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php echo __('Delete widget'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this widget?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php echo __('Delete'); ?></button>
-        </div>
-    </form>
-</dialog>
+<?php osc_admin_confirm_dialog(array(
+    'id'         => 'deleteModal',
+    'method'     => 'get',
+    'fields'     => array('page' => 'appearance', 'action' => 'delete_widget', 'id' => ''),
+    'title'      => __('Delete widget'),
+    'text'       => __('This removes the widget from its section immediately and cannot be undone.'),
+    'confirm'    => __('Delete'),
+    'confirm_id' => 'deleteSubmit',
+)); ?>
 <script type="text/javascript">
     function delete_dialog(id) {
         var deleteModal = document.getElementById('deleteModal');

@@ -334,10 +334,16 @@ pin('a valid enum type is stored as given', 'INTEGER', $rowFor('osclass', 'typed
 $model->replace('typedBogus', 'x', 'osclass', 'NOT_A_TYPE');
 pin('an invalid type falls back to STRING', 'STRING', $rowFor('osclass', 'typedBogus')['e_type'] ?? null);
 
-harness_section('Preference::replace() — does NOT invalidate the cache');
+harness_section('Preference::replace() — updates the cache it reads from');
 
-pin('get() right after a successful replace() is still stale', '', $model->get('newPref', 'osclass'));
-pin('the live table read sees the replace() immediately, unlike get()', 'v2', $model->findValueByName('newPref'));
+/* This pinned the opposite until 6.2.0: replace() wrote the row and left the map
+ * loaded at the start of the request untouched, so a value was invisible to the
+ * code that had just written it. It read as a stale preference rather than a
+ * missing write, and the location catalog is where it finally showed — recording
+ * where a new data release lived, then building download URLs from the previous
+ * one and failing every checksum. */
+pin('get() sees a successful replace() immediately', 'v2', $model->get('newPref', 'osclass'));
+pin('and so does the live table read', 'v2', $model->findValueByName('newPref'));
 
 harness_section('Preference::replace() — failure (NOT NULL violation)');
 

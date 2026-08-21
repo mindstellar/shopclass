@@ -1,7 +1,22 @@
 # Verifies that a fresh install (struct.sql) and an upgraded install
-# (last release's struct.sql -> updateDB -> migrations) converge to the
-# same database schema. A failure means struct.sql changed in a way the
-# upgrade path does not reproduce — i.e. a migration is owed.
+# (a past release's struct.sql -> migrations) converge to the same database
+# schema. A failure means struct.sql changed in a way the migrations do not
+# reproduce — i.e. a migration is owed.
+#
+# The upgrade path deliberately excludes the schema reconciler, which would
+# otherwise absorb any additive change nobody wrote a migration for and let
+# the check pass on a schema it was quietly repairing on every upgrade.
+#
+# Every supported release is checked, not just the most recent one. A migration
+# only has to be wrong for an older starting point to break upgrades from it
+# while the latest baseline still passes, which is exactly how the pre-5.2 gap
+# went unnoticed: the sequence failed outright from 5.0 for several releases.
+#
+# The list is deduplicated by struct.sql content, so what is actually tested is
+# one baseline per distinct schema rather than one per tag. Patch releases within
+# a line are usually byte-identical, so this is a handful of runs, and it stays
+# that way as releases accumulate — a new tag only adds a run if it changed the
+# schema.
 name: Schema Drift
 on:
   # develop and master are excluded here because the release workflow calls this
@@ -57,23 +72,107 @@ jobs:
           php-version: '8.2'
           extensions: mysqli
 
-      - name: Resolve baseline (latest stable release tag)
-        id: baseline
+      - name: Resolve baselines (one per distinct schema at or above the supported floor)
+        id: baselines
+        env:
+          # The oldest release an upgrade is supported from. Raising this is a
+          # deliberate decision to stop supporting upgrades from older installs,
+          # not a way to quieten a failing baseline.
+          SUPPORTED_UPGRADE_FLOOR: '5.0.0'
         run: |
-          TAG=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -z "$TAG" ]; then
-            echo "::notice::No stable release tag found — skipping schema-drift check (no baseline to diff against yet)."
+          mkdir -p /tmp/baselines
+          : > /tmp/baselines/index
+
+          # Candidates come from two places, merged and then deduplicated by content:
+          # the committed fixtures, which cover releases whose tags were never pushed
+          # and so cannot be read out of git here, and every reachable release tag,
+          # which keeps new releases covered without anyone remembering to add a file.
+          # Fixtures are read first so that where the two overlap, the run is labelled
+          # with the older of the two.
+          CANDIDATES=''
+          for FIXTURE in tests/fixtures/schema-baselines/*.sql; do
+            [ -f "$FIXTURE" ] || continue
+            NAME=$(basename "$FIXTURE" .sql)
+            CANDIDATES="$CANDIDATES $NAME=$FIXTURE"
+          done
+
+          for TAG in $(git tag --sort=v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true); do
+            # sort -V puts the floor first only when the tag is at or above it.
+            OLDEST=$(printf '%s\n%s\n' "$TAG" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
+            [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
+            git show "$TAG:oc-includes/osclass/installer/struct.sql" > "/tmp/struct-$TAG.sql" 2>/dev/null || continue
+            CANDIDATES="$CANDIDATES $TAG=/tmp/struct-$TAG.sql"
+          done
+
+          if [ -z "$CANDIDATES" ]; then
+            echo "::notice::No release baseline found — skipping schema-drift check (nothing to diff against yet)."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "Using baseline tag: $TAG"
-          git show "$TAG:oc-includes/osclass/installer/struct.sql" > /tmp/baseline-struct.sql
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Schema drift check (baseline ${{ steps.baseline.outputs.tag }} -> current)
-        if: ${{ steps.baseline.outputs.skip != 'true' }}
+          for CANDIDATE in $CANDIDATES; do
+            LABEL=${CANDIDATE%%=*}
+            FILE=${CANDIDATE#*=}
+
+            OLDEST=$(printf '%s\n%s\n' "$LABEL" "$SUPPORTED_UPGRADE_FLOOR" | sort -V | head -1)
+            [ "$OLDEST" = "$SUPPORTED_UPGRADE_FLOOR" ] || continue
+
+            SUM=$(sha1sum "$FILE" | cut -d' ' -f1)
+            if [ -f "/tmp/baselines/$SUM.sql" ]; then
+              # Same schema as one already queued. Appended, so the first label stays
+              # first and is the one reported as the baseline actually run.
+              grep -q "^$SUM .*\b$LABEL\b" /tmp/baselines/index || sed -i "s|^$SUM .*|& $LABEL|" /tmp/baselines/index
+              continue
+            fi
+            cp "$FILE" "/tmp/baselines/$SUM.sql"
+            echo "$SUM $LABEL" >> /tmp/baselines/index
+          done
+
+          sort -V -k2 -o /tmp/baselines/index /tmp/baselines/index
+
+          echo "Distinct schemas to check:"
+          while read -r SUM TAGS_FOR_SUM; do
+            echo "  $(echo "$TAGS_FOR_SUM" | awk '{print $1}')  (also: $(echo "$TAGS_FOR_SUM" | cut -d' ' -f2- | tr ' ' ',' | sed 's/,$//'))"
+          done < /tmp/baselines/index
+
+          # What this actually managed to cover. A tag that only ever existed in
+          # somebody's local clone is invisible here, and the sweep would otherwise
+          # check whatever it could find and still report that every supported
+          # baseline passed -- which is the failure this whole job exists to stop.
+          OLDEST_COVERED=$(head -1 /tmp/baselines/index | awk '{print $2}')
+          echo "oldest=$OLDEST_COVERED" >> "$GITHUB_OUTPUT"
+          if [ "$OLDEST_COVERED" != "$SUPPORTED_UPGRADE_FLOOR" ]; then
+            echo "::warning::Upgrades are supported from $SUPPORTED_UPGRADE_FLOOR, but the oldest release tag reachable here is $OLDEST_COVERED. Everything below $OLDEST_COVERED is UNTESTED — the missing tags are not on the remote."
+          fi
+
+      - name: Schema drift check (every supported baseline)
+        if: ${{ steps.baselines.outputs.skip != 'true' }}
         env:
           DRIFT_DB_HOST: 127.0.0.1
           DRIFT_DB_USER: root
           DRIFT_DB_PASS: root
-        run: php tests/schema-drift.php /tmp/baseline-struct.sql
+        run: |
+          FAILED=''
+          while read -r SUM TAGS_FOR_SUM; do
+            REPRESENTATIVE=$(echo "$TAGS_FOR_SUM" | awk '{print $1}')
+            echo "::group::baseline $REPRESENTATIVE -> current"
+            # Every baseline is run before anything fails the job: knowing that
+            # upgrades break from 5.0 but not 5.2 is what locates the bad migration.
+            if php tests/schema-drift.php "/tmp/baselines/$SUM.sql"; then
+              echo "OK ($REPRESENTATIVE, covering: $TAGS_FOR_SUM)"
+            else
+              FAILED="$FAILED $REPRESENTATIVE"
+              echo "::error::Upgrading from $REPRESENTATIVE does not reproduce struct.sql (covers: $TAGS_FOR_SUM)"
+            fi
+            echo "::endgroup::"
+          done < /tmp/baselines/index
+
+          if [ -n "$FAILED" ]; then
+            echo "Schema drift on baseline(s):$FAILED"
+            exit 1
+          fi
+
+          # Says what was covered rather than what was hoped for: "every baseline
+          # passed" reads as full coverage even when only one was reachable.
+          COUNT=$(wc -l < /tmp/baselines/index)
+          echo "$COUNT distinct schema(s) checked, back to ${{ steps.baselines.outputs.oldest }}, all reproduced from migrations alone."

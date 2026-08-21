@@ -3,36 +3,6 @@
 // follow (see the Token Indirection Rule in the design system).
 
 #media-library {
-  // Filter pills: All / Listings / Users / Pages (+ plugin owner types).
-  .media-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .4rem;
-    margin-block: .25rem 1.25rem;
-  }
-
-  .media-filter {
-    border: 1px solid var(--osc-rule-strong);
-    border-radius: 999px;
-    color: var(--osc-ink-muted);
-    font-size: .8125rem;
-    font-weight: 500;
-    padding: .3rem .9rem;
-    text-decoration: none;
-
-    &:hover,
-    &:focus-visible {
-      background: var(--osc-chrome-hover);
-      color: var(--osc-ink);
-    }
-
-    &.active {
-      background: var(--osc-bronze);
-      border-color: var(--osc-bronze);
-      color: var(--osc-bench);
-    }
-  }
-
   // Preview column: a small fixed-size thumbnail that opens the full image.
   .media-col-preview {
     width: 64px;
@@ -53,13 +23,6 @@
       object-fit: cover;
       width: 100%;
     }
-  }
-
-  .media-col-name {
-    max-width: 22rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .media-owner-unattached {
@@ -84,22 +47,6 @@
   .media-owner-page { background: var(--osc-bronze-tint); color: var(--osc-bronze); }
   .media-owner-library { background: var(--osc-warning-tint); color: var(--osc-warning-deep); }
 
-  .media-library-head {
-    align-items: center;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-  }
-
-  .media-upload-btn {
-    align-items: center;
-    cursor: pointer;
-    display: inline-flex;
-    gap: .35rem;
-    margin: 0;
-
-    &.is-busy { opacity: .6; pointer-events: none; }
-  }
 
   .media-owner-link {
     color: var(--osc-ink-muted);
@@ -133,27 +80,6 @@
         color: var(--osc-danger);
       }
     }
-  }
-
-  .media-empty {
-    color: var(--osc-ink-muted);
-    padding: 3rem 1rem;
-    text-align: center;
-
-    i { display: block; font-size: 2.5rem; margin-block-end: .5rem; }
-  }
-
-  .media-pagination {
-    align-items: center;
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-block-start: 1.5rem;
-  }
-
-  .media-page-count {
-    color: var(--osc-ink-muted);
-    font-size: .85rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -266,6 +192,3 @@
   }
 }
 
-#media-preview-usage:empty {
-  display: none;
-}

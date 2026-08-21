@@ -518,38 +518,40 @@ class Category extends DAO
             }
         }
 
-        osc_run_hook('delete_category', (int)($pk));
+        $pkInt = (int)($pk);
 
-        $pkInt  = (int)($pk);
-        $prefix = DB_TABLE_PREFIX;
+        osc_run_hook('delete_category', $pkInt);
 
-        // The first four deletes have always had their result discarded, and the
-        // query layer reported failure without raising, so one failing never
-        // stopped the rest from running. Each keeps its own swallowed catch: a
-        // single shared try would abort the cascade at the first failure and
-        // leave orphaned rows behind.
-        foreach (
-            array(
-                $prefix . 't_plugin_category',
-                $prefix . 't_category_description',
-                $prefix . 't_category_stats',
-                $prefix . 't_meta_categories',
-                $prefix . 't_meta_group_categories',
-                $prefix . 't_category_slug_history',
-            ) as $table
-        ) {
-            try {
-                osc_db_table($table)->where('fk_i_category_id', $pkInt)->delete();
-            } catch (\mindstellar\database\DbException $e) {
-                // Discarded, as before.
-            }
-        }
+        // Every table below also carries ON DELETE CASCADE now, so the database
+        // would clear it regardless. They stay here for an install whose foreign
+        // keys were never created, where nothing else would.
+        $dependents = array(
+            't_plugin_category',
+            't_category_description',
+            't_category_stats',
+            't_meta_categories',
+            't_meta_group_categories',
+            't_category_slug_history',
+        );
 
         try {
-            return osc_db_table($prefix . 't_category')->where('pk_i_id', $pkInt)->delete();
-        } catch (\mindstellar\database\DbException $e) {
+            $deleted = osc_db_transaction(function () use ($pkInt, $dependents) {
+                foreach ($dependents as $table) {
+                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
+                }
+
+                return osc_db_table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
+            });
+        } catch (\Throwable $e) {
+            // Rolled back together: a category that cannot be removed keeps its
+            // descriptions and its custom-field assignments instead of being left
+            // unnamed and unreachable in the tree.
             return false;
         }
+
+        osc_run_hook('after_delete_category', $pkInt);
+
+        return $deleted;
     }
 
     /**

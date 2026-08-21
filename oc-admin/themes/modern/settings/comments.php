@@ -66,35 +66,11 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>' . __("Modify the options that allow your users to publish comments on your site's listings.") . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Comment Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Comment Settings'),
+    'help'    => __("Modify the options that allow your users to publish comments on your site's listings."),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
@@ -104,40 +80,32 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <input type="hidden" name="action" value="comments_post"/>
         <fieldset>
             <div class="form-horizontal">
-                <h2 class="render-title"><?php _e('Comment Settings'); ?></h2>
+                <?php osc_admin_page_head(__('Comment Settings')); ?>
 
                 <div class="form-row">
                     <div class="form-label"><?php _e('Default comment settings'); ?></div>
                     <div class="form-controls">
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo(osc_comments_enabled() ? 'checked="checked"' : ''); ?>
-                                       name="enabled_comments"
-                                       value="1"/> <?php _e('Allow people to post comments on listings'); ?>
-                            </label>
-                        </div>
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo(osc_reg_user_post_comments() ? 'checked="checked"'
-                                    : ''); ?> name="reg_user_post_comments"
-                                       value="1"/> <?php _e('Users must be registered and logged in to comment'); ?>
-                            </label>
-                        </div>
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo(osc_recaptcha_comments_enabled() ? 'checked="checked"'
-                                    : ''); ?> name="enabled_recaptcha_comments"
-                                       value="1"/> <?php _e('Require a CAPTCHA to post a comment'); ?>
-                            </label>
-                            <div class="help-box"><?php _e('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.'); ?></div>
-                        </div>
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo((osc_moderate_comments() == -1) ? ''
-                                    : 'checked="checked"'); ?> name="moderate_comments"
-                                       value="1"/> <?php _e('A comment is being held for moderation'); ?>
-                            </label>
-                        </div>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'enabled_comments',
+                            'label'   => __('Allow people to post comments on listings'),
+                            'checked' => osc_comments_enabled(),
+                        )); ?>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'reg_user_post_comments',
+                            'label'   => __('Users must be registered and logged in to comment'),
+                            'checked' => osc_reg_user_post_comments(),
+                        )); ?>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'enabled_recaptcha_comments',
+                            'label'   => __('Require a CAPTCHA to post a comment'),
+                            'checked' => osc_recaptcha_comments_enabled(),
+                            'help'    => __('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.'),
+                        )); ?>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'moderate_comments',
+                            'label'   => __('A comment is being held for moderation'),
+                            'checked' => osc_moderate_comments() != -1,
+                        )); ?>
                         <div class="form-label-checkbox-offset">
                             <?php printf(
                                 __('Before a comment appears, comment author must have at least %s previously approved comments'),
@@ -161,36 +129,29 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </div>
                 </div>
 
-                <h2 class="render-title"><?php _e('Notifications'); ?></h2>
+                <?php osc_admin_page_head(__('Notifications')); ?>
 
                 <div class="form-row">
                     <div class="form-label"><?php _e('E-mail admin whenever') ?></div>
                     <div class="form-controls">
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo(osc_notify_new_comment() ? 'checked="checked"'
-                                    : ''); ?> name="notify_new_comment"
-                                       value="1"/> <?php _e('A new comment is posted'); ?>
-                            </label>
-                        </div>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'notify_new_comment',
+                            'label'   => __('A new comment is posted'),
+                            'checked' => osc_notify_new_comment(),
+                        )); ?>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-label"><?php _e('E-mail user whenever') ?></div>
                     <div class="form-controls">
-                        <div class="form-label-checkbox">
-                            <label>
-                                <input type="checkbox" <?php echo(osc_notify_new_comment_user() ? 'checked="checked"'
-                                    : ''); ?> name="notify_new_comment_user"
-                                       value="1"/> <?php _e("There's a new comment on his listing"); ?>
-                            </label>
-                        </div>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'notify_new_comment_user',
+                            'label'   => __("There's a new comment on his listing"),
+                            'checked' => osc_notify_new_comment_user(),
+                        )); ?>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                           class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(); ?>
             </div>
         </fieldset>
     </form>

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a5cff0d5c8e2c5cf54a47ac216810b9",
+    "content-hash": "b15bdd75aab5753301e887dd30a99b9e",
     "packages": [
         {
             "name": "async-aws/core",
@@ -443,40 +443,6 @@
                 "source": "https://github.com/ivanlanin/pclzip/tree/master"
             },
             "time": "2014-06-05T11:42:24+00:00"
-        },
-        {
-            "name": "pensiero/php-openssl-cryptor",
-            "version": "v0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/pensiero/php-openssl-cryptor.git",
-                "reference": "85f81646a9ec5046a42b9c2259147d98525ce526"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/pensiero/php-openssl-cryptor/zipball/85f81646a9ec5046a42b9c2259147d98525ce526",
-                "reference": "85f81646a9ec5046a42b9c2259147d98525ce526",
-                "shasum": ""
-            },
-            "require": {
-                "ext-openssl": "*",
-                "php": ">=5.6"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "OpensslCryptor\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Simple to use class for encrypting/decrypting using the PHP Openssl library.",
-            "support": {
-                "source": "https://github.com/pensiero/php-openssl-cryptor/tree/v0.1.0"
-            },
-            "time": "2017-12-30T01:09:54+00:00"
         },
         {
             "name": "phpmailer/phpmailer",

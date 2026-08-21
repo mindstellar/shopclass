@@ -664,15 +664,6 @@ function oc_install()
 
     );
 
-    $install_lang_sql = ABS_PATH . 'oc-content/languages/' . osc_current_admin_locale() . '/mail.sql';
-    $default_lang_sql = ABS_PATH . 'oc-includes/osclass/installer/mail.sql';
-
-    if (file_exists($install_lang_sql)) {
-        $required_files[] = $install_lang_sql;
-    } else {
-        $required_files[] = $default_lang_sql;
-    }
-
     $sql = '';
     foreach ($required_files as $file) {
         if (!file_exists($file)) {
@@ -687,6 +678,28 @@ function oc_install()
     } catch (\mindstellar\database\DbException $e) {
         return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
+
+    // Email templates, after pages.sql has created the rows they describe. The
+    // chosen language ships its own set; where it does not, the bundled English one
+    // is imported under that language rather than under en_US, so the site still has
+    // templates for the locale it actually runs in.
+    $mail_json = ABS_PATH . 'oc-content/languages/' . osc_current_admin_locale() . '/mail.json';
+    if (!file_exists($mail_json)) {
+        $mail_json = ABS_PATH . 'oc-includes/osclass/installer/mail.json';
+    }
+
+    $mail_templates = @file_get_contents($mail_json);
+    if ($mail_templates === false) {
+        return array('error' => sprintf(__('The file %s doesn\'t exist'), $mail_json));
+    }
+
+    $decoded = json_decode($mail_templates, true);
+    if (is_array($decoded)) {
+        $decoded['language'] = osc_current_admin_locale();
+        $mail_templates      = json_encode($decoded);
+    }
+
+    Page::newInstance()->importEmailJsonTemplates($mail_templates);
 
     // Seed the installer's own preference rows through the parameterized API,
     // grouped in one transaction so a mid-write failure leaves none of them

@@ -23,7 +23,7 @@
 // The icon gutter: row inline padding (.6rem) + icon slot (1.25rem) + icon-to-label gap
 // (.5rem). Submenu labels are indented by exactly this so they sit under the PARENT's
 // label, not its icon — the alignment is what groups a child to its parent, which is why
-// the old hairline guide rail is gone. One Sass value keeps the two in lockstep.
+// there is no hairline guide rail. One Sass value keeps the two in lockstep.
 $sidebar-gutter: 2.35rem;
 
 .dashboard-sidebar {
@@ -66,7 +66,7 @@ $sidebar-gutter: 2.35rem;
       display: flex;
       flex: 1 1 auto;
       // A fixed icon slot so every label starts at the same x — the vertical edge the
-      // eye reads as the menu's spine, and the anchor $sidebar-gutter aligns children to.
+      // eye reads as the menu's spine.
       gap: .5rem;
       // The label is marked up as `<a class="h6">`, so Bootstrap already gives it
       // heading weight (600) and a heading margin. Both are wrong here: if every item is
@@ -155,8 +155,26 @@ $sidebar-gutter: 2.35rem;
       }
     }
   }
+
+  // Section bands. Twelve sections in one undivided column is a list to read, not a
+  // menu to scan, so they are laid out in four groups — where am I, the work, how the
+  // site is built, how it is kept running — separated by a hairline and a little room.
+  // No group headings: four more translated subheads would cost more height than the
+  // grouping buys back, and the gap already says "different kind of thing". Logical
+  // properties throughout, so the rule sits above the row in RTL too.
+  #dashboard-menu > .nav-item-band {
+    border-block-start: 1px solid var(--osc-chrome-edge);
+    margin-block-start: .5rem;
+    padding-block-start: .5rem;
+  }
 }
 
+// The open group stays on the sidebar's own colour. It does not need a surface of its
+// own: what made an expanded section read as six more sections was that its children
+// stood exactly as tall as the rows above them (see min-height below), and once that is
+// fixed the size step, the indent and the dot column carry the hierarchy on their own.
+// A second material here only added a box the menu never needed.
+//
 // Prefixed with .dashboard-sidebar so these outrank `.dashboard-sidebar .nav-link`
 // (0,2,0): the submenu anchors also carry `.nav-link`, so an unqualified
 // `.sidebar-submenu a` (0,1,1) loses to the row rule and the gutter indent never lands.
@@ -164,13 +182,20 @@ $sidebar-gutter: 2.35rem;
   background-color: transparent;
   border: 0;
   font-size: $font-size-sm;
-  margin: 0;
-  padding: 0;
+  // Room above so the group starts under its section rather than against it, and room
+  // below so it closes before the next one begins.
+  margin: .25rem 0 0;
+  padding: 0 0 .4rem;
 
   a {
     border-radius: $border-radius;
     color: var(--osc-nav-label);
     font-size: $font-size-sm;
+    // These anchors also carry `.nav-link`, so they were picking up the top-level row's
+    // `min-height: 2.5rem` and standing exactly as tall as the sections above them — the
+    // main reason an open group read as more sections rather than as their contents.
+    // Still a comfortable target, just visibly subordinate.
+    min-height: 2rem;
     // A hair of vertical rhythm so the hover/active pills read as separate rows
     // instead of one continuous block. Adjacent margins collapse, so this is the
     // gap between items, not doubled.
@@ -237,16 +262,54 @@ $sidebar-gutter: 2.35rem;
     }
   }
 
-  // A section subhead, not a link. Sentence case stays (no uppercase / letter-spacing —
-  // those break cursive joining in Arabic and this string is translated). Aligned to the
-  // gutter like the links it heads, set a step smaller and in the muted ink.
+  // A section subhead, not a link, and it has to be unmistakably the former: four
+  // signals carry it, because weight alone did not. A hairline above — the same thing a
+  // group boundary looks like between the top-level bands, so the menu says it one way
+  // at both levels. Emphasis ink against the items' muted ink. Outdented to the dot
+  // column, so the items visibly hang off it. And the Label step down in size, which is
+  // what this is. Sentence case stays: uppercase and letter-spacing break cursive
+  // joining in Arabic, and every one of these strings is translated.
   .submenu-divide {
-    color: var(--osc-nav-label);
+    // --osc-chrome-edge, not --osc-rule: this sits on the sidebar's chrome, and the
+    // rule token is tuned for the white content bench — on chrome it all but vanishes.
+    // It is also exactly the hairline the top-level bands use, which is the point: a
+    // group boundary looks like one thing in this menu, at both levels.
+    border-block-start: 1px solid var(--osc-chrome-edge);
+    color: var(--osc-ink-emphasis);
     font-size: .8125rem;
     font-weight: 600;
-    margin-block-start: .55rem;
-    padding-block: .25rem;
-    padding-inline-start: $sidebar-gutter;
+    margin-block-start: .4rem;
+    padding-block: .4rem .2rem;
+    // Inset to the dot column — the parent icon's spine — rather than padded to it, so
+    // the hairline starts there too. The top-level band rules run the full width; this
+    // one is visibly shorter, which is what keeps a group inside a section from reading
+    // as a new section. The items still hang off its left edge.
+    margin-inline-start: 1.05rem;
+
+    // The first group opens the panel, so it heads the list rather than dividing it.
+    &:first-child {
+      border-block-start: 0;
+      margin-block-start: 0;
+      padding-block-start: .15rem;
+    }
+  }
+
+  // A group boundary with nothing to name, closing core's last group ahead of the entries
+  // a plugin or theme appended. Same hairline and inset as a subhead, minus the label.
+  .submenu-break {
+    border-block-start: 1px solid var(--osc-chrome-edge);
+    margin-block-start: .4rem;
+    margin-inline-start: 1.05rem;
+  }
+
+  // …and the rail flyout's injected title is the panel's real first child — hidden in
+  // the expanded menu, but still occupying :first-child — so a divider opening the list
+  // is only ever the second. Without this it draws a boundary above nothing. The rule
+  // holds in the flyout too, where the title is visible and already carries its own.
+  .rail-flyout-title + .submenu-divide {
+    border-block-start: 0;
+    margin-block-start: 0;
+    padding-block-start: .15rem;
   }
 }
 
@@ -779,13 +842,12 @@ $sidebar-gutter: 2.35rem;
       min-width: 12rem;
       overflow-y: auto;
       padding: .35rem;
-      padding-inline-start: .35rem;
 
       // In the expanded menu the links are indented to the icon gutter to align under
       // the parent label; in this detached flyout there is no parent row to align to, so
-      // drop back to a small padding. The leading dot still rides in that padding — its
-      // base inset (1.05rem, the expanded-menu gutter) would otherwise land ON the label
-      // here, so re-inset it to sit in this flyout's own gutter, left of the text.
+      // drop back to a small padding. The dot and the group subhead ride in that padding
+      // — their base insets are keyed to the expanded menu's gutter and would land on the
+      // label here, so both are re-inset to this flyout's own.
       a {
         padding-inline-start: 1.4rem;
 
@@ -795,7 +857,7 @@ $sidebar-gutter: 2.35rem;
       }
 
       .submenu-divide {
-        padding-inline-start: 1.4rem;
+        margin-inline-start: .5rem;
       }
     }
 
@@ -837,5 +899,12 @@ $sidebar-gutter: 2.35rem;
 @media (max-width: 1024px) {
   .sidebar-collapse-toggle {
     display: none;
+  }
+
+  // The submenu density that reads well under a pointer is too tight for a thumb, and
+  // below this breakpoint the menu is the full-width off-canvas panel — so the rows grow
+  // back to the same target size as the sections above them.
+  .dashboard-sidebar .sidebar-submenu a {
+    min-height: 2.5rem;
   }
 }

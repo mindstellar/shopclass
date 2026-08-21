@@ -17,7 +17,8 @@
  * and an explicit second-arg domain on __/_e/_n wins.
  */
 import gettextParser from 'gettext-parser';
-import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const SRC_DIRS = ['oc-includes', 'oc-admin'];
@@ -35,6 +36,12 @@ const WS = String.raw`\s*`;
 // Singular: fn( STRING [, DOMAIN] ). Plural: fn( STRING , STRING , ... ).
 const SINGULAR_RE = new RegExp(String.raw`\b(__|_e|_m)${WS}\(${WS}(?:${STR})(?:${WS},${WS}(?:${STR}))?`, 'g');
 const PLURAL_RE = new RegExp(String.raw`\b(_n|_mn)${WS}\(${WS}(?:${STR})${WS},${WS}(?:${STR})`, 'g');
+// Context: fn( STRING , CONTEXT [, DOMAIN] ). The context disambiguates two identical
+// English strings for translators and is never shown to anyone.
+const CONTEXT_RE = new RegExp(
+    String.raw`\b(_x|_ex|_mx)${WS}\(${WS}(?:${STR})${WS},${WS}(?:${STR})(?:${WS},${WS}(?:${STR}))?`,
+    'g'
+);
 
 /** Decode a matched literal (group pair: single, double) to its runtime value, or null to skip. */
 function decode(single, double) {
@@ -73,21 +80,29 @@ async function walkPhp(dir, out = []) {
     return out;
 }
 
-// domain -> Map(key -> { msgid, msgid_plural?, refs:Set })
+// domain -> Map(key -> { msgid, msgctxt, msgid_plural?, refs:Set })
+// Keyed by context and msgid together: the whole point of a context is that the same
+// msgid appears more than once, so keying on msgid alone would collapse them.
 const domains = new Map();
-function record(domain, msgid, msgidPlural, ref) {
+function record(domain, msgid, msgidPlural, ref, msgctxt = '') {
     if (!domains.has(domain)) {
         domains.set(domain, new Map());
     }
     const bucket = domains.get(domain);
-    const existing = bucket.get(msgid);
+    const key = `${msgctxt}\u0004${msgid}`;
+    const existing = bucket.get(key);
     if (existing) {
         existing.refs.add(ref);
         if (msgidPlural && !existing.msgid_plural) {
             existing.msgid_plural = msgidPlural;
         }
     } else {
-        bucket.set(msgid, { msgid, ...(msgidPlural ? { msgid_plural: msgidPlural } : {}), refs: new Set([ref]) });
+        bucket.set(key, {
+            msgid,
+            msgctxt,
+            ...(msgidPlural ? { msgid_plural: msgidPlural } : {}),
+            refs: new Set([ref]),
+        });
     }
 }
 
@@ -111,6 +126,18 @@ async function extract() {
             record(domain, msgid, null, `${file}:${lineOf(content, m.index)}`);
         }
 
+        for (const m of content.matchAll(CONTEXT_RE)) {
+            const [, fn, s1, d1, sCtx, dCtx, sDom, dDom] = m;
+            const msgid = decode(s1, d1);
+            const msgctxt = decode(sCtx, dCtx);
+            if (msgid === null || msgid === '' || msgctxt === null || msgctxt === '') {
+                continue;
+            }
+            const explicitDomain = decode(sDom, dDom);
+            const domain = fn === '_mx' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
+            record(domain, msgid, null, `${file}:${lineOf(content, m.index)}`, msgctxt);
+        }
+
         for (const m of content.matchAll(PLURAL_RE)) {
             const [, fn, s1, d1, s2, d2] = m;
             const single = decode(s1, d1);
@@ -122,6 +149,21 @@ async function extract() {
             record(domain, single, plural, `${file}:${lineOf(content, m.index)}`);
         }
     }
+}
+
+/** Whether a parsed catalogue carries any actual translation, ignoring its header entry. */
+function hasTranslations(parsed) {
+    for (const [ctx, entries] of Object.entries(parsed.translations || {})) {
+        for (const [msgid, entry] of Object.entries(entries)) {
+            if (ctx === '' && msgid === '') {
+                continue;
+            }
+            if ((entry.msgstr || []).some((v) => v !== '')) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function potHeaders() {
@@ -141,8 +183,13 @@ async function writePot(domain, entries) {
     const translations = { '': {} };
     for (const key of [...entries.keys()].sort()) {
         const e = entries.get(key);
-        translations[''][key] = {
+        const ctx = e.msgctxt || '';
+        if (!translations[ctx]) {
+            translations[ctx] = {};
+        }
+        translations[ctx][e.msgid] = {
             msgid: e.msgid,
+            ...(ctx ? { msgctxt: ctx } : {}),
             ...(e.msgid_plural ? { msgid_plural: e.msgid_plural } : {}),
             msgstr: e.msgid_plural ? ['', ''] : [''],
             comments: { reference: [...e.refs].sort().join('\n') },
@@ -156,6 +203,7 @@ async function writePot(domain, entries) {
 
 async function compilePoToMo() {
     let count = 0;
+    let removed = 0;
     for (const locale of await readdir(LANG_DIR, { withFileTypes: true })) {
         if (!locale.isDirectory()) {
             continue;
@@ -168,11 +216,26 @@ async function compilePoToMo() {
             const poPath = join(dir, entry);
             const parsed = gettextParser.po.parse(await readFile(poPath));
             const moPath = join(dir, `${entry.slice(0, -3)}.mo`);
+
+            // A catalogue that translates nothing -- the source language, or a locale
+            // nobody has started -- compiles to a header-only .mo that every lookup
+            // misses before falling back to the msgid it would have used anyway.
+            // Shipping no file at all is the same behaviour without the lookup: the
+            // loader already treats a missing catalogue as nothing to load.
+            if (!hasTranslations(parsed)) {
+                if (existsSync(moPath)) {
+                    await rm(moPath);
+                    removed++;
+                }
+                continue;
+            }
+
             await writeFile(moPath, gettextParser.mo.compile(parsed));
             count++;
         }
     }
-    console.log(`  compiled ${count} .po -> .mo`);
+    console.log(`  compiled ${count} .po -> .mo`
+        + (removed ? `, removed ${removed} that translated nothing` : ''));
 }
 
 const started = Date.now();

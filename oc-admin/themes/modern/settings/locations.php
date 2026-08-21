@@ -14,44 +14,23 @@
  */
 $aCountries = __get('aCountries');
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
-              . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
-              . "until they're recalculated. Modify only if you're sure what you're doing!")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a id="b_import" class="ms-1 text-success float-end" href="#" title="<?php _e('Import new'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Locations &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Locations'),
+    'help'    => __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
+                    . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
+                    . "until they're recalculated. Modify only if you're sure what you're doing!"),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => '#',
+            'title' => __('Import new'),
+            'attrs' => array('id' => 'b_import'),
+        ),
+    ),
+));
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <!-- container -->
-    <h1 class="render-title"><?php _e('Locations'); ?></h1>
-    <!-- grid close -->
+    <?php osc_admin_page_head(__('Locations')); ?>
     <!-- settings form -->
     <div id="settings_form" class="locations">
         <div class="row g-1">
@@ -144,7 +123,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
             <div class="osc-dialog-actions">
                 <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button class="btn btn-primary btn-sm" type="submit"><?php echo __('Delete'); ?></button>
+                <button class="btn btn-submit btn-sm" type="submit"></button>
             </div>
         </form>
     </dialog>
@@ -152,8 +131,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <script>
         // Location constant
         var baseUrl = "<?php echo osc_admin_base_url(); ?>";
-        var jsonExistingCountries = <?php echo json_encode(Country::newInstance()->listNames()) ?>;
-        var locationJsonUrl = "<?php echo osc_get_locations_json_url() ?>";
         var sCountry = "<?php echo Params::getParam('country')?>";
         var sCountryCode = "<?php echo Params::getParam('country_code')?>";
         var sRegionId = "<?php echo Params::getParam('region')?>";
@@ -161,6 +138,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringAddCity = '<?php echo osc_esc_js(__('Add city')); ?>';
         var stringAddCountry = '<?php echo osc_esc_js(__('Add country')); ?>';
         var stringAddRegion = '<?php echo osc_esc_js(__('Add region')); ?>';
+        var stringCatalogUnavailable = '<?php echo osc_esc_js(__('No countries available right now')); ?>';
         var stringCity = '<?php echo osc_esc_js(__('City')); ?>';
         var stringCityName = "<?php echo osc_esc_js(__('City Name')); ?>";
         var stringCountry = '<?php echo osc_esc_js(__('Country')); ?>';
@@ -174,9 +152,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringEnter = '<?php echo osc_esc_js(__('Enter')); ?>';
         var stringImport = '<?php echo osc_esc_js(__('Import')); ?>';
         var stringImportLocations = '<?php echo osc_esc_js(__('Import locations')); ?>';
-        var stringImportWarning = "<?php echo osc_esc_js(__("Import a country with it's regions and cities from our database. "
-                                . "Already imported countries aren't shown.")); ?>";
+        var stringImportWarning = "<?php echo osc_esc_js(__('Import a country with its regions and cities. Countries you '
+                                . 'already have appear only when newer data is available for them.')); ?>";
+        var stringLoading = '<?php echo osc_esc_js(__('Loading countries…')); ?>';
         var stringName = '<?php echo osc_esc_js(__("Name")); ?>';
+        var stringNotInstalled = '<?php echo osc_esc_js(__('Not installed')); ?>';
         var stringRegion = '<?php echo osc_esc_js(__("Region")); ?>';
         var stringRegionName = '<?php echo osc_esc_js(__("Region name")); ?>';
         var stringSave = '<?php echo osc_esc_js(__("Save")); ?>';
@@ -184,6 +164,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         var stringSlug = '<?php echo osc_esc_js(__("Slug")); ?>';
         var stringSlugError = "<?php echo osc_esc_js(__("The slug is not unique."));?>";
         var stringSlugWarning = "<?php echo osc_esc_js(__("The slug has to be a unique string, could be left blank"));?>"
+        var stringUpdateAvailable = '<?php echo osc_esc_js(__('Update available')); ?>';
         var stringViewMore = "<?php echo osc_esc_js(__("View more")); ?>";
     </script>
 <?php

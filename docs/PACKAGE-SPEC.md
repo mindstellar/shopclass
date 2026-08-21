@@ -141,6 +141,43 @@ Identical in spirit; the names differ because theme parsing is a separate functi
 | `Tested up to` | recommended | `tested_up_to` |
 | `Requires PHP` | recommended | `requires_php` |
 
+### 3.4 Hooks a theme must emit
+
+A theme's header block declares what it is; the hooks below are what make it usable. They
+are how a plugin reaches the public page at all — core renders no markup into a theme's
+document — so a theme that omits one silently disables every plugin that depends on it.
+Nothing detects this: the page renders, the plugin reports itself active, and its output
+is simply absent.
+
+Two are **required**:
+
+| Hook | Where | What depends on it |
+|---|---|---|
+| `header` | inside `<head>`, after the theme's own tags | stylesheets, meta tags, and any script that must run before first paint |
+| `footer` | at the end of `<body>`, before `</body>` | markup appended to the document, deferred scripts |
+
+```php
+<?php osc_run_hook('header'); ?>     <!-- in the head template  -->
+<?php osc_run_hook('footer'); ?>     <!-- in the footer template -->
+```
+
+These two are not a convention to follow where convenient. Of the plugins written for the
+Osclass theme API, `header` and `footer` are the most widely registered theme hooks by a
+wide margin, ahead of every content-placement hook — because they are the only general
+way into the page.
+
+Beyond those, both bundled themes emit the same broader set, and a theme that means to be
+a drop-in replacement should match it: `before`, `after`, `item_detail`,
+`item_contact_form`, `contact_form`, `admin_contact_form`, `search_form`,
+`search_ads_listing_top`, `search_ads_listing_medium`, `user_form`, `user_register_form`,
+`user_profile_form`. These are placement points rather than an interface: a plugin that
+uses one degrades to not rendering in that spot, instead of not working.
+
+**A plugin should not work around a missing hook.** Emitting into `after_html` to survive
+a theme that skips `footer` puts content after `</html>`, and buys compatibility with a
+broken theme at the cost of invalid markup on every correct one. Depend on the contract
+and let a theme that breaks it be fixed.
+
 ---
 
 ## 4. Compatibility

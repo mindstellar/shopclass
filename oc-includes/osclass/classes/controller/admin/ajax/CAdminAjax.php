@@ -15,6 +15,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\security\PluginAjaxFile;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
@@ -52,6 +53,34 @@ class CAdminAjax extends AdminSecBaseModel
             case 'cities': //Returns cities given a regionId
                 $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
                 echo json_encode($cities);
+                break;
+            case 'location_catalog': // Countries the published catalog offers for import
+                header('Content-Type: application/json');
+                // Read through the catalog rather than letting the browser fetch the
+                // published URL: that URL names the current release rather than listing
+                // countries, and following it is server-side work that is cached here.
+                $catalog = new \mindstellar\location\LocationCatalog();
+                $rows    = array();
+                foreach ($catalog->status(Params::getParamInt('refresh') === 1) as $row) {
+                    if ($row['file'] === '' && $row['ndjson'] === '') {
+                        continue;
+                    }
+                    // Only what the dialog draws. A country is named by its code rather
+                    // than by a file path, so the list survives the catalog rearranging
+                    // its files; the checksums are the bulk of a row and the browser has
+                    // no use for them.
+                    $rows[] = array(
+                        'code'      => $row['code'],
+                        'name'      => $row['name'],
+                        'installed' => (bool) $row['installed'],
+                        'current'   => (bool) $row['current'],
+                        'rows'      => (int) $row['rows'],
+                    );
+                }
+                echo json_encode(array(
+                    'release'   => $catalog->release(),
+                    'countries' => $rows,
+                ));
                 break;
             case 'location': // This is the autocomplete AJAX
                 $cities = City::newInstance()->ajax(Params::getParam('term'));
@@ -527,8 +556,11 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'delete_group':
                 osc_csrf_check();
+                // Row count, not just "did not throw": deleteByPrimaryKey() reports 0
+                // for an id that matched nothing, and reporting that as a success left
+                // the deleted form sitting in the list until the page was reloaded.
                 $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
-                if ($res !== false) {
+                if ($res > 0) {
                     echo json_encode(array('ok' => __('The field group has been deleted')));
                 } else {
                     echo json_encode(array('error' => __('An error occurred while deleting')));
@@ -777,7 +809,15 @@ class CAdminAjax extends AdminSecBaseModel
                     break;
                 }
 
-                require_once osc_plugins_path() . $file;
+                // This ends in require_once, so resolve the path before running it:
+                // .php only, and inside the plugins directory once symlinks are followed.
+                $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved === null) {
+                    echo json_encode(array('error' => 'no valid file'));
+                    break;
+                }
+
+                require_once $resolved;
                 break;
             case 'test_mail':
                 $title = sprintf(__('Test email, %s'), osc_page_title());
@@ -952,7 +992,12 @@ class CAdminAjax extends AdminSecBaseModel
                     try {
                         $upgradeOsclass->doUpgrade();
                         $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(Params::getParam('skipdb')), true);
-                        $result            = ['error' => $db_upgrade_result['error'], 'message' => $db_upgrade_result['message']];
+                        $result            = [
+                            'error'   => $db_upgrade_result['error'],
+                            'message' => $db_upgrade_result['message'],
+                            'repairs' => $db_upgrade_result['repairs'] ?? [],
+                        ];
+                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -980,12 +1025,20 @@ class CAdminAjax extends AdminSecBaseModel
                     try {
                         $upgradeOsclass->doUpgrade();
                         $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(), true);
-                        $result            = ['error' => 0, 'message' => __('Shopclass upgraded successfully.')];
+                        $result            = [
+                            'error'   => 0,
+                            'message' => __('Shopclass upgraded successfully.'),
+                            'repairs' => $db_upgrade_result['repairs'] ?? [],
+                        ];
+                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
                     }
-                    if (isset($db_upgrade_result) && $db_upgrade_result['status'] !== true) {
+                    // upgradeDB() reports through 'error', and never returned a 'status'
+                    // key at all — so this read an absent index and treated every
+                    // successful reinstall as a database failure.
+                    if (isset($db_upgrade_result) && (int) $db_upgrade_result['error'] !== 0) {
                         $result = ['error' => 5, 'message' => $db_upgrade_result['message']];
                         osc_add_flash_warning_message(__('Error occurred while upgrading osclass Database.'), 'admin');
                     }
@@ -1173,6 +1226,32 @@ class CAdminAjax extends AdminSecBaseModel
     private static function marketInstaller($type)
     {
         return $type === 'theme' ? Installer::forThemes() : Installer::forPlugins();
+    }
+
+    /**
+     * Say so when the upgrade had to repair the schema on its way through.
+     *
+     * The migrations build the schema and a release cannot ship unless they reproduce
+     * it on their own, so this list is empty on an install in good order. A non-empty
+     * one means the database had drifted by some other route -- a hand-edited column, a
+     * plugin's leftovers, an upgrade interrupted half way -- and the site owner is
+     * better off knowing that happened than having it fixed silently.
+     *
+     * @param array $repairs statements the repair pass applied
+     */
+    private function flashSchemaRepairs($repairs)
+    {
+        if (!is_array($repairs) || $repairs === array()) {
+            return;
+        }
+
+        osc_add_flash_warning_message(
+            sprintf(
+                __('The database schema had drifted and %d difference(s) were repaired during the upgrade.'),
+                count($repairs)
+            ),
+            'admin'
+        );
     }
 
     /**

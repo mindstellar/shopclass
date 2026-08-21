@@ -44,6 +44,7 @@ class Item extends DAO
             'fk_i_user_id',
             'fk_i_category_id',
             'dt_pub_date',
+            'dt_first_pub_date',
             'dt_mod_date',
             'f_price',
             'i_price',
@@ -52,6 +53,7 @@ class Item extends DAO
             's_contact_email',
             's_contact_phone',
             'b_premium',
+            'dt_premium_expiration',
             's_ip',
             'b_enabled',
             'b_active',
@@ -1232,6 +1234,59 @@ class Item extends DAO
             return false;
         }
 
+        $isAdmin = false;
+        if (defined('OC_ADMIN') && OC_ADMIN) {
+            $isAdmin = true;
+        }
+
+        // Read now, unlinked further down once the transaction has committed. The rows
+        // are the only record of which files belong to the listing and the transaction
+        // is about to remove them, but deleting a file cannot be undone — so a delete
+        // that rolls back has to leave the listing with its images intact rather than
+        // stranding it with none.
+        $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
+
+        // t_item_moderation_log and t_item_report_log carry no foreign key to the
+        // item, so nothing blocked the delete and nothing removed them either: an
+        // id reused by a later listing would inherit the old listing's report and
+        // moderation history. The rest are covered by ON DELETE CASCADE as well,
+        // and stay listed for installs whose foreign keys were never created.
+        $dependents = array(
+            't_item_description',
+            't_item_comment',
+            't_item_resource',
+            't_item_location',
+            't_item_stats',
+            't_item_meta',
+            't_item_moderation_log',
+            't_item_report_log',
+        );
+
+        try {
+            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                foreach ($dependents as $depTable) {
+                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
+                }
+
+                // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
+                // delete by returning false rather than raising, and a plain return
+                // inside a transaction reads as success — so the dependent deletes above
+                // would commit and leave the listing in place with everything attached
+                // to it already gone. This is the same statement the DAO would run, from
+                // the layer that raises, which is what makes the rollback real. It still
+                // reports 0 for an id that matched nothing, which is not a failure.
+                return osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
+            });
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        // The row is gone for good, so the files can go too.
+        ItemActions::deleteResourcesFromHD($id, $isAdmin, $resources);
+
+        // Counters are decremented only once the row is really gone. Doing it first
+        // meant a delete that failed still took the listing out of every total, and
+        // the numbers stayed wrong until the next stats rebuild.
         if ($item['b_active'] == 1 && $item['b_enabled'] == 1 && $item['b_spam'] == 0
             && !osc_isExpired($item['dt_expiration'])
         ) {
@@ -1243,28 +1298,10 @@ class Item extends DAO
             RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
             CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
         }
-        $isAdmin = false;
-        if (defined('OC_ADMIN') && OC_ADMIN) {
-            $isAdmin = true;
-        }
-        ItemActions::deleteResourcesFromHD($id, $isAdmin);
-
-        // Each dependent-table delete had its result discarded, and legacy
-        // dao->delete() returned false on failure without throwing — so every one
-        // ran regardless of any other failing. The builder throws, so each keeps
-        // its own swallowed catch; only the final parent delete decides the return
-        // (amendment K).
-        foreach (array('t_item_description', 't_item_comment', 't_item_resource', 't_item_location', 't_item_stats', 't_item_meta') as $depTable) {
-            try {
-                osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
-            } catch (\mindstellar\database\DbException $e) {
-                // ignore: a failed dependent delete never aborted the cascade
-            }
-        }
 
         Plugins::runHook('delete_item', $id);
 
-        return parent::deleteByPrimaryKey($id);
+        return $deleted;
     }
 
     /**

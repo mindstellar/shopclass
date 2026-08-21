@@ -13,43 +13,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Manually add Shopclass themes in .zip format. If you prefer, '
-              . 'you can manually upload the decompressed theme to <em>oc-content/themes</em>.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Appearance'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Add theme &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Appearance'),
+    'title'   => __('Add theme'),
+    'help'    => __('Manually add Shopclass themes in .zip format. If you prefer, '
+                    . 'you can manually upload the decompressed theme to <em>oc-content/themes</em>.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <!-- themes list -->
 <div class="appearance">
-    <h2 class="render-title"><?php _e('Add new theme'); ?></h2>
+    <?php osc_admin_page_head(__('Add new theme')); ?>
     <div id="upload-themes" class="ui-osc-tabs-panel">
         <div class="form-horizontal">
             <?php if (is_writable(osc_themes_path())) { ?>
@@ -63,9 +37,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="form-label-checkbox"><input type="file" name="package" id="package"/></div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(__('Upload')); ?></button>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Upload'), 'type' => 'submit'),
+                    )); ?>
                 </form>
             <?php } else { ?>
                 <div class="flashmessage flashmessage-error">

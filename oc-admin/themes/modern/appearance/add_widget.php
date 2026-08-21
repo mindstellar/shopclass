@@ -27,11 +27,11 @@ $widget = __get('widget');
 if (Params::getParam('action') === 'edit_widget') {
     $title  = __('Edit widget');
     $edit   = true;
-    $button = osc_esc_html(__('Save changes'));
+    $button = __('Save changes');
 } else {
     $title  = __('Add widget');
     $edit   = false;
-    $button = osc_esc_html(__('Add widget'));
+    $button = __('Add widget');
 }
 
 // Widget types available from this screen: registered types filtered by the
@@ -107,32 +107,10 @@ foreach ($widgetTypes as $typeId => $typeSpec) {
 }
 
 if (!$inline) {
-    osc_add_hook('admin_page_header', 'customPageHeader');
-}
-function customPageHeader()
-{
-    if (Params::getParam('action') === 'edit_widget') {
-        $title = __('Edit widget');
-    } else {
-        $title = __('Add widget');
-    }
-    ?>
-    <h1><?php echo $title; ?></h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Appearance &raquo; %s'), $string);
-}
-
-if (!$inline) {
-    osc_add_filter('admin_title', 'customPageTitle');
+    osc_admin_page(array(
+        'section' => $title,
+        'title'   => __('Appearance'),
+    ));
 }
 function customHead()
 {
@@ -226,9 +204,9 @@ if (!$inline) {
                             </div>
                         <?php } ?>
                     </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-submit"><?php echo $button; ?></button>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => $button, 'type' => 'submit'),
+                    )); ?>
                 </fieldset>
             </form>
         </div>

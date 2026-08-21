@@ -43,25 +43,10 @@ if (!function_exists('addBodyClass')) {
     }
 }
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Dashboard'); ?></h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Dashboard &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Dashboard'),
+    'title'   => __('Dashboard'),
+));
 
 function chartJs()
 {

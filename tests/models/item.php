@@ -213,11 +213,20 @@ check('Item still extends DAO', is_subclass_of('Item', 'DAO'));
 check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
 pin('table name is unchanged', $itemTable, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
+/* dt_premium_expiration joined the list when premium upgrades became sellable by
+ * duration, and dt_first_pub_date joined it so ItemActions::add()'s insert (gated
+ * by this same allowlist via DAO::checkFieldKeys()) can write it. Adding a column
+ * is additive for consumers — every existing key keeps its meaning and every row
+ * gains one — so it is a deliberate change to this pin rather than a regression it
+ * caught. Removing or renaming one is not: themes and plugins read these keys
+ * straight off the row. */
 pin(
     'field allowlist is unchanged',
     array(
-        'pk_i_id', 'fk_i_user_id', 'fk_i_category_id', 'dt_pub_date', 'dt_mod_date', 'f_price', 'i_price',
-        'fk_c_currency_code', 's_contact_name', 's_contact_email', 's_contact_phone', 'b_premium', 's_ip',
+        'pk_i_id', 'fk_i_user_id', 'fk_i_category_id', 'dt_pub_date', 'dt_first_pub_date', 'dt_mod_date',
+        'f_price', 'i_price',
+        'fk_c_currency_code', 's_contact_name', 's_contact_email', 's_contact_phone', 'b_premium',
+        'dt_premium_expiration', 's_ip',
         'b_enabled', 'b_active', 'b_spam', 's_secret', 'b_show_email', 'dt_expiration',
     ),
     $model->getFields()
@@ -858,8 +867,8 @@ check('deleteByPrimaryKey returns the affected-row count', is_int($directRet) ||
 check('the item is gone', !$itemExists($directDoom));
 pin('its resource rows are gone', 0, $countRows($resTable, 'fk_i_item_id', $directDoom));
 // findByPrimaryKey(unknown) returns array() (not null), so the null-guard is not
-// taken; the cascade runs over zero rows and parent::deleteByPrimaryKey() reports
-// int 0 affected.
+// taken; the cascade runs over zero rows and the delete reports int 0 affected.
+// Zero rows matched is not a failure, so it does not roll the transaction back.
 pin('deleting an unknown id returns int 0 (the null-guard sees array(), not null)', 0, $model->deleteByPrimaryKey(999999));
 
 harness_section('Item::deleteByCity / deleteByRegion / deleteByCountry / deleteByCityArea — empty scopes');

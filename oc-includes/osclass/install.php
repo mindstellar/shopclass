@@ -44,6 +44,8 @@ require_once LIB_PATH . 'osclass/helpers/hSanitize.php';
 require_once LIB_PATH . 'osclass/default-constants.php';
 require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
+require_once LIB_PATH . 'osclass/helpers/hTheme.php';
+require_once LIB_PATH . 'osclass/helpers/hBilling.php';
 require_once LIB_PATH . 'osclass/install-functions.php';
 require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/locales.php';
@@ -57,8 +59,28 @@ if ($step < 1) {
 }
 
 $locales = osc_listLocales();
-$jsonLocales = osc_file_get_contents(osc_get_locations_json_url());
-$jsonLocales = json_decode($jsonLocales, true);
+// Languages the installer can offer: the ones already bundled, plus the ones the i18n
+// repository publishes for download. The index is read from that repository and not from
+// the location catalog — those are unrelated documents, and reading the latter as this
+// one offered the installer a list of countries to pick a language from.
+//
+// The published index is a list of locale objects; every reader here wants it keyed by
+// code, so it is reshaped once rather than searched at each use.
+$jsonLocales = array();
+foreach ($locales as $localeCode => $localeInfo) {
+    $jsonLocales[$localeCode] = $localeInfo['name'] ?? $localeCode;
+}
+
+$publishedLocales = json_decode((string) osc_file_get_contents(osc_get_i18n_repository_url()), true);
+if (is_array($publishedLocales)) {
+    foreach ($publishedLocales as $publishedLocale) {
+        if (is_array($publishedLocale) && isset($publishedLocale['locale_code'])) {
+            $code = (string) $publishedLocale['locale_code'];
+            $jsonLocales[$code] = (string) ($publishedLocale['name'] ?? $code);
+        }
+    }
+}
+asort($jsonLocales);
 $install_locale = Params::getParam('install_locale');
 
 if (Params::getParam('install_locale') && !(strlen($install_locale) > 5)) {

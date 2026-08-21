@@ -15,14 +15,11 @@
 
 osc_enqueue_script('tiny_mce');
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?></h1>
-    <?php
-}
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Edit email template'),
+));
 
-osc_add_hook('admin_page_header', 'customPageHeader');
 //customize Head
 function customHead()
 {
@@ -113,18 +110,6 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Edit email template &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
 $email      = __get('email');
 $aEmailVars = EmailVariables::newInstance()->getVariables($email);
 
@@ -132,7 +117,7 @@ $locales = OSCLocale::newInstance()->listAllEnabled();
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 
-<h2 class="render-title"><?php _e('Edit email template'); ?></h2>
+<?php osc_admin_page_head(__('Edit email template')); ?>
 <div id="pretty-form">
     <div class="col">
         <div class="row-wrapper">

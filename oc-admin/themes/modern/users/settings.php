@@ -13,42 +13,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Manage the options related to users on your site. Here, you can decide if users must register or if '
-              . 'email confirmation is necessary, among other options.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('User Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Users'),
+    'title'   => __('User Settings'),
+    'help'    => __('Manage the options related to users on your site. Here, you can decide if users must register or if '
+                    . 'email confirmation is necessary, among other options.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- settings form -->
-    <h2 class="render-title"><?php _e('User Settings'); ?></h2>
+    <?php osc_admin_page_head(__('User Settings')); ?>
     <form action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="users"/>
         <input type="hidden" name="action" value="settings_post"/>
@@ -57,39 +31,39 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="form-row">
                     <div class="form-label"> <?php _e('Settings'); ?></div>
                     <div class="form-controls">
-                        <label id="enabled_users" class="form-label-checkbox">
-                            <input type="checkbox" id="enabled_users"
-                                   name="enabled_users" <?php echo(osc_users_enabled() ? 'checked="checked"' : ''); ?>
-                                   value="1"/>
-                            <?php _e('Users enabled'); ?>
-                        </label>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'enabled_users',
+                            'id'      => 'enabled_users',
+                            'label'   => __('Users enabled'),
+                            'checked' => osc_users_enabled(),
+                        )); ?>
                     </div>
                     <div class="form-controls separate-top-medium">
-                        <label id="enabled_user_registration">
-                            <input type="checkbox" id="enabled_user_registration"
-                                   name="enabled_user_registration" <?php echo(osc_user_registration_enabled()
-                                    ? 'checked="checked"' : ''); ?> value="1"/>
-                            <?php _e('Anyone can register'); ?>
-                        </label>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'enabled_user_registration',
+                            'id'      => 'enabled_user_registration',
+                            'label'   => __('Anyone can register'),
+                            'checked' => osc_user_registration_enabled(),
+                        )); ?>
                     </div>
                     <div class="form-controls separate-top-medium">
-                        <label id="enabled_user_validation">
-                            <input type="checkbox" id="enabled_user_validation"
-                                   name="enabled_user_validation" <?php echo(osc_user_validation_enabled()
-                                    ? 'checked="checked"' : ''); ?> value="1"/>
-                            <?php _e('Users need to validate their account'); ?>
-                        </label>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'enabled_user_validation',
+                            'id'      => 'enabled_user_validation',
+                            'label'   => __('Users need to validate their account'),
+                            'checked' => osc_user_validation_enabled(),
+                        )); ?>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-label"> <?php _e('Admin notifications'); ?></div>
                     <div class="form-controls">
-                        <label id="notify_new_user" class="form-label-checkbox">
-                            <input type="checkbox" id="notify_new_user"
-                                   name="notify_new_user" <?php echo(osc_notify_new_user() ? 'checked="checked"'
-                                    : ''); ?> value="1"/>
-                            <?php _e('When a new user is registered'); ?>
-                        </label>
+                        <?php osc_admin_checkbox(array(
+                            'name'    => 'notify_new_user',
+                            'id'      => 'notify_new_user',
+                            'label'   => __('When a new user is registered'),
+                            'checked' => osc_notify_new_user(),
+                        )); ?>
                     </div>
                 </div>
                 <div class="form-row">
@@ -102,10 +76,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </label>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                           class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary', 'attrs' => array('id' => 'save_changes')),
+                )); ?>
             </div>
         </fieldset>
     </form>

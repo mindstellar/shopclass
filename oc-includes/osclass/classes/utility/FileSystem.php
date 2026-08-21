@@ -671,6 +671,12 @@ class FileSystem
             }
             curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            // Advertise every encoding this curl can decode, and let it decompress
+            // transparently. Without it curl sends no Accept-Encoding at all and servers
+            // hand back the raw file: the largest country in the location dataset arrives
+            // as 76 MB rather than 5.7. The bytes returned are identical either way, so
+            // checksums over the result are unaffected.
+            @curl_setopt($ch, CURLOPT_ENCODING, '');
             if (stripos($url, 'https') !== false) {
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
@@ -870,6 +876,11 @@ class FileSystem
                     Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
                 );
                 curl_setopt($ch, CURLOPT_FILE, $fp);
+                // Decompressed in flight, so the file on disk is the real thing and the
+                // checksum below still matches — it just travels in a fraction of the
+                // bytes. The largest country in the location catalog is 76 MB raw and
+                // 5.7 MB gzipped.
+                @curl_setopt($ch, CURLOPT_ENCODING, '');
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
                 curl_setopt($ch, CURLOPT_REFERER, osc_base_url());

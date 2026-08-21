@@ -690,7 +690,11 @@ pin('insertCategories costs one query per category', 2, harness_query_count(stat
 pin('cleanCategoriesFromGroup costs one query', 1, harness_query_count(static function () use ($model, $costGroup) {
     $model->cleanCategoriesFromGroup($costGroup);
 }));
-pin('deleteByPrimaryKey costs four queries', 4, harness_query_count(static function () use ($model) {
+/* Three more statements than the four this cost before: the delete that clears
+ * submissions left behind by the removed form, plus the BEGIN and COMMIT now
+ * wrapping the cascade so a failed parent delete cannot leave a form stripped of
+ * its links and submissions but still listed. */
+pin('deleteByPrimaryKey costs seven queries', 7, harness_query_count(static function () use ($model) {
     $model->deleteByPrimaryKey(999999);
 }));
 pin('setFieldSingleGroup costs one query when detaching', 1, harness_query_count(static function () use ($model, $costField) {

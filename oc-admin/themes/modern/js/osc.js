@@ -221,3 +221,19 @@ window.oscTinymceTheme = function () {
 
     return { skin: dark ? 'oxide-dark' : 'oxide', content_css: dark ? 'dark' : 'default' };
 };
+
+// Select-all for a list's bulk-action column. Every list screen shipped its own
+// copy of this listener; it is one behaviour, so it lives once. Delegated from the
+// document so it also covers a table whose rows arrive after load.
+document.addEventListener('change', function (event) {
+    var checkAll = event.target;
+    if (!checkAll || checkAll.id !== 'check_all') {
+        return;
+    }
+    var scope = checkAll.closest('table') || document;
+    scope.querySelectorAll('.col-bulkactions input[type=checkbox]').forEach(function (cb) {
+        if (cb !== checkAll) {
+            cb.checked = checkAll.checked;
+        }
+    });
+});

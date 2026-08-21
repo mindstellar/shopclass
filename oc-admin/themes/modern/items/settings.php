@@ -13,14 +13,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Listing Settings'),
+    'help'    => __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.'),
+));
 
 //customize Head
 function customHead()
@@ -63,34 +60,11 @@ function render_offset()
     return 'row-offset';
 }
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box" aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Listing Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="item-settings">
-        <h2 class="render-title"><?php _e('Listing Settings'); ?></h2>
+        <?php osc_admin_page_head(__('Listing Settings')); ?>
         <form action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="items"/>
             <input type="hidden" name="action" value="settings_post"/>
@@ -99,13 +73,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"> <?php _e('Settings'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_reg_user_post() ? 'checked="checked"'
-                                        : ''); ?> name="reg_user_post" value="1"/>
-                                    <?php _e('Only logged in users can post listings'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'reg_user_post',
+                                'label'   => __('Only logged in users can post listings'),
+                                'checked' => osc_reg_user_post(),
+                            )); ?>
                             <div>
                                 <?php printf(
                                     __('An user has to wait %s seconds between each listing added'),
@@ -172,13 +144,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"> <?php _e('Contact publisher'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_reg_user_can_contact() ? 'checked="checked"'
-                                    : ''); ?> name="reg_user_can_contact" value="1"/>
-                                    <?php _e('Only allow registered users to contact publisher'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'reg_user_can_contact',
+                                'label'   => __('Only allow registered users to contact publisher'),
+                                'checked' => osc_reg_user_can_contact(),
+                            )); ?>
                             <div class="separate-top-medium">
                                 <label>
                                     <input type="checkbox" <?php echo(osc_item_attachment() ? 'checked="checked"'
@@ -191,14 +161,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"> <?php _e('Share listing'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_enable_send_friend() ? 'checked="checked"'
-                                    : ''); ?> name="enable_send_friend" value="1"/>
-                                    <?php _e('Enable the "send to a friend" form'); ?>
-                                </label>
-                                <div class="help-box"><?php _e('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.'); ?></div>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'enable_send_friend',
+                                'label'   => __('Enable the "send to a friend" form'),
+                                'checked' => osc_enable_send_friend(),
+                                'help'    => __('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.'),
+                            )); ?>
                             <div class="separate-top-medium">
                                 <label>
                                     <input type="checkbox" <?php echo(osc_reg_user_can_send_friend()
@@ -211,13 +179,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"> <?php _e('Notifications'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_notify_new_item() ? 'checked="checked"'
-                                    : ''); ?> name="notify_new_item" value="1"/>
-                                    <?php _e('Notify admin when a new listing is added'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'notify_new_item',
+                                'label'   => __('Notify admin when a new listing is added'),
+                                'checked' => osc_notify_new_item(),
+                            )); ?>
                             <div class="separate-top-medium">
                                 <label>
                                     <input type="checkbox" <?php echo(osc_notify_contact_item() ? 'checked="checked"'
@@ -270,13 +236,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <div class="form-row">
                         <div class="form-label"> <?php _e('Rich Edit'); ?></div>
                         <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_tinymce_frontend() ? 'checked="checked"'
-                                        : ''); ?> name="tinymce" value="1"/>
-                                    <?php _e('Enable TinyMCE on frontend'); ?>
-                                </label>
-                            </div>
+                            <?php osc_admin_checkbox(array(
+                                'name'    => 'tinymce',
+                                'label'   => __('Enable TinyMCE on frontend'),
+                                'checked' => osc_tinymce_frontend(),
+                            )); ?>
                         </div>
                     </div>
                     <div class="form-row">
@@ -326,10 +290,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'save_changes')),
+                    )); ?>
                 </div>
             </fieldset>
         </form>

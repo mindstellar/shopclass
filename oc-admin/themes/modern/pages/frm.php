@@ -66,14 +66,9 @@ function customFrmText($return = 'title')
     return $text[$return];
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Pages'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => __('Pages'),
+));
 
 /**
  * @param $string
@@ -170,7 +165,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminPageForm" class="col-xl-10">
     <div class="row">
         <div class="col">
-            <h2 class="render-title"><?php echo osc_esc_html(customFrmText('title')); ?></h2>
+            <?php osc_admin_page_head(customFrmText('title')); ?>
         </div>
     </div>
     <div class="row">

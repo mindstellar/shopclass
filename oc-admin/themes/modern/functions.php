@@ -4,6 +4,11 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
+// The shared component vocabulary every screen draws from — page head, panel, status
+// pill, empty state, definition rows. Kept in its own file because it is a library, not
+// page glue, and because a screen should be able to read as a list of components.
+require_once __DIR__ . '/parts/ui.php';
+
 function admin_js_lang_string()
 {
     ?>

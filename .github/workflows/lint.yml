@@ -63,3 +63,10 @@ jobs:
 
       - name: Check PHP 8.0 floor
         run: composer compat
+
+      # A write that resolves to the inherited DAO reports failure by returning false,
+      # which reads as success inside a transaction and commits everything before it.
+      # Grepping for the query helpers cannot find these — the call that shipped this
+      # bug was `parent::deleteByPrimaryKey($id)`, with no query in sight.
+      - name: No legacy DAO write inside a transaction
+        run: php tools/ci/legacy-dao-in-transaction.php

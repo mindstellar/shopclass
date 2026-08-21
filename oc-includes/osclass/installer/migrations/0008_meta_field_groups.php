@@ -63,6 +63,15 @@ return new class () implements MigrationInterface {
             $sql = 'ALTER TABLE ' . $fields . ' ADD COLUMN fk_i_group_id INT UNSIGNED NULL DEFAULT NULL';
             $conn->execute($sql);
         }
+
+        // A field's order within its group. Declared in struct.sql from the same
+        // release as the rest of this feature but never added here, so it arrived only
+        // by way of the schema reconciler -- and 0009 reads it, which made the whole
+        // migration sequence fail on any install old enough not to have it already.
+        if (!$this->columnExists($conn, $fields, 'i_position')) {
+            $sql = 'ALTER TABLE ' . $fields . ' ADD COLUMN i_position INT(2) UNSIGNED NOT NULL DEFAULT 0';
+            $conn->execute($sql);
+        }
     }
 
     /**

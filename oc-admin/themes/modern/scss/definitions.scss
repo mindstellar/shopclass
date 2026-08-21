@@ -82,4 +82,19 @@ $status-badge: (
         // word source (PHP), no new entry needed for that one.
         "untested":   (tint: var(--osc-warning-tint), ink: var(--osc-warning-deep),  icon: "\f291"), // ◷ clock
         "undeclared": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis),  icon: "\f504"), // ? question circle
+
+        // Payment orders. Mapped onto the severity vocabulary above rather than given a
+        // palette of their own: an order that settled is the same KIND of good as an active
+        // listing, and a payment that failed is the same kind of bad as a blocked one. A
+        // second colour language for money would spend the accent budget twice and teach the
+        // admin two grammars for one idea.
+        //
+        // "pending" is the one that earns a distinct look: it is not good or bad, it is
+        // waiting, and it is the state an admin acts on. It borrows the clock from
+        // "untested" for exactly that reason -- same question, same silhouette.
+        "paid":      (tint: var(--osc-success-tint), ink: var(--osc-success),      icon: "\f287"), // ● disc
+        "pending":   (tint: var(--osc-warning-tint), ink: var(--osc-warning-deep), icon: "\f291"), // ◷ clock
+        "failed":    (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
+        "refunded":  (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
+        "cancelled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
 );

@@ -36,14 +36,9 @@ function customFrmText()
     return $return;
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
+osc_admin_page(array(
+    'section' => __('Users'),
+));
 
 $aux = customFrmText();
 
@@ -62,7 +57,7 @@ function customPageTitle($string)
 osc_add_filter('admin_title', 'customPageTitle');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php echo $aux['title']; ?></h2>
+    <?php osc_admin_page_head($aux['title']); ?>
     <!-- add/edit admin form -->
     <div class="settings-user">
         <ul id="error_list"></ul>
@@ -133,12 +128,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
                     <?php osc_run_hook('admin_profile_form', $admin); ?>
                     <div class="clear"></div>
-                    <div class="form-actions">
-                        <?php if ($aux['admin_edit']) { ?>
-                            <a href="javascript:history.go(-1)" class="btn btn-dim"><?php _e('Cancel'); ?></a>
-                        <?php } ?>
-                        <button class="btn btn-submit" type="submit"><?php echo osc_esc_html($aux['btn_text']); ?></button>
-                    </div>
+                    <?php
+                    $formActions = array();
+                    if ($aux['admin_edit']) {
+                        $formActions[] = array('label' => __('Cancel'), 'url' => 'javascript:history.go(-1)', 'variant' => 'dim');
+                    }
+                    $formActions[] = array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary');
+                    osc_admin_form_actions($formActions);
+                    ?>
                 </div>
             </fieldset>
         </form>

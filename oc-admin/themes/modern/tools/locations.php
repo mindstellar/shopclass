@@ -72,33 +72,16 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Statistics'); ?></h1>
-    <?php
-}
-
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Location stats &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Statistics'),
+    'title'   => __('Location stats'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="locations-stats-setting">
     <!-- settings form -->
     <div id="">
-        <h2 class="render-title"><?php _e('Locations stats'); ?></h2>
+        <?php osc_admin_page_head(__('Location stats')); ?>
         <?php if ($worktodo > 0) { ?>
             <p>
                 <span id="percent">0</span> % <?php _e('Complete'); ?> <span class="spinner-border spinner-border-sm text-primary"></span>
@@ -112,11 +95,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="page" value="tools"/>
             <fieldset>
                 <div class="form-horizontal">
-                    <div class="form-actions">
-                        <input id="button_save" type="submit"
-                               value="<?php echo osc_esc_html(__('Calculate location stats')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Calculate location stats'), 'type' => 'submit', 'variant' => 'primary', 'attrs' => array('id' => 'button_save')),
+                    )); ?>
                 </div>
             </fieldset>
         </form>

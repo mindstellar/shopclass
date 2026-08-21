@@ -188,6 +188,8 @@ class Region extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
+        osc_run_hook('before_delete_region', $pk);
+
         $mCities = City::newInstance();
         $aCities = $mCities->findByRegion($pk);
         $result  = 0;
@@ -197,12 +199,29 @@ class Region extends DAO
         Item::newInstance()->deleteByRegion($pk);
         RegionStats::newInstance()->delete(array('fk_i_region_id' => $pk));
         User::newInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
+
+        // Recorded renames for this region. The table has no foreign key -- fk_i_id
+        // points into either t_region or t_city depending on e_type -- so nothing
+        // removes these rows on its own, and a leftover slug would keep redirecting
+        // to a region that no longer exists.
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
+                ->where('e_type', 'REGION')
+                ->where('fk_i_id', (int)$pk)
+                ->delete();
+        } catch (\Throwable $e) {
+            // A stale redirect is not worth failing the delete over.
+        }
         // Count the own-row delete as a failure only when the query itself
         // errors (DAO::delete() returns false), not when it validly matches no
         // rows (returns 0). Deleting a primary key that does not exist is not a
         // failure -- there was simply nothing to remove.
         if ($this->delete(array('pk_i_id' => $pk)) === false) {
             $result++;
+        }
+
+        if ($result === 0) {
+            osc_run_hook('after_delete_region', $pk);
         }
 
         return $result;
@@ -222,6 +241,36 @@ class Region extends DAO
     {
         try {
             $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
+    }
+
+    /**
+     * Find a region by its upstream source id
+     *
+     * i_source_id is the identifier the upstream location dataset uses for this row, and
+     * it is the only stable way to match a region across dataset updates, because names
+     * and slugs are renamed upstream constantly. It is unique table-wide, not scoped to
+     * a country.
+     *
+     * @access public
+     *
+     * @param $sourceId
+     *
+     * @return array
+     * @since  6.2.0
+     */
+    public function findBySourceId($sourceId)
+    {
+        try {
+            $row = osc_db_table($this->getTableName())->where('i_source_id', $sourceId)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }

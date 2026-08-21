@@ -131,6 +131,8 @@ class CityArea extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
+        osc_run_hook('before_delete_city_area', $pk);
+
         Item::newInstance()->deleteByCityArea($pk);
         User::newInstance()->update(
             array('fk_i_city_area_id' => null, 's_city_area' => ''),
@@ -139,6 +141,8 @@ class CityArea extends DAO
         if (!$this->delete(array('pk_i_id' => $pk))) {
             return 1;
         }
+
+        osc_run_hook('after_delete_city_area', $pk);
 
         return 0;
     }

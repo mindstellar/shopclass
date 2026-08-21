@@ -97,6 +97,8 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors
         run: php tests/params-typed-accessors.php
+      - name: Captcha posted token
+        run: php tests/captcha-posted-token.php
       - name: Rewrite param decode
         run: php tests/rewrite-param-decode.php
       - name: Rewrite route match
@@ -115,3 +117,21 @@ jobs:
         run: php tests/dao-contract.php
       - name: Model contracts
         run: php tests/run-models.php
+      - name: Delete cascades
+        run: php tests/delete-cascade.php
+      # The upgrade screen and upgradeDB() are replaced at different moments — an
+      # opcode cache can serve the previous class behind the new template — so the
+      # screen has to stay truthful when the answer predates it.
+      - name: Upgrade payload contract
+        run: php tests/upgrade-payload-contract.php
+      # Needs no database or network: the catalog's pointer and its manifest both carry a
+      # `countries` key, and telling them apart on presence rather than type has broken
+      # the catalog twice, both times hidden by a warm cache.
+      - name: Location catalog shapes
+        run: php tests/location-catalog-shapes.php
+      # Identity is the upstream id; names are the fallback that carries a place across a
+      # change of source. Both halves are easy to get subtly wrong -- a row that counts as
+      # ambiguous with itself matches nothing and re-imports a whole country, and a name
+      # shared by 117 villages matching one of them retires the other 116.
+      - name: Location matching
+        run: php tests/location-matching.php

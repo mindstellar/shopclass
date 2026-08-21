@@ -43,7 +43,7 @@ function osc_isExpired($dt_expiration)
  *
  * @return bool|void
  */
-function osc_deleteResource($id, $admin)
+function osc_deleteResource($id, $admin, $resource = null)
 {
     if (defined('DEMO')) {
         return false;
@@ -51,7 +51,13 @@ function osc_deleteResource($id, $admin)
     if (is_array($id)) {
         $id = $id[0];
     }
-    $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+    // $resource lets a caller hand over the row it already read. Deleting a listing
+    // removes the resource rows inside a transaction and only unlinks the files once
+    // that commits, by which point this could no longer look the row up — and without
+    // the row there are no paths to remove and no resource to hand to the hook.
+    if (!is_array($resource)) {
+        $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+    }
     if ($resource !== null) {
         Log::newInstance()->insertLog(
             'item',
@@ -982,13 +988,18 @@ function osc_zip_folder($archive_folder, $archive_name)
  */
 function osc_check_recaptcha()
 {
-    $gReCaptchaResponse = Params::getParam('g-recaptcha-response');
-    if ($gReCaptchaResponse !== '' || $gReCaptchaResponse !== false || $gReCaptchaResponse !== 0) {
-        $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
-        $resp      = $recaptcha->verify($gReCaptchaResponse, Params::getServerParam('REMOTE_ADDR'));
-        if ($resp->isSuccess()) {
-            return true;
-        }
+    if (strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) !== 'POST') {
+        return false;
+    }
+    // Opaque token: skip HTMLPurifier (same idiom as installer passwords).
+    $gReCaptchaResponse = Params::getParamString('g-recaptcha-response', false, false);
+    if ($gReCaptchaResponse === '') {
+        return false;
+    }
+    $recaptcha = new ReCaptcha(osc_recaptcha_private_key());
+    $resp      = $recaptcha->verify($gReCaptchaResponse, Params::getServerParam('REMOTE_ADDR'));
+    if ($resp->isSuccess()) {
+        return true;
     }
 
     return false;
@@ -1010,8 +1021,11 @@ function osc_check_captcha()
         case 'recaptcha':
             return osc_check_recaptcha();
         case 'turnstile':
-            $token = Params::getParam('cf-turnstile-response');
-            if (!is_string($token) || $token === '' || strlen($token) > 2048) {
+            if (strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) !== 'POST') {
+                return false;
+            }
+            $token = Params::getParamString('cf-turnstile-response', false, false);
+            if ($token === '' || strlen($token) > 2048) {
                 return false;
             }
             try {
@@ -1290,40 +1304,48 @@ function osc_check_theme_update($update_uri, $version = null)
 }
 
 /**
- * @param string $update_uri
- * @param null   $version
+ * Whether the translations repository has a newer version of an installed language.
  *
- * @param bool   $disable
+ * The published index describes every language at once, so it is read once per
+ * request however many languages are installed -- the alternative was a request per
+ * language, which is what made this worth disabling in the first place.
+ *
+ * Anything that stops the index being read means no update is offered: a site with no
+ * outbound network is not a site with stale translations, it is a site that cannot be
+ * told either way.
+ *
+ * @param string      $update_uri Locale code, e.g. 'fr_FR'
+ * @param string|null $version    Version currently installed
+ * @param bool        $disable    Kept for callers that passed it; true still short-circuits
  *
  * @return bool
- * @deprecated since 4.0.0
  */
-function osc_check_language_update($update_uri, $version = null, $disable = true)
+function osc_check_language_update($update_uri, $version = null, $disable = false)
 {
     if ($disable) {
         return false;
     }
-    $uri = _get_market_url('languages', $update_uri);
-    if ($uri != false) {
-        if (false === ($json = @osc_file_get_contents($uri))) {
-            return false;
-        }
 
-        $data = json_decode($json, true);
-        if (isset($data['s_version'])) {
-            $result = version_compare2($version, $data['s_version']);
-            if ($result == -1) {
-                // market have a newer version of this language
-                $result = version_compare2($data['s_version'], OSCLASS_VERSION);
-                if ($result == 0 || $result == -1) {
-                    // market version is compatible with current osclass version
-                    return true;
+    static $published = null;
+
+    if ($published === null) {
+        $published = array();
+        $json      = @osc_file_get_contents(osc_get_i18n_repository_url());
+        $list      = json_decode((string) $json, true);
+        if (is_array($list)) {
+            foreach ($list as $locale) {
+                if (is_array($locale) && isset($locale['locale_code'], $locale['version'])) {
+                    $published[(string) $locale['locale_code']] = (string) $locale['version'];
                 }
             }
         }
     }
 
-    return false;
+    if ($version === null || !isset($published[$update_uri])) {
+        return false;
+    }
+
+    return version_compare((string) $version, $published[$update_uri], '<');
 }
 
 /**

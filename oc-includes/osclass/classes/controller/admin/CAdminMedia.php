@@ -21,7 +21,10 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminMedia extends AdminSecBaseModel
 {
-    private $resourcesManager;
+    /** Page sizes offered in the toolbar; anything else falls back to the default. */
+    public const PER_PAGE_OPTIONS = array(10, 25, 50, 100, 250, 500);
+
+    private ItemResource $resourcesManager;
 
     public function __construct()
     {
@@ -46,9 +49,14 @@ class CAdminMedia extends AdminSecBaseModel
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
             default:
-                $type    = $this->resolveType(Params::getParam('type'));
-                $perPage = 24;
-                $iPage   = max(1, Params::getParamInt('iPage'));
+                $type = $this->resolveType(Params::getParam('type'));
+                // Same ladder every other list screen offers, so the control means the
+                // same thing here as it does on listings or users.
+                $perPage = Params::getParamInt('iDisplayLength');
+                if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
+                    $perPage = 25;
+                }
+                $iPage = max(1, Params::getParamInt('iPage'));
                 $data    = osc_media_library_query($type, $iPage, $perPage);
 
                 // Snap a too-high page back to the last one with results.
@@ -63,6 +71,7 @@ class CAdminMedia extends AdminSecBaseModel
                 $this->_exportVariableToView('mediaTotal', $data['total']);
                 $this->_exportVariableToView('mediaPerPage', $perPage);
                 $this->_exportVariableToView('mediaPage', $iPage);
+                $this->_exportVariableToView('mediaPerPageOptions', self::PER_PAGE_OPTIONS);
                 $this->doView('media/index.php');
                 break;
         }

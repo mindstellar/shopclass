@@ -17,13 +17,10 @@ $categories  = __get('categories');
 $selected    = __get('selected');
 $plugin_data = __get('plugin_data');
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php echo osc_apply_filter('custom_plugin_title', __('Plugins')); ?></h1>
-    <?php
-}
+osc_admin_page(array(
+    'section' => static fn () => osc_apply_filter('custom_plugin_title', __('Plugins')),
+    'title'   => __('Plugins'),
+));
 
 //customize Head
 function customHead()
@@ -59,18 +56,6 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Plugins &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
 osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- plugin configuration -->
     <div class="plugin-configuration form-horizontal">
@@ -79,7 +64,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="plugin" value="<?php echo $plugin_data['filename']; ?>"/>
             <input type="hidden" name="plugin_short_name" value="<?php echo $plugin_data['short_name']; ?>"/>
             <fieldset>
-                <h2 class="render-title"><?php echo $plugin_data['plugin_name']; ?></h2>
+                <?php osc_admin_page_head($plugin_data['plugin_name']); ?>
                 <p class="text"><?php echo $plugin_data['description']; ?></p>
                 <div class="form-row">
                     <div><?php _e('Select the categories where you want to apply these attribute:'); ?></div>
@@ -98,10 +83,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" id="plugin-configuration-submit"
-                           value="<?php echo osc_esc_html(__('Update')); ?>" class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Update'), 'type' => 'submit', 'attrs' => array('id' => 'plugin-configuration-submit')),
+                )); ?>
             </fieldset>
         </form>
     </div>

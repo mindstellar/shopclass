@@ -179,7 +179,13 @@ class SchemaReconciler
      */
     private function getTableFieldsFromStruct($table, &$struct_queries)
     {
-        if (preg_match('|\((.*)\)|ms', $struct_queries[strtolower($table)], $match)) {
+        // Anchored to the bracket that opens THIS table rather than the first one
+        // anywhere in the statement: a comment above the CREATE TABLE containing a
+        // bracket used to start the column list early, and its prose was then read
+        // as column definitions. SqlScript strips line comments now, so this is the
+        // second of two independent guards against the same fault.
+        $pattern = '|CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?[^\s`(]+`?\s*\((.*)\)|ims';
+        if (preg_match($pattern, $struct_queries[strtolower($table)], $match)) {
             $fields = explode("\n", trim($match[1]));
             foreach ($fields as $key => $value) {
                 $fields[$key] = trim(preg_replace('/,$/', '', $value));
@@ -260,15 +266,25 @@ class SchemaReconciler
             //Every field should we on the definition, so else SHOULD never happen,
             // unless a very aggressive plugin modify our tables
             if (array_key_exists(strtolower($tbl_field['Field']), $normal_fields)) {
+                // The declaration is "<name> <type> ...", but struct.sql is free to pad
+                // between the two to keep a table's types in a column. Matching a single
+                // literal space made the type of every aligned declaration come out
+                // empty, which never equals the live type, so the reconciler proposed a
+                // CHANGE COLUMN that changed nothing on every upgrade. Anchored to the
+                // start of the declaration as well, so a name appearing again later in
+                // it -- inside a DEFAULT, say -- cannot be mistaken for the type.
+                $declaration = $normal_fields[strtolower($tbl_field['Field'])];
+                $fieldName   = preg_quote($tbl_field['Field'], '|');
+
                 // Take the of the field
                 if (preg_match(
-                    '|' . $tbl_field['Field'] . " (ENUM\s*\(([^\)]*)\))|i",
-                    $normal_fields[strtolower($tbl_field['Field'])],
+                    '|^' . $fieldName . "\s+(ENUM\s*\(([^\)]*)\))|i",
+                    $declaration,
                     $match
                 )
                     || preg_match(
-                        '|' . $tbl_field['Field'] . ' ([^ ]*( unsigned)?)|i',
-                        $normal_fields[strtolower($tbl_field['Field'])],
+                        '|^' . $fieldName . '\s+([^ ]+(\s+unsigned)?)|i',
+                        $declaration,
                         $match
                     )
                 ) {
@@ -476,46 +492,143 @@ class SchemaReconciler
      */
     private function createForeignKey($tbl_constraint, $table, &$struct_queries, $constrains)
     {
-        $foreignRepited = array();
-        $constrainsDB   = $foreignRepited;
-        if (preg_match_all(
-            "| CONSTRAINT\s+(.*)\s+FOREIGN KEY\s+(.*)\s+REFERENCES\s+(.*),?\n|i",
-            $tbl_constraint['Create Table'],
-            $default_match
-        )
-        ) {
-            $aKeyName = $default_match[1];
-            $aTables  = $default_match[2];
-            $aRefere  = $default_match[3];
-            foreach ($aTables as $index => $value) {
-                $_refere  = str_replace('`', '', $aRefere[$index]);
-                $_keyName = str_replace('`', '', $aKeyName[$index]);
-                $_refere  = str_replace(',', '', $_refere);
-                $_value   = str_replace('`', '', $value);
-                if (in_array($_refere, $constrainsDB)) {
-                    $foreignRepited[] = $_keyName;
-                }
-                $constrainsDB[$_value] = $_refere;
+        $createTable = isset($tbl_constraint['Create Table']) ? $tbl_constraint['Create Table'] : '';
+
+        // Existing keys, indexed by the column list they are declared on. A second key
+        // on the same columns is a duplicate an earlier reconcile added and is dropped,
+        // so the pass converges instead of appending another one every upgrade.
+        $existing = array();
+        $duplicates = array();
+        foreach ($this->parseForeignKeys($createTable) as $fk) {
+            if (isset($existing[$fk['columns']])) {
+                $duplicates[] = $fk['name'];
+                continue;
+            }
+            $existing[$fk['columns']] = $fk;
+        }
+
+        foreach ($constrains as $columns => $reference) {
+            $wantColumns   = $this->normalizeKeyColumns($columns);
+            $wantReference = $this->normalizeReference($reference);
+            $wantActions   = $this->normalizeReferentialActions($reference);
+
+            if (!isset($existing[$wantColumns])) {
+                $struct_queries[] = 'ALTER TABLE ' . $table
+                    . ' ADD FOREIGN KEY ' . $columns . ' REFERENCES ' . $reference;
+                continue;
+            }
+
+            $have = $existing[$wantColumns];
+            if ($have['reference'] === $wantReference && $have['actions'] === $wantActions) {
+                continue;
+            }
+
+            // The key exists but points elsewhere, or -- far more commonly -- carries a
+            // different ON DELETE rule than struct.sql now declares. A referential
+            // action cannot be altered in place, so replace the key rather than add a
+            // second one beside it.
+            $duplicates[]     = $have['name'];
+            $struct_queries[] = 'ALTER TABLE ' . $table
+                . ' ADD FOREIGN KEY ' . $columns . ' REFERENCES ' . $reference;
+        }
+
+        // Dropped before anything is added: MySQL will not accept two keys on the same
+        // columns, and the ADDs above are queued after these.
+        foreach (array_reverse($duplicates) as $name) {
+            array_unshift($struct_queries, 'ALTER TABLE ' . $table . ' DROP FOREIGN KEY ' . $name);
+        }
+    }
+
+    /**
+     * Foreign keys declared in a SHOW CREATE TABLE body, as name / columns / reference /
+     * referential-action parts, each already normalised for comparison.
+     *
+     * @param string $createTable
+     *
+     * @return array
+     */
+    private function parseForeignKeys($createTable)
+    {
+        $keys = array();
+        $pattern = '/CONSTRAINT\s+`?([^`\s]+)`?\s+FOREIGN KEY\s*\(([^)]*)\)'
+            . '\s*REFERENCES\s*`?([^`\s(]+)`?\s*\(([^)]*)\)([^,\n]*)/i';
+
+        if (preg_match_all($pattern, $createTable, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $keys[] = array(
+                    'name'      => $match[1],
+                    'columns'   => $this->normalizeKeyColumns($match[2]),
+                    'reference' => $this->normalizeReference($match[3] . '(' . $match[4] . ')'),
+                    'actions'   => $this->normalizeReferentialActions($match[5]),
+                );
             }
         }
 
-        if (count($foreignRepited) > 0) {
-            foreach ($foreignRepited as $_key) {
-                $struct_queries[] = 'ALTER TABLE ' . $table . ' DROP FOREIGN KEY ' . $_key;
-            }
+        return $keys;
+    }
+
+    /**
+     * A column list reduced to a comparable form: no backticks, parentheses or spacing
+     * differences between `(fk_i_id)`, "( `fk_i_id` )" and `fk_i_id`.
+     *
+     * @param string $columns
+     *
+     * @return string
+     */
+    private function normalizeKeyColumns($columns)
+    {
+        $columns = str_replace(array('`', '(', ')', ' ', "\t"), '', $columns);
+
+        return strtolower(trim($columns, ','));
+    }
+
+    /**
+     * The referenced table and columns of a foreign key, with any trailing ON DELETE /
+     * ON UPDATE clause removed so that the target can be compared independently of the
+     * referential actions.
+     *
+     * @param string $reference
+     *
+     * @return string
+     */
+    private function normalizeReference($reference)
+    {
+        $reference = preg_replace('/\bON\s+(DELETE|UPDATE)\b.*$/is', '', $reference);
+        $reference = str_replace(array('`', ' ', "\t", "\n"), '', $reference);
+
+        return strtolower(trim($reference, ','));
+    }
+
+    /**
+     * The ON DELETE / ON UPDATE clauses of a foreign key, reduced to a comparable form.
+     *
+     * RESTRICT and NO ACTION are the default and behave identically, and MySQL omits
+     * them from SHOW CREATE TABLE, so all three spellings normalise to the empty string
+     * -- otherwise a key that already matches struct.sql would be rebuilt on every pass.
+     *
+     * @param string $reference
+     *
+     * @return string
+     */
+    private function normalizeReferentialActions($reference)
+    {
+        if (!preg_match_all('/\bON\s+(DELETE|UPDATE)\s+(RESTRICT|CASCADE|SET\s+NULL|NO\s+ACTION|SET\s+DEFAULT)/i', $reference, $matches, PREG_SET_ORDER)) {
+            return '';
         }
 
-        $keys = array_keys($constrainsDB);
-        foreach ($constrains as $k => $v) {
-            if (in_array($k, $keys) && $constrainsDB[$k] == $v) {
-                // nothing to do
-            } else {
-                // alter table
-                $index = 'FOREIGN KEY ' . $k . ' REFERENCES ' . $v;
-
-                $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $index;
+        $actions = array();
+        foreach ($matches as $match) {
+            $event  = strtoupper($match[1]);
+            $action = strtoupper(preg_replace('/\s+/', ' ', $match[2]));
+            if ($action === 'RESTRICT' || $action === 'NO ACTION') {
+                continue;
             }
+            $actions[$event] = 'ON ' . $event . ' ' . $action;
         }
+
+        ksort($actions);
+
+        return implode(' ', $actions);
     }
 }
 

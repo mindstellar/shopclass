@@ -129,6 +129,8 @@ class Country extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
+        osc_run_hook('before_delete_country', $pk);
+
         $mRegions = Region::newInstance();
         $aRegions = $mRegions->findByCountry($pk);
         $result   = 0;
@@ -143,6 +145,12 @@ class Country extends DAO
         );
         if (!$this->delete(array('pk_c_code' => $pk))) {
             $result++;
+        }
+
+        // Regions and cities record their own slug history and clear it as they go,
+        // so a country only has to account for what the recursion above left behind.
+        if ($result === 0) {
+            osc_run_hook('after_delete_country', $pk);
         }
 
         return $result;

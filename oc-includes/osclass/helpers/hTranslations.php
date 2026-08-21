@@ -66,6 +66,53 @@ function _m($key)
 }
 
 /**
+ * Translate a string whose English wording is ambiguous on its own.
+ *
+ * The context is not shown to anyone -- it exists so a translator can tell two
+ * identical English strings apart. "Post" as a button and "Post" as a noun are one
+ * msgid to gettext and two different words in most languages; without a context
+ * they cannot both be right.
+ *
+ * @param string $key
+ * @param string $context Disambiguator, e.g. 'verb' or 'listing status'
+ * @param string $domain
+ *
+ * @return string
+ */
+function _x($key, $context, $domain = 'core')
+{
+    $gt     = Translation::newInstance()->_get();
+    $string = $gt->dpgettext($domain, $context, $key);
+
+    return osc_apply_filter('gettext', $string);
+}
+
+/**
+ * Translate a string with context and echo it.
+ *
+ * @param string $key
+ * @param string $context
+ * @param string $domain
+ */
+function _ex($key, $context, $domain = 'core')
+{
+    echo _x($key, $context, $domain);
+}
+
+/**
+ * Translate a flash message with context.
+ *
+ * @param string $key
+ * @param string $context
+ *
+ * @return string
+ */
+function _mx($key, $context)
+{
+    return _x($key, $context, 'messages');
+}
+
+/**
  * Retrieve the singular or plural translation of the string.
  *
  * @param string $single_key

@@ -13,42 +13,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Manage the comments that users publish on the listings on your site.'
-              . ' You can also edit, delete, activate or block comments.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listings'); ?>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=comments'; ?>"
-           class="ms-1 float-end" title="<?php echo osc_esc_html(__('Settings')); ?>"
-           aria-label="<?php echo osc_esc_html(__('Comment settings')); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box" aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Comments &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listings'),
+    'title'   => __('Comments'),
+    'help'    => __('Manage the comments that users publish on the listings on your site.'
+                    . ' You can also edit, delete, activate or block comments.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-gear-fill',
+            'url'   => osc_admin_base_url(true) . '?page=settings&amp;action=comments',
+            'title' => __('Settings'),
+        ),
+    ),
+));
 
 $aData     = __get('aData');
 $aRawRows  = __get('aRawRows');
@@ -59,7 +36,7 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php _e('Comments'); ?></h2>
+<?php osc_admin_page_head(__('Comments')); ?>
 <div class="relative">
     <div id="listing-toolbar">
         <div class="float-right">
@@ -76,17 +53,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
           data-dialog-open="false">
         <input type="hidden" name="page" value="comments"/>
         <input type="hidden" name="action" value="bulk_actions"/>
-        <div id="bulk-actions">
-            <div class="input-group input-group-sm">
-                <?php osc_print_bulk_actions(
-                    'bulk_actions',
-                    'bulk_actions',
-                    __get('bulk_options'),
-                    'select-box-extra'
-                ); ?>
-                <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-            </div>
-        </div>
+        <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -116,13 +83,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <?php } ?>
                         </tr>
                     <?php } ?>
-                <?php } else { ?>
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            <p><?php _e('No comments to moderate.'); ?></p>
-                        </td>
-                    </tr>
-                <?php } ?>
+                <?php } else {
+                    osc_admin_table_empty(count($columns), array(
+                        'icon'  => 'bi-chat-left-text',
+                        'title' => __('No comments to moderate'),
+                        'text'  => __('Comments visitors leave on listings appear here for approval.'),
+                    ));
+                } ?>
                 </tbody>
             </table>
             <div id="table-row-actions"></div><!-- used for table actions -->
@@ -130,52 +97,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </form>
 </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>'
-         . osc_pagination_showing(
-             (Params::getParam('iPage') - 1)
-                                  * $aData['iDisplayLength'] + 1,
-             ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-                                  + count($aData['aRows']),
-             $aData['iTotalDisplayRecords'],
-             $aData['iTotalRecords']
-         )
-         . '</span></li></ul>';
-}
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
-<dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="comments"/>
-        <input type="hidden" name="action" value="delete"/>
-        <input type="hidden" name="id" value=""/>
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <?php _e('Delete comment'); ?>
-            </p>
-            <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this comment?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php _e('Delete'); ?></button>
-        </div>
-    </form>
-</dialog>
-<dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-        <p class="osc-dialog-text"></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-        <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-    </div>
-</dialog>
+<?php osc_admin_confirm_dialog(array(
+    'id'      => 'deleteModal',
+    'method'  => 'get',
+    'fields'  => array('page' => 'comments', 'action' => 'delete', 'id' => ''),
+    'title'   => __('Delete comment'),
+    'text'    => __('This permanently deletes the comment from the listing. This cannot be undone.'),
+    'confirm' => __('Delete'),
+)); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
     function delete_dialog(id) {
         var deleteModal = document.getElementById('deleteModal');
@@ -184,17 +116,5 @@ osc_show_pagination_admin($aData);
         deleteModal.showModal();
         return false;
     }
-</script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-        var checkAll = document.getElementById('check_all');
-        if (checkAll) {
-            checkAll.addEventListener('change', function () {
-                document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                    cb.checked = checkAll.checked;
-                });
-            });
-        }
-    });
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

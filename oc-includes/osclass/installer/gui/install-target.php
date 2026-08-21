@@ -22,9 +22,15 @@ global $install_nonce;
 
 $internet_error = false;
 require_once LIB_PATH . 'osclass/helpers/hUtils.php';
-$country_list = osc_file_get_contents(osc_get_locations_json_url());
-$country_list = json_decode($country_list, false);
-$country_list = $country_list->locations;
+
+// Read through the catalog rather than decoding the configured URL here: that URL names
+// the current release rather than listing countries, so parsing it directly finds no
+// countries and reports the catalog unreachable.
+try {
+    $country_list = (new \mindstellar\location\LocationCatalog())->status();
+} catch (\Throwable $e) {
+    $country_list = array();
+}
 
 $country_ip = '';
 if (preg_match(
@@ -35,7 +41,7 @@ if (preg_match(
     $country_ip = $match[2];
 }
 
-if (!isset($country_list[0]->s_country_name)) {
+if ($country_list === array()) {
     $internet_error = true;
 }
 ?>
@@ -91,8 +97,8 @@ if (!isset($country_list[0]->s_country_name)) {
                 <select class="ins-input" name="location-json" id="location-json">
                     <option value="skip"><?php _e('Skip for now'); ?></option>
                     <?php foreach ($country_list as $c) : ?>
-                        <option value="<?php echo osc_esc_html($c->s_file_name); ?>" <?php echo ($country_ip && strpos($c->s_file_name, $country_ip) === 0) ? 'selected="selected"' : ''; ?>>
-                            <?php echo osc_esc_html($c->s_country_name); ?>
+                        <option value="<?php echo osc_esc_html($c['code']); ?>" <?php echo ($country_ip && strcasecmp($c['code'], $country_ip) === 0) ? 'selected="selected"' : ''; ?>>
+                            <?php echo osc_esc_html($c['name']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

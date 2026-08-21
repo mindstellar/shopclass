@@ -67,22 +67,11 @@ function osc_checkLocales()
             }
 
             // inserting e-mail translations
-            if (file_exists(osc_translations_path() . $locale['locale_code'] . '/mail.json')) {
-                $mailJson = file_get_contents(osc_translations_path() . $locale['locale_code'] . '/mail.json');
+            $mailJsonPath = osc_translations_path() . $locale['locale_code'] . '/mail.json';
+            if (file_exists($mailJsonPath)) {
+                $mailJson = file_get_contents($mailJsonPath);
                 if ($mailJson) {
                     Page::newInstance()->importEmailJsonTemplates($mailJson);
-                }
-            } else {
-                // old templates
-                $path = osc_translations_path() . $locale['locale_code'] . '/mail.sql';
-                if (file_exists($path)) {
-                    $sql  = file_get_contents($path);
-
-                    try {
-                        \mindstellar\database\Connection::instance()->executeScript($sql);
-                    } catch (\mindstellar\database\DbException $e) {
-                        return false;
-                    }
                 }
             }
         } else {

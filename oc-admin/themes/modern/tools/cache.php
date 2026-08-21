@@ -57,29 +57,18 @@ function cacheDriverSupported($driver)
     return class_exists($class) && method_exists($class, 'is_supported') && $class::is_supported();
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function customPageTitle($string)
-{
-    return sprintf(__('Cache &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Cache'),
+));
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <h2 class="render-title"><?php _e('Cache'); ?></h2>
+    <?php osc_admin_page_head(__('Cache')); ?>
 
     <div class="relative">
         <div id="listing-toolbar">
-            <div class="d-flex justify-content-end gap-1">
+            <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
                 <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
                     <input type="hidden" name="page" value="tools" />
                     <input type="hidden" name="action" value="cache_clear" />
@@ -88,7 +77,7 @@ osc_current_admin_theme_path('parts/header.php');
                         <?php echo $persistent ? '' : 'title="' . osc_esc_html(__('The current cache holds nothing between requests, so there is nothing to clear.')) . '"'; ?>><?php
                         _e('Clear cache'); ?></button>
                 </form>
-            </div>
+            <?php osc_admin_toolbar_close(); ?>
         </div>
 
         <p class="col-hint"><?php printf(

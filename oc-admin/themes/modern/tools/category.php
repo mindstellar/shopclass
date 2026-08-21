@@ -22,33 +22,16 @@ function render_offset()
 }
 
 
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Statistics'); ?></h1>
-    <?php
-}
-
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Category stats &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Statistics'),
+    'title'   => __('Category stats'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-setting">
     <!-- settings form -->
     <div id="backup-settings">
-        <h2 class="render-title"><?php _e('Category stats'); ?></h2>
+        <?php osc_admin_page_head(__('Category stats')); ?>
         <p>
             <?php _e('You can recalculate your category stats if they are incorrect.'); ?>
         </p>
@@ -57,11 +40,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="action" value="category_post"/>
             <fieldset>
                 <div class="form-horizontal">
-                    <div class="form-actions">
-                        <input type="submit" id="backup_save"
-                               value="<?php echo osc_esc_html(__('Calculate category stats')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Calculate category stats'), 'type' => 'submit', 'variant' => 'primary', 'attrs' => array('id' => 'backup_save')),
+                    )); ?>
                 </div>
             </fieldset>
         </form>

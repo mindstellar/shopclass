@@ -341,75 +341,61 @@ function osc_city_area_url()
 }
 
 /**
- * Install Json locations from official repositories
+ * Install or update one country's locations from the published catalog.
  *
- * @param string $location
+ * Kept as a thin wrapper over {@see \mindstellar\location\LocationImporter} so existing
+ * callers keep their signature and boolean return. The importer is what makes a second
+ * call an update rather than a duplication: it matches on the upstream source id and
+ * renames in place, where this used to skip anything whose name already existed and so
+ * could never refresh a row.
  *
+ * @param string $location the catalog file name, e.g. "IN-India.json"
  *
+ * @return bool
  */
 function osc_install_json_locations($location = null)
 {
-    if ($location !== null) {
-        /** @var object $locationsObj
-         *
-         */
-        $locationsObj = json_decode(
-            osc_file_get_contents('https://raw.githubusercontent.com/mindstellar/geodata/master/src/json/' . rawurlencode($location)),
-            false
-        );
-        if ($locationsObj) {
-            $countries = Country::newInstance();
-            $regions   = Region::newInstance();
-            $cities    = City::newInstance();
-            if (!$countries->findByCode($locationsObj->s_country_code)) {
-                $countryData = [
-                    'pk_c_code' => $locationsObj->s_country_code,
-                    's_name'    => $locationsObj->s_country_name,
-                    's_slug'    => $locationsObj->s_country_slug
-                ];
-                $countries->insert($countryData);
-                unset($countryData);
-            }
+    if ($location === null || $location === '') {
+        return false;
+    }
 
-            if (isset($locationsObj->regions) && $countries->findByCode($locationsObj->s_country_code)) {
-                foreach ($locationsObj->regions as $regionObj) {
-                    if (!$regions->findByName($regionObj->s_region_name, strtolower($locationsObj->s_country_code))) {
-                        $regionData = [
-                            'fk_c_country_code' => strtolower($locationsObj->s_country_code),
-                            's_name'            => $regionObj->s_region_name,
-                            'b_active'          => 1,
-                            's_slug'            => $regionObj->s_region_slug
-                        ];
+    $catalog = new \mindstellar\location\LocationCatalog();
 
-                        $regions->insert($regionData);
-                        unset($regionData);
-                    }
-
-                    $region = $regions->findByName($regionObj->s_region_name, strtolower($locationsObj->s_country_code));
-
-                    if (isset($regionObj->cities) && $region) {
-                        foreach ($regionObj->cities as $cityObj) {
-                            if (!$cities->findByName($cityObj->s_city_name, $region['pk_i_id'])) {
-                                $cityData = [
-                                    'fk_i_region_id'    => $region['pk_i_id'],
-                                    's_name'            => $cityObj->s_city_name,
-                                    'fk_c_country_code' => strtolower($cityObj->s_country_code),
-                                    'b_active'          => 1,
-                                    's_slug'            => $cityObj->s_city_slug
-                                ];
-                                $cities->insert($cityData);
-                                unset($cityData);
-                            }
-                        }
-                        unset($regionObj);
-                    }
-                }
-                unset($locationsObj);
-            }
-
-            return true;
+    // A country is named either by its code or by the published file name. The code is
+    // what the admin and installer send, because it survives the catalog rearranging its
+    // files; the file name is what older callers pass and still works. Going through the
+    // catalog row rather than straight to countryFile() is what lets the import stream
+    // the country where the catalog offers a streamable copy of it.
+    $entry = null;
+    foreach ($catalog->status() as $row) {
+        if ($row['file'] === (string) $location || strcasecmp($row['code'], (string) $location) === 0) {
+            $entry = $row;
+            break;
         }
     }
 
-    return false;
+    if ($entry === null) {
+        // Not in the manifest — a hand-supplied file name. Import it the old way rather
+        // than refusing, since that is all this function could ever do before.
+        $data = $catalog->countryFile((string) $location);
+        if ($data === null) {
+            return false;
+        }
+        $report = (new \mindstellar\location\LocationImporter())->import($data);
+
+        return !isset($report['error']);
+    }
+
+    $report = (new \mindstellar\location\LocationImporter())->importCountry($catalog, $entry);
+    if (isset($report['error'])) {
+        return false;
+    }
+
+    // Record which published version this install now holds, so the admin can be told
+    // when it goes stale without downloading anything to find out.
+    if ($entry['sha'] !== '') {
+        $catalog->markInstalled((string) $entry['code'], (string) $entry['sha']);
+    }
+
+    return true;
 }

@@ -153,11 +153,33 @@ change.
 ### Run it with Docker
 
 A full local stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
-ships in `docker-compose.yml`:
+ships in `docker-compose.dev.yml`, alongside `docker-compose.prod.yml` for the
+production image:
 
 ```bash
-docker compose up -d --build
+npm run dev:build     # first run — builds the PHP-FPM image
+npm run dev           # start
+npm run dev:down      # stop
+npm run dev:logs      # follow the logs
 ```
+
+The first of those writes a `.env` from `.env.example` if you have none. It sets
+`COMPOSE_FILE`, so plain `docker compose up -d` works too and brings up exactly the same
+stack. `.env` is also where you change the database credentials and, on Linux, the
+`PUID`/`PGID` the container writes files as.
+
+Public themes live in their own repositories and `oc-content/themes` is gitignored, so a
+fresh checkout starts without one. Install the default theme into the running stack:
+
+```bash
+docker compose exec php-fpm php oc-cli.php market:install storefront --type=theme
+```
+
+To work on a theme or plugin you have checked out locally, put the mounts in
+`docker-compose.local.yml` and append it to `COMPOSE_FILE` — `.env.example` shows the
+shape. Keep them out of the committed file: where the path is missing Docker creates an
+empty directory at the mount point rather than failing, and an empty theme directory
+looks broken rather than absent.
 
 Then open **http://localhost:8000** and run the installer with these database
 details (leave the admin password blank on step 3 for a generated one):

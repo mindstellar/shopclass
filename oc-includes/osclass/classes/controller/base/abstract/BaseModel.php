@@ -111,6 +111,7 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $region['s_slug']);
                         Params::setParam('sRegion', $region['pk_i_id']);
                     } else {
+                        $this->locationSubdomainSlugRedirect('REGION', $subdomain, $match[1], $subhost);
                         $this->do400();
                     }
                 } elseif ($subdomain_type === 'city') {
@@ -120,6 +121,7 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $city['s_slug']);
                         Params::setParam('sCity', $city['pk_i_id']);
                     } else {
+                        $this->locationSubdomainSlugRedirect('CITY', $subdomain, $match[1], $subhost);
                         $this->do400();
                     }
                 } elseif ($subdomain_type === 'user') {
@@ -136,6 +138,71 @@ abstract class BaseModel
                 }
             }
         }
+    }
+
+    /**
+     * If $slug is a former region/city slug recorded in the location rename history,
+     * 301 to the same URL with the current slug swapped into the subdomain. Falls
+     * through (returns without redirecting) on a history miss, a target row that no
+     * longer exists, or a current slug that would not change the URL -- the caller
+     * then do400()s.
+     *
+     * The default search-URL scheme embeds the row id ({slug}-r{id}) and self-heals
+     * on rename, but subdomain routing resolves purely by slug with nothing to fall
+     * back on -- and a dataset update can rename a large share of regions/cities at
+     * once (see LocationImporter). This is that fallback.
+     *
+     * @param string $type      'REGION' or 'CITY'
+     * @param string $slug      the requested (missed) subdomain slug
+     * @param string $wwwPrefix 'www.' or '', whatever prefixed the subdomain in the request host
+     * @param string $subhost   the configured subdomain host (osc_subdomain_host())
+     *
+     * @return void
+     */
+    private function locationSubdomainSlugRedirect($type, $slug, $wwwPrefix, $subhost)
+    {
+        $slug = trim((string)$slug);
+        if ($slug === '') {
+            return;
+        }
+
+        try {
+            $history = osc_db_select_one(
+                'SELECT fk_i_id FROM ' . DB_TABLE_PREFIX . 't_location_slug_history'
+                . ' WHERE e_type = ? AND s_slug = ?',
+                array($type, $slug)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            return;
+        }
+
+        if ($history === null) {
+            return;
+        }
+
+        $model   = $type === 'REGION' ? Region::newInstance() : City::newInstance();
+        $current = $model->findByPrimaryKey((int)$history['fk_i_id']);
+        if (!$current || !isset($current['pk_i_id'])) {
+            return; // target row is gone -> let the caller do400()
+        }
+
+        $currentSlug = $current['s_slug'];
+        if ($currentSlug === '' || $currentSlug === $slug) {
+            return; // loop guard
+        }
+
+        $url = Utils::isSsl() ? 'https://' : 'http://';
+        $url .= $wwwPrefix . $currentSlug . '.' . $subhost;
+        // Same non-default-port handling as the host canonicalization above: a null
+        // port is the usual case and must not append a bare ":".
+        $http_port    = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_PORT);
+        $default_port = Utils::isSsl() ? 443 : 80;
+        if ($http_port !== null && (int)$http_port !== $default_port) {
+            $url .= ':' . (int)$http_port;
+        }
+        $url .= Params::getServerParam('REQUEST_URI', false, false);
+
+        $this->redirectTo($url, 301);
     }
 
     //to export variables at the business layer

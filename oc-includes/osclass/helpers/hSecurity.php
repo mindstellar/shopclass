@@ -21,7 +21,6 @@
  */
 
 use mindstellar\Csrf;
-use OpensslCryptor\Cryptor;
 
 /**
  * bcrypt work factor used by osc_hash_password().
@@ -334,30 +333,29 @@ function osc_hash_password($password)
  */
 function osc_encrypt_alert($alert)
 {
-    $string = osc_genRandomPassword(32) . $alert;
     osc_set_alert_private_key(); // ensure the persistent keys exist
     osc_set_alert_public_key();
-    $key = hash('sha256', osc_get_alert_private_key(), true);
 
-    if (function_exists('openssl_digest') && function_exists('openssl_encrypt') && function_exists('openssl_decrypt')
-        && in_array('aes-256-ctr', openssl_get_cipher_methods(true))
-        && in_array('sha256', openssl_get_md_methods(true))
-    ) {
-        return Cryptor::Encrypt($string, $key, 0);
+    // AES-GCM: 12-byte nonce (the size the mode is defined for) and a full 16-byte tag.
+    $iv  = random_bytes(12);
+    $tag = '';
+
+    $ciphertext = openssl_encrypt(
+        (string)$alert,
+        'aes-256-gcm',
+        osc_alert_cipher_key(),
+        OPENSSL_RAW_DATA,
+        $iv,
+        $tag,
+        '',
+        16
+    );
+
+    if ($ciphertext === false) {
+        return '';
     }
 
-    // COMPATIBILITY
-    while (strlen($string) % 32 != 0) {
-        $string .= "\0";
-    }
-
-    $cipher = new phpseclib\Crypt\Rijndael();
-    $cipher->disablePadding();
-    $cipher->setBlockLength(256);
-    $cipher->setKey($key);
-    $cipher->setIV($key);
-
-    return $cipher->encrypt($string);
+    return $iv . $tag . $ciphertext;
 }
 
 /**
@@ -367,28 +365,90 @@ function osc_encrypt_alert($alert)
  */
 function osc_decrypt_alert($string)
 {
-    $key = hash('sha256', osc_get_alert_private_key(), true);
+    $string = (string)$string;
 
-    if (function_exists('openssl_digest') && function_exists('openssl_encrypt') && function_exists('openssl_decrypt')
-        && in_array('aes-256-ctr', openssl_get_cipher_methods(true))
-        && in_array('sha256', openssl_get_md_methods(true))
-    ) {
-        try {
-            return trim(substr(Cryptor::Decrypt($string, $key, 0), 32));
-        } catch (Exception $e) {
-            trigger_error($e->getMessage().' in '.$e->getFile().' at line '.$e->getLine(), E_USER_WARNING);
+    $ivLen  = 12;
+    $tagLen = 16;
+
+    if (strlen($string) > $ivLen + $tagLen) {
+        $plain = openssl_decrypt(
+            substr($string, $ivLen + $tagLen),
+            'aes-256-gcm',
+            osc_alert_cipher_key(),
+            OPENSSL_RAW_DATA,
+            substr($string, 0, $ivLen),
+            substr($string, $ivLen, $tagLen)
+        );
+
+        // A failed tag is the signal that this is not a token of this format --
+        // either an older one, or a forgery. Both fall through to the legacy read,
+        // which is itself checked by the caller.
+        if ($plain !== false) {
+            return $plain;
         }
     }
 
-    // COMPATIBILITY
+    return osc_decrypt_alert_legacy($string);
+}
 
-    $cipher = new phpseclib\Crypt\Rijndael();
-    $cipher->disablePadding();
-    $cipher->setBlockLength(256);
-    $cipher->setKey($key);
-    $cipher->setIV($key);
+/**
+ * Read a token minted before alert tokens were authenticated.
+ *
+ * The old format was AES-256-CTR with no MAC: `IV(16) . ciphertext`, the plaintext
+ * carrying 32 random characters that were stripped after decryption. CTR is
+ * malleable, so tampering with one of these produces a controlled change to the
+ * plaintext rather than the garbage the surrounding code assumed -- the JSON parse
+ * on the result is what actually rejects a forgery here, and it is a weaker check
+ * than a tag. Kept only so a token already in a rendered page still resolves after
+ * an upgrade; nothing mints this format any more.
+ *
+ * @param string $string
+ *
+ * @return string
+ */
+function osc_decrypt_alert_legacy($string)
+{
+    if (strlen($string) <= 16) {
+        return '';
+    }
 
-    return trim(substr($cipher->decrypt($string), 32));
+    $plain = openssl_decrypt(
+        substr($string, 16),
+        'aes-256-ctr',
+        openssl_digest(hash('sha256', osc_get_alert_private_key(), true), 'sha256', true),
+        OPENSSL_RAW_DATA,
+        substr($string, 0, 16)
+    );
+
+    if ($plain === false) {
+        return '';
+    }
+
+    $plain = trim(substr($plain, 32));
+
+    // CTR decryption cannot fail: fed a forgery, or anything that simply is not a
+    // token of this format, it returns bytes rather than an error. A real alert
+    // payload is UTF-8 JSON, so anything that is not even UTF-8 was never a token
+    // and is reported as such instead of being handed back as binary noise.
+    if ($plain === '' || !preg_match('//u', $plain)) {
+        return '';
+    }
+
+    return $plain;
+}
+
+/**
+ * Encryption key for alert tokens, derived from the install's persistent alert key.
+ *
+ * Derived rather than used directly so the value handed to the cipher is bound to
+ * this one purpose: the same stored key backing a second use later cannot then share
+ * key material with this one.
+ *
+ * @return string 32 raw bytes
+ */
+function osc_alert_cipher_key()
+{
+    return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_alert_private_key(), true);
 }
 
 function osc_set_alert_public_key()

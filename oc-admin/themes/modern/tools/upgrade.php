@@ -189,46 +189,18 @@ function render_offset()
 }
 
 
-function addHelp()
-{
-    echo '<p>'
-        . __("Check to see if you're using the latest version of Shopclass. If you're not, 
-        the system will let you know so you can update and use the newest features.")
-        . '</p>';
-}
-
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Upgrade &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Upgrade'),
+    'help'    => __("Check to see if you're using the latest version of Shopclass. If you're not, "
+                    . 'the system will let you know so you can update and use the newest features.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-setting">
     <!-- settings form -->
     <div id="backup-settings">
-        <h2 class="render-title"><?php _e('Upgrade'); ?></h2>
+        <?php osc_admin_page_head(__('Upgrade')); ?>
         <form>
             <fieldset>
                 <div class="form-horizontal">

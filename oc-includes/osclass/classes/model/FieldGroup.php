@@ -158,33 +158,6 @@ class FieldGroup extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        // The first three statements have always had their return value thrown
-        // away, and the query layer they used reported failure without raising,
-        // so a failure on one of them never stopped the rest from running. Each
-        // therefore keeps its own swallowed catch: one shared try would abort the
-        // cascade at the first failure and leave orphaned links behind.
-        try {
-            osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
-                ->where('fk_i_group_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-        try {
-            osc_db_table(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX))
-                ->where('fk_i_group_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-        try {
-            osc_db_table(sprintf('%st_meta_fields', DB_TABLE_PREFIX))
-                ->where('fk_i_group_id', $id)
-                ->update(array('fk_i_group_id' => null));
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-
         // A null id used to build a comparison with no right-hand side, so the
         // delete failed and the method reported false. A bound null is valid SQL
         // that simply matches nothing and would report 0 instead — callers tell
@@ -193,11 +166,35 @@ class FieldGroup extends DAO
             return false;
         }
 
+        osc_run_hook('before_delete_field_group', $id);
+
         try {
-            return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
-        } catch (\mindstellar\database\DbException $e) {
+            $deleted = osc_db_transaction(function () use ($id) {
+                foreach (array('t_meta_group_categories', 't_meta_group_fields') as $table) {
+                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
+                }
+
+                // Submissions carry no foreign key to the form, so nothing would
+                // stop the delete and nothing would clean them up either: they would
+                // sit in the submissions list for ever, attributed to a form that no
+                // longer exists. Their values follow by cascade.
+                osc_db_table(DB_TABLE_PREFIX . 't_form_submission')
+                    ->where('fk_i_group_id', $id)
+                    ->delete();
+
+                osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')
+                    ->where('fk_i_group_id', $id)
+                    ->update(array('fk_i_group_id' => null));
+
+                return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+            });
+        } catch (\Throwable $e) {
             return false;
         }
+
+        osc_run_hook('after_delete_field_group', $id);
+
+        return $deleted;
     }
 
     /**

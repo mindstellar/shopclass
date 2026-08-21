@@ -213,9 +213,11 @@ class CWebAjax extends BaseModel
                 $encoded_alert = Params::getParam('alert');
                 $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
 
-                // Integrity check: a genuine alert is encrypted with the persistent per-install
-                // key, so a valid token decrypts to a JSON search array. A forged or tampered
-                // token decrypts to garbage and is rejected here — no session state needed.
+                // A token of the current format carries an authentication tag, so a forgery
+                // or a tampered token fails to decrypt at all and arrives here as ''. The
+                // JSON test below is what still covers a token minted by the previous
+                // release, whose format has no tag to check — it is the weaker of the two
+                // and the reason nothing mints that format any more.
                 if ($alert === '' || !is_array(json_decode($alert, true))) {
                     echo '-2';
 
@@ -334,7 +336,16 @@ class CWebAjax extends BaseModel
                     break;
                 }
 
-                require_once osc_plugins_path() . $file;
+                // Unauthenticated, and it ends in require_once: resolve the path before
+                // running it -- .php only, and inside the plugins directory once symlinks
+                // are followed.
+                $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved === null) {
+                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    break;
+                }
+
+                require_once $resolved;
                 break;
             case 'check_username_availability':
                 $username = osc_sanitize_username(Params::getParam('s_username'));

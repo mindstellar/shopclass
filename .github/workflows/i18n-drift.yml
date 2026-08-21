@@ -1,0 +1,71 @@
+# Verifies that the committed translation templates match the source they are
+# extracted from.
+#
+# Nothing else notices when they fall behind. Translators work from whatever
+# .pot is published, so a template that stopped tracking the code simply stops
+# offering the newer strings — the site renders them in English, no error is
+# raised anywhere, and the gap only shows up when someone counts. That is how
+# the Osclass templates ended up at 1399 strings against a codebase with 2280.
+#
+# The whole languages directory is checked rather than just the .pot files:
+# compiled .mo output is committed too, and a .po edited without rebuilding
+# ships stale translations the same silent way.
+name: i18n Drift
+
+on:
+  push:
+    branches-ignore:
+      - develop
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  workflow_call:
+
+jobs:
+  i18n-drift:
+    name: Templates match the source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # ci, not install: the lockfile is what makes the regenerated output
+      # byte-comparable with what was committed.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild translation templates
+        run: npm run i18n
+
+      - name: Compare against what is committed
+        run: |
+          if ! git diff --quiet -- oc-content/languages/; then
+            echo "::error::Translation templates are out of date. Run 'npm run i18n' and commit the result."
+            echo
+            echo "Files that differ:"
+            git diff --stat -- oc-content/languages/
+            echo
+            echo "--- first 80 lines of the difference ---"
+            git diff -- oc-content/languages/ | head -80
+            exit 1
+          fi
+          echo "Templates match the source."

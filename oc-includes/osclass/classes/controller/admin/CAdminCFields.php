@@ -21,8 +21,11 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminCFields extends AdminSecBaseModel
 {
+    /** Page sizes offered on the submissions browser. */
+    public const PER_PAGE_OPTIONS = array(10, 25, 50, 100, 250, 500);
+
     //specific for this class
-    private $fieldManager;
+    private Field $fieldManager;
 
     public function __construct()
     {
@@ -149,11 +152,26 @@ class CAdminCFields extends AdminSecBaseModel
             $status = null;
         }
 
-        $submissions = array();
+        // Paged like every other list screen. This used to fetch a flat 200 rows at
+        // offset 0, so a form past its two-hundredth entry simply stopped showing them
+        // with nothing on screen to say so.
+        $perPage = Params::getParamInt('iDisplayLength');
+        if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
+            $perPage = 25;
+        }
+        $page = max(1, Params::getParamInt('iPage'));
+
+        $submissions  = array();
         $statusCounts = array();
         $formFields   = array();
+        $total        = 0;
         if ($formId > 0) {
-            $submissions  = $submissionModel->listByForm($formId, $status, 200, 0);
+            $total = $submissionModel->countByForm($formId, $status);
+            $maxPage = max(1, (int) ceil($total / $perPage));
+            if ($page > $maxPage) {
+                $page = $maxPage;
+            }
+            $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ($page - 1) * $perPage);
             $statusCounts = $submissionModel->statusCounts($formId);
             $formFields   = Field::newInstance()->findByGroup($formId);
             // attach each submission's values
@@ -173,6 +191,10 @@ class CAdminCFields extends AdminSecBaseModel
         $this->_exportVariableToView('current_form_id', $formId);
         $this->_exportVariableToView('current_status', $status);
         $this->_exportVariableToView('status_counts', $statusCounts);
+        $this->_exportVariableToView('submissions_total', $total);
+        $this->_exportVariableToView('submissions_per_page', $perPage);
+        $this->_exportVariableToView('submissions_page', $page);
+        $this->_exportVariableToView('submissions_per_page_options', self::PER_PAGE_OPTIONS);
         $this->_exportVariableToView('form_fields', $formFields);
         $this->_exportVariableToView('submissions', $submissions);
         $this->doView('fields/submissions.php');

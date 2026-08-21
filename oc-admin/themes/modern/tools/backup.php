@@ -22,47 +22,18 @@ function render_offset()
 }
 
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Save a backup of all of your site's information: listings, users and configuration."
-              . " You can save a backup on your server or on your computer.")
-         . '</p>';
-}
-
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Tools'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Backup &raquo; %s'), $string);
-}
-
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Tools'),
+    'title'   => __('Backup'),
+    'help'    => __("Save a backup of all of your site's information: listings, users and configuration."
+                    . ' You can save a backup on your server or on your computer.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="backup-setting">
         <!-- settings form -->
         <div id="backup-settings">
-            <h2 class="render-title"><?php _e('Backup'); ?></h2>
+            <?php osc_admin_page_head(__('Backup')); ?>
             <form id="backup_form" name="backup_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
                 <input type="hidden" name="page" value="tools"/>
                 <fieldset>
@@ -92,11 +63,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-actions">
-                            <input type="submit"
-                                   value="<?php echo osc_esc_html(__('Submit')); ?>"
-                                   class="btn btn-submit"/>
-                        </div>
+                        <?php osc_admin_form_actions(array(
+                            array('label' => __('Submit'), 'type' => 'submit', 'variant' => 'primary'),
+                        )); ?>
                     </div>
                 </fieldset>
             </form>

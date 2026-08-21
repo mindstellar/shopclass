@@ -14,26 +14,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Edit language &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Edit language'),
+));
 
 //customize Head
 function customHead()
@@ -46,7 +30,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 $aLocale = __get('aLocale');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Edit language'); ?></h2>
+    <?php osc_admin_page_head(__('Edit language')); ?>
     <div id="language-form" class="col-lg-6">
         <ul id="error_list"></ul>
         <form name="language_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -134,9 +118,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </div>
                 </div>
             </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(__('Save changes')); ?></button>
-            </div>
+            <?php osc_admin_form_actions(); ?>
         </form>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

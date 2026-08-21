@@ -1,0 +1,247 @@
+// =============================================================================
+// Shared page patterns
+// -----------------------------------------------------------------------------
+// The shapes every screen was rebuilding by hand: a page head with actions, a
+// panel, a page-level empty state, and label/value rows. Their markup lives in
+// parts/ui.php.
+//
+// Colour goes through var(--osc-*) exclusively, so all of it follows
+// data-bs-theme. Spacing and radius stay as Sass: they are identical in both
+// themes and there is nothing to switch.
+// =============================================================================
+
+// ---- Page head --------------------------------------------------------------
+// Title on one side, page-level actions on the other. Wraps rather than clips,
+// because a translated title plus a translated button label will not fit on one
+// line in every language and the layout must survive that.
+.page-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  justify-content: space-between;
+  // Matches the 20px a bare .render-title carries, so a title with actions and a title
+  // without one sit the same distance above the content they introduce.
+  margin-block-end: 20px;
+
+  .render-title {
+    margin-block-end: 0;
+  }
+}
+
+.page-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+// ---- Panel additions --------------------------------------------------------
+.widget-box-title-actions {
+  display: inline-flex;
+  gap: .5rem;
+  inset-inline-end: 1rem;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.panel-subtitle {
+  color: var(--osc-ink-muted);
+  margin-block-end: 1rem;
+  max-width: 70ch;
+}
+
+// Explanatory copy inside a panel that spans the full page width. A panel is as
+// wide as the screen, and a line of prose that wide is measurably harder to
+// track back from the end of one line to the start of the next.
+.osc-prose {
+  max-width: 70ch;
+}
+
+// ---- Empty state ------------------------------------------------------------
+// The screen before it has been used. This is where an admin is most likely to
+// decide a feature is broken, so it names the screen's purpose and offers the
+// action that fills it. Deliberately not an illustration.
+.osc-empty {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius;
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.osc-empty-icon {
+  color: var(--osc-ink-muted);
+  font-size: 1.75rem;
+  line-height: 1;
+  margin-block-end: .75rem;
+}
+
+.osc-empty-title {
+  color: var(--osc-ink);
+  font-size: 1.0625rem; // Title
+  font-weight: 600;
+  margin: 0;
+}
+
+.osc-empty-text {
+  color: var(--osc-ink-muted);
+  margin: .35rem 0 0;
+  max-width: 52ch;
+}
+
+.osc-empty-action {
+  margin-block-start: 1rem;
+}
+
+// An empty state standing in for the rows of a table that has already drawn its
+// header. The cell contributes nothing of its own — no padding, no zebra tint, no
+// hover — so what shows through is the empty state and the table frame around it.
+.osc-table-empty-row {
+  background-color: transparent !important;
+
+  > td {
+    padding: 0 !important;
+  }
+
+  .osc-empty {
+    border-radius: 0;
+  }
+}
+
+// ---- Definition rows --------------------------------------------------------
+// The read-only counterpart to a form. A grid rather than a table so it collapses
+// to stacked rows on narrow screens without a horizontal scrollbar.
+.osc-deflist {
+  margin: 0;
+}
+
+.osc-deflist-row {
+  border-block-end: 1px solid var(--osc-rule);
+  display: grid;
+  gap: .25rem 1rem;
+  grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr);
+  padding: .65rem 0;
+
+  &:last-child {
+    border-block-end: 0;
+  }
+
+  &:first-child {
+    padding-block-start: 0;
+  }
+
+  dt {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem; // Label
+    font-weight: 500;
+    letter-spacing: .01em;
+    line-height: 1.4;
+    // Labels sit on the body baseline rather than the top of a tall value.
+    padding-block-start: .1rem;
+  }
+
+  dd {
+    color: var(--osc-ink);
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 575.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Gateway references, transaction ids, keys — values you compare character by
+// character rather than read.
+.osc-mono {
+  font-family: $font-family-monospace;
+  font-size: .875rem;
+}
+
+// ---- Toolbar ----------------------------------------------------------------
+// The filter strip above a table. A plain flow-level flex row, so it grows with
+// its contents and wraps on a narrow screen instead of overflowing a fixed
+// height or narrowing the panel beside it.
+.osc-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  margin-block-end: 1rem;
+}
+
+// Controls that belong together inside a toolbar — a set of filters on one side,
+// away from whatever sits on the other.
+.osc-toolbar-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  // A form-select is width:100% by default, which would make every filter stretch.
+  .form-select {
+    width: auto;
+  }
+}
+
+.osc-toolbar-between {
+  justify-content: space-between;
+}
+
+.osc-toolbar-end {
+  justify-content: flex-end;
+}
+
+.osc-toolbar-start {
+  justify-content: flex-start;
+}
+
+// ---- Pager ------------------------------------------------------------------
+// Range on one side, controls on the other. Renders only when there is more than
+// one page, so it never appears under a short list.
+.osc-pager {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  justify-content: space-between;
+  margin-block-start: 1rem;
+}
+
+.osc-pager-range {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem; // Label
+  margin: 0;
+}
+
+.osc-pager-controls {
+  display: flex;
+  gap: .5rem;
+
+  // A disabled control at an end of the range is rendered as a span, so it is
+  // skipped by the keyboard rather than focusable and inert.
+  .disabled {
+    opacity: .4;
+    pointer-events: none;
+  }
+}
+
+// ---- Numeric table columns --------------------------------------------------
+// Amounts and balances align on their last digit so a column of them can be
+// scanned for magnitude. Tabular figures keep the digits from shifting width
+// between rows.
+.col-numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+// A balance that has gone negative after a chargeback. Colour is the second
+// signal here, not the only one: the minus sign is already in the number.
+.balance-negative {
+  color: var(--osc-danger);
+  font-weight: 500;
+}

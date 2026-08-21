@@ -20,34 +20,18 @@ if (isset($comment['pk_i_id'])) {
     //editing...
     $title      = __('Edit comment');
     $action_frm = 'comment_edit_post';
-    $btn_text   = osc_esc_html(__('Update comment'));
+    $btn_text   = __('Update comment');
 } else {
     //adding...
     $title      = __('Add comment');
     $action_frm = 'add_comment_post';
-    $btn_text   = osc_esc_html(__('Add'));
+    $btn_text   = __('Add');
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Listing'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Edit comment &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Listing'),
+    'title'   => __('Edit comment'),
+));
 
 //customize Head
 function customHead()
@@ -60,7 +44,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 $comment = __get('comment');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php echo $title; ?></h2>
+    <?php osc_admin_page_head($title); ?>
     <div id="language-form">
         <ul id="error_list"></ul>
         <form name="language_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -123,10 +107,10 @@ $comment = __get('comment');
                     </div>
                 </div>
             </div>
-            <div class="form-actions">
-                <a href="javascript:history.go(-1)" class="btn btn-dim"><?php _e('Cancel'); ?></a>
-                <button type="submit" class="btn btn-submit"><?php echo $btn_text; ?></button>
-            </div>
+            <?php osc_admin_form_actions(array(
+                array('label' => __('Cancel'), 'url' => 'javascript:history.go(-1)', 'variant' => 'dim'),
+                array('label' => $btn_text, 'type' => 'submit', 'variant' => 'primary'),
+            )); ?>
         </form>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

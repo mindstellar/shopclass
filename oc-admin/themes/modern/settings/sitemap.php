@@ -10,39 +10,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Configure the XML sitemap: how many URLs go in each file, which extra location pages to '
-              . 'include, any custom URLs to append, and the robots.txt that advertises it to search engines.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Sitemap &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Sitemap'),
+    'help'    => __('Configure the XML sitemap: how many URLs go in each file, which extra location pages to '
+                    . 'include, any custom URLs to append, and the robots.txt that advertises it to search engines.'),
+));
 
 $prefs           = __get('prefs');
 $custom_urls     = __get('custom_urls');
@@ -70,7 +43,7 @@ $freqOptions = array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="sitemap-setting">
-    <h2 class="render-title"><?php _e('Sitemap'); ?></h2>
+    <?php osc_admin_page_head(__('Sitemap')); ?>
     <p>
         <?php printf(
             __('The sitemap index is served at %s and always reflects the current site content.'),
@@ -108,10 +81,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 <?php } ?>
-                <div class="form-actions">
-                    <input type="submit" id="submit_sitemap_settings" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                           class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'submit_sitemap_settings')),
+                )); ?>
             </fieldset>
         </form>
     </div>
@@ -151,9 +123,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" value="<?php echo osc_esc_html(__('Add URL')); ?>" class="btn btn-submit"/>
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array('label' => __('Add URL'), 'type' => 'submit'),
+                )); ?>
             </fieldset>
         </form>
 
@@ -215,10 +187,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
-                    <input type="submit" value="<?php echo osc_esc_html(__('Save robots.txt')); ?>" class="btn btn-submit"
-                        <?php echo (!$robots_writable) ? 'disabled="disabled"' : ''; ?> />
-                </div>
+                <?php osc_admin_form_actions(array(
+                    array(
+                        'label' => __('Save robots.txt'),
+                        'type'  => 'submit',
+                        'attrs' => $robots_writable ? array() : array('disabled' => 'disabled'),
+                    ),
+                )); ?>
             </fieldset>
         </form>
     </div>

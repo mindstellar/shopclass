@@ -102,6 +102,10 @@ switch (Params::getParam('page')) {
         $do = new CAdminTools();
         $do->doModel();
         break;
+    case ('billing'):
+        $do = new CAdminBilling();
+        $do->doModel();
+        break;
     case ('stats'):
         $do = new CAdminStats();
         $do->doModel();

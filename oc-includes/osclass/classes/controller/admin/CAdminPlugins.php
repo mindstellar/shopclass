@@ -16,6 +16,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\security\PluginAjaxFile;
+
 /**
  * Class CAdminPlugins
  */
@@ -205,8 +207,15 @@ class CAdminPlugins extends AdminSecBaseModel
                     }
                 }
                 osc_run_hook('renderplugin_controller');
-                if (strpos($file, '../') === false && strpos($file, '..\\') === false && $file != '') {
-                    $this->_exportVariableToView('file', osc_plugins_path() . $file);
+
+                // This route ends in require_once, so the path is resolved here rather
+                // than pattern-matched: .php only, and inside the plugins directory once
+                // symlinks are followed. Checking for the literal '../' let anything else
+                // in the tree through — a README, an uploaded file a plugin had written —
+                // and every one of those is executed as PHP by the view.
+                $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved !== null) {
+                    $this->_exportVariableToView('file', $resolved);
                     $this->doView('plugins/view.php');
                 }
                 break;

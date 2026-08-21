@@ -79,6 +79,22 @@ h3.render-title {
   font-size: 18px;
 }
 
+// A section heading that follows content needs air above it; the first heading inside a
+// container opens that container and must not have any. Two things made this go wrong
+// before: `.render-title`'s `margin: 0 0 20px` shorthand re-zeroed the top margin that
+// `.separate-top` had set (declared later, equal specificity), and most section headings
+// never asked for the class at all. Element-qualified for h3 so subsections keep the
+// tighter 20px step the separators define.
+* + .render-title,
+.render-title.separate-top {
+  margin-block-start: 40px;
+}
+
+* + h3.render-title,
+h3.render-title.separate-top {
+  margin-block-start: 20px;
+}
+
 .render-title a.btn-mini, .form-controls a.btn-mini {
   float: none;
   height: 24px;
@@ -135,3 +151,18 @@ h3.render-title {
   }
 }
 
+
+// The per-row delete on the locations panels. It removes a country and everything
+// under it, but inherited link colour, so it was indistinguishable from the row's
+// edit link while "Remove selected" beside it was already red. Colour alone is not
+// the signal — the glyph and the title attribute carry it too — but a destructive
+// control must not read as routine.
+.locations .list-group-item > a.close {
+  color: var(--osc-ink-muted);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-danger);
+  }
+}

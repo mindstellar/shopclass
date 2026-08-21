@@ -111,43 +111,17 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Manage the options for the images users can upload along with their listings. You can limit their size, '
-              . 'the number of images per ad, include a watermark, etc.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Media'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Media Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Media'),
+    'title'   => __('Media Settings'),
+    'help'    => __('Manage the options for the images users can upload along with their listings. You can limit their size, '
+                    . 'the number of images per ad, include a watermark, etc.'),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <!--the inputs have a class for the size ...-->
     <div id="general-settings">
-        <h2 class="render-title"><?php _e('Media Settings'); ?></h2>
+        <?php osc_admin_page_head(__('Media Settings')); ?>
         <ul id="error_list"></ul>
         <form name="media_form" action="<?php echo osc_admin_base_url(true); ?>" method="post"
               enctype="multipart/form-data">
@@ -155,7 +129,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="action" value="media_post"/>
             <fieldset>
                 <div class="form-horizontal">
-                    <h2 class="render-title"><?php _e('Image sizes'); ?></h2>
+                    <?php osc_admin_page_head(__('Image sizes')); ?>
                     <p class="form-intro"><?php _e('The sizes listed below determine the maximum dimensions in pixels to use when uploading a image.'
                                 . ' Format: <b>Width</b> x <b>Height</b>.'); ?>
                     </p>
@@ -188,7 +162,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title"><?php _e('Restrictions'); ?></h2>
+                    <?php osc_admin_page_head(__('Restrictions')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Force JPEG'); ?></div>
                         <div class="form-controls">
@@ -257,7 +231,7 @@ if (!$imagickLoaded) {
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title"><?php _e('Watermark'); ?></h2>
+                    <?php osc_admin_page_head(__('Watermark')); ?>
                     <div class="form-row">
                         <div class="form-label"><?php _e('Watermark type'); ?></div>
                         <div class="form-controls">
@@ -290,7 +264,7 @@ if (!$imagickLoaded) {
                     </div>
                     <div id="watermark_text_box" class="table-backoffice-form" <?php echo(osc_is_watermark_text() ? ''
                         : 'style="display:none;"'); ?>>
-                        <h2 class="render-title"><?php _e('Watermark Text Settings'); ?></h2>
+                        <?php osc_admin_page_head(__('Watermark Text Settings')); ?>
                         <div class="form-row">
                             <div class="form-label"><?php _e('Watermark Text'); ?></div>
                             <div class="form-controls">
@@ -424,7 +398,7 @@ if (!$imagickLoaded) {
                         </div>
                     </div>
                     <div id="watermark_image_box" <?php echo(osc_is_watermark_image() ? '' : 'style="display:none;"'); ?>>
-                        <h2 class="render-title"><?php _e('Watermark Image Settings'); ?></h2>
+                        <?php osc_admin_page_head(__('Watermark Image Settings')); ?>
                         <div class="form-row">
                             <div class="form-label"><?php _e('Image'); ?></div>
                             <div class="form-controls">
@@ -459,7 +433,7 @@ if (!$imagickLoaded) {
                             </div>
                         </div>
                     </div>
-                    <h2 class="render-title"><?php _e('Regenerate images'); ?></h2>
+                    <?php osc_admin_page_head(__('Regenerate images')); ?>
                     <div class="form-row">
                         <div class="form-controls">
                             <p>
@@ -472,10 +446,7 @@ if (!$imagickLoaded) {
                         </div>
                     </div>
                     <div class="clear"></div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(); ?>
                 </div>
             </fieldset>
         </form>

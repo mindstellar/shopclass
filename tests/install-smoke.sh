@@ -183,6 +183,31 @@ fi
 grep -q 'id="ins-target-form"' "$WORK/step3.html" || fail "the database step did not reach the site-details form"
 ok "schema created"
 
+# The country list on this form comes from the published catalog, which is reached
+# through a document naming the current release rather than one listing countries.
+# A reader that parses the configured URL directly finds no countries there and the
+# form falls back to its offline branch -- no dropdown at all on the first screen of
+# a new install, indistinguishable from having no network, and nothing logged. The
+# step below skips the location, so without this the list is never looked at.
+#
+# Which is why the catalog is probed from here first: "the form showed no countries"
+# is only acceptable when this machine could not read the catalog either. Taking the
+# form's word for it is what let an unreadable catalog pass as being offline.
+CATALOG_URL="$(sed -n "s/.*return '\(https:\/\/[^']*latest\.json\)'.*/\1/p" \
+  "$ROOT/oc-includes/osclass/helpers/hUtils.php" | head -1)"
+: "${CATALOG_URL:=https://geo.mindstellar.com/releases/latest.json}"
+
+if curl -fsS --max-time 25 -o /dev/null "$CATALOG_URL" 2>/dev/null; then
+  grep -q 'id="location-json"' "$WORK/step3.html" \
+    || fail "the catalog is reachable but the form offered no country list"
+  COUNTRIES="$(grep -coE '<option value="[A-Za-z]{2}"' "$WORK/step3.html" || true)"
+  [ "${COUNTRIES:-0}" -ge 50 ] \
+    || fail "the country list offered ${COUNTRIES:-0} countries, expected the catalog's"
+  ok "country list populated (${COUNTRIES} countries)"
+else
+  ok "country list not checked (catalog unreachable from here)"
+fi
+
 # ---------------------------------------------------------------------------
 echo "==> creating the admin account"
 NONCE="$(nonce_from "$WORK/step3.html")"

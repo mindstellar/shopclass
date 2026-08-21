@@ -74,45 +74,19 @@ function render_offset()
     return 'row-offset';
 }
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Modify the settings of the mail server from which your site's emails are sent. <strong>Be careful</strong>"
-              . ": these settings can vary depending on your hosting or server. If you run into any issues"
-              . ", check your hosting's help section.")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Settings'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Mail Settings &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Mail Settings'),
+    'help'    => __("Modify the settings of the mail server from which your site's emails are sent. <strong>Be careful</strong>"
+                    . ": these settings can vary depending on your hosting or server. If you run into any issues"
+                    . ", check your hosting's help section."),
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="mail-setting">
     <!-- settings form -->
     <div id="mail-settings">
-        <h2 class="render-title"><?php _e('Mail Settings'); ?></h2>
+        <?php osc_admin_page_head(__('Mail Settings')); ?>
         <ul id="error_list"></ul>
         <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="settings"/>
@@ -205,10 +179,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php _e('Use POP before SMTP'); ?></div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <input type="submit" id="save_changes" value="<?php echo osc_esc_html(__('Save changes')); ?>"
-                               class="btn btn-submit"/>
-                    </div>
+                    <?php osc_admin_form_actions(); ?>
                 </div>
             </fieldset>
         </form>

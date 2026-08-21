@@ -166,6 +166,18 @@ if (!function_exists('osc_db_rollback')) {
     }
 }
 
+if (!function_exists('osc_db_in_transaction')) {
+    /**
+     * Whether a database transaction is currently open.
+     *
+     * @return bool
+     */
+    function osc_db_in_transaction(): bool
+    {
+        return \mindstellar\database\Db::inTransaction();
+    }
+}
+
 if (!function_exists('osc_db_stringify_row')) {
     /**
      * Coerce every value in a result row to a string, leaving null as null.

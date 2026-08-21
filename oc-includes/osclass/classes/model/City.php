@@ -213,6 +213,8 @@ class City extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
+        osc_run_hook('before_delete_city', $pk);
+
         $mCityAreas = CityArea::newInstance();
         $aCityAreas = $mCityAreas->findByCity($pk);
         $result     = 0;
@@ -222,12 +224,27 @@ class City extends DAO
         Item::newInstance()->deleteByCity($pk);
         CityStats::newInstance()->delete(array('fk_i_city_id' => $pk));
         User::newInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
+
+        // See Region::deleteByPrimaryKey(): the slug history has no foreign key to
+        // clean it up, so a rename recorded for this city would outlive the city.
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
+                ->where('e_type', 'CITY')
+                ->where('fk_i_id', (int)$pk)
+                ->delete();
+        } catch (\Throwable $e) {
+            // A stale redirect is not worth failing the delete over.
+        }
         // Count the own-row delete as a failure only when the query itself
         // errors (DAO::delete() returns false), not when it validly matches no
         // rows (returns 0). Deleting a primary key that does not exist is not a
         // failure -- there was simply nothing to remove.
         if ($this->delete(array('pk_i_id' => $pk)) === false) {
             $result++;
+        }
+
+        if ($result === 0) {
+            osc_run_hook('after_delete_city', $pk);
         }
 
         return $result;
@@ -248,6 +265,38 @@ class City extends DAO
         try {
             $row = osc_db_table($this->getTableName())
                 ->where('s_slug', $slug)
+                ->first();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+
+        if ($row === null) {
+            return array();
+        }
+
+        return osc_db_stringify_row($row);
+    }
+
+    /**
+     * Find a city by its upstream source id
+     *
+     * i_source_id is the identifier the upstream location dataset uses for this row, and
+     * it is the only stable way to match a city across dataset updates, because names and
+     * slugs are renamed upstream constantly. It is unique table-wide, not scoped to a
+     * region.
+     *
+     * @access public
+     *
+     * @param $sourceId
+     *
+     * @return array
+     * @since  6.2.0
+     */
+    public function findBySourceId($sourceId)
+    {
+        try {
+            $row = osc_db_table($this->getTableName())
+                ->where('i_source_id', $sourceId)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();

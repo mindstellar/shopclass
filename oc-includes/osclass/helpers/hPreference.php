@@ -1382,6 +1382,23 @@ function getBoolPreference($key)
     return false;
 }
 
+/**
+ * Whether the billing section is switched on.
+ *
+ * Off unless an admin has turned it on, so an existing install that upgrades sees no new
+ * menu, no new behaviour, and no new obligations. Everything billing does is gated on
+ * this one answer.
+ *
+ * @return bool
+ */
+function osc_billing_enabled()
+{
+    return (bool)(int)osc_get_preference(
+        \mindstellar\billing\Billing::PREF_ENABLED,
+        \mindstellar\billing\Billing::PREF_GROUP
+    );
+}
+
 // PRIVATE FUNCTION FOR GETTING NO BOOLEAN INFORMATION (if there was a class :P)
 /**
  * Gets preference

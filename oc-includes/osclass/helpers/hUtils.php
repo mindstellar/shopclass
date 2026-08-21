@@ -11,6 +11,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\utility\Deprecate;
+
 /**
  * Helper Utils
  *
@@ -958,12 +960,19 @@ function osc_get_subdomain_params()
 }
 
 /**
- * Get Google Analytics tracking ID.
+ * Get the Google Analytics measurement ID a previous release stored.
  *
+ * Core no longer renders a tracking snippet and no longer offers a field to set
+ * this, so the value is whatever was saved before the setting was removed. Kept
+ * only so themes that print their own snippet do not fatal on upgrade.
+ *
+ * @deprecated since 6.2.0
  * @return string
  */
 function osc_google_analytics_id()
 {
+    Deprecate::deprecatedFunction(__FUNCTION__, '6.2.0');
+
     return osc_get_preference('ga_tracking_id');
 }
 
@@ -1016,7 +1025,24 @@ function osc_openstreet_geocode_url($address)
  */
 function osc_get_locations_json_url()
 {
-    return 'https://raw.githubusercontent.com/mindstellar/geodata/master/src/json-list.json';
+    // Overridable so a staging install, a local mirror or a pinned release can
+    // be pointed at without editing core. Falls back to the published catalog.
+    $override = getenv('OSC_LOCATIONS_JSON_URL');
+    if (is_string($override) && $override !== '') {
+        return $override;
+    }
+
+    // A pointer at the current data release, not a manifest: LocationCatalog follows it,
+    // so a corrected place name reaches installs without a core release. Pinning a
+    // release here would tie the data to the version of Shopclass that shipped it.
+    //
+    // The dataset behind it is built from Wikidata and published CC0, replacing the
+    // ODbL-licensed one this used to point at — no attribution or share-alike condition
+    // travels with the data a site imports.
+    return osc_apply_filter(
+        'locations_json_url',
+        'https://geo.mindstellar.com/releases/latest.json'
+    );
 }
 
 /**
@@ -1039,25 +1065,32 @@ function osc_get_locations_sql_url($location)
  */
 function osc_get_i18n_repository_url($path = '')
 {
+    // The version of the code, not the one recorded in the database: this is asked during
+    // installation, when there is no database to record anything yet, and after an upgrade
+    // has replaced the files but before the schema has caught up. Which branch of the
+    // translations to read from follows the code either way.
+    $installed = defined('OSCLASS_VERSION') ? OSCLASS_VERSION : osc_version();
+
     // Check if version tring contain dev,alpha,beta,RC set is_dev to 1
     $is_dev = false;
     // try str_replace to remove all version tags from string if string changed than it's dev
-    $version = str_replace(array('dev', 'alpha', 'beta', 'rc'), '', strtolower(osc_version()));
+    $version = str_replace(array('dev', 'alpha', 'beta', 'rc'), '', strtolower($installed));
     // if version string changed than it's dev
-    if ($version !== osc_version()) {
+    if ($version !== strtolower($installed)) {
         $is_dev = true;
     }
     if ($is_dev) {
         // get url of local_list.json from github
-        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/i10n-osclass/develop/';
+        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/shopclass-i18n/develop/';
     } else {
-        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/i10n-osclass/master/';
+        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/shopclass-i18n/master/';
     }
     if ($path === '') {
         $path = 'locale_list.json';
     }
-    ltrim($path, '/');
-    $path = rawurlencode($path);
+    // Encoded a segment at a time: encoding the whole path turns its separators into
+    // %2F, which asks the repository for one long file name instead of a nested path.
+    $path = implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
 
     return $repoUrl . $path;
 }

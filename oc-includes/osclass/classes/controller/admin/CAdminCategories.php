@@ -22,7 +22,7 @@ if (!defined('ABS_PATH')) {
 class CAdminCategories extends AdminSecBaseModel
 {
     //specific for this class
-    private $categoryManager;
+    private Category $categoryManager;
 
     public function __construct()
     {

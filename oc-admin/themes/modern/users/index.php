@@ -13,43 +13,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Add, edit or delete information associated to registered users. Keep in mind that deleting a user also '
-              . 'deletes all the listings the user published.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Users'); ?>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=settings'; ?>"
-           class="ms-1 text-dark float-end" title="<?php _e('Settings'); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse" href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=create'; ?>"
-           class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Manage users &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Users'),
+    'title'   => __('Manage users'),
+    'help'    => __('Add, edit or delete information associated to registered users. Keep in mind that deleting a user also '
+                    . 'deletes all the listings the user published.'),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=users&action=create',
+            'title' => __('Add'),
+        ),
+        array(
+            'icon'  => 'bi-gear-fill',
+            'url'   => osc_admin_base_url(true) . '?page=users&action=settings',
+            'title' => __('Settings'),
+        ),
+    ),
+));
 
 //customize Head
 function customHead()
@@ -95,30 +76,10 @@ $rows        = $aData['aRows'];
 $withFilters = __get('withFilters');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <h2 class="render-title"><?php _e('Manage users'); ?></h2>
+    <?php osc_admin_page_head(__('Manage users')); ?>
     <div class="relative">
         <div id="users-toolbar" class="table-toolbar d-flex justify-content-end">
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
-                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                    <?php if ($key !== 'iDisplayLength') { ?>
-                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
-                               value="<?php echo osc_esc_html($value); ?>"/>
-                    <?php }
-                    } ?>
-                <select name="iDisplayLength" class="form-select form-select-sm"
-                        onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d users'), 10); ?></option>
-                    <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                        echo 'selected';
-                    } ?> ><?php printf(__('%d users'), 25); ?></option>
-                    <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                        echo 'selected';
-                    } ?> ><?php printf(__('%d users'), 50); ?></option>
-                    <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                        echo 'selected';
-                    } ?> ><?php printf(__('%d users'), 100); ?></option>
-                </select>
-            </form>
+            <?php osc_admin_per_page(array('label' => __('%d Users'), 'current' => $iDisplayLength)); ?>
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
                   class="inline nocsrf">
                 <fieldset class="input-group input-group-sm">
@@ -146,17 +107,7 @@ $withFilters = __get('withFilters');
         <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
 
-            <div id="bulk-actions">
-                <div class="input-group input-group-sm">
-                    <?php osc_print_bulk_actions(
-                        'bulk_actions',
-                        'action',
-                        __get('bulk_options'),
-                        'select-box-extra'
-                    ); ?>
-                    <input type="submit" id="bulk_apply" class="btn btn-primary" value="<?php echo osc_esc_html(__('Apply')); ?>"/>
-                </div>
-            </div>
+            <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
             <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
@@ -186,12 +137,22 @@ $withFilters = __get('withFilters');
                                 <?php } ?>
                             </tr>
                         <?php } ?>
+                    <?php } elseif ($withFilters) { ?>
+                        <?php osc_admin_table_empty(count($columns), array(
+                            'icon'  => 'bi-people',
+                            'title' => __('No results for this filter'),
+                        )); ?>
                     <?php } else { ?>
-                        <tr>
-                            <td colspan="9" class="text-center">
-                                <p><?php _e('No data available in table'); ?></p>
-                            </td>
-                        </tr>
+                        <?php osc_admin_table_empty(count($columns), array(
+                            'icon'   => 'bi-people',
+                            'title'  => __('No users yet'),
+                            'text'   => __('Registered users will appear here once they sign up or you add them.'),
+                            'action' => array(
+                                'label'   => __('Add'),
+                                'url'     => osc_admin_base_url(true) . '?page=users&action=create',
+                                'variant' => 'primary',
+                            ),
+                        )); ?>
                     <?php } ?>
                     </tbody>
                 </table>
@@ -200,22 +161,7 @@ $withFilters = __get('withFilters');
         </form>
     </div>
 <?php
-function showingResults()
-{
-    $aData = __get('aData');
-    echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
-        (Params::getParam('iPage') - 1)
-                                                                           * $aData['iDisplayLength'] + 1,
-        ((Params::getParam('iPage') - 1) * $aData['iDisplayLength'])
-                                                                           + count($aData['aRows']),
-        $aData['iTotalDisplayRecords'],
-        $aData['iTotalRecords']
-    )
-         . '</span></li></ul>';
-}
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
+osc_admin_pagination($aData);
 ?>
     <dialog id="display-filters" class="osc-dialog osc-dialog-wide">
         <form method="get" action="<?php echo osc_admin_base_url(true); ?>" nocsrf>
@@ -337,46 +283,17 @@ osc_show_pagination_admin($aData);
                 </div>
         </form>
     </dialog>
-    <dialog id="deleteModal" class="osc-dialog osc-dialog-danger">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-            <input type="hidden" name="page" value="users"/>
-            <input type="hidden" name="action" value="delete"/>
-            <input type="hidden" name="id[]" value=""/>
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <?php echo osc_esc_html(__('Delete user')); ?>
-                </p>
-                <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this user?'); ?></p>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button id="deleteSubmit" class="btn btn-danger btn-sm" type="submit"><?php _e('Delete'); ?></button>
-            </div>
-        </form>
-    </dialog>
-    <dialog id="bulkActionsModal" class="osc-dialog osc-dialog-danger">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-            <p class="osc-dialog-text"></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="bulkActionsSubmit" onclick="bulkActionsSubmit()" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-        </div>
-    </dialog>
+    <?php osc_admin_confirm_dialog(array(
+        'id'         => 'deleteModal',
+        'method'     => 'get',
+        'fields'     => array('page' => 'users', 'action' => 'delete', 'id[]' => ''),
+        'title'      => __('Delete user'),
+        'text'       => __('This permanently deletes the account and every listing the user published.'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'deleteSubmit',
+    )); ?>
+<?php osc_admin_bulk_confirm_dialog(); ?>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // check_all bulkactions
-            var checkAll = document.getElementById('check_all');
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    document.querySelectorAll('.col-bulkactions input').forEach(function (cb) {
-                        cb.checked = checkAll.checked;
-                    });
-                });
-            }
-        });
 
         function delete_dialog(id) {
             var deleteModal = document.getElementById("deleteModal");

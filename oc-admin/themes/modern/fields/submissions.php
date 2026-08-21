@@ -16,6 +16,9 @@ $currentStatus = __get('current_status');
 $statusCounts  = __get('status_counts');
 $formFields    = __get('form_fields');
 $submissions   = __get('submissions');
+$total         = (int)__get('submissions_total');
+$perPage       = (int)__get('submissions_per_page');
+$pageNum       = (int)__get('submissions_page');
 foreach (array('forms', 'statusCounts', 'formFields', 'submissions') as $v) {
     if (!is_array($$v)) {
         $$v = array();
@@ -72,60 +75,52 @@ if (!function_exists('submission_value_display')) {
     }
 }
 
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Forms'); ?></h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-function customPageTitle($string)
-{
-    return sprintf(__('Form submissions &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Forms'),
+    'title'   => __('Submissions'),
+));
 
 $base = osc_admin_base_url(true) . '?page=cfields&action=submissions';
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <h2 class="render-title"><?php _e('Form submissions'); ?></h2>
+    <?php osc_admin_page_head(__('Submissions')); ?>
 
     <div class="relative">
-        <?php if (count($forms) > 0) { ?>
-            <div id="listing-toolbar">
-                <div class="d-flex justify-content-end gap-1">
-                    <div class="input-group input-group-sm">
-                        <label class="input-group-text" for="form-picker"><?php _e('Form'); ?></label>
-                        <select class="form-select" id="form-picker">
-                            <?php foreach ($forms as $f) {
-                                $fid = (int)$f['pk_i_id']; ?>
-                                <option value="<?php echo $fid; ?>"<?php echo $fid === $currentFormId ? ' selected' : ''; ?>><?php
-                                    echo osc_esc_html($f['s_name'] . ' (' . (int)$f['submission_count'] . ')'); ?></option>
-                            <?php } ?>
-                        </select>
-                        <?php if ($currentFormId > 0) { ?>
-                            <label class="input-group-text" for="status-picker"><?php _e('Status'); ?></label>
-                            <select class="form-select" id="status-picker">
-                                <option value=""<?php echo $currentStatus === null ? ' selected' : ''; ?>><?php
-                                    echo osc_esc_html(sprintf(__('All (%d)'), $totalForForm)); ?></option>
-                                <?php foreach ($statusLabels as $key => $label) { ?>
-                                    <option value="<?php echo $key; ?>"<?php echo $currentStatus === $key ? ' selected' : ''; ?>><?php
-                                        echo osc_esc_html($label . ' (' . (int)($statusCounts[$key] ?? 0) . ')'); ?></option>
-                                <?php } ?>
-                            </select>
+        <?php if (count($forms) > 0) {
+            osc_admin_toolbar_open(); ?>
+            <div class="osc-toolbar-group">
+                <label class="visually-hidden" for="form-picker"><?php _e('Form'); ?></label>
+                <select class="form-select form-select-sm" id="form-picker">
+                    <?php foreach ($forms as $f) {
+                        $fid = (int)$f['pk_i_id']; ?>
+                        <option value="<?php echo $fid; ?>"<?php echo $fid === $currentFormId ? ' selected' : ''; ?>><?php
+                            echo osc_esc_html($f['s_name'] . ' (' . (int)$f['submission_count'] . ')'); ?></option>
+                    <?php } ?>
+                </select>
+                <?php if ($currentFormId > 0) { ?>
+                    <label class="visually-hidden" for="status-picker"><?php _e('Status'); ?></label>
+                    <select class="form-select form-select-sm" id="status-picker">
+                        <option value=""<?php echo $currentStatus === null ? ' selected' : ''; ?>><?php
+                            echo osc_esc_html(sprintf(__('All (%d)'), $totalForForm)); ?></option>
+                        <?php foreach ($statusLabels as $key => $label) { ?>
+                            <option value="<?php echo $key; ?>"<?php echo $currentStatus === $key ? ' selected' : ''; ?>><?php
+                                echo osc_esc_html($label . ' (' . (int)($statusCounts[$key] ?? 0) . ')'); ?></option>
                         <?php } ?>
-                        <?php if ($currentFormId > 0 && $totalForForm > 0) { ?>
-                            <button type="button" class="btn btn-dim" id="purge-button"
-                                    data-form-id="<?php echo $currentFormId; ?>"><?php _e('Delete all'); ?></button>
-                        <?php } ?>
-                    </div>
-                </div>
+                    </select>
+                <?php } ?>
+                <?php if ($currentFormId > 0 && $totalForForm > 0) { ?>
+                    <button type="button" class="btn btn-sm btn-dim" id="purge-button"
+                            data-form-id="<?php echo $currentFormId; ?>"><?php _e('Delete all'); ?></button>
+                <?php } ?>
             </div>
-        <?php } ?>
+            <?php osc_admin_per_page(array(
+                'label'   => __('%d submissions'),
+                'current' => $perPage,
+                'options' => __get('submissions_per_page_options') ?: array(10, 25, 50, 100, 250, 500),
+            ));
+            osc_admin_toolbar_close();
+        } ?>
 
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
@@ -207,24 +202,39 @@ osc_current_admin_theme_path('parts/header.php');
                             </td>
                         </tr>
                     <?php }
-                    } else { ?>
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            <p><?php if (count($forms) === 0) {
-                                _e('No forms yet. Create a form and place it on a page to start collecting submissions.');
-                            } elseif ($currentFormId > 0) {
-                                _e('No submissions in this view yet.');
-                            } else {
-                                _e('Pick a form to see its submissions.');
-                            } ?></p>
-                        </td>
-                    </tr>
-                <?php } ?>
+                    } elseif (count($forms) === 0) {
+                        osc_admin_table_empty(5, array(
+                            'icon'  => 'bi-file-earmark-text',
+                            'title' => __('No forms yet'),
+                            'text'  => __('Create a form and place it on a page to start collecting submissions.'),
+                            'action' => array(
+                                'label'   => __('Create a form'),
+                                'url'     => osc_admin_base_url(true) . '?page=fields',
+                                'variant' => 'primary',
+                            ),
+                        ));
+                    } elseif ($currentFormId > 0) {
+                        osc_admin_table_empty(5, array(
+                            'icon'  => 'bi-inbox',
+                            'title' => __('No submissions in this view yet'),
+                        ));
+                    } else {
+                        osc_admin_table_empty(5, array(
+                            'icon'  => 'bi-file-earmark-text',
+                            'title' => __('Pick a form to see its submissions'),
+                        ));
+                    } ?>
                 </tbody>
             </table>
             <div id="table-row-actions"></div><!-- used for table actions -->
         </div>
     </div>
+    <?php osc_admin_pagination(array(
+        'aRows'                => $submissions,
+        'iDisplayLength'       => $perPage,
+        'iTotalDisplayRecords' => $total,
+        'iPage'                => $pageNum,
+    )); ?>
 
     <dialog id="submissionModal" class="osc-dialog osc-dialog-wide">
         <div class="osc-dialog-body">
@@ -259,6 +269,7 @@ osc_current_admin_theme_path('parts/header.php');
         var BASE = '<?php echo osc_admin_base_url(true); ?>';
         var CSRF = '<?php echo osc_csrf_token_url(); ?>';
         var SUBS_BASE = '<?php echo osc_esc_js($base); ?>';
+        var PER_PAGE = <?php echo (int) $perPage; ?>;
 
         // Row action: move a submission to another status, then reload so the row
         // lands in the right filter and the counts stay honest.
@@ -303,13 +314,16 @@ osc_current_admin_theme_path('parts/header.php');
             var formPicker = document.getElementById('form-picker');
             if (formPicker) {
                 formPicker.addEventListener('change', function () {
-                    window.location = SUBS_BASE + '&form_id=' + encodeURIComponent(formPicker.value);
+                    // Switching form starts at page 1 but keeps the chosen page size.
+                    window.location = SUBS_BASE + '&form_id=' + encodeURIComponent(formPicker.value)
+                        + '&iDisplayLength=' + encodeURIComponent(PER_PAGE);
                 });
             }
             var statusPicker = document.getElementById('status-picker');
             if (statusPicker) {
                 statusPicker.addEventListener('change', function () {
-                    var url = SUBS_BASE + '&form_id=' + encodeURIComponent('<?php echo $currentFormId; ?>');
+                    var url = SUBS_BASE + '&form_id=' + encodeURIComponent('<?php echo $currentFormId; ?>')
+                        + '&iDisplayLength=' + encodeURIComponent(PER_PAGE);
                     if (statusPicker.value !== '') { url += '&status=' + encodeURIComponent(statusPicker.value); }
                     window.location = url;
                 });

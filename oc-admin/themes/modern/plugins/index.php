@@ -13,42 +13,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __("Install or uninstall the plugins available in your installation. In some cases, "
-              . "you'll have to configure the plugin in order to get it to work.")
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Plugins'); ?>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-        <a href="<?php echo osc_admin_base_url(true); ?>?page=plugins&amp;action=add"
-           class="ms-1 text-success float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="<?php _e('Add plugin'); ?>"><i
-                    class="bi bi-plus-circle-fill"></i></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Plugins &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Plugins'),
+    'title'   => __('Plugins'),
+    'help'    => __("Install or uninstall the plugins available in your installation. In some cases, "
+                    . "you'll have to configure the plugin in order to get it to work."),
+    'actions' => array(
+        array(
+            'icon'  => 'bi-plus-circle-fill',
+            'url'   => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
+            'title' => __('Add plugin'),
+        ),
+    ),
+));
 
 $iDisplayLength = __get('iDisplayLength');
 $aData          = __get('aPlugins');
@@ -82,7 +59,7 @@ $marketUpdateUrl  = osc_admin_base_url(true) . '?page=ajax&action=market_update&
 $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh&type=plugin&' . $marketCsrf;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<h2 class="render-title"><?php _e('Manage plugins'); ?></h2>
+<?php osc_admin_page_head(__('Manage plugins')); ?>
 
 <div class="market-app" data-type="plugin"
      data-install-url="<?php echo osc_esc_html($marketInstallUrl); ?>"
@@ -148,58 +125,24 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                     <td data-col-name="<?php echo osc_esc_html(__('Description')); ?>"><?php echo $array[1]; ?></td>
                 </tr>
             <?php } ?>
-        <?php } else { ?>
-            <tr>
-                <td colspan="3" class="text-center">
-                    <p><?php _e('No data available in table'); ?></p>
-                </td>
-            </tr>
-        <?php } ?>
+        <?php } else {
+            osc_admin_table_empty(3, array(
+                'icon'   => 'bi-plug',
+                'title'  => __('No plugins installed'),
+                'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload a package.'),
+                'action' => array(
+                    'label'   => __('Add plugin'),
+                    'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
+                    'variant' => 'primary',
+                ),
+            ));
+        } ?>
         </tbody>
     </table>
-    <?php
-    function showingResults()
-    {
-        $aData = __get('aPlugins');
-        echo '<ul class="showing-results"><li><span>' . osc_pagination_showing(
-            (Params::getParam('iPage') - 1)
-                                                                               * $aData['iDisplayLength'] + 1,
-            ((Params::getParam('iPage') - 1)
-                                                                                * $aData['iDisplayLength'])
-                                                                               + count($aData['aaData']),
-            $aData['iTotalDisplayRecords']
-        )
-             . '</span></li></ul>';
-    }
-
-osc_add_hook('before_show_pagination_admin', 'showingResults');
-osc_show_pagination_admin($aData);
-?>
+    <?php osc_admin_pagination($aData); ?>
 
     <div class="display-select-bottom">
-        <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline nocsrf">
-            <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                <?php if ($key !== 'iDisplayLength') { ?>
-                    <input type="hidden" name="<?php echo osc_esc_html($key); ?>"
-                           value="<?php echo osc_esc_html($value); ?>"/>
-                <?php }
-                } ?>
-            <select name="iDisplayLength" class="form-select form-select-sm select-box-medium float-left"
-                    onchange="this.form.submit();">
-                <option value="10" <?php if (Params::getParam('iDisplayLength') == 10) {
-                    echo 'selected';
-                } ?> ><?php printf(__('%d plugins'), 10); ?></option>
-                <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                    echo 'selected';
-                } ?> ><?php printf(__('%d plugins'), 25); ?></option>
-                <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                    echo 'selected';
-                } ?> ><?php printf(__('%d plugins'), 50); ?></option>
-                <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                    echo 'selected';
-                } ?> ><?php printf(__('%d plugins'), 100); ?></option>
-            </select>
-        </form>
+            <?php osc_admin_per_page(array('label' => __('%d Plugins'), 'current' => $iDisplayLength)); ?>
     </div>
 </div>
     </div>

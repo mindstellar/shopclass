@@ -133,34 +133,6 @@ class Field extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        // The first three statements have always thrown their return value away,
-        // and the legacy layer reported a failure without raising, so a failure
-        // on one never stopped the rest from running. Each therefore keeps its
-        // own swallowed catch: one shared try would abort the cascade at the
-        // first failure and leave orphaned rows behind.
-        try {
-            osc_db_table(sprintf('%st_item_meta', DB_TABLE_PREFIX))
-                ->where('fk_i_field_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-        try {
-            osc_db_table(sprintf('%st_meta_categories', DB_TABLE_PREFIX))
-                ->where('fk_i_field_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-        // remove form memberships too, or the t_meta_group_fields FK blocks the delete.
-        try {
-            osc_db_table(sprintf('%st_meta_group_fields', DB_TABLE_PREFIX))
-                ->where('fk_i_field_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-
         // A null id used to build a comparison with no right-hand side, so the
         // delete failed and the method reported false. A bound null is valid SQL
         // that matches nothing and would report 0 instead — callers tell the two
@@ -169,11 +141,38 @@ class Field extends DAO
             return false;
         }
 
+        osc_run_hook('before_delete_field', $id);
+
+        // Every one of these tables now also carries ON DELETE CASCADE, so the
+        // database would clear it anyway. They are still removed here because an
+        // install whose foreign keys were never created -- or were dropped by a
+        // migration that ran with FOREIGN_KEY_CHECKS off -- has nothing else to do
+        // it, and a redundant delete is a no-op.
+        //
+        // t_form_submission_value belongs in this list: it holds every value ever
+        // submitted for the field through a form, and leaving it out made deleting
+        // a field that had been submitted fail outright on the foreign key.
+        $dependents = array('t_item_meta', 't_meta_categories', 't_meta_group_fields', 't_form_submission_value');
+
         try {
-            return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
-        } catch (\mindstellar\database\DbException $e) {
+            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                foreach ($dependents as $table) {
+                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_field_id', $id)->delete();
+                }
+
+                return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+            });
+        } catch (\Throwable $e) {
+            // The whole cascade is rolled back, so the field keeps its values and
+            // its category and form links rather than surviving as an empty shell.
+            // Throwable, not DbException: failing to even open the transaction
+            // raises a RuntimeException, and callers expect false either way.
             return false;
         }
+
+        osc_run_hook('after_delete_field', $id);
+
+        return $deleted;
     }
 
     /**

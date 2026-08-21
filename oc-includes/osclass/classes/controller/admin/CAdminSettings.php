@@ -32,7 +32,6 @@ class CAdminSettings
         switch (Params::getParam('action')) {
             case ('advanced'):
             case ('advanced_post'):
-            case ('advanced_cache_flush'):
                 $do = new CAdminSettingsAdvanced();
                 break;
             case ('comments'):
@@ -74,6 +73,10 @@ class CAdminSettings
                 break;
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();
+                break;
+            case ('billing'):
+            case ('billing_post'):
+                $do = new CAdminSettingsBilling();
                 break;
             case ('mailserver'):
             case ('mailserver_post'):

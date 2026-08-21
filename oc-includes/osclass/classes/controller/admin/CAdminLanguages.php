@@ -22,7 +22,7 @@ if (!defined('ABS_PATH')) {
 class CAdminLanguages extends AdminSecBaseModel
 {
     //specific for this class
-    private $localeManager;
+    private OSCLocale $localeManager;
 
     public function __construct()
     {

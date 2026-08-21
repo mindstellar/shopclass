@@ -1,0 +1,90 @@
+// =============================================================================
+// Billing
+// -----------------------------------------------------------------------------
+// Almost everything here is drawn from the shared patterns in ui-patterns.scss
+// and the existing table/panel/badge components. What remains is the two-column
+// detail layout and the balance figure — the only shapes billing needed that
+// nothing else in the admin has.
+// =============================================================================
+
+// A record on the left, the things you can do to it on the right. The side column
+// is fixed and narrow because it holds short forms and a number, not content;
+// giving it a fraction of the width would let it stretch on a wide monitor and
+// leave the reading column short.
+.billing-detail-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+
+  @media (max-width: 991.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Panels stacked in the side column are separate cards, so they need air between them.
+// Bootstrap's .card carries no bottom margin — it expects a grid gap to do this — and
+// without one, three cards share their borders and read as a single segmented block.
+.billing-detail-grid .widget-box + .widget-box {
+  margin-block-start: 1.25rem;
+}
+
+// The counts beside the filters: "128 orders · 96 paid · 12 awaiting payment".
+.billing-summary {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem; // Label
+  margin: 0;
+
+  strong {
+    color: var(--osc-ink);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+}
+
+.billing-filters {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  // A form-select is width:100% by default, which in a flex row makes every filter
+  // stretch to fill. Each should be as wide as its longest option and no wider.
+  .form-select {
+    width: auto;
+  }
+}
+
+// The one number on the screen that is the answer to "how much does this account
+// have". Large enough to be the anchor of its panel, but plain — this is a figure,
+// not a hero metric, so it takes no accent colour and no gradient.
+.billing-balance {
+  color: var(--osc-ink);
+  font-size: 1.75rem; // Display — the documented top of the ramp, not a new step
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.billing-balance-label {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem; // Label
+  letter-spacing: .01em;
+  margin: .15rem 0 0;
+}
+
+// The order id is the row's handle, so it reads as the identifier it is rather
+// than as prose that happens to be a link.
+.billing-order-link {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.billing-orders {
+  th,
+  td {
+    vertical-align: middle;
+  }
+}

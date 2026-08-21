@@ -13,41 +13,27 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-function addHelp()
-{
-    echo '<p>'
-         . __('Every image uploaded across your site — listing photos, user avatars and page images — in one '
-              . 'place. Filter by type, and delete a file without removing the listing, user or page it belongs to.')
-         . '</p>';
-}
-
-osc_add_hook('help_box', 'addHelp');
-
-function customPageHeader()
-{
-    ?>
-    <h1><?php _e('Media'); ?>
-        <a href="<?php echo osc_admin_base_url(true) . '?page=settings&action=media'; ?>"
-           class="ms-1 float-end" title="<?php echo osc_esc_html(__('Settings')); ?>"><i class="bi bi-gear-fill"></i></a>
-        <a class="ms-1 bi bi-question-circle float-end" data-bs-target="#help-box" data-bs-toggle="collapse"
-           href="#help-box"></a>
-    </h1>
-    <?php
-}
-
-osc_add_hook('admin_page_header', 'customPageHeader');
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    return sprintf(__('Media &raquo; %s'), $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
+osc_admin_page(array(
+    'section' => __('Media'),
+    'title'   => __('Media'),
+    'help'    => __('Every image uploaded across your site — listing photos, user avatars and page images — in one '
+                    . 'place. Filter by type, and delete a file without removing the listing, user or page it belongs to.'),
+    'actions' => array(
+        array(
+            'icon'    => 'bi-upload',
+            'url'     => '#',
+            'title'   => __('Upload'),
+            // Opens the hidden file input further down the page, so the header keeps the
+            // same anchor markup every other screen's actions use.
+            'onclick' => "document.getElementById('media-upload-input').click(); return false;",
+        ),
+        array(
+            'icon'  => 'bi-gear-fill',
+            'url'   => osc_admin_base_url(true) . '?page=settings&amp;action=media',
+            'title' => __('Settings'),
+        ),
+    ),
+));
 
 osc_add_filter('render-wrapper', static function () {
     return 'row-offset';
@@ -255,33 +241,45 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="media-library" class="col-12">
-    <div class="media-library-head">
-        <h2 class="render-title"><?php _e('Media library'); ?></h2>
-        <label class="btn btn-submit btn-sm media-upload-btn">
-            <i class="bi bi-upload" aria-hidden="true"></i> <?php _e('Upload'); ?>
-            <input type="file" accept="image/*" hidden id="media-upload-input"
-                   data-url="<?php echo osc_esc_html(osc_admin_base_url(true)
-                       . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
-                       . osc_csrf_token_url()); ?>"/>
-        </label>
-    </div>
-    <div class="media-filters">
-        <?php foreach ($mediaFilters as $filter) {
-            $active = ($filter['type'] === $mediaType) ? ' active' : ''; ?>
-            <a class="media-filter<?php echo $active; ?>"
-               href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=media&type='
-                   . urlencode($filter['type'])); ?>">
-                <?php echo osc_esc_html($filter['label']); ?>
-            </a>
-        <?php } ?>
-    </div>
+    <?php
+    osc_admin_page_head(__('Media library'));
+    ?>
+    <input type="file" accept="image/*" hidden id="media-upload-input"
+           data-url="<?php echo osc_esc_html(osc_admin_base_url(true)
+               . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
+               . osc_csrf_token_url()); ?>"/>
+    <?php
 
-    <?php if (count($mediaRows) === 0) { ?>
-        <div class="media-empty">
-            <i class="bi bi-images" aria-hidden="true"></i>
-            <p><?php _e('No media here yet.'); ?></p>
-        </div>
-    <?php } else {
+    osc_admin_toolbar_open();
+
+    $filterLinks = array();
+    foreach ($mediaFilters as $filter) {
+        $filterLinks[] = array(
+            'label'  => $filter['label'],
+            'url'    => osc_admin_base_url(true) . '?page=media&amp;type=' . urlencode($filter['type']),
+            'active' => $filter['type'] === $mediaType,
+        );
+    }
+    osc_admin_link_group($filterLinks);
+
+    osc_admin_per_page(array(
+        'label'   => __('%d files'),
+        'current' => $mediaPerPage,
+        'options' => __get('mediaPerPageOptions') ?: array(10, 25, 50, 100, 250, 500),
+    ));
+
+    osc_admin_toolbar_close();
+
+    if (count($mediaRows) === 0) {
+        osc_admin_empty(array(
+            'icon'  => 'bi-images',
+            'title' => $mediaType === 'all' ? __('No media yet') : __('No media of this type'),
+            'text'  => $mediaType === 'all'
+                ? __('Every image uploaded across listings, users and pages collects here. '
+                     . 'Upload one, or add a photo to a listing.')
+                : __('Nothing has been uploaded under this filter yet.'),
+        ));
+    } else {
         // Resolve where every row is used up front, in a fixed number of queries.
         $usageMap = mediaResolveUsageBatch($mediaRows); ?>
         <div id="media-table" class="table-contains-actions">
@@ -289,7 +287,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                 <thead>
                     <tr>
                         <th class="media-col-preview"><?php _e('Preview'); ?></th>
-                        <th><?php _e('Name'); ?></th>
                         <th><?php _e('Used in'); ?></th>
                         <th><?php _e('Type'); ?></th>
                         <th><?php _e('Size'); ?></th>
@@ -328,15 +325,11 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                             <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
                                data-media-preview
                                data-full="<?php echo osc_esc_html($full); ?>"
-                               data-name="<?php echo osc_esc_html((string) $row['s_name']); ?>"
                                data-usage="<?php echo osc_esc_html($usageText); ?>"
                                title="<?php echo osc_esc_html(__('Preview')); ?>">
                                 <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
-                                     alt="<?php echo osc_esc_html((string) $row['s_name']); ?>"/>
+                                     alt="<?php echo osc_esc_html($usageText); ?>"/>
                             </a>
-                        </td>
-                        <td class="media-col-name" data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
-                            <?php echo osc_esc_html((string) $row['s_name']); ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Used in')); ?>">
                             <?php if ($usage !== null) { ?>
@@ -364,9 +357,9 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                             </a>
                             <a class="media-delete" href="<?php echo osc_esc_html($deleteUrl); ?>"
-                               data-confirm="<?php echo osc_esc_html(
-                                   __('Delete this media file? The listing, user or page it belongs to is not affected.')
-                               ); ?>" title="<?php echo osc_esc_html(__('Delete')); ?>"
+                               data-src="<?php echo osc_esc_html((string) $row['src']); ?>"
+                               data-id="<?php echo (int) $row['id']; ?>"
+                               title="<?php echo osc_esc_html(__('Delete')); ?>"
                                aria-label="<?php echo osc_esc_html(__('Delete')); ?>">
                                 <i class="bi bi-trash" aria-hidden="true"></i>
                             </a>
@@ -377,31 +370,29 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             </table>
         </div>
 
-        <?php if ($mediaMaxPage > 1) {
-            $pageBase = osc_admin_base_url(true) . '?page=media&type=' . urlencode($mediaType) . '&iPage='; ?>
-            <nav class="media-pagination" aria-label="<?php echo osc_esc_html(__('Pagination')); ?>">
-                <?php if ($mediaPage > 1) { ?>
-                    <a class="btn btn-secondary btn-sm"
-                       href="<?php echo osc_esc_html($pageBase . ($mediaPage - 1)); ?>"><?php _e('Previous'); ?></a>
-                <?php } ?>
-                <span class="media-page-count">
-                    <?php printf(__('Page %1$d of %2$d'), $mediaPage, $mediaMaxPage); ?>
-                </span>
-                <?php if ($mediaPage < $mediaMaxPage) { ?>
-                    <a class="btn btn-secondary btn-sm"
-                       href="<?php echo osc_esc_html($pageBase . ($mediaPage + 1)); ?>"><?php _e('Next'); ?></a>
-                <?php } ?>
-            </nav>
-        <?php } ?>
-    <?php } ?>
+        <?php osc_admin_pagination(array(
+            'aRows'                => $mediaRows,
+            'iDisplayLength'       => $mediaPerPage,
+            'iTotalDisplayRecords' => $mediaTotal,
+            'iPage'                => $mediaPage,
+        ));
+    } ?>
 </div>
+<?php osc_admin_confirm_dialog(array(
+    'id'      => 'media-delete-dialog',
+    'method'  => 'get',
+    'fields'  => array('page' => 'media', 'action' => 'delete', 'src' => '', 'id' => '', 'type' => $mediaType),
+    'title'   => __('Delete this file?'),
+    'text'    => __('This file will be removed from the server. The listing, user or page it '
+                    . 'belongs to is not affected.'),
+    'confirm' => __('Delete file'),
+)); ?>
 <dialog id="media-preview" class="osc-dialog osc-dialog-wide media-preview-dialog">
     <div class="osc-dialog-body">
         <p class="osc-dialog-title" id="media-preview-name"></p>
         <div class="media-preview-figure">
             <img id="media-preview-img" src="" alt=""/>
         </div>
-        <p class="osc-dialog-text" id="media-preview-usage"></p>
     </div>
     <div class="osc-dialog-actions">
         <a id="media-preview-open" class="btn btn-secondary btn-sm" href="#" target="_blank" rel="noopener">
@@ -418,28 +409,35 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         if (!dialog || typeof dialog.showModal !== 'function') { return; }
         var img   = document.getElementById('media-preview-img');
         var name  = document.getElementById('media-preview-name');
-        var usage = document.getElementById('media-preview-usage');
         var open  = document.getElementById('media-preview-open');
         document.querySelectorAll('[data-media-preview]').forEach(function (trigger) {
             trigger.addEventListener('click', function (e) {
                 e.preventDefault();
                 img.src = trigger.getAttribute('data-full') || '';
-                img.alt = trigger.getAttribute('data-name') || '';
-                name.textContent = trigger.getAttribute('data-name') || '';
-                usage.textContent = trigger.getAttribute('data-usage') || '';
+                img.alt = trigger.getAttribute('data-usage') || '';
+                name.textContent = trigger.getAttribute('data-usage') || '';
                 open.href = trigger.getAttribute('data-full') || '#';
                 dialog.showModal();
             });
         });
     })();
 
-    document.querySelectorAll('.media-delete').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            if (!window.confirm(link.getAttribute('data-confirm') || 'Delete?')) {
+    // Delete goes through the admin's own confirm dialog, not the browser's alert:
+    // it can name the file and say what is left alone, and it looks like the rest of
+    // the panel. The link keeps its real href, so it still works without JS.
+    (function () {
+        var dialog = document.getElementById('media-delete-dialog');
+        if (!dialog || typeof dialog.showModal !== 'function') { return; }
+        var form = dialog.querySelector('form');
+        document.querySelectorAll('.media-delete').forEach(function (link) {
+            link.addEventListener('click', function (e) {
                 e.preventDefault();
-            }
+                form.querySelector('input[name=src]').value = link.getAttribute('data-src') || '';
+                form.querySelector('input[name=id]').value = link.getAttribute('data-id') || '';
+                dialog.showModal();
+            });
         });
-    });
+    })();
 
     // Upload straight to the library, then reload to show it under the Library filter.
     var mediaUpload = document.getElementById('media-upload-input');
@@ -449,7 +447,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             if (!file) { return; }
             var data = new FormData();
             data.append('file', file);
-            var btn = document.querySelector('.media-upload-btn');
+            var btn = document.querySelector('#content-head a[title]');
             if (btn) { btn.classList.add('is-busy'); }
             fetch(mediaUpload.getAttribute('data-url'), {
                 method: 'POST', credentials: 'same-origin', body: data
