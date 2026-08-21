@@ -125,6 +125,10 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- `_x()`, `_ex()` and `_mx()` translate a string with a context, so two identical English
+  words that are different words in another language can each be translated correctly.
+  The context is for translators and is never shown.
+
 - Delete hooks for the records that had none: `before_delete_field` / `after_delete_field`,
   `before_delete_field_group` / `after_delete_field_group`, `before_delete_page` /
   `after_delete_page`, `before_delete_country` / `after_delete_country`,
