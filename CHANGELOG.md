@@ -132,6 +132,9 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- CI fails when the translation templates no longer match the source they are extracted
+  from, so a template cannot quietly stop offering newer strings to translators.
+
 - `_x()`, `_ex()` and `_mx()` translate a string with a context, so two identical English
   words that are different words in another language can each be translated correctly.
   The context is for translators and is never shown.
