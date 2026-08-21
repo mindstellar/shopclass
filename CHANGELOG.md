@@ -189,6 +189,11 @@ directory, and removes Google Analytics from the core.
 
 ### Breaking
 
+- **`oc-includes/assets/chart-js/` has been removed.** Chart.js was added in 2021 and
+  never used: no core file, admin page, bundled plugin or theme has ever loaded it, and
+  the admin's charts are Google Charts. It shipped 122 KB to every install. A third-party
+  plugin loading that path directly should bundle its own copy.
+
 - **Back up your database before upgrading.** This release rebuilds foreign keys on
   twenty-four tables so that the database removes dependent rows along with their parent.
   Each key is checked against the whole table as it is rebuilt, so the time it takes
