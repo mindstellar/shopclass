@@ -3,7 +3,7 @@
         'name' => 'mindstellar/shopclass',
         'pretty_version' => 'dev-develop',
         'version' => 'dev-develop',
-        'reference' => '22216ff03dd7ce410756003b7643ad76a47a05c8',
+        'reference' => 'b63498c2bb45bd70da595b601bbe68242df32e77',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
@@ -67,7 +67,7 @@
         'mindstellar/shopclass' => array(
             'pretty_version' => 'dev-develop',
             'version' => 'dev-develop',
-            'reference' => '22216ff03dd7ce410756003b7643ad76a47a05c8',
+            'reference' => 'b63498c2bb45bd70da595b601bbe68242df32e77',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),

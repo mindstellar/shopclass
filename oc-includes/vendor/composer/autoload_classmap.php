@@ -862,6 +862,7 @@ return array(
     'mindstellar\\model\\FormSubmission' => $baseDir . '/oc-includes/osclass/classes/model/FormSubmission.php',
     'mindstellar\\model\\Resource' => $baseDir . '/oc-includes/osclass/classes/model/Resource.php',
     'mindstellar\\pages\\PageTemplateRegistry' => $baseDir . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
+    'mindstellar\\privacy\\PersonalData' => $baseDir . '/oc-includes/osclass/classes/privacy/PersonalData.php',
     'mindstellar\\security\\ActionThrottle' => $baseDir . '/oc-includes/osclass/classes/security/ActionThrottle.php',
     'mindstellar\\security\\ActionToken' => $baseDir . '/oc-includes/osclass/classes/security/ActionToken.php',
     'mindstellar\\security\\LoginThrottle' => $baseDir . '/oc-includes/osclass/classes/security/LoginThrottle.php',

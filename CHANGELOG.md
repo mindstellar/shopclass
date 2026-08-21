@@ -135,6 +135,10 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- CI fails when the committed vendor and asset trees no longer match what
+  composer.lock and package-lock.json declare. Releases ship those trees verbatim, so
+  a bump that edits only a manifest would hand users the old library.
+
 - Translation templates are published to the translations repository automatically when
   the strings they hold change, so translators are never working from an older set.
 

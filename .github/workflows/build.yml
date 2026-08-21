@@ -82,9 +82,11 @@ jobs:
     uses: ./.github/workflows/lint.yml
   i18n:
     uses: ./.github/workflows/i18n-drift.yml
+  vendor:
+    uses: ./.github/workflows/vendor-drift.yml
 
   release:
-    needs: [gate, test, drift, lint, i18n]
+    needs: [gate, test, drift, lint, i18n, vendor]
     if: needs.gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     # For the install smoke test below: the zip is installed against a real
@@ -281,7 +283,7 @@ jobs:
   # commits never republish the image, and a deliberate one does. Gated on the
   # same test/drift/lint as a release so a broken commit can never ship an image.
   edge:
-    needs: [test, drift, lint, i18n]
+    needs: [test, drift, lint, i18n, vendor]
     if: github.ref_name == 'develop' && contains(github.event.head_commit.message, '[publish-edge]')
     runs-on: ubuntu-latest
     permissions:
