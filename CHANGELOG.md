@@ -135,6 +135,9 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- Translation templates are published to the translations repository automatically when
+  the strings they hold change, so translators are never working from an older set.
+
 - CI fails when the translation templates no longer match the source they are extracted
   from, so a template cannot quietly stop offering newer strings to translators.
 

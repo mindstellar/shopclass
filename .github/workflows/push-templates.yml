@@ -1,0 +1,63 @@
+# Sends the English source strings to the translations repository.
+#
+# Translators work from whatever is published there, so until this ran the
+# templates were copied across by hand -- which is how they came to sit at 1399
+# strings while core had 2280, with nothing anywhere reporting the gap.
+#
+# Only the three files core generates are pushed. theme.pot belongs to the themes,
+# which are their own repositories, and locale.json is a maintainer's configuration
+# rather than anything extracted from here.
+#
+# Branches map to how Shopclass reads them: a prerelease install fetches from
+# develop and a stable one from master (see osc_get_i18n_repository_url()), so the
+# branch pushed to has to be the branch pushed from.
+name: Publish translation templates
+
+on:
+  push:
+    branches: [develop, master]
+    paths:
+      - 'oc-content/languages/core.pot'
+      - 'oc-content/languages/messages.pot'
+      - 'oc-includes/osclass/installer/mail.json'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Shopclass
+        uses: actions/checkout@v7
+
+      - name: Checkout translations
+        uses: actions/checkout@v7
+        with:
+          repository: mindstellar/shopclass-i18n
+          # A token that can write to the translations repository. Without it this
+          # job cannot push, so it says so rather than failing further down.
+          token: ${{ secrets.I18N_PUSH_TOKEN }}
+          ref: ${{ github.ref_name }}
+          path: i18n
+
+      - name: Copy the templates across
+        run: |
+          cp oc-content/languages/core.pot      i18n/src/templates/core.pot
+          cp oc-content/languages/messages.pot  i18n/src/templates/messages.pot
+          cp oc-includes/osclass/installer/mail.json i18n/src/templates/mail.json
+
+      - name: Push if anything changed
+        working-directory: i18n
+        run: |
+          if git diff --quiet -- src/templates/; then
+            echo "Templates already match; nothing to publish."
+            exit 0
+          fi
+
+          echo "Publishing:"
+          git diff --stat -- src/templates/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/templates/
+          git commit -m "Templates from shopclass@${GITHUB_SHA:0:8}"
+          git push origin "${GITHUB_REF_NAME}"
