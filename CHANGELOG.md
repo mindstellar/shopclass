@@ -110,6 +110,10 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- A language catalogue that translates nothing is no longer compiled or shipped. The
+  English ones were header-only files every lookup missed before falling back to the
+  text it would have used anyway.
+
 - Email templates ship as `mail.json` only; the parallel `mail.sql` copy is gone. Installing
   a language with no templates of its own now imports the bundled English set under that
   language instead of under `en_US`.
