@@ -113,6 +113,8 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- The published Docker image runs PHP 8.5.
+
 - PHPMailer updated to 7.1.1 and HTMLPurifier to 4.19.0.
 
 - Translations now come from the Shopclass translations repository rather than the
