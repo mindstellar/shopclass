@@ -33,9 +33,11 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: mindstellar/shopclass-i18n
-          # A token that can write to the translations repository. Without it this
-          # job cannot push, so it says so rather than failing further down.
-          token: ${{ secrets.I18N_PUSH_TOKEN }}
+          # A deploy key rather than a token: this job is meant to run unattended for
+          # years, and an expiring credential fails by quietly leaving translators on
+          # stale templates -- the exact thing this job exists to prevent. A deploy
+          # key does not expire and reaches only this one repository.
+          ssh-key: ${{ secrets.I18N_DEPLOY_KEY }}
           ref: ${{ github.ref_name }}
           path: i18n
 
