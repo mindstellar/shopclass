@@ -113,6 +113,8 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- PHPMailer updated to 7.1.1 and HTMLPurifier to 4.19.0.
+
 - Translations now come from the Shopclass translations repository rather than the
   Osclass one. 32 languages carried over, re-merged against the current strings.
 

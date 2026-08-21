@@ -1,72 +1,76 @@
 {
-  "name": "mindstellar/shopclass",
-  "type": "project",
-  "description": "With Shopclass, get your own  classifieds site for free. Build your own Shopclass installation and start advertising real estate, jobs or whatever you want- in minutes! ",
-  "keywords": [
-    "shopclass",
-    "classified",
-    "open-source",
-    "php-classified",
-    "cms"
-  ],
-  "homepage": "https://github.com/mindstellar/shopclass",
-  "license": "GPL-3.0-or-later",
-  "authors": [
-    {
-      "name": "Shopclass Community",
-      "homepage": "https://github.com/mindstellar/shopclass/graphs/contributors"
+    "name": "mindstellar/shopclass",
+    "type": "project",
+    "description": "With Shopclass, get your own  classifieds site for free. Build your own Shopclass installation and start advertising real estate, jobs or whatever you want- in minutes! ",
+    "keywords": [
+        "shopclass",
+        "classified",
+        "open-source",
+        "php-classified",
+        "cms"
+    ],
+    "homepage": "https://github.com/mindstellar/shopclass",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Shopclass Community",
+            "homepage": "https://github.com/mindstellar/shopclass/graphs/contributors"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "mindstellar\\": "oc-includes/osclass/classes"
+        },
+        "classmap": [
+            "oc-includes/osclass",
+            "oc-includes/AjaxUploader.php",
+            "oc-includes/Akismet.class.php"
+        ]
+    },
+    "config": {
+        "vendor-dir": "oc-includes/vendor",
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "8.0.0"
+        }
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-ctype": "*",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "ext-mysqli": "*",
+        "ext-zip": "*",
+        "ext-curl": "*",
+        "ext-posix": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*",
+        "ext-gd": "*",
+        "ezyang/htmlpurifier": "4.19.*",
+        "phpmailer/phpmailer": "^7.0",
+        "pclzip/pclzip": "2.8.*",
+        "phpseclib/phpseclib": "2.0.*",
+        "google/recaptcha": "^1.3",
+        "gettext/gettext": "4.8.*",
+        "phpseclib/mcrypt_compat": "^1.0",
+        "async-aws/s3": "^2.10"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-latest"
+    },
+    "scripts": {
+        "cs:check": "php tools/php-cs-fixer.phar fix --dry-run --diff",
+        "cs:fix": "php tools/php-cs-fixer.phar fix",
+        "lint:install": "composer install --working-dir=tools/lint --no-interaction",
+        "compat": "php tools/lint/vendor/bin/phpcs --standard=.phpcompat.xml.dist",
+        "lint": [
+            "@cs:check",
+            "@compat"
+        ]
+    },
+    "suggest": {
+        "ext-apcu": "Fast PHP user cache",
+        "ext-memcached": "Enables the 'memcached' object cache driver (set OSC_CACHE='memcached')",
+        "ext-imagick": "Will enable to use Imagick library for image manipulation"
     }
-  ],
-  "autoload": {
-    "psr-4": {"mindstellar\\": "oc-includes/osclass/classes"},
-    "classmap": [
-      "oc-includes/osclass",
-      "oc-includes/AjaxUploader.php",
-      "oc-includes/Akismet.class.php"
-    ]
-  },
-  "config": {
-    "vendor-dir": "oc-includes/vendor",
-    "optimize-autoloader": true,
-    "platform": {
-      "php": "8.0.0"
-    }
-  },
-  "require": {
-    "php": ">=8.0",
-    "ext-ctype": "*",
-    "ext-json": "*",
-    "ext-openssl": "*",
-    "ext-mysqli": "*",
-    "ext-zip": "*",
-    "ext-curl": "*",
-    "ext-posix": "*",
-    "ext-fileinfo": "*",
-    "ext-mbstring": "*",
-    "ext-gd": "*",
-    "ezyang/htmlpurifier": "4.17.*",
-    "phpmailer/phpmailer": "^6.9",
-    "pclzip/pclzip": "2.8.*",
-    "phpseclib/phpseclib": "2.0.*",
-    "google/recaptcha": "^1.3",
-    "gettext/gettext": "4.8.*",
-    "phpseclib/mcrypt_compat": "^1.0",
-    "async-aws/s3": "^2.10"
-  }
-  ,
-  "require-dev": {
-    "roave/security-advisories": "dev-latest"
-  },
-  "scripts": {
-    "cs:check": "php tools/php-cs-fixer.phar fix --dry-run --diff",
-    "cs:fix": "php tools/php-cs-fixer.phar fix",
-    "lint:install": "composer install --working-dir=tools/lint --no-interaction",
-    "compat": "php tools/lint/vendor/bin/phpcs --standard=.phpcompat.xml.dist",
-    "lint": ["@cs:check", "@compat"]
-  },
-  "suggest": {
-    "ext-apcu": "Fast PHP user cache",
-    "ext-memcached": "Enables the 'memcached' object cache driver (set OSC_CACHE='memcached')",
-    "ext-imagick": "Will enable to use Imagick library for image manipulation"
-  }
 }

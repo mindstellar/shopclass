@@ -545,6 +545,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'HTMLPurifier_AttrDef_CSS_Multiple' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/Multiple.php',
         'HTMLPurifier_AttrDef_CSS_Number' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/Number.php',
         'HTMLPurifier_AttrDef_CSS_Percentage' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/Percentage.php',
+        'HTMLPurifier_AttrDef_CSS_Ratio' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/Ratio.php',
         'HTMLPurifier_AttrDef_CSS_TextDecoration' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/TextDecoration.php',
         'HTMLPurifier_AttrDef_CSS_URI' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/CSS/URI.php',
         'HTMLPurifier_AttrDef_Clone' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier/AttrDef/Clone.php',
