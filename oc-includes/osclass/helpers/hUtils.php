@@ -1081,9 +1081,9 @@ function osc_get_i18n_repository_url($path = '')
     }
     if ($is_dev) {
         // get url of local_list.json from github
-        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/i10n-osclass/develop/';
+        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/shopclass-i18n/develop/';
     } else {
-        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/i10n-osclass/master/';
+        $repoUrl = 'https://raw.githubusercontent.com/mindstellar/shopclass-i18n/master/';
     }
     if ($path === '') {
         $path = 'locale_list.json';

@@ -110,6 +110,9 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- Translations now come from the Shopclass translations repository rather than the
+  Osclass one. 32 languages carried over, re-merged against the current strings.
+
 - A language catalogue that translates nothing is no longer compiled or shipped. The
   English ones were header-only files every lookup missed before falling back to the
   text it would have used anyway.
