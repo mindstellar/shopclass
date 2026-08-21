@@ -54,6 +54,9 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Sites are told when a newer translation is available again. The check returned false
+  before doing anything and asked a market that no longer exists.
+
 - Sample content is created again on a fresh install. Both installers were missing the
   billing helper the listing form calls, so seeding stopped with an undefined function
   and the install finished without it.
