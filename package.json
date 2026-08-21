@@ -43,6 +43,6 @@
     "npm-font-open-sans": "^1.1.0",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
     "sortablejs": "^1.15.7",
-    "tinymce": "^7.9.3"
+    "tinymce": "^8.8.2"
   }
 }

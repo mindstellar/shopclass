@@ -113,6 +113,9 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- TinyMCE updated to 8.8.2. The editor now declares the GPL licence it is bundled
+  under; version 8 refuses to start without one.
+
 - The published Docker image runs PHP 8.5.
 
 - PHPMailer updated to 7.1.1 and HTMLPurifier to 4.19.0.

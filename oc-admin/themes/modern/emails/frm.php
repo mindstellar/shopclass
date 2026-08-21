@@ -37,6 +37,9 @@ function customHead()
         tinymce.init({
             selector: "textarea",
             promotion: false,
+            // TinyMCE 8 disables the editor outright unless a licence is declared;
+            // 'gpl' is the self-hosted GPL option the bundled build is used under.
+            license_key: 'gpl',
             skin: window.oscTinymceTheme ? window.oscTinymceTheme().skin : 'oxide',
             content_css: window.oscTinymceTheme ? window.oscTinymceTheme().content_css : 'default',
             width: "100%",

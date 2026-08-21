@@ -341,6 +341,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             // never plugin textareas elsewhere on the form.
             selector: 'textarea[name^="description["]',
             promotion: false,
+            // TinyMCE 8 disables the editor outright unless a licence is declared;
+            // 'gpl' is the self-hosted GPL option the bundled build is used under.
+            license_key: 'gpl',
             branding: false,
             menubar: false,
             height: 320,

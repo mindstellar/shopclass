@@ -102,6 +102,9 @@ function customHead()
             var cfg = {
                 selector: 'textarea[name$="#s_text"]',
                 promotion: false,
+                // TinyMCE 8 disables the editor outright unless a licence is declared;
+                // 'gpl' is the self-hosted GPL option the bundled build is used under.
+                license_key: 'gpl',
                 branding: false,
                 menubar: false,
                 height: 460,
