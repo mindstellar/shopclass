@@ -54,6 +54,10 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Choosing a country's locations during install downloaded nothing. The rebrand renamed the
+  repository in the URL but not the repository, so the request has 404'd since 5.3.0.beta1.
+  The import is deliberately non-fatal, so the install simply finished without them.
+
 - Sites are told when a newer translation is available again. The check returned false
   before doing anything and asked a market that no longer exists.
 

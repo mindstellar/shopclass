@@ -1056,7 +1056,9 @@ function osc_get_locations_sql_url($location)
 {
     $location = rawurlencode($location);
 
-    return 'https://raw.githubusercontent.com/mindstellar/Shopclass-Extras/master/locations/' . $location;
+    // Osclass-Extras, not Shopclass-Extras: the rename swept the code but not this
+    // repository, which still holds the location dumps under its original name.
+    return 'https://raw.githubusercontent.com/mindstellar/Osclass-Extras/master/locations/' . $location;
 }
 
 /**
