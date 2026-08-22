@@ -39,6 +39,9 @@ paths) so existing extensions keep working, while replacing the legacy frontend:
 a Bootstrap 5 admin theme, jQuery removed from the core, PHP 8 throughout, and a
 first-class maintenance/cleanup toolset built in.
 
+**Coming from Osclass?** [What happened to Osclass, and how to upgrade](https://mindstellar.com/osclass)
+walks through the history, what carries over, and the upgrade path from a 3.x or 5.x install.
+
 ## Features
 
 - 🗂️ Listings with photos, categories, and hierarchical locations
@@ -317,6 +320,8 @@ notices are retained in [NOTICE](NOTICE) as that license requires.
 
 ## Links
 
+- 🏠 [Website](https://mindstellar.com) · [Live demo](https://demo.mindstellar.com)
+- 🧭 [Coming from Osclass](https://mindstellar.com/osclass)
 - 📦 [Releases](https://github.com/mindstellar/shopclass/releases)
 - 🐛 [Issues](https://github.com/mindstellar/shopclass/issues)
 - 💬 [Discussions](https://github.com/mindstellar/shopclass/discussions)
