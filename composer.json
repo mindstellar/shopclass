@@ -44,7 +44,7 @@
     "ext-fileinfo": "*",
     "ext-mbstring": "*",
     "ext-gd": "*",
-    "ezyang/htmlpurifier": "4.17.*",
+    "ezyang/htmlpurifier": "4.19.*",
     "phpmailer/phpmailer": "^6.9",
     "pclzip/pclzip": "2.8.*",
     "phpseclib/phpseclib": "2.0.*",
