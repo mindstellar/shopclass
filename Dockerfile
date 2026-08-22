@@ -9,7 +9,7 @@
 # vendor/ and oc-includes/assets/ are committed, so no composer/npm build is
 # needed here; the storefront default theme lives in its own repo and is bundled
 # below (STOREFRONT_VERSION defaults to its latest release).
-FROM php:8.3-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 LABEL org.opencontainers.image.title="Shopclass" \
       org.opencontainers.image.description="Self-hosted PHP classifieds CMS" \
