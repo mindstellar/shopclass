@@ -31,11 +31,11 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
     [Upgrade an Osclass site](/docs/from-osclass/)
   </Card>
-  <Card title="Keep it healthy" icon="setting">
-    Cron, mail, object caching, location data and search tuning — the settings
-    that decide whether a busy site stays fast.
+  <Card title="Run your site" icon="approve-check">
+    Categories, forms and custom fields, moderation, spam defences, media and
+    storage — the admin panel, screen by screen.
 
-    [Configuration guides](/docs/configure/cron/)
+    [First steps after installing](/docs/use/first-steps/)
   </Card>
   <Card title="Build on it" icon="puzzle">
     The plugin and theme API carried over from Osclass, plus the package spec
@@ -48,10 +48,19 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 ## Popular pages
 
 <CardGrid>
-  <LinkCard title="Command-line interface" href="/docs/cli/" description="Cron, migrations, admin recovery, plugin and theme management from a shell." />
-  <LinkCard title="Set up cron" href="/docs/configure/cron/" description="The scheduled tasks that send alerts, expire listings and warm the sitemap." />
+  <LinkCard title="Set up cron" href="/docs/configure/cron/" description="The scheduled tasks that send alerts and expire listings. Skip it and neither happens." />
+  <LinkCard title="Forms & custom fields" href="/docs/use/forms-and-custom-fields/" description="Model vehicles, property or jobs with typed fields and conditional logic — no code." />
+  <LinkCard title="Spam & abuse" href="/docs/use/spam-and-abuse/" description="Turnstile, the keyword blocklist, login throttling and rate limits." />
   <LinkCard title="Mail server" href="/docs/configure/mail-server/" description="SMTP settings, and what to check when mail stops arriving." />
-  <LinkCard title="Package specification" href="/docs/developers/package-spec/" description="The contract a plugin or theme must satisfy to be listed in the market." />
+  <LinkCard title="Command-line interface" href="/docs/cli/" description="Cron, migrations, admin recovery, plugin and theme management from a shell." />
+  <LinkCard title="Backups & maintenance" href="/docs/use/backups-and-maintenance/" description="Backups, maintenance mode, cleanup and the activity log." />
+</CardGrid>
+
+## Deploying
+
+<CardGrid>
+  <LinkCard title="Docker & the production image" href="/docs/deploy/docker/" description="The self-provisioning container image, its volumes, and how core and packages update differently." />
+  <LinkCard title="Security & hardening" href="/docs/deploy/security/" description="Permissions, HTTPS, admin access, the real client IP behind a proxy." />
 </CardGrid>
 
 ## Where else to look
