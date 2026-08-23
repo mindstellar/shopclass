@@ -66,20 +66,28 @@ The installer confirms your PHP version, the required extensions and folder
 write permissions up front, so nothing fails halfway through. Fix anything
 flagged here before continuing.
 
+![The installer's first step, listing each PHP version, extension and directory permission it requires with a pass or fail against it.](images/install/1-check-server.png)
+
 ### Step 2 · Connect database
 
 Enter the details from step 3 and press **Test connection** to confirm they work
 *before* anything is written. On success, the installer writes `config.php` for
 you and creates the schema.
 
+![The installer's database step: host, name, user, password and table prefix fields above a Test connection button.](images/install/2-connect-database.png)
+
 ### Step 3 · Your site
 
 Pick an admin username, your site title, a contact e-mail and your country.
 Leave the password field blank and a strong one is generated for you.
 
+![The installer's site step: admin username and password, site title, contact e-mail and country.](images/install/3-your-site.png)
+
 ### Step 4 · Done
 
 Copy the admin password — it is also e-mailed to you — and open the admin panel.
+
+![The installer's final step, showing the generated admin username and password with a link to the admin panel.](images/install/4-done.png)
 
 ## 5. Sign in
 

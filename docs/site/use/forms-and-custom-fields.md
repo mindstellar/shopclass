@@ -30,11 +30,18 @@ yet."* Creating the form is only half the job.
 
 ## Creating a form
 
-1. **Forms → Manage forms**, and name it.
-2. Drag fields into it from the palette, or use **Add field** to make a new one.
+**Forms → Manage forms** is a two-panel builder: your forms on the left, your
+reusable fields on the right.
+
+![The Forms admin screen: a Vehicle Details form on the left holding Make, Model, Year, Mileage, Fuel Type, Transmission and Condition, beside a panel of reusable fields on the right.](../images/forms/forms-builder.png)
+
+1. Press **+ New form** and name it.
+2. Drag fields in from the **Fields** panel on the right, or use the form's
+   **+ Add field** to make a new one.
 3. Drag to reorder — this is the order visitors see. Fields can also be reordered
    from the keyboard: focus the grip and use the arrow keys.
-4. Open **Categories & name** and attach the form to the categories it applies to.
+4. Open the form's **settings** (the gear) to attach it to the categories it
+   applies to. Each form shows its **Applies to:** line underneath.
 
 ## Field types
 
@@ -59,6 +66,19 @@ Choose the narrowest type that fits. A **Number** for Year gives you numeric
 filtering and sorting; the same thing as **Text** gives you neither, and sorts
 `1998` after `10000`.
 
+Editing a field opens its settings beside the form:
+
+![A field's editor: locale tabs for its name, a type picker, a required checkbox, placeholder, help text, default value, a conditional-logic selector and an advanced options section.](../images/forms/forms-field-editor.png)
+
+- **Name** has a tab per active language. The default locale is required; see
+  [languages](/docs/use/languages/).
+- **This field is required** makes it mandatory on the publish form.
+- **Placeholder**, **Help text** and **Default value** are what turn a bare input
+  into one a seller can answer without guessing.
+- **Advanced options** holds the rest, including *Tick to allow searches by this
+  field* — see [making fields searchable](#making-fields-searchable) — and, for a
+  URL field, *Tick to open links in new tab*.
+
 ## Reused fields change everywhere
 
 The admin says so when you edit one: *"Editing this field changes it in every
@@ -73,11 +93,19 @@ one.
 
 ## Conditional logic
 
-A field can be shown only when another field has a particular value: show
-*Engine size* only when *Fuel type* is not *Electric*.
+Every field carries a **Conditional logic** setting with three modes:
+
+| Mode | Effect |
+|---|---|
+| **Always show** | The default. The field is on the form for everyone. |
+| **Show only when…** | The field appears only when another field matches a condition — show *Engine size* only when *Fuel type* is not *Electric*. |
+| **Required only when…** | The field is always visible, but only mandatory when the condition matches — make *Registration number* required only when *Condition* is *Used*. |
 
 The available conditions are **is**, **is not**, **is greater than**, **is less
 than** and **is filled**.
+
+*Required only when* is the one people miss. It is how you demand the detail that
+matters for one kind of listing without blocking every other kind.
 
 This is how you keep a publish form short. A form with forty fields, most
 irrelevant to any given listing, is abandoned; a form that reveals the next
@@ -109,7 +137,9 @@ There is no deadline to do this, but doing it means one place to look.
 A form can also be placed on a **page** to collect enquiries rather than to
 describe a listing — a contact form, an application, a request form.
 
-**Forms → Submissions** shows what has come in. Each submission carries who sent
+**Forms → Submissions** shows what has come in.
+
+![The Submissions screen, listing responses to a form with their status and the date received.](../images/forms/forms-submissions.png) Each submission carries who sent
 it (if they were logged in), their IP, when it arrived, and a status of **New**,
 **Read** or **Spam**.
 
@@ -132,7 +162,8 @@ Existing values are kept, but the consequences differ by change:
 
 ## Making fields searchable
 
-A field is only useful as a filter if search knows about it. Mark the fields you
-want visitors to narrow by — price ranges, year, bedrooms — and leave descriptive
+A field is only useful as a filter if search knows about it. In the field's
+**Advanced options**, tick **"Tick to allow searches by this field"** for the
+fields you want visitors to narrow by — price ranges, year, bedrooms — and leave descriptive
 fields unmarked. Every searchable field is another query cost and another control
 in the sidebar, so choose the two or three that actually change what people find.
