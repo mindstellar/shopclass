@@ -26,10 +26,13 @@ the feature.
 | [`BILLING.md`](BILLING.md) | The seam between core's entitlements and a payment plugin's money. | Shipped in 6.2.0 |
 | [`CUSTOM-FIELDS.md`](CUSTOM-FIELDS.md) | Field inheritance down the category tree, reusable forms, conditional logic, the field-type registry. | Implemented |
 | [`PAGE-BUILDER.md`](PAGE-BUILDER.md) | Folding page templates and the widget registry into one composition model. | Phases 1–3 shipped |
-| [`GEO-SEARCH.md`](GEO-SEARCH.md) | Radius search and distance sort, and why coverage is the hard part. | **Design only — not built** |
 
 Where a specification and a page under `site/` cover the same ground, the specification is
 authoritative on the contract and the site page is authoritative on how to use it.
+
+Designs for work that has not started are kept out of this directory: a specification
+sitting beside shipped ones reads as a description of the software, and someone will
+believe the feature exists.
 
 A document here is expected to age into a record. When the thing it describes ships, its
 status line says so and its planning sections become the account of what was decided —
