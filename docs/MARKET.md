@@ -717,7 +717,9 @@ Two rules keep this from rotting:
    a rendered author-facing docs site are both scoped and unbuilt; neither is
    implied to work anywhere in these documents.
 
-## 11. Open questions
+## 11. Decisions
+
+Kept as a record of what was decided and why. Only item 4 is still open.
 
 1. **Do bundled plugins leave core? — resolved: mirrored, not moved.**
    `sample-forms` and `sample-widgets` are registered in `shopclass-plugins`

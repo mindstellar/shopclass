@@ -1,7 +1,16 @@
 # Billing & entitlements
 
-Core owns **entitlements**. Plugins own **money**. This document specifies the contract
-between them.
+Status: **Shipped in Shopclass 6.2.0**, off by default. Wallet, ledger, orders,
+entitlements, the listing quota, the feature registry and the built-in bank-transfer
+gateway are all built. The one gap is theming: the bundled theme is its own repository
+and does not yet ship `user-billing-*.php` templates, so sites see core's plain fallback
+views until it does.
+
+Admin-facing documentation is at
+[mindstellar.com/docs/use/currencies-and-paid-listings](https://mindstellar.com/docs/use/currencies-and-paid-listings/).
+This document is the contract between core and a payment plugin.
+
+Core owns **entitlements**. Plugins own **money**.
 
 Shopclass has never had a payment surface — paid listings have always been reimplemented
 from scratch by each commercial plugin, each with its own tables, its own way of flipping
@@ -627,17 +636,15 @@ Deliberately not in core, so the security and regulatory surface stays where it 
 - **Refund initiation.** Core records a refund the gateway reports; it never calls out to
   request one.
 
-## 11. Phases
+## 11. Delivery
 
-| Phase | Contents |
-|---|---|
-| **1** | Wallet, ledger, orders, `PaymentGateway` + registry, `dt_premium_expiration`, expiry cron, admin orders/balance UI. No enforcement. *Built.* |
-| **2** | Entitlements, the listing-slot quota, the `ItemActions::add()` choke point, settings. *Built.* |
-| **3** | Feature registry generalisation; theme helpers (`osc_user_credits()`, buy/wallet pages). *Core's half is built: `FeatureRegistry`, the theme-facing helpers (`osc_user_credits()`, `osc_billing_packages()`, `osc_billing_wallet_url()`/`buy_url()`/`orders_url()`/`upgrade_url()`, `osc_item_can_be_featured()`), and core's own fallback wallet/buy/orders views under `oc-includes/osclass/gui/billing/`. Still open: the bundled theme is its own external repository, and does not yet ship its own `user-billing-*.php` templates — until it does, every site sees core's plain fallback rather than a themed one.* |
-| **4** | Reference gateway: **offline / bank transfer**, plus the package catalogue admins price it against. No external dependency, no API keys — an admin marks the order paid. It proves the interface end to end and is genuinely useful for markets where card payment is not the norm. *Built.* |
+Every phase is built: the wallet/ledger/orders substrate and gateway registry, then
+entitlements and the listing-slot quota at the `ItemActions::add()` choke point, then the
+feature registry and theme-facing helpers, then the bank-transfer reference gateway and the
+package catalogue admins price against.
 
-Phase 1 is the keystone: it is the part third-party plugins compile against, and it ships
-without changing any existing behaviour.
+Phase 1 was the keystone — it is the part third-party plugins compile against, and it
+shipped without changing any existing behaviour.
 
 ## 12. Compatibility
 
