@@ -27,7 +27,7 @@ every five minutes costs nothing and keeps alerts prompt.
 
 Then turn the fallback **off**, so work is not attempted twice:
 
-**Admin → Settings → Cron** → uncheck **Auto-cron**.
+**Admin → Settings → General** → uncheck **Auto-cron**.
 
 ### Adding the crontab entry
 
@@ -84,7 +84,7 @@ and inherits the web server's timeout — but it is far better than nothing.
 If you cannot schedule anything at all, ShopClass can piggyback on visitor
 traffic instead:
 
-**Admin → Settings → Cron** → check **Auto-cron**.
+**Admin → Settings → General** → check **Auto-cron**.
 
 Due tasks are then triggered by ordinary page views. It works, with two real
 costs: nothing runs while the site has no visitors, and one unlucky visitor pays

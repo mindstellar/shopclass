@@ -12,7 +12,7 @@ place names — so you install the countries you actually serve.
 
 ## From the admin panel
 
-**Admin → Settings → Locations** lists every country in the published catalog
+**Admin → Listings → Locations** lists every country in the published catalog
 alongside what this install currently holds. Pick a country and install it; the
 regions and cities come with it.
 

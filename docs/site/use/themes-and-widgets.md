@@ -1,6 +1,6 @@
 ---
 title: Themes & widgets
-description: Install, switch and configure ShopClass themes, and place widgets into a theme's sections.
+description: Install, switch and customise ShopClass themes, and place widgets into a theme's sections — including what to check before switching.
 sidebar:
   order: 7
 ---
@@ -19,7 +19,7 @@ palette and their own hero copy, which is a settings change, not a theme change.
 
 ## Installing another theme
 
-**Appearance → Add new theme** browses the
+**Appearance → Manage themes** browses the
 [theme registry](/docs/developers/market/) — the same catalog `oc-cli.php` reads
 — and installs with one click. **Available themes** lists what is installed;
 **Current theme** marks the active one.
@@ -57,7 +57,7 @@ A widget is a block of content placed into a section of the page. Theme
 templates declare which sections exist — a sidebar, a footer column, a strip
 above the listing grid.
 
-**Appearance → Widgets** shows every section with what is in it. **Add widget**
+**Appearance → Manage widgets** shows every section with what is in it. **Add widget**
 picks a type, then **Add to which section?** places it. Drag to reorder within a
 section; the order is the order visitors see.
 

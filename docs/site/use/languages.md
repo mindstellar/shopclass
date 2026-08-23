@@ -1,6 +1,6 @@
 ---
 title: Languages
-description: Add, import and manage languages in a ShopClass site, and translate categories, pages and e-mail templates.
+description: Add and manage languages in a ShopClass site, and translate the content — categories, pages, form labels and e-mail templates — yourself.
 sidebar:
   order: 12
 ---
@@ -36,10 +36,10 @@ translated by anyone but you:
 
 | Content | Where |
 |---|---|
-| Category names | **Categories** — one name per active language |
+| Category names | **Listings → Categories** — one name per active language |
 | Static pages | **Pages** — title and body per language |
 | Field and form labels | **Forms** — the admin requires a name for the default locale |
-| E-mail templates | **Settings → E-mail templates** — per language |
+| E-mail templates | **Settings → Email templates** — per language |
 
 :::caution[An empty translation shows as empty]
 A category or page with no text for an active language renders blank to visitors

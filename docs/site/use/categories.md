@@ -9,7 +9,7 @@ Every listing belongs to exactly one category, and categories drive browsing,
 filtering, [forms](/docs/use/forms-and-custom-fields/) and much of your URL
 structure. They are the most consequential structural decision on the site.
 
-**Categories** in the admin panel.
+**Listings → Categories** in the admin panel.
 
 ## Adding a category
 
@@ -47,9 +47,16 @@ Rename early, or not at all.
 
 ## Per-category settings
 
-Individual categories can carry their own rules — whether listings in them
-require a price, and the expiry behaviour. Plugins add their own per-category
-configuration here too, which is what `t_plugin_category` stores.
+Editing a category exposes its own rules:
+
+- **Expiration (days)** — how long a listing in this category lives. This is
+  where listing expiry is set, not in the global listing settings.
+- **Price** settings for the category.
+- **Apply the expiration and price changes to all subcategories** — the option
+  that saves you editing each child by hand.
+
+Plugins add their own per-category configuration here too, which is what
+`t_plugin_category` stores.
 
 ## Fields per category
 

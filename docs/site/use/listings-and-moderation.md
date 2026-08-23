@@ -10,13 +10,16 @@ and where you post listings yourself.
 
 ## The listing rules
 
-**Settings → Listings.** These decide how the site behaves for everyone, so set
+**Listings → Settings.** These decide how the site behaves for everyone, so set
 them before you have users rather than after:
 
 | Setting | What it decides |
 |---|---|
 | **Only logged in users can post listings** | Whether publishing needs an account. Off means anyone can post; on cuts spam sharply and cuts volume too. |
-| **Users need to validate their listing** | Whether a listing appears immediately or only after the publisher clicks a link in an e-mail. |
+| **Moderate listings** | Hold new listings until an admin approves them. Set a threshold and a user stops needing moderation *after n validated listings* — so regulars post freely while newcomers are checked. |
+| **Moderate listings posted / edited by admins** | Whether your own team's posts and edits go through the same queue. |
+| **Logged-in users' listings need validation** | Whether registration alone is enough to skip validation. |
+| **Warn before expiration** | Days of notice a seller gets before a listing expires. |
 | **Attach *n* images per listing** | The photo limit. |
 | **An user has to wait *n* seconds between each listing added** | Rate limit on posting — the cheapest defence against a bulk poster. |
 | **Only allow registered users to contact publisher** | Whether the contact form needs an account. |
@@ -63,7 +66,7 @@ what terms:
 - **Notifications** — e-mail you when a comment is posted, and when one is held
   for moderation.
 
-Comments are moderated from the **Comments** screen, with the same
+Comments are moderated from the **Listings → Comments** screen, with the same
 enable/disable/spam/delete actions as listings.
 
 Unmoderated comments on a classifieds site become a spam channel quickly. Either
@@ -75,7 +78,7 @@ unwatched is the one option that always ends badly.
 **Users** lists everyone registered. From there you can activate an account,
 enable or disable one, edit its details, or add a user yourself.
 
-**Settings → Users** carries the registration rules:
+**Users → Settings** carries the registration rules:
 
 - **Anyone can register** — the master switch.
 - **Users need to validate their account** — e-mail confirmation before the
@@ -84,17 +87,18 @@ enable or disable one, edit its details, or add a user yourself.
 
 ### Ban rules
 
-**Users → Manage ban rules** blocks registrations and posts matching a pattern —
+**Users → Ban rules** blocks registrations and posts matching a pattern —
 an e-mail domain, an address, an IP range. This is how you stop a returning
 abuser without watching for them.
 
 ### Alerts
 
-**Users → Manage alerts** lists saved searches. As the admin explains: *alerts
+**Users → Alerts** lists saved searches. As the admin explains: *alerts
 notify a user by email when a new listing matches their saved search.*
 
-Alerts are sent by the **hourly cron**. If your users say they never receive
-them, check cron before anything else — see [setting up cron](/docs/configure/cron/).
+Alerts are sent by **cron**, on the schedule each user picked for their saved
+search — hourly, daily or weekly. If your users say they never receive them,
+check cron before anything else — see [setting up cron](/docs/configure/cron/).
 
 ## Clearing out old content
 

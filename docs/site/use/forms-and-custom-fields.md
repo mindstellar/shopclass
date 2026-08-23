@@ -19,7 +19,7 @@ form and your Motorbikes form.
 
 **Forms** are ordered groups of fields — *Vehicle details*, *Property details*.
 
-**Categories** are what a form is attached to. A form applies to one or more
+**Listings → Categories** are what a form is attached to. A form applies to one or more
 categories, and its fields then appear when publishing in those categories, and
 as filters when browsing them.
 
@@ -30,7 +30,7 @@ yet."* Creating the form is only half the job.
 
 ## Creating a form
 
-1. **Forms → Create a form**, and name it.
+1. **Forms → Manage forms**, and name it.
 2. Drag fields into it from the palette, or use **Add field** to make a new one.
 3. Drag to reorder — this is the order visitors see. Fields can also be reordered
    from the keyboard: focus the grip and use the arrow keys.
@@ -115,6 +115,9 @@ it (if they were logged in), their IP, when it arrived, and a status of **New**,
 
 Submissions are stored in the database, not e-mailed away and forgotten, so
 nothing is lost if mail delivery fails.
+
+Deleting a form deletes the submissions made through it. Export anything you
+need to keep first.
 
 ## Changing a field after listings use it
 

@@ -1,6 +1,6 @@
 ---
 title: Contributing
-description: How to contribute to ShopClass — reporting bugs, translations, documentation, and the pull request workflow.
+description: How to contribute to ShopClass — the pull request workflow, coding standards, documentation, translations, testing and reporting bugs.
 sidebar:
   order: 14
 ---

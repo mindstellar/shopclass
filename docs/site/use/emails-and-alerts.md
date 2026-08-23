@@ -40,9 +40,9 @@ two are the ones that lock people out when they are wrong.
 
 Several settings decide when the admin gets mail:
 
-- **Settings → Listings → notify admin when a new listing is added**
-- **Settings → Users → when a new user is registered**
-- **Settings → Comments → notifications** — when a comment is posted, and when
+- **Listings → Settings → notify admin when a new listing is added**
+- **Users → Settings → when a new user is registered**
+- **Settings → Comments → Notifications** — when a comment is posted, and when
   one is held for moderation
 
 All of these are useful in week one and unbearable at volume. Turn them off when
@@ -51,7 +51,8 @@ the site is busy and moderate from the admin lists instead.
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent
-by the **hourly cron**.
+by **cron**, on the schedule each user picked for their saved search — hourly,
+daily or weekly.
 
 That means the single most common report — "my users never get alerts" — is
 almost always a missing crontab entry, not a mail problem. Check it first:
@@ -62,7 +63,7 @@ php oc-cli.php doctor          # reports cron freshness
 
 See [setting up cron](/docs/configure/cron/).
 
-Alerts themselves are managed at **Users → Manage alerts**, where you can see,
+Alerts themselves are managed at **Users → Alerts**, where you can see,
 enable, disable and delete users' saved searches.
 
 ## When e-mail does not arrive

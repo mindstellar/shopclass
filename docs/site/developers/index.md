@@ -28,6 +28,13 @@ Worth knowing before you port something:
   checks — see the [CLI reference](/docs/cli/).
 - **A package registry.** Plugins and themes are published through
   [the market](/docs/developers/market/) instead of ad-hoc update URLs.
+- **`oc-includes/assets/chart-js/` is gone** as of 6.2.0. It was added in 2021
+  and never used by anything in core. A plugin loading that path directly must
+  bundle its own copy.
+- **Delete cascades run in transactions**, and every record type now has
+  `before_delete_*` / `after_delete_*` hooks. A `before_` hook runs before the
+  transaction opens and an `after_` hook only once it has committed, so your own
+  database work is never rolled back with a failed delete.
 
 ## Where to start
 

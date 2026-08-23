@@ -73,9 +73,10 @@ combinations that wastes crawl budget on pages you do not want ranking anyway.
 
 Every search has an RSS feed, and users can subscribe to one as an
 [alert](/docs/use/listings-and-moderation/#alerts) delivered by e-mail. Alerts
-are sent by the **hourly cron**; without cron they never arrive.
+are sent by **cron** on the schedule the user picked; without cron they never
+arrive.
 
-**Settings → Searches** controls how many recent queries are stored. That log is
+**Settings → Latest searches** controls how many recent queries are stored. That log is
 worth reading: it tells you the words your visitors actually use, which is what
 your category names should match.
 

@@ -1,6 +1,6 @@
 ---
 title: Static pages
-description: Create About, Terms and Contact pages in ShopClass with the text editor or the block-based page builder.
+description: Create About, Terms and Contact pages in ShopClass with the rich-text editor or the block-based page builder, and place forms on them.
 sidebar:
   order: 9
 ---

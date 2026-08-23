@@ -20,7 +20,7 @@ before search engines see the site.
 
 ## 2. Locations
 
-**Settings → Locations**, or `php oc-cli.php location:update --country=IN`.
+**Listings → Locations**, or `php oc-cli.php location:update --country=IN`.
 
 A classifieds site without location data cannot filter by place, which is half
 of what makes it useful. Install the countries you actually serve — see
@@ -51,7 +51,7 @@ the most commonly skipped step and the most commonly reported bug. See
 
 ## 5. Mail
 
-**Settings → General → Mail server.**
+**Settings → Mail server.**
 
 Account activation, password resets and alerts all depend on outgoing mail, and
 PHP's default `mail()` on shared hosting usually lands in spam. Configure real
@@ -67,16 +67,21 @@ live. See [spam and abuse](/docs/use/spam-and-abuse/).
 
 ## 7. Listing rules
 
-**Settings → Listings.**
+**Listings → Settings.**
 
 Decide the rules before people start posting, because changing them later is
 visible to everyone:
 
-- whether listings need e-mail activation before they appear
+- whether new listings are held for moderation, and after how many approved
+  listings a user stops needing it
 - whether publishing requires an account
 - how many photos a listing may carry
-- how long a listing lives before it expires
 - how long a user must wait between posts
+- how much notice a seller gets before a listing expires
+
+Listing **expiry itself is per category** — *Expiration (days)* on the category,
+with an option to apply it to all subcategories. See
+[categories](/docs/use/categories/).
 
 ## 8. Permalinks
 

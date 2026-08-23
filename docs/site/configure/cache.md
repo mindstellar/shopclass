@@ -1,6 +1,6 @@
 ---
 title: Object caching
-description: Configure the ShopClass object cache — memcached, APCu, TTLs, and how it differs from a page cache.
+description: Configure the ShopClass object cache with memcached or APCu — drivers, TTLs, environment variables, and how it differs from a page cache.
 sidebar:
   order: 4
 ---

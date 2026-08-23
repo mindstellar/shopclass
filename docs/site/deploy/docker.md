@@ -14,7 +14,7 @@ docker pull ghcr.io/mindstellar/shopclass:latest
 ```
 
 Tags are published per release, with `:latest` tracking the newest **stable**
-release.
+release. The published image runs **PHP 8.5**.
 
 ## Bringing it up
 

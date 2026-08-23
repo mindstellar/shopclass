@@ -30,7 +30,7 @@ Author: Mindstellar
 Author URI: https://github.com/mindstellar
 Short Name: digital-goods
 Requires Shopclass: 6.0.0
-Tested up to: 6.1
+Tested up to: 6.2
 Requires PHP: 8.0
 Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issues
 */

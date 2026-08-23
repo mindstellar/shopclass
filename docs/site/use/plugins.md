@@ -1,6 +1,6 @@
 ---
 title: Plugins
-description: Find, install, update and remove ShopClass plugins from the admin panel or the command line.
+description: Find, install, update and remove ShopClass plugins from the admin market or the command line — and recover when one breaks the site.
 sidebar:
   order: 8
 ---
@@ -12,7 +12,7 @@ Plugins add what your particular site needs and core deliberately does not carry
 
 ## Installing
 
-**Plugins → Add plugin** browses the
+**Plugins → Manage plugins** browses the
 [plugin registry](/docs/developers/market/): a public, static catalog of
 packages submitted by pull request and validated by CI. Search it, read what a
 package does, and install in one step.

@@ -25,6 +25,41 @@ easier to undo when you can put them back.
 
 That is the whole procedure on a healthy install.
 
+## Upgrading to 6.2.0 specifically
+
+6.2.0 rebuilds foreign keys on **twenty-four tables** so the database removes
+dependent rows along with their parent. Three consequences:
+
+- **Back up the database first.** This is the one release where that instruction
+  is not boilerplate.
+- **It takes time proportional to your row count.** Measured over a quarter of a
+  million listings and three quarters of a million custom-field values, the whole
+  rebuild took about six seconds. A much larger site, or slow shared hosting,
+  should expect longer.
+- **A timeout page does not mean it failed.** The upgrade is still running and
+  will finish. With shell access you can sidestep the browser entirely:
+
+  ```bash
+  php oc-cli.php db:upgrade
+  ```
+
+An interrupted upgrade is **safe to resume** — each step is recorded as it
+completes and every step can be re-run, so starting it again finishes it.
+
+Before each key is rebuilt, any row still pointing at a parent that no longer
+exists is removed. A healthy database has none; if yours does, they were rows
+nothing could reach. The backup is what lets you look at them afterwards.
+
+### Google Analytics is gone from core
+
+The **Tracking ID** field has been removed from **Settings → General** and no
+measurement snippet is rendered on public pages. If you were using it, paste
+your own snippet into a **Custom Code** widget under
+**Appearance → Manage widgets**, or install a plugin that provides one.
+
+Your saved measurement ID is left in the database untouched, so a theme printing
+its own snippet keeps working.
+
 ## Updating by hand
 
 Use this when the updater cannot reach GitHub, or when you deploy from your own

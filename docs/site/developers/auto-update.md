@@ -40,7 +40,7 @@ It must return JSON in this shape:
   "e_type": "PLUGIN",
   "s_source_file": "https://example.com/downloads/myplugin-2.1.0.zip",
   "s_update_url": "https://example.com/updates/myplugin.json",
-  "s_compatible": "6.0.0,6.1.0",
+  "s_compatible": "6.0.0,6.1.0,6.2.0",
   "s_contact_name": "Your name",
   "s_banner": "banner.jpg",
   "s_banner_path": "https://example.com/banners/",

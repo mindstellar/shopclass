@@ -1,6 +1,6 @@
 ---
 title: Debug SQL queries
-description: Inspect the queries ShopClass runs with OSC_DEBUG_DB, log them to a file, and EXPLAIN them to find slow ones.
+description: Inspect the queries ShopClass runs with OSC_DEBUG_DB, log them from AJAX and cron, and EXPLAIN them to find the ones missing an index.
 sidebar:
   order: 12
 ---

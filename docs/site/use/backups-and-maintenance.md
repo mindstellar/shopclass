@@ -9,15 +9,19 @@ Everything here lives under **Tools** in the admin panel.
 
 ## Backups
 
-**Tools → Backup** exports your data.
+**Tools → Backup data** exports two things, and a complete backup needs both:
 
-A complete backup is two things, and the export only covers the first:
-
-1. **The database** — listings, users, categories, settings, everything.
-2. **`oc-content/`** — uploads, installed plugins and themes.
+1. **A SQL dump** of the database — listings, users, categories, settings,
+   everything. Downloaded directly, or written to a directory on the server.
+2. **A zip of the install**, which carries `oc-content/` — uploads, installed
+   plugins and themes.
 
 A database dump without the uploads restores a site whose every photo is
 missing.
+
+On a large site the zip is the part that fails first: it is built in one request,
+so a big uploads directory can exhaust the memory limit or the execution time.
+When that happens, use the command line below instead — it has neither limit.
 
 ### From the command line
 
@@ -41,7 +45,7 @@ tar -czf uploads-$(date +%F).tar.gz oc-content/
 
 ## Maintenance mode
 
-**Tools → Maintenance** takes the front end offline while leaving the admin
+**Tools → Maintenance mode** takes the front end offline while leaving the admin
 panel reachable. The screen shows the current state — *maintenance mode is: ON /
 OFF* — with a single button to toggle it.
 
@@ -74,7 +78,7 @@ specifically: deleting them 404s pages that may still rank.
 
 ## The activity log
 
-**Tools → Logs** records admin actions with their details and originating IP,
+**Tools → Activity log** records admin actions with their details and originating IP,
 searchable by *details, action or IP*.
 
 This is what answers "who disabled that category" and "when did this setting
@@ -87,7 +91,7 @@ is being passed through — see the
 
 ## Import
 
-**Tools → Import** takes SQL directly — the route for location data,
+**Tools → Import data** takes SQL directly — the route for location data,
 bulk-loading listings, or anything prepared outside the admin.
 
 It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual prefix, which

@@ -13,7 +13,7 @@ server and land in spam.
 Configuring real SMTP is the single biggest deliverability improvement you can
 make.
 
-Settings live at **Admin → Settings → General → Mail server**.
+Settings live at **Admin → Settings → Mail server**.
 
 ## The settings
 
