@@ -54,10 +54,6 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
-- Choosing a country's locations during install downloaded nothing. The rebrand renamed the
-  repository in the URL but not the repository, so the request has 404'd since 5.3.0.beta1.
-  The import is deliberately non-fatal, so the install simply finished without them.
-
 - Sites are told when a newer translation is available again. The check returned false
   before doing anything and asked a market that no longer exists.
 
@@ -116,6 +112,9 @@ directory, and removes Google Analytics from the core.
   unaffected — every step checks first and does nothing where the change is already present.
 
 ### Changed
+
+- `osc_get_locations_sql_url()` is deprecated in favour of the published location
+  catalogue, and the unreachable installer function that was its only caller is gone.
 
 - TinyMCE updated to 8.8.2. The editor now declares the GPL licence it is bundled
   under; version 8 refuses to start without one.

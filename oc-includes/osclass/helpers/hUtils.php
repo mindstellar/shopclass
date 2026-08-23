@@ -1046,18 +1046,26 @@ function osc_get_locations_json_url()
 }
 
 /**
- * Get URL of location SQL.
+ * URL of a country's legacy location SQL dump.
+ *
+ * Nothing in core calls this. Locations come from the published catalogue instead
+ * (see osc_get_locations_json_url() and `oc-cli.php location:update`), which is
+ * built from Wikidata and published CC0; these dumps are the ODbL dataset that
+ * replaced, and are no longer maintained.
+ *
+ * Kept because it is an osc_* helper a third-party installer may still call. The
+ * repository is Osclass-Extras, not Shopclass-Extras: the rebrand rewrote this URL
+ * but not the repository it points at.
  *
  * @param string $location
  *
  * @return string
+ * @deprecated since 6.2.0; use osc_get_locations_json_url()
  */
 function osc_get_locations_sql_url($location)
 {
     $location = rawurlencode($location);
 
-    // Osclass-Extras, not Shopclass-Extras: the rename swept the code but not this
-    // repository, which still holds the location dumps under its original name.
     return 'https://raw.githubusercontent.com/mindstellar/Osclass-Extras/master/locations/' . $location;
 }
 

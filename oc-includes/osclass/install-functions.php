@@ -1124,31 +1124,3 @@ function basic_info()
     }
 }
 
-/**
- * @return bool
- */
-function install_locations()
-{
-    $location = Params::getParam('locationsql');
-    if ($location) {
-        $sql = osc_file_get_contents(osc_get_locations_sql_url($location));
-        if ($sql) {
-            $conn = \mindstellar\database\ConnectionManager::newInstance();
-            $locationDb = new \mindstellar\database\Connection($conn->getHandle());
-            // A failed locations import is not fatal to the install: the dataset is
-            // optional, and the previous layer likewise reported success regardless.
-            try {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 0');
-                $locationDb->executeScript($sql);
-            } catch (\mindstellar\database\DbException $e) {
-                error_log('Location dataset import failed: ' . $e->getMessage());
-            } finally {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 1');
-            }
-
-            return true;
-        }
-    }
-
-    return false;
-}
