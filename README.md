@@ -289,6 +289,10 @@ please don't modify the marks or imply endorsement.
 
 ## Documentation
 
+**[mindstellar.com/docs](https://mindstellar.com/docs/)** — installing, configuring
+and extending Shopclass. The pages are written in [`docs/site/`](docs/site/) and
+published from there, so corrections are a pull request against this repository.
+
 - [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
 - [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.
 

@@ -1,0 +1,64 @@
+---
+title: ShopClass documentation
+description: Install, configure and extend ShopClass — the free, self-hosted, open-source classifieds CMS, and the maintained continuation of Osclass.
+template: splash
+hero:
+  tagline: Everything you need to run a classifieds site on your own hosting — and to build on top of it.
+  actions:
+    - text: Install ShopClass
+      link: /docs/install/
+      icon: right-arrow
+      variant: primary
+    - text: Try the live demo
+      link: https://demo.mindstellar.com
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Get it running" icon="rocket">
+    Download a release, unpack it in your web root, and follow the four-step
+    installer. Ordinary shared hosting is enough — there is no build step on the
+    server.
+
+    [Install ShopClass](/docs/install/)
+  </Card>
+  <Card title="Coming from Osclass" icon="random">
+    ShopClass *is* Osclass, continued under its own name. Existing sites update
+    in place — no export, no re-import, no rebuild.
+
+    [Upgrade an Osclass site](/docs/from-osclass/)
+  </Card>
+  <Card title="Keep it healthy" icon="setting">
+    Cron, mail, object caching, location data and search tuning — the settings
+    that decide whether a busy site stays fast.
+
+    [Configuration guides](/docs/configure/cron/)
+  </Card>
+  <Card title="Build on it" icon="puzzle">
+    The plugin and theme API carried over from Osclass, plus the package spec
+    and the registry that publishes your work to every install.
+
+    [Developer docs](/docs/developers/)
+  </Card>
+</CardGrid>
+
+## Popular pages
+
+<CardGrid>
+  <LinkCard title="Command-line interface" href="/docs/cli/" description="Cron, migrations, admin recovery, plugin and theme management from a shell." />
+  <LinkCard title="Set up cron" href="/docs/configure/cron/" description="The scheduled tasks that send alerts, expire listings and warm the sitemap." />
+  <LinkCard title="Mail server" href="/docs/configure/mail-server/" description="SMTP settings, and what to check when mail stops arriving." />
+  <LinkCard title="Package specification" href="/docs/developers/package-spec/" description="The contract a plugin or theme must satisfy to be listed in the market." />
+</CardGrid>
+
+## Where else to look
+
+The [source repository](https://github.com/mindstellar/shopclass) carries the
+changelog, the security policy and the Docker setup for local development.
+Questions and help happen in
+[GitHub Discussions](https://github.com/mindstellar/shopclass/discussions);
+reproducible bugs belong in
+[issues](https://github.com/mindstellar/shopclass/issues).
