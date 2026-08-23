@@ -783,6 +783,12 @@ function oc_install_example_data()
         $mCat->insert($fields, $aFieldsDescription);
     }
 
+    // Posting a listing goes through the billing helper for the seller's limits.
+    // It is required here rather than in the bootstrap because it reads a preference
+    // as it loads, and during bootstrap there is no database to read one from.
+    require_once LIB_PATH . 'osclass/helpers/hTheme.php';
+    require_once LIB_PATH . 'osclass/helpers/hBilling.php';
+
     $mItem = new ItemActions(true);
 
     foreach ($item as $k => $v) {

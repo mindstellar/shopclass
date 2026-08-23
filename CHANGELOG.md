@@ -54,6 +54,10 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- The web installer returned a 500 on a fresh install. The billing helper reads a
+  preference as it loads, so requiring it during bootstrap asked for a database the
+  installer had not configured yet. Unreleased; it never reached a published build.
+
 - Sites are told when a newer translation is available again. The check returned false
   before doing anything and asked a market that no longer exists.
 
