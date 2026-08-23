@@ -213,8 +213,8 @@ from it.
   "source": { "kind": "github-release", "repo": "mindstellar/theme-bender" },
   "asset_pattern": "^bender_.*\\.zip$",
   "categories": ["general"],
-  "short_description": "The bundled default theme.",
-  "icon": "https://raw.githubusercontent.com/mindstellar/theme-bender/main/screenshot.png"
+  "short_description": "The legacy Osclass theme, kept for compatibility.",
+  "icon": "https://raw.githubusercontent.com/mindstellar/theme-bender/master/screenshot.png"
 }
 ```
 
