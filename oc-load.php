@@ -57,6 +57,7 @@ OsclassErrors::newInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
+require_once LIB_PATH . 'osclass/helpers/hMaintenance.php';
 // check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {
     osc_die(

@@ -275,6 +275,7 @@ class CAdminTools extends AdminSecBaseModel
                     $maintenance_file = osc_base_path() . '.maintenance';
                     $fileHandler      = @fopen($maintenance_file, 'wb');
                     if ($fileHandler) {
+                        fclose($fileHandler);
                         osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -282,7 +283,6 @@ class CAdminTools extends AdminSecBaseModel
                             'admin'
                         );
                     }
-                    fclose($fileHandler);
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 } elseif ($mode === 'off') {
                     osc_csrf_check();
@@ -295,6 +295,23 @@ class CAdminTools extends AdminSecBaseModel
                             'admin'
                         );
                     }
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+                } elseif ($mode === 'save') {
+                    osc_csrf_check();
+                    osc_set_preference(
+                        OSC_MAINTENANCE_PREF_LOCKOUT,
+                        Params::getParam('maintenance_lockout') ? '1' : '0',
+                        OSC_MAINTENANCE_PREF_SECTION,
+                        'BOOLEAN'
+                    );
+                    osc_set_preference(
+                        OSC_MAINTENANCE_PREF_MESSAGE,
+                        osc_sanitize_maintenance_message(Params::getParam('maintenance_message')),
+                        OSC_MAINTENANCE_PREF_SECTION,
+                        'STRING'
+                    );
+                    osc_reset_preferences();
+                    osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 }
                 $this->doView('tools/maintenance.php');

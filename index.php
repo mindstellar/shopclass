@@ -47,12 +47,24 @@ if (CLI) {
 }
 
 if (file_exists(ABS_PATH . '.maintenance')) {
-    if (osc_is_admin_user_logged_in()) {
-        define('__OSC_MAINTENANCE__', true);
-    } else {
+    // Default is a public 503 (same as before this option existed). Unchecking
+    // lockout in Tools → Maintenance leaves the site up and shows a banner.
+    // CLI is never 503'd: `php index.php -p cron` must still run while the
+    // public site is down. Admins always get through.
+    if (osc_maintenance_should_lockout_request(
+        true,
+        osc_maintenance_lockout_enabled(),
+        osc_is_admin_user_logged_in(),
+        CLI
+    )) {
         header('HTTP/1.1 503 Service Temporarily Unavailable');
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 900');
+
+        $maintenanceMessage = osc_maintenance_visitor_message();
+        if (!defined('OSC_MAINTENANCE_MESSAGE')) {
+            define('OSC_MAINTENANCE_MESSAGE', $maintenanceMessage);
+        }
 
         if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'maintenance.php')) {
             osc_current_web_theme_path('maintenance.php');
@@ -63,10 +75,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 
         osc_die(
             sprintf(__('Maintenance &raquo; %s'), osc_page_title()),
-            sprintf(
-                __('%s is undergoing maintenance right now. We\'re making some improvements and will be back shortly — thanks for your patience.'),
-                osc_page_title()
-            ),
+            nl2br(osc_esc_html($maintenanceMessage), false),
             array(
                 'heading'   => __('We\'ll be right back'),
                 'tone'      => 'info',
@@ -76,6 +85,8 @@ if (file_exists(ABS_PATH . '.maintenance')) {
                 'brandName' => osc_page_title(),
             )
         );
+    } elseif (!CLI) {
+        define('__OSC_MAINTENANCE__', true);
     }
 }
 

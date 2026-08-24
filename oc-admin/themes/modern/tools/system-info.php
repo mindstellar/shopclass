@@ -602,12 +602,21 @@ define('OSC_DEBUG_LOG', true);</pre>
                     );
 
                     if ($maintenance) {
-                        oscsi_row(
-                            'warn', $CHECK,
-                            __('Maintenance mode'),
-                            sprintf(__('The site is in maintenance mode — visitors see the maintenance page. Remove the %s file to bring it back.'), '<code>.maintenance</code>'),
-                            __('on')
-                        );
+                        if (osc_maintenance_lockout_enabled()) {
+                            oscsi_row(
+                                'warn', $CHECK,
+                                __('Maintenance mode'),
+                                sprintf(__('The site is in maintenance mode — visitors see the maintenance page (HTTP 503). Remove the %s file to bring it back.'), '<code>.maintenance</code>'),
+                                __('on, locked')
+                            );
+                        } else {
+                            oscsi_row(
+                                'warn', $CHECK,
+                                __('Maintenance mode'),
+                                sprintf(__('Maintenance mode is on, but the public site is not blocked. Visitors can still use the site and see a banner. Remove the %s file to hide it, or enable lockout under Tools → Maintenance.'), '<code>.maintenance</code>'),
+                                __('on, banner only')
+                            );
+                        }
                     }
 
                     oscsi_row(

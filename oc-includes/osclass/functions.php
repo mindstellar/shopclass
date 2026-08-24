@@ -894,12 +894,20 @@ osc_add_hook('cron_hourly', 'osc_expire_premium_items');
 
 function osc_show_maintenance()
 {
-    if (defined('__OSC_MAINTENANCE__')) { ?>
+    if (defined('__OSC_MAINTENANCE__')) {
+        // Lockout on: only admins reach this bar, so tell them the public site
+        // is down. Lockout off: everyone sees the (escaped) visitor message.
+        if (osc_maintenance_lockout_enabled()) {
+            $maintenanceBarText = __('Maintenance mode is on — only signed-in admins can see the site right now.');
+        } else {
+            $maintenanceBarText = osc_maintenance_visitor_message();
+        }
+        ?>
         <div id="osc-maintenance-bar" role="status">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
             </svg>
-            <?php _e('Maintenance mode is on — only signed-in admins can see the site right now.'); ?>
+            <?php echo nl2br(osc_esc_html($maintenanceBarText), false); ?>
         </div>
         <style>
             #osc-maintenance-bar {

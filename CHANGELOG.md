@@ -59,6 +59,13 @@ most of them do not use — so it now goes in the same place as any other third-
   `after_delete_category` to pair with the existing `delete_category`. Each `before_` hook
   runs before the delete's transaction opens and each `after_` hook only once it has
   committed, so a plugin's own database work is never rolled back with a failed delete.
+- **Maintenance mode can stay online.** Tools → Maintenance still drops a `.maintenance`
+  file, and that still takes the public site to HTTP 503 unless you uncheck **Block the
+  public site**. Unchecked, visitors keep using the site and see a banner whose text you
+  edit on the same screen. The 503 page uses the same text. Signed-in admins are never
+  locked out. Command-line cron (`php index.php -p cron`) is not served a 503 either, so
+  scheduled jobs still run while the public site is down. Installs that have never saved
+  the new checkbox keep today's lockout.
 
 ### Breaking
 
