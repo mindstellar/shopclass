@@ -54,6 +54,11 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- **A dead SMTP host no longer holds a php-fpm worker for five minutes.** PHPMailer's
+  default wait is 300 seconds; `osc_sendMail()` now caps connect and command timeouts at
+  15 seconds (filter `phpmailer_smtp_timeout`, clamped to 1–60). The Mail Settings
+  **Send a test email** button, which had no markup left in the form, is back and gives
+  up after 25 seconds instead of hanging until the browser does.
 - Activating, deactivating, installing, or uninstalling a plugin, or switching a theme,
   did not take effect until php-fpm restarted when `opcache.validate_timestamps` is off
   (the usual production setting) — the change appeared not to apply, or a stale class ran

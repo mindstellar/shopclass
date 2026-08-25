@@ -99,6 +99,10 @@ jobs:
         run: php tests/params-typed-accessors.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
+      # PHPMailer's default wait is 300s; a dead SMTP host then pins a php-fpm worker
+      # for five minutes per send. The cap is a filter with a 1–60 clamp.
+      - name: PHPMailer SMTP timeout
+        run: php tests/phpmailer-smtp-timeout.php
       - name: Rewrite param decode
         run: php tests/rewrite-param-decode.php
       - name: Rewrite route match

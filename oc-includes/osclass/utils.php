@@ -214,6 +214,58 @@ function osc_doRequest($url, $_data)
 }
 
 /**
+ * Seconds PHPMailer may wait on one SMTP connect or command.
+ *
+ * PHPMailer's default is 300. A dead or firewalled host then holds a php-fpm
+ * worker for five minutes per send (or per "Send a test email" click). Fifteen
+ * seconds is long enough for a slow provider and short enough that a bad host
+ * fails the page instead of pinning the pool. Plugins may change it with the
+ * `phpmailer_smtp_timeout` filter; the value is clamped to 1–60.
+ *
+ * Pure aside from that filter. Safe to call from characterization tests.
+ *
+ * @return int
+ */
+function osc_phpmailer_smtp_timeout_seconds()
+{
+    $seconds = (int)osc_apply_filter('phpmailer_smtp_timeout', 15);
+    if ($seconds < 1) {
+        return 1;
+    }
+    if ($seconds > 60) {
+        return 60;
+    }
+
+    return $seconds;
+}
+
+/**
+ * Apply {@see osc_phpmailer_smtp_timeout_seconds()} to a PHPMailer instance
+ * and to the SMTP object it will use on send().
+ *
+ * @param PHPMailer $mail
+ *
+ * @return void
+ */
+function osc_phpmailer_limit_smtp_wait($mail)
+{
+    if (!is_object($mail)) {
+        return;
+    }
+    $seconds        = osc_phpmailer_smtp_timeout_seconds();
+    $mail->Timeout  = $seconds;
+    if (method_exists($mail, 'getSMTPInstance')) {
+        $smtpInst = $mail->getSMTPInstance();
+        if (is_object($smtpInst)) {
+            $smtpInst->Timeout = $seconds;
+            if (property_exists($smtpInst, 'Timelimit')) {
+                $smtpInst->Timelimit = $seconds;
+            }
+        }
+    }
+}
+
+/**
  * @param $params
  *
  * @return bool
@@ -260,7 +312,7 @@ function osc_sendMail($params)
             $pop3_password = $params['password'];
         }
 
-        $pop->authorise($pop3_host, $pop3_port, 30, $pop3_username, $pop3_password);
+        $pop->authorise($pop3_host, $pop3_port, osc_phpmailer_smtp_timeout_seconds(), $pop3_username, $pop3_password);
     }
 
     if (osc_mailserver_auth()) {
@@ -393,6 +445,7 @@ function osc_sendMail($params)
         $mail->isHTML();
 
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
+        osc_phpmailer_limit_smtp_wait($mail);
 
         // send email!
         $mail->send();
