@@ -362,6 +362,7 @@ class Plugins
     public static function install($path)
     {
         osc_run_hook('before_plugin_install');
+        self::resetOpcache();
 
         $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
@@ -428,6 +429,7 @@ class Plugins
     public static function activate($path)
     {
         osc_run_hook('before_plugin_activate');
+        self::resetOpcache();
 
         $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
@@ -471,6 +473,22 @@ class Plugins
                     include_once $pluginPath;
                 }
             }
+        }
+    }
+
+    /**
+     * Drop the compiled-bytecode (opcache) cache so a plugin's code change takes
+     * effect immediately. With opcache.validate_timestamps=Off (the usual production
+     * setting) a just-installed, updated, activated or deactivated plugin would keep
+     * running the OLD bytecode until php-fpm restarts — which looks like the change
+     * "not taking", or worse, runs a stale class against new state and fatals. Called
+     * from a web request (the normal admin flow) this clears the FPM pool's cache so
+     * the next request recompiles from disk. Public so theme activation can reuse it.
+     */
+    public static function resetOpcache()
+    {
+        if (function_exists('opcache_reset') && ini_get('opcache.enable')) {
+            @opcache_reset();
         }
     }
 
@@ -520,6 +538,7 @@ class Plugins
     public static function uninstall($path)
     {
         osc_run_hook('before_plugin_uninstall');
+        self::resetOpcache();
 
         $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
@@ -561,6 +580,7 @@ class Plugins
     public static function deactivate($path)
     {
         osc_run_hook('before_plugin_deactivate');
+        self::resetOpcache();
 
         $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
