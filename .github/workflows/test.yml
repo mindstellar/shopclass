@@ -113,6 +113,11 @@ jobs:
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
         run: php tests/security-secret-coercion.php
+      # Both directions of a wrong cookie allowlist are silent: a name no setcookie()
+      # writes never matches at the proxy, and a missing one lets a personalized page be
+      # stored under a URL whose cache key has no such component.
+      - name: Cache cookie contract
+        run: php tests/cache-cookie-contract.php
       - name: DAO contract
         run: php tests/dao-contract.php
       - name: Model contracts

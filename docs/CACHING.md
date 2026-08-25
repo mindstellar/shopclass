@@ -29,9 +29,13 @@ itself (`osc_cache_relevant_cookies()`, filterable via `cache_relevant_cookies`)
 | Cookie | Set when | Why it matters |
 |---|---|---|
 | `osclass` (session) | a PHP session physically starts (login, a form write) | session-bound output |
-| `oc_userId` (+ `oc_userSecret`) | front-end login / remember-me | logged-in user |
-| `oc_adminId` | admin login / remember-me | admin |
+| `oc_cache_bypass` | front-end or admin login / remember-me | logged-in user or admin |
 | `oc_userLocale` | a visitor switches language (`?lang=`) | changes the rendered language |
+
+Front-end and admin identity (`oc_userId`, `oc_userSecret`, `oc_adminId`) are **keys inside one
+cookie named `md5(WEB_PATH)`**, not cookie names — a proxy config cannot hardcode that per-site
+hash. `oc_cache_bypass` is the fixed-name flag core writes in lockstep with that cookie so the
+edge has one stable name to match. Match those key names directly and the rule never fires.
 
 **Every other cookie is irrelevant to the server and MUST NOT affect caching** -- including
 third-party client-set cookies (`_ga`, `_gid`, `_gat_*`, `_gcl_*`, `__gads`, `__gpi`, `_fbp`, ...)
@@ -115,7 +119,7 @@ The full reference is `.docker/nginx/microcache.conf`. The essence:
     # Bypass ONLY on core's cache-relevant cookies; ignore _ga / __gads / consent / everything else.
     map $http_cookie $mc_private {
         default 0;
-        "~(^|;\s*)(osclass|oc_userId|oc_adminId|oc_userLocale)=" 1;
+        "~(^|;\s*)(oc_cache_bypass|oc_userLocale|osclass|PHPSESSID)=" 1;
     }
 
     # location ~ \.php$

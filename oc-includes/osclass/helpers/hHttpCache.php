@@ -41,13 +41,15 @@ function osc_mark_response_cacheable($cacheable = true)
 }
 
 /**
- * The cookie names that mean "this response is personalized" — core's PHP session, and the
- * fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity or
- * locale state (front-end user, admin, chosen language).
+ * The cookie names that mean "this response is personalized" — core's PHP session, the chosen
+ * front-end locale, and the fixed-name cache-bypass flag Cookie::set() writes whenever the
+ * visitor carries identity state (front-end user, admin).
  *
  * These are REAL wire cookie names, so a reverse proxy / CDN can match them by name. (Front-end
  * and admin identity actually live as keys inside one cookie named md5(WEB_PATH), which a proxy
- * config cannot hardcode; oc_cache_bypass is the stable public signal that stands in for them.)
+ * config cannot hardcode; oc_cache_bypass is the stable public signal that stands in for them.
+ * oc_userLocale is NOT one of those keys — it is a standalone cookie written by
+ * osc_set_current_user_locale(), so it is matched directly and must be listed in its own right.)
  * This is the caching contract's allowlist: a proxy bypasses on exactly these and ignores every
  * other cookie (third-party analytics/ads, the consent banner), and the app applies the same set
  * below so both layers agree. Filterable so a plugin that adds its own auth cookie can extend both
@@ -65,6 +67,7 @@ function osc_cache_relevant_cookies()
         session_name() ?: 'osclass',
         'osclass',
         'oc_cache_bypass',
+        'oc_userLocale',
     ))));
 }
 

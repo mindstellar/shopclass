@@ -39,9 +39,14 @@ the cache — neither serve nor store — when a request carries any of them:
 | Cookie | Set when | Why it matters |
 |---|---|---|
 | `osclass` | a PHP session starts (login, a form write) | session-bound output |
-| `oc_userId` (+ `oc_userSecret`) | front-end login / remember-me | logged-in user |
-| `oc_adminId` | admin login / remember-me | admin |
+| `oc_cache_bypass` | front-end or admin login / remember-me | logged-in user or admin |
 | `oc_userLocale` | a visitor switches language | changes the rendered language |
+
+Front-end and admin identity (`oc_userId`, `oc_userSecret`, `oc_adminId`) are keys
+*inside* a cookie named `md5(WEB_PATH)` — not cookie names, and not something a
+proxy config can hardcode. `oc_cache_bypass` is the fixed-name flag core sets in
+lockstep with login so the edge has one stable name to match. A rule written
+against the key names never fires.
 
 **Every other cookie is irrelevant and must not affect caching** — including
 analytics cookies (`_ga`, `_gid`, `_fbp`, …) and the theme's `cookies_consent`.
@@ -88,7 +93,7 @@ admin panel keeps PHP's default limiter, and is never cached.
 curl -sI https://example.com/ | grep -i 'cache-control\|cf-cache-status\|x-cache'
 
 # carrying a session cookie — expect private, no-store and a bypass
-curl -sI https://example.com/ -H 'Cookie: oc_userId=1' | grep -i 'cache-control\|cf-cache-status'
+curl -sI https://example.com/ -H 'Cookie: oc_cache_bypass=1' | grep -i 'cache-control\|cf-cache-status'
 ```
 
 If a logged-in request returns a cached response, stop and fix the cookie rule
