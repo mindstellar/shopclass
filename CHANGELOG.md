@@ -54,11 +54,17 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Activating, deactivating, installing, or uninstalling a plugin, or switching a theme,
+  did not take effect until php-fpm restarted when `opcache.validate_timestamps` is off
+  (the usual production setting) — the change appeared not to apply, or a stale class ran
+  against new state and fataled, auto-deactivating the plugin. These operations now reset
+  opcache so the next request recompiles.
 - Logged-in visitors could be served a cached anonymous page by a reverse proxy or the
   nginx micro-cache. Identity lives as keys inside one cookie named `md5(WEB_PATH)`, which
   the cookie-name bypass could not match; the app now also sets a fixed-name `oc_cache_bypass`
-  cookie in lockstep with login, and the caching contract matches that. Nothing leaked (the
-  response was already `private, no-store`), but logged-in users saw stale/anonymous pages.
+  cookie in lockstep with login, and the caching contract matches that (the `osclass` session
+  cookie is listed explicitly, so CLI and web agree). Nothing leaked (the response was already
+  `private, no-store`), but logged-in users saw stale/anonymous pages.
 - The web installer returned a 500 on a fresh install. The billing helper reads a
   preference as it loads, so requiring it during bootstrap asked for a database the
   installer had not configured yet. Unreleased; it never reached a published build.
