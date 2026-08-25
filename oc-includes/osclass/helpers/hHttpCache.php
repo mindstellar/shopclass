@@ -57,10 +57,15 @@ function osc_mark_response_cacheable($cacheable = true)
  */
 function osc_cache_relevant_cookies()
 {
-    return osc_apply_filter('cache_relevant_cookies', array(
+    // 'osclass' is listed explicitly, not just as a session_name() fallback: the web
+    // runtime sets the session cookie name to 'osclass', but session_name() is the PHP
+    // default ('PHPSESSID') under the CLI (e.g. a plugin re-applying rules), so relying
+    // on it alone would emit a rule that never matches the real session cookie.
+    return osc_apply_filter('cache_relevant_cookies', array_values(array_unique(array(
         session_name() ?: 'osclass',
+        'osclass',
         'oc_cache_bypass',
-    ));
+    ))));
 }
 
 /**
