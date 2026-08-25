@@ -317,9 +317,13 @@ function osc_current_user_locale()
  *
  * The locale used to live in $_SESSION, which started a PHP session — and made the
  * response uncacheable — the moment an anonymous visitor switched language. A
- * standalone, long-lived cookie keeps the choice without a session. The value is
- * validated against the installed locales both here and on read, because it is later
+ * standalone cookie keeps the choice without a session. The value is validated
+ * against the installed locales both here and on read, because it is later
  * concatenated into a translation .mo file path.
+ *
+ * It expires after a day: carrying it makes every response personalized (see
+ * osc_cache_relevant_cookies()), so a longer life opts a visitor out of the shared
+ * cache well past the visit the choice was made in.
  *
  * @param string $locale
  *
@@ -332,7 +336,7 @@ function osc_set_current_user_locale($locale)
     }
 
     $options = array(
-        'expires'  => time() + (86400 * 365),
+        'expires'  => time() + 86400,
         'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
         'httponly' => true,
         'samesite' => 'Lax',

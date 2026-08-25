@@ -143,8 +143,10 @@ nginx makes before the app runs and so cannot base on response headers.
 ## 7. Known limitation: locale
 
 `oc_userLocale` is treated as personalized, so a visitor who switches language bypasses the
-cache. Single-language installs (the majority) are unaffected. A future URL-based locale scheme
-would let localized pages be cached under distinct keys instead of bypassing.
+cache. The cookie lasts 24 hours, so the bypass is bounded to the visit rather than following
+the visitor for a year. Single-language installs (the majority) are unaffected. A future
+URL-based locale scheme would let localized pages be cached under distinct keys instead of
+bypassing.
 
 ## 8. Anti-patterns (why the config stays this small)
 

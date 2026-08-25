@@ -65,6 +65,8 @@ directory, and removes Google Analytics from the core.
   cookie in lockstep with login, and the caching contract matches that alongside the `osclass`
   session cookie and `oc_userLocale`. Nothing leaked (the response was already `private,
   no-store`), but logged-in users saw stale/anonymous pages.
+- The chosen front-end language cookie now expires after 24 hours instead of a year, so a
+  visitor who switches language is not kept out of the shared cache long after that visit.
 - The web installer returned a 500 on a fresh install. The billing helper reads a
   preference as it loads, so requiring it during bootstrap asked for a database the
   installer had not configured yet. Unreleased; it never reached a published build.
