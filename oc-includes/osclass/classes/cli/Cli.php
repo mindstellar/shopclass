@@ -708,6 +708,7 @@ class Cli
         }
 
         osc_set_preference('theme', $theme);
+        \Plugins::resetOpcache();
         // Mirror the admin activation hook so plugins/themes can react.
         osc_run_hook('theme_activate', $theme);
 
