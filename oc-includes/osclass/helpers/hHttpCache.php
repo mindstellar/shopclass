@@ -41,12 +41,17 @@ function osc_mark_response_cacheable($cacheable = true)
 }
 
 /**
- * The cookie names that mean "this response is personalized" — core's session, front-end and
- * admin identity, and the locale (which changes the rendered language). This is the caching
- * contract's allowlist: a reverse proxy bypasses on exactly these and ignores every other cookie
- * (third-party analytics/ads, the consent banner), and the app applies the same set below so both
- * layers agree. Filterable so a plugin that adds its own auth cookie can extend both at once —
- * keep it in sync with the reference proxy config (.docker/nginx/microcache.conf).
+ * The cookie names that mean "this response is personalized" — core's PHP session, and the
+ * fixed-name cache-bypass flag Cookie::set() writes whenever the visitor carries identity or
+ * locale state (front-end user, admin, chosen language).
+ *
+ * These are REAL wire cookie names, so a reverse proxy / CDN can match them by name. (Front-end
+ * and admin identity actually live as keys inside one cookie named md5(WEB_PATH), which a proxy
+ * config cannot hardcode; oc_cache_bypass is the stable public signal that stands in for them.)
+ * This is the caching contract's allowlist: a proxy bypasses on exactly these and ignores every
+ * other cookie (third-party analytics/ads, the consent banner), and the app applies the same set
+ * below so both layers agree. Filterable so a plugin that adds its own auth cookie can extend both
+ * at once — keep it in sync with the reference proxy config (.docker/nginx/microcache.conf).
  *
  * @return string[]
  */
@@ -54,9 +59,7 @@ function osc_cache_relevant_cookies()
 {
     return osc_apply_filter('cache_relevant_cookies', array(
         session_name() ?: 'osclass',
-        'oc_userId',
-        'oc_adminId',
-        'oc_userLocale',
+        'oc_cache_bypass',
     ));
 }
 
