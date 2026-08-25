@@ -48,7 +48,7 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                 $mailserverAuth     = ($mailserverAuth != '' ? true : false);
                 $mailserverPop      = Params::getParam('mailserver_pop');
                 $mailserverPop      = ($mailserverPop != '' ? true : false);
-                $mailserverType     = Params::getParam('mailserver_type');
+                $mailserverType     = osc_mailserver_normalize_type(Params::getParam('mailserver_type'));
                 $mailserverHost     = Params::getParam('mailserver_host');
                 $mailserverPort     = Params::getParam('mailserver_port');
                 $mailserverUsername = Params::getParam('mailserver_username');
@@ -57,7 +57,7 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                 $mailserverMailFrom = Params::getParam('mailserver_mail_from');
                 $mailserverNameFrom = Params::getParam('mailserver_name_from');
 
-                if (!in_array($mailserverType, array('custom', 'gmail'))) {
+                if (!in_array($mailserverType, osc_mailserver_allowed_types(), true)) {
                     osc_add_flash_error_message(_m('Mail server type is incorrect'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=mailserver');
                 }
@@ -72,6 +72,29 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                 $iUpdated += osc_set_preference('mailserver_ssl', $mailserverSsl);
                 $iUpdated += osc_set_preference('mailserver_mail_from', $mailserverMailFrom);
                 $iUpdated += osc_set_preference('mailserver_name_from', $mailserverNameFrom);
+
+                $rawJson = '';
+                if (isset($_POST['mailserver_presets_json']) && is_string($_POST['mailserver_presets_json'])) {
+                    $rawJson = $_POST['mailserver_presets_json'];
+                }
+                $posted = ($rawJson !== '') ? json_decode($rawJson, true) : null;
+                $presets = osc_mailserver_merge_posted_presets(
+                    osc_mailserver_read_stored(),
+                    $posted,
+                    $mailserverType,
+                    array(
+                        'host'      => $mailserverHost,
+                        'port'      => $mailserverPort,
+                        'username'  => $mailserverUsername,
+                        'password'  => $mailserverPassword,
+                        'ssl'       => $mailserverSsl,
+                        'auth'      => $mailserverAuth ? '1' : '',
+                        'pop'       => $mailserverPop ? '1' : '',
+                        'mail_from' => $mailserverMailFrom,
+                        'name_from' => $mailserverNameFrom,
+                    )
+                );
+                osc_mailserver_save_presets($presets);
 
                 if ($iUpdated > 0) {
                     osc_add_flash_ok_message(_m('Mail server configuration has changed'), 'admin');

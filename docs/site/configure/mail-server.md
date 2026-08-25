@@ -17,6 +17,18 @@ Settings live at **Admin → Settings → Mail server**.
 
 ## The settings
 
+**Server type** chooses a provider slot. Custom, Gmail, Brevo, SMTP2GO and
+Amazon SES each keep their own host, port, username and password. Saving one
+does not erase the others — switch the menu to recall a saved provider, then
+**Save** on the one that should send. The live `mailserver_*` preferences are
+still what `osc_sendMail()` reads; the extra slots are only so you can park a
+second provider without retyping it.
+
+Choosing a type fills a typical host and port when that slot is still empty.
+Amazon SES uses `email-smtp.us-east-1.amazonaws.com` as a placeholder — change
+the region to match your SES account. If outbound port 587 is blocked, Brevo
+and SMTP2GO also accept **2525** with `tls`.
+
 | Field | What to enter |
 |---|---|
 | **Hostname** | Your provider's SMTP host, e.g. `smtp.example.com`. |
@@ -50,15 +62,17 @@ Without those three, your mail is unauthenticated no matter how it is sent.
 
 Possible, and fine for a small site, but understand the limits: Google caps
 daily volume and will mark a classifieds site's alert traffic as suspicious
-sooner than a transactional provider would.
+sooner than a transactional provider would. Choosing **Gmail Server** fills
+`smtp.gmail.com`, port **465**, encryption **ssl** (implicit TLS). Port 587
+with `tls` also works if you switch to Custom and enter it by hand.
 
 | Field | Value |
 |---|---|
 | Hostname | `smtp.gmail.com` |
-| Server port | `587` |
+| Server port | `465` (or `587` with `tls`) |
 | Username | Your full address, e.g. `you@gmail.com` |
 | Password | An [app password](https://support.google.com/accounts/answer/185833) — not your account password |
-| Encryption | `tls` |
+| Encryption | `ssl` on 465, `tls` on 587 |
 | SMTP authentication | Checked |
 
 An app password requires 2-Step Verification on the account. Plain account
@@ -66,9 +80,10 @@ passwords have not worked for SMTP for years.
 
 ## Testing
 
-Trigger a real message rather than guessing — register a test account, or use
-the contact form — and watch what happens. If nothing arrives, check the spam
-folder before assuming the send failed.
+**Send a test email** on the Mail Settings screen sends a message to the
+contact address. Prefer that over guessing. If nothing arrives, check the spam
+folder before assuming the send failed. A real registration or the contact form
+is the next check.
 
 ## Troubleshooting
 

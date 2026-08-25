@@ -99,6 +99,11 @@ jobs:
         run: php tests/params-typed-accessors.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
+      # Saving one Server type used to overwrite the only mailserver_* row, so
+      # switching provider wiped the previous one. Merge/factory helpers are
+      # pure; a blank posted slot for an inactive type must not replace stored.
+      - name: Mail server provider presets
+        run: php tests/mailserver-presets.php
       - name: Rewrite param decode
         run: php tests/rewrite-param-decode.php
       - name: Rewrite route match

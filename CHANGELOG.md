@@ -168,6 +168,11 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- **Mail Settings remembers each SMTP provider.** Server type is no longer only
+  Custom or Gmail: Brevo, SMTP2GO and Amazon SES are listed too, with a typical
+  host and port filled in. Saving one type stores that slot without erasing the
+  others, so you can switch and Save on the provider that should send. Existing
+  Custom and Gmail settings keep working.
 - CI fails when the committed vendor and asset trees no longer match what
   composer.lock and package-lock.json declare. Releases ship those trees verbatim, so
   a bump that edits only a manifest would hand users the old library.
