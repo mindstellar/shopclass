@@ -58,15 +58,6 @@ function decode(single, double) {
     return null;
 }
 
-function lineOf(content, index) {
-    let line = 1;
-    for (let i = 0; i < index; i++) {
-        if (content.charCodeAt(i) === 10) {
-            line++;
-        }
-    }
-    return line;
-}
 
 async function walkPhp(dir, out = []) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -123,7 +114,7 @@ async function extract() {
             }
             const explicitDomain = decode(sDom, dDom);
             const domain = fn === '_m' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
-            record(domain, msgid, null, `${file}:${lineOf(content, m.index)}`);
+            record(domain, msgid, null, file);
         }
 
         for (const m of content.matchAll(CONTEXT_RE)) {
@@ -135,7 +126,7 @@ async function extract() {
             }
             const explicitDomain = decode(sDom, dDom);
             const domain = fn === '_mx' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
-            record(domain, msgid, null, `${file}:${lineOf(content, m.index)}`, msgctxt);
+            record(domain, msgid, null, file, msgctxt);
         }
 
         for (const m of content.matchAll(PLURAL_RE)) {
@@ -146,7 +137,7 @@ async function extract() {
                 continue;
             }
             const domain = fn === '_mn' ? 'messages' : DEFAULT_DOMAIN;
-            record(domain, single, plural, `${file}:${lineOf(content, m.index)}`);
+            record(domain, single, plural, file);
         }
     }
 }
