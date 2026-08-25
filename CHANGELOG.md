@@ -54,6 +54,11 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Logged-in visitors could be served a cached anonymous page by a reverse proxy or the
+  nginx micro-cache. Identity lives as keys inside one cookie named `md5(WEB_PATH)`, which
+  the cookie-name bypass could not match; the app now also sets a fixed-name `oc_cache_bypass`
+  cookie in lockstep with login, and the caching contract matches that. Nothing leaked (the
+  response was already `private, no-store`), but logged-in users saw stale/anonymous pages.
 - The web installer returned a 500 on a fresh install. The billing helper reads a
   preference as it loads, so requiring it during bootstrap asked for a database the
   installer had not configured yet. Unreleased; it never reached a published build.

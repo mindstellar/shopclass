@@ -107,6 +107,16 @@ class Cookie
             $options['expires'] = time() - 3600;
         }
         setcookie($this->name, $cookie_val, $options);
+
+        // Companion cache-bypass flag with a fixed, domain-independent NAME. The identity
+        // cookie above is named md5(WEB_PATH); a reverse proxy / CDN config cannot hardcode
+        // that per-site hash, so a cache in front of the app cannot tell a logged-in visitor
+        // from an anonymous one by cookie name and would serve them the cached anonymous copy.
+        // This flag rides the identity cookie's exact lifecycle — "1" whenever any identity or
+        // locale value is present, expired in lockstep on logout — so the proxy contract
+        // (osc_cache_relevant_cookies) can match one stable name. It carries no secret; its
+        // presence alone means "do not serve this request a cached public page".
+        setcookie('oc_cache_bypass', $cookie_val === '' ? '' : '1', $options);
     }
 
     /**

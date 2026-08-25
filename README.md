@@ -76,19 +76,19 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 **1 · Check server** — the installer confirms your PHP version, extensions and folder permissions up front, so nothing fails halfway through.
 
-<img src="docs/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
+<img src="docs/site/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
 
 **2 · Connect database** — enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
 
-<img src="docs/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
+<img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
 
 **3 · Your site** — pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
 
-<img src="docs/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
+<img src="docs/site/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
 
 **4 · Done** — copy your admin password (it's also e-mailed to you) and open the admin panel.
 
-<img src="docs/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
+<img src="docs/site/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
@@ -288,6 +288,10 @@ Brand assets are licensed **CC BY-ND 4.0**: use them to refer to Shopclass, but
 please don't modify the marks or imply endorsement.
 
 ## Documentation
+
+**[mindstellar.com/docs](https://mindstellar.com/docs/)** — installing, configuring
+and extending Shopclass. The pages are written in [`docs/site/`](docs/site/) and
+published from there, so corrections are a pull request against this repository.
 
 - [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
 - [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.

@@ -1,0 +1,84 @@
+---
+title: ShopClass documentation
+description: Install, configure and extend ShopClass — the free, self-hosted, open-source classifieds CMS, and the maintained continuation of Osclass.
+template: splash
+hero:
+  tagline: Everything you need to run a classifieds site on your own hosting — and to build on top of it.
+  actions:
+    - text: Install ShopClass
+      link: /docs/install/
+      icon: right-arrow
+      variant: primary
+    - text: Try the live demo
+      link: https://demo.mindstellar.com
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Get it running" icon="rocket">
+    Download a release, unpack it in your web root, and follow the four-step
+    installer. Ordinary shared hosting is enough — there is no build step on the
+    server.
+
+    [Install ShopClass](/docs/install/)
+  </Card>
+  <Card title="Coming from Osclass" icon="random">
+    ShopClass *is* Osclass, continued under its own name. Existing sites update
+    in place — no export, no re-import, no rebuild.
+
+    [Upgrade an Osclass site](/docs/from-osclass/)
+  </Card>
+  <Card title="Run your site" icon="approve-check">
+    Categories, forms and custom fields, moderation, spam defences, media and
+    storage — the admin panel, screen by screen.
+
+    [First steps after installing](/docs/use/first-steps/)
+  </Card>
+  <Card title="Build on it" icon="puzzle">
+    The plugin and theme API carried over from Osclass, plus the package spec
+    and the registry that publishes your work to every install.
+
+    [Developer docs](/docs/developers/)
+  </Card>
+</CardGrid>
+
+## Popular pages
+
+<CardGrid>
+  <LinkCard title="Set up cron" href="/docs/configure/cron/" description="The scheduled tasks that send alerts and expire listings. Skip it and neither happens." />
+  <LinkCard title="Forms & custom fields" href="/docs/use/forms-and-custom-fields/" description="Model vehicles, property or jobs with typed fields and conditional logic — no code." />
+  <LinkCard title="Spam & abuse" href="/docs/use/spam-and-abuse/" description="Turnstile, the keyword blocklist, login throttling and rate limits." />
+  <LinkCard title="Mail server" href="/docs/configure/mail-server/" description="SMTP settings, and what to check when mail stops arriving." />
+  <LinkCard title="Command-line interface" href="/docs/cli/" description="Cron, migrations, admin recovery, plugin and theme management from a shell." />
+  <LinkCard title="Backups & maintenance" href="/docs/use/backups-and-maintenance/" description="Backups, maintenance mode, cleanup and the activity log." />
+</CardGrid>
+
+## Deploying
+
+<CardGrid>
+  <LinkCard title="Docker & the production image" href="/docs/deploy/docker/" description="The self-provisioning container image, its volumes, and how core and packages update differently." />
+  <LinkCard title="Security & hardening" href="/docs/deploy/security/" description="Permissions, HTTPS, admin access, the real client IP behind a proxy." />
+</CardGrid>
+
+## Which version this documents
+
+These pages document **ShopClass 6.2.0**. Where a feature arrived in that
+release — selling credits and charging for listings, and letting users download
+a copy of their own data — the page says so.
+
+If you are on an older release, most of this still applies: the admin panel,
+the extension API and the CLI have been stable across the 6.x line. Check
+[updating](/docs/updating/) before assuming a feature is missing rather than
+just switched off.
+
+## Where else to look
+
+The [source repository](https://github.com/mindstellar/shopclass) carries the
+changelog, the security policy and the Docker setup for local development.
+Questions and help happen in
+[GitHub Discussions](https://github.com/mindstellar/shopclass/discussions);
+reproducible bugs belong in
+[issues](https://github.com/mindstellar/shopclass/issues).
