@@ -127,6 +127,12 @@ directory, and removes Google Analytics from the core.
   that truncated every IPv6 address. They are migrations now, so the upgrade no longer depends
   on the repair pass to arrive at a complete schema. Sites already on 5.2 or later are
   unaffected — every step checks first and does nothing where the change is already present.
+- A listing URL that matches nothing returned 410 Gone, claiming a listing had existed there
+  and was permanently deleted — for any id, including ones never issued. It now returns 404.
+- Listings awaiting moderation or blocked, and unknown category/location/user subdomains,
+  returned 400 Bad Request; they now return 404.
+- Error pages now send a `Cache-Control` header, so a crawler walking dead URLs can be
+  absorbed by a reverse proxy instead of costing a page render per hit.
 
 ### Changed
 

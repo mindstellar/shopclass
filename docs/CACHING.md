@@ -89,6 +89,9 @@ Public read pages that opt in (`osc_mark_response_cacheable()`):
 - category and static-page slugs
 - item detail
 - **the public user profile -- a user's public listings (`user/items`)**
+- error pages (`do404()`, and the `do410()`/`do400()` kept for third-party callers), which exit
+  before the stamp in `index.php` and so emit the header themselves -- a crawler walking dead
+  URLs is otherwise one full theme render per hit
 
 Private by default (not opted in): the account area (`user/dashboard`, `user/profile` edit,
 `user/change_*`, `user/alerts`), item posting and the `item/view` beacon, `/contact`,
