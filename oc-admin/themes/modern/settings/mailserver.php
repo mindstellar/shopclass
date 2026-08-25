@@ -44,19 +44,35 @@ function customHead()
             var testBtn = document.getElementById('testMail');
             if (testBtn) {
                 testBtn.addEventListener('click', function () {
-                    fetch("<?php echo osc_admin_base_url(true)?>?page=ajax&action=test_mail", {
+                    var msg = document.getElementById('testMail_message');
+                    var pEl = msg ? msg.querySelector('p') : null;
+                    function show(html, ok) {
+                        if (!msg || !pEl) { return; }
+                        pEl.textContent = html;
+                        msg.style.display = 'block';
+                        msg.classList.remove('flashmessage-ok', 'flashmessage-error');
+                        msg.classList.add(ok ? 'flashmessage-ok' : 'flashmessage-error');
+                    }
+                    var controller = (typeof AbortController === 'function') ? new AbortController() : null;
+                    var timer = window.setTimeout(function () {
+                        if (controller) { controller.abort(); }
+                    }, 25000);
+                    var opts = {
                         credentials: 'same-origin',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    }).then(function (r) {
-                        return r.json();
-                    }).then(function (data) {
-                        var msg = document.getElementById('testMail_message');
-                        if (!msg) { return; }
-                        var pEl = msg.querySelector('p');
-                        if (pEl) { pEl.innerHTML = data.html; }
-                        msg.style.display = 'block';
-                        msg.classList.add(data.status == 1 ? 'ok' : 'error');
-                    });
+                    };
+                    if (controller) { opts.signal = controller.signal; }
+                    fetch("<?php echo osc_admin_base_url(true)?>?page=ajax&action=test_mail", opts)
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            show(data.html, data.status == 1);
+                        })
+                        .catch(function () {
+                            show(<?php echo json_encode(
+                                __('Mail server did not respond in time. Check host, port and encryption, and that POP before SMTP is off.')
+                            ); ?>, false);
+                        })
+                        .then(function () { window.clearTimeout(timer); });
                 });
             }
         });
@@ -179,7 +195,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php _e('Use POP before SMTP'); ?></div>
                         </div>
                     </div>
-                    <?php osc_admin_form_actions(); ?>
+                    <div id="testMail_message" class="flashmessage" style="display:none"><p></p></div>
+                    <?php osc_admin_form_actions(array(
+                        array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'),
+                        array(
+                            'label'   => __('Send a test email'),
+                            'type'    => 'button',
+                            'variant' => 'secondary',
+                            'attrs'   => array('id' => 'testMail'),
+                        ),
+                    )); ?>
                 </div>
             </fieldset>
         </form>
