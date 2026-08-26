@@ -1288,6 +1288,26 @@ class ItemForm extends Form
     }
 
     /**
+     * The photo cap to show the seller, matching what ItemActions::uploadItemResources()
+     * will actually enforce. Reads the listing's own owner rather than the session -- an
+     * admin may be editing on a seller's behalf -- and falls back to the logged-in user
+     * while a new listing is being posted, which is what a null id does here.
+     *
+     * Returned in the uploader's convention, where 0 means unlimited. The entitlement's
+     * own sentinel for that is -1, which every consumer here would read as a limit of
+     * minus one and refuse every photo.
+     *
+     * @return int
+     */
+    private static function maxImagesForForm()
+    {
+        $ownerId = osc_item_user_id() ?: null;
+        $max     = osc_max_images_for_user($ownerId);
+
+        return $max === -1 ? 0 : $max;
+    }
+
+    /**
      * @param null $resources
      *
      */
@@ -1340,7 +1360,7 @@ class ItemForm extends Form
             }
 
             function addNewPhoto() {
-                var max = <?php echo osc_max_images_per_item(); ?>;
+                var max = <?php echo self::maxImagesForForm(); ?>;
                 var num_img = document.querySelectorAll('input[name="photos[]"]').length + document.querySelectorAll('a.delete').length;
                 if ((max != 0 && num_img < max) || max == 0) {
                     var id = 'p-' + photoIndex++;
@@ -1388,7 +1408,7 @@ class ItemForm extends Form
                         count++;
                     }
                 });
-                var max = <?php echo osc_max_images_per_item(); ?>;
+                var max = <?php echo self::maxImagesForForm(); ?>;
                 var num_img = fields.length + document.querySelectorAll('a.delete').length;
                 if (count == 0 && (max == 0 || (max != 0 && num_img < max))) {
                     addNewPhoto();
@@ -1528,7 +1548,7 @@ class ItemForm extends Form
         $allowedExtensions = "'" . implode("','", $aExt) . "'";
         $acceptAttr        = '.' . implode(',.', $aExt);
         $maxSize           = osc_max_size_kb() * 1024;
-        $maxImages         = osc_max_images_per_item();
+        $maxImages         = self::maxImagesForForm();
         $isAdd             = Params::getParam('action') === 'item_add';
         $secret            = Params::getParam('secret');
         ?>

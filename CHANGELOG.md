@@ -148,6 +148,10 @@ directory, and removes Google Analytics from the core.
   the counts and pager were inflated to match, and a premium listing that was admin-disabled or
   awaiting moderation could reach a public profile. The same clause also dropped the expiry and
   spam tests entirely on a site with no premium listings.
+- The photo uploader told a seller the site-wide photo limit even when they held a raised
+  one, capping them in the browser below what the upload actually accepts.
+- The `nospam` listing filter did not exclude spam. It asked for an option name the filter
+  builder had no case for, so the one test it exists for was silently never applied.
 
 ### Changed
 
