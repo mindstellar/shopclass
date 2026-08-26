@@ -152,6 +152,10 @@ directory, and removes Google Analytics from the core.
   one, capping them in the browser below what the upload actually accepts.
 - The `nospam` listing filter did not exclude spam. It asked for an option name the filter
   builder had no case for, so the one test it exists for was silently never applied.
+- **Four of the five forms on Settings → Billing saved nothing.** Pricing (which owns the
+  seller listing limit), offline payments, upgrades and seller limits posted actions the
+  settings router had no case for, so each one landed on the General settings page and
+  discarded the values with no error. Only the enable/disable toggle worked.
 
 ### Changed
 

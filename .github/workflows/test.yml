@@ -113,6 +113,10 @@ jobs:
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order
         run: php tests/user-menu-order.php
+      # An unrouted settings action does not error -- it renders a different settings page
+      # and discards the post, so the only symptom is preferences that never save.
+      - name: Admin settings routes
+        run: php tests/admin-settings-routes.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

@@ -76,6 +76,10 @@ class CAdminSettings
                 break;
             case ('billing'):
             case ('billing_post'):
+            case ('billing_pricing_post'):
+            case ('billing_offline_post'):
+            case ('billing_upgrades_post'):
+            case ('billing_limits_post'):
                 $do = new CAdminSettingsBilling();
                 break;
             case ('mailserver'):
