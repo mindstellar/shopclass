@@ -133,6 +133,9 @@ directory, and removes Google Analytics from the core.
   returned 400 Bad Request; they now return 404.
 - Error pages now send a `Cache-Control` header, so a crawler walking dead URLs can be
   absorbed by a reverse proxy instead of costing a page render per hit.
+- The account menu offered "Credits" and "Buy credits" whenever billing was on, so a site
+  that enabled it only to cap listings sent every seller to an empty state. They now appear
+  only where credits can be bought, or are already held.
 
 ### Changed
 
@@ -167,6 +170,9 @@ directory, and removes Google Analytics from the core.
   code that performs those side effects. Existing installs are converted on upgrade.
 
 ### New
+
+- `billing_listing_limit_message` filters the message a seller sees at their listing limit,
+  for a plugin that sells extra slots and needs to say so.
 
 - CI fails when the committed vendor and asset trees no longer match what
   composer.lock and package-lock.json declare. Releases ship those trees verbatim, so

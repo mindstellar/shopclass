@@ -76,6 +76,14 @@ if (!function_exists('osc_base_url')) {
         return WEB_PATH . ($with_index ? 'index.php' : '');
     }
 }
+// The account-menu hook labels its entries with _m(), whose real definition drags in
+// the whole translation stack; the labels are not what these pins read.
+if (!function_exists('_m')) {
+    function _m($key)
+    {
+        return $key;
+    }
+}
 // Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_live_listings()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
@@ -1710,6 +1718,52 @@ osc_reset_preferences();
 
 Entitlements::grant($limitUserId, 'listing.no_wait', null, 30);
 pin('a listing.no_wait entitlement waives the wait entirely', 0, osc_items_wait_time_for_user($limitUserId));
+
+/* ----------------------------------------------------------------------------
+ * The account-menu gate. Both entries used to appear on the billing switch alone,
+ * so a site that enabled billing only to cap listings handed every seller two links
+ * to an empty state. A configured gateway is registered by this point (see the
+ * registry section above), so the packages side is what these move.
+ * ------------------------------------------------------------------------- */
+harness_section('hBilling: wallet/buy links appear only where they lead somewhere');
+
+$menuClasses = static function (): array {
+    $out = array();
+    foreach (osc_apply_filter('user_menu_filter', array()) as $option) {
+        $out[] = $option['class'];
+    }
+
+    return $out;
+};
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+Packages::update($packageId, array(
+    's_name'     => 'Test bundle',
+    'i_amount'   => 5_000_000,
+    's_currency' => 'USD',
+    'i_credits'  => 250,
+    'b_enabled'  => 0,
+));
+pin('nothing on sale -> neither link is offered', array(), $menuClasses());
+
+Packages::update($packageId, array(
+    's_name'     => 'Test bundle',
+    'i_amount'   => 5_000_000,
+    's_currency' => 'USD',
+    'i_credits'  => 250,
+    'b_enabled'  => 1,
+));
+pin(
+    'a package plus a configured gateway -> both links are offered',
+    array('opt_billing_wallet', 'opt_billing_buy'),
+    $menuClasses()
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+pin('billing off -> neither link, whatever is on sale', array(), $menuClasses());
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 

@@ -821,8 +821,24 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
         return $options;
     }
 
-    $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
-    $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+    // Both entries used to appear on the billing switch alone, so a site that enabled
+    // billing only to cap listings gave every seller two links to "no payment method is
+    // set up yet". Offer them only where they lead somewhere. Gateways are preference
+    // reads, so they gate the packages query rather than the other way round.
+    $canBuy = PaymentGatewayRegistry::instance()->available() !== array()
+              && osc_billing_packages() !== array();
+
+    if ($canBuy) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+        $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+
+        return $options;
+    }
+
+    // Nothing on sale, but credits already held (or owed) still need somewhere to be read.
+    if (osc_user_credits() !== 0) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+    }
 
     return $options;
 });
