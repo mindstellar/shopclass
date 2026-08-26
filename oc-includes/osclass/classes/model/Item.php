@@ -703,7 +703,9 @@ class Item extends DAO
 
                 return;
             case 'nospam':
-                $this->addWhereByOptions(['ACTIVE', 'NOSPAM', 'NOTEXPIRED'], $conditions, $params);
+                // 'NOSPAM' matched no case in addWhereByOptions() and fell through its
+                // default, so the one filter this type exists for was never applied.
+                $this->addWhereByOptions(['ACTIVE', 'NOTSPAM', 'NOTEXPIRED'], $conditions, $params);
 
                 return;
             case 'expired':

@@ -551,6 +551,11 @@ pin('blocked-type count (disabled items)', '1', $model->findItemByTypes(null, 'b
 pin('expired-type count', '1', $model->findItemByTypes(null, 'expired', true));
 pin('premium-type count', '0', $model->findItemByTypes(null, 'premium', true));
 pin('pending-type count (inactive)', '1', $model->findItemByTypes(null, 'pending', true));
+// 'nospam' asked addWhereByOptions() for 'NOSPAM', which matched no case and fell through
+// its default -- so the one filter the type exists for was never applied and C (spam) was
+// counted. Note this type tests active and not-expired but NOT enabled, so B (disabled)
+// legitimately counts: A + B + 5 batch, with C dropped.
+pin('nospam-type count drops C (spam), so 7: A + B + 5 batch', '7', $model->findItemByTypes(null, 'nospam', true));
 pin('default-type also drops C (spam), so 6: A + 5 batch', '6', $model->findItemByTypes(null, false, true));
 
 harness_section('Item::findByUserID / findByUserIDEnabled / findItemTypesByUserID');
