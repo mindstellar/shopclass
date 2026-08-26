@@ -261,25 +261,44 @@ final class Entitlements
     }
 
     /**
-     * Whether $userId is still inside the free listing quota: a slot model. The
-     * ceiling is the free tier (osc_billing_free_live_listings()) plus whatever a
-     * listing.slot entitlement adds on top (capacity() -- see its own docblock for
-     * why -1 there means unlimited and is never folded into the arithmetic sum
-     * below). 0 or less, with nothing bought, is unlimited.
+     * How many listings $userId may hold live at once: the free tier
+     * (osc_billing_free_live_listings()) plus whatever a listing.slot entitlement adds
+     * on top (capacity() -- see its own docblock for why -1 there means unlimited and is
+     * never folded into the arithmetic sum below).
+     *
+     * Returns -1 for unlimited, matching capacity()'s own sentinel and the billing-side
+     * helpers built on it -- treat it that way, never compare it numerically. A free tier
+     * of 0 or less with nothing bought is unlimited, which is what an install that never
+     * set a cap reads back.
+     *
+     * The one place the ceiling is computed. withinFreeQuota() is the gate and
+     * osc_user_listing_limit() is what a theme shows; both read it here so the number a
+     * seller is told can never drift from the number they are held to.
      */
-    public static function withinFreeQuota(int $userId): bool
+    public static function listingCeiling(int $userId): int
     {
         $bought = self::capacity($userId, 'listing.slot', 0);
         if ($bought === -1) {
-            return true; // -1 is unlimited -- never added to a finite ceiling below.
+            return -1; // -1 is unlimited -- never added to a finite ceiling below.
         }
 
         $limit = osc_billing_free_live_listings() + $bought;
-        if ($limit <= 0) {
+
+        return $limit > 0 ? $limit : -1;
+    }
+
+    /**
+     * Whether $userId is still inside the free listing quota: a slot model, measured
+     * against listingCeiling().
+     */
+    public static function withinFreeQuota(int $userId): bool
+    {
+        $ceiling = self::listingCeiling($userId);
+        if ($ceiling === -1) {
             return true;
         }
 
-        return self::liveListings($userId) < $limit;
+        return self::liveListings($userId) < $ceiling;
     }
 
     /**

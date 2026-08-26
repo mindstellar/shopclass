@@ -229,15 +229,7 @@ class ItemActions
         if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                // Core sells no listing slot -- listing.slot is user-scoped and the only public
-                // spend route takes item-scoped features -- so the default names the only two
-                // remedies that exist. Filterable for a plugin that does sell them.
-                $flash_error .= osc_apply_filter(
-                    'billing_listing_limit_message',
-                    _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'),
-                    $aItem['userId'],
-                    $aItem
-                ) . PHP_EOL;
+                $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
             }
         }
 

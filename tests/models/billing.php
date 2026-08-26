@@ -1226,6 +1226,71 @@ osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
+ * The theme-facing quota helpers. These are what a theme shows a seller, so they
+ * are pinned against the same fixtures the gate above is measured on -- a number
+ * a seller is told that disagrees with the one they are held to is the whole bug
+ * this set exists to catch.
+ * ------------------------------------------------------------------------- */
+harness_section('hBilling: listing-quota helpers a theme can read');
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+$quotaUserId = seed_user($admin, 'quotaread', 'quotaread@example.test');
+pin('billing off -> unlimited (-1), whatever the cap says', -1, osc_user_listing_limit($quotaUserId));
+pin('billing off -> nothing counted as used', 0, osc_user_listings_used($quotaUserId));
+pin('billing off -> unlimited remaining', -1, osc_user_listings_remaining($quotaUserId));
+check('billing off -> publishing is allowed', osc_user_can_publish($quotaUserId));
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+
+pin('a cap of 2 reads back as 2', 2, osc_user_listing_limit($quotaUserId));
+pin('nothing published yet -> 0 used', 0, osc_user_listings_used($quotaUserId));
+pin('...so 2 remain', 2, osc_user_listings_remaining($quotaUserId));
+
+seed_item($admin, $categoryId, $quotaUserId, 'Quota reader, first');
+pin('one live listing -> 1 used', 1, osc_user_listings_used($quotaUserId));
+pin('...and 1 remaining', 1, osc_user_listings_remaining($quotaUserId));
+check('still allowed to publish', osc_user_can_publish($quotaUserId));
+
+seed_item($admin, $categoryId, $quotaUserId, 'Quota reader, second');
+pin('at the ceiling -> 0 remaining', 0, osc_user_listings_remaining($quotaUserId));
+check('...and publishing is refused, the same answer the post route enforces', osc_user_can_publish($quotaUserId) === false);
+check('...which is exactly what the gate itself says', Entitlements::canPublish($quotaUserId) === false);
+
+/* An unset cap is unlimited, not zero -- the reading an install that never touched
+   billing must get. */
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('a cap of 0 means unlimited, not blocked', -1, osc_user_listing_limit($quotaUserId));
+pin('...and unlimited remaining', -1, osc_user_listings_remaining($quotaUserId));
+check('...and publishing is allowed again', osc_user_can_publish($quotaUserId));
+
+/* Over the line reads back 0, never a negative: a seller whose cap was lowered
+   under them still gets a number a theme can print. */
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+pin('two live against a cap of 1 clamps at 0 remaining, not -1', 0, osc_user_listings_remaining($quotaUserId));
+
+pin(
+    'the limit message is the one wording, defaulting to the no-purchase remedies',
+    'You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.',
+    osc_listing_limit_message($quotaUserId)
+);
+osc_add_filter('billing_listing_limit_message', static function ($message, $userId, $item) {
+    return 'Buy a slot to keep posting.';
+});
+pin(
+    'billing_listing_limit_message lets a plugin selling slots say so instead',
+    'Buy a slot to keep posting.',
+    osc_listing_limit_message($quotaUserId)
+);
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+/* ----------------------------------------------------------------------------
  * ItemActions::add(): publishing consumes nothing. A slot is occupied by the
  * row existing, not spent by the insert -- there is no consume-after-insert
  * path at all, and so nothing to warn about if one were to fail.

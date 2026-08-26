@@ -136,6 +136,8 @@ directory, and removes Google Analytics from the core.
 - The account menu offered "Credits" and "Buy credits" whenever billing was on, so a site
   that enabled it only to cap listings sent every seller to an empty state. They now appear
   only where credits can be bought, or are already held.
+- A seller at their listing limit only found out after writing the whole listing. Opening
+  the post form now turns them back with the same message.
 
 ### Changed
 
@@ -173,6 +175,10 @@ directory, and removes Google Analytics from the core.
 
 - `billing_listing_limit_message` filters the message a seller sees at their listing limit,
   for a plugin that sells extra slots and needs to say so.
+
+- `osc_user_listing_limit()`, `osc_user_listings_used()`, `osc_user_listings_remaining()`,
+  `osc_user_can_publish()` and `osc_listing_limit_message()` let a theme show a seller their
+  listing quota before they hit it. -1 means unlimited.
 
 - CI fails when the committed vendor and asset trees no longer match what
   composer.lock and package-lock.json declare. Releases ship those trees verbatim, so

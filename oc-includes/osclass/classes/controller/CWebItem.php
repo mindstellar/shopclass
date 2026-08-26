@@ -69,6 +69,18 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
+                // Turn them back at the door rather than after they have written the whole
+                // listing: the submit path refuses on the same answer, so reaching the form
+                // at all would only waste the writing. Admins are never metered, and guests
+                // have no quota to be outside of.
+                if (!osc_is_admin_user_logged_in()
+                    && osc_is_web_user_logged_in()
+                    && !osc_user_can_publish()
+                ) {
+                    osc_add_flash_error_message(osc_listing_limit_message());
+                    $this->redirectTo(osc_user_list_items_url());
+                }
+
                 $countries = Country::newInstance()->listAll();
                 $regions   = array();
                 if (isset($this->user['fk_c_country_code'])
