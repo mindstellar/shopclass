@@ -420,8 +420,8 @@ class Item extends DAO
      *
      * Appends bound WHERE fragments to $conditions/$params. The date comparisons
      * keep PHP's date() as the clock source (never SQL NOW()); the value is bound.
-     * NOTEXPIRED keeps its OR connector so the mixed AND/OR structure the legacy
-     * orWhere() produced is preserved verbatim.
+     * Every option contributes an AND-connected fragment; NOTEXPIRED groups its own
+     * premium/expiry alternation rather than leaking an OR into the caller's chain.
      *
      * @access  private
      *
@@ -461,8 +461,20 @@ class Item extends DAO
                     $this->pushWhere($conditions, $params, '( i.dt_expiration < ? )', 'AND', array(date('Y-m-d H:i:s')));
                     break;
                 case 'NOTEXPIRED':
-                    $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'OR', array(1));
-                    $this->pushWhere($conditions, $params, '( i.dt_expiration >= ? )', 'AND', array(date('Y-m-d H:i:s')));
+                    // One self-contained fragment, ANDed like every other option. Pushed as
+                    // two -- the first with an OR connector -- it broke out of the AND chain
+                    // and swallowed the caller's own conditions: findItemByTypes() joins
+                    // fragments unparenthesised, so `owner = 24 AND live OR premium` reads as
+                    // `(mine AND live) OR (any premium listing)` and every seller's listing
+                    // page showed the whole site's premium rows. Same predicate as
+                    // liveConditions(), which had it right all along.
+                    $this->pushWhere(
+                        $conditions,
+                        $params,
+                        '( i.b_premium = ? OR i.dt_expiration >= ? )',
+                        'AND',
+                        array(1, date('Y-m-d H:i:s'))
+                    );
                     break;
                 case 'PREMIUM':
                     $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'AND', array(1));

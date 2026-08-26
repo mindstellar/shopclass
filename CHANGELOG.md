@@ -142,6 +142,12 @@ directory, and removes Google Analytics from the core.
   into the middle of the list. Log out is kept last.
 - The installer downloaded storefront 1.0.1 when a fresh install had no bundled copy of the
   theme, two releases behind. It now fetches 1.2.0, from a single pinned version.
+- **"My listings" and public seller profiles listed every premium listing on the site.** The
+  not-expired filter contributed an ungrouped `OR`, so the query read `(mine AND live) OR (any
+  premium listing)` — other sellers' rows appeared with the owner's own controls beside them,
+  the counts and pager were inflated to match, and a premium listing that was admin-disabled or
+  awaiting moderation could reach a public profile. The same clause also dropped the expiry and
+  spam tests entirely on a site with no premium listings.
 
 ### Changed
 
