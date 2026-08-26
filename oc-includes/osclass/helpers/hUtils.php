@@ -400,6 +400,27 @@ function osc_private_user_menu($options = null)
 
     $options = osc_apply_filter('user_menu_filter', $options);
 
+    // Keep log out last. The filter is how a plugin adds an account entry and appending is
+    // the natural way to do it, which landed every one of them BELOW the log-out row --
+    // and displaced log out into the middle of the list, since the render below gives the
+    // final entry its own slot after the user_menu hook. Moving it here rather than holding
+    // it out of the filter leaves it visible to a plugin that wants to relabel it. A theme
+    // passing its own options without an opt_logout entry (bender has none) is untouched.
+    foreach ($options as $var_k => $var_option) {
+        if (isset($var_option['class']) && $var_option['class'] === 'opt_logout') {
+            unset($options[$var_k]);
+            $options[] = $var_option;
+            break;
+        }
+    }
+    $options = array_values($options);
+
+    // A filter is free to return nothing; the final-entry render below would then reach for
+    // a key that does not exist.
+    if ($options === array()) {
+        return;
+    }
+
     echo '<script type="text/javascript">';
     // Vanilla, and DOMContentLoaded-wrapped so it runs after the list below exists (the
     // old jQuery ran inline before the <ul> and matched nothing). No jQuery dependency.

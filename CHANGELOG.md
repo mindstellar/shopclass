@@ -138,6 +138,8 @@ directory, and removes Google Analytics from the core.
   only where credits can be bought, or are already held.
 - A seller at their listing limit only found out after writing the whole listing. Opening
   the post form now turns them back with the same message.
+- Account-menu entries added by a plugin rendered below the log-out row, and pushed log out
+  into the middle of the list. Log out is kept last.
 
 ### Changed
 

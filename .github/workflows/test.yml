@@ -109,6 +109,10 @@ jobs:
         run: php tests/item-url-characterization.php
       - name: Pagination
         run: php tests/pagination.php
+      # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
+      # order there is silent -- the entry renders, just under the log-out row.
+      - name: Account menu order
+        run: php tests/user-menu-order.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
