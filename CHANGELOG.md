@@ -140,6 +140,8 @@ directory, and removes Google Analytics from the core.
   the post form now turns them back with the same message.
 - Account-menu entries added by a plugin rendered below the log-out row, and pushed log out
   into the middle of the list. Log out is kept last.
+- The installer downloaded storefront 1.0.1 when a fresh install had no bundled copy of the
+  theme, two releases behind. It now fetches 1.2.0, from a single pinned version.
 
 ### Changed
 
