@@ -1384,6 +1384,10 @@ msgstr ""
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
+msgid "Shopclass has been updated to %s"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "Sign in to buy credits."
 msgstr ""

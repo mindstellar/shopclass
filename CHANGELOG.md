@@ -159,6 +159,10 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- A release that ships no migration no longer sends the admin to the upgrade screen. The
+  version is carried across on the next admin page load, with a notice saying so. Releases
+  with migrations waiting still go to the screen, where the schema reconcile runs under
+  supervision — an install carried across automatically has not been reconciled.
 - `osc_get_locations_sql_url()` is deprecated in favour of the published location
   catalogue, and the unreachable installer function that was its only caller is gone.
 
