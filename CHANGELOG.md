@@ -159,6 +159,10 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- The wallet, buy-credits and orders pages have permalinks (`user/credits`,
+  `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
+  still had them. The old `?page=billing` form keeps resolving, so existing links and the
+  gateway callback are unaffected.
 - A release that ships no migration no longer sends the admin to the upgrade screen. The
   version is carried across on the next admin page load, with a notice saying so. Releases
   with migrations waiting still go to the screen, where the schema reconcile runs under

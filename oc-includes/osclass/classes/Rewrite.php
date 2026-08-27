@@ -332,6 +332,31 @@ class Rewrite
         $rewrite->addRule('^' . osc_get_preference('rewrite_user_change_email_confirm')
             . '/([0-9]+)/(.*?)/?$', 'index.php?page=user&action=change_email_confirm&userId=$1&code=$2');
 
+        // Billing's three navigable pages. Registered specific-first: the buy path nests
+        // under the wallet's by default, and while both patterns are $-anchored -- which
+        // already keeps them apart -- the order is what stays correct if an admin renames
+        // one into something that does overlap. The gateway callback keeps its
+        // ?page=billing&action=callback form: gateways hold that URL on their side, and a
+        // rule added here would never reach the ones already registered.
+        //
+        // Each path is checked before it is compiled. This table is rebuilt whenever
+        // OSCLASS_VERSION moves, which happens the moment new code is deployed -- before
+        // the release's migration has seeded these preferences, and on a front-end request
+        // that never goes near the upgrade screen. An empty path would compile to '^/?$'
+        // and answer the homepage with the wallet.
+        $billingRoutes = array(
+            'rewrite_billing_buy'    => 'index.php?page=billing&action=buy',
+            'rewrite_billing_orders' => 'index.php?page=billing&action=orders',
+            'rewrite_billing_wallet' => 'index.php?page=billing',
+        );
+        foreach ($billingRoutes as $billingPref => $billingTarget) {
+            $billingPath = trim((string)osc_get_preference($billingPref), '/');
+            if ($billingPath === '') {
+                continue;
+            }
+            $rewrite->addRule('^' . $billingPath . '/?$', $billingTarget);
+        }
+
         // Page rules
         $pos_pID   = stripos($page_url, '{PAGE_ID}');
         $pos_pSlug = stripos($page_url, '{PAGE_SLUG}');

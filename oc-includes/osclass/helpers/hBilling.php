@@ -466,22 +466,38 @@ function osc_billing_packages(): array
     return Packages::enabled();
 }
 
-/** Balance and ledger history. */
+/**
+ * Balance and ledger history. Rewritten like every other account route when the site
+ * has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the
+ * query-string form still resolves either way, so links already out there keep working.
+ */
 function osc_billing_wallet_url(): string
 {
-    return osc_base_url() . '?page=billing';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_wallet');
+    }
+
+    return osc_base_url(true) . '?page=billing';
 }
 
 /** Buy credits: packages plus the configured payment methods. */
 function osc_billing_buy_url(): string
 {
-    return osc_base_url() . '?page=billing&action=buy';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_buy');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=buy';
 }
 
 /** The buyer's own past orders. */
 function osc_billing_orders_url(): string
 {
-    return osc_base_url() . '?page=billing&action=orders';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_orders');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=orders';
 }
 
 /**
@@ -491,7 +507,7 @@ function osc_billing_orders_url(): string
  */
 function osc_billing_upgrade_url(int $itemId): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId;
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId;
 }
 
 /**
@@ -629,7 +645,7 @@ function osc_item_can_bump(?array $item = null): bool
  */
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
 }
 
 /**
