@@ -121,6 +121,10 @@ jobs:
       # mandatory, four were updated and the public one was not -- and it stops loading.
       - name: TinyMCE config
         run: php tests/tinymce-config.php
+      # A listing description is stored with Params' XSS check off, so the allow-list is
+      # the only thing between a poster and script running for every visitor.
+      - name: Rich-text sanitiser
+        run: php tests/sanitize-html.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

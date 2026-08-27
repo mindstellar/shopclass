@@ -1185,11 +1185,14 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
                                    . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
                                    . 'line-height:1.55;color:#14181f}';
     } else {
-        // Lean set: basic inline formatting, lists, links and a raw-HTML view.
+        // Lean set: basic inline formatting, lists and links. No source view -- this is the
+        // preset the public listing form uses, and handing a poster a raw-HTML pane invites
+        // exactly what osc_sanitize_html() then has to take back out. An admin-only editor
+        // that wants one asks for it in $overrides.
         // bold/italic/underline/removeformat are core and need no plugin.
-        $config['plugins'] = 'autolink lists link code';
+        $config['plugins'] = 'autolink lists link';
         $config['toolbar'] = 'undo redo | bold italic underline | bullist numlist | link'
-                             . ' | removeformat | code';
+                             . ' | removeformat';
     }
 
     $config = array_merge($config, $overrides);

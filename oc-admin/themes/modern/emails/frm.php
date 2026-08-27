@@ -39,6 +39,11 @@ function customHead()
             'width'    => '100%',
             'height'   => '440px',
             'language' => 'en',
+            // An email template is authored by an admin and is full of markup already, so
+            // this one keeps the source view the public preset no longer carries.
+            'plugins'  => 'autolink lists link code',
+            'toolbar'  => 'undo redo | bold italic underline | bullist numlist | link'
+                          . ' | removeformat | code',
         )); ?>;
         // JavaScript, so it cannot come through the JSON above.
         if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }

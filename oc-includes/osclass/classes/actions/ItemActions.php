@@ -1992,8 +1992,15 @@ class ItemActions
         $aItem['currency']     = Params::getParam('currency');
         $aItem['showEmail']    = Params::getParam('showEmail') ? 1 : 0;
         $aItem['title']        = Params::getParam('title');
+        // A rich editor needs its markup to survive, so Params' XSS check -- which strips
+        // every tag -- is off on that path; osc_sanitize_html() is what keeps it safe, an
+        // allow-list of exactly what the toolbars emit. Without it a description was stored
+        // as submitted, and a <script> in one ran for every visitor who opened the listing.
+        // The plain-textarea path keeps stripping everything, as it always has.
         $aItem['description']  =
-            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN)) ? Params::getParam('description', false, false) : Params::getParam('description');
+            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
+                ? osc_sanitize_html(Params::getParam('description', false, false))
+                : Params::getParam('description');
         $aItem['photos']       = Params::getFiles('photos');
         $ajax_photos           = Params::getParam('ajax_photos');
         $aItem['s_ip']         = get_ip();

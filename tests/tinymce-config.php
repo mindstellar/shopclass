@@ -69,7 +69,11 @@ harness_section('osc_tinymce_config — presets');
 $basic = cfg('basic');
 $full  = cfg('full');
 
-pin('basic is the lean plugin set', 'autolink lists link code', $basic['plugins']);
+pin('basic is the lean plugin set', 'autolink lists link', $basic['plugins']);
+// Not a style choice: basic is what the public listing form uses, and a raw-HTML pane
+// hands a poster the shape osc_sanitize_html() then has to take back out.
+check('basic loads no source-view plugin', strpos($basic['plugins'], 'code') === false, $basic['plugins']);
+check('...and shows no source-view button', strpos($basic['toolbar'], 'code') === false, $basic['toolbar']);
 check('basic offers no image button', strpos($basic['toolbar'], 'image') === false);
 check('basic has no paste-cleaning block', !isset($basic['smart_paste']));
 check('basic sets no content_style', !isset($basic['content_style']));

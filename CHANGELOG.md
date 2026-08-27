@@ -11,6 +11,16 @@ directory, and removes Google Analytics from the core.
 
 ### Security
 
+- **A listing description was stored exactly as submitted on sites using the rich editor.**
+  Params' XSS check strips every tag, so it is switched off wherever a rich editor is in
+  use, and nothing replaced it — a script in a description ran for every visitor who opened
+  the listing, the listing's author included. Descriptions are now sanitised against an
+  allow-list of the markup the toolbars actually produce; scripts, iframes, event handlers
+  and any URL scheme other than http/https/mailto do not survive it. Only sites that turned
+  on "use TinyMCE on the frontend" were affected — it is off unless an admin enables it, and
+  everywhere else every tag was already stripped. The public listing editor also loses its
+  source-view button, which is not what made this exploitable but is no longer worth
+  offering.
 - **The plugin admin-page route would execute any file inside the plugins directory.**
   `?page=plugins&action=renderplugin&file=…` ends in `require_once`, and decided what to
   run by looking for the literal `../` — so anything else under the plugins tree was
