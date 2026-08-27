@@ -831,22 +831,9 @@ function osc_item_tinymce_footer()
         // based init replaces the old mode:'none' + per-textarea mceAddEditor loop; the
         // plugin/toolbar set is the same lean, basic-formatting config as the admin editor.
         document.addEventListener('DOMContentLoaded', function () {
-            tinyMCE.init({
-                selector: 'textarea[id^="description"]',
-                // Required since TinyMCE 7: without it the editor refuses to load and
-                // reports that no license key was provided. Shopclass bundles the GPL
-                // build, which is what 'gpl' declares -- the same value every admin
-                // editor already passes.
-                license_key: 'gpl',
-                promotion: false,
-                menubar: false,
-                plugins: 'autolink lists link code',
-                toolbar: 'undo redo | bold italic underline | bullist numlist | link | removeformat | code',
-                entity_encoding: 'raw',
-                relative_urls: false,
-                remove_script_host: false,
-                convert_urls: false
-            });
+            tinyMCE.init(<?php echo osc_tinymce_config('basic', array(
+                'selector' => 'textarea[id^="description"]',
+            )); ?>);
         });
     </script>
     <?php

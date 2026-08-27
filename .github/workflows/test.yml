@@ -117,6 +117,10 @@ jobs:
       # and discards the post, so the only symptom is preferences that never save.
       - name: Admin settings routes
         run: php tests/admin-settings-routes.php
+      # The editor config was copied into five call sites; when TinyMCE made license_key
+      # mandatory, four were updated and the public one was not -- and it stops loading.
+      - name: TinyMCE config
+        run: php tests/tinymce-config.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

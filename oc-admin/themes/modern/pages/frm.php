@@ -99,36 +99,10 @@ function customHead()
                 return;
             }
             var uploadUrl = <?php echo json_encode($uploadUrl); ?>;
-            var cfg = {
-                selector: 'textarea[name$="#s_text"]',
-                promotion: false,
-                // TinyMCE 8 disables the editor outright unless a licence is declared;
-                // 'gpl' is the self-hosted GPL option the bundled build is used under.
-                license_key: 'gpl',
-                branding: false,
-                menubar: false,
-                height: 460,
-                relative_urls: false,
-                remove_script_host: false,
-                convert_urls: false,
-                entity_encoding: 'raw',
-                plugins: 'advlist anchor autolink charmap code fullscreen image insertdatetime'
-                    + ' link lists media preview searchreplace table visualblocks',
-                toolbar: 'undo redo | blocks | bold italic underline | bullist numlist'
-                    + ' | link image media table | alignleft aligncenter alignright'
-                    + ' | removeformat | visualblocks code fullscreen preview',
-                // Paste handling — clean what comes in from Word / Google Docs.
-                smart_paste: true,
-                paste_as_text: false,
-                paste_merge_formats: true,
-                paste_data_images: false,
-                paste_remove_styles_if_webkit: true,
-                paste_webkit_styles: 'none',
-                // Only the light oxide skin ships, so the editor is a consistent
-                // "sheet of paper" in both themes rather than a half-dark panel.
-                content_style: 'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,'
-                    + 'Helvetica Neue,Arial,sans-serif;font-size:16px;line-height:1.55;color:#14181f}'
-            };
+            var cfg = <?php echo osc_tinymce_config('full', array(
+                'selector' => 'textarea[name$="#s_text"]',
+                'height'   => 460,
+            )); ?>;
             // Drag/drop and paste auto-upload straight to the library; the image
             // dialog's picker opens the media library (browse existing or upload).
             cfg.automatic_uploads = true;

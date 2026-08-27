@@ -168,6 +168,10 @@ directory, and removes Google Analytics from the core.
   `action=buy`. A rule no longer overwrites a value the POST body supplies — a form's hidden
   fields are its intent, the URL only says where it was rendered — which fixes the same trap
   for any page that gains a permalink later. Unreleased; it never reached a published build.
+- `osc_tinymce_config()` is the one place every rich-text editor is configured from, with a
+  `basic` and a `full` preset. The settings each editor shared were copied into five call
+  sites, which is how the front-end one was left without a licence key; a `tinymce_config`
+  filter now also gives plugins their first way into these editors.
 - The wallet, buy-credits and orders pages have permalinks (`user/credits`,
   `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
   still had them. The old `?page=billing` form keeps resolving, so existing links and the

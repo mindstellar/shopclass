@@ -1125,3 +1125,77 @@ function osc_get_i18n_repository_url($path = '')
 
     return $repoUrl . $path;
 }
+
+/**
+ * The TinyMCE config every editor in the product starts from, as the JSON object literal
+ * tinymce.init() takes.
+ *
+ * The base was copied into five call sites, which is how the front-end listing editor was
+ * left without license_key when TinyMCE 7 made it mandatory: four were updated, one was
+ * missed, and nothing could catch it. Everything shared now lives here once.
+ *
+ * $preset picks the plugin/toolbar pair:
+ *   'basic' — inline formatting, lists, link, source view (front-end listings, emails)
+ *   'full'  — blocks, image/media, tables and Word-paste cleaning (pages, widgets)
+ * The admin listing editor uses neither: it wants tables and forecolor but no embedded
+ * media, so it passes its own plugins/toolbar in $overrides rather than earning a preset
+ * of its own for one caller.
+ *
+ * Values that are JavaScript rather than data -- the dark-mode skin bridge, upload
+ * callbacks -- cannot survive json_encode, so callers assign those onto the object
+ * afterwards, which is the shape three of them already used.
+ *
+ * @param string $preset    'basic' or 'full'
+ * @param array  $overrides merged over the result; selector is always one of these
+ *
+ * @return string JSON, ready to embed
+ */
+function osc_tinymce_config($preset = 'basic', array $overrides = array())
+{
+    $config = array(
+        // TinyMCE disables the editor outright from 7 onwards unless a licence is
+        // declared; 'gpl' is the self-hosted option the bundled build is used under.
+        'license_key'        => 'gpl',
+        'promotion'          => false,
+        'branding'           => false,
+        'menubar'            => false,
+        'entity_encoding'    => 'raw',
+        'relative_urls'      => false,
+        'remove_script_host' => false,
+        'convert_urls'       => false,
+    );
+
+    if ($preset === 'full') {
+        $config['plugins'] = 'advlist anchor autolink charmap code fullscreen image'
+                             . ' insertdatetime link lists media preview searchreplace'
+                             . ' table visualblocks';
+        $config['toolbar'] = 'undo redo | blocks | bold italic underline | bullist numlist'
+                             . ' | link image media table | alignleft aligncenter alignright'
+                             . ' | removeformat | visualblocks code fullscreen preview';
+        // Paste handling — clean what comes in from Word / Google Docs.
+        $config['smart_paste']                   = true;
+        $config['paste_as_text']                 = false;
+        $config['paste_merge_formats']           = true;
+        $config['paste_data_images']             = false;
+        $config['paste_remove_styles_if_webkit'] = true;
+        $config['paste_webkit_styles']           = 'none';
+        // Only the light oxide skin ships, so the editor is a consistent "sheet of
+        // paper" in both themes rather than a half-dark panel.
+        $config['content_style'] = 'body{font-family:system-ui,-apple-system,"Segoe UI",'
+                                   . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
+                                   . 'line-height:1.55;color:#14181f}';
+    } else {
+        // Lean set: basic inline formatting, lists, links and a raw-HTML view.
+        // bold/italic/underline/removeformat are core and need no plugin.
+        $config['plugins'] = 'autolink lists link code';
+        $config['toolbar'] = 'undo redo | bold italic underline | bullist numlist | link'
+                             . ' | removeformat | code';
+    }
+
+    $config = array_merge($config, $overrides);
+
+    // The one seam a plugin has on these editors; nothing else exposes them.
+    $config = osc_apply_filter('tinymce_config', $config, $preset);
+
+    return json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
