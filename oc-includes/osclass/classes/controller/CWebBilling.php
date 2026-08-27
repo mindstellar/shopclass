@@ -83,7 +83,7 @@ class CWebBilling extends WebSecBaseModel
     //Business Layer...
     public function doModel()
     {
-        switch ($this->resolveAction()) {
+        switch ($this->action) {
             case ('buy'):
                 $this->buyView();
                 break;
@@ -144,33 +144,6 @@ class CWebBilling extends WebSecBaseModel
         $this->_exportVariableToView('pageNum', $page);
         $this->_exportVariableToView('perPage', self::PER_PAGE);
         $this->doView('user-billing-orders.php');
-    }
-
-    /**
-     * The action this request is actually asking for.
-     *
-     * A matched rewrite rule writes its own params over the request (see
-     * Rewrite::applyParams()), so once the buy page gained a permalink, a form posting
-     * action=checkout at that page's own URL arrived as action=buy and silently
-     * re-rendered the picker with nothing bought. Themes have posted checkout there since
-     * before the URL had a route -- core's own fallback did -- so the body wins on a POST:
-     * it is what the browser asked for, and the route only ever described where the form
-     * was rendered. Nothing new is reachable this way; every action still runs its own
-     * osc_csrf_check() and its own validation.
-     *
-     * @return string
-     */
-    private function resolveAction()
-    {
-        if (strtoupper((string) Params::getServerParam('REQUEST_METHOD', false, false)) !== 'POST') {
-            return (string) $this->action;
-        }
-
-        $posted = Params::getParamsAsArray('post');
-
-        return isset($posted['action']) && is_string($posted['action']) && $posted['action'] !== ''
-            ? $posted['action']
-            : (string) $this->action;
     }
 
     /**

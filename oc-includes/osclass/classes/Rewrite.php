@@ -637,11 +637,31 @@ class Rewrite
      * Write a resolved param map into Params. The single sink through which every
      * resolve*() result reaches request state.
      *
+     * A value the POST body already supplies is left alone. A form's hidden page/action
+     * say what to do; the URL it posts to only says where that form was rendered, and
+     * writing the route over the body made a form that posts to its own page's permalink
+     * arrive as whatever the route declared -- silently, because the POST still rendered
+     * 200 on the page it came from. That is how buying credits stopped working the day the
+     * buy page gained a permalink.
+     *
+     * This grants nothing new. The same body posted to index.php was always in full
+     * control -- no rule matches there, so nothing overwrote it -- and every controller
+     * treats Params as untrusted either way. It only makes a POST behave the same whether
+     * it is aimed at the permalink or at index.php.
+     *
      * @param array $params key => value pairs to set
      */
     private function applyParams(array $params)
     {
+        $posted = strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) === 'POST'
+            ? Params::getParamsAsArray('post')
+            : array();
+
         foreach ($params as $k => $v) {
+            // An empty posted value is not an answer -- the route still fills it in.
+            if (isset($posted[$k]) && $posted[$k] !== '') {
+                continue;
+            }
             Params::setParam($k, $v);
         }
     }
