@@ -159,6 +159,11 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- Buying credits did nothing: the Continue button re-rendered the package picker and placed
+  no order. Giving the buy page a permalink meant its route set `action=buy` over the
+  `action=checkout` the form posts, since a matched rewrite rule writes its params over the
+  request. The posted action now wins on a POST, so a theme's checkout form works whether it
+  posts to the permalink or the query string. Unreleased; it never reached a published build.
 - The wallet, buy-credits and orders pages have permalinks (`user/credits`,
   `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
   still had them. The old `?page=billing` form keeps resolving, so existing links and the
