@@ -182,6 +182,12 @@ directory, and removes Google Analytics from the core.
   `basic` and a `full` preset. The settings each editor shared were copied into five call
   sites, which is how the front-end one was left without a licence key; a `tinymce_config`
   filter now also gives plugins their first way into these editors.
+- The new billing permalinks could 404 for good after upgrading. The permalink table
+  rebuilds when its stamped version stops matching the code's, which is true from the first
+  request after new files land — before that release's migration has seeded the preferences
+  the new routes are built from. A request that won that race compiled without them and
+  stamped the new version anyway, so it never rebuilt again. The upgrade now recompiles the
+  table once its migrations have run. Unreleased; it never reached a published build.
 - The wallet, buy-credits and orders pages have permalinks (`user/credits`,
   `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
   still had them. The old `?page=billing` form keeps resolving, so existing links and the

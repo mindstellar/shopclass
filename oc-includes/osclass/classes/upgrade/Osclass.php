@@ -28,6 +28,8 @@ use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
 use Preference;
+use Rewrite;
+use Throwable;
 
 /**
  * Class Osclass
@@ -160,6 +162,24 @@ class Osclass extends UpgradePackage
                         $migrated['failed']
                     ) . ' — ' . $migrated['error']
                 ]);
+            }
+
+            // Recompile the permalink table now that this release's migrations have seeded
+            // whatever preferences they add. The cache rebuilds itself when its stamped
+            // version no longer matches the code's -- which is true from the first request
+            // after new files land, i.e. potentially before the migrations run. A request
+            // that wins that race compiles the rules without the new preferences and stamps
+            // the new version anyway, and since the versions then agree it never rebuilds:
+            // the routes stay missing for good. Rebuilding here is the point at which the
+            // preferences are known to be present.
+            try {
+                // Migrations seed preferences with raw SQL, so the in-memory snapshot this
+                // request loaded still predates them; rebuilding off it would compile the
+                // same missing routes all over again.
+                osc_reset_preferences();
+                Rewrite::newInstance()->rebuildAndPersistRules();
+            } catch (Throwable $e) {
+                // A rules rebuild is a repair, not the upgrade; never fail the upgrade on it.
             }
 
             Utils::changeOsclassVersionTo(self::newVersionOnDisk());
