@@ -86,9 +86,15 @@ traffic instead:
 
 **Admin → Settings → General** → check **Auto-cron**.
 
-Due tasks are then triggered by ordinary page views. It works, with two real
-costs: nothing runs while the site has no visitors, and one unlucky visitor pays
-the cost of the job in their page load.
+Due tasks are then triggered by ordinary page views, at most once every five
+minutes. Nobody waits for them: on PHP-FPM the page is sent first and the work
+runs afterwards in the same process. On other setups ShopClass falls back to
+asking itself for `?page=cron` over HTTP, which **an origin behind a proxy cannot
+do** — it resolves its own public address to the proxy and never reaches itself,
+so nothing runs and nothing says so. If that is your setup, use a real crontab.
+
+The real cost that remains either way: nothing runs while the site has no
+visitors.
 
 Use it to get started, then move to a real crontab.
 

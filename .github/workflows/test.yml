@@ -125,6 +125,10 @@ jobs:
       # the only thing between a poster and script running for every visitor.
       - name: Rich-text sanitiser
         run: php tests/sanitize-html.php
+      # Auto-cron's three decisions -- run in-process on FPM, after the response, under a
+      # bounded time limit -- are one small block that is easy to undo while tidying.
+      - name: Auto-cron dispatch
+        run: php tests/autocron-dispatch.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

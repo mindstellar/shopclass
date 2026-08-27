@@ -222,7 +222,37 @@ if (!defined('__FROM_CRON__') && osc_auto_cron()) {
     }
 
     if ($autocron_fire) {
-        \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+        if (function_exists('fastcgi_finish_request')) {
+            // Under FPM the work runs here, after the response has gone, instead of asking
+            // the site to call itself over HTTP. That self request is only a way to detach
+            // -- the "is it time" decision is the throttle above -- and it cannot survive an
+            // origin behind a proxy, which resolves its own public host to the edge and
+            // never hairpins back: no page=cron ever arrives, silently, forever. Running it
+            // here needs no network, occupies one worker instead of two, and puts failures
+            // in the site's own error log where doctor's cron-freshness check can see them.
+            //
+            // Registered as a shutdown function, not called inline: the CSRF guard holds the
+            // page in an output buffer and injects tokens from its own shutdown function.
+            // Finishing the request before that runs would send the page without them.
+            register_shutdown_function(static function () use ($autocron_window) {
+                fastcgi_finish_request();
+                // The visitor already has their page, so nothing is waiting on this.
+                ignore_user_abort(true);
+                // Bounded, never 0: this occupies an FPM worker, and one that hangs is one
+                // the pool cannot serve from. The throttle window is the natural ceiling --
+                // a run that outlives it would overlap the next dispatch.
+                @set_time_limit($autocron_window);
+                if (!defined('__FROM_CRON__')) {
+                    define('__FROM_CRON__', true);
+                }
+                require_once LIB_PATH . 'osclass/cron.php';
+            });
+        } else {
+            // No way to detach on this SAPI, so the self request stays -- unchanged, including
+            // its inability to reach a proxied origin. Shared hosting is where it is still the
+            // only option, and it is also where nobody can add a real crontab.
+            \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+        }
     }
 }
 

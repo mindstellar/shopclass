@@ -188,6 +188,11 @@ directory, and removes Google Analytics from the core.
   the new routes are built from. A request that won that race compiled without them and
   stamped the new version anyway, so it never rebuilt again. The upgrade now recompiles the
   table once its migrations have run. Unreleased; it never reached a published build.
+- Auto-cron runs its work in the same process on PHP-FPM, after the page has been sent,
+  instead of asking the site for `?page=cron` over HTTP. That request only ever existed to
+  get the work off the visitor's page load, and an origin behind a proxy cannot make it —
+  it resolves its own public address to the proxy and never reaches itself, so nothing ran
+  and nothing said so. Setups without FPM keep the old request. Nobody waits either way.
 - The wallet, buy-credits and orders pages have permalinks (`user/credits`,
   `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
   still had them. The old `?page=billing` form keeps resolving, so existing links and the
