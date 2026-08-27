@@ -159,6 +159,9 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- The description editor on the post and edit listing pages refused to load, reporting that
+  no TinyMCE license key had been provided. The front-end editor was the only one of the five
+  that did not declare the bundled GPL build.
 - Buying credits did nothing: the Continue button re-rendered the package picker and placed
   no order. A matched rewrite rule wrote its own params over the request, so once the buy
   page had a permalink the `action=checkout` the form posts arrived as the route's

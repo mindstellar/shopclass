@@ -833,6 +833,11 @@ function osc_item_tinymce_footer()
         document.addEventListener('DOMContentLoaded', function () {
             tinyMCE.init({
                 selector: 'textarea[id^="description"]',
+                // Required since TinyMCE 7: without it the editor refuses to load and
+                // reports that no license key was provided. Shopclass bundles the GPL
+                // build, which is what 'gpl' declares -- the same value every admin
+                // editor already passes.
+                license_key: 'gpl',
                 promotion: false,
                 menubar: false,
                 plugins: 'autolink lists link code',
