@@ -99,6 +99,22 @@ See [installing locations](/docs/configure/locations/).
 | `doctor` | Check PHP version, extensions, database, writability, cron freshness and cache. Exits non-zero if any check fails. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
+| `storage:work [--max-seconds=]` | Drain the storage-offload queue and nothing else. Safe to run every minute. |
+
+When listings are offloaded to remote storage, uploads queue up and a worker moves
+them. That worker also runs from the hourly `cron` tier, but a busy site can queue
+images faster than one pass an hour clears them, and the hourly tier does too much
+else to schedule it more often. `storage:work` turns only that crank, so it can go
+on a tight schedule of its own:
+
+```cron
+* * * * * php /path/to/site/oc-cli.php storage:work --max-seconds=50 >/dev/null 2>&1
+```
+
+It exits non-zero only when the queue holds jobs the worker gave up on — a backlog
+still draining is the normal case and exits `0`. On a site with no remote storage
+configured it prints one line and exits `0`, so the entry is harmless to leave in
+place.
 
 `doctor` is the first thing to run when a site is misbehaving and you do not yet
 know why:

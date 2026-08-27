@@ -124,3 +124,18 @@ php /path/to/site/oc-cli.php cron --type=hourly
 
 Plugins add their own work to these tiers through the `cron_hourly`,
 `cron_daily` and `cron_weekly` hooks.
+
+## Remote storage needs its own entry
+
+If listings are offloaded to remote storage, the queue that moves uploaded images
+is drained from the hourly tier — which on a busy site is not often enough, and the
+hourly tier does too much else to be run every few minutes. Give it a second entry
+of its own:
+
+```cron
+* * * * * php /path/to/site/oc-cli.php storage:work --max-seconds=50 >/dev/null 2>&1
+```
+
+This runs the queue worker and nothing else, so a tight schedule is safe. On a site
+with no remote storage it does nothing and exits cleanly, so it is harmless to add
+before you need it. See the [CLI reference](/docs/cli/).

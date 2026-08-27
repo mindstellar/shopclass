@@ -228,6 +228,9 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- `oc-cli.php storage:work` drains the storage-offload queue and nothing else, so it can be
+  scheduled every minute. The queue was reachable only through the hourly cron tier, which
+  runs a whole schedule block besides — on a busy site the backlog never cleared.
 - `billing_listing_limit_message` filters the message a seller sees at their listing limit,
   for a plugin that sells extra slots and needs to say so.
 

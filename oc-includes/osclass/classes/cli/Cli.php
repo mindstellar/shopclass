@@ -44,6 +44,7 @@ class Cli
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
+        'storage:work'        => ['cmdStorageWork', 'Drain the storage-offload queue and nothing else (--max-seconds=)'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
@@ -428,6 +429,67 @@ class Cli
         $this->out($flushed ? "Object cache flushed.\n" : "Nothing to flush (no persistent cache backend active).\n");
 
         return 0;
+    }
+
+    /**
+     * Turn the storage-offload queue crank, and nothing else.
+     *
+     * The queue is otherwise drained only from the generic `cron` hook, which means
+     * `cron --type=hourly` -- and that runs the whole hourly schedule: expiry mail,
+     * purges, stats. Nobody can safely run that every two minutes, so the queue got at
+     * most one 20-second pass an hour, which does not keep up with a busy site's uploads
+     * and never clears a backlog. Auto-cron cannot help either: it reaches the site over
+     * HTTP at its own public URL, which an origin behind a proxy cannot hairpin back to.
+     *
+     * This runs the worker alone, so it is safe on a tight schedule:
+     *
+     *     * * * * * php oc-cli.php storage:work --max-seconds=50
+     *
+     * The remote is registered first, the same way the cron hook does it, so the adapter
+     * resolves regardless of the context this is invoked from.
+     *
+     * @param array<string, mixed> $args
+     */
+    private function cmdStorageWork(array $args): int
+    {
+        $maxSeconds = (int) ($args['max-seconds'] ?? 20);
+        if ($maxSeconds < 1) {
+            $this->err("--max-seconds must be 1 or more.\n");
+
+            return 2;
+        }
+
+        osc_storage_register_remote();
+        if (\mindstellar\storage\StorageManager::instance()->adapter('s3') === null) {
+            // Not an error: a site with no remote configured queues nothing, and a cron
+            // entry left in place through a config change should not start alarming.
+            $this->out("No remote storage configured — nothing to drain.\n");
+
+            return 0;
+        }
+
+        $queue   = \StorageQueue::newInstance();
+        $before  = $queue->countByStatus('pending');
+        $started = time();
+
+        \mindstellar\storage\StorageWorker::run($maxSeconds);
+
+        $after   = $queue->countByStatus('pending');
+        $failed  = $queue->countByStatus('failed');
+        $elapsed = time() - $started;
+
+        $this->out(sprintf(
+            "Drained %d job(s) in %ds — %d pending, %d failed.\n",
+            max(0, $before - $after),
+            $elapsed,
+            $after,
+            $failed
+        ));
+
+        // A backlog that is still draining is the normal case on a schedule, so it is
+        // not a failure. Jobs the worker gave up on are, and they are what a cron log
+        // should be able to notice.
+        return $failed > 0 ? 1 : 0;
     }
 
     /**
