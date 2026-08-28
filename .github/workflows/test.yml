@@ -133,6 +133,10 @@ jobs:
       # after a storage offload rewrites its image URLs, which fires nothing else.
       - name: Item cache invalidation hook
         run: php tests/item-cache-invalidation.php
+      # The validator masks the CSRF pair so it survives a fresh token. Masking a
+      # character too much and an edited page keeps its ETag, which serves stale content.
+      - name: Response ETag
+        run: php tests/response-etag.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

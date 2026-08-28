@@ -233,6 +233,13 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- Public pages carry an `ETag`, so a returning visitor or a crawler gets a small "nothing
+  changed" reply instead of the page again. They were already told to revalidate on every
+  use but had nothing to revalidate against, so every check re-sent the whole page. nginx
+  answers these from its own copy once it holds one.
+- `response_body` filters the finished page, after CSRF tokens are injected and before
+  anything reaches the client — one place for anything needing the whole body, instead of
+  a second output buffer racing the first. Returning an empty string sends no body.
 - `invalidate_item_cache` fires whenever a listing's rendered output goes stale — an edit,
   an image added or removed, the listing deleted, and a storage offload once it has
   rewritten the image URLs. That last case fired nothing at all before, so a proxy or CDN

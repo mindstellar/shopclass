@@ -144,4 +144,109 @@ function osc_send_response_cache_headers()
     header('Cache-Control: ' . osc_apply_filter('response_cache_control', $header));
 }
 
+/**
+ * The validator for a page body: what identifies "this exact content" to a client.
+ *
+ * Pure, and separate from the filter around it, because everything that can go wrong
+ * lives here. Two renders of the same page differ only in the CSRF pair, so that pair is
+ * masked before hashing -- mask too little and the validator changes every second and
+ * never matches; mask too much and a real edit keeps its validator and a visitor is
+ * served content that is genuinely out of date.
+ *
+ * $window puts the body on a clock of its own. Masking asserts two bodies are
+ * interchangeable, which would otherwise let a browser revalidate against one for as long
+ * as it liked -- and the CSRF token inside it stops being accepted after
+ * Csrf::TOKEN_LIFETIME, at which point that visitor's next form submit fails. Turning the
+ * validator over well inside that window forces a fresh body. The phase is derived from
+ * the URL so pages do not all turn over on the same second.
+ *
+ * @param string $body
+ * @param string $uri    the request path, only as a phase for the window
+ * @param int    $window seconds a body may be revalidated against
+ *
+ * @return string quoted, ready for an ETag header
+ */
+function osc_response_etag_value($body, $uri = '', $window = 3600)
+{
+    $window = max(60, (int)$window);
+    $bucket = (int)floor((time() + (crc32((string)$uri) % $window)) / $window);
+
+    // Only the CSRF pair. Anything else that differs between renders of the same page
+    // yields a different validator and simply no 304 -- today's behaviour, never a stale
+    // page.
+    $canonical = preg_replace(
+        "/name='CSRF(?:Name|Token)' value='[^']*'/",
+        "name='CSRF'",
+        (string)$body
+    );
+
+    return '"' . md5($bucket . '|' . $canonical) . '"';
+}
+
+/**
+ * Answer a repeat request with "nothing changed" instead of the page again.
+ *
+ * Registered on `response_body`, so it sees the finished page. Two renders of the same
+ * public page are byte-identical apart from the CSRF token, which carries a per-second
+ * timestamp -- so the validator is computed with those masked out. Without that the hash
+ * would change every second and never match anything.
+ *
+ * A browser is told to revalidate on every use (`max-age=0`), and until now it had no way
+ * to be told "reuse yours": with no validator on the response, every one of those checks
+ * came back as the whole page. This makes them 304s of a couple of hundred bytes, for
+ * repeat visitors and for every crawler pass. nginx answers them from its own copy once
+ * the cached response carries the header, so it costs PHP nothing after the first render.
+ *
+ * The hour bucket is not decoration. Masking the token says "these two bodies are
+ * equivalent", which would otherwise let a browser hold one indefinitely -- and the token
+ * inside it expires after Csrf::TOKEN_LIFETIME (7200s), after which the next form submit
+ * fails. Changing the validator every hour forces a fresh body well inside that. The
+ * bucket is offset per URL so every cached page does not turn over on the same second.
+ *
+ * @param string $body the finished page
+ *
+ * @return string the body to send, or '' when a 304 is being sent instead
+ */
+function osc_response_etag($body)
+{
+    if (!is_string($body) || $body === '' || headers_sent()) {
+        return $body;
+    }
+    // Only for a response a client could reasonably hold: an ordinary, successful,
+    // non-redirect GET that carries no per-visitor state.
+    $method = strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false));
+    if (($method !== 'GET' && $method !== 'HEAD') || !osc_response_is_cacheable()) {
+        return $body;
+    }
+    if (function_exists('http_response_code') && http_response_code() !== 200) {
+        return $body;
+    }
+    foreach (headers_list() as $sent) {
+        if (stripos($sent, 'location:') === 0) {
+            return $body;
+        }
+    }
+
+    $etag = osc_response_etag_value(
+        $body,
+        (string)Params::getServerParam('REQUEST_URI', false, false),
+        (int)osc_apply_filter('etag_window', 3600)
+    );
+    header('ETag: ' . $etag);
+
+    if (trim((string)Params::getServerParam('HTTP_IF_NONE_MATCH', false, false)) === $etag) {
+        http_response_code(304);
+
+        return '';
+    }
+
+    return $body;
+}
+
+// Guarded so this file stays includable on its own -- the test suite loads it without a
+// plugin layer, and so does early boot.
+if (function_exists('osc_add_filter')) {
+    osc_add_filter('response_body', 'osc_response_etag');
+}
+
 /* file end: ./oc-includes/osclass/helpers/hHttpCache.php */

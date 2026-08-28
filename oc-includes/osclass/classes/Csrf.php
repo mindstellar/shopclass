@@ -98,6 +98,13 @@ class Csrf
         $injectCsrf = static function () {
             $data = ob_get_clean();
             $data = self::newInstance()->replaceForms($data);
+            // The one moment the finished page exists as a string: after the tokens are
+            // in, before anything reaches the client. Anything that needs the whole body
+            // -- a validator to answer conditional requests with, a minifier, a late
+            // replacement -- belongs here rather than starting a second output buffer and
+            // racing this one for it. A filter that returns '' sends no body, which is
+            // what a 304 needs.
+            $data = osc_apply_filter('response_body', $data);
             echo $data;
         };
         $functions  = Plugins::applyFilter('shutdown_functions', [$injectCsrf]);
