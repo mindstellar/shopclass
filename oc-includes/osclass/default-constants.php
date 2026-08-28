@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '6.2.0.rc7');
+    define('OSCLASS_VERSION', '6.2.0.rc8');
 }
 
 if (!defined('MULTISITE')) {
