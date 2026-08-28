@@ -147,61 +147,40 @@ function osc_send_response_cache_headers()
 /**
  * The validator for a page body: what identifies "this exact content" to a client.
  *
- * Pure, and separate from the filter around it, because everything that can go wrong
- * lives here. Two renders of the same page differ only in the CSRF pair, so that pair is
- * masked before hashing -- mask too little and the validator changes every second and
- * never matches; mask too much and a real edit keeps its validator and a visitor is
- * served content that is genuinely out of date.
+ * A plain hash of what was sent, and it can be that simple because a render of a page is
+ * now deterministic. The only thing that used to differ between two renders was the CSRF
+ * token's per-second issue time; that is stamped on a bucket (Csrf::ISSUE_BUCKET), so two
+ * renders inside one bucket are byte-identical and hash the same.
  *
- * $window puts the body on a clock of its own. Masking asserts two bodies are
- * interchangeable, which would otherwise let a browser revalidate against one for as long
- * as it liked -- and the CSRF token inside it stops being accepted after
- * Csrf::TOKEN_LIFETIME, at which point that visitor's next form submit fails. Turning the
- * validator over well inside that window forces a fresh body. The phase is derived from
- * the URL so pages do not all turn over on the same second.
+ * The token is also what keeps this honest over time. A page carrying one changes its
+ * validator every bucket whether or not the content moved, so a browser cannot revalidate
+ * against a body until the token inside it stops being accepted -- the turnover and the
+ * token's life are the same clock, rather than an interval invented here to approximate
+ * it. A page with no form has no token, so its validator changes only when it does.
+ *
+ * Nothing is masked. Anything that does vary between renders -- a plugin stamping a time,
+ * a theme printing something per request -- simply yields a different hash and no 304,
+ * which is the behaviour there was before any of this. It can never serve a stale page.
  *
  * @param string $body
- * @param string $uri    the request path, only as a phase for the window
- * @param int    $window seconds a body may be revalidated against
  *
  * @return string quoted, ready for an ETag header
  */
-function osc_response_etag_value($body, $uri = '', $window = 3600)
+function osc_response_etag_value($body)
 {
-    $window = max(60, (int)$window);
-    $bucket = (int)floor((time() + (crc32((string)$uri) % $window)) / $window);
-
-    // Only the CSRF pair. Anything else that differs between renders of the same page
-    // yields a different validator and simply no 304 -- today's behaviour, never a stale
-    // page.
-    $canonical = preg_replace(
-        "/name='CSRF(?:Name|Token)' value='[^']*'/",
-        "name='CSRF'",
-        (string)$body
-    );
-
-    return '"' . md5($bucket . '|' . $canonical) . '"';
+    return '"' . md5((string)$body) . '"';
 }
 
 /**
  * Answer a repeat request with "nothing changed" instead of the page again.
  *
- * Registered on `response_body`, so it sees the finished page. Two renders of the same
- * public page are byte-identical apart from the CSRF token, which carries a per-second
- * timestamp -- so the validator is computed with those masked out. Without that the hash
- * would change every second and never match anything.
+ * Registered on `response_body`, so it sees the finished page.
  *
  * A browser is told to revalidate on every use (`max-age=0`), and until now it had no way
  * to be told "reuse yours": with no validator on the response, every one of those checks
  * came back as the whole page. This makes them 304s of a couple of hundred bytes, for
  * repeat visitors and for every crawler pass. nginx answers them from its own copy once
  * the cached response carries the header, so it costs PHP nothing after the first render.
- *
- * The hour bucket is not decoration. Masking the token says "these two bodies are
- * equivalent", which would otherwise let a browser hold one indefinitely -- and the token
- * inside it expires after Csrf::TOKEN_LIFETIME (7200s), after which the next form submit
- * fails. Changing the validator every hour forces a fresh body well inside that. The
- * bucket is offset per URL so every cached page does not turn over on the same second.
  *
  * @param string $body the finished page
  *
@@ -227,11 +206,7 @@ function osc_response_etag($body)
         }
     }
 
-    $etag = osc_response_etag_value(
-        $body,
-        (string)Params::getServerParam('REQUEST_URI', false, false),
-        (int)osc_apply_filter('etag_window', 3600)
-    );
+    $etag = osc_response_etag_value($body);
     header('ETag: ' . $etag);
 
     if (trim((string)Params::getServerParam('HTTP_IF_NONE_MATCH', false, false)) === $etag) {

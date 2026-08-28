@@ -169,6 +169,10 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- CSRF tokens stamp their issue time on a half-hour bucket rather than the exact second.
+  Two renders of a page are otherwise identical, so the second-level stamp was the only
+  thing making them differ — which is what stopped a cache or a validator recognising them
+  as the same page. How long a token is accepted is unchanged.
 - The description editor on the post and edit listing pages refused to load, reporting that
   no TinyMCE license key had been provided. The front-end editor was the only one of the five
   that did not declare the bundled GPL build.

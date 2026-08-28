@@ -9,105 +9,88 @@
  */
 
 /**
- * osc_response_etag_value() — the validator that lets a repeat request answer 304.
+ * The validator that lets a repeat request answer 304, and the token bucket it rests on.
  *
  * Public pages are told to revalidate on every use (`max-age=0`) and carried nothing to
- * revalidate against, so every one of those checks returned the whole page. This is what
- * turns them into 304s.
+ * revalidate against, so every one of those checks returned the whole page.
  *
- * Two renders of the same page are byte-identical apart from the CSRF pair, which carries
- * a per-second timestamp, so the hash is taken with that pair masked. Everything pinned
- * here follows from that one decision, and both directions of it are dangerous:
+ * The validator is a plain hash of what was sent, which only works because a render is
+ * deterministic. It was not: the CSRF token stamped its issue time to the second, making
+ * every render of a page different, and that was the *only* thing that differed. Rounding
+ * the stamp onto Csrf::ISSUE_BUCKET is what makes a page stable, and it is also what keeps
+ * the validator honest — a page carrying a token turns over once a bucket, so a browser
+ * can never revalidate against a body whose token has stopped being accepted.
  *
- *  - mask too little and the validator changes every second, matching nothing;
- *  - mask too much and an edited page keeps its validator, and a visitor is served
- *    content that is genuinely out of date.
+ * Both halves are pinned here: the hash, and the bucket through Csrf's own behaviour.
+ * Which responses get a validator at all — not a personalised one, not a redirect, not a
+ * POST — is decided by header state that cannot be stubbed (headers_list() and friends are
+ * built-ins) and is verified against a running site instead.
  *
- * The window is pinned for a third reason: masking asserts two bodies are interchangeable,
- * which would let a browser revalidate against one indefinitely — while the CSRF token
- * inside it stops being accepted after Csrf::TOKEN_LIFETIME and that visitor's next form
- * submit fails.
- *
- * Only the pure part is covered here. Which responses get a validator at all — not a
- * personalised one, not a redirect, not a POST — is decided by header state that cannot be
- * stubbed (headers_list() and friends are built-ins), and is verified against a running
- * site instead.  Usage:  php tests/response-etag.php
+ * Usage:  php tests/response-etag.php
  */
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
+require_once __DIR__ . '/../oc-includes/osclass/classes/Csrf.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-/** A page carrying the CSRF pair exactly as Csrf::tokenForm() emits it. */
-function page(string $token = 'AAAA', string $body = 'hello'): string
-{
-    return "<html><body>$body"
-        . "<form><input type='hidden' name='CSRFName' value='n$token' />\n"
-        . "        <input type='hidden' name='CSRFToken' value='v$token' /></form></body></html>";
-}
+harness_section('the validator identifies the bytes that were sent');
 
-harness_section('the token may change; the validator may not');
+$page = '<html><body>hello</body></html>';
 
-$tag = osc_response_etag_value(page('AAAA'), '/a-listing');
-
-check('a validator is produced, quoted', $tag !== '' && $tag[0] === '"' && substr($tag, -1) === '"');
 pin(
-    'the same page with a freshly issued token keeps its validator',
-    $tag,
-    osc_response_etag_value(page('ZZZZ'), '/a-listing')
+    'the same body yields the same validator',
+    osc_response_etag_value($page),
+    osc_response_etag_value($page)
 );
-
-harness_section('a changed page must not keep its validator');
-
+check('it is quoted, as an ETag must be', osc_response_etag_value($page)[0] === '"');
 check(
-    'changed body text moves it',
-    $tag !== osc_response_etag_value(page('AAAA', 'hello, and something new'), '/a-listing')
+    'a changed body yields a different one',
+    osc_response_etag_value($page) !== osc_response_etag_value('<html><body>hello!</body></html>')
 );
-check(
-    'a change beside the masked attribute moves it',
-    $tag !== osc_response_etag_value(
-        str_replace("name='CSRFName'", "name='CSRFName' data-x='1'", page('AAAA')),
-        '/a-listing'
-    )
-);
-check(
-    'a change to an unrelated hidden field moves it',
-    $tag !== osc_response_etag_value(
-        str_replace('<form>', "<form><input type='hidden' name='other' value='1' />", page('AAAA')),
-        '/a-listing'
-    )
-);
+check('a one-character change is enough', osc_response_etag_value('a') !== osc_response_etag_value('b'));
 check(
     'an empty body is not confused with a rendered one',
-    osc_response_etag_value('', '/a-listing') !== $tag
+    osc_response_etag_value('') !== osc_response_etag_value($page)
 );
 
-harness_section('the window turns the body over on its own');
-
-/* Same body, same URL, adjacent windows: the validator has to move, or a browser could
-   revalidate against one body until the token inside it expired. */
-$narrow = osc_response_etag_value(page('AAAA'), '/a-listing', 60);
-check('a window of its own yields its own validator', $narrow !== $tag);
-
+/* Nothing is masked, so anything that does vary between renders yields a different
+   validator and simply no 304 — the behaviour there was before any of this, never a
+   stale page. */
 check(
-    'the floor is enforced, so a zero window cannot pin the validator forever',
-    osc_response_etag_value(page('AAAA'), '/a-listing', 0)
-    === osc_response_etag_value(page('AAAA'), '/a-listing', 60)
+    'a per-render difference changes the validator rather than being ignored',
+    osc_response_etag_value($page) !== osc_response_etag_value($page . '<!-- 12 ms -->')
 );
 
-/* Phase comes from the URL, so a site's pages do not all turn over on the same second. */
+harness_section('the token stamp is bucketed, which is what makes a render repeatable');
+
+$ref    = new ReflectionClass('mindstellar\\Csrf');
+$bucket = $ref->getConstant('ISSUE_BUCKET');
+$life   = $ref->getConstant('TOKEN_LIFETIME');
+$skew   = $ref->getConstant('CLOCK_SKEW');
+$issued = $ref->getMethod('issuedAt');
+$issued->setAccessible(true);
+
+check('a bucket is configured', is_int($bucket) && $bucket > 0);
+pin('the stamp is a multiple of the bucket', 0, $issued->invoke(null) % $bucket);
+check('...and never in the future, so it cannot trip the skew guard', $issued->invoke(null) <= time());
+check('...nor further back than one bucket', time() - $issued->invoke(null) < $bucket);
+
+/* Bucketing issues a token up to one bucket "early", so it expires that much sooner. That
+   has to stay well short of its own lifetime, or a form rendered late in a bucket would
+   arrive close to dead. */
 check(
-    'two URLs with identical bodies sit in different phases',
-    osc_response_etag_value(page('AAAA'), '/listing-a')
-    !== osc_response_etag_value(page('AAAA'), '/listing-b')
+    'a bucketed token keeps most of its life',
+    $life - $bucket >= $life / 2,
+    sprintf('worst case %ds of %ds', $life - $bucket, $life)
 );
-pin(
-    'the same URL is stable across calls',
-    osc_response_etag_value(page('AAAA'), '/listing-a'),
-    osc_response_etag_value(page('AAAA'), '/listing-a')
-);
+check('the bucket is longer than the clock-skew allowance', $bucket > $skew);
+
+/* A body holding a token must not be revalidatable for longer than the token is accepted:
+   the body changes when the bucket does, so the bucket bounds it. */
+check('a body cannot outlive its token', $bucket <= $life);
 
 exit(harness_result());
