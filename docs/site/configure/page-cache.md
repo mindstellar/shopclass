@@ -75,7 +75,13 @@ nothing to configure there. Elsewhere it is an Alpine or Debian package
 **Setup** page prints the exact configuration for your install, including the
 version of nginx you are actually running.
 
-Then press **Test purge**. Until that has passed, the plugin serves core's own
+List every hostname the site answers on, one per line — `www.example.com` as well
+as `example.com`, aliases, a staging domain. nginx keeps a separate copy of every
+page under each `Host` it was asked with, so a name left out of the list goes on
+serving what it already had for the whole window.
+
+Then press **Test purge**. It primes and purges each host in turn, and requires
+the site's own to be among them. Until it has passed, the plugin serves core's own
 thirty seconds and changes nothing — a long window over a purge that silently
 does not work is worse than no plugin at all, so it is not something the plugin
 will take on trust.
@@ -110,6 +116,7 @@ setting rather than warning about it.
 | No `X-Cache` header at all | The cache is not configured. In the image, `OSC_MICROCACHE` is not set. |
 | `X-Cache: BYPASS` on every request | The request carries a login or locale cookie. Try it in a private window. |
 | Always `MISS`, never `HIT` | The response is not cacheable — check for a `Set-Cookie` on the page, or a plugin emitting its own `Cache-Control`. |
-| Test purge says the key does not match | The Host setting is not the host visitors send, port included, or the endpoint's scheme is not the one nginx serves on. Both are part of the cache key. |
+| Test purge says a host is not in the list | Visitors reach the site under a name the plugin was not told to purge. Add it — port included. |
+| Test purge says the key does not match | The endpoint's scheme is not the one nginx serves on. It is part of the cache key, so a purge over the wrong one matches nothing. |
 | Test purge returns 404 | The purge location is missing from the nginx config. The Setup page prints it. |
 | An edit is not visible | Check **Purges waiting** on the plugin's settings page; anything there is a page the origin could not be told about, retried on the next cron run. |
