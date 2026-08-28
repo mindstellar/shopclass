@@ -173,6 +173,8 @@ directory, and removes Google Analytics from the core.
 
 ### Changed
 
+- Micro-cache entries are kept for a day rather than dropped after a minute idle, and
+  `docker-compose.prod.yml` turns the micro-cache on.
 - CSRF tokens stamp their issue time on a half-hour bucket rather than the exact second.
   Two renders of a page are otherwise identical, so the second-level stamp was the only
   thing making them differ — which is what stopped a cache or a validator recognising them
@@ -241,6 +243,10 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- The Docker image can now remove a cached page before it expires: it carries
+  `ngx_cache_purge`, and `OSC_MICROCACHE` writes a purge endpoint reachable only from
+  inside the container. That is what the nginx Cache plugin needs to hold public pages for
+  an hour instead of core's thirty seconds.
 - Public pages carry an `ETag`, so a returning visitor or a crawler gets a small "nothing
   changed" reply instead of the page again. They were already told to revalidate on every
   use but had nothing to revalidate against, so every check re-sent the whole page. nginx

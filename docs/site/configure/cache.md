@@ -16,8 +16,9 @@ real backend is a two-line change.
 
 :::note[This is not a page cache]
 The object cache stores fragments of work inside PHP. Caching whole responses at
-a reverse proxy or CDN is a separate, complementary layer — see the
-[caching contract](/docs/developers/caching/).
+a reverse proxy or CDN is a separate, complementary layer — see
+[page caching](/docs/configure/page-cache/) for how to turn it on, and the
+[caching contract](/docs/developers/caching/) for what core promises a proxy.
 :::
 
 ## Before you start

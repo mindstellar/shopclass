@@ -19,7 +19,12 @@ LABEL org.opencontainers.image.title="Shopclass" \
 # the entrypoint's health/DB waits. msmtp is a send-only SMTP client: the image
 # bundles no MTA, so PHP mail() relays through it to a smarthost the entrypoint
 # configures from the environment (ca-certificates backs its TLS trust).
-RUN apk add --no-cache nginx supervisor curl unzip tzdata msmtp ca-certificates
+# nginx-mod-http-cache-purge is what lets a cached page be removed before its
+# window is up. Without it OSC_MICROCACHE can only hold a page for the thirty
+# seconds core asks for, since time would be the only way an entry ever leaves.
+# It is an Alpine package versioned with nginx itself, not a source build, and it
+# does nothing until the purge location is configured.
+RUN apk add --no-cache nginx nginx-mod-http-cache-purge supervisor curl unzip tzdata msmtp ca-certificates
 
 # PHP extensions Shopclass uses in production (superset of composer's ext-*
 # requires, plus opcache and the memcached object-cache driver). imagick is left

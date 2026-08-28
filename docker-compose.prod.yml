@@ -29,6 +29,12 @@ services:
       OSC_ADMIN_USER: admin
       OSC_ADMIN_EMAIL: admin@example.com
       OSC_ADMIN_PASSWORD: changeme
+      # Cache public pages in nginx for as long as the app says they may be held —
+      # thirty seconds by default, and the app is the only thing that decides what is
+      # cacheable at all. Install the nginx-cache plugin to hold them for longer and
+      # purge them when a listing changes; the image already carries the module and
+      # writes the purge location this switch turns on.
+      OSC_MICROCACHE: "1"
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
