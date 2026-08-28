@@ -40,7 +40,7 @@ Everything is set from environment variables:
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
-| `OSC_REAL_IP_HEADER` | The header carrying the real client IP behind a proxy, e.g. `CF-Connecting-IP` |
+| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the CIDRs to trust it from — see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx — see [page caching](/docs/configure/page-cache/). The image carries the purge module, so the nginx Cache plugin works with nothing further to configure |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
@@ -118,13 +118,121 @@ On Kubernetes, a `CronJob` running the same command is the equivalent. Without
 it, alerts never send and listings never expire — see
 [setting up cron](/docs/configure/cron/).
 
-## Behind a proxy
+## Putting it behind TLS
 
-Terminate TLS at your proxy and forward to the container. Set
-`OSC_REAL_IP_HEADER` to the header your proxy sets, or every visitor arrives as
-the proxy's address — which collapses login throttling and abuse-report keying
-onto one identity. See [security](/docs/deploy/security/) and the
+The image speaks plain HTTP on port 80 and is built to sit behind something that
+terminates TLS. Keep it that way: a certificate is renewing state, and this
+container is meant to be replaceable at any moment. Terminate on the host with
+nginx, and let certbot own the certificate.
+
+Start by taking the container off the public interface, so the only way in is
+through the proxy:
+
+```yaml
+services:
+  app:
+    ports:
+      - "127.0.0.1:8080:80"   # loopback only
+```
+
+Then a server block on the host. This is the plain-HTTP form — certbot rewrites
+it in the next step:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+
+    # Must be at least as large as the app's own limit, or uploads fail at the
+    # proxy with a 413 before ShopClass ever sees them.
+    client_max_body_size 108M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Then get the certificate:
+
+```bash
+certbot --nginx -d example.com
+```
+
+That obtains it, rewrites the block to listen on 443, and adds the redirect from
+port 80.
+
+### How renewal is handled
+
+**Nothing about renewal touches the container.** The certificate lives on the
+host, the host's nginx is what serves it, and certbot's nginx installer reloads
+that nginx after a successful renewal. There is no mounted certificate, no
+deploy hook to write, and no container restart in the loop — which is the main
+reason to terminate here rather than inside the image.
+
+Installing certbot from your distribution's package (or snap) also installs the
+renewal job, so this is already running:
+
+```bash
+systemctl list-timers | grep certbot     # twice-daily check
+certbot renew --dry-run                  # prove the whole path works
+```
+
+`certbot renew` is a no-op until a certificate is within 30 days of expiry, so
+running it often is free and expected. Two things keep it working:
+
+- **Leave port 80 open on the host.** The HTTP-01 challenge arrives there. The
+  redirect certbot adds is fine — Let's Encrypt follows it — but a firewall that
+  drops :80 entirely will fail every renewal, silently, until the certificate
+  expires.
+- **Do not hand-edit the `managed by Certbot` lines** in the server block. That
+  is how certbot finds what to update.
+
+Run the dry run once after setup. If it passes, renewal is genuinely unattended.
+
+### What the app needs to be told
+
+TLS is invisible to ShopClass unless these are set:
+
+| Setting | Value |
+|---|---|
+| `WEB_PATH` | `https://example.com/` — the app builds every URL and cookie path from this |
+| `OSC_REAL_IP_HEADER` | `X-Real-IP`, matching the `proxy_set_header` above |
+| `OSC_REAL_IP_TRUSTED` | `172.16.0.0/12` — see below |
+
+`X-Forwarded-Proto` is what makes the app treat the request as secure: it sets
+`HTTPS=on` for PHP, so `osc_is_ssl()` is true and the login cookie is issued with
+the `Secure` flag. Without it a visitor on HTTPS gets cookies that are not marked
+secure, and the app generates `http://` links.
+
+`OSC_REAL_IP_TRUSTED` is the one people get wrong. When the host proxies into a
+published port, the container does not see `127.0.0.1` — it sees the Docker
+bridge gateway, an address like `172.19.0.1`. Trusting loopback there restores
+nothing, and every visitor arrives as the gateway, which collapses login
+throttling and abuse-report keying onto a single identity. `172.16.0.0/12`
+covers Docker's default pools; narrow it to your own gateway with
+`docker network inspect`.
+
+### Other terminators
+
+An ALB, a Kubernetes ingress, Cloudflare or a managed platform all work the same
+way — the contract is the three settings above plus a proxy that sends
+`X-Forwarded-Proto`. Only the certificate's owner changes. See
+[security](/docs/deploy/security/) and the
 [caching contract](/docs/developers/caching/).
+
+### With page caching on
+
+Nothing changes. The container's nginx still sees `http` as its own scheme and
+keys its cache on that, which is correct — and it is what the nginx Cache
+plugin's purge endpoint follows, so that stays `http://127.0.0.1/purge`. The
+plugin's host list is the **public** hostname, because that is the `Host`
+visitors send and therefore what the cache is keyed on. See
+[page caching](/docs/configure/page-cache/).
 
 ## Running more than one instance
 
