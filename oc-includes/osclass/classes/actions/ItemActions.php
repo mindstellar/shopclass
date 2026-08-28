@@ -1815,7 +1815,11 @@ class ItemActions
             return 6;
         }
 
-        if (!preg_match('|^.*?@.{2,}\..{2,3}$|', $authorEmail)) {
+        // osc_validate_email(), the same check the contact form and registration use. The
+        // pattern that stood here required a two or three character top-level domain, so it
+        // turned away every .info, .online, .store and .agency address while accepting a
+        // local part containing spaces.
+        if (!osc_validate_email($authorEmail)) {
             Session::newInstance()->_setForm('commentAuthorName', $authorName);
             Session::newInstance()->_setForm('commentTitle', $title);
             Session::newInstance()->_setForm('commentBody', $body);

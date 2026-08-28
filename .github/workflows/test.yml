@@ -137,6 +137,10 @@ jobs:
       # character too much and an edited page keeps its ETag, which serves stale content.
       - name: Response ETag
         run: php tests/response-etag.php
+      # A form that validates addresses on its own drifts: the comment form refused every
+      # .info and .online address for years while accepting a local part with a space in it.
+      - name: Email validation
+        run: php tests/validate-email.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

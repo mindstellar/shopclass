@@ -160,6 +160,10 @@ directory, and removes Google Analytics from the core.
   spam tests entirely on a site with no premium listings.
 - The photo uploader told a seller the site-wide photo limit even when they held a raised
   one, capping them in the browser below what the upload actually accepts.
+- Posting a comment refused any address whose top-level domain was longer than three
+  characters — `.info`, `.online`, `.store`, `.agency` — reporting it as a missing email.
+  The same form accepted a local part containing spaces. It now validates the way the
+  contact form and registration always have.
 - The `nospam` listing filter did not exclude spam. It asked for an option name the filter
   builder had no case for, so the one test it exists for was silently never applied.
 - **Four of the five forms on Settings → Billing saved nothing.** Pricing (which owns the
