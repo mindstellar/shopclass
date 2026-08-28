@@ -233,6 +233,10 @@ directory, and removes Google Analytics from the core.
 
 ### New
 
+- `invalidate_item_cache` fires whenever a listing's rendered output goes stale — an edit,
+  an image added or removed, the listing deleted, and a storage offload once it has
+  rewritten the image URLs. That last case fired nothing at all before, so a proxy or CDN
+  went on serving a page pointing at local files the offload had moved.
 - `oc-cli.php storage:work` drains the storage-offload queue and nothing else, so it can be
   scheduled every minute. The queue was reachable only through the hourly cron tier, which
   runs a whole schedule block besides — on a busy site the backlog never cleared.

@@ -129,6 +129,10 @@ jobs:
       # bounded time limit -- are one small block that is easy to undo while tidying.
       - name: Auto-cron dispatch
         run: php tests/autocron-dispatch.php
+      # The only signal a proxy or CDN gets that a listing's page went stale -- including
+      # after a storage offload rewrites its image URLs, which fires nothing else.
+      - name: Item cache invalidation hook
+        run: php tests/item-cache-invalidation.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
