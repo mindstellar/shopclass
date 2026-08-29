@@ -65,6 +65,10 @@ with too: every listing index now has its own description and a single canonical
 
 ### Fixed
 
+- Pasting a listing title with hyphens (`co-working`) or function words (`and`, `in`)
+  into search returned no rows. FULLTEXT indexes hyphenated words as separate tokens,
+  and InnoDB does not store those stopwords, but BOOLEAN still required `+coworking*`
+  / `+and*`. Hyphens are split and unindexed tokens are skipped.
 - A search carrying a category id rather than a slug returned 404, though the category
   existed. Both spellings now resolve.
 - A static page built from blocks rendered with no `<head>` — no title, description or

@@ -2298,6 +2298,10 @@ class Search extends DAO
      * '-' is preserved as an exclusion marker; quoted "phrases" are returned whole
      * (without the quotes) via the $phrases out-parameter.
      *
+     * Hyphens and other punctuation are word separators: MySQL FULLTEXT indexes
+     * "co-working" as "co" + "working". Deleting the hyphen glued those into
+     * "coworking", and +coworking* then matched nothing, so a pasted title missed.
+     *
      * @param array $phrases  filled with the quoted phrases found (operators stripped)
      *
      * @return array          the loose words, each ['neg' => bool, 'text' => string]
@@ -2322,14 +2326,75 @@ class Search extends DAO
 
         $words = array();
         foreach ((array)preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) as $word) {
-            $neg  = ($word[0] === '-');
-            $text = (string)preg_replace('/[+\-*"()~<>@]/u', '', $word);
-            if ($text !== '') {
-                $words[] = array('neg' => $neg, 'text' => $text);
+            $neg  = (isset($word[0]) && $word[0] === '-');
+            $text = $neg ? substr($word, 1) : $word;
+            foreach ((array)preg_split('/[^\p{L}\p{N}\']+/u', (string)$text, -1, PREG_SPLIT_NO_EMPTY) as $part) {
+                $words[] = array('neg' => $neg, 'text' => $part);
             }
         }
 
         return $words;
+    }
+
+    /**
+     * English function words that overlap InnoDB's default stopword list.
+     * +and* / +in* are not dropped by BOOLEAN truncation and then require a
+     * token the index never stored, so a pasted title with "and" or "in" missed.
+     *
+     * @param string $text
+     *
+     * @return bool
+     */
+    private function ftIsStopword($text)
+    {
+        $text = function_exists('mb_strtolower') ? mb_strtolower((string)$text, 'UTF-8') : strtolower((string)$text);
+        static $stop = null;
+        if ($stop === null) {
+            $stop = array_flip(array(
+                'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from',
+                'how', 'in', 'is', 'it', 'of', 'on', 'or', 'that', 'the', 'this',
+                'to', 'was', 'what', 'when', 'where', 'who', 'will', 'with',
+            ));
+        }
+
+        return isset($stop[$text]);
+    }
+
+    /**
+     * Skip FULLTEXT BOOLEAN tokens that are too short or stopwords.
+     *
+     * @param string $text
+     *
+     * @return bool
+     */
+    private function ftSkipToken($text)
+    {
+        if ($this->uLen($text) < $this->ftMinWord()) {
+            return true;
+        }
+
+        return $this->ftIsStopword($text);
+    }
+
+    /**
+     * Phrase words that are long enough and not stopwords.
+     * "co-working" becomes "co working"; "co" is dropped so BOOLEAN does not
+     * require a token MySQL never indexed.
+     *
+     * @param string $phrase
+     *
+     * @return array
+     */
+    private function ftPhraseKept($phrase)
+    {
+        $kept = array();
+        foreach ((array)preg_split('/\s+/u', (string)$phrase, -1, PREG_SPLIT_NO_EMPTY) as $pw) {
+            if ($pw !== '' && !$this->ftSkipToken($pw)) {
+                $kept[] = $pw;
+            }
+        }
+
+        return $kept;
     }
 
     /**
@@ -2345,12 +2410,13 @@ class Search extends DAO
             return true;
         }
         $words = $this->patternTerms($phrases);
-        if (!empty($phrases)) {
-            return true;
+        foreach ($phrases as $phrase) {
+            if ($this->ftPhraseKept($phrase) !== array()) {
+                return true;
+            }
         }
-        $min = $this->ftMinWord();
         foreach ($words as $w) {
-            if (!$w['neg'] && $this->uLen($w['text']) >= $min) {
+            if (!$w['neg'] && !$this->ftSkipToken($w['text'])) {
                 return true;
             }
         }
@@ -2369,13 +2435,19 @@ class Search extends DAO
      */
     private function booleanPattern()
     {
-        $words   = $this->patternTerms($phrases);
-        $tokens  = array();
+        $words  = $this->patternTerms($phrases);
+        $tokens = array();
 
         foreach ($phrases as $phrase) {
-            $tokens[] = '+"' . $phrase . '"';
+            $kept = $this->ftPhraseKept($phrase);
+            if ($kept !== array()) {
+                $tokens[] = '+"' . implode(' ', $kept) . '"';
+            }
         }
         foreach ($words as $w) {
+            if ($this->ftSkipToken($w['text'])) {
+                continue;
+            }
             $tokens[] = $w['neg'] ? '-' . $w['text'] : '+' . $w['text'] . '*';
         }
 
@@ -2398,12 +2470,16 @@ class Search extends DAO
         $words = $this->patternTerms($phrases);
         $terms = array();
         foreach ($phrases as $phrase) {
-            $terms[] = $phrase;
+            $kept = $this->ftPhraseKept($phrase);
+            if ($kept !== array()) {
+                $terms[] = implode(' ', $kept);
+            }
         }
         foreach ($words as $w) {
-            if (!$w['neg']) {
-                $terms[] = $w['text'];
+            if ($w['neg'] || $this->ftIsStopword($w['text'])) {
+                continue;
             }
+            $terms[] = $w['text'];
         }
 
         $clauses = array();

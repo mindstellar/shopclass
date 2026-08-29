@@ -554,6 +554,21 @@ pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s
 $s = new Search();
 check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
 
+/* Hyphenated title paste: FULLTEXT indexes "co-working" as "co" + "working",
+ * not "coworking". Requiring +coworking* emptied the result set. "and" / "in"
+ * are InnoDB stopwords; +and* would miss for the same reason. Seeded last so
+ * the "5 live items" pins above stay undisturbed. */
+harness_section('Search: hyphenated title paste');
+
+$cowork = $mkItem('Co-working space in Aville', $catCars, 1500.0, 0, $regionA, $cityA, 'Alpha', 'Aville');
+$s = new Search();
+$s->addPattern('Co-working space in Aville');
+pin('a hyphenated title paste still matches', array($cowork), $sorted($ids($s->doSearch())));
+
+$s = new Search();
+$s->addPattern('co-working');
+check('a hyphenated token matches the split words', in_array($cowork, $ids($s->doSearch()), true));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
