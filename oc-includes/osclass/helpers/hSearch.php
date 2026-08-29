@@ -296,6 +296,32 @@ function osc_search_category_id()
     return $category;
 }
 
+/**
+ * Name of the category the current search is filtered to. Takes the first of a
+ * multi-category search, so it always agrees with
+ * {@see osc_search_category_description()}.
+ *
+ * @param string $locale
+ *
+ * @return string
+ */
+function osc_search_category_name($locale = '')
+{
+    $a_search_category_id = osc_search_category_id();
+    $text                 = '';
+    if (!empty($a_search_category_id)) {
+        list($search_category_id) = $a_search_category_id;
+        if (is_numeric($search_category_id)) {
+            $tmp = Category::newInstance()->findByPrimaryKey($search_category_id, $locale);
+            if (isset($tmp['s_name'])) {
+                $text = $tmp['s_name'];
+            }
+        }
+    }
+
+    return $text;
+}
+
 function osc_search_category_description($locale = '')
 {
     $a_search_category_id = osc_search_category_id();

@@ -459,7 +459,9 @@ function osc_private_user_menu($options = null)
  */
 function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')
 {
-    $txt = strip_tags($txt);
+    // A tag is a word boundary: stripping it outright glues the text either side
+    // of it together ("</p><p>" turned "…platform. Instead" into "…platform.Instead").
+    $txt = strip_tags(preg_replace('/<[^>]*>/', ' ', $txt));
     $txt = str_replace(array("\n\r", "\r\n", "\n", "\r", "\t"), ' ', $txt);
     $txt = trim($txt);
     $txt = preg_replace('/\s+/', ' ', $txt);

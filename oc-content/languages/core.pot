@@ -33,6 +33,10 @@ msgstr ""
 msgid "%1$s entries, %2$s"
 msgstr ""
 
+#: oc-includes/osclass/functions.php
+msgid "%1$s in %2$s"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 msgid "%1$s orders · %2$s paid · %3$s awaiting payment"
 msgstr ""
@@ -103,6 +107,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
+#: oc-includes/osclass/functions.php
 msgid "%d listing"
 msgid_plural "%d listings"
 msgstr[0] ""
@@ -1818,6 +1823,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Classes"
+msgstr ""
+
+#: oc-includes/osclass/functions.php
+msgid "Classified ads in %s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php

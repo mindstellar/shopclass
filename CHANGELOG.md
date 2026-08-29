@@ -64,6 +64,10 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Listing indexes in the same category all served the same meta description. They now
+  lead with category, location and count, and city and region pages get one at all.
+- Stripping HTML for a description glued words together across tags. Also affects
+  static-page and listing excerpts.
 - The category-city and category-region sitemaps listed a second, duplicate URL for every
   page. Clear the sitemap cache after upgrading (Settings -> Sitemap -> Regenerate).
 - Activating, deactivating, installing, or uninstalling a plugin, or switching a theme,
