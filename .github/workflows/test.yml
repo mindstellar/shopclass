@@ -109,6 +109,11 @@ jobs:
         run: php tests/item-url-characterization.php
       - name: Pagination
         run: php tests/pagination.php
+      # The location sitemaps synthesise URLs while the sitemap route's own params are
+      # still in the request; one leaking in silently doubles every category-location
+      # page into a second, self-canonicalising URL that Google indexes separately.
+      - name: Sitemap search URLs
+        run: php tests/sitemap-search-url.php
       # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order

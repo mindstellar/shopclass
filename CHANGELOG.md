@@ -64,6 +64,8 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- The category-city and category-region sitemaps listed a second, duplicate URL for every
+  page. Clear the sitemap cache after upgrading (Settings -> Sitemap -> Regenerate).
 - Activating, deactivating, installing, or uninstalling a plugin, or switching a theme,
   did not take effect until php-fpm restarted when `opcache.validate_timestamps` is off
   (the usual production setting) — the change appeared not to apply, or a stale class ran

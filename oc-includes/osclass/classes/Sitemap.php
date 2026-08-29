@@ -389,13 +389,12 @@ class Sitemap extends DAO
             $rows = $this->locationPairs('b.fk_i_region_id');
 
             foreach ($rows as $row) {
-                $url = osc_update_search_url(array(
-                    'action_specific' => '',
-                    'CSRFName'        => '',
-                    'CSRFToken'       => '',
-                    'route'           => '',
-                    'sCategory'       => $row['fk_i_category_id'],
-                    'sRegion'         => $row['fk_i_region_id'],
+                // Not osc_update_search_url(): it merges the current request's params, so
+                // the sitemap route's own sitemap_doc leaks in and defeats the pretty-URL
+                // branch of osc_search_url().
+                $url = osc_search_url(array(
+                    'sCategory' => $row['fk_i_category_id'],
+                    'sRegion'   => $row['fk_i_region_id'],
                 ));
                 $this->addUrl($url, date('Y-m-d'), 'weekly', 'cat_region');
             }
@@ -416,13 +415,12 @@ class Sitemap extends DAO
             $rows = $this->locationPairs('b.fk_i_city_id');
 
             foreach ($rows as $row) {
-                $url = osc_update_search_url(array(
-                    'action_specific' => '',
-                    'CSRFName'        => '',
-                    'CSRFToken'       => '',
-                    'route'           => '',
-                    'sCategory'       => $row['fk_i_category_id'],
-                    'sCity'           => $row['fk_i_city_id'],
+                // Not osc_update_search_url(): it merges the current request's params, so
+                // the sitemap route's own sitemap_doc leaks in and defeats the pretty-URL
+                // branch of osc_search_url().
+                $url = osc_search_url(array(
+                    'sCategory' => $row['fk_i_category_id'],
+                    'sCity'     => $row['fk_i_city_id'],
                 ));
                 $this->addUrl($url, date('Y-m-d'), 'weekly', 'cat_city');
             }
