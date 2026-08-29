@@ -7,7 +7,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Back up your database before upgrading: this release rebuilds foreign keys across twenty-four
 tables. It also lets sites sell credits and charge for listings, lets people download a copy of
 their own data, closes three paths that could execute arbitrary files under the plugins
-directory, and removes Google Analytics from the core.
+directory, and removes Google Analytics from the core. Search engines get more to work
+with too: every listing index now has its own description and a single canonical.
 
 ### Security
 
