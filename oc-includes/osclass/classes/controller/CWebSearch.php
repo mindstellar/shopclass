@@ -89,16 +89,13 @@ class CWebSearch extends BaseModel
                         );
 
                         $categorySlug = $tmp[count($tmp) - 1];
-                        $category     = Category::newInstance()->findBySlug($categorySlug);
-
                         Params::setParam('sCategory', $categorySlug);
                     } else {
                         $categorySlug = Params::getParam('sCategory');
-                        $category     = Category::newInstance()->findBySlug($categorySlug);
-
                         Params::setParam('sCategory', $categorySlug);
                     }
-                    if (count($category) === 0) {
+                    $category = self::findCategory($categorySlug);
+                    if (empty($category)) {
                         $this->categorySlugRedirect($categorySlug);
                         $this->do404();
                     }
@@ -756,6 +753,30 @@ class CWebSearch extends BaseModel
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Resolve an sCategory value, which may be either a slug or an id.
+     *
+     * Slug first, because that is what a friendly URL carries. An id is just as
+     * legitimate — osc_search_url() emits ids and a category <select> submits
+     * them — and resolving only by slug 404s a category that plainly exists.
+     *
+     * @param string $value
+     *
+     * @return array The category row, or an empty array when there is no such category
+     */
+    public static function findCategory($value)
+    {
+        $category = Category::newInstance()->findBySlug($value);
+        if (empty($category) && is_numeric($value)) {
+            $byId = Category::newInstance()->findByPrimaryKey($value);
+            if (!empty($byId)) {
+                return $byId;
+            }
+        }
+
+        return is_array($category) ? $category : array();
     }
 
     /**

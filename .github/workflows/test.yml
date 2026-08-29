@@ -124,6 +124,14 @@ jobs:
       # two different result sets at the same canonical, de-indexing one of them.
       - name: Canonical params
         run: php tests/canonical-params.php
+      # Resolving sCategory by slug alone 404s a category that exists whenever the value
+      # is an id -- which is what osc_search_url() emits and what a category <select> submits.
+      - name: Search category resolution
+        run: php tests/search-category-resolve.php
+      # A page built from blocks rendered through the theme's root header.php, which is not
+      # part of the view contract -- the page shipped as a fragment with no <head> at all.
+      - name: Page builder render
+        run: php tests/page-builder-render.php
       # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order

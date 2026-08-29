@@ -64,6 +64,10 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- A search carrying a category id rather than a slug returned 404, though the category
+  existed. Both spellings now resolve.
+- A static page built from blocks rendered with no `<head>` — no title, description or
+  canonical. It now renders through the theme's page view.
 - Price, photo, premium and custom-field filters each claimed their own canonical, so
   every permutation was a separate indexable URL. They now point at the page they
   filter.
