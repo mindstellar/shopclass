@@ -182,6 +182,9 @@ MESSAGE;
      */
     public function doView($file)
     {
+        // Indexable on purpose — a contact page is somewhere people search for. It
+        // only lacked a canonical, which it is reachable without.
+        $this->_exportVariableToView('canonical', osc_contact_url());
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();

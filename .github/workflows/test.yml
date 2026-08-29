@@ -119,6 +119,11 @@ jobs:
       # where a search engine stops reading.
       - name: Meta description
         run: php tests/meta-description.php
+      # Both directions are silent: a facet param left in the canonical makes every price
+      # and custom-field permutation its own indexable URL, and one dropped too many points
+      # two different result sets at the same canonical, de-indexing one of them.
+      - name: Canonical params
+        run: php tests/canonical-params.php
       # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order

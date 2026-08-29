@@ -64,6 +64,11 @@ directory, and removes Google Analytics from the core.
 
 ### Fixed
 
+- Price, photo, premium and custom-field filters each claimed their own canonical, so
+  every permutation was a separate indexable URL. They now point at the page they
+  filter.
+- Static pages had no canonical, and the sign-in and registration forms were
+  indexable. Both fixed; the contact page stays indexable and gains a canonical.
 - Listing indexes in the same category all served the same meta description. They now
   lead with category, location and count, and city and region pages get one at all.
 - Stripping HTML for a description glued words together across tags. Also affects
