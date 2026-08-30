@@ -312,10 +312,8 @@ class CWebUser extends WebSecBaseModel
                 break;
             case 'export':
                 // A copy of everything held about the person, for their own request.
-                // Gated exactly as 'delete' below is — signed in, and the id and secret
-                // in the link both matching the session — because it hands out the same
-                // data that action destroys, and inventing a second rule for that would
-                // mean two things to keep right instead of one.
+                // Signed in, and the id and secret in the link both matching the session,
+                // because it hands out the same data that deleting the account destroys.
                 $id     = Params::getParamInt('id');
                 $secret = Params::getParamString('secret');
                 if (!osc_is_web_user_logged_in()) {
@@ -351,40 +349,67 @@ class CWebUser extends WebSecBaseModel
                 echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
             case 'delete':
-                $id     = Params::getParam('id');
-                $secret = Params::getParam('secret');
-                if (osc_is_web_user_logged_in()) {
-                    $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
-                    osc_run_hook('before_user_delete', $user);
-                    View::newInstance()->_exportVariableToView('user', $user);
-                    if (!empty($user) && osc_logged_user_id() == $id
-                        && $secret == $user['s_secret']
-                    ) {
-                        try {
-                            User::newInstance()->deleteUser(osc_logged_user_id());
-                        } catch (Exception $e) {
-                            trigger_error($e->getMessage(), E_USER_WARNING);
-                        }
-
-                        Session::newInstance()->_drop('userId');
-                        Session::newInstance()->_drop('userName');
-                        Session::newInstance()->_drop('userEmail');
-                        Session::newInstance()->_drop('userPhone');
-
-                        Cookie::newInstance()->pop('oc_userId');
-                        Cookie::newInstance()->pop('oc_userSecret');
-                        Cookie::newInstance()->set();
-
-                        osc_add_flash_ok_message(_m('Your account have been deleted'));
-                        $this->redirectTo(osc_base_url());
-                    } else {
-                        osc_add_flash_error_message(_m('Oops! you can not do that'));
-                        $this->redirectTo(osc_user_dashboard_url());
-                    }
-                } else {
+                // GET must not delete. Older themes still point here with id and
+                // secret in the query string; those land on the confirm form and
+                // the query values are ignored. Mail scanners and prefetchers
+                // that only GET therefore cannot remove the account.
+                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                if (empty($user)) {
                     osc_add_flash_error_message(_m('Oops! you can not do that'));
-                    $this->redirectTo(osc_base_url());
+                    $this->redirectTo(osc_user_login_url());
+                    break;
                 }
+                $this->_exportVariableToView('user', $user);
+                $this->doView('user-delete_account.php');
+                break;
+            case 'delete_post':
+                osc_csrf_check();
+                $userId = (int) osc_logged_user_id();
+                $user   = User::newInstance()->findByPrimaryKey($userId);
+                if (empty($user) || $userId < 1) {
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo(osc_user_login_url());
+                    break;
+                }
+
+                $password = Params::getParam('password', false, false);
+                if ($password === '') {
+                    osc_add_flash_warning_message(_m('Password cannot be blank'));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+                if (!osc_verify_password($password, $user['s_password'])) {
+                    osc_add_flash_error_message(_m("Current password doesn't match"));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+
+                osc_run_hook('before_user_delete', $user);
+                try {
+                    User::newInstance()->deleteUser($userId);
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+
+                Session::newInstance()->_drop('userId');
+                Session::newInstance()->_drop('userName');
+                Session::newInstance()->_drop('userEmail');
+                Session::newInstance()->_drop('userPhone');
+                Session::newInstance()->_dropEphemeral('userId');
+                Session::newInstance()->_dropEphemeral('userName');
+                Session::newInstance()->_dropEphemeral('userEmail');
+                Session::newInstance()->_dropEphemeral('userPhone');
+                View::newInstance()->_erase('_loggedUser');
+
+                Cookie::newInstance()->pop('oc_userId');
+                Cookie::newInstance()->pop('oc_userSecret');
+                Cookie::newInstance()->set();
+
+                osc_add_flash_ok_message(_m('Your account have been deleted'));
+                $this->redirectTo(osc_base_url());
                 break;
         }
     }
@@ -464,9 +489,31 @@ class CWebUser extends WebSecBaseModel
     public function doView($file)
     {
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if ($file === 'user-delete_account.php' && !$this->themeProvides($file)) {
+            $this->doFallbackDeleteView();
+        } else {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Whether the active theme ships $file itself. Not osc_current_web_theme_path()'s
+     * walk onto a parent or storefront: those have never heard of this view and would
+     * render blank instead of the core fallback.
+     */
+    private function themeProvides(string $file): bool
+    {
+        return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
+    }
+
+    private function doFallbackDeleteView(): void
+    {
+        $path = osc_base_path() . 'oc-includes/osclass/gui/user-delete_account.php';
+        if (file_exists($path)) {
+            require $path;
+        }
     }
 }
 

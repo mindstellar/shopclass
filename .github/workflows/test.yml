@@ -136,6 +136,10 @@ jobs:
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order
         run: php tests/user-menu-order.php
+      # GET ?page=user&action=delete&id=&secret= used to remove the account as soon
+      # as the page was requested. The confirm view must not call deleteUser.
+      - name: Account delete is POST
+        run: php tests/user-delete-get.php
       # An unrouted settings action does not error -- it renders a different settings page
       # and discards the post, so the only symptom is preferences that never save.
       - name: Admin settings routes
