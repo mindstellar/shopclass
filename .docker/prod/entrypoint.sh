@@ -174,7 +174,14 @@ SH
             echo "auth off"
         fi
     } > /etc/msmtprc
-    chmod 600 /etc/msmtprc
+    # Readable by the php-fpm worker (www-data), not only root: sendmail_path is
+    # "msmtp -t" with no -C, so a web request reads /etc/msmtprc as www-data. Left at
+    # 0600 root, every WEB-context email (contact, registration, password reset, and
+    # theme features like the IP-complaint notices) failed with "no configuration file
+    # available", while cron mail — run as root — worked and hid it. Group-read only,
+    # never world: this file holds the SMTP password when SMTP_USER is set.
+    chown root:www-data /etc/msmtprc
+    chmod 640 /etc/msmtprc
     printf 'sendmail_path = "/usr/bin/msmtp -t"\n' > "$ini"
     echo "entrypoint: mail relay -> ${host}:${port} (auth: ${SMTP_USER:+on}${SMTP_USER:-off})."
 }
