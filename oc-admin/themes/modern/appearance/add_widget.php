@@ -232,33 +232,15 @@ if (!$inline) {
         if (typeof tinymce === 'undefined') {
             return;
         }
-        tinymce.init({
-            selector: 'textarea:not(.widget-code-editor)',
-            promotion: false,
-            skin: window.oscTinymceTheme ? window.oscTinymceTheme().skin : 'oxide',
-            content_css: window.oscTinymceTheme ? window.oscTinymceTheme().content_css : 'default',
-            branding: false,
-            menubar: false,
-            height: 340,
-            relative_urls: false,
-            remove_script_host: false,
-            convert_urls: false,
-            entity_encoding: 'raw',
-            extended_valid_elements: 'script[type|src|charset|defer]',
-            plugins: 'advlist anchor autolink charmap code fullscreen image insertdatetime'
-                + ' link lists media preview searchreplace table visualblocks',
-            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist'
-                + ' | link image media table | alignleft aligncenter alignright'
-                + ' | removeformat | visualblocks code fullscreen preview',
-            smart_paste: true,
-            paste_as_text: false,
-            paste_merge_formats: true,
-            paste_data_images: false,
-            paste_remove_styles_if_webkit: true,
-            paste_webkit_styles: 'none',
-            content_style: 'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,'
-                + 'Helvetica Neue,Arial,sans-serif;font-size:16px;line-height:1.55;color:#14181f}'
-        });
+        var cfg = <?php echo osc_tinymce_config('full', array(
+            'selector'                => 'textarea:not(.widget-code-editor)',
+            'height'                  => 340,
+            // A widget may legitimately embed a script tag; nothing else may.
+            'extended_valid_elements' => 'script[type|src|charset|defer]',
+        )); ?>;
+        // JavaScript, so it cannot come through the JSON above.
+        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
+        tinymce.init(cfg);
     });
 </script>
 <script type="text/javascript">

@@ -68,9 +68,16 @@ class CWebPage extends BaseModel
 
         // export $page content to View
         $this->_exportVariableToView('page', $page);
+        $lang = '';
         if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-            osc_set_current_user_locale(Params::getParam('lang'));
+            $lang = Params::getParam('lang');
+            osc_set_current_user_locale($lang);
         }
+
+        // A static page is reachable by id and by slug, and per-locale under a
+        // language prefix. Point each at itself in the language it was asked for,
+        // never across languages.
+        $this->_exportVariableToView('canonical', osc_static_page_url($lang));
 
         // Public static page: cacheable for anonymous visitors.
         osc_mark_response_cacheable();

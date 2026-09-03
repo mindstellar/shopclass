@@ -25,7 +25,7 @@ appears in the download URL, the release tag, the catalog key, and (for many plu
 option keys and table names the package owns. Renaming it is a new package, not a rename.
 
 ```
-oc-content/plugins/better-s3/          oc-content/themes/bender/
+oc-content/plugins/digital-goods/        oc-content/themes/bender/
   index.php            required          index.php            required
   shopclass.json       registry only     shopclass.json       registry only
   README.md            recommended       screenshot.png       required
@@ -47,8 +47,8 @@ unzipping a tarball by hand in 2014.
 A released package is a zip whose **single top-level directory is the slug**:
 
 ```
-better-s3_1.2.0.zip
-└── better-s3/
+digital-goods_2.0.0.zip
+└── digital-goods/
     ├── index.php
     └── …
 ```
@@ -56,7 +56,7 @@ better-s3_1.2.0.zip
 This is what `Upgrade::processUpgrade()` expects; it accepts either an `index.php` at the
 zip root or one inside a directory named for the package's short name, and the latter is
 the form to produce. A zip that expands to loose files, or to a directory named
-`better-s3-main/` (what GitHub's "Download ZIP" button produces), will not install.
+`digital-goods-main/` (what GitHub's "Download ZIP" button produces), will not install.
 
 Exclude development files from the zip via `.distignore` — at minimum `.git`, `.github`,
 `node_modules`, tests, build sources, `*.map`, and the `.distignore` itself.
@@ -91,17 +91,17 @@ The block is a plain PHP comment immediately after `<?php`:
 ```php
 <?php
 /*
-Plugin Name: Better S3
-Plugin URI: https://github.com/mindstellar/better-s3
-Description: Offload uploaded images to any S3-compatible bucket.
-Version: 1.2.0
+Plugin Name: Digital Goods
+Plugin URI: https://github.com/mindstellar/shopclass-plugin-digital-goods
+Description: Attach downloadable files to a listing and deliver them to buyers.
+Version: 2.0.0
 Author: Mindstellar
 Author URI: https://github.com/mindstellar
-Short Name: better-s3
+Short Name: digital-goods
 Requires Shopclass: 6.0.0
 Tested up to: 6.1
 Requires PHP: 8.0
-Support URI: https://github.com/mindstellar/better-s3/issues
+Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issues
 */
 ```
 
@@ -258,7 +258,7 @@ orders below the release.
 - Every release must increase the version. Registry CI rejects a package whose `Version:`
   is not greater than the one already in the catalog.
 - The `Version:` header, the newest `CHANGELOG.md` entry, and the release tag must agree.
-- Do not prefix the header value with `v`. Tags may (`better-s3-v1.2.0`); the header may
+- Do not prefix the header value with `v`. Tags may (`digital-goods-v2.0.0`); the header may
   not.
 
 ---
@@ -294,7 +294,7 @@ CI against `schema/package.schema.json` in the registry repo.
 ```jsonc
 {
   "$schema": "../../schema/package.schema.json",
-  "slug": "better-s3",                 // MUST equal the directory name
+  "slug": "digital-goods",                 // MUST equal the directory name
   "type": "plugin",                    // "plugin" | "theme"
   "categories": ["storage", "media"],  // from the registry's fixed vocabulary
   "tags": ["s3", "cdn", "offload"],    // free-form, max 8

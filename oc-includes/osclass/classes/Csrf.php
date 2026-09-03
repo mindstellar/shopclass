@@ -50,6 +50,20 @@ class Csrf
      */
     private const TOKEN_VERSION = '1';
 
+    /**
+     * Granularity of the issue time stamped into a token.
+     *
+     * A token minted per second makes every render of a page different, which is the only
+     * thing that does -- pages are otherwise byte-identical -- so it defeats any validator
+     * computed from the response body and any cache that wants to compare two renders.
+     * Rounding down to a bucket makes a page stable for the length of the bucket while
+     * changing nothing about how long a token is accepted: TOKEN_LIFETIME is still measured
+     * from the stamped time, so a token issued at the end of a bucket simply has one bucket
+     * less of its life left. Issue granularity was never the protection -- these tokens
+     * are not one-time, and an anonymous one is already valid for every anonymous visitor.
+     */
+    private const ISSUE_BUCKET = 1800;
+
     private static $instance;
 
     /**
@@ -98,6 +112,13 @@ class Csrf
         $injectCsrf = static function () {
             $data = ob_get_clean();
             $data = self::newInstance()->replaceForms($data);
+            // The one moment the finished page exists as a string: after the tokens are
+            // in, before anything reaches the client. Anything that needs the whole body
+            // -- a validator to answer conditional requests with, a minifier, a late
+            // replacement -- belongs here rather than starting a second output buffer and
+            // racing this one for it. A filter that returns '' sends no body, which is
+            // what a 304 needs.
+            $data = osc_apply_filter('response_body', $data);
             echo $data;
         };
         $functions  = Plugins::applyFilter('shutdown_functions', [$injectCsrf]);
@@ -137,7 +158,7 @@ class Csrf
         if ($this->tokenName !== null) {
             return;
         }
-        $payload          = self::TOKEN_VERSION . '|' . time() . '|' . $this->bind();
+        $payload          = self::TOKEN_VERSION . '|' . self::issuedAt() . '|' . $this->bind();
         $this->tokenName  = self::b64urlEncode($payload);
         $this->tokenValue = self::sign($this->tokenName);
     }
@@ -255,6 +276,17 @@ class Csrf
      *
      * @return string
      */
+    /**
+     * Issue time for a token, rounded down to ISSUE_BUCKET. Always <= now, so it can never
+     * trip validate()'s clock-skew guard.
+     *
+     * @return int
+     */
+    private static function issuedAt()
+    {
+        return (int)(floor(time() / self::ISSUE_BUCKET) * self::ISSUE_BUCKET);
+    }
+
     private function bind()
     {
         $adminId = $this->session->_get('adminId');

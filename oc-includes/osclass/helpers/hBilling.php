@@ -311,6 +311,99 @@ function osc_max_images_for_user(?int $userId = null): int
 }
 
 /**
+ * How many listings $userId may hold live at once. -1 means unlimited -- treat it that
+ * way, never compare it numerically -- which is what billing being off, an unknown user,
+ * or a site that never set a cap all read back. Defaults to osc_logged_user_id().
+ *
+ * Reads Entitlements::listingCeiling(), the same number the post-time gate is measured
+ * against, so a theme can show a seller their limit without it drifting from the one
+ * they are actually held to.
+ */
+function osc_user_listing_limit(?int $userId = null): int
+{
+    if (!osc_billing_enabled()) {
+        return -1;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return -1;
+    }
+
+    return Entitlements::listingCeiling((int) $userId);
+}
+
+/**
+ * How many live listings $userId currently holds -- what osc_user_listing_limit() is
+ * spent against. Counts listings awaiting moderation and admin-disabled ones too (see
+ * Entitlements::liveListings()), so it matches the gate rather than what is publicly
+ * visible. 0 while billing is off or no user is known.
+ */
+function osc_user_listings_used(?int $userId = null): int
+{
+    if (!osc_billing_enabled()) {
+        return 0;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return 0;
+    }
+
+    return Entitlements::liveListings((int) $userId);
+}
+
+/**
+ * Listings $userId may still publish before hitting the ceiling. -1 means unlimited,
+ * the same sentinel osc_user_listing_limit() uses; otherwise never below 0, so a seller
+ * already over the line reads back 0 rather than a negative.
+ */
+function osc_user_listings_remaining(?int $userId = null): int
+{
+    $limit = osc_user_listing_limit($userId);
+    if ($limit === -1) {
+        return -1;
+    }
+
+    return max(0, $limit - osc_user_listings_used($userId));
+}
+
+/**
+ * Whether $userId may publish another listing right now -- the same answer the post
+ * route enforces, filter included, so a theme that hides its "post a listing" button on
+ * false is hiding it exactly when the form would refuse. There is no listing yet at this
+ * point, so a plugin filtering billing_can_publish on $ctx['item'] sees none here.
+ */
+function osc_user_can_publish(?int $userId = null): bool
+{
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return true; // guests are not metered; the post route does not check them either
+    }
+
+    return Entitlements::canPublish((int) $userId);
+}
+
+/**
+ * The message a seller is shown at their listing limit, in the one wording the post form
+ * and the submit path both use. $item carries the listing being posted where there is one
+ * (the submit path), and is empty where there is not (opening the form).
+ *
+ * Core sells no listing slot -- listing.slot is user-scoped and the only public spend
+ * route takes item-scoped features -- so the default names the only two remedies that
+ * exist. Filterable for a plugin that does sell them.
+ */
+function osc_listing_limit_message(?int $userId = null, array $item = array()): string
+{
+    return (string) osc_apply_filter(
+        'billing_listing_limit_message',
+        _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'),
+        $userId ?? osc_logged_user_id(),
+        $item
+    );
+}
+
+/**
  * Seconds $userId must wait between posts -- 0 while a listing.no_wait entitlement is
  * held, osc_items_wait_time() otherwise. Defaults to osc_logged_user_id(). Guests
  * (no user id) always read the global wait: this is an anti-flood control and
@@ -373,22 +466,38 @@ function osc_billing_packages(): array
     return Packages::enabled();
 }
 
-/** Balance and ledger history. */
+/**
+ * Balance and ledger history. Rewritten like every other account route when the site
+ * has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the
+ * query-string form still resolves either way, so links already out there keep working.
+ */
 function osc_billing_wallet_url(): string
 {
-    return osc_base_url() . '?page=billing';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_wallet');
+    }
+
+    return osc_base_url(true) . '?page=billing';
 }
 
 /** Buy credits: packages plus the configured payment methods. */
 function osc_billing_buy_url(): string
 {
-    return osc_base_url() . '?page=billing&action=buy';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_buy');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=buy';
 }
 
 /** The buyer's own past orders. */
 function osc_billing_orders_url(): string
 {
-    return osc_base_url() . '?page=billing&action=orders';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_orders');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=orders';
 }
 
 /**
@@ -398,7 +507,7 @@ function osc_billing_orders_url(): string
  */
 function osc_billing_upgrade_url(int $itemId): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId;
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId;
 }
 
 /**
@@ -536,7 +645,7 @@ function osc_item_can_bump(?array $item = null): bool
  */
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
 }
 
 /**
@@ -821,8 +930,24 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
         return $options;
     }
 
-    $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
-    $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+    // Both entries used to appear on the billing switch alone, so a site that enabled
+    // billing only to cap listings gave every seller two links to "no payment method is
+    // set up yet". Offer them only where they lead somewhere. Gateways are preference
+    // reads, so they gate the packages query rather than the other way round.
+    $canBuy = PaymentGatewayRegistry::instance()->available() !== array()
+              && osc_billing_packages() !== array();
+
+    if ($canBuy) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+        $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+
+        return $options;
+    }
+
+    // Nothing on sale, but credits already held (or owed) still need somewhere to be read.
+    if (osc_user_credits() !== 0) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+    }
 
     return $options;
 });

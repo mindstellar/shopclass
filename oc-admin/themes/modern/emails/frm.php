@@ -34,25 +34,20 @@ function customHead()
         if (typeof tinymce === 'undefined') {
             return;
         }
-        tinymce.init({
-            selector: "textarea",
-            promotion: false,
-            skin: window.oscTinymceTheme ? window.oscTinymceTheme().skin : 'oxide',
-            content_css: window.oscTinymceTheme ? window.oscTinymceTheme().content_css : 'default',
-            width: "100%",
-            height: "440px",
-            language: 'en',
-            // Lean set for editing an email template: basic inline formatting, lists,
-            // links, and a raw-HTML view. TinyMCE 7 takes plugins as one space-separated
-            // list; bold/italic/underline/removeformat are core (no plugin needed).
-            plugins: "autolink lists link code",
-            toolbar: "undo redo | bold italic underline | bullist numlist | link | removeformat | code",
-            menubar: false,
-            entity_encoding: "raw",
-            relative_urls: false,
-            remove_script_host: false,
-            convert_urls: false
-        });
+        var cfg = <?php echo osc_tinymce_config('basic', array(
+            'selector' => 'textarea',
+            'width'    => '100%',
+            'height'   => '440px',
+            'language' => 'en',
+            // An email template is authored by an admin and is full of markup already, so
+            // this one keeps the source view the public preset no longer carries.
+            'plugins'  => 'autolink lists link code',
+            'toolbar'  => 'undo redo | bold italic underline | bullist numlist | link'
+                          . ' | removeformat | code',
+        )); ?>;
+        // JavaScript, so it cannot come through the JSON above.
+        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
+        tinymce.init(cfg);
         });
 
 

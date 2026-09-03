@@ -120,6 +120,33 @@ check(
     preg_match('/else if \(!applied\.length && !repairs\.length\)/', $viewSrc) === 1
 );
 
+/* ----------------------------------------------------------------------------
+ * The permalink table must be recompiled after migrations, not before.
+ *
+ * Rewrite caches the compiled rules and rebuilds when their stamped version no
+ * longer matches the code's -- which is true from the first request after new
+ * files land, i.e. possibly before that release's migrations have seeded the
+ * preferences new routes are built from. A request that wins that race compiles
+ * without them and stamps the new version anyway; the versions then agree, so it
+ * never rebuilds, and those routes 404 permanently. rc7's billing permalinks did
+ * exactly that. The rebuild belongs in the upgrade, after the migrations, with the
+ * preference cache reloaded first -- migrations seed with raw SQL, so the snapshot
+ * this request is holding still predates them.
+ * ------------------------------------------------------------------------- */
+$runPos     = strpos($modelSrc, '$runner->run()');
+$rebuildPos = strpos($modelSrc, 'rebuildAndPersistRules()');
+$resetPos   = strpos($modelSrc, 'osc_reset_preferences()');
+
+check('upgradeDB() recompiles the permalink table', $rebuildPos !== false);
+check(
+    '...after the migrations have run, not before',
+    $runPos !== false && $rebuildPos !== false && $rebuildPos > $runPos
+);
+check(
+    '...and reloads the preference cache first, since migrations seed with raw SQL',
+    $resetPos !== false && $rebuildPos !== false && $resetPos < $rebuildPos
+);
+
 echo "\n----------------------------------------\n";
 echo "RESULT: $ok passed, $failed failed\n";
 

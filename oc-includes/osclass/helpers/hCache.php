@@ -168,12 +168,20 @@ function osc_invalidate_item_cache($itemId)
     if (empty($locales)) {
         // No locale list available yet (early boot / install): clear the current-locale key.
         osc_cache_delete($baseKey);
-
-        return;
+    } else {
+        foreach ($locales as $locale) {
+            $cache->delete($baseKey . $locale['pk_c_code']);
+        }
     }
 
-    foreach ($locales as $locale) {
-        $cache->delete($baseKey . $locale['pk_c_code']);
+    // Every event that makes an item's rendered page wrong converges here -- an edit, an
+    // image added or removed, the listing deleted, and the storage worker once an offload
+    // has rewritten the image URLs. A cache outside PHP (a proxy, a CDN) cannot observe any
+    // of that on its own, and the offload especially: nothing else fires when it completes,
+    // so a cached page goes on pointing at local files that are no longer there. One hook
+    // here is what lets a purge plugin see the whole set.
+    if (function_exists('osc_run_hook')) {
+        osc_run_hook('invalidate_item_cache', $itemId);
     }
 }
 

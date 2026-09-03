@@ -322,6 +322,9 @@ class CAdminAppearance extends AdminSecBaseModel
             case ('activate'):
                 osc_csrf_check();
                 osc_set_preference('theme', Params::getParam('theme'));
+                // Clear opcache so the new theme's code runs at once even with
+                // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
+                Plugins::resetOpcache();
                 osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
                 osc_run_hook('theme_activate', Params::getParam('theme'));
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');

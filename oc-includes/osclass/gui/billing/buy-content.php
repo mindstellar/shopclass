@@ -97,7 +97,14 @@ $formatMoney = static function (int $micros, string $currency): string {
         </div>
     <?php } else { ?>
         <div class="oe-bill-card">
-            <form method="post" action="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
+            <?php
+            // Posts to index.php, not osc_billing_buy_url(): the buy page has a permalink,
+            // and a matched rewrite rule writes its own params over the request (see
+            // Rewrite::applyParams()) -- so posting 'checkout' at the URL whose route says
+            // 'buy' arrives as 'buy' and silently re-renders this picker. The route lives in
+            // the hidden fields below, where nothing overwrites it.
+            ?>
+            <form method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
                 <input type="hidden" name="page" value="billing"/>
                 <input type="hidden" name="action" value="checkout"/>
 

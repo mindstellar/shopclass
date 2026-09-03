@@ -69,6 +69,18 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
+                // Turn them back at the door rather than after they have written the whole
+                // listing: the submit path refuses on the same answer, so reaching the form
+                // at all would only waste the writing. Admins are never metered, and guests
+                // have no quota to be outside of.
+                if (!osc_is_admin_user_logged_in()
+                    && osc_is_web_user_logged_in()
+                    && !osc_user_can_publish()
+                ) {
+                    osc_add_flash_error_message(osc_listing_limit_message());
+                    $this->redirectTo(osc_user_list_items_url());
+                }
+
                 $countries = Country::newInstance()->listAll();
                 $regions   = array();
                 if (isset($this->user['fk_c_country_code'])
@@ -775,8 +787,10 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_url());
                 break;
             default:
-                // if there isn't ID, show an error 404
-                if (Params::getParam('id') == '') {
+                // Reject a non-numeric or array-valued id before it reaches the lookup —
+                // a crawler on junk URLs costs no query.
+                $id = trim(Params::getParamString('id'));
+                if ($id === '' || !ctype_digit($id)) {
                     $this->do404();
 
                     return;
@@ -788,11 +802,10 @@ class CWebItem extends BaseModel
 
                 $item = osc_apply_filter(
                     'pre_show_item',
-                    $this->itemManager->findByPrimaryKey(Params::getParam('id'))
+                    $this->itemManager->findByPrimaryKey($id)
                 );
-                // if item doesn't exist show an error 410
                 if (count($item) == 0) {
-                    $this->do410();
+                    $this->do404();
 
                     return;
                 }
@@ -805,7 +818,9 @@ class CWebItem extends BaseModel
                             _m("The listing hasn't been validated. Please validate it in order to make it public")
                         );
                     } else {
-                        $this->do400();
+                        // Not public yet: 404, not 400. It is a well-formed URL for a listing
+                        // that may be published later, so nothing permanent is signalled.
+                        $this->do404();
 
                         return;
                     }
@@ -821,7 +836,7 @@ class CWebItem extends BaseModel
                             _m('The listing has been blocked or is awaiting moderation from the admin')
                         );
                     } else {
-                        $this->do400();
+                        $this->do404();
 
                         return;
                     }

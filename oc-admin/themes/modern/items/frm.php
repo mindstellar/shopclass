@@ -336,23 +336,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if (typeof tinymce === 'undefined') {
             return;
         }
-        var cfg = {
-            // Only the per-locale description editors (name="description[<locale>]"),
-            // never plugin textareas elsewhere on the form.
-            selector: 'textarea[name^="description["]',
-            promotion: false,
-            branding: false,
-            menubar: false,
-            height: 320,
-            entity_encoding: 'raw',
-            relative_urls: false,
-            remove_script_host: false,
-            convert_urls: false,
-            plugins: 'advlist anchor autolink charmap code fullscreen insertdatetime'
-                + ' link lists preview searchreplace table',
-            toolbar: 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
-                + ' | link charmap table | removeformat | searchreplace code fullscreen preview'
-        };
+        // Neither preset: a listing description wants tables and a colour picker but no
+        // embedded image or media, so the pair is passed here rather than earning a
+        // preset of its own for one caller. The selector takes only the per-locale
+        // description editors (name="description[<locale>]"), never plugin textareas
+        // elsewhere on the form.
+        var cfg = <?php echo osc_tinymce_config('basic', array(
+            'selector' => 'textarea[name^="description["]',
+            'height'   => 320,
+            'plugins'  => 'advlist anchor autolink charmap code fullscreen insertdatetime'
+                          . ' link lists preview searchreplace table',
+            'toolbar'  => 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
+                          . ' | link charmap table | removeformat | searchreplace code fullscreen preview',
+        )); ?>;
         if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
         tinymce.init(cfg);
     });

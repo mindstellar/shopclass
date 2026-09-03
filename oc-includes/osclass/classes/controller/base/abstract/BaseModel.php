@@ -93,7 +93,7 @@ abstract class BaseModel
                             Params::setParam('page', 'search');
                         }
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'country') {
                     $country = Country::newInstance()->findBySlug($subdomain);
@@ -102,7 +102,7 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $country['s_slug']);
                         Params::setParam('sCountry', $country['pk_c_code']);
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'region') {
                     $region = Region::newInstance()->findBySlug($subdomain);
@@ -112,7 +112,7 @@ abstract class BaseModel
                         Params::setParam('sRegion', $region['pk_i_id']);
                     } else {
                         $this->locationSubdomainSlugRedirect('REGION', $subdomain, $match[1], $subhost);
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'city') {
                     $city = City::newInstance()->findBySlug($subdomain);
@@ -122,7 +122,7 @@ abstract class BaseModel
                         Params::setParam('sCity', $city['pk_i_id']);
                     } else {
                         $this->locationSubdomainSlugRedirect('CITY', $subdomain, $match[1], $subhost);
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'user') {
                     $user = User::newInstance()->findByUsername($subdomain);
@@ -131,10 +131,10 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $user['s_username']);
                         Params::setParam('sUser', $user['pk_i_id']);
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } else {
-                    $this->do400();
+                    $this->do404();
                 }
             }
         }
@@ -145,7 +145,7 @@ abstract class BaseModel
      * 301 to the same URL with the current slug swapped into the subdomain. Falls
      * through (returns without redirecting) on a history miss, a target row that no
      * longer exists, or a current slug that would not change the URL -- the caller
-     * then do400()s.
+     * then do404()s.
      *
      * The default search-URL scheme embeds the row id ({slug}-r{id}) and self-heals
      * on rename, but subdomain routing resolves purely by slug with nothing to fall
@@ -183,7 +183,7 @@ abstract class BaseModel
         $model   = $type === 'REGION' ? Region::newInstance() : City::newInstance();
         $current = $model->findByPrimaryKey((int)$history['fk_i_id']);
         if (!$current || !isset($current['pk_i_id'])) {
-            return; // target row is gone -> let the caller do400()
+            return; // target row is gone -> let the caller do404()
         }
 
         $currentSlug = $current['s_slug'];
@@ -207,10 +207,17 @@ abstract class BaseModel
 
     //to export variables at the business layer
 
+    /**
+     * Retained for themes and plugins that call it. Core no longer uses it: a URL that
+     * resolves to nothing is Not Found, not Bad Request.
+     *
+     * @return void
+     */
     public function do400()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 400 Bad Request');
+        $this->sendErrorCacheHeaders();
         osc_current_web_theme_path('404.php');
         exit;
     }
@@ -263,16 +270,38 @@ abstract class BaseModel
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 404 Not Found');
+        $this->sendErrorCacheHeaders();
         osc_current_web_theme_path('404.php');
         exit;
     }
 
+    /**
+     * Retained for themes and plugins that call it. Core no longer uses it: 410 claims a URL
+     * is permanently gone, which a restore or a re-import makes untrue, and search engines
+     * treat it almost identically to 404.
+     *
+     * @return void
+     */
     public function do410()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 410 Gone');
+        $this->sendErrorCacheHeaders();
         osc_current_web_theme_path('404.php');
         exit;
+    }
+
+    /**
+     * Error pages exit before index.php can stamp Cache-Control, so stamp it here — a crawler
+     * walking dead listing URLs is otherwise a full theme render per hit. An identified visitor
+     * is downgraded to `private, no-store` by osc_response_is_cacheable().
+     *
+     * @return void
+     */
+    private function sendErrorCacheHeaders()
+    {
+        osc_mark_response_cacheable();
+        osc_send_response_cache_headers();
     }
     /**
      *  Functions that will have to be rewritten in the class that extends from this

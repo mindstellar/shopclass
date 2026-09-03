@@ -243,32 +243,84 @@ function meta_title()
 }
 
 /**
+ * Description for a listing-index page: what is being listed, where, and how
+ * much of it there is, before any category blurb.
+ *
+ * The location leads because it is the only part that differs between the
+ * thousands of category-location pages a sitemap advertises, and whatever
+ * trails the budget is cut. Building it the other way round — blurb first —
+ * gives every city in a category the same truncated sentence.
+ *
+ * @return string
+ */
+function osc_search_meta_description()
+{
+    $place = osc_search_city();
+    if ($place === '') {
+        $place = osc_search_region();
+    }
+    if ($place === '') {
+        $place = osc_search_country();
+    }
+
+    // A typed query describes the page better than the category it was run in.
+    $subject = osc_search_pattern();
+    if ($subject === '') {
+        $subject = osc_search_category_name();
+    }
+
+    if ($subject !== '' && $place !== '') {
+        $text = sprintf(__('%1$s in %2$s'), $subject, $place);
+    } elseif ($subject !== '') {
+        $text = $subject;
+    } elseif ($place !== '') {
+        $text = sprintf(__('Classified ads in %s'), $place);
+    } else {
+        // Unfiltered listing index: nothing to say that the site description
+        // does not already say.
+        return osc_page_description();
+    }
+
+    $total = (int)osc_search_total_items();
+    if ($total > 0) {
+        $text .= ' - ' . sprintf(_n('%d listing', '%d listings', $total), $total);
+    }
+    $text .= '.';
+
+    // The category blurb fills what is left, and only when enough is left for it
+    // to read as a sentence rather than a cut-off fragment.
+    $room = OSC_META_DESCRIPTION_LENGTH - mb_strlen($text, 'UTF-8') - 1;
+    if ($room >= 40) {
+        // Ask for three fewer than there is room for: osc_highlight() appends an
+        // ellipsis on top of the length it is given.
+        $blurb = osc_highlight(osc_search_category_description(), $room - 3, '', '');
+        if ($blurb !== '') {
+            $text .= ' ' . $blurb;
+        }
+    }
+
+    return $text;
+}
+
+/**
  * @return bool|mixed
  */
 function meta_description()
 {
     $text = '';
-    // home page
     if (osc_is_home_page()) {
         $text = osc_page_description();
-    }
-    // static page
-    if (osc_is_static_page()) {
-        $text = osc_highlight(osc_static_page_text(), 140, '', '');
-    }
-    // search
-    if (osc_is_search_page()) {
-        // search category
-        if (osc_is_search_category_page() && osc_search_category_description()) {
-            $text = osc_search_category_description();
-        } elseif (osc_has_items()) {
-            $text = osc_item_category() . ' ' . osc_item_city() . ', ' . osc_highlight(osc_item_description(), 120);
-            osc_reset_items();
+    } elseif (osc_is_static_page()) {
+        $text = osc_highlight(osc_static_page_text(), OSC_META_DESCRIPTION_LENGTH, '', '');
+    } elseif (osc_is_ad_page()) {
+        // The listing's own words first: they are what makes this page unlike
+        // every other listing in the same category and city.
+        $text = osc_highlight(osc_item_description(), OSC_META_DESCRIPTION_LENGTH, '', '');
+        if ($text === '') {
+            $text = trim(osc_item_category() . ' ' . osc_item_city());
         }
-    }
-    // listing
-    if (osc_is_ad_page()) {
-        $text = osc_item_category() . ' ' . osc_item_city() . ', ' . osc_highlight(osc_item_description(), 120);
+    } elseif (osc_is_search_page()) {
+        $text = osc_search_meta_description();
     }
 
     return osc_apply_filter('meta_description_filter', $text);
@@ -831,17 +883,9 @@ function osc_item_tinymce_footer()
         // based init replaces the old mode:'none' + per-textarea mceAddEditor loop; the
         // plugin/toolbar set is the same lean, basic-formatting config as the admin editor.
         document.addEventListener('DOMContentLoaded', function () {
-            tinyMCE.init({
-                selector: 'textarea[id^="description"]',
-                promotion: false,
-                menubar: false,
-                plugins: 'autolink lists link code',
-                toolbar: 'undo redo | bold italic underline | bullist numlist | link | removeformat | code',
-                entity_encoding: 'raw',
-                relative_urls: false,
-                remove_script_host: false,
-                convert_urls: false
-            });
+            tinyMCE.init(<?php echo osc_tinymce_config('basic', array(
+                'selector' => 'textarea[id^="description"]',
+            )); ?>);
         });
     </script>
     <?php

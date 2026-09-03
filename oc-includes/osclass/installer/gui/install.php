@@ -215,12 +215,16 @@ $ins_i18n = array(
 
                             display_finish($password);
 
-                            // Install storefront theme for first time.
+                            // Install storefront theme for first time. One constant for the
+                            // version: the tag and the asset filename both carry it, and pinning
+                            // them separately is how they drift apart.
                             if (!is_dir(CONTENT_PATH . 'themes/storefront')) {
                                 $fileSystem      = new \mindstellar\utility\FileSystem();
                                 $download_path   = CONTENT_PATH . 'downloads/';
+                                $storefrontVer   = '1.2.0';
                                 if ($downloaded = $fileSystem->downloadFile(
-                                    'https://github.com/mindstellar/theme-storefront/releases/download/v1.0.1/storefront_1.0.1.zip',
+                                    'https://github.com/mindstellar/theme-storefront/releases/download/v'
+                                    . $storefrontVer . '/storefront_' . $storefrontVer . '.zip',
                                     $download_path . 'storefront.zip'
                                 )) {
                                     $zip = new \mindstellar\utility\Zip();

@@ -37,13 +37,12 @@
   "dependencies": {
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
-    "chart.js": "^3.9.1",
     "jquery": "^3.7.1",
     "jquery-ui-dist": "^1.13.3",
     "jquery-validation": "^1.22.1",
     "npm-font-open-sans": "^1.1.0",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
     "sortablejs": "^1.15.7",
-    "tinymce": "^7.9.3"
+    "tinymce": "^8.8.2"
   }
 }

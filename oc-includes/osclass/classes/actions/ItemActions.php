@@ -229,8 +229,7 @@ class ItemActions
         if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                $flash_error .= _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.')
-                    . PHP_EOL;
+                $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
             }
         }
 
@@ -1816,7 +1815,11 @@ class ItemActions
             return 6;
         }
 
-        if (!preg_match('|^.*?@.{2,}\..{2,3}$|', $authorEmail)) {
+        // osc_validate_email(), the same check the contact form and registration use. The
+        // pattern that stood here required a two or three character top-level domain, so it
+        // turned away every .info, .online, .store and .agency address while accepting a
+        // local part containing spaces.
+        if (!osc_validate_email($authorEmail)) {
             Session::newInstance()->_setForm('commentAuthorName', $authorName);
             Session::newInstance()->_setForm('commentTitle', $title);
             Session::newInstance()->_setForm('commentBody', $body);
@@ -1993,8 +1996,15 @@ class ItemActions
         $aItem['currency']     = Params::getParam('currency');
         $aItem['showEmail']    = Params::getParam('showEmail') ? 1 : 0;
         $aItem['title']        = Params::getParam('title');
+        // A rich editor needs its markup to survive, so Params' XSS check -- which strips
+        // every tag -- is off on that path; osc_sanitize_html() is what keeps it safe, an
+        // allow-list of exactly what the toolbars emit. Without it a description was stored
+        // as submitted, and a <script> in one ran for every visitor who opened the listing.
+        // The plain-textarea path keeps stripping everything, as it always has.
         $aItem['description']  =
-            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN)) ? Params::getParam('description', false, false) : Params::getParam('description');
+            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
+                ? osc_sanitize_html(Params::getParam('description', false, false))
+                : Params::getParam('description');
         $aItem['photos']       = Params::getFiles('photos');
         $ajax_photos           = Params::getParam('ajax_photos');
         $aItem['s_ip']         = get_ip();

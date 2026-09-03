@@ -400,6 +400,27 @@ function osc_private_user_menu($options = null)
 
     $options = osc_apply_filter('user_menu_filter', $options);
 
+    // Keep log out last. The filter is how a plugin adds an account entry and appending is
+    // the natural way to do it, which landed every one of them BELOW the log-out row --
+    // and displaced log out into the middle of the list, since the render below gives the
+    // final entry its own slot after the user_menu hook. Moving it here rather than holding
+    // it out of the filter leaves it visible to a plugin that wants to relabel it. A theme
+    // passing its own options without an opt_logout entry (bender has none) is untouched.
+    foreach ($options as $var_k => $var_option) {
+        if (isset($var_option['class']) && $var_option['class'] === 'opt_logout') {
+            unset($options[$var_k]);
+            $options[] = $var_option;
+            break;
+        }
+    }
+    $options = array_values($options);
+
+    // A filter is free to return nothing; the final-entry render below would then reach for
+    // a key that does not exist.
+    if ($options === array()) {
+        return;
+    }
+
     echo '<script type="text/javascript">';
     // Vanilla, and DOMContentLoaded-wrapped so it runs after the list below exists (the
     // old jQuery ran inline before the <ul> and matched nothing). No jQuery dependency.
@@ -438,7 +459,9 @@ function osc_private_user_menu($options = null)
  */
 function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')
 {
-    $txt = strip_tags($txt);
+    // A tag is a word boundary: stripping it outright glues the text either side
+    // of it together ("</p><p>" turned "…platform. Instead" into "…platform.Instead").
+    $txt = strip_tags(preg_replace('/<[^>]*>/', ' ', $txt));
     $txt = str_replace(array("\n\r", "\r\n", "\n", "\r", "\t"), ' ', $txt);
     $txt = trim($txt);
     $txt = preg_replace('/\s+/', ' ', $txt);
@@ -1046,17 +1069,27 @@ function osc_get_locations_json_url()
 }
 
 /**
- * Get URL of location SQL.
+ * URL of a country's legacy location SQL dump.
+ *
+ * Nothing in core calls this. Locations come from the published catalogue instead
+ * (see osc_get_locations_json_url() and `oc-cli.php location:update`), which is
+ * built from Wikidata and published CC0; these dumps are the ODbL dataset that
+ * replaced, and are no longer maintained.
+ *
+ * Kept because it is an osc_* helper a third-party installer may still call. The
+ * repository is Osclass-Extras, not Shopclass-Extras: the rebrand rewrote this URL
+ * but not the repository it points at.
  *
  * @param string $location
  *
  * @return string
+ * @deprecated since 6.2.0; use osc_get_locations_json_url()
  */
 function osc_get_locations_sql_url($location)
 {
     $location = rawurlencode($location);
 
-    return 'https://raw.githubusercontent.com/mindstellar/Shopclass-Extras/master/locations/' . $location;
+    return 'https://raw.githubusercontent.com/mindstellar/Osclass-Extras/master/locations/' . $location;
 }
 
 /**
@@ -1093,4 +1126,81 @@ function osc_get_i18n_repository_url($path = '')
     $path = implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
 
     return $repoUrl . $path;
+}
+
+/**
+ * The TinyMCE config every editor in the product starts from, as the JSON object literal
+ * tinymce.init() takes.
+ *
+ * The base was copied into five call sites, which is how the front-end listing editor was
+ * left without license_key when TinyMCE 7 made it mandatory: four were updated, one was
+ * missed, and nothing could catch it. Everything shared now lives here once.
+ *
+ * $preset picks the plugin/toolbar pair:
+ *   'basic' — inline formatting, lists, link, source view (front-end listings, emails)
+ *   'full'  — blocks, image/media, tables and Word-paste cleaning (pages, widgets)
+ * The admin listing editor uses neither: it wants tables and forecolor but no embedded
+ * media, so it passes its own plugins/toolbar in $overrides rather than earning a preset
+ * of its own for one caller.
+ *
+ * Values that are JavaScript rather than data -- the dark-mode skin bridge, upload
+ * callbacks -- cannot survive json_encode, so callers assign those onto the object
+ * afterwards, which is the shape three of them already used.
+ *
+ * @param string $preset    'basic' or 'full'
+ * @param array  $overrides merged over the result; selector is always one of these
+ *
+ * @return string JSON, ready to embed
+ */
+function osc_tinymce_config($preset = 'basic', array $overrides = array())
+{
+    $config = array(
+        // TinyMCE disables the editor outright from 7 onwards unless a licence is
+        // declared; 'gpl' is the self-hosted option the bundled build is used under.
+        'license_key'        => 'gpl',
+        'promotion'          => false,
+        'branding'           => false,
+        'menubar'            => false,
+        'entity_encoding'    => 'raw',
+        'relative_urls'      => false,
+        'remove_script_host' => false,
+        'convert_urls'       => false,
+    );
+
+    if ($preset === 'full') {
+        $config['plugins'] = 'advlist anchor autolink charmap code fullscreen image'
+                             . ' insertdatetime link lists media preview searchreplace'
+                             . ' table visualblocks';
+        $config['toolbar'] = 'undo redo | blocks | bold italic underline | bullist numlist'
+                             . ' | link image media table | alignleft aligncenter alignright'
+                             . ' | removeformat | visualblocks code fullscreen preview';
+        // Paste handling — clean what comes in from Word / Google Docs.
+        $config['smart_paste']                   = true;
+        $config['paste_as_text']                 = false;
+        $config['paste_merge_formats']           = true;
+        $config['paste_data_images']             = false;
+        $config['paste_remove_styles_if_webkit'] = true;
+        $config['paste_webkit_styles']           = 'none';
+        // Only the light oxide skin ships, so the editor is a consistent "sheet of
+        // paper" in both themes rather than a half-dark panel.
+        $config['content_style'] = 'body{font-family:system-ui,-apple-system,"Segoe UI",'
+                                   . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
+                                   . 'line-height:1.55;color:#14181f}';
+    } else {
+        // Lean set: basic inline formatting, lists and links. No source view -- this is the
+        // preset the public listing form uses, and handing a poster a raw-HTML pane invites
+        // exactly what osc_sanitize_html() then has to take back out. An admin-only editor
+        // that wants one asks for it in $overrides.
+        // bold/italic/underline/removeformat are core and need no plugin.
+        $config['plugins'] = 'autolink lists link';
+        $config['toolbar'] = 'undo redo | bold italic underline | bullist numlist | link'
+                             . ' | removeformat';
+    }
+
+    $config = array_merge($config, $overrides);
+
+    // The one seam a plugin has on these editors; nothing else exposes them.
+    $config = osc_apply_filter('tinymce_config', $config, $preset);
+
+    return json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }

@@ -13,7 +13,13 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '6.2.0.beta1');
+    define('OSCLASS_VERSION', '6.2.0');
+}
+
+// Roughly where a search engine stops showing a description, and the budget
+// meta_description() fills — most distinguishing part first.
+if (!defined('OSC_META_DESCRIPTION_LENGTH')) {
+    define('OSC_META_DESCRIPTION_LENGTH', 155);
 }
 
 if (!defined('MULTISITE')) {

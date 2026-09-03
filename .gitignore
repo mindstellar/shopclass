@@ -95,3 +95,7 @@ oc-content/downloads/backups/
 
 # Personal dev-stack additions (theme/plugin mounts from sibling checkouts).
 docker-compose.local.yml
+
+# HTMLPurifier compiles its definitions into here at runtime. That is a
+# per-install cache, not part of the library.
+oc-includes/vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer/*/

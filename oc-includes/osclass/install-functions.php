@@ -783,6 +783,12 @@ function oc_install_example_data()
         $mCat->insert($fields, $aFieldsDescription);
     }
 
+    // Posting a listing goes through the billing helper for the seller's limits.
+    // It is required here rather than in the bootstrap because it reads a preference
+    // as it loads, and during bootstrap there is no database to read one from.
+    require_once LIB_PATH . 'osclass/helpers/hTheme.php';
+    require_once LIB_PATH . 'osclass/helpers/hBilling.php';
+
     $mItem = new ItemActions(true);
 
     foreach ($item as $k => $v) {
@@ -1122,33 +1128,4 @@ function basic_info()
             's_password'   => $password
         );
     }
-}
-
-/**
- * @return bool
- */
-function install_locations()
-{
-    $location = Params::getParam('locationsql');
-    if ($location) {
-        $sql = osc_file_get_contents(osc_get_locations_sql_url($location));
-        if ($sql) {
-            $conn = \mindstellar\database\ConnectionManager::newInstance();
-            $locationDb = new \mindstellar\database\Connection($conn->getHandle());
-            // A failed locations import is not fatal to the install: the dataset is
-            // optional, and the previous layer likewise reported success regardless.
-            try {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 0');
-                $locationDb->executeScript($sql);
-            } catch (\mindstellar\database\DbException $e) {
-                error_log('Location dataset import failed: ' . $e->getMessage());
-            } finally {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 1');
-            }
-
-            return true;
-        }
-    }
-
-    return false;
 }

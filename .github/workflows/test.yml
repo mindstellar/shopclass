@@ -109,10 +109,70 @@ jobs:
         run: php tests/item-url-characterization.php
       - name: Pagination
         run: php tests/pagination.php
+      # The location sitemaps synthesise URLs while the sitemap route's own params are
+      # still in the request; one leaking in silently doubles every category-location
+      # page into a second, self-canonicalising URL that Google indexes separately.
+      - name: Sitemap search URLs
+        run: php tests/sitemap-search-url.php
+      # A description that leads with the category blurb reads fine on one page and is a
+      # duplicate across every city in that category -- the part that differs sits past
+      # where a search engine stops reading.
+      - name: Meta description
+        run: php tests/meta-description.php
+      # Both directions are silent: a facet param left in the canonical makes every price
+      # and custom-field permutation its own indexable URL, and one dropped too many points
+      # two different result sets at the same canonical, de-indexing one of them.
+      - name: Canonical params
+        run: php tests/canonical-params.php
+      # Resolving sCategory by slug alone 404s a category that exists whenever the value
+      # is an id -- which is what osc_search_url() emits and what a category <select> submits.
+      - name: Search category resolution
+        run: php tests/search-category-resolve.php
+      # A page built from blocks rendered through the theme's root header.php, which is not
+      # part of the view contract -- the page shipped as a fragment with no <head> at all.
+      - name: Page builder render
+        run: php tests/page-builder-render.php
+      # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
+      # order there is silent -- the entry renders, just under the log-out row.
+      - name: Account menu order
+        run: php tests/user-menu-order.php
+      # An unrouted settings action does not error -- it renders a different settings page
+      # and discards the post, so the only symptom is preferences that never save.
+      - name: Admin settings routes
+        run: php tests/admin-settings-routes.php
+      # The editor config was copied into five call sites; when TinyMCE made license_key
+      # mandatory, four were updated and the public one was not -- and it stops loading.
+      - name: TinyMCE config
+        run: php tests/tinymce-config.php
+      # A listing description is stored with Params' XSS check off, so the allow-list is
+      # the only thing between a poster and script running for every visitor.
+      - name: Rich-text sanitiser
+        run: php tests/sanitize-html.php
+      # Auto-cron's three decisions -- run in-process on FPM, after the response, under a
+      # bounded time limit -- are one small block that is easy to undo while tidying.
+      - name: Auto-cron dispatch
+        run: php tests/autocron-dispatch.php
+      # The only signal a proxy or CDN gets that a listing's page went stale -- including
+      # after a storage offload rewrites its image URLs, which fires nothing else.
+      - name: Item cache invalidation hook
+        run: php tests/item-cache-invalidation.php
+      # The validator masks the CSRF pair so it survives a fresh token. Masking a
+      # character too much and an edited page keeps its ETag, which serves stale content.
+      - name: Response ETag
+        run: php tests/response-etag.php
+      # A form that validates addresses on its own drifts: the comment form refused every
+      # .info and .online address for years while accepting a local part with a space in it.
+      - name: Email validation
+        run: php tests/validate-email.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
         run: php tests/security-secret-coercion.php
+      # Both directions of a wrong cookie allowlist are silent: a name no setcookie()
+      # writes never matches at the proxy, and a missing one lets a personalized page be
+      # stored under a URL whose cache key has no such component.
+      - name: Cache cookie contract
+        run: php tests/cache-cookie-contract.php
       - name: DAO contract
         run: php tests/dao-contract.php
       - name: Model contracts

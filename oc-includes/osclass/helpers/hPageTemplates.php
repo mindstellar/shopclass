@@ -83,8 +83,8 @@ function osc_show_page_widgets()
  * the option always exists in the page editor without any plugin. Its render is
  * theme-agnostic: if the active theme ships a template-widgets.php it owns the
  * page (and calls osc_show_page_widgets() within its own chrome); otherwise the
- * core fallback wraps the theme header/footer around the page's blocks, so a
- * widgetized page renders correctly on any theme. See PAGE-BUILDER.md.
+ * blocks are filtered into the theme's page.php, so a widgetized page renders
+ * inside whatever chrome that theme uses. See PAGE-BUILDER.md.
  */
 osc_register_page_template('core.page_builder', array(
     'label'       => 'Page builder (blocks)',
@@ -98,11 +98,20 @@ osc_register_page_template('core.page_builder', array(
             return;
         }
 
-        osc_current_web_theme_path('header.php');
-        echo '<div class="page-builder">';
-        echo '<h1>' . osc_esc_html(osc_static_page_title()) . '</h1>';
-        osc_show_page_widgets();
-        echo '</div>';
-        osc_current_web_theme_path('footer.php');
+        // No theme canvas: render the blocks through the theme's own page view,
+        // the only static-page template core's view contract guarantees. A root
+        // header.php is not part of that contract — storefront has none, and
+        // shopclass's carries site chrome only, with the document head living in
+        // each view — so this pair emitted a page fragment with no <head>, and
+        // therefore no title, description, canonical or robots meta.
+        osc_add_filter('static_page_text', static function () {
+            ob_start();
+            echo '<div class="page-builder">';
+            osc_show_page_widgets();
+            echo '</div>';
+
+            return ob_get_clean();
+        });
+        osc_current_web_theme_path('page.php');
     },
 ));

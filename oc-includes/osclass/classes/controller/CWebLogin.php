@@ -359,6 +359,9 @@ class CWebLogin extends BaseModel
      */
     public function doView($file)
     {
+        // A sign-in form has nothing to rank for, and every account page behind it
+        // redirects here — so this one URL stands in for all of them in a crawl.
+        $this->_exportVariableToView('meta_noindex', true);
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
         osc_run_hook('after_html');

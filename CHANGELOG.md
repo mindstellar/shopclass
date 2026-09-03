@@ -7,10 +7,21 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Back up your database before upgrading: this release rebuilds foreign keys across twenty-four
 tables. It also lets sites sell credits and charge for listings, lets people download a copy of
 their own data, closes three paths that could execute arbitrary files under the plugins
-directory, and removes Google Analytics from the core.
+directory, and removes Google Analytics from the core. Search engines get more to work
+with too: every listing index now has its own description and a single canonical.
 
 ### Security
 
+- **A listing description was stored exactly as submitted on sites using the rich editor.**
+  Params' XSS check strips every tag, so it is switched off wherever a rich editor is in
+  use, and nothing replaced it — a script in a description ran for every visitor who opened
+  the listing, the listing's author included. Descriptions are now sanitised against an
+  allow-list of the markup the toolbars actually produce; scripts, iframes, event handlers
+  and any URL scheme other than http/https/mailto do not survive it. Only sites that turned
+  on "use TinyMCE on the frontend" were affected — it is off unless an admin enables it, and
+  everywhere else every tag was already stripped. The public listing editor also loses its
+  source-view button, which is not what made this exploitable but is no longer worth
+  offering.
 - **The plugin admin-page route would execute any file inside the plugins directory.**
   `?page=plugins&action=renderplugin&file=…` ends in `require_once`, and decided what to
   run by looking for the literal `../` — so anything else under the plugins tree was
@@ -53,6 +64,38 @@ directory, and removes Google Analytics from the core.
   whose cached copy is unreadable.
 
 ### Fixed
+
+- A search carrying a category id rather than a slug returned 404, though the category
+  existed. Both spellings now resolve.
+- A static page built from blocks rendered with no `<head>` — no title, description or
+  canonical. It now renders through the theme's page view.
+- Price, photo, premium and custom-field filters each claimed their own canonical, so
+  every permutation was a separate indexable URL. They now point at the page they
+  filter.
+- Static pages had no canonical, and the sign-in and registration forms were
+  indexable. Both fixed; the contact page stays indexable and gains a canonical.
+- Listing indexes in the same category all served the same meta description. They now
+  lead with category, location and count, and city and region pages get one at all.
+- Stripping HTML for a description glued words together across tags. Also affects
+  static-page and listing excerpts.
+- The category-city and category-region sitemaps listed a second, duplicate URL for every
+  page. Clear the sitemap cache after upgrading (Settings -> Sitemap -> Regenerate).
+- Activating, deactivating, installing, or uninstalling a plugin, or switching a theme,
+  did not take effect until php-fpm restarted when `opcache.validate_timestamps` is off
+  (the usual production setting) — the change appeared not to apply, or a stale class ran
+  against new state and fataled, auto-deactivating the plugin. These operations now reset
+  opcache so the next request recompiles.
+- Logged-in visitors could be served a cached anonymous page by a reverse proxy or the
+  nginx micro-cache. Identity lives as keys inside one cookie named `md5(WEB_PATH)`, which
+  the cookie-name bypass could not match; the app now also sets a fixed-name `oc_cache_bypass`
+  cookie in lockstep with login, and the caching contract matches that alongside the `osclass`
+  session cookie and `oc_userLocale`. Nothing leaked (the response was already `private,
+  no-store`), but logged-in users saw stale/anonymous pages.
+- The chosen front-end language cookie now expires after 24 hours instead of a year, so a
+  visitor who switches language is not kept out of the shared cache long after that visit.
+- The web installer returned a 500 on a fresh install. The billing helper reads a
+  preference as it loads, so requiring it during bootstrap asked for a database the
+  installer had not configured yet. Unreleased; it never reached a published build.
 
 - Sites are told when a newer translation is available again. The check returned false
   before doing anything and asked a market that no longer exists.
@@ -110,8 +153,89 @@ directory, and removes Google Analytics from the core.
   that truncated every IPv6 address. They are migrations now, so the upgrade no longer depends
   on the repair pass to arrive at a complete schema. Sites already on 5.2 or later are
   unaffected — every step checks first and does nothing where the change is already present.
+- A listing URL that matches nothing returned 410 Gone, claiming a listing had existed there
+  and was permanently deleted — for any id, including ones never issued. It now returns 404.
+- Listings awaiting moderation or blocked, and unknown category/location/user subdomains,
+  returned 400 Bad Request; they now return 404.
+- Error pages now send a `Cache-Control` header, so a crawler walking dead URLs can be
+  absorbed by a reverse proxy instead of costing a page render per hit.
+- The account menu offered "Credits" and "Buy credits" whenever billing was on, so a site
+  that enabled it only to cap listings sent every seller to an empty state. They now appear
+  only where credits can be bought, or are already held.
+- A seller at their listing limit only found out after writing the whole listing. Opening
+  the post form now turns them back with the same message.
+- Account-menu entries added by a plugin rendered below the log-out row, and pushed log out
+  into the middle of the list. Log out is kept last.
+- The installer downloaded storefront 1.0.1 when a fresh install had no bundled copy of the
+  theme, two releases behind. It now fetches 1.2.0, from a single pinned version.
+- **"My listings" and public seller profiles listed every premium listing on the site.** The
+  not-expired filter contributed an ungrouped `OR`, so the query read `(mine AND live) OR (any
+  premium listing)` — other sellers' rows appeared with the owner's own controls beside them,
+  the counts and pager were inflated to match, and a premium listing that was admin-disabled or
+  awaiting moderation could reach a public profile. The same clause also dropped the expiry and
+  spam tests entirely on a site with no premium listings.
+- The photo uploader told a seller the site-wide photo limit even when they held a raised
+  one, capping them in the browser below what the upload actually accepts.
+- Posting a comment refused any address whose top-level domain was longer than three
+  characters — `.info`, `.online`, `.store`, `.agency` — reporting it as a missing email.
+  The same form accepted a local part containing spaces. It now validates the way the
+  contact form and registration always have.
+- The `nospam` listing filter did not exclude spam. It asked for an option name the filter
+  builder had no case for, so the one test it exists for was silently never applied.
+- **Four of the five forms on Settings → Billing saved nothing.** Pricing (which owns the
+  seller listing limit), offline payments, upgrades and seller limits posted actions the
+  settings router had no case for, so each one landed on the General settings page and
+  discarded the values with no error. Only the enable/disable toggle worked.
 
 ### Changed
+
+- Micro-cache entries are kept for a day rather than dropped after a minute idle, and
+  `docker-compose.prod.yml` turns the micro-cache on.
+- CSRF tokens stamp their issue time on a half-hour bucket rather than the exact second.
+  Two renders of a page are otherwise identical, so the second-level stamp was the only
+  thing making them differ — which is what stopped a cache or a validator recognising them
+  as the same page. How long a token is accepted is unchanged.
+- The description editor on the post and edit listing pages refused to load, reporting that
+  no TinyMCE license key had been provided. The front-end editor was the only one of the five
+  that did not declare the bundled GPL build.
+- Buying credits did nothing: the Continue button re-rendered the package picker and placed
+  no order. A matched rewrite rule wrote its own params over the request, so once the buy
+  page had a permalink the `action=checkout` the form posts arrived as the route's
+  `action=buy`. A rule no longer overwrites a value the POST body supplies — a form's hidden
+  fields are its intent, the URL only says where it was rendered — which fixes the same trap
+  for any page that gains a permalink later. Unreleased; it never reached a published build.
+- `osc_tinymce_config()` is the one place every rich-text editor is configured from, with a
+  `basic` and a `full` preset. The settings each editor shared were copied into five call
+  sites, which is how the front-end one was left without a licence key; a `tinymce_config`
+  filter now also gives plugins their first way into these editors.
+- The new billing permalinks could 404 for good after upgrading. The permalink table
+  rebuilds when its stamped version stops matching the code's, which is true from the first
+  request after new files land — before that release's migration has seeded the preferences
+  the new routes are built from. A request that won that race compiled without them and
+  stamped the new version anyway, so it never rebuilt again. The upgrade now recompiles the
+  table once its migrations have run. Unreleased; it never reached a published build.
+- Auto-cron runs its work in the same process on PHP-FPM, after the page has been sent,
+  instead of asking the site for `?page=cron` over HTTP. That request only ever existed to
+  get the work off the visitor's page load, and an origin behind a proxy cannot make it —
+  it resolves its own public address to the proxy and never reaches itself, so nothing ran
+  and nothing said so. Setups without FPM keep the old request. Nobody waits either way.
+- The wallet, buy-credits and orders pages have permalinks (`user/credits`,
+  `user/credits/buy`, `user/orders`) instead of query strings — the only account links that
+  still had them. The old `?page=billing` form keeps resolving, so existing links and the
+  gateway callback are unaffected.
+- A release that ships no migration no longer sends the admin to the upgrade screen. The
+  version is carried across on the next admin page load, with a notice saying so. Releases
+  with migrations waiting still go to the screen, where the schema reconcile runs under
+  supervision — an install carried across automatically has not been reconciled.
+- `osc_get_locations_sql_url()` is deprecated in favour of the published location
+  catalogue, and the unreachable installer function that was its only caller is gone.
+
+- TinyMCE updated to 8.8.2. The editor now declares the GPL licence it is bundled
+  under; version 8 refuses to start without one.
+
+- The published Docker image runs PHP 8.5.
+
+- PHPMailer updated to 7.1.1 and HTMLPurifier to 4.19.0.
 
 - Translations now come from the Shopclass translations repository rather than the
   Osclass one. 32 languages carried over, re-merged against the current strings.
@@ -134,6 +258,35 @@ directory, and removes Google Analytics from the core.
   code that performs those side effects. Existing installs are converted on upgrade.
 
 ### New
+
+- The Docker image can now remove a cached page before it expires: it carries
+  `ngx_cache_purge`, and `OSC_MICROCACHE` writes a purge endpoint reachable only from
+  inside the container. That is what the nginx Cache plugin needs to hold public pages for
+  an hour instead of core's thirty seconds.
+- Public pages carry an `ETag`, so a returning visitor or a crawler gets a small "nothing
+  changed" reply instead of the page again. They were already told to revalidate on every
+  use but had nothing to revalidate against, so every check re-sent the whole page. nginx
+  answers these from its own copy once it holds one.
+- `response_body` filters the finished page, after CSRF tokens are injected and before
+  anything reaches the client — one place for anything needing the whole body, instead of
+  a second output buffer racing the first. Returning an empty string sends no body.
+- `invalidate_item_cache` fires whenever a listing's rendered output goes stale — an edit,
+  an image added or removed, the listing deleted, and a storage offload once it has
+  rewritten the image URLs. That last case fired nothing at all before, so a proxy or CDN
+  went on serving a page pointing at local files the offload had moved.
+- `oc-cli.php storage:work` drains the storage-offload queue and nothing else, so it can be
+  scheduled every minute. The queue was reachable only through the hourly cron tier, which
+  runs a whole schedule block besides — on a busy site the backlog never cleared.
+- `billing_listing_limit_message` filters the message a seller sees at their listing limit,
+  for a plugin that sells extra slots and needs to say so.
+
+- `osc_user_listing_limit()`, `osc_user_listings_used()`, `osc_user_listings_remaining()`,
+  `osc_user_can_publish()` and `osc_listing_limit_message()` let a theme show a seller their
+  listing quota before they hit it. -1 means unlimited.
+
+- CI fails when the committed vendor and asset trees no longer match what
+  composer.lock and package-lock.json declare. Releases ship those trees verbatim, so
+  a bump that edits only a manifest would hand users the old library.
 
 - Translation templates are published to the translations repository automatically when
   the strings they hold change, so translators are never working from an older set.
@@ -184,6 +337,11 @@ directory, and removes Google Analytics from the core.
   describe.
 
 ### Breaking
+
+- **`oc-includes/assets/chart-js/` has been removed.** Chart.js was added in 2021 and
+  never used: no core file, admin page, bundled plugin or theme has ever loaded it, and
+  the admin's charts are Google Charts. It shipped 122 KB to every install. A third-party
+  plugin loading that path directly should bundle its own copy.
 
 - **Back up your database before upgrading.** This release rebuilds foreign keys on
   twenty-four tables so that the database removes dependent rows along with their parent.
