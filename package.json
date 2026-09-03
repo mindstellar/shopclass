@@ -2,10 +2,10 @@
   "name": "shopclass",
   "devDependencies": {
     "@popperjs/core": "^2.11.8",
-    "esbuild": "^0.28.1",
-    "eslint": "^9.39.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
     "gettext-parser": "^9.1.1",
-    "sass-embedded": "^1.100.0"
+    "sass-embedded": "^1.103.1"
   },
   "description": "Shopclass is a free and open script to create your advertisement or listings site. Best features: Plugins, themes, multi-language, CAPTCHA, dashboard, SEO friendly.",
   "scripts": {
