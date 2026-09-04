@@ -37,6 +37,90 @@ function osc_widget_types()
 }
 
 /**
+ * The widget sections the active theme offers, in the order it offers them:
+ * slug => array('label' => string, 'description' => string).
+ *
+ * Resolution, first hit wins:
+ *   1. osc_add_theme_support('widget_locations', array('header' => array('label' => …)))
+ *      -- labelled, described, ordered, and declarable conditionally.
+ *   2. the `Widgets:` line in the theme's index.php, each slug standing in as its
+ *      own label. This is what every theme written before the declaration existed
+ *      does, and it keeps behaving exactly as it did.
+ *   3. neither -- no sections.
+ *
+ * A plugin adds one through the `widget_locations` filter, which sees the merged
+ * map. The admin uses this to build its drop zones *and* to refuse a forged
+ * section on a move, so anything added here becomes placeable.
+ *
+ * @return array<string,array{label:string,description:string}>
+ */
+function osc_widget_locations()
+{
+    $locations = _osc_widget_locations_normalize(osc_theme_supports('widget_locations'));
+
+    if ($locations === array()) {
+        $info   = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+        $header = (is_array($info) && isset($info['locations']) && is_array($info['locations']))
+            ? $info['locations']
+            : array();
+        $locations = _osc_widget_locations_normalize($header);
+    }
+
+    $filtered = osc_apply_filter('widget_locations', $locations);
+
+    return is_array($filtered) ? _osc_widget_locations_normalize($filtered) : $locations;
+}
+
+/**
+ * Coerce any of the shapes a location map arrives in into slug => spec.
+ *
+ * Accepts a list of slugs (the `Widgets:` header), a map of slug => spec, and a
+ * map of slug => label. A slug that is not [a-zA-Z0-9_.-]{1,60} is dropped: it
+ * reaches an HTML attribute and a database column, and no theme has ever used
+ * anything else.
+ *
+ * @param mixed $raw
+ *
+ * @return array<string,array{label:string,description:string}>
+ */
+function _osc_widget_locations_normalize($raw)
+{
+    if (!is_array($raw)) {
+        return array();
+    }
+
+    $locations = array();
+    foreach ($raw as $slug => $spec) {
+        if (is_int($slug)) {
+            // A bare list: array('header', 'footer').
+            $slug = $spec;
+            $spec = array();
+        }
+        if (is_string($spec)) {
+            $spec = array('label' => $spec);
+        }
+        if (!is_string($slug) || !is_array($spec)) {
+            continue;
+        }
+        $slug = trim($slug);
+        if (!preg_match('/^[a-zA-Z0-9_.-]{1,60}$/', $slug)) {
+            continue;
+        }
+
+        $label = (isset($spec['label']) && is_string($spec['label']) && trim($spec['label']) !== '')
+            ? trim($spec['label'])
+            : $slug;
+        $description = (isset($spec['description']) && is_string($spec['description']))
+            ? trim($spec['description'])
+            : '';
+
+        $locations[$slug] = array('label' => $label, 'description' => $description);
+    }
+
+    return $locations;
+}
+
+/**
  * Render a single widget row.
  *
  * Dispatcher used by osc_show_widgets() / osc_show_widgets_by_description() and

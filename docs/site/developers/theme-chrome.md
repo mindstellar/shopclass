@@ -105,3 +105,49 @@ nothing behaves exactly as before.
 `osc_theme_provides('user-wishlist.php')` answers whether the active theme can
 render a view: it ships the file, or it named the view here. Use it when the view
 is not a file — one a plugin renders, or one built at runtime.
+
+## Declaring widget zones
+
+A theme has always listed its widget zones on the `Widgets:` line of
+`index.php`. That line gives core a slug and nothing else, so the admin screen
+labels the zone `footer` and cannot say what it is or where it renders.
+
+Declare them instead:
+
+```php
+osc_add_theme_support('widget_locations', array(
+    'header' => array(
+        'label'       => __('Masthead', 'mytheme'),
+        'description' => __('Below the navigation.', 'mytheme'),
+    ),
+    'footer' => array(
+        'label'       => __('Colophon', 'mytheme'),
+        'description' => __('Above the copyright line.', 'mytheme'),
+    ),
+));
+```
+
+The declared order is the order the admin shows them in. `description` is
+optional; a zone with no `label` falls back to its slug. A bare list —
+`array('header', 'footer')` — and a `slug => label` map are both accepted.
+
+Declare from the `init` hook rather than the top of `functions.php` if your
+labels are translated: core requires `functions.php` before the translation
+layer is initialised.
+
+**A theme that declares nothing keeps its `Widgets:` line**, with each slug
+standing in as its own label — exactly what it does today.
+
+`osc_widget_locations()` returns the resolved map, and passes through the
+`widget_locations` filter, which is how a plugin contributes a zone of its own.
+Anything in that map is placeable: the admin builds its drop zones from it and
+refuses a move into a zone that is not in it.
+
+Rendering a zone is unchanged:
+
+```php
+osc_show_widgets('footer');
+```
+
+It prints nothing when the zone is empty — which is most zones on most sites, so
+buffer it if your wrapper would otherwise render as an empty box.

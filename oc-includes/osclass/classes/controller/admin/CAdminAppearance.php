@@ -265,14 +265,13 @@ class CAdminAppearance extends AdminSecBaseModel
                 $ids      = Params::getParamArray('ids');
                 $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
-                // The section must be one the active theme actually declares, so a
+                // The section must be one the active theme actually offers, so a
                 // forged post cannot invent a location.
-                $info       = WebThemes::newInstance()->loadThemeInfo(osc_theme());
-                $locations  = isset($info['locations']) && is_array($info['locations']) ? $info['locations'] : array();
-                $widgetRow  = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
-                $ok         = false;
+                $locations = osc_widget_locations();
+                $widgetRow = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
+                $ok        = false;
 
-                if ($widgetRow !== null && in_array($location, $locations, true)) {
+                if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
                     osc_db_table(DB_TABLE_PREFIX . 't_widget')
                         ->where('pk_i_id', $moved)
                         ->update(array('s_location' => $location));

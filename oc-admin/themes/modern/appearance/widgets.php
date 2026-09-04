@@ -18,8 +18,6 @@
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('sortablejs');
 
-$info = __get('info');
-
 osc_admin_page(array(
     'section' => __('Appearance'),
     'title'   => __('Appearance'),
@@ -52,17 +50,20 @@ uksort($paletteTypes, static function ($a, $b) {
     }
     return strcasecmp($a, $b);
 });
-$locations = (isset($info['locations']) && is_array($info['locations'])) ? $info['locations'] : array();
+$locations = osc_widget_locations();
 
 // Sections that still hold widgets but which the active theme no longer declares.
 // Switching theme (or disabling a plugin that registered an area) does not delete
 // the widgets — it just leaves them with nowhere to render, silently. They are
 // listed after the live sections, marked unavailable, so they can be moved or
 // removed rather than quietly doing nothing.
-$orphanLocations = array();
+$sections = array();
+foreach ($locations as $slug => $spec) {
+    $sections[$slug] = $spec + array('orphan' => false);
+}
 foreach (Widget::newInstance()->distinctLocations() as $stored) {
-    if (!in_array($stored, $locations, true)) {
-        $orphanLocations[] = $stored;
+    if (!isset($sections[$stored])) {
+        $sections[$stored] = array('label' => $stored, 'description' => '', 'orphan' => true);
     }
 }
 ?>
@@ -79,8 +80,8 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
             </div>
             <p class="col-hint"><?php _e('Each section is a place your theme renders widgets. Drag a type in from the right, and drag widgets to reorder them or move them between sections.'); ?></p>
 
-            <?php foreach (array_merge($locations, $orphanLocations) as $location) {
-                $isOrphan = in_array($location, $orphanLocations, true);
+            <?php foreach ($sections as $location => $section) {
+                $isOrphan = $section['orphan'];
                 $widgets  = Widget::newInstance()->findByLocation($location); ?>
                 <div class="form-card widget-section<?php echo $isOrphan ? ' is-unavailable' : ''; ?>"
                      data-location="<?php echo osc_esc_html($location); ?>"<?php echo $isOrphan ? ' data-unavailable="1"' : ''; ?>>
@@ -88,7 +89,10 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
                         <button type="button" class="form-card-toggle" aria-expanded="true"
                                 aria-label="<?php echo osc_esc_html(__('Collapse or expand this section')); ?>"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
                         <div class="form-card-heading">
-                            <span class="form-card-title"><?php echo osc_esc_html($location); ?></span>
+                            <span class="form-card-title"><?php echo osc_esc_html($section['label']); ?></span>
+                            <?php if ($section['description'] !== '') { ?>
+                                <span class="form-card-cats"><?php echo osc_esc_html($section['description']); ?></span>
+                            <?php } ?>
                             <?php if ($isOrphan) { ?>
                                 <span class="form-card-cats is-unattached">
                                     <i class="bi bi-exclamation-circle" aria-hidden="true"></i>

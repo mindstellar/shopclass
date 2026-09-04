@@ -18,6 +18,9 @@ deletion, credits, buy and orders — render inside the theme rather than on a p
 - Every front-end page resolves through an ordered candidate list: `osc_locate_template()`, the
   `template_candidates` filter, and per-category `item-{id}.php` and `search-{category}.php`
   views. A theme adds a view without a core patch.
+- Themes name and describe their widget zones with
+  `osc_add_theme_support('widget_locations', …)`; the admin screen shows the label and
+  description instead of the raw slug. Themes that only carry a `Widgets:` line are unchanged.
 
 ### Fixed
 
