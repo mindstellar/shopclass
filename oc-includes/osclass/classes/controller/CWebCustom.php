@@ -77,12 +77,12 @@ class CWebCustom extends BaseModel
         if ($user_menu) {
             if (osc_is_web_user_logged_in()) {
                 Params::setParam('in_user_menu', true);
-                $this->doView('user-custom.php');
+                $this->doView(osc_locate_template(array('user-custom.php'), 'user-custom'));
             } else {
                 $this->redirectTo(osc_user_login_url());
             }
         } else {
-            $this->doView('custom.php');
+            $this->doView(osc_locate_template(array('custom.php'), 'custom'));
         }
     }
 

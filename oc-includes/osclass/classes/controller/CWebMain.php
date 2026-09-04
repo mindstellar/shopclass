@@ -45,7 +45,7 @@ class CWebMain extends BaseModel
             $this->_exportVariableToView('canonical', osc_base_url());
             // Public homepage: a shared cache may hold it briefly for anonymous visitors.
             osc_mark_response_cacheable();
-            $this->doView('main.php');
+            $this->doView(osc_locate_template(array('main.php'), 'home'));
         }
     }
 

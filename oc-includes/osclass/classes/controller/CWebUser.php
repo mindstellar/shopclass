@@ -39,7 +39,7 @@ class CWebUser extends WebSecBaseModel
                 //calling the view...
                 $this->_exportVariableToView('items', $aItems);
                 $this->_exportVariableToView('max_items', $max_items);
-                $this->doView('user-dashboard.php');
+                $this->doView(osc_locate_template(array('user-dashboard.php'), 'user-dashboard'));
                 break;
             case ('profile'):        //profile...
                 $aUser      = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
@@ -76,7 +76,7 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('cities', $aCities);
                 $this->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
 
-                $this->doView('user-profile.php');
+                $this->doView(osc_locate_template(array('user-profile.php'), 'user-profile'));
                 break;
             case ('profile_post'):   //profile post...
                 osc_csrf_check();
@@ -114,10 +114,10 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('alerts', $aAlerts);
                 View::newInstance()->_reset('alerts');
                 $this->_exportVariableToView('user', $user);
-                $this->doView('user-alerts.php');
+                $this->doView(osc_locate_template(array('user-alerts.php'), 'user-alerts'));
                 break;
             case ('change_email'):           //change email
-                $this->doView('user-change_email.php');
+                $this->doView(osc_locate_template(array('user-change_email.php'), 'user-change_email'));
                 break;
             case ('change_email_post'):      //change email post
                 osc_csrf_check();
@@ -161,7 +161,7 @@ class CWebUser extends WebSecBaseModel
                 }
                 break;
             case ('change_username'):        //change username
-                $this->doView('user-change_username.php');
+                $this->doView(osc_locate_template(array('user-change_username.php'), 'user-change_username'));
                 break;
             case ('change_username_post'):   //change username
                 osc_csrf_check();
@@ -196,7 +196,7 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_change_user_username_url());
                 break;
             case ('change_password'):        //change password
-                $this->doView('user-change_password.php');
+                $this->doView(osc_locate_template(array('user-change_password.php'), 'user-change_password'));
                 break;
             case 'change_password_post':    //change password post
                 osc_csrf_check();
@@ -270,7 +270,7 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('items_type', $itemType);
                 $this->_exportVariableToView('search_page', $page);
 
-                $this->doView('user-items.php');
+                $this->doView(osc_locate_template(array('user-items.php'), 'user-items'));
                 break;
             case 'activate_alert':
                 $email  = Params::getParam('email');
@@ -360,7 +360,7 @@ class CWebUser extends WebSecBaseModel
                     break;
                 }
                 $this->_exportVariableToView('user', $user);
-                $this->doView('user-delete_account.php');
+                $this->doView(osc_locate_template(array('user-delete_account.php'), 'user-delete_account'));
                 break;
             case 'delete_post':
                 osc_csrf_check();

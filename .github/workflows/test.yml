@@ -107,6 +107,12 @@ jobs:
       # lets a page shadow the route of the same name and quietly stop resolving.
       - name: Theme view names
         run: php tests/theme-views.php
+      # Controllers now name a list of views rather than one, and the two orderings
+      # have to resolve theme-first: if candidate order won outright, a fallback
+      # theme's specific view would beat the active theme's generic one and the
+      # visitor would silently get a page from a theme the site is not running.
+      - name: Template hierarchy
+        run: php tests/template-hierarchy.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
       - name: Rewrite param decode

@@ -169,7 +169,7 @@ MESSAGE;
                 $this->redirectTo(osc_contact_url());
                 break;
             default:                //contact
-                $this->doView('contact.php');
+                $this->doView(osc_locate_template(array('contact.php'), 'contact'));
         }
     }
 

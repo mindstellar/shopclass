@@ -736,7 +736,25 @@ class CWebSearch extends BaseModel
         } else {
             // Public search / category results: cacheable for anonymous visitors.
             osc_mark_response_cacheable();
-            $this->doView('search.php');
+
+            // A theme may specialise a single category's results page. The token
+            // comes from the request as it stands -- resolving it to a row would
+            // cost a query on every search, and a file that does not exist is not
+            // worth one.
+            $viewCandidates = array();
+            if (count($p_sCategory) === 1) {
+                $viewCategory = reset($p_sCategory);
+                if (is_string($viewCategory)) {
+                    $segments     = explode('/', trim($viewCategory, '/'));
+                    $viewCategory = end($segments);
+                    if (preg_match('/^[a-zA-Z0-9_-]+$/', $viewCategory)) {
+                        $viewCandidates[] = 'search-' . $viewCategory . '.php';
+                    }
+                }
+            }
+            $viewCandidates[] = 'search.php';
+
+            $this->doView(osc_locate_template($viewCandidates, 'search'));
         }
     }
 

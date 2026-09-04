@@ -617,7 +617,7 @@ class Rewrite
             if ($rewrite['not_found']) {
                 $this->set_location('error');
                 header('HTTP/1.1 404 Not Found');
-                osc_current_web_theme_path('404.php');
+                osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
                 exit;
             }
             $request_uri = $rewrite['uri'];

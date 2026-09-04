@@ -218,7 +218,7 @@ abstract class BaseModel
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 400 Bad Request');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
@@ -271,7 +271,7 @@ abstract class BaseModel
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 404 Not Found');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
@@ -287,7 +287,7 @@ abstract class BaseModel
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 410 Gone');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 

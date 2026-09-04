@@ -105,6 +105,128 @@ function osc_theme_provides(string $view): bool
 }
 
 /**
+ * The theme stack a view is resolved against, as absolute directory paths:
+ * active theme, then its parent when it declares one, then the bundled fallback
+ * theme core keeps for views nobody else supplies.
+ *
+ * The same three places osc_current_web_theme_path() walks, without its side
+ * effect of switching the active theme as it goes -- this only answers a
+ * question. Cached per active theme: a request renders one theme, and the admin
+ * theme previewer picks its theme before anything is located.
+ *
+ * @return string[] existing directories, each ending in a separator
+ */
+function osc_theme_template_paths(): array
+{
+    static $cache = array();
+
+    $themes = WebThemes::newInstance();
+    $active = $themes->getCurrentThemePath();
+    $key    = (string) $themes->getCurrentTheme();
+
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    $paths = array();
+    if ($active !== '' && is_dir($active)) {
+        $paths[] = $active;
+    }
+
+    $info = $themes->loadThemeInfo($themes->getCurrentTheme());
+    if (is_array($info) && isset($info['template']) && $info['template'] !== ''
+        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+    ) {
+        $parent = osc_themes_path() . $info['template'] . '/';
+        if (is_dir($parent)) {
+            $paths[] = $parent;
+        }
+    }
+
+    $fallback = osc_content_path() . 'themes/storefront/';
+    if (is_dir($fallback)) {
+        $paths[] = $fallback;
+    }
+
+    $cache[$key] = array_values(array_unique($paths));
+
+    return $cache[$key];
+}
+
+/**
+ * The first view in $candidates that some theme in the stack can render.
+ *
+ * Ordered most specific first: array('item-12.php', 'item.php') renders the
+ * category's own view where a theme ships one and the generic listing view
+ * everywhere else. Candidate order is resolved *within* one theme before moving
+ * on to the next, so a theme's own generic view always beats a fallback theme's
+ * specific one -- otherwise adding a candidate could hand a page to a theme the
+ * visitor is not using.
+ *
+ * Returns a **view name**, not a path: rendering goes through
+ * osc_current_web_theme_path(), which also switches the theme's own asset URLs
+ * to whichever theme in the stack answered. When nothing matches, the last
+ * candidate comes back, so a caller behaves exactly as it did when it named one
+ * view and no theme had it.
+ *
+ * Plugins and themes reshape the list through the `template_candidates` filter,
+ * which receives the candidates and a context slug ('item', 'search', 'page', …).
+ * This is the seam that lets a theme add a view without a core patch.
+ *
+ * Only files count here. A name declared through
+ * osc_add_theme_support('views', …) with no file behind it reserves the name but
+ * gives core nothing to require -- the theme renders that view itself.
+ *
+ * @param string[]|string $candidates ordered, most specific first
+ * @param string          $context    route slug passed to the filter
+ */
+function osc_locate_template($candidates, string $context = ''): string
+{
+    if (is_string($candidates)) {
+        $candidates = array($candidates);
+    }
+    if (!is_array($candidates)) {
+        $candidates = array();
+    }
+
+    // A filter that hands back something other than a list is ignored rather than
+    // obeyed: it must not be able to blank a page.
+    $filtered = osc_apply_filter('template_candidates', $candidates, $context);
+    if (is_array($filtered)) {
+        $candidates = $filtered;
+    }
+
+    $clean = array();
+    foreach ($candidates as $view) {
+        if (!is_string($view)) {
+            continue;
+        }
+        $view = trim($view);
+        if ($view === '' || strpos($view, '..') !== false || strpos($view, "\0") !== false) {
+            continue;
+        }
+        if ($view[0] === '/' || preg_match('#^[a-zA-Z]:#', $view)) {
+            continue;
+        }
+        $clean[] = $view;
+    }
+
+    if ($clean === array()) {
+        return '';
+    }
+
+    foreach (osc_theme_template_paths() as $base) {
+        foreach ($clean as $view) {
+            if (file_exists($base . $view)) {
+                return $view;
+            }
+        }
+    }
+
+    return $clean[count($clean) - 1];
+}
+
+/**
  * The active theme's page chrome: the view that opens the document and the one
  * that closes it, as absolute paths, or null when the theme has none.
  *

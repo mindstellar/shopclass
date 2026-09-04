@@ -129,7 +129,7 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('post_item');
 
-                $this->doView('item-post.php');
+                $this->doView(osc_locate_template(array('item-post.php'), 'item-post'));
                 break;
             case 'item_add_post':
                 // SAVE form data before CSRF CHECK
@@ -247,7 +247,7 @@ class CWebItem extends BaseModel
                     $this->_exportVariableToView('item', $item);
 
                     osc_run_hook('before_item_edit', $item);
-                    $this->doView('item-edit.php');
+                    $this->doView(osc_locate_template(array('item-edit.php'), 'item-edit'));
                 } else {
                     // add a flash message [ITEM NO EXISTE]
                     osc_add_flash_error_message(_m("Sorry, we don't have any listings with that ID"));
@@ -521,7 +521,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
-                $this->doView('item-send-friend.php');
+                $this->doView(osc_locate_template(array('item-send-friend.php'), 'item-send-friend'));
                 break;
             case 'send_friend_post':
                 osc_csrf_check();
@@ -600,7 +600,7 @@ class CWebItem extends BaseModel
                     if ((osc_reg_user_can_contact() && osc_is_web_user_logged_in())
                         || !osc_reg_user_can_contact()
                     ) {
-                        $this->doView('item-contact.php');
+                        $this->doView(osc_locate_template(array('item-contact.php'), 'item-contact'));
                     } else {
                         osc_add_flash_warning_message(_m("You can't contact the seller, only registered users can")
                             . '. <br />' . sprintf(
@@ -918,7 +918,17 @@ class CWebItem extends BaseModel
                 // counter client-side (the `count_view_on_render` filter), which stays accurate
                 // behind a full-page cache.
                 osc_mark_response_cacheable();
-                $this->doView('item.php');
+
+                // A theme may specialise the listing page per category. The id is
+                // already on the row, so offering the candidate costs nothing.
+                $viewCandidates = array();
+                $viewCategory   = osc_item_category_id();
+                if ($viewCategory > 0) {
+                    $viewCandidates[] = 'item-' . $viewCategory . '.php';
+                }
+                $viewCandidates[] = 'item.php';
+
+                $this->doView(osc_locate_template($viewCandidates, 'item'));
                 break;
         }
     }

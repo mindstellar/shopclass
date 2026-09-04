@@ -210,7 +210,7 @@ class CWebUserNonSecure extends BaseModel
                 // Public seller profile (a user's public listings): cacheable for anonymous
                 // visitors. Sibling `/user` routes (dashboard, account) stay private by default.
                 osc_mark_response_cacheable();
-                $this->doView('user-public-profile.php');
+                $this->doView(osc_locate_template(array('user-public-profile.php'), 'user-public-profile'));
                 break;
             case 'contact_post':
                 $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));

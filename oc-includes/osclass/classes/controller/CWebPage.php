@@ -91,7 +91,7 @@ class CWebPage extends BaseModel
             . '.php')
         ) {
             // Theme convention override wins over any picked template.
-            $this->doView('page-' . $page['s_internal_name'] . '.php');
+            $this->doView(osc_locate_template(array('page-' . $page['s_internal_name'] . '.php'), 'page'));
         } elseif ($registered !== null) {
             $this->renderRegisteredTemplate($registered, $page);
         } elseif (isset($meta['template'])
@@ -106,7 +106,7 @@ class CWebPage extends BaseModel
             Session::newInstance()->_clearVariables();
             osc_run_hook('after_html');
         } else {
-            $this->doView('page.php');
+            $this->doView(osc_locate_template(array('page.php'), 'page'));
         }
     }
 
@@ -150,7 +150,7 @@ class CWebPage extends BaseModel
             return;
         }
 
-        $this->doView('page.php');
+        $this->doView(osc_locate_template(array('page.php'), 'page'));
     }
 
     /**

@@ -41,7 +41,7 @@ class CWebRegister extends BaseModel
     {
         switch ($this->action) {
             case ('register'):       //register user
-                $this->doView('user-register.php');
+                $this->doView(osc_locate_template(array('user-register.php'), 'user-register'));
                 break;
             case ('register_post'):  //register user
                 osc_csrf_check();

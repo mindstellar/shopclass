@@ -15,6 +15,9 @@ deletion, credits, buy and orders — render inside the theme rather than on a p
 - Themes declare extra view names with `osc_add_theme_support('views', …)`, and
   `osc_theme_provides()` asks whether the active theme can render one. Core's list of names a
   static page may not take is no longer hardcoded.
+- Every front-end page resolves through an ordered candidate list: `osc_locate_template()`, the
+  `template_candidates` filter, and per-category `item-{id}.php` and `search-{category}.php`
+  views. A theme adds a view without a core patch.
 
 ### Fixed
 
