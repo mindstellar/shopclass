@@ -13,21 +13,24 @@ if (!defined('ABS_PATH')) {
  */
 
 /**
- * Account-delete confirm form -- the form only, so the themed page and the
- * system-page fallback can each supply their own heading. CSRF is injected on
- * shutdown for forms that are not marked nocsrf. The POST is delete_post; this
- * GET page does not delete anything.
+ * Account-delete confirm form -- markup only. The heading and the intro belong
+ * to whatever wraps this (the theme's chrome, or core's shell), so neither is
+ * printed here.
+ *
+ * CSRF is injected on shutdown for forms that are not marked nocsrf. The POST is
+ * delete_post; this GET page does not delete anything.
  */
 ?>
 <form class="osc-user-delete-account" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
     <input type="hidden" name="page" value="user" />
     <input type="hidden" name="action" value="delete_post" />
-    <p>
-        <label for="osc-delete-account-password"><?php echo osc_esc_html(_m('Password')); ?></label>
-        <input id="osc-delete-account-password" type="password" name="password" autocomplete="current-password" required />
-    </p>
-    <p>
-        <button type="submit"><?php echo osc_esc_html(_m('Delete my account')); ?></button>
-        <a href="<?php echo osc_esc_html(osc_user_profile_url()); ?>"><?php echo osc_esc_html(_m('Cancel')); ?></a>
-    </p>
+    <div class="oe-field">
+        <label class="oe-label" for="osc-delete-account-password"><?php echo osc_esc_html(_m('Password')); ?></label>
+        <input class="oe-input" id="osc-delete-account-password" type="password" name="password"
+               autocomplete="current-password" required />
+    </div>
+    <div class="oe-actions">
+        <button class="oe-btn oe-btn-danger" type="submit"><?php echo osc_esc_html(_m('Delete my account')); ?></button>
+        <a class="oe-muted" href="<?php echo osc_esc_html(osc_user_profile_url()); ?>"><?php echo osc_esc_html(_m('Cancel')); ?></a>
+    </div>
 </form>

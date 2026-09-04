@@ -46,6 +46,7 @@ Worth knowing before you port something:
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
+| Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |

@@ -489,31 +489,22 @@ class CWebUser extends WebSecBaseModel
     public function doView($file)
     {
         osc_run_hook('before_html');
-        if ($file === 'user-delete_account.php' && !$this->themeProvides($file)) {
-            $this->doFallbackDeleteView();
+        if ($file === 'user-delete_account.php') {
+            osc_gui_view(
+                $file,
+                osc_base_path() . 'oc-includes/osclass/gui/user-delete_account-content.php',
+                array(
+                    'heading' => _m('Delete your account'),
+                    'title'   => trim(_m('Delete your account') . ' — ' . osc_page_title(), ' —'),
+                    'intro'   => _m('This page has not deleted the account yet. Enter your password and click Delete my account. Your listings and messages will be removed. This cannot be undone.'),
+                    'tone'    => 'danger',
+                )
+            );
         } else {
             osc_current_web_theme_path($file);
         }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
-    }
-
-    /**
-     * Whether the active theme ships $file itself. Not osc_current_web_theme_path()'s
-     * walk onto a parent or storefront: those have never heard of this view and would
-     * render blank instead of the core fallback.
-     */
-    private function themeProvides(string $file): bool
-    {
-        return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
-    }
-
-    private function doFallbackDeleteView(): void
-    {
-        $path = osc_base_path() . 'oc-includes/osclass/gui/user-delete_account.php';
-        if (file_exists($path)) {
-            require $path;
-        }
     }
 }
 

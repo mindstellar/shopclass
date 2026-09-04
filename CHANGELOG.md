@@ -2,6 +2,24 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.3.0
+
+Themes can now tell core where their header and footer live, so the pages core owns — account
+deletion, credits, buy and orders — render inside the theme rather than on a page of their own.
+
+### New
+
+- Themes declare their page chrome with `osc_add_theme_support('chrome', …)`. Core falls back to
+  probing `header.php`/`footer.php` and `common/header.php`/`common/footer.php`, so existing
+  themes need no change.
+
+### Fixed
+
+- Core-rendered pages dropped to a bare standalone page on the default theme, which keeps its
+  chrome in `common/` rather than the theme root.
+- The credits, buy and orders pages each carried their own copy of the same stylesheet, which had
+  drifted: an unstyled `History` heading, links in the browser's default blue, unbranded radios.
+
 ## Shopclass 6.2.0
 
 Back up your database before upgrading: this release rebuilds foreign keys across twenty-four

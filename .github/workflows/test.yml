@@ -97,6 +97,11 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors
         run: php tests/params-typed-accessors.php
+      # Storefront -- the default theme -- keeps its chrome in common/, so a probe
+      # for a root header.php/footer.php missed on a default install and every
+      # core-rendered page dropped to the standalone shell.
+      - name: Theme chrome resolution
+        run: php tests/theme-chrome.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
       - name: Rewrite param decode

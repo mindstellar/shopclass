@@ -25,6 +25,230 @@ function osc_admin_render_theme_url($file = '')
 }
 
 /**
+ * Declare that the active theme supports $feature.
+ *
+ * Called from a theme's functions.php, which WebThemes::loadActive() requires
+ * after these helpers are defined. Declaring is always optional: a feature
+ * nobody registers reads as unsupported and core falls back to what it did
+ * before.
+ *
+ * @param string $feature Slug, [a-z0-9_-]+, max 60 chars.
+ * @param mixed  $args    Feature arguments, or true for a bare flag.
+ */
+function osc_add_theme_support(string $feature, $args = true): void
+{
+    \mindstellar\theme\ThemeSupports::instance()->add($feature, $args);
+}
+
+/**
+ * Arguments the active theme declared for $feature, or false when it declared
+ * nothing. Callers must treat false as "do what we did before", never as an
+ * error.
+ *
+ * @return mixed
+ */
+function osc_theme_supports(string $feature)
+{
+    return \mindstellar\theme\ThemeSupports::instance()->get($feature);
+}
+
+/**
+ * @param string $feature
+ */
+function osc_remove_theme_support(string $feature): void
+{
+    \mindstellar\theme\ThemeSupports::instance()->remove($feature);
+}
+
+/**
+ * The active theme's page chrome: the view that opens the document and the one
+ * that closes it, as absolute paths, or null when the theme has none.
+ *
+ * Resolution, first hit wins:
+ *   1. declared -- osc_add_theme_support('chrome', ['header' => …, 'footer' => …])
+ *   2. the root pair       header.php        + footer.php        (bender, shopclass)
+ *   3. the common/ pair    common/header.php + common/footer.php (storefront)
+ *
+ * Both halves must exist. A theme with a header and no footer is not chrome:
+ * half a page is worse than a self-contained one.
+ *
+ * Deliberately the *active* theme only, not osc_current_web_theme_path()'s walk
+ * onto a parent theme and then storefront -- that walk answers for a theme the
+ * visitor is not using.
+ *
+ * @return array{header:string,footer:string}|null
+ */
+function osc_theme_chrome(): ?array
+{
+    $base = WebThemes::newInstance()->getCurrentThemePath();
+
+    $declared = osc_theme_supports('chrome');
+    if (is_array($declared) && isset($declared['header'], $declared['footer'])) {
+        $pair = osc_theme_chrome_pair($base, (string) $declared['header'], (string) $declared['footer']);
+        if ($pair !== null) {
+            return $pair;
+        }
+    }
+
+    foreach (array('', 'common/') as $dir) {
+        $pair = osc_theme_chrome_pair($base, $dir . 'header.php', $dir . 'footer.php');
+        if ($pair !== null) {
+            return $pair;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * One candidate chrome pair, resolved against $base, or null unless both files
+ * exist inside the theme. Relative paths only -- a declared '../' or an absolute
+ * path would let a theme point core's include at any file on disk.
+ *
+ * @return array{header:string,footer:string}|null
+ */
+function osc_theme_chrome_pair(string $base, string $header, string $footer): ?array
+{
+    foreach (array($header, $footer) as $rel) {
+        if ($rel === '' || strpos($rel, '..') !== false || strpos($rel, "\0") !== false) {
+            return null;
+        }
+        if ($rel[0] === '/' || preg_match('#^[a-zA-Z]:#', $rel)) {
+            return null;
+        }
+    }
+    if (!file_exists($base . $header) || !file_exists($base . $footer)) {
+        return null;
+    }
+
+    return array('header' => $base . $header, 'footer' => $base . $footer);
+}
+
+/**
+ * Whether the active theme can wrap a core-rendered page.
+ */
+function osc_theme_has_chrome(): bool
+{
+    return osc_theme_chrome() !== null;
+}
+
+/**
+ * Render the theme's opening chrome. False when the theme has none, so a caller
+ * can fall through to core's own shell.
+ *
+ * @return bool
+ */
+function osc_get_header(): bool
+{
+    $chrome = osc_theme_chrome();
+    if ($chrome === null) {
+        return false;
+    }
+    require $chrome['header'];
+
+    return true;
+}
+
+/**
+ * Render the theme's closing chrome. See osc_get_header().
+ *
+ * @return bool
+ */
+function osc_get_footer(): bool
+{
+    $chrome = osc_theme_chrome();
+    if ($chrome === null) {
+        return false;
+    }
+    require $chrome['footer'];
+
+    return true;
+}
+
+/**
+ * Render a page core owns, through whatever the active theme provides.
+ *
+ * Resolution, first hit wins:
+ *   1. the active theme ships $themeView            -> the theme renders it, unchanged
+ *   2. the theme exposes chrome (osc_theme_chrome()) -> chrome + core's content partial
+ *   3. neither                                       -> core's own shell (gui/page.php)
+ *
+ * Step 1 deliberately checks the *active* theme only, not
+ * osc_current_web_theme_path()'s walk onto a parent theme and then storefront:
+ * those have never heard of these views and would render a blank page instead of
+ * falling through to core.
+ *
+ * @param string $themeView   e.g. 'user-billing-wallet.php'
+ * @param string $contentFile Absolute path to core's markup-only partial.
+ * @param array  $opts        $oscPage keys for the shell; 'heading', 'title',
+ *                            'intro' and 'tone' are also used on the chrome path.
+ */
+function osc_gui_view(string $themeView, string $contentFile, array $opts = array()): void
+{
+    require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
+
+    $themePath = WebThemes::newInstance()->getCurrentThemePath();
+    if ($themeView !== '' && file_exists($themePath . $themeView)) {
+        require $themePath . $themeView;
+
+        return;
+    }
+
+    if (!file_exists($contentFile)) {
+        return;
+    }
+
+    $tone    = isset($opts['tone']) ? (string) $opts['tone'] : 'info';
+    $heading = isset($opts['heading']) ? (string) $opts['heading'] : '';
+    $intro   = isset($opts['intro']) ? (string) $opts['intro'] : '';
+
+    if (osc_theme_has_chrome()) {
+        // The sheet belongs in <head>, and every bundled theme runs this hook
+        // there. The call after osc_get_header() covers a theme that does not:
+        // print-once makes whichever ran second a no-op.
+        osc_add_hook('header', static function () use ($tone) {
+            osc_gui_print_style($tone);
+        });
+        osc_get_header();
+        osc_gui_print_style($tone);
+        echo '<div class="oe-page"><div class="oe-doc">';
+        if ($heading !== '') {
+            echo '<h1 class="oe-h1">' . osc_esc_html($heading) . '</h1>';
+        }
+        if ($intro !== '') {
+            echo '<p>' . osc_esc_html($intro) . '</p>';
+        }
+        require $contentFile;
+        echo '</div></div>';
+        osc_get_footer();
+
+        return;
+    }
+
+    ob_start();
+    require $contentFile;
+    $content = ob_get_clean();
+    if ($intro !== '') {
+        $content = '<p>' . osc_esc_html($intro) . '</p>' . $content;
+    }
+
+    $oscPage = array_merge(
+        array(
+            'layout'    => 'document',
+            'tone'      => $tone,
+            'role'      => 'main',
+            'lang'      => str_replace('_', '-', osc_current_user_locale()),
+            'brandName' => osc_page_title(),
+            'homeUrl'   => osc_base_url(),
+        ),
+        $opts,
+        array('body' => $content)
+    );
+
+    require ABS_PATH . 'oc-includes/osclass/gui/page.php';
+}
+
+/**
  * Register a named render target: an opaque id mapped to an absolute file path.
  * osc_render_file() checks this registry before its own filesystem lookups, so
  * core can expose a file outside the theme/plugin directories -- e.g. an

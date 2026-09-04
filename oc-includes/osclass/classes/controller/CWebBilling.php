@@ -53,9 +53,9 @@ class CWebBilling extends WebSecBaseModel
      * See doView().
      */
     private const FALLBACK_VIEWS = array(
-        'user-billing-wallet.php' => 'wallet.php',
-        'user-billing-buy.php'    => 'buy.php',
-        'user-billing-orders.php' => 'orders.php',
+        'user-billing-wallet.php' => 'wallet-content.php',
+        'user-billing-buy.php'    => 'buy-content.php',
+        'user-billing-orders.php' => 'orders-content.php',
     );
 
     /**
@@ -376,11 +376,11 @@ class CWebBilling extends WebSecBaseModel
      *   2. else the active theme ships user-custom.php -- the theme's account
      *      chrome renders the registered billing render target, the same way it
      *      already renders a plugin's page (see CWebCustom::doModel());
-     *   3. else core's own standalone fallback under
-     *      oc-includes/osclass/gui/billing/ -- the bundled theme is an external
-     *      repository (see osc_current_web_theme_path()) and may not carry any
-     *      of the above yet, but a site must not be left with a dead
-     *      wallet/buy/orders page for that.
+     *   3. else osc_gui_view(): the theme's own chrome around core's content
+     *      partial when the theme exposes a chrome pair, otherwise core's shell.
+     *      The bundled theme is an external repository (see
+     *      osc_current_web_theme_path()) and may not carry any of the above yet,
+     *      but a site must not be left with a dead wallet/buy/orders page.
      *
      * @param $file
      *
@@ -398,7 +398,11 @@ class CWebBilling extends WebSecBaseModel
                 Params::setParam('in_user_menu', true);
                 osc_current_web_theme_path('user-custom.php');
             } else {
-                $this->doFallbackView(self::FALLBACK_VIEWS[$file]);
+                osc_gui_view(
+                    '',
+                    osc_base_path() . 'oc-includes/osclass/gui/billing/' . self::FALLBACK_VIEWS[$file],
+                    $this->fallbackPageOptions($file)
+                );
             }
         } else {
             osc_current_web_theme_path($file);
@@ -420,12 +424,27 @@ class CWebBilling extends WebSecBaseModel
         return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
     }
 
-    private function doFallbackView(string $file): void
+    /**
+     * Heading and tab title for a core-rendered billing page. The partials no
+     * longer print their own <h1>: the heading belongs to whatever wraps them,
+     * so the theme's chrome and core's shell can each place it their own way.
+     *
+     * @return array<string,string>
+     */
+    private function fallbackPageOptions(string $file): array
     {
-        $path = osc_base_path() . 'oc-includes/osclass/gui/billing/' . $file;
-        if (file_exists($path)) {
-            require $path;
-        }
+        $headings = array(
+            'user-billing-wallet.php' => _m('Credits'),
+            'user-billing-buy.php'    => _m('Buy credits'),
+            'user-billing-orders.php' => _m('Your orders'),
+        );
+        $heading  = $headings[$file] ?? '';
+
+        return array(
+            'heading' => $heading,
+            'title'   => trim($heading . ' — ' . osc_page_title(), ' —'),
+            'tone'    => 'info',
+        );
     }
 }
 
