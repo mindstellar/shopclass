@@ -87,6 +87,13 @@ function osc_theme_view_names(): array
  * The active theme only. A parent theme and core's own fallback theme answer for
  * a theme the visitor is not using; osc_locate_template() walks those separately.
  *
+ * Not a test for "is there a file I can include". A declared view has no file, so
+ * a caller that branches on this and then requires the view -- or hands it to
+ * osc_current_web_theme_path(), which walks on to the fallback theme and renders
+ * nothing when it finds no file either -- ships a blank page. Branch on
+ * file_exists() for that; branch on this only where a name is what is being
+ * asked about, as the static-page reservation does.
+ *
  * @param string $view e.g. 'user-profile.php'
  */
 function osc_theme_provides(string $view): bool
