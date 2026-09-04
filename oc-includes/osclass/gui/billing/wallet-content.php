@@ -56,6 +56,8 @@ $reasonWords = array(
     Wallet::REASON_REVOKE   => _m('Removed by admin'),
 );
 ?>
+<div class="oe-account">
+<div class="oe-account-main">
 <div class="oe-bill">
 
 
@@ -128,4 +130,8 @@ $reasonWords = array(
         <?php } ?>
     </div>
 <?php } ?>
+</div>
+</div>
+
+<?php require ABS_PATH . 'oc-includes/osclass/gui/account/nav.php'; ?>
 </div>

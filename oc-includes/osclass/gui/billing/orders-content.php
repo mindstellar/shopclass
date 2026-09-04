@@ -61,6 +61,8 @@ $formatMoney = static function (int $micros, string $currency): string {
            . ' ' . strtoupper($currency);
 };
 ?>
+<div class="oe-account">
+<div class="oe-account-main">
 <div class="oe-bill">
 
 
@@ -128,4 +130,8 @@ $formatMoney = static function (int $micros, string $currency): string {
         <a href="<?php echo osc_esc_html(osc_billing_wallet_url()); ?>"><?php echo osc_esc_html(_m('Back to your wallet')); ?></a>
     </p>
 <?php } ?>
+</div>
+</div>
+
+<?php require ABS_PATH . 'oc-includes/osclass/gui/account/nav.php'; ?>
 </div>

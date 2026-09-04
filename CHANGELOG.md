@@ -56,6 +56,9 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   name, so restyling the documented vocabulary reaches them.
 - The credits and orders ledgers scrolled the whole page sideways on a phone instead of
   scrolling the table.
+- Account deletion and the three credits pages rendered without the account sidebar, so moving
+  between them and the settings pages gained and lost a nav. They use the account layout now,
+  and the nav marks which one you are on.
 - A static page whose slug matched a name core newly reserved could not be edited at all —
   not its title, not its body — because the reserved set was checked even when the name was
   not changing.

@@ -75,6 +75,12 @@ if (osc_is_user_dashboard()) {
     $navCurrent = 'opt_change_username';
 } elseif (osc_is_current_page('user', 'delete')) {
     $navCurrent = 'opt_delete_account';
+} elseif (osc_is_current_page('billing', 'wallet') || osc_is_current_page('billing', 'orders')) {
+    // Orders hang off the wallet -- there is no nav entry of their own, and
+    // marking nothing on that page would read as having left the account.
+    $navCurrent = 'opt_billing_wallet';
+} elseif (osc_is_current_page('billing', 'buy') || osc_is_current_page('billing', 'checkout')) {
+    $navCurrent = 'opt_billing_buy';
 }
 ?>
 <nav class="oe-account-nav" aria-label="<?php echo osc_esc_html(_m('Your account')); ?>">
