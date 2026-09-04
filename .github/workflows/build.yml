@@ -47,9 +47,13 @@ jobs:
           echo "suffix=${SUFFIX}" >> "$GITHUB_OUTPUT"
 
           # Branch decides the release type; a mismatch publishes nothing.
-          # develop -> prereleases only (suffix required); master -> stable only (no suffix).
+          # develop -> beta/rc only; master -> stable only (no suffix).
+          #
+          # .dev is the open-development marker: valid, but it publishes nothing.
+          # It is what the version sits at between releases, so every ordinary
+          # commit on develop carries a suffix without cutting a release.
           SHOULD_RELEASE=false
-          if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" ]]; then
+          if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" && "${SUFFIX}" != .dev* ]]; then
             SHOULD_RELEASE=true
           elif [[ "${GITHUB_REF_NAME}" == "master" && -z "${SUFFIX}" ]]; then
             SHOULD_RELEASE=true
@@ -65,7 +69,7 @@ jobs:
             fi
           else
             echo "No release for ${RAW_VERSION} on ${GITHUB_REF_NAME}."
-            echo "develop publishes prereleases (suffix required); master publishes stable (no suffix)."
+            echo "develop publishes beta/rc; master publishes stable (no suffix); .dev publishes nothing."
           fi
 
           echo "should_release=${SHOULD_RELEASE}" >> "$GITHUB_OUTPUT"
