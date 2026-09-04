@@ -415,6 +415,213 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
 }
 
 /**
+ * The document's language attributes: `lang="en-US" dir="ltr"`.
+ *
+ * Every theme has reimplemented this line, and each one has to remember that a
+ * locale code is stored with an underscore and written with a hyphen, and that
+ * dir must be emitted for a right-to-left locale or the whole page reads
+ * backwards. Filterable through `language_attributes`.
+ *
+ * @param bool $echo print as well as return
+ */
+function osc_language_attributes(bool $echo = true): string
+{
+    $lang = str_replace('_', '-', (string) osc_current_user_locale());
+    $dir  = osc_locale_text_direction() === 'rtl' ? 'rtl' : 'ltr';
+
+    $attrs = 'lang="' . osc_esc_html($lang) . '" dir="' . $dir . '"';
+    $attrs = (string) osc_apply_filter('language_attributes', $attrs);
+
+    if ($echo) {
+        echo $attrs;
+    }
+
+    return $attrs;
+}
+
+/**
+ * What page this is, as a list of class tokens for <body>.
+ *
+ * The account views all carry a shared `user` token alongside their own, so a
+ * theme can style the whole signed-in area in one selector. Filterable through
+ * `body_class`, which receives the computed list and whatever the caller passed.
+ *
+ * @param string|string[] $class extra classes from the caller
+ *
+ * @return string[] deduplicated, lowercase, [a-z0-9_-] only
+ */
+function osc_body_class_list($class = ''): array
+{
+    $classes = array();
+
+    $pages = array(
+        'home'               => 'osc_is_home_page',
+        'search'             => 'osc_is_search_page',
+        'search-category'    => 'osc_is_search_category_page',
+        'item'               => 'osc_is_ad_page',
+        'item-post'          => 'osc_is_publish_page',
+        'item-edit'          => 'osc_is_edit_page',
+        'item-contact'       => 'osc_is_item_contact_page',
+        'contact'            => 'osc_is_contact_page',
+        'custom'             => 'osc_is_custom_page',
+        'login'              => 'osc_is_login_page',
+        'register'           => 'osc_is_register_page',
+        'recover'            => 'osc_is_recover_page',
+        'forgot-password'    => 'osc_is_forgot_page',
+        'user-public-profile' => 'osc_is_public_profile',
+        'error-404'          => 'osc_is_404',
+    );
+    foreach ($pages as $name => $test) {
+        if (function_exists($test) && $test()) {
+            $classes[] = $name;
+        }
+    }
+
+    $account = array(
+        'user-dashboard'       => 'osc_is_user_dashboard',
+        'user-profile'         => 'osc_is_user_profile',
+        'user-items'           => 'osc_is_list_items',
+        'user-alerts'          => 'osc_is_list_alerts',
+        'user-change-email'    => 'osc_is_change_email_page',
+        'user-change-password' => 'osc_is_change_password_page',
+        'user-change-username' => 'osc_is_change_username_page',
+    );
+    foreach ($account as $name => $test) {
+        if (function_exists($test) && $test()) {
+            $classes[] = 'user';
+            $classes[] = $name;
+        }
+    }
+
+    if (osc_is_static_page()) {
+        $classes[] = 'page';
+        $slug = (string) osc_static_page_field('s_internal_name');
+        if ($slug !== '') {
+            $classes[] = 'page-' . $slug;
+        }
+    }
+
+    $classes[] = osc_is_web_user_logged_in() ? 'logged-in' : 'logged-out';
+    if (osc_locale_text_direction() === 'rtl') {
+        $classes[] = 'rtl';
+    }
+    $classes[] = 'lang-' . str_replace('_', '-', (string) osc_current_user_locale());
+    $classes[] = 'theme-' . (string) osc_theme();
+
+    if (is_string($class)) {
+        $class = preg_split('/\s+/', trim($class), -1, PREG_SPLIT_NO_EMPTY);
+    }
+    if (is_array($class)) {
+        $classes = array_merge($classes, $class);
+    }
+
+    $filtered = osc_apply_filter('body_class', $classes, $class);
+    if (is_array($filtered)) {
+        $classes = $filtered;
+    }
+
+    $clean = array();
+    foreach ($classes as $name) {
+        if (!is_string($name)) {
+            continue;
+        }
+        $name = preg_replace('/[^a-z0-9_-]/', '-', strtolower(trim($name)));
+        if ($name !== '' && $name !== null) {
+            $clean[] = $name;
+        }
+    }
+
+    return array_values(array_unique($clean));
+}
+
+/**
+ * The <body> class attribute: `<body <?php osc_body_class(); ?>>`.
+ *
+ * Prints the whole attribute, not just the value, so a page with no classes at
+ * all prints nothing rather than an empty one.
+ *
+ * @param string|string[] $class extra classes from the caller
+ * @param bool            $echo  print as well as return
+ */
+function osc_body_class($class = '', bool $echo = true): string
+{
+    $classes = osc_body_class_list($class);
+    $attr    = $classes === array() ? '' : 'class="' . osc_esc_html(implode(' ', $classes)) . '"';
+
+    if ($echo) {
+        echo $attr;
+    }
+
+    return $attr;
+}
+
+/**
+ * Everything core has to say inside <head>, followed by the `header` hook that
+ * carries enqueued styles, scripts and whatever plugins add.
+ *
+ * Core could never put a tag in <head> on its own: the head belonged to the
+ * theme, which is why a page core rendered had no title, description or
+ * canonical unless the theme happened to supply one. A theme that calls this
+ * hands that back.
+ *
+ * Parts are opt-out, so a theme keeping its own <title> declares:
+ *
+ *     osc_add_theme_support('head', array('title' => false));
+ *
+ * The declaration is also how core knows a theme's head is core-managed; the
+ * function itself works whether or not the theme declared anything.
+ *
+ * Runs the `header` hook itself -- a theme calling osc_head() must not also call
+ * osc_run_hook('header'), or every enqueued asset is printed twice.
+ */
+function osc_head(): void
+{
+    $args = osc_theme_supports('head');
+    $want = static function (string $part) use ($args): bool {
+        return !is_array($args) || !isset($args[$part]) || $args[$part] !== false;
+    };
+
+    if ($want('charset')) {
+        echo '<meta charset="utf-8">' . PHP_EOL;
+    }
+    if ($want('viewport')) {
+        echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . PHP_EOL;
+    }
+    if ($want('title')) {
+        echo '<title>' . osc_esc_html((string) meta_title()) . '</title>' . PHP_EOL;
+    }
+    if ($want('description')) {
+        $description = (string) meta_description();
+        if ($description !== '') {
+            echo '<meta name="description" content="' . osc_esc_html($description) . '">' . PHP_EOL;
+        }
+    }
+    if ($want('keywords')) {
+        $keywords = (string) meta_keywords();
+        if ($keywords !== '') {
+            echo '<meta name="keywords" content="' . osc_esc_html($keywords) . '">' . PHP_EOL;
+        }
+    }
+    if ($want('canonical')) {
+        $canonical = (string) osc_get_canonical();
+        if ($canonical !== '') {
+            echo '<link rel="canonical" href="' . osc_esc_html($canonical) . '">' . PHP_EOL;
+        }
+    }
+    if ($want('feed')) {
+        // The current search's feed on a results page, the site-wide one elsewhere.
+        $feed = osc_is_search_page()
+            ? osc_update_search_url(array('sFeed' => 'rss'))
+            : osc_search_url(array('sFeed' => 'rss'));
+        echo '<link rel="alternate" type="application/rss+xml" title="'
+            . osc_esc_html(osc_page_title()) . '" href="' . osc_esc_html((string) $feed) . '">' . PHP_EOL;
+    }
+
+    // Enqueued styles and scripts, robots meta, and everything plugins add.
+    osc_run_hook('header');
+}
+
+/**
  * Register a named render target: an opaque id mapped to an absolute file path.
  * osc_render_file() checks this registry before its own filesystem lookups, so
  * core can expose a file outside the theme/plugin directories -- e.g. an

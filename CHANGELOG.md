@@ -4,8 +4,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.3.0
 
-Themes can now tell core where their header and footer live, so the pages core owns — account
-deletion, credits, buy and orders — render inside the theme rather than on a page of their own.
+Themes can now tell core about themselves: where their header and footer live, which views
+and widget zones they own, and whether core may write the document head. The pages core owns —
+account deletion, credits, buy and orders — render inside the theme rather than on a page of
+their own, and a theme can add a view without a patch to core. A theme that declares nothing
+behaves exactly as it did.
 
 ### New
 
@@ -21,6 +24,9 @@ deletion, credits, buy and orders — render inside the theme rather than on a p
 - Themes name and describe their widget zones with
   `osc_add_theme_support('widget_locations', …)`; the admin screen shows the label and
   description instead of the raw slug. Themes that only carry a `Widgets:` line are unchanged.
+- `osc_head()`, `osc_body_class()` and `osc_language_attributes()` let a theme hand the
+  document head and the body classes to core, so a page core renders is described like any
+  other. Each part of the head is opt-out.
 
 ### Fixed
 

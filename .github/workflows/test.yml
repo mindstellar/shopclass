@@ -113,6 +113,11 @@ jobs:
       # visitor would silently get a page from a theme the site is not running.
       - name: Template hierarchy
         run: php tests/template-hierarchy.php
+      # osc_head() ends by running the `header` hook, which carries every enqueued
+      # asset and the robots meta. Running it twice ships every asset twice and
+      # dropping it ships an unstyled page — the page renders through either way.
+      - name: Head and body ownership
+        run: php tests/theme-head.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
       - name: Rewrite param decode
