@@ -43,6 +43,7 @@ class WebThemes extends Themes
         'user-change_email',
         'user-change_password',
         'user-dashboard',
+        'user-delete_account',
         'user-forgot_password',
         'user-items',
         'user-login',

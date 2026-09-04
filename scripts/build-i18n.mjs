@@ -114,7 +114,7 @@ async function extract() {
             }
             const explicitDomain = decode(sDom, dDom);
             const domain = fn === '_m' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
-            record(domain, msgid, null, file);
+            record(domain, msgid, null, file.replace(/\\/g, '/'));
         }
 
         for (const m of content.matchAll(CONTEXT_RE)) {
@@ -126,7 +126,7 @@ async function extract() {
             }
             const explicitDomain = decode(sDom, dDom);
             const domain = fn === '_mx' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
-            record(domain, msgid, null, file, msgctxt);
+            record(domain, msgid, null, file.replace(/\\/g, '/'), msgctxt);
         }
 
         for (const m of content.matchAll(PLURAL_RE)) {
@@ -137,7 +137,7 @@ async function extract() {
                 continue;
             }
             const domain = fn === '_mn' ? 'messages' : DEFAULT_DOMAIN;
-            record(domain, single, plural, file);
+            record(domain, single, plural, file.replace(/\\/g, '/'));
         }
     }
 }
