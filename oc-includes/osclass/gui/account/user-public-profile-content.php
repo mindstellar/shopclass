@@ -23,7 +23,13 @@ $publicInfo = osc_user_info();
 <?php osc_show_flash_message(); ?>
 
 <?php if ($publicInfo !== '') { ?>
-    <div class="oe-panel"><?php echo $publicInfo; ?></div>
+    <?php
+    // "About you" is stored exactly as the account holder typed it -- the
+    // self-service save path applies no HTML sanitisation -- so it is escaped
+    // here and its line breaks put back. Anyone can register and edit it, and
+    // this page is public and cacheable.
+    ?>
+    <div class="oe-panel"><?php echo nl2br(osc_esc_html($publicInfo)); ?></div>
 <?php } ?>
 
 <p class="oe-meta">

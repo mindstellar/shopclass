@@ -11,6 +11,12 @@ their own, and a theme can add a view without a patch to core. A theme that decl
 behaves exactly as it did. Core now also renders every account and sign-in page itself when the
 theme ships none, using a documented class vocabulary a theme restyles in CSS alone.
 
+### Security
+
+- A member's "About you" text rendered unescaped on the public profile page core falls
+  back to, so anyone who could register could store a script that ran for every visitor to
+  that profile. It is escaped now, as the bundled themes already did.
+
 ### New
 
 - Themes declare their page chrome with `osc_add_theme_support('chrome', …)`. Core falls back to
