@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '6.2.0');
+    define('OSCLASS_VERSION', '6.3.0.dev');
 }
 
 // Roughly where a search engine stops showing a description, and the budget
