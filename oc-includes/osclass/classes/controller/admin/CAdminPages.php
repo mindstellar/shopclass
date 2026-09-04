@@ -85,7 +85,13 @@ class CAdminPages extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id);
                 }
 
-                if (!WebThemes::newInstance()->isValidPage($s_internal_name)) {
+                // Core's view vocabulary grows between releases, so a page can hold a name
+                // that was free when it was created and is reserved now. Only a rename has
+                // to clear the reserved set; keeping the old name leaves the page editable.
+                $currentName = $this->pageManager->findByPrimaryKey($id)['s_internal_name'] ?? '';
+                if ($s_internal_name !== $currentName
+                    && !WebThemes::newInstance()->isValidPage($s_internal_name)
+                ) {
                     osc_add_flash_error_message(_m('You have to set a different internal name'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id);
                 }
