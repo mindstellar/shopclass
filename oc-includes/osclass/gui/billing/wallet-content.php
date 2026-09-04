@@ -60,33 +60,34 @@ $reasonWords = array(
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-bill-card">
-        <p class="oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
+    <div class="oe-panel oe-bill-card">
+        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
-    <div class="oe-bill-card">
+    <div class="oe-panel oe-bill-card">
         <p class="oe-bill-balance<?php echo $balance < 0 ? ' neg' : ''; ?>">
             <?php echo osc_esc_html(number_format($balance)); ?>
         </p>
-        <p class="oe-bill-sub"><?php echo osc_esc_html(_m('credits available')); ?></p>
+        <p class="oe-muted oe-bill-sub"><?php echo osc_esc_html(_m('credits available')); ?></p>
         <div class="oe-bill-actions">
-            <a class="oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
+            <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
                 <?php echo osc_esc_html(_m('Buy more credits')); ?>
             </a>
         </div>
     </div>
 
-    <div class="oe-bill-card">
+    <div class="oe-panel oe-bill-card">
         <h2><?php echo osc_esc_html(_m('History')); ?></h2>
         <?php if (empty($entries)) { ?>
-            <p class="oe-bill-empty"><?php echo osc_esc_html(_m('Nothing has moved yet.')); ?></p>
+            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('Nothing has moved yet.')); ?></p>
         <?php } else { ?>
+            <div class="oe-scroll">
             <table>
                 <thead>
                 <tr>
                     <th scope="col"><?php echo osc_esc_html(_m('What happened')); ?></th>
-                    <th scope="col" class="oe-bill-num"><?php echo osc_esc_html(_m('Change')); ?></th>
-                    <th scope="col" class="oe-bill-num"><?php echo osc_esc_html(_m('Balance after')); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Change')); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Balance after')); ?></th>
                     <th scope="col"><?php echo osc_esc_html(_m('Date')); ?></th>
                 </tr>
                 </thead>
@@ -96,17 +97,18 @@ $reasonWords = array(
                     $reason = (string) $entry['s_reason']; ?>
                     <tr>
                         <td><?php echo osc_esc_html($reasonWords[$reason] ?? $reason); ?></td>
-                        <td class="oe-bill-num">
+                        <td class="oe-num oe-bill-num">
                             <?php echo osc_esc_html(($amount > 0 ? '+' : '') . number_format($amount)); ?>
                         </td>
-                        <td class="oe-bill-num"><?php echo osc_esc_html(number_format((int) $entry['i_balance_after'])); ?></td>
+                        <td class="oe-num oe-bill-num"><?php echo osc_esc_html(number_format((int) $entry['i_balance_after'])); ?></td>
                         <td><?php echo osc_esc_html(osc_format_date($entry['dt_date'])); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>
             </table>
+            </div>
             <?php if ($total > $perPage) { ?>
-                <div class="oe-bill-pager">
+                <div class="oe-pager oe-bill-pager">
                     <span>
                         <?php if ($pageNum > 1) { ?>
                             <a href="<?php echo osc_esc_html(osc_billing_wallet_url() . '&pageNum=' . ($pageNum - 1)); ?>">

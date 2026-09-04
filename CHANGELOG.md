@@ -51,6 +51,11 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 ### Fixed
 
 - A theme that shipped no view for an account page rendered a blank document.
+- The credits pages ignored a theme's own button and panel styling, because their markup
+  carried only the older `oe-bill-*` class names. Each element now also carries the published
+  name, so restyling the documented vocabulary reaches them.
+- The credits and orders ledgers scrolled the whole page sideways on a phone instead of
+  scrolling the table.
 - A static page whose slug matched a name core newly reserved could not be edited at all —
   not its title, not its body — because the reserved set was checked even when the name was
   not changing.

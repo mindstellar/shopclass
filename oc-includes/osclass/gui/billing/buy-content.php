@@ -56,27 +56,27 @@ $formatMoney = static function (int $micros, string $currency): string {
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-bill-card">
-        <p class="oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
+    <div class="oe-panel oe-bill-card">
+        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
-        <div class="oe-bill-card">
+        <div class="oe-panel oe-bill-card">
             <h2><?php echo osc_esc_html(sprintf(_m('Order #%d'), $order->getId())); ?></h2>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
         </div>
     <?php } ?>
 
     <?php if (empty($packages)) { ?>
-        <div class="oe-bill-card">
-            <p class="oe-bill-empty"><?php echo osc_esc_html(_m('There are no credit packages for sale right now.')); ?></p>
+        <div class="oe-panel oe-bill-card">
+            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('There are no credit packages for sale right now.')); ?></p>
         </div>
     <?php } elseif (empty($gateways)) { ?>
-        <div class="oe-bill-card">
-            <p class="oe-bill-empty"><?php echo osc_esc_html(_m('No payment method is set up yet.')); ?></p>
+        <div class="oe-panel oe-bill-card">
+            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('No payment method is set up yet.')); ?></p>
         </div>
     <?php } else { ?>
-        <div class="oe-bill-card">
+        <div class="oe-panel oe-bill-card">
             <?php
             // Posts to index.php, not osc_billing_buy_url(): the buy page has a permalink,
             // and a matched rewrite rule writes its own params over the request (see
@@ -122,12 +122,12 @@ $formatMoney = static function (int $micros, string $currency): string {
                     } ?>
                 </fieldset>
 
-                <button type="submit" class="oe-bill-btn"><?php echo osc_esc_html(_m('Continue')); ?></button>
+                <button type="submit" class="oe-btn oe-bill-btn"><?php echo osc_esc_html(_m('Continue')); ?></button>
             </form>
         </div>
     <?php } ?>
 
-    <p class="oe-bill-sub">
+    <p class="oe-muted oe-bill-sub">
         <a href="<?php echo osc_esc_html(osc_billing_orders_url()); ?>"><?php echo osc_esc_html(_m('View your past orders')); ?></a>
     </p>
 <?php } ?>

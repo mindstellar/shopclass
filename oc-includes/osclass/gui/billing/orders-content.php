@@ -65,21 +65,22 @@ $formatMoney = static function (int $micros, string $currency): string {
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-bill-card">
-        <p class="oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
+    <div class="oe-panel oe-bill-card">
+        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
     </div>
 <?php } else { ?>
-    <div class="oe-bill-card">
+    <div class="oe-panel oe-bill-card">
         <?php if (empty($orders)) { ?>
-            <p class="oe-bill-empty"><?php echo osc_esc_html(_m('You have not bought any credits yet.')); ?></p>
+            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('You have not bought any credits yet.')); ?></p>
         <?php } else { ?>
+            <div class="oe-scroll">
             <table>
                 <thead>
                 <tr>
                     <th scope="col"><?php echo osc_esc_html(_m('Date')); ?></th>
                     <th scope="col"><?php echo osc_esc_html(_m('Payment method')); ?></th>
-                    <th scope="col" class="oe-bill-num"><?php echo osc_esc_html(_m('Amount')); ?></th>
-                    <th scope="col" class="oe-bill-num"><?php echo osc_esc_html(_m('Credits')); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Amount')); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Credits')); ?></th>
                     <th scope="col"><?php echo osc_esc_html(_m('Status')); ?></th>
                 </tr>
                 </thead>
@@ -88,12 +89,12 @@ $formatMoney = static function (int $micros, string $currency): string {
                     <tr>
                         <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
                         <td><?php echo osc_esc_html($order->getGateway()); ?></td>
-                        <td class="oe-bill-num">
+                        <td class="oe-num oe-bill-num">
                             <?php echo osc_esc_html($formatMoney($order->getAmount(), $order->getCurrency())); ?>
                         </td>
-                        <td class="oe-bill-num"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
+                        <td class="oe-num oe-bill-num"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
                         <td>
-                            <span class="oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
+                            <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
                                 <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
                             </span>
                         </td>
@@ -101,8 +102,9 @@ $formatMoney = static function (int $micros, string $currency): string {
                 <?php } ?>
                 </tbody>
             </table>
+            </div>
             <?php if ($total > $perPage) { ?>
-                <div class="oe-bill-pager">
+                <div class="oe-pager oe-bill-pager">
                     <span>
                         <?php if ($pageNum > 1) { ?>
                             <a href="<?php echo osc_esc_html(osc_billing_orders_url() . '&pageNum=' . ($pageNum - 1)); ?>">
@@ -122,7 +124,7 @@ $formatMoney = static function (int $micros, string $currency): string {
         <?php } ?>
     </div>
 
-    <p class="oe-bill-sub">
+    <p class="oe-muted oe-bill-sub">
         <a href="<?php echo osc_esc_html(osc_billing_wallet_url()); ?>"><?php echo osc_esc_html(_m('Back to your wallet')); ?></a>
     </p>
 <?php } ?>
