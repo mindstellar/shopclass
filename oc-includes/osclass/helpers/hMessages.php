@@ -128,9 +128,18 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
             $idAttr       = $firstMessage ? ' id="' . $id . '"' : '';
             $firstMessage = false;
 
+            // Bender and storefront both bind click and keyboard dismissal to
+            // `.flashmessage a.ico-close` and read data-oc-close-label off it, so
+            // the tag and the class names are a contract, not decoration. Core
+            // adds role and tabindex so it is operable before any theme script
+            // runs; a theme that sets them again sets the same values.
+            $dismiss = '<a class="btn ico btn-mini ico-close" role="button" tabindex="0"'
+                . ' data-oc-close-label="' . osc_esc_html(__('Dismiss')) . '">x</a>';
+
             if (isset($message['msg']) && $message['msg'] != '') {
                 echo '<div' . $idAttr . ' role="' . $role . '" class="' . strtolower($class) . ' '
                     . strtolower($class) . '-' . $type . '">';
+                echo $dismiss;
                 echo osc_apply_filter('flash_message_text', $message['msg']);
                 echo '</div>';
             } elseif ($message != '') {

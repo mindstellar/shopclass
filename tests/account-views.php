@@ -130,7 +130,15 @@ harness_section('flash messages');
 
 check('a flash message carries a role, so it announces without JavaScript', strpos($messages, "role=\"' . \$role . '\"") !== false);
 check('an error is assertive and everything else is polite', strpos($messages, "\$role = (\$type === 'error') ? 'alert' : 'status';") !== false);
-check('no dismiss control: it was an <a> with no href, focusable by nobody', strpos($messages, 'ico-close') === false);
+// Bender and storefront both bind dismissal to `.flashmessage a.ico-close` and
+// read data-oc-close-label off it. Removing the element, or changing its tag,
+// silently costs both themes their close button on the next core upgrade.
+check('the dismiss control is still an <a class="ico-close">', strpos($messages, 'ico-close') !== false);
+check('it still carries data-oc-close-label', strpos($messages, 'data-oc-close-label') !== false);
+check(
+    'core makes it keyboard-operable rather than relying on a theme script',
+    strpos($messages, 'role="button" tabindex="0"') !== false
+);
 // Frozen names. Themes and plugins nobody here can see style these exact strings.
 check('the flashmessage-<type> class is still emitted', strpos($messages, "strtolower(\$class) . '-'") !== false);
 check('the flash_js mount is printed once, not once per message', substr_count($messages, "<div id=\"flash_js\"></div>") === 1);

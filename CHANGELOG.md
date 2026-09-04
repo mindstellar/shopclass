@@ -13,6 +13,13 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 
 ### Security
 
+- **Deleting an account was a GET with the account id and secret in the URL.**
+  `?page=user&action=delete&id=…&secret=…` removed the signed-in account as soon as
+  the page was requested — a mail scanner, a prefetch, or a leaked referrer was
+  enough. GET now shows a confirm form; the deletion is POST `delete_post` with a
+  CSRF token and the current password. Existing theme links that still carry id and
+  secret land on the confirm page and no longer delete. Themes may ship
+  `user-delete_account.php`; core falls back to its own view when they do not.
 - A member's "About you" text rendered unescaped on the public profile page core falls
   back to, so anyone who could register could store a script that ran for every visitor to
   that profile. It is escaped now, as the bundled themes already did.
@@ -45,8 +52,8 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 
 - A theme that shipped no view for an account page rendered a blank document.
 - Flash messages carry `role="status"`, or `role="alert"` on an error, so a screen reader is
-  told they appeared. The dismiss control, an `<a>` with no `href` that no keyboard could reach,
-  is gone, and two queued messages no longer share one `id`.
+  told they appeared. The dismiss control is keyboard-operable without a theme script, and two
+  queued messages no longer share one `id`.
 - The profile form's "About you" field is labelled with the id it actually renders, and its
   region and city lists follow the country without a page reload.
 - Core-rendered pages dropped to a bare standalone page on the default theme, which keeps its
@@ -64,13 +71,6 @@ with too: every listing index now has its own description and a single canonical
 
 ### Security
 
-- **Deleting an account was a GET with the account id and secret in the URL.**
-  `?page=user&action=delete&id=…&secret=…` removed the signed-in account as soon as
-  the page was requested — a mail scanner, a prefetch, or a leaked referrer was
-  enough. GET now shows a confirm form; the deletion is POST `delete_post` with a
-  CSRF token and the current password. Existing theme links that still carry id and
-  secret land on the confirm page and no longer delete. Themes may ship
-  `user-delete_account.php`; core falls back to its own view when they do not.
 - **A listing description was stored exactly as submitted on sites using the rich editor.**
   Params' XSS check strips every tag, so it is switched off wherever a rich editor is in
   use, and nothing replaced it — a script in a description ran for every visitor who opened

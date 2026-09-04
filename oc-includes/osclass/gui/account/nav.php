@@ -92,7 +92,10 @@ if (osc_is_user_dashboard()) {
                    <?php echo $isHere ? 'aria-current="page"' : ''; ?>><?php
                     echo osc_esc_html($navItem['name']); ?></a>
             </li>
-        <?php } ?>
+        <?php }
+        // Inside the list, as osc_private_user_menu() has always fired it: every
+        // plugin written against this hook echoes an <li>, and outside the <ul>
+        // that is a stray element in the nav.
+        osc_run_hook('user_menu'); ?>
     </ul>
-    <?php osc_run_hook('user_menu'); ?>
 </nav>

@@ -126,8 +126,8 @@ if (!defined('ABS_PATH')) {
 
   .oe-page .oe-muted,.oe-page .oe-bill-sub{color:var(--oe-ink-muted);margin:4px 0 0;font-size:.875rem;}
   .oe-page .oe-empty,.oe-page .oe-bill-empty{color:var(--oe-ink-muted);padding:24px 0;text-align:center;}
-  .oe-pager,.oe-bill-pager{display:flex;justify-content:space-between;margin-top:16px;font-size:.875rem;}
-  .oe-pager a,.oe-bill-pager a{text-decoration:none;}
+  .oe-page .oe-pager,.oe-page .oe-bill-pager{display:flex;justify-content:space-between;margin-top:16px;font-size:.875rem;}
+  .oe-page .oe-pager a,.oe-page .oe-bill-pager a{text-decoration:none;}
   .oe-page .oe-figure,.oe-page .oe-bill-balance{font-size:2rem;font-weight:700;margin:0;}
   .oe-page .oe-figure.neg,.oe-page .oe-bill-balance.neg{color:var(--oe-danger);}
 
