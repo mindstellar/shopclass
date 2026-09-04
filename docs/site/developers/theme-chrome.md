@@ -58,7 +58,13 @@ if (!osc_get_header()) {
 }
 ```
 
-`osc_theme_has_chrome()` answers the same question without rendering.
+`osc_theme_has_chrome()` answers the same question without rendering, and
+`osc_theme_chrome()` returns the resolved pair as absolute paths — or `null` —
+if you need to know *which* files answered rather than just whether any did.
+
+```php
+$chrome = osc_theme_chrome();   // ['header' => '/…/common/header.php', 'footer' => …]
+```
 
 ## What core puts between them
 
@@ -101,6 +107,16 @@ osc_add_theme_support('views', array(
 Names may be written with or without `.php`. A declaration only ever **adds** —
 core's own names stay reserved whatever you declare, and a theme that declares
 nothing behaves exactly as before.
+
+`osc_theme_view_names()` returns the whole reserved set — core's names plus
+anything the active theme declared — as names without a directory and without
+`.php`. The admin page editor uses it to refuse a colliding slug; a plugin that
+offers its own page-naming UI should check against the same list rather than
+hardcoding one.
+
+```php
+in_array('contact', osc_theme_view_names(), true);   // true — reserved by core
+```
 
 
 ## Declaring widget zones

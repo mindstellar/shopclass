@@ -871,6 +871,7 @@ function osc_ui_common_header()
     osc_enqueue_style('osc-ui-common');
 }
 osc_add_hook('header', 'osc_ui_common_header');
+osc_add_hook('header', 'osc_head_hook_guard', 1);
 
 function osc_item_tinymce_footer()
 {

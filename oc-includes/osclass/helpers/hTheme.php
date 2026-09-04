@@ -679,6 +679,34 @@ function osc_head(): void
 }
 
 /**
+ * Warn, in debug builds only, when the `header` hook runs more than once in a
+ * request.
+ *
+ * osc_head() runs the hook itself, so a theme that calls osc_head() *and* keeps
+ * its old osc_run_hook('header') loads every enqueued script and stylesheet
+ * twice. Nothing about the page looks wrong, which is why it is worth a notice:
+ * the symptom is duplicated assets, not a broken layout.
+ *
+ * Registered on the hook rather than inside osc_head(), so it sees the second
+ * call whichever of the two made it. The registration lives in functions.php:
+ * this file is required before hPlugins.php, so osc_add_hook() does not exist
+ * yet, and the DB-free tests include it directly.
+ */
+function osc_head_hook_guard(): void
+{
+    static $runs = 0;
+
+    if (++$runs > 1 && defined('OSC_DEBUG') && OSC_DEBUG) {
+        trigger_error(
+            "The 'header' hook has run {$runs} times this request. A theme calling both "
+            . "osc_head() and osc_run_hook('header') enqueues every script and stylesheet twice; "
+            . 'osc_head() already runs the hook.',
+            E_USER_WARNING
+        );
+    }
+}
+
+/**
  * Register a named render target: an opaque id mapped to an absolute file path.
  * osc_render_file() checks this registry before its own filesystem lookups, so
  * core can expose a file outside the theme/plugin directories -- e.g. an

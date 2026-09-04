@@ -174,3 +174,20 @@ osc_add_filter('user_menu_filter', function ($options) {
 ```
 
 The `opt_logout` entry is always moved last, whatever the filter returns.
+
+## Rendering your own page in the theme's chrome
+
+The helper core uses for these pages is public, so a plugin can put its own page
+inside the active theme without shipping a view for every theme in existence:
+
+```php
+osc_gui_view(
+    'my-plugin-page.php',                  // the theme's own view, if it ships one
+    PLUGINS_PATH . 'my-plugin/page.php',   // your markup, used when it does not
+    array('heading' => __('My page'), 'title' => __('My page'))
+);
+```
+
+Resolution is the same three steps core uses: the active theme's view if it has
+one, otherwise your file inside the theme's chrome, otherwise core's own shell.
+Your file is markup only — no `<html>`, no header, no footer.
