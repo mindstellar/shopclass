@@ -2853,7 +2853,6 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hMessages.php
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Dismiss"
 msgstr ""

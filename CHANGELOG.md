@@ -8,7 +8,8 @@ Themes can now tell core about themselves: where their header and footer live, w
 and widget zones they own, and whether core may write the document head. The pages core owns —
 account deletion, credits, buy and orders — render inside the theme rather than on a page of
 their own, and a theme can add a view without a patch to core. A theme that declares nothing
-behaves exactly as it did.
+behaves exactly as it did. Core now also renders every account and sign-in page itself when the
+theme ships none, using a documented class vocabulary a theme restyles in CSS alone.
 
 ### New
 
@@ -27,9 +28,22 @@ behaves exactly as it did.
 - `osc_head()`, `osc_body_class()` and `osc_language_attributes()` let a theme hand the
   document head and the body classes to core, so a page core renders is described like any
   other. Each part of the head is opt-out.
+- Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
+  three settings pages, sign in, register, the two password-reset steps, the public profile and
+  the plugin account slot — when the theme ships none. A theme that ships one still wins.
+- A published `.oe-*` class vocabulary for those pages, documented at
+  `docs/site/developers/account-pages.md`, so a theme restyles them in CSS with no PHP.
+- `osc_gui_account_view()` resolves one account view: the theme's file, then a parent theme's,
+  then core's page inside the theme's chrome, then core's own shell.
 
 ### Fixed
 
+- A theme that shipped no view for an account page rendered a blank document.
+- Flash messages carry `role="status"`, or `role="alert"` on an error, so a screen reader is
+  told they appeared. The dismiss control, an `<a>` with no `href` that no keyboard could reach,
+  is gone, and two queued messages no longer share one `id`.
+- The profile form's "About you" field is labelled with the id it actually renders, and its
+  region and city lists follow the country without a page reload.
 - Core-rendered pages dropped to a bare standalone page on the default theme, which keeps its
   chrome in `common/` rather than the theme root.
 - The credits, buy and orders pages each carried their own copy of the same stylesheet, which had

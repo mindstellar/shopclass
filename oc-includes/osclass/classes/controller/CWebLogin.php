@@ -363,7 +363,9 @@ class CWebLogin extends BaseModel
         // redirects here — so this one URL stands in for all of them in a crawl.
         $this->_exportVariableToView('meta_noindex', true);
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         osc_run_hook('after_html');
     }
 }

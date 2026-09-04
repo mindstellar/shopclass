@@ -127,7 +127,9 @@ class CWebRegister extends BaseModel
     {
         $this->_exportVariableToView('meta_noindex', true);
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

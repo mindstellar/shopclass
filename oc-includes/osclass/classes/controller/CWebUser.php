@@ -489,18 +489,10 @@ class CWebUser extends WebSecBaseModel
     public function doView($file)
     {
         osc_run_hook('before_html');
-        if ($file === 'user-delete_account.php') {
-            osc_gui_view(
-                $file,
-                osc_base_path() . 'oc-includes/osclass/gui/user-delete_account-content.php',
-                array(
-                    'heading' => _m('Delete your account'),
-                    'title'   => trim(_m('Delete your account') . ' — ' . osc_page_title(), ' —'),
-                    'intro'   => _m('This page has not deleted the account yet. Enter your password and click Delete my account. Your listings and messages will be removed. This cannot be undone.'),
-                    'tone'    => 'danger',
-                )
-            );
-        } else {
+        // Core has a fallback page for every account view. A theme that ships the
+        // view still wins; this only replaces the blank page a theme that does not
+        // used to produce.
+        if (!osc_gui_account_view($file)) {
             osc_current_web_theme_path($file);
         }
         Session::newInstance()->_clearVariables();

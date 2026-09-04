@@ -44,7 +44,11 @@ if (!defined('ABS_PATH')) {
     font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   }
   .oe-page *,.oe-page *::before,.oe-page *::after{box-sizing:border-box;}
-  .oe-page a{color:var(--oe-teal);}
+  /* Link colour is text colour, so it follows the same rule as the type above it:
+     set only on the standalone shell. Inside a theme the page's links are the
+     theme's links, which is what makes a core-rendered page read as part of the
+     site rather than as a panel dropped into it. */
+  body.oe-page a{color:var(--oe-teal);}
   .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;}
   .oe-page h2{font-size:1.0625rem;font-weight:600;margin:0 0 12px;}
 
@@ -93,8 +97,10 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-btn-danger{background:var(--oe-danger);border-color:var(--oe-danger);}
   .oe-page .oe-actions,.oe-page .oe-bill-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
-  .oe-page .oe-actions a.oe-secondary{background:var(--oe-bench);color:var(--oe-ink);border-color:var(--oe-rule);}
-  .oe-page .oe-actions a.oe-secondary:hover{border-color:var(--oe-ink-muted);}
+  .oe-page .oe-actions a.oe-secondary,.oe-page .oe-btn.oe-secondary{
+    background:var(--oe-bench);color:var(--oe-ink);border-color:var(--oe-rule);
+  }
+  .oe-page .oe-actions a.oe-secondary:hover,.oe-page .oe-btn.oe-secondary:hover{border-color:var(--oe-ink-muted);}
 
   .oe-page .oe-field{margin:0 0 16px;}
   .oe-page .oe-label{display:block;font-size:.9375rem;font-weight:500;margin-bottom:6px;}
@@ -143,6 +149,112 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-bill-pkg-credits{color:var(--oe-ink-muted);font-size:.875rem;}
   .oe-page .oe-bill-pkg-price{margin-left:auto;font-weight:600;white-space:nowrap;}
   .oe-page .oe-bill-instructions{white-space:pre-line;}
+
+  /* ------------------------------------------------------------------ account --
+     The vocabulary the account and auth partials emit. Role names, not page
+     names: .oe-account-nav is what a thing IS, .oe-dashboard-box would be where
+     it happened to sit. Documented in docs/site/developers/account-pages.md,
+     which is the contract -- these names cannot be renamed once released. */
+
+  /* Content column plus the section nav. One column below 60rem, nav last in the
+     source either way, so it reads after the page on a narrow screen and in a
+     screen reader. */
+  .oe-page .oe-account{
+    display:grid; gap:32px; align-items:start;
+    grid-template-columns:minmax(0,1fr) minmax(13rem,16rem);
+  }
+  .oe-page .oe-account > *{min-inline-size:0;}
+  .oe-page .oe-account-main > :last-child{margin-block-end:0;}
+  @media (max-width:60rem){.oe-page .oe-account{grid-template-columns:minmax(0,1fr);gap:28px;}}
+
+  .oe-page .oe-account-nav h2{
+    font-size:.8125rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--oe-ink-muted); margin:0 0 8px; padding-block-end:8px;
+    border-block-end:1px solid var(--oe-rule);
+  }
+  .oe-page .oe-account-nav ul{list-style:none;margin:0;padding:0;}
+  .oe-page .oe-account-nav a{
+    display:block; padding:8px 10px; margin-inline:-10px; border-radius:4px;
+    text-decoration:none; color:inherit;
+  }
+  .oe-page .oe-account-nav a:hover{background:var(--oe-bench-sunk);text-decoration:underline;}
+  /* aria-current is the accessible signal; the weight and tint follow it rather
+     than being set separately, so the two can never disagree. */
+  .oe-page .oe-account-nav [aria-current]{background:var(--oe-bench-sunk);font-weight:600;}
+
+  /* Core's own flash output, whose class names are frozen and are the notice
+     surface for the whole product -- so there is no second .oe-* name for the
+     same role. Scoped inside .oe-page so these rules can only reach a message
+     rendered within core's own block; a theme's header-rendered flash is
+     untouched. The message text carries the meaning, so the tint ranks it
+     rather than being the only signal. */
+  .oe-page .flashmessage{
+    border:1px solid var(--oe-rule); border-radius:6px; background:var(--oe-bench);
+    padding:12px 16px; margin:0 0 20px;
+  }
+  .oe-page .flashmessage-ok{background:#e4f8e7;border-color:var(--oe-success);}
+  .oe-page .flashmessage-error{background:#ffe9e5;border-color:var(--oe-danger);}
+  .oe-page .flashmessage-warning{background:#fdf4d2;border-color:var(--oe-warning);}
+  .oe-page .flashmessage-info{background:#e6f6f4;border-color:var(--oe-teal);}
+  .oe-page .flashmessage > :last-child{margin-block-end:0;}
+
+  /* A list of records -- listings, alerts. A list, not a table: the rows carry a
+     picture and wrap, which a table row does badly on a phone. */
+  .oe-page .oe-list{list-style:none;margin:0;padding:0;}
+  .oe-page .oe-list-item{
+    display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 16px;
+    padding:14px 0; border-block-end:1px solid var(--oe-bench-sunk);
+  }
+  .oe-page .oe-list-item > .oe-list-body{flex:1 1 16rem;min-inline-size:0;}
+  .oe-page .oe-list-item h2,.oe-page .oe-list-item h3{margin:0;font-size:1.0625rem;overflow-wrap:anywhere;}
+  .oe-page .oe-meta{
+    display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px;
+    color:var(--oe-ink-muted); font-size:.875rem; margin:6px 0 0;
+  }
+  .oe-page .oe-thumb{
+    flex:none; display:block; inline-size:5.5rem; block-size:auto; aspect-ratio:6/5;
+    object-fit:cover; background:var(--oe-bench-sunk);
+    border:1px solid var(--oe-rule); border-radius:4px;
+  }
+  .oe-page .oe-thumb-empty{
+    display:grid; place-items:center; text-align:center; padding:4px;
+    border-style:dashed; color:var(--oe-ink-muted); font-size:.75rem;
+  }
+
+  .oe-page .oe-price{
+    flex:none; margin:0; font-weight:600; font-size:1.0625rem;
+    font-variant-numeric:tabular-nums; margin-inline-start:auto; text-align:end;
+  }
+
+  /* A page that is one form: sign in, register, reset a password. Bounded so a
+     single column of fields still reads as one object at any window width. */
+  .oe-page .oe-form-page{max-inline-size:30rem;}
+  /* Core's register validator writes <li> into #error_list and never changes its
+     visibility, so the box is its own switch: nothing at all until it has one. */
+  .oe-page #error_list{list-style:none;margin:0;padding:0;}
+  .oe-page #error_list:not(:empty){
+    background:#ffe9e5; border:1px solid var(--oe-danger); border-radius:6px;
+    margin:0 0 20px; padding:12px 16px; padding-inline-start:32px; list-style:disc;
+  }
+
+  /* Help text bound to its field with aria-describedby. */
+  .oe-page .oe-hint{display:block;font-size:.8125rem;color:var(--oe-ink-muted);margin-block-start:6px;}
+  /* A checkbox and its label on one line -- the label wraps the control, so the
+     whole row is the target and no `for` can drift. */
+  .oe-page .oe-check{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-size:.9375rem;}
+  .oe-page .oe-check input{inline-size:auto;flex:none;}
+
+  /* The floor under a control core did not put a class on: UserForm renders bare
+     <input>/<select>/<textarea>. Zero specificity on purpose (:where), so ANY
+     rule a theme writes -- even a bare `input {}` -- wins. Inside a theme these
+     should look like the theme's fields, not like core's. */
+  :where(.oe-page .oe-field, .oe-page .oe-check) :where(input,select,textarea){
+    font:inherit; font-size:.9375rem; inline-size:100%; max-inline-size:22rem;
+    padding:8px 10px; background:var(--oe-bench); color:var(--oe-ink);
+    border:1px solid var(--oe-rule); border-radius:4px;
+  }
+  :where(.oe-page .oe-field) :where(textarea){min-block-size:7rem;max-inline-size:34rem;line-height:1.55;}
+  .oe-page .oe-field :is(input,select,textarea):focus-visible{outline:2px solid var(--oe-teal);outline-offset:1px;}
 
   .oe-page .oe-ref{font-size:.8125rem;color:var(--oe-ink-muted);margin:16px 0 0;}
   .oe-page .oe-ref code{

@@ -360,11 +360,33 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
 {
     require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 
-    $themePath = WebThemes::newInstance()->getCurrentThemePath();
-    if ($themeView !== '' && file_exists($themePath . $themeView)) {
-        require $themePath . $themeView;
+    if ($themeView !== '') {
+        $themes = WebThemes::newInstance();
+        if (file_exists($themes->getCurrentThemePath() . $themeView)) {
+            require $themes->getCurrentThemePath() . $themeView;
 
-        return;
+            return;
+        }
+
+        // A child theme inherits its parent's views, and osc_current_web_theme_path()
+        // has always resolved them that way. What is deliberately NOT walked is the
+        // setGuiTheme() fallback at the end of that walk: it is a bundled theme the
+        // site is not running, and rendering its view here is the blank-or-foreign
+        // page this fallback exists to replace.
+        $info = $themes->loadThemeInfo($themes->getCurrentTheme());
+        if (is_array($info) && !empty($info['template'])
+            && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+        ) {
+            $parentPath = osc_themes_path() . $info['template'] . '/';
+            if (file_exists($parentPath . $themeView)) {
+                // Switches the theme URLs to the parent, exactly as the walk does,
+                // so the parent's view loads the parent's assets.
+                $themes->setParentTheme();
+                require $themes->getCurrentThemePath() . $themeView;
+
+                return;
+            }
+        }
     }
 
     if (!file_exists($contentFile)) {
@@ -419,6 +441,71 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
     );
 
     require ABS_PATH . 'oc-includes/osclass/gui/page.php';
+}
+
+/**
+ * Render core's own fallback page for one of the account and auth views.
+ *
+ * Core has a content partial for every view the account section routes to, so a
+ * theme that ships none of them still gets a working, styled page instead of a
+ * blank one. Resolution is osc_gui_view()'s: the theme's own view wins, then the
+ * theme's chrome around core's partial, then core's standalone shell.
+ *
+ * Returns false when core has no partial for $themeView, so the caller falls
+ * through to its ordinary osc_current_web_theme_path() render.
+ *
+ * The class vocabulary the partials emit is documented for theme authors in
+ * docs/site/developers/account-pages.md and cannot be renamed once released.
+ *
+ * @param string $themeView view filename, e.g. 'user-login.php'
+ */
+function osc_gui_account_view(string $themeView): bool
+{
+    // Headings are user-visible, so the table is built per call rather than held
+    // in a constant: a constant would freeze them in whatever locale loaded first.
+    $pages = array(
+        'user-dashboard.php'       => array('heading' => _m('Dashboard')),
+        'user-items.php'           => array('heading' => _m('Your listings')),
+        'user-alerts.php'          => array('heading' => _m('Alerts')),
+        'user-profile.php'         => array('heading' => _m('Your profile')),
+        'user-change_email.php'    => array('heading' => _m('Change your email address')),
+        'user-change_password.php' => array('heading' => _m('Change your password')),
+        'user-change_username.php' => array('heading' => _m('Change your username')),
+        'user-login.php'           => array('heading' => _m('Sign in')),
+        'user-register.php'        => array('heading' => _m('Create an account')),
+        'user-recover.php'         => array('heading' => _m('Reset your password')),
+        'user-forgot_password.php' => array('heading' => _m('Choose a new password')),
+        'user-public-profile.php'  => array('heading' => (string) osc_user_name()),
+        'user-custom.php'          => array('heading' => _m('Your account')),
+        'user-delete_account.php'  => array(
+            'heading' => _m('Delete your account'),
+            'tone'    => 'danger',
+            'intro'   => _m('This page has not deleted the account yet. Enter your password and click '
+                            . 'Delete my account. Your listings and messages will be removed. This '
+                            . 'cannot be undone.'),
+        ),
+    );
+
+    if (!isset($pages[$themeView])) {
+        return false;
+    }
+
+    // user-delete_account keeps its original partial path: it shipped in 6.3.0's
+    // first phase and a theme may already include it through that name.
+    $contentFile = $themeView === 'user-delete_account.php'
+        ? ABS_PATH . 'oc-includes/osclass/gui/user-delete_account-content.php'
+        : ABS_PATH . 'oc-includes/osclass/gui/account/' . basename($themeView, '.php') . '-content.php';
+
+    if (!file_exists($contentFile)) {
+        return false;
+    }
+
+    $opts = $pages[$themeView];
+    $opts['title'] = trim($opts['heading'] . ' — ' . osc_page_title(), ' —');
+
+    osc_gui_view($themeView, $contentFile, $opts);
+
+    return true;
 }
 
 /**

@@ -157,6 +157,12 @@ jobs:
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order
         run: php tests/user-menu-order.php
+      # Core's fallback pages for the account section render only when the theme ships
+      # no view of its own, so every break here is invisible on the themes we run: a
+      # renamed partial is a blank page again, and a renamed .oe-* class strands every
+      # theme styling the published name.
+      - name: Account fallback views
+        run: php tests/account-views.php
       # GET ?page=user&action=delete&id=&secret= used to remove the account as soon
       # as the page was requested. The confirm view must not call deleteUser.
       - name: Account delete is POST
