@@ -51,6 +51,11 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 ### Fixed
 
 - A theme that shipped no view for an account page rendered a blank document.
+- A static page whose slug matched a name core newly reserved could not be edited at all —
+  not its title, not its body — because the reserved set was checked even when the name was
+  not changing.
+- A theme in a directory with a hyphen in its name, which is how most are distributed, did
+  not appear in the appearance screen or the CLI at all.
 - Flash messages carry `role="status"`, or `role="alert"` on an error, so a screen reader is
   told they appeared. The dismiss control is keyboard-operable without a theme script, and two
   queued messages no longer share one `id`.

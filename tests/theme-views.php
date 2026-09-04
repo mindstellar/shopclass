@@ -122,7 +122,6 @@ $legacy = array(
     'user-change_email',
     'user-change_password',
     'user-dashboard',
-    'user-delete_account',
     'user-forgot_password',
     'user-items',
     'user-login',
@@ -132,17 +131,31 @@ $legacy = array(
 );
 
 $supports->reset();
-pin('a theme that declares nothing gets the legacy list unchanged', $legacy, osc_theme_view_names());
-pin('and nothing has been added to it', 31, count($legacy));
+$reserved = osc_theme_view_names();
+
+// The contract is one-directional. A name may be added when core starts rendering
+// that view itself -- a static page can no longer take the slug, which is the
+// point. Removing one silently un-reserves a slug a live route still answers on,
+// so a page created afterwards shadows it.
+$lost = array_values(array_diff($legacy, $reserved));
+pin('no name reserved in 6.2 has been dropped', array(), $lost);
+
+// What 6.3 adds, enumerated rather than counted: each is a view core now renders
+// when the theme ships none, so each has to be reserved.
+pin(
+    'and the additions are exactly the views core took over',
+    array('user-change_username', 'user-custom', 'user-delete_account', 'user-public-profile'),
+    array_values(array_diff($reserved, $legacy))
+);
 
 harness_section('a declaration adds, never replaces');
 $supports->reset();
 osc_add_theme_support('views', array('user-wishlist', 'template-promo'));
 $names = osc_theme_view_names();
-check('the whole baseline survives', array_slice($names, 0, count($legacy)) === $legacy);
+check('the whole baseline survives', array_slice($names, 0, count($reserved)) === $reserved);
 check('user-wishlist is reserved', in_array('user-wishlist', $names, true));
 check('template-promo is reserved', in_array('template-promo', $names, true));
-pin('nothing else was added', count($legacy) + 2, count($names));
+pin('nothing else was added', count($reserved) + 2, count($names));
 
 harness_section('declared names are normalized');
 $supports->reset();
@@ -157,7 +170,7 @@ foreach (array(true, 'user-wishlist', 42, array(1, 2), array('')) as $i => $args
     $supports->reset();
     osc_add_theme_support('views', $args);
     $names = osc_theme_view_names();
-    $extra = array_values(array_diff($names, $legacy));
+    $extra = array_values(array_diff($names, $reserved));
     // A bare string is a one-item list; everything else here adds nothing.
     $want = $args === 'user-wishlist' ? array('user-wishlist') : array();
     pin('shape ' . $i . ' adds only what it should', $want, $extra);

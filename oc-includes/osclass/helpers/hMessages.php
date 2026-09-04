@@ -130,10 +130,15 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
 
             // Bender and storefront both bind click and keyboard dismissal to
             // `.flashmessage a.ico-close` and read data-oc-close-label off it, so
-            // the tag and the class names are a contract, not decoration. Core
-            // adds role and tabindex so it is operable before any theme script
-            // runs; a theme that sets them again sets the same values.
-            $dismiss = '<a class="btn ico btn-mini ico-close" role="button" tabindex="0"'
+            // the tag and the class names are a contract, not decoration.
+            //
+            // Deliberately no role or tabindex here. Core ships no front-end
+            // script, so on a theme that ships none either the control cannot be
+            // made to work -- and announcing it as a focusable button that does
+            // nothing is worse for a screen reader than leaving it as the inert
+            // decoration it is. The themes that bind behaviour to it set role,
+            // tabindex and aria-label themselves at the same time.
+            $dismiss = '<a class="btn ico btn-mini ico-close"'
                 . ' data-oc-close-label="' . osc_esc_html(__('Dismiss')) . '">x</a>';
 
             if (isset($message['msg']) && $message['msg'] != '') {

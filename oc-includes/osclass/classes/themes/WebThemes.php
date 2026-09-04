@@ -263,7 +263,11 @@ class WebThemes extends Themes
         $themes = array();
         $dir    = opendir($this->path);
         while ($file = readdir($dir)) {
-            if (preg_match('/^[a-zA-Z0-9_]+$/', $file)
+            // Hyphens are allowed: a theme distributed as `my-theme` is ordinary,
+            // and rejecting the directory name made the theme invisible to both
+            // this screen and the CLI rather than reporting anything. Dots stay
+            // out, so `.` and `..` still fall through with no special case.
+            if (preg_match('/^[a-zA-Z0-9_-]+$/', $file)
                 && file_exists($this->path . '/' . $file . '/index.php')
                 && $this->loadThemeInfo($file)
             ) {

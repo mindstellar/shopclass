@@ -135,9 +135,11 @@ check('an error is assertive and everything else is polite', strpos($messages, "
 // silently costs both themes their close button on the next core upgrade.
 check('the dismiss control is still an <a class="ico-close">', strpos($messages, 'ico-close') !== false);
 check('it still carries data-oc-close-label', strpos($messages, 'data-oc-close-label') !== false);
+// Core ships no front-end script, so it must not claim the control is a button:
+// on a theme that ships none either, that is a focusable control that does nothing.
 check(
-    'core makes it keyboard-operable rather than relying on a theme script',
-    strpos($messages, 'role="button" tabindex="0"') !== false
+    'core does not announce the inert control as a button',
+    strpos($messages, 'role="button"') === false
 );
 // Frozen names. Themes and plugins nobody here can see style these exact strings.
 check('the flashmessage-<type> class is still emitted', strpos($messages, "strtolower(\$class) . '-'") !== false);
