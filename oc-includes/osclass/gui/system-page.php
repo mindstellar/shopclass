@@ -23,6 +23,8 @@
  *     'bodyHtml' => bool,     // echo body as trusted HTML instead of escaping
  *     'tone'     => string,   // 'info' | 'warning' | 'danger' | 'success'
  *     'ref'      => ?string,  // reference id the admin can grep for in logs
+ *     'lang'     => ?string,  // html lang attribute (default 'en')
+ *     'role'     => ?string,  // landmark role on the card (default 'alert')
  *     'actions'  => ?array,   // [ ['label'=>, 'href'=>, 'primary'=>bool], ... ]
  *     'detail'   => ?array,   // ['type','message','file','line','trace'] (debug)
  *   ]
@@ -41,6 +43,11 @@ $tone     = isset($oscSys['tone']) ? $oscSys['tone'] : 'danger';
 $ref      = isset($oscSys['ref']) ? $oscSys['ref'] : null;
 $actions  = (isset($oscSys['actions']) && is_array($oscSys['actions'])) ? $oscSys['actions'] : array();
 $detail   = !empty($oscSys['detail']) ? $oscSys['detail'] : null;
+$lang     = isset($oscSys['lang']) && $oscSys['lang'] !== '' ? $oscSys['lang'] : 'en';
+// 'alert' is right for a message the visitor did not ask for. A page that asks
+// for something back -- a confirm form -- passes 'main' instead, so a screen
+// reader does not read the whole card assertively before the fields.
+$role     = isset($oscSys['role']) && $oscSys['role'] !== '' ? $oscSys['role'] : 'alert';
 
 // Site branding, when the caller can supply it (e.g. maintenance mode, where
 // the database is reachable). Boot-failure pages leave these empty and fall
@@ -77,7 +84,7 @@ $icons = array(
 );
 $iconSvg = str_replace('%C', $accent, $icons[$tone]);
 ?><!doctype html>
-<html lang="en">
+<html lang="<?php echo $esc($lang); ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -132,6 +139,20 @@ $iconSvg = str_replace('%C', $accent, $icons[$tone]);
     background: var(--oe-bench); color: var(--oe-ink); border: 1px solid var(--oe-rule);
   }
   .oe-actions a.oe-secondary:hover { border-color: var(--oe-ink-muted); }
+  /* Form controls in a message (a confirm page) match the buttons above. */
+  .oe-lead label { display: block; font-size: .9375rem; font-weight: 500; margin-bottom: 6px; }
+  .oe-lead input {
+    font: inherit; font-size: .9375rem; width: 100%; max-width: 320px; padding: 8px 10px;
+    background: var(--oe-bench); color: var(--oe-ink);
+    border: 1px solid var(--oe-rule); border-radius: 4px;
+  }
+  .oe-lead input:focus { outline: 2px solid var(--oe-bronze); outline-offset: 1px; }
+  .oe-lead button {
+    font: inherit; font-size: .9375rem; font-weight: 500; cursor: pointer;
+    padding: 9px 18px; border-radius: 4px;
+    background: var(--oe-accent); color: #fff; border: 1px solid var(--oe-accent);
+  }
+  .oe-lead button + a { margin-left: 12px; color: var(--oe-ink-muted); }
   .oe-ref { font-size: .8125rem; color: var(--oe-ink-muted); margin: 16px 0 0; }
   .oe-ref code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -153,7 +174,7 @@ $iconSvg = str_replace('%C', $accent, $icons[$tone]);
 </style>
 </head>
 <body>
-  <main class="oe-card" role="alert">
+  <main class="oe-card" role="<?php echo $esc($role); ?>">
     <div class="oe-band">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><?php echo $iconSvg; ?></svg>
       <?php if ($brandLogo) { ?>

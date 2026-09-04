@@ -13,36 +13,46 @@ if (!defined('ABS_PATH')) {
  */
 
 /**
- * Core's fallback account-delete page -- rendered only when the active theme
- * has no user-delete_account.php of its own. Wraps user-delete_account-content.php
- * in the theme chrome when header.php and footer.php exist. See CWebUser::doView().
+ * Core's fallback account-delete page -- rendered only when the active theme has
+ * no user-delete_account.php of its own. Uses the theme chrome when header.php
+ * and footer.php exist, otherwise the shared system page. See CWebUser::doView().
+ *
+ * Not osc_die(): it discards the output buffer the CSRF filter writes into, so
+ * the form would ship without a token and every submission would be rejected.
  */
 
+$heading = _m('Delete your account');
+$intro   = _m('This page has not deleted the account yet. Enter your password and click Delete my account. Your listings and messages will be removed. This cannot be undone.');
+
 $themePath = WebThemes::newInstance()->getCurrentThemePath();
-$hasChrome = file_exists($themePath . 'header.php') && file_exists($themePath . 'footer.php');
 
-if ($hasChrome) {
+if (file_exists($themePath . 'header.php') && file_exists($themePath . 'footer.php')) {
     osc_current_web_theme_path('header.php');
-} else {
-    ?><!doctype html>
-<html lang="<?php echo osc_esc_html(str_replace('_', '-', osc_current_user_locale())); ?>">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo osc_esc_html(_m('Delete your account')); ?></title>
-<style>html,body{margin:0;padding:0;background:#f7f9fb;}</style>
-</head>
-<body>
-    <?php
-}
-
-require __DIR__ . '/user-delete_account-content.php';
-
-if ($hasChrome) {
-    osc_current_web_theme_path('footer.php');
-} else {
     ?>
-</body>
-</html>
-<?php
+    <section class="osc-user-delete-account-page">
+        <h1><?php echo osc_esc_html($heading); ?></h1>
+        <p><?php echo osc_esc_html($intro); ?></p>
+        <?php require __DIR__ . '/user-delete_account-content.php'; ?>
+    </section>
+    <?php
+    osc_current_web_theme_path('footer.php');
+
+    return;
 }
+
+ob_start();
+require __DIR__ . '/user-delete_account-content.php';
+$form = ob_get_clean();
+
+$oscSys = array(
+    'title'     => $heading,
+    'heading'   => $heading,
+    'body'      => '<p>' . osc_esc_html($intro) . '</p>' . $form,
+    'bodyHtml'  => true,
+    'tone'      => 'danger',
+    'role'      => 'main',
+    'lang'      => str_replace('_', '-', osc_current_user_locale()),
+    'brandName' => osc_page_title(),
+);
+
+require ABS_PATH . 'oc-includes/osclass/gui/system-page.php';

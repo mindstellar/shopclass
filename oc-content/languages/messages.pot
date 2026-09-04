@@ -511,7 +511,6 @@ msgstr ""
 msgid "Delete my account"
 msgstr ""
 
-#: oc-includes/osclass/gui/user-delete_account-content.php
 #: oc-includes/osclass/gui/user-delete_account.php
 msgid "Delete your account"
 msgstr ""
@@ -2074,7 +2073,7 @@ msgstr ""
 msgid "This listing doesn't exist"
 msgstr ""
 
-#: oc-includes/osclass/gui/user-delete_account-content.php
+#: oc-includes/osclass/gui/user-delete_account.php
 msgid ""
 "This page has not deleted the account yet. Enter your password and click "
 "Delete my account. Your listings and messages will be removed. This cannot "
