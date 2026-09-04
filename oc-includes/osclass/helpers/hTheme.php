@@ -80,38 +80,6 @@ function osc_theme_view_names(): array
 }
 
 /**
- * Whether the active theme can render $view: it ships the file, or it named the
- * view in its 'views' declaration -- a view it renders itself, from a plugin or
- * built at runtime, with no file of that name on disk.
- *
- * The active theme only. A parent theme and core's own fallback theme answer for
- * a theme the visitor is not using; osc_locate_template() walks those separately.
- *
- * Not a test for "is there a file I can include". A declared view has no file, so
- * a caller that branches on this and then requires the view -- or hands it to
- * osc_current_web_theme_path(), which walks on to the fallback theme and renders
- * nothing when it finds no file either -- ships a blank page. Branch on
- * file_exists() for that; branch on this only where a name is what is being
- * asked about, as the static-page reservation does.
- *
- * @param string $view e.g. 'user-profile.php'
- */
-function osc_theme_provides(string $view): bool
-{
-    if ($view === '' || strpos($view, '..') !== false || strpos($view, "\0") !== false) {
-        return false;
-    }
-
-    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $view)) {
-        return true;
-    }
-
-    $declared = \mindstellar\theme\ThemeViews::declared(osc_theme_supports('views'));
-
-    return in_array(\mindstellar\theme\ThemeViews::normalize($view), $declared, true);
-}
-
-/**
  * The theme stack a view is resolved against, as absolute directory paths:
  * active theme, then its parent when it declares one, then the bundled fallback
  * theme core keeps for views nobody else supplies.
@@ -255,46 +223,41 @@ function osc_theme_chrome(): ?array
 {
     $base = WebThemes::newInstance()->getCurrentThemePath();
 
+    // One candidate pair, or null unless both halves exist inside the theme.
+    // Relative paths only: a declared '../' or an absolute path would let a theme
+    // point core's include at any file on disk.
+    $pair = static function (string $header, string $footer) use ($base): ?array {
+        foreach (array($header, $footer) as $rel) {
+            if ($rel === '' || strpos($rel, '..') !== false || strpos($rel, "\0") !== false) {
+                return null;
+            }
+            if ($rel[0] === '/' || preg_match('#^[a-zA-Z]:#', $rel)) {
+                return null;
+            }
+        }
+        if (!file_exists($base . $header) || !file_exists($base . $footer)) {
+            return null;
+        }
+
+        return array('header' => $base . $header, 'footer' => $base . $footer);
+    };
+
     $declared = osc_theme_supports('chrome');
     if (is_array($declared) && isset($declared['header'], $declared['footer'])) {
-        $pair = osc_theme_chrome_pair($base, (string) $declared['header'], (string) $declared['footer']);
-        if ($pair !== null) {
-            return $pair;
+        $found = $pair((string) $declared['header'], (string) $declared['footer']);
+        if ($found !== null) {
+            return $found;
         }
     }
 
     foreach (array('', 'common/') as $dir) {
-        $pair = osc_theme_chrome_pair($base, $dir . 'header.php', $dir . 'footer.php');
-        if ($pair !== null) {
-            return $pair;
+        $found = $pair($dir . 'header.php', $dir . 'footer.php');
+        if ($found !== null) {
+            return $found;
         }
     }
 
     return null;
-}
-
-/**
- * One candidate chrome pair, resolved against $base, or null unless both files
- * exist inside the theme. Relative paths only -- a declared '../' or an absolute
- * path would let a theme point core's include at any file on disk.
- *
- * @return array{header:string,footer:string}|null
- */
-function osc_theme_chrome_pair(string $base, string $header, string $footer): ?array
-{
-    foreach (array($header, $footer) as $rel) {
-        if ($rel === '' || strpos($rel, '..') !== false || strpos($rel, "\0") !== false) {
-            return null;
-        }
-        if ($rel[0] === '/' || preg_match('#^[a-zA-Z]:#', $rel)) {
-            return null;
-        }
-    }
-    if (!file_exists($base . $header) || !file_exists($base . $footer)) {
-        return null;
-    }
-
-    return array('header' => $base . $header, 'footer' => $base . $footer);
 }
 
 /**

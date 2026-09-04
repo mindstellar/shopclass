@@ -102,9 +102,6 @@ Names may be written with or without `.php`. A declaration only ever **adds** â€
 core's own names stay reserved whatever you declare, and a theme that declares
 nothing behaves exactly as before.
 
-`osc_theme_provides('user-wishlist.php')` answers whether the active theme can
-render a view: it ships the file, or it named the view here. Use it when the view
-is not a file â€” one a plugin renders, or one built at runtime.
 
 ## Declaring widget zones
 

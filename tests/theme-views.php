@@ -168,26 +168,6 @@ $supports->reset();
 check('"contact" is reserved', in_array('contact', osc_theme_view_names(), true));
 check('"Contact" is not', !in_array('Contact', osc_theme_view_names(), true));
 
-harness_section('osc_theme_provides(): files on disk');
-$supports->reset();
-file_put_contents($themeRoot . 'user-profile.php', '<?php /* fixture */');
-check('a view the theme ships', osc_theme_provides('user-profile.php') === true);
-check('a view it does not', osc_theme_provides('user-billing-wallet.php') === false);
-check('an empty name', osc_theme_provides('') === false);
-check('a traversing name is refused', osc_theme_provides('../../../etc/passwd') === false);
-
-harness_section('osc_theme_provides(): declared without a file');
-$supports->reset();
-osc_add_theme_support('views', array('user-wishlist'));
-check('declared with no file on disk', osc_theme_provides('user-wishlist.php') === true);
-check('and without the extension', osc_theme_provides('user-wishlist') === true);
-check('an undeclared name is still false', osc_theme_provides('user-billing-buy.php') === false);
-
-harness_section('removing the declaration goes back to the baseline');
-osc_remove_theme_support('views');
-pin('baseline again', $legacy, osc_theme_view_names());
-check('the declared-only view is gone', osc_theme_provides('user-wishlist.php') === false);
-
 harness_section('widget zones: the `Widgets:` header answers when nothing is declared');
 $supports->reset();
 WebThemes::$headerLocations = array('header', 'footer');
