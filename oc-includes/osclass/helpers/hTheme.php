@@ -61,6 +61,50 @@ function osc_remove_theme_support(string $feature): void
 }
 
 /**
+ * Every view name that is spoken for: the ones core asks any theme for, plus the
+ * ones the active theme declared with
+ * osc_add_theme_support('views', array('user-wishlist', 'template-promo')).
+ *
+ * A static page's internal name becomes a URL segment, so a page slugged
+ * "contact" would shadow the contact route. This is the set the admin page
+ * editor refuses.
+ *
+ * A theme that declares nothing gets core's list exactly as before; a
+ * declaration only ever adds.
+ *
+ * @return string[] names without a directory and without .php
+ */
+function osc_theme_view_names(): array
+{
+    return \mindstellar\theme\ThemeViews::reserved(osc_theme_supports('views'));
+}
+
+/**
+ * Whether the active theme can render $view: it ships the file, or it named the
+ * view in its 'views' declaration -- a view it renders itself, from a plugin or
+ * built at runtime, with no file of that name on disk.
+ *
+ * The active theme only. A parent theme and core's own fallback theme answer for
+ * a theme the visitor is not using; osc_locate_template() walks those separately.
+ *
+ * @param string $view e.g. 'user-profile.php'
+ */
+function osc_theme_provides(string $view): bool
+{
+    if ($view === '' || strpos($view, '..') !== false || strpos($view, "\0") !== false) {
+        return false;
+    }
+
+    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $view)) {
+        return true;
+    }
+
+    $declared = \mindstellar\theme\ThemeViews::declared(osc_theme_supports('views'));
+
+    return in_array(\mindstellar\theme\ThemeViews::normalize($view), $declared, true);
+}
+
+/**
  * The active theme's page chrome: the view that opens the document and the one
  * that closes it, as absolute paths, or null when the theme has none.
  *

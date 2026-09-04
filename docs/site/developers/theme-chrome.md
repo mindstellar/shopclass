@@ -84,3 +84,24 @@ osc_remove_theme_support(string $feature): void;
 Call `osc_add_theme_support()` from `functions.php`, which core loads before it
 renders anything. A feature nobody declared reads as `false`, and core does what
 it did before — declaring is always optional.
+
+## Declaring extra views
+
+A static page's internal name becomes a URL segment, so core keeps a list of
+names a page may not take — otherwise a page slugged `contact` would shadow the
+contact route. That list is core's own view vocabulary, and a theme adds to it:
+
+```php
+osc_add_theme_support('views', array(
+    'user-wishlist',
+    'template-promo',
+));
+```
+
+Names may be written with or without `.php`. A declaration only ever **adds** —
+core's own names stay reserved whatever you declare, and a theme that declares
+nothing behaves exactly as before.
+
+`osc_theme_provides('user-wishlist.php')` answers whether the active theme can
+render a view: it ships the file, or it named the view here. Use it when the view
+is not a file — one a plugin renders, or one built at runtime.

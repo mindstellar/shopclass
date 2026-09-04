@@ -12,6 +12,9 @@ deletion, credits, buy and orders — render inside the theme rather than on a p
 - Themes declare their page chrome with `osc_add_theme_support('chrome', …)`. Core falls back to
   probing `header.php`/`footer.php` and `common/header.php`/`common/footer.php`, so existing
   themes need no change.
+- Themes declare extra view names with `osc_add_theme_support('views', …)`, and
+  `osc_theme_provides()` asks whether the active theme can render one. Core's list of names a
+  static page may not take is no longer hardcoded.
 
 ### Fixed
 

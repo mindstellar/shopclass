@@ -18,39 +18,6 @@ class WebThemes extends Themes
 {
     private static $instance;
 
-    private $pages = array(
-        '404',
-        'contact',
-        'alert-form',
-        'custom',
-        'footer',
-        'functions',
-        'head',
-        'header',
-        'inc.search',
-        'index',
-        'item-contact',
-        'item-edit',
-        'item-post',
-        'item-send-friend',
-        'item',
-        'main',
-        'page',
-        'search',
-        'search_gallery',
-        'search_list',
-        'user-alerts',
-        'user-change_email',
-        'user-change_password',
-        'user-dashboard',
-        'user-delete_account',
-        'user-forgot_password',
-        'user-items',
-        'user-login',
-        'user-profile',
-        'user-recover',
-        'user-register',
-    );
     /**
      * @var string
      */
@@ -309,13 +276,19 @@ class WebThemes extends Themes
     }
 
     /**
+     * Whether $internal_name is free for a static page to take.
+     *
+     * The reserved set is core's own view vocabulary plus anything the active
+     * theme declared through osc_add_theme_support('views', …), so a theme with
+     * views core has never heard of can protect their names without a core patch.
+     *
      * @param $internal_name
      *
      * @return bool
      */
     public function isValidPage($internal_name)
     {
-        return !in_array($internal_name, $this->pages);
+        return !in_array($internal_name, osc_theme_view_names(), true);
     }
 
     /**

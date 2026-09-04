@@ -102,6 +102,11 @@ jobs:
       # core-rendered page dropped to the standalone shell.
       - name: Theme chrome resolution
         run: php tests/theme-chrome.php
+      # The reserved view names guard static-page slugs, and both directions are
+      # silent: a name added forbids a slug live sites already use, and one dropped
+      # lets a page shadow the route of the same name and quietly stop resolving.
+      - name: Theme view names
+        run: php tests/theme-views.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
       - name: Rewrite param decode
