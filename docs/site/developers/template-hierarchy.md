@@ -108,6 +108,13 @@ The two `selected_*` calls prefer the **posted** value, which matters without
 JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
+`osc_show_item_comments()` renders the comment thread and its form inside your
+listing page. Comments are enabled by default, so a theme that skips this ships a
+feature nobody can reach; the field names belong to core's `add_comment` action,
+not to the theme. It prints nothing when comments are switched off, fires
+`item_comments_before`, `comment_form` and `item_comments_after`, and styles
+itself with `:where()` rules you override using a single class.
+
 The title and description inputs pick their own locale — the visitor's when
 publishing, and when editing the one the listing's text actually came from, so an
 edit updates the translation it is showing instead of copying it into a second

@@ -1313,6 +1313,36 @@ function osc_count_item_comments()
 }
 
 /**
+ * Render the comments block for the current listing: the thread and the form.
+ *
+ * Comments are on by default, and the field names the add_comment action reads
+ * are core's, not a theme's -- so a theme that skipped this shipped an enabled
+ * feature nobody could reach. A theme calls this once inside its listing page and
+ * styles the .oe-comment* classes; one that wants the markup too simply writes its
+ * own block instead of calling this.
+ *
+ * Prints nothing when comments are disabled site-wide.
+ *
+ * @return void
+ */
+function osc_show_item_comments()
+{
+    if (!osc_comments_enabled()) {
+        return;
+    }
+
+    // The core page stylesheet is scoped .oe-page and this block renders inside a
+    // theme's own page, so it carries its own defaults instead.
+    static $styled = false;
+    if (!$styled) {
+        $styled = true;
+        require ABS_PATH . 'oc-includes/osclass/gui/item-comments-style.php';
+    }
+
+    require ABS_PATH . 'oc-includes/osclass/gui/item-comments-content.php';
+}
+
+/**
  * Gets next comment of current item comments
  *
  * @return array

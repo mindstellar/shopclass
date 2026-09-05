@@ -56,6 +56,11 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Core loads the photo uploader and the location combobox itself on the publish and edit
   routes, so a theme no longer enqueues them by hand above its form.
 
+- `osc_show_item_comments()` renders a listing's comment thread and post form, so a theme
+  gets the feature — on by default — without laying out a form whose field names are core's.
+  It fires `item_comments_before`, `comment_form` and `item_comments_after`, and ships
+  zero-specificity defaults a theme overrides with a single class.
+
 ### Fixed
 
 - Form labels pointed at the field's name rather than its id, so any control with an id of

@@ -135,6 +135,10 @@ jobs:
       # page into a second, self-canonicalising URL that Google indexes separately.
       - name: Sitemap search URLs
         run: php tests/sitemap-search-url.php
+      # Comments are on by default, so a renamed field or a dropped hook here breaks
+      # posting on every theme that uses core's block, with nothing to see on the page.
+      - name: Item comments view
+        run: php tests/item-comments-view.php
       # The edit form posts title[<locale>]. Report the wrong one and saving copies the
       # text it was showing into a second locale, leaving the original untranslated --
       # once per edit, with nothing to see on the page.
