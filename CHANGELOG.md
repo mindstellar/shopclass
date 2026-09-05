@@ -54,6 +54,11 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 ### Fixed
 
 - A theme that shipped no view for an account page rendered a blank document.
+- The profile page never showed the picture you had already set — only a file field and,
+  once one existed, a checkbox to remove the thing you could not see.
+- Deleting an account was a nav entry alongside Alerts and Credits. It sits at the foot of
+  the profile page now, past everything routine.
+- The listings page printed a pager reading "1" when everything fitted on one page.
 - The credits pages ignored a theme's own button and panel styling, because their markup
   carried only the older `oe-bill-*` class names. Each element now also carries the published
   name, so restyling the documented vocabulary reaches them.

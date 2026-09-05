@@ -89,9 +89,19 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
                 <?php UserForm::zip_text($profileUser); ?>
             </div>
 
-            <?php if (osc_get_preference('enabled_user_avatars')) { ?>
+            <?php if (osc_get_preference('enabled_user_avatars')) {
+                $hasAvatar = osc_has_user_avatar(osc_logged_user_id()); ?>
                 <div class="oe-field">
                     <label class="oe-label" for="oe-avatar"><?php echo osc_esc_html(_m('Picture')); ?></label>
+
+                    <?php // Show what is there before offering to replace it.
+                    if ($hasAvatar) { ?>
+                        <?php // 'normal', not the 64px thumbnail: displayed at 96 it would upscale. ?>
+                        <img class="oe-avatar" src="<?php echo osc_esc_html(osc_user_avatar_url(null, 'normal')); ?>"
+                             alt="<?php echo osc_esc_html(_m('Your current picture')); ?>"
+                             width="96" height="96" decoding="async" />
+                    <?php } ?>
+
                     <input class="oe-input" id="oe-avatar" type="file" name="avatar" accept="image/*"
                            aria-describedby="oe-avatar-hint" />
                     <span class="oe-hint" id="oe-avatar-hint"><?php printf(
@@ -99,7 +109,7 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
                         osc_esc_html((string) osc_max_size_kb())
                     ); ?></span>
                 </div>
-                <?php if (osc_has_user_avatar(osc_logged_user_id())) { ?>
+                <?php if ($hasAvatar) { ?>
                     <label class="oe-check">
                         <input type="checkbox" name="remove_avatar" value="1" />
                         <span><?php echo osc_esc_html(_m('Remove the current picture')); ?></span>
@@ -119,6 +129,23 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
         // own: saving a country re-renders this page with that country's regions.
         UserForm::location_javascript();
         ?>
+
+        <?php
+        // Account deletion sits at the foot of this page rather than in the account
+        // nav: it is irreversible, and a nav entry makes it a peer of "Alerts".
+        // Reaching it takes scrolling past everything routine, and it is still only
+        // a link -- the page it opens is where the password is asked for.
+        $deleteUrl = osc_user_delete_url();
+        if ($deleteUrl !== '') { ?>
+            <section class="oe-danger">
+                <h2><?php echo osc_esc_html(_m('Delete your account')); ?></h2>
+                <p class="oe-muted"><?php echo osc_esc_html(
+                    _m('Your listings and messages are removed with it. This cannot be undone.')
+                ); ?></p>
+                <a class="oe-btn oe-btn-danger" href="<?php echo osc_esc_html($deleteUrl); ?>"><?php
+                    echo osc_esc_html(_m('Delete your account')); ?></a>
+            </section>
+        <?php } ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

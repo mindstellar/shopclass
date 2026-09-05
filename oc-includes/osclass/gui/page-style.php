@@ -211,6 +211,10 @@ if (!defined('ABS_PATH')) {
     display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px;
     color:var(--oe-ink-muted); font-size:.875rem; margin:6px 0 0;
   }
+  /* Set apart from everything routine above it, not decorated. */
+  .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
+  .oe-page .oe-danger h2{color:var(--oe-danger);}
+  .oe-page .oe-avatar{display:block;inline-size:96px;block-size:96px;object-fit:cover;border-radius:50%;background:var(--oe-bench-sunk);margin-block-end:.6rem;}
   .oe-page .oe-thumb{
     flex:none; display:block; inline-size:5.5rem; block-size:auto; aspect-ratio:6/5;
     object-fit:cover; background:var(--oe-bench-sunk);

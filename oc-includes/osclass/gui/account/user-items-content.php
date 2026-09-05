@@ -34,8 +34,12 @@ if (!defined('ABS_PATH')) {
                     require __DIR__ . '/parts/item-row.php';
                 } ?>
             </ul>
-            <?php $itemsPager = osc_pagination_items();
-            if ($itemsPager !== '') { ?>
+            <?php
+            // osc_pagination_items() still returns markup when everything fits on
+            // one page -- a lone "1" with nothing to click. Render the pager only
+            // when it actually leads somewhere.
+            $itemsPager = osc_pagination_items();
+            if ($itemsPager !== '' && strpos($itemsPager, '<a') !== false) { ?>
                 <nav class="oe-pager" aria-label="<?php echo osc_esc_html(_m('Pages')); ?>"><?php
                     echo $itemsPager; ?></nav>
             <?php } ?>

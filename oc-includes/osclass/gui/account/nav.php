@@ -36,10 +36,6 @@ $navItems = array(
     array('name' => _m('Sign-in details'), 'url' => osc_change_user_email_url(), 'class' => 'opt_signin'),
 );
 
-$deleteUrl = osc_user_delete_url();
-if ($deleteUrl !== '') {
-    $navItems[] = array('name' => _m('Delete your account'), 'url' => $deleteUrl, 'class' => 'opt_delete_account');
-}
 $navItems[] = array('name' => _m('Log out'), 'url' => osc_user_logout_url(), 'class' => 'opt_logout');
 
 $navItems = osc_apply_filter('user_menu_filter', $navItems);
@@ -47,16 +43,25 @@ if (!is_array($navItems) || $navItems === array()) {
     return;
 }
 
-// Same rule as osc_private_user_menu(): appending is the natural way for a
-// plugin to add an entry, which would otherwise push log out into the middle.
-foreach ($navItems as $navKey => $navItem) {
-    if (isset($navItem['class']) && $navItem['class'] === 'opt_logout') {
-        unset($navItems[$navKey]);
-        $navItems[] = $navItem;
-        break;
+// Log out goes last whatever the filter did -- the same rule
+// osc_private_user_menu() applies. Core's own billing links arrive through that
+// filter, and appending is the natural way for a plugin to add an entry, which
+// would otherwise push log out into the middle.
+//
+// Deleting the account is deliberately not here. It is irreversible, and a nav
+// entry makes it a peer of "Alerts"; it lives at the foot of the profile page
+// instead, where you have to go looking for it.
+$logout = array();
+$rest   = array();
+foreach ($navItems as $navItem) {
+    $class = (is_array($navItem) && isset($navItem['class'])) ? (string) $navItem['class'] : '';
+    if ($class === 'opt_logout') {
+        $logout[] = $navItem;
+    } else {
+        $rest[] = $navItem;
     }
 }
-$navItems = array_values($navItems);
+$navItems = array_merge($rest, $logout);
 
 $navCurrent = '';
 if (osc_is_user_dashboard()) {
@@ -73,7 +78,8 @@ if (osc_is_user_dashboard()) {
 ) {
     $navCurrent = 'opt_signin';
 } elseif (osc_is_current_page('user', 'delete')) {
-    $navCurrent = 'opt_delete_account';
+    // No entry of its own; it hangs off the profile page that links to it.
+    $navCurrent = 'opt_account';
 } elseif (osc_is_current_page('billing', 'wallet') || osc_is_current_page('billing', 'orders')) {
     // Orders hang off the wallet -- there is no nav entry of their own, and
     // marking nothing on that page would read as having left the account.

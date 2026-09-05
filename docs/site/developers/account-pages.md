@@ -82,6 +82,8 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-label` | the field's `<label>` | `for` always matches a real control id |
 | `.oe-input` | a control core renders itself | absent on controls `UserForm` renders — see below |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
+| `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
+| `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
 | `.oe-actions` | a form's buttons | the submit is first |
 | `.oe-btn` | a button or a link acting as one | add `.oe-secondary` for the quiet one, `.oe-btn-danger` for the destructive one |
