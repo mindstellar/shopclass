@@ -36,6 +36,8 @@ $themeRoot = sys_get_temp_dir() . '/osc-theme-chrome-' . getmypid() . '/';
 class WebThemes
 {
     public static string $path = '';
+    /** Theme slug of the declared parent, or '' for none. */
+    public static string $parent = '';
 
     public static function newInstance(): self
     {
@@ -46,6 +48,23 @@ class WebThemes
     {
         return self::$path;
     }
+
+    public function getCurrentTheme(): string
+    {
+        return 'child';
+    }
+
+    /** @return array<string,string> */
+    public function loadThemeInfo($theme): array
+    {
+        return array('template' => self::$parent);
+    }
+}
+
+/** Where a parent theme's directory would live. */
+function osc_themes_path(): string
+{
+    return sys_get_temp_dir() . '/osc-theme-chrome-' . getmypid() . '-themes/';
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hTheme.php';
@@ -162,6 +181,53 @@ pin(
     array('header' => 'header.php', 'footer' => 'footer.php'),
     $rel(osc_theme_chrome())
 );
+
+harness_section('a child theme inherits its parent\'s chrome');
+// A theme with a declared parent is one identity: a child that ships no chrome of
+// its own must get the parent's, or every page it does not override renders with
+// no header at all. The bundled fallback theme is deliberately not in this walk.
+$parentRoot = osc_themes_path() . 'folio-parent/';
+if (!is_dir($parentRoot . 'common')) {
+    mkdir($parentRoot . 'common', 0777, true);
+}
+file_put_contents($parentRoot . 'common/header.php', '<?php /* parent */');
+file_put_contents($parentRoot . 'common/footer.php', '<?php /* parent */');
+
+$makeTheme(array());
+\mindstellar\theme\ThemeSupports::instance()->reset();
+WebThemes::$parent = '';
+check('no parent declared: still no chrome', osc_theme_chrome() === null);
+
+WebThemes::$parent = 'folio-parent';
+$fromParent = osc_theme_chrome();
+check('the child falls back to the parent', $fromParent !== null);
+check(
+    'and it is the parent\'s file, not the child\'s',
+    $fromParent !== null && strpos($fromParent['header'], 'folio-parent/common/header.php') !== false
+);
+
+// The child's own chrome must still win when it has some.
+$makeTheme(array('header.php', 'footer.php'));
+pin(
+    'a child that ships chrome keeps its own',
+    array('header' => 'header.php', 'footer' => 'footer.php'),
+    $rel(osc_theme_chrome())
+);
+
+// A declaration inherited from the parent resolves against the parent too.
+$makeTheme(array());
+osc_add_theme_support('chrome', array('header' => 'common/header.php', 'footer' => 'common/footer.php'));
+check(
+    'a parent-declared pair resolves in the parent directory',
+    ($c = osc_theme_chrome()) !== null && strpos($c['header'], 'folio-parent/') !== false
+);
+WebThemes::$parent = '';
+
+@unlink($parentRoot . 'common/header.php');
+@unlink($parentRoot . 'common/footer.php');
+@rmdir($parentRoot . 'common');
+@rmdir($parentRoot);
+@rmdir(osc_themes_path());
 
 $makeTheme(array());
 @rmdir($themeRoot . 'common');

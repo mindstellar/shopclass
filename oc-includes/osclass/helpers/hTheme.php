@@ -221,12 +221,28 @@ function osc_locate_template($candidates, string $context = ''): string
  */
 function osc_theme_chrome(): ?array
 {
-    $base = WebThemes::newInstance()->getCurrentThemePath();
+    $themes = WebThemes::newInstance();
+    $bases  = array($themes->getCurrentThemePath());
+
+    // A declared parent theme is part of the active theme's own identity, so a
+    // child that ships no chrome inherits its parent's -- the same walk
+    // osc_theme_template_paths() makes for views. The bundled fallback theme is
+    // deliberately NOT here: it has never heard of this site's design, and core's
+    // own shell is the right answer when nothing in the active lineage answers.
+    $info = $themes->loadThemeInfo($themes->getCurrentTheme());
+    if (is_array($info) && isset($info['template']) && $info['template'] !== ''
+        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+    ) {
+        $parent = osc_themes_path() . $info['template'] . '/';
+        if (is_dir($parent)) {
+            $bases[] = $parent;
+        }
+    }
 
     // One candidate pair, or null unless both halves exist inside the theme.
     // Relative paths only: a declared '../' or an absolute path would let a theme
     // point core's include at any file on disk.
-    $pair = static function (string $header, string $footer) use ($base): ?array {
+    $pair = static function (string $header, string $footer, string $base): ?array {
         foreach (array($header, $footer) as $rel) {
             if ($rel === '' || strpos($rel, '..') !== false || strpos($rel, "\0") !== false) {
                 return null;
@@ -243,17 +259,20 @@ function osc_theme_chrome(): ?array
     };
 
     $declared = osc_theme_supports('chrome');
-    if (is_array($declared) && isset($declared['header'], $declared['footer'])) {
-        $found = $pair((string) $declared['header'], (string) $declared['footer']);
-        if ($found !== null) {
-            return $found;
-        }
-    }
 
-    foreach (array('', 'common/') as $dir) {
-        $found = $pair($dir . 'header.php', $dir . 'footer.php');
-        if ($found !== null) {
-            return $found;
+    foreach ($bases as $base) {
+        if (is_array($declared) && isset($declared['header'], $declared['footer'])) {
+            $found = $pair((string) $declared['header'], (string) $declared['footer'], $base);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        foreach (array('', 'common/') as $dir) {
+            $found = $pair($dir . 'header.php', $dir . 'footer.php', $base);
+            if ($found !== null) {
+                return $found;
+            }
         }
     }
 

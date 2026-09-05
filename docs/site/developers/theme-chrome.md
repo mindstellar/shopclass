@@ -22,6 +22,11 @@ Core finds chrome on its own, first hit wins:
 2. `header.php` + `footer.php` in the theme root
 3. `common/header.php` + `common/footer.php`
 
+Each is tried in your theme first, then in the parent theme when your
+`index.php` names one — a child theme that ships no chrome inherits its parent's.
+The bundled fallback theme is deliberately not in that walk: it knows nothing
+about your site, so core renders its own page instead.
+
 Both halves must exist. A header with no footer is not chrome — core would leave
 the page unclosed, so it falls through to its own standalone page instead.
 
