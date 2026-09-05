@@ -591,6 +591,20 @@ class ItemForm extends Form
             return true;
         }
 
+        // No country picked yet, so there is nothing to list. The field is still a
+        // select waiting on the cascade; a free-text box here would leave the script
+        // no #regionId to fill, and the empty list means "not chosen", not "this
+        // country has no regions".
+        $countryId = Session::newInstance()->_getForm('countryId');
+        if ($countryId == '' && isset($item['fk_c_country_code'])) {
+            $countryId = $item['fk_c_country_code'];
+        }
+        if ($countryId == '') {
+            parent::generic_select('regionId', array(), 'pk_i_id', 's_name', __('Select a region...'), null);
+
+            return true;
+        }
+
         if (Session::newInstance()->_getForm('region') != '') {
             $item['s_region'] = Session::newInstance()->_getForm('region');
         }
@@ -634,6 +648,18 @@ class ItemForm extends Form
                 __('Select a city...'),
                 isset($item['fk_i_city_id']) ? $item['fk_i_city_id'] : null
             );
+
+            return true;
+        }
+
+        // Same as the region above: no region picked yet is not the same as a region
+        // with no cities.
+        $regionId = Session::newInstance()->_getForm('regionId');
+        if ($regionId == '' && isset($item['fk_i_region_id'])) {
+            $regionId = $item['fk_i_region_id'];
+        }
+        if ($regionId == '') {
+            parent::generic_select('cityId', array(), 'pk_i_id', 's_name', __('Select a city...'), null);
 
             return true;
         }

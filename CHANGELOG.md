@@ -55,6 +55,12 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   location defaults for itself. Both bundled themes had written the same branch.
 - Core loads the photo uploader and the location combobox itself on the publish and edit
   routes, so a theme no longer enqueues them by hand above its form.
+
+### Fixed
+
+- The publish form filled the region and city selects from the first country in the list
+  while the country select still read "Select a country", offering another country's
+  places. Both now stay empty until a country is chosen.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.

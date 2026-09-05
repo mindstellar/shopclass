@@ -82,21 +82,21 @@ class CWebItem extends BaseModel
                 }
 
                 $countries = Country::newInstance()->listAll();
-                $regions   = array();
-                if (isset($this->user['fk_c_country_code'])
-                    && $this->user['fk_c_country_code'] != ''
-                ) {
-                    $regions =
-                        Region::newInstance()->findByCountry($this->user['fk_c_country_code']);
-                } elseif (count($countries) > 0) {
-                    $regions = Region::newInstance()->findByCountry($countries[0]['pk_c_code']);
-                }
-                $cities = array();
-                if (isset($this->user['fk_i_region_id']) && $this->user['fk_i_region_id'] != '') {
-                    $cities = City::newInstance()->findByRegion($this->user['fk_i_region_id']);
-                } elseif (count($regions) > 0) {
-                    $cities = City::newInstance()->findByRegion($regions[0]['pk_i_id']);
-                }
+
+                // Regions and cities follow a country and a region the seller
+                // actually chose. Falling back to the first country listed filled
+                // both selects with somewhere else's places while the country
+                // select still read "Select a country", so a visitor with no
+                // JavaScript could file a listing against a city in another country.
+                $countryId = $this->user['fk_c_country_code'] ?? '';
+                $regionId  = $this->user['fk_i_region_id'] ?? '';
+
+                $regions = $countryId != ''
+                    ? Region::newInstance()->findByCountry($countryId)
+                    : array();
+                $cities = $regionId != ''
+                    ? City::newInstance()->findByRegion($regionId)
+                    : array();
 
                 $this->_exportVariableToView('countries', $countries);
                 $this->_exportVariableToView('regions', $regions);
