@@ -43,9 +43,10 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Email address, username and password are one **Sign-in details** page instead of three
   pages holding one field each. All three routes still resolve, and the one asked for focuses
   its own field. Deleting an account stays separate.
-- Core also renders the plugin page mount, the seller-contact form and the save-this-search
-  field when the theme ships none of them. All three were the same markup in every theme, over
-  a contract core already owned.
+- Core also renders the plugin page mount, both contact forms, the share-a-listing form and
+  the save-this-search field when the theme ships none of them. All were the same markup in
+  every theme, over a contract core already owned, and the contact forms fire `contact_form`
+  and `admin_contact_form` so a plugin's field reaches every one of them.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.

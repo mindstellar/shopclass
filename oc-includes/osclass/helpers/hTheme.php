@@ -299,6 +299,11 @@ function osc_gui_page_view(string $themeView): bool
             'heading' => _m('Contact the seller'),
             'content' => 'item-contact',
         ),
+        'contact.php'      => array('heading' => _m('Contact'), 'content' => 'contact'),
+        'item-send-friend.php' => array(
+            'heading' => _m('Send this listing to someone'),
+            'content' => 'item-send-friend',
+        ),
     );
 
     if (!isset($pages[$themeView])) {

@@ -214,7 +214,13 @@ dangerous should sit a misclick away from changing an email address.
 | View | What it is |
 |---|---|
 | `custom.php` | the mount point a plugin's page renders into |
+| `contact.php` | writing to whoever runs the site |
 | `item-contact.php` | writing to a seller about one listing |
+| `item-send-friend.php` | passing a listing on to someone else |
+
+Both contact forms and the share form fire `contact_form` and then
+`admin_contact_form`, in the places the bundled themes put them, so a plugin that
+adds a field to one contact form gets it on all of them.
 
 Ship either view and yours wins, exactly as with the account pages. The
 save-this-search field `osc_alert_form()` prints falls back the same way, so a

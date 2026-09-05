@@ -186,7 +186,9 @@ MESSAGE;
         // only lacked a canonical, which it is reachable without.
         $this->_exportVariableToView('canonical', osc_contact_url());
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_page_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
