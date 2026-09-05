@@ -431,9 +431,13 @@ function osc_gui_account_view(string $themeView): bool
         'user-items.php'           => array('heading' => _m('Your listings')),
         'user-alerts.php'          => array('heading' => _m('Alerts')),
         'user-profile.php'         => array('heading' => _m('Your profile')),
-        'user-change_email.php'    => array('heading' => _m('Change your email address')),
-        'user-change_password.php' => array('heading' => _m('Change your password')),
-        'user-change_username.php' => array('heading' => _m('Change your username')),
+        // One page, three routes. Each is a single setting answering the same
+        // question -- how do I sign in -- so they share a destination rather than
+        // being three near-identical pages to hunt through. The routes stay: a
+        // bookmark or a theme's own link still resolves, to its own section.
+        'user-change_email.php'    => array('heading' => _m('Sign-in details'), 'content' => 'user-signin'),
+        'user-change_password.php' => array('heading' => _m('Sign-in details'), 'content' => 'user-signin'),
+        'user-change_username.php' => array('heading' => _m('Sign-in details'), 'content' => 'user-signin'),
         'user-login.php'           => array('heading' => _m('Sign in')),
         'user-register.php'        => array('heading' => _m('Create an account')),
         'user-recover.php'         => array('heading' => _m('Reset your password')),
@@ -455,15 +459,22 @@ function osc_gui_account_view(string $themeView): bool
 
     // user-delete_account keeps its original partial path: it shipped in 6.3.0's
     // first phase and a theme may already include it through that name.
-    $contentFile = $themeView === 'user-delete_account.php'
-        ? ABS_PATH . 'oc-includes/osclass/gui/user-delete_account-content.php'
-        : ABS_PATH . 'oc-includes/osclass/gui/account/' . basename($themeView, '.php') . '-content.php';
+    // A page may serve more than one route, so the map names its partial where the
+    // two differ. user-delete_account keeps its original path: it shipped in
+    // 6.3.0's first phase and a theme may already include it through that name.
+    if ($themeView === 'user-delete_account.php') {
+        $contentFile = ABS_PATH . 'oc-includes/osclass/gui/user-delete_account-content.php';
+    } else {
+        $partial     = $pages[$themeView]['content'] ?? basename($themeView, '.php');
+        $contentFile = ABS_PATH . 'oc-includes/osclass/gui/account/' . $partial . '-content.php';
+    }
 
     if (!file_exists($contentFile)) {
         return false;
     }
 
     $opts = $pages[$themeView];
+    unset($opts['content']);
     $opts['title'] = trim($opts['heading'] . ' — ' . osc_page_title(), ' —');
 
     osc_gui_view($themeView, $contentFile, $opts);

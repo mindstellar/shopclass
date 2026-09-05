@@ -31,9 +31,9 @@ $navItems = array(
     array('name' => _m('Public profile'),
           'url' => osc_user_public_profile_url(osc_logged_user_id()), 'class' => 'opt_publicprofile'),
     array('name' => _m('Profile'), 'url' => osc_user_profile_url(), 'class' => 'opt_account'),
-    array('name' => _m('Email address'), 'url' => osc_change_user_email_url(), 'class' => 'opt_change_email'),
-    array('name' => _m('Password'), 'url' => osc_change_user_password_url(), 'class' => 'opt_change_password'),
-    array('name' => _m('Username'), 'url' => osc_change_user_username_url(), 'class' => 'opt_change_username'),
+    // Email, username and password are one page. The entry points at the email
+    // route because that is the canonical one; the page carries all three.
+    array('name' => _m('Sign-in details'), 'url' => osc_change_user_email_url(), 'class' => 'opt_signin'),
 );
 
 $deleteUrl = osc_user_delete_url();
@@ -67,12 +67,11 @@ if (osc_is_user_dashboard()) {
     $navCurrent = 'opt_alerts';
 } elseif (osc_is_user_profile()) {
     $navCurrent = 'opt_account';
-} elseif (osc_is_change_email_page()) {
-    $navCurrent = 'opt_change_email';
-} elseif (osc_is_change_password_page()) {
-    $navCurrent = 'opt_change_password';
-} elseif (osc_is_change_username_page()) {
-    $navCurrent = 'opt_change_username';
+} elseif (osc_is_change_email_page()
+          || osc_is_change_password_page()
+          || osc_is_change_username_page()
+) {
+    $navCurrent = 'opt_signin';
 } elseif (osc_is_current_page('user', 'delete')) {
     $navCurrent = 'opt_delete_account';
 } elseif (osc_is_current_page('billing', 'wallet') || osc_is_current_page('billing', 'orders')) {

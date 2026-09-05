@@ -288,8 +288,8 @@ msgstr ""
 msgid "Archived successfully!"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_password-content.php
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "At least six characters."
 msgstr ""
 
@@ -378,18 +378,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Change"
-msgstr ""
-
-#: oc-includes/osclass/helpers/hTheme.php
-msgid "Change your email address"
-msgstr ""
-
-#: oc-includes/osclass/helpers/hTheme.php
-msgid "Change your password"
-msgstr ""
-
-#: oc-includes/osclass/helpers/hTheme.php
-msgid "Change your username"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -562,7 +550,7 @@ msgstr ""
 msgid "Currency updated"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Current password"
 msgstr ""
 
@@ -651,9 +639,9 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/gui/account/user-recover-content.php
 #: oc-includes/osclass/gui/account/user-register-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Email address"
 msgstr ""
 
@@ -864,7 +852,7 @@ msgstr ""
 msgid "Invalid plugin file"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_username-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "It appears on your public profile and in the address of your listings."
 msgstr ""
 
@@ -1001,12 +989,12 @@ msgstr ""
 msgid "New city name cannot be blank"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_email-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "New email address"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_password-content.php
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "New password"
 msgstr ""
 
@@ -1332,9 +1320,9 @@ msgstr ""
 msgid "Paid"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/gui/account/user-login-content.php
 #: oc-includes/osclass/gui/account/user-register-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 #: oc-includes/osclass/gui/user-delete_account-content.php
 msgid "Password"
 msgstr ""
@@ -1570,8 +1558,8 @@ msgstr ""
 msgid "Repeat password"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_password-content.php
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Repeat the new password"
 msgstr ""
 
@@ -1602,9 +1590,7 @@ msgstr ""
 msgid "Rule updated correctly"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_email-content.php
-#: oc-includes/osclass/gui/account/user-change_password-content.php
-#: oc-includes/osclass/gui/account/user-change_username-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Save"
 msgstr ""
 
@@ -1672,6 +1658,11 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Sign in to see your orders."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Sign-in details"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
@@ -2414,8 +2405,7 @@ msgstr ""
 msgid "User settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
-#: oc-includes/osclass/gui/account/user-change_username-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "Username"
 msgstr ""
 
@@ -2465,7 +2455,7 @@ msgstr ""
 msgid "We just sent your message to %s"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_email-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid ""
 "We send a link to the new address. The change takes effect when you follow "
 "it."
@@ -2538,7 +2528,7 @@ msgid ""
 "configuration: <b>%d KB</b>"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-change_email-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "You currently sign in as %s."
 msgstr ""
 

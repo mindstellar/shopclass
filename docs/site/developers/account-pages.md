@@ -191,3 +191,16 @@ osc_gui_view(
 Resolution is the same three steps core uses: the active theme's view if it has
 one, otherwise your file inside the theme's chrome, otherwise core's own shell.
 Your file is markup only — no `<html>`, no header, no footer.
+
+## One page, three routes
+
+`user-change_email.php`, `user-change_username.php` and `user-change_password.php` all
+resolve to a single **Sign-in details** page. Each keeps its own form and its own POST
+action, so nothing about the controllers changed; the route that was asked for gets
+`autofocus` on its field, so an old link still lands where it used to.
+
+A theme that ships any one of those three views still wins for that route, exactly as
+before — the consolidation is core's fallback shape, not a rule imposed on themes.
+
+Deleting an account stays on its own page. It is destructive and irreversible, and nothing
+dangerous should sit a misclick away from changing an email address.

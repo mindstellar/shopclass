@@ -40,6 +40,9 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - `osc_head()`, `osc_body_class()` and `osc_language_attributes()` let a theme hand the
   document head and the body classes to core, so a page core renders is described like any
   other. Each part of the head is opt-out.
+- Email address, username and password are one **Sign-in details** page instead of three
+  pages holding one field each. All three routes still resolve, and the one asked for focuses
+  its own field. Deleting an account stays separate.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.

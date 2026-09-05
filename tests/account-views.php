@@ -81,13 +81,39 @@ pin('no view is mapped that is not expected', array(), array_values(array_diff($
 harness_section('the content partials');
 // -------------------------------------------------------------- the files --
 
+// A page may answer more than one route: email, username and password are one
+// page, so their views share a partial. The map is the source of truth for which.
+$sharedPartial = array(
+    'user-change_email.php'    => 'user-signin',
+    'user-change_password.php' => 'user-signin',
+    'user-change_username.php' => 'user-signin',
+);
+
 foreach ($expected as $view) {
     // user-delete_account keeps the path it shipped with; the rest live together.
-    $file = $view === 'user-delete_account.php'
-        ? $guiDir . 'user-delete_account-content.php'
-        : $accountIn . basename($view, '.php') . '-content.php';
+    if ($view === 'user-delete_account.php') {
+        $file = $guiDir . 'user-delete_account-content.php';
+    } else {
+        $partial = $sharedPartial[$view] ?? basename($view, '.php');
+        $file    = $accountIn . $partial . '-content.php';
+    }
 
     check("content partial exists for {$view}", file_exists($file));
+}
+
+// The routing table has to agree with the files, or a route renders the wrong page.
+foreach ($sharedPartial as $view => $partial) {
+    $line = '';
+    foreach (explode("\n", $body) as $candidate) {
+        if (strpos($candidate, "'" . $view . "'") !== false) {
+            $line = $candidate;
+            break;
+        }
+    }
+    check(
+        "osc_gui_account_view() routes {$view} to {$partial}",
+        $line !== '' && strpos($line, "'content' => '" . $partial . "'") !== false
+    );
 }
 check('the shared account nav partial exists', file_exists($accountIn . 'nav.php'));
 check('the shared listing-row partial exists', file_exists($accountIn . 'parts/item-row.php'));
