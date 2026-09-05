@@ -61,6 +61,9 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Form labels pointed at the field's name rather than its id, so any control with an id of
   its own — every custom field on the listing form and search — had a label that focused
   nothing and left the field unnamed to a screen reader.
+- A radio custom field built each option's id by appending to the previous one, giving
+  `colour1`, `colour12`, `colour123`. Its group label now names the list through
+  `aria-labelledby`, and radio and checkbox inputs no longer emit `type` twice.
 - `ItemForm::title_input()` and `description_textarea()` defaulted to the `en_US` locale;
   they now default to the visitor's. `ItemForm::locale_field_id()` returns the id these
   fields actually carry, so a theme can label them.

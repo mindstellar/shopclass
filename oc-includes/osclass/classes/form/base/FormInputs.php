@@ -165,11 +165,15 @@ class FormInputs implements InputInterface
         switch ($attributes['type']) {
             // Generate input with type=radio
             case 'radio':
-                //Add label if $options['label'] is set
+                // Every option carries its own <label>, so this one names the group.
+                // It gets an id the list is pointed at: a <label> with no for reaches
+                // nothing, and a group is not a control it could point at anyway.
+                $groupLabelId = null;
                 if (isset($options['label'])) {
-                    $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], null);
-                    $input .= $labelDivEnd;
+                    $groupLabelId = $labelFor . '-label';
+                    $input        .= $labelDivStart;
+                    $input        .= $this->label($options['label'], null, null, $groupLabelId);
+                    $input        .= $labelDivEnd;
                 }
                 if (isset($options['radioOptions'])) {
                     $radioOptions = $options['radioOptions'];
@@ -183,21 +187,28 @@ class FormInputs implements InputInterface
                     }
                     $i            = 0;
                     $radioOptions = $this->sanitizeByType($radioOptions, $options['sanitize']);
-                    $input        .= '<ul class="meta-radio-list list-unstyled">';
+                    $groupAttr    = $groupLabelId === null
+                        ? ''
+                        : ' role="group" aria-labelledby="' . $groupLabelId . '"';
+                    $input .= '<ul class="meta-radio-list list-unstyled"' . $groupAttr . '>';
+                    // Each option needs its own id, built from the base every time.
+                    // Appending to $attributes['id'] in place accumulated instead:
+                    // meta_colour1, then meta_colour12, meta_colour123.
+                    $baseId = $attributes['id'] ?? null;
                     foreach ($radioOptions as $v => $l) {
                         $i++;
                         $checked = '';
                         if ($v == $values) {
                             $checked = ' checked';
                         }
-                        if (isset($attributes['id'])) {
-                            $attributes['id'] .= $i;
+                        if ($baseId !== null) {
+                            $attributes['id'] = $baseId . $i;
                         }
                         $attributesString = $this->attributesToString($attributes);
                         $input            .= '<li class="meta-radio">';
                         $input            .= '<label>';
                         $input            .= sprintf(
-                            '<input type="radio" name="%s" value="%s"%s>',
+                            '<input name="%s" value="%s"%s>',
                             $name,
                             $v,
                             $attributesString . ' ' . $checked
@@ -207,7 +218,7 @@ class FormInputs implements InputInterface
                         $input            .= '</li>';
                     }
                     $input .= '</ul>';
-                    unset($i, $radioOptions);
+                    unset($i, $radioOptions, $baseId);
                 }
                 break;
                 // Generate input with type=checkbox
@@ -215,7 +226,7 @@ class FormInputs implements InputInterface
                 $attributesString = $this->attributesToString($attributes);
                 $input            .= $inputDivStart;
                 $input            .= sprintf(
-                    '<input type="checkbox" name="%s" value="%s"%s>',
+                    '<input name="%s" value="%s"%s>',
                     $name,
                     $values,
                     $attributesString
@@ -429,16 +440,19 @@ class FormInputs implements InputInterface
      *
      * @return string
      */
-    private function label(string $label, ?string $for, ?string $class = null): string
+    private function label(string $label, ?string $for, ?string $class = null, ?string $id = null): string
     {
         if ($class === null) {
             $class = $this->labelClass;
         }
         // No target means this labels a group, not one control: a for pointing at
-        // nothing is worse than none at all.
+        // nothing is worse than none at all. Such a label carries an id instead, for
+        // the group to reference with aria-labelledby.
         $forAttr = $for === null || $for === '' ? '' : ' for="' . $for . '"';
+        $idAttr  = $id === null || $id === '' ? '' : ' id="' . $id . '"';
 
-        return '<label class="' . $class . '"' . $forAttr . '>' . $this->escape::html($label) . '</label>';
+        return '<label class="' . $class . '"' . $idAttr . $forAttr . '>'
+            . $this->escape::html($label) . '</label>';
     }
 
     /**
