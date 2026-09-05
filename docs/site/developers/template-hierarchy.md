@@ -92,3 +92,21 @@ tell them apart with `osc_is_edit_page()`.
 
 So a theme ships **one** publishing form and gets editing for free. Ship
 `item-edit.php` as well and yours still wins for that route.
+
+`ItemForm` supplies everything that differs between the two, so the view does not
+have to work out which one it is:
+
+| Call | What it gives you |
+|---|---|
+| `ItemForm::route_hidden()` | `page`, `action`, and on edit the listing's `id` and `secret` |
+| `ItemForm::location_record()` | the listing when editing, the seller's own address when publishing |
+| `ItemForm::selected_country()` | the country the region list should be built from |
+| `ItemForm::selected_region()` | the region the city list should be built from |
+| `ItemForm::plugin_item_fields()` | the plugin fields for whichever form this is |
+
+The two `selected_*` calls prefer the **posted** value, which matters without
+JavaScript: change country, submit, and the re-rendered form offers that
+country's regions rather than the previous one's.
+
+`ItemForm::ajax_photos()` enqueues the uploader itself — you no longer call
+`osc_enqueue_script('osc-uploader')` before it.

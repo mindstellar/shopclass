@@ -49,6 +49,12 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   and `admin_contact_form` so a plugin's field reaches every one of them.
 - A theme need only ship `item-post.php`: editing a listing falls back to it, since the two
   forms carry the same fields. A theme that ships `item-edit.php` still wins for that route.
+- `ItemForm` now supplies what differs between publishing and editing —
+  `route_hidden()`, `location_record()`, `selected_country()`, `selected_region()` and
+  `plugin_item_fields()` — so a theme stops deriving the action, the hidden fields and the
+  location defaults for itself. Both bundled themes had written the same branch.
+- `ItemForm::ajax_photos()` enqueues the uploader it renders, rather than every theme
+  remembering to.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.

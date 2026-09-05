@@ -1527,8 +1527,100 @@ class ItemForm extends Form
      * @param null $resources
      *
      */
+    /**
+     * Every hidden field the publishing form needs, chosen from the route.
+     *
+     * Publishing and editing are the same form with the same fields; the only
+     * differences are the action and, when editing, the listing's id and secret.
+     * Both bundled themes worked that out for themselves and wrote the same
+     * branch, which is why it lives here now: a theme ships one form and core
+     * decides which of the two it is.
+     *
+     * @return void
+     */
+    public static function route_hidden()
+    {
+        $editing = osc_is_edit_page();
+
+        parent::generic_input_hidden('page', 'item');
+        parent::generic_input_hidden('action', $editing ? 'item_edit_post' : 'item_add_post');
+
+        if ($editing) {
+            parent::generic_input_hidden('id', osc_item_id());
+            parent::generic_input_hidden('secret', osc_item_secret());
+        }
+    }
+
+    /**
+     * The record the location selects should default to: the listing being
+     * edited, or the seller's own address when publishing a new one.
+     *
+     * @return array|null
+     */
+    public static function location_record()
+    {
+        return osc_is_edit_page() ? osc_item() : osc_user();
+    }
+
+    /**
+     * Country the region list should be built from.
+     *
+     * The posted value wins, and that is the part worth having in one place: a
+     * visitor with no JavaScript changes country and submits, and without this
+     * the re-rendered form offers the previous country's regions.
+     *
+     * @return string
+     */
+    public static function selected_country()
+    {
+        $posted = Params::getParamString('countryId');
+        if ($posted !== '') {
+            return $posted;
+        }
+
+        return (string) (osc_is_edit_page() ? osc_item_country_code() : osc_user_field('fk_c_country_code'));
+    }
+
+    /**
+     * Region the city list should be built from. See selected_country().
+     *
+     * @return int
+     */
+    public static function selected_region()
+    {
+        $posted = Params::getParamInt('regionId');
+        if ($posted > 0) {
+            return $posted;
+        }
+
+        return (int) (osc_is_edit_page() ? osc_item_region_id() : osc_user_field('fk_i_region_id'));
+    }
+
+    /**
+     * The plugin fields for whichever form this is. plugin_edit_item() has to
+     * carry the listing id and plugin_post_item() must not, so picking between
+     * them was another branch every theme wrote.
+     *
+     * @return void
+     */
+    public static function plugin_item_fields()
+    {
+        if (osc_is_edit_page()) {
+            self::plugin_edit_item();
+
+            return;
+        }
+
+        self::plugin_post_item();
+    }
+
     public static function ajax_photos($resources = null)
     {
+        // The field cannot work without these, and both bundled themes enqueued
+        // them by hand at the top of their own form.
+        osc_enqueue_script('osc-uploader');
+        osc_enqueue_style('osc-uploader');
+
         if ($resources == null) {
             $resources = osc_get_item_resources();
         }
