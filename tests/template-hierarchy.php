@@ -227,4 +227,21 @@ foreach ((array) glob($content . 'themes/*') as $dir) {
 @rmdir($content . 'themes');
 @rmdir($content);
 
+harness_section('editing falls back to the publishing form');
+// The two forms are the same fields; core offers item-post.php as the second
+// candidate so a theme need not ship a second copy, or a file that includes the
+// first. A theme that does ship item-edit.php still wins -- bender does.
+$controller = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');
+check(
+    'item-edit offers item-post as its fallback',
+    (bool) preg_match(
+        "/osc_locate_template\(\s*array\('item-edit\.php',\s*'item-post\.php'\)/s",
+        $controller
+    )
+);
+check(
+    'and item-edit is still the first candidate',
+    strpos($controller, "array('item-edit.php', 'item-post.php')") !== false
+);
+
 exit(harness_result());

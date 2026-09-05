@@ -47,6 +47,8 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   the save-this-search field when the theme ships none of them. All were the same markup in
   every theme, over a contract core already owned, and the contact forms fire `contact_form`
   and `admin_contact_form` so a plugin's field reaches every one of them.
+- A theme need only ship `item-post.php`: editing a listing falls back to it, since the two
+  forms carry the same fields. A theme that ships `item-edit.php` still wins for that route.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.

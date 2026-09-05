@@ -83,3 +83,12 @@ Context slugs are the route names: `home`, `search`, `item`, `item-post`,
 A filter that returns anything other than an array is ignored, and candidates
 that are absolute or contain `..` are dropped — neither can blank a page or
 reach outside the theme directories.
+
+## Editing reuses the publishing form
+
+Core asks for `item-edit.php` first and falls back to `item-post.php`, because the
+two carry the same fields — `ItemForm` hands both the same list, and the view can
+tell them apart with `osc_is_edit_page()`.
+
+So a theme ships **one** publishing form and gets editing for free. Ship
+`item-edit.php` as well and yours still wins for that route.

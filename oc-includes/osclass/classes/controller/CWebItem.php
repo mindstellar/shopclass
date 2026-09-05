@@ -247,7 +247,14 @@ class CWebItem extends BaseModel
                     $this->_exportVariableToView('item', $item);
 
                     osc_run_hook('before_item_edit', $item);
-                    $this->doView(osc_locate_template(array('item-edit.php'), 'item-edit'));
+                    // Editing is the publishing form with the values filled in, and
+                    // ItemForm hands both the same fields. A theme that ships only
+                    // item-post.php gets it here too rather than having to keep a
+                    // second copy, or a one-line file that includes the first.
+                    $this->doView(osc_locate_template(
+                        array('item-edit.php', 'item-post.php'),
+                        'item-edit'
+                    ));
                 } else {
                     // add a flash message [ITEM NO EXISTE]
                     osc_add_flash_error_message(_m("Sorry, we don't have any listings with that ID"));
