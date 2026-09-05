@@ -280,6 +280,46 @@ function osc_theme_chrome(): ?array
 }
 
 /**
+ * Core's fallback for a page outside the account section: the plugin mount and
+ * the seller-contact form. Same three steps as osc_gui_account_view() -- the
+ * theme's own view, else core's partial inside the theme's chrome, else core's
+ * shell -- kept separate from it because these are not account pages and the
+ * account nav has no business on them.
+ *
+ * Returns false for a view core has no page for, so the caller falls through to
+ * whatever it did before.
+ */
+function osc_gui_page_view(string $themeView): bool
+{
+    // Built per call: the headings are translated, and a constant would freeze
+    // them in whichever locale loaded first.
+    $pages = array(
+        'custom.php'       => array('heading' => '', 'content' => 'custom'),
+        'item-contact.php' => array(
+            'heading' => _m('Contact the seller'),
+            'content' => 'item-contact',
+        ),
+    );
+
+    if (!isset($pages[$themeView])) {
+        return false;
+    }
+
+    $contentFile = ABS_PATH . 'oc-includes/osclass/gui/' . $pages[$themeView]['content'] . '-content.php';
+    if (!file_exists($contentFile)) {
+        return false;
+    }
+
+    $opts = $pages[$themeView];
+    unset($opts['content']);
+    $opts['title'] = trim($opts['heading'] . ' — ' . osc_page_title(), ' —');
+
+    osc_gui_view($themeView, $contentFile, $opts);
+
+    return true;
+}
+
+/**
  * Whether the active theme can wrap a core-rendered page.
  */
 function osc_theme_has_chrome(): bool

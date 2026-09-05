@@ -96,7 +96,7 @@ class CWebCustom extends BaseModel
     public function doView($file)
     {
         osc_run_hook('before_html');
-        if (!osc_gui_account_view($file)) {
+        if (!osc_gui_account_view($file) && !osc_gui_page_view($file)) {
             osc_current_web_theme_path($file);
         }
         Session::newInstance()->_clearVariables();

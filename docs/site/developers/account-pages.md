@@ -206,3 +206,17 @@ before — the consolidation is core's fallback shape, not a rule imposed on the
 
 Deleting an account stays on its own page. It is destructive and irreversible, and nothing
 dangerous should sit a misclick away from changing an email address.
+
+## Pages outside the account section
+
+`osc_gui_page_view()` does the same job for two pages that are not account pages:
+
+| View | What it is |
+|---|---|
+| `custom.php` | the mount point a plugin's page renders into |
+| `item-contact.php` | writing to a seller about one listing |
+
+Ship either view and yours wins, exactly as with the account pages. The
+save-this-search field `osc_alert_form()` prints falls back the same way, so a
+theme that calls it without shipping `alert-form.php` gets core's field rather
+than nothing.

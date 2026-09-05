@@ -386,7 +386,16 @@ function osc_update_search_url($params = array(), $forced = false)
  */
 function osc_alert_form()
 {
-    osc_current_web_theme_path('alert-form.php');
+    // One field on a core-owned contract. A theme that ships the view still owns
+    // it; one that does not gets core's rather than nothing, which is what the
+    // walk used to leave behind.
+    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'alert-form.php')) {
+        osc_current_web_theme_path('alert-form.php');
+
+        return;
+    }
+
+    require ABS_PATH . 'oc-includes/osclass/gui/alert-form-content.php';
 }
 
 /**
