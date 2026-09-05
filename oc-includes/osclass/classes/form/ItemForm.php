@@ -400,11 +400,43 @@ class ItemForm extends Form
      *
      * @return bool
      */
-    public static function title_input($name, $locale = 'en_US', $value = '')
+    public static function title_input($name, $locale = null, $value = '')
     {
-        parent::generic_input_text($name . '[' . $locale . ']', $value);
+        parent::generic_input_text($name . '[' . self::field_locale($locale) . ']', $value);
 
         return true;
+    }
+
+    /**
+     * The locale a localised item field posts under. Defaulted here rather than in
+     * each signature, where it was a hardcoded 'en_US' that no install outside the
+     * United States wanted.
+     *
+     * @param string|null $locale
+     *
+     * @return string
+     */
+    private static function field_locale($locale = null)
+    {
+        return $locale === null || $locale === '' ? osc_current_user_locale() : $locale;
+    }
+
+    /**
+     * The id core gives a localised field, so a <label for> can reach it.
+     *
+     * The id is derived from the name with everything but word characters stripped,
+     * so title[en_US] is posted but titleen_US is the id. All three bundled themes
+     * wrote for="title[en_US]" and labelled nothing at all: the label was inert to a
+     * pointer and the field unnamed to a screen reader.
+     *
+     * @param string      $name
+     * @param string|null $locale
+     *
+     * @return string
+     */
+    public static function locale_field_id($name, $locale = null)
+    {
+        return preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name . '[' . self::field_locale($locale) . ']');
     }
 
     /**
@@ -414,11 +446,13 @@ class ItemForm extends Form
      *
      * @return bool
      */
-    public static function description_textarea($name, $locale = 'en_US', $value = '')
+    public static function description_textarea($name, $locale = null, $value = '')
     {
-        $attributes['id'] = preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name . '[' . $locale . ']');
+        $locale              = self::field_locale($locale);
+        $attributes['id']    = self::locale_field_id($name, $locale);
         $options['sanitize'] = null;
         echo (new self())->textarea($name . '[' . $locale . ']', $value, $attributes, $options);
+
         return true;
     }
 

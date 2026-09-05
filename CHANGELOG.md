@@ -58,6 +58,12 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 
 ### Fixed
 
+- Form labels pointed at the field's name rather than its id, so any control with an id of
+  its own — every custom field on the listing form and search — had a label that focused
+  nothing and left the field unnamed to a screen reader.
+- `ItemForm::title_input()` and `description_textarea()` defaulted to the `en_US` locale;
+  they now default to the visitor's. `ItemForm::locale_field_id()` returns the id these
+  fields actually carry, so a theme can label them.
 - The publish form filled the region and city selects from the first country in the list
   while the country select still read "Select a country", offering another country's
   places. Both now stay empty until a country is chosen.

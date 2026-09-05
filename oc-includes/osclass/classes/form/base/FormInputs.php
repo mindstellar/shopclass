@@ -144,6 +144,11 @@ class FormInputs implements InputInterface
             throw new Exception('Input Name is not set');
         }
         $this->handleOptions($options);
+        // A label points at the control's id, which is not always its name. Custom
+        // fields post as meta[12] while the input carries id meta_colour, so for="meta[12]"
+        // reached nothing: the label was inert to a pointer and the field unnamed to a
+        // screen reader. Fall back to the name only where no id was set, as before.
+        $labelFor = $attributes['id'] ?? $name;
         list($divStart,
             $divEnd,
             $labelDivStart,
@@ -163,7 +168,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], null);
                     $input .= $labelDivEnd;
                 }
                 if (isset($options['radioOptions'])) {
@@ -218,7 +223,7 @@ class FormInputs implements InputInterface
                 $input            .= $inputDivEnd;
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     if (isset($options['inputHelp'])) {
                         $input .= '<p class="' . $this->helpTextClass . '">' . $options['inputHelp'] . '</p>';
                     }
@@ -231,7 +236,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -261,7 +266,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -278,7 +283,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -295,7 +300,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -312,7 +317,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $name);
+                    $input .= $this->label($options['label'], $labelFor);
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -424,13 +429,16 @@ class FormInputs implements InputInterface
      *
      * @return string
      */
-    private function label(string $label, string $for, ?string $class = null): string
+    private function label(string $label, ?string $for, ?string $class = null): string
     {
         if ($class === null) {
             $class = $this->labelClass;
         }
+        // No target means this labels a group, not one control: a for pointing at
+        // nothing is worse than none at all.
+        $forAttr = $for === null || $for === '' ? '' : ' for="' . $for . '"';
 
-        return '<label class="' . $class . '" for="' . $for . '">' . $this->escape::html($label) . '</label>';
+        return '<label class="' . $class . '"' . $forAttr . '>' . $this->escape::html($label) . '</label>';
     }
 
     /**
