@@ -135,6 +135,11 @@ jobs:
       # page into a second, self-canonicalising URL that Google indexes separately.
       - name: Sitemap search URLs
         run: php tests/sitemap-search-url.php
+      # The edit form posts title[<locale>]. Report the wrong one and saving copies the
+      # text it was showing into a second locale, leaving the original untranslated --
+      # once per edit, with nothing to see on the page.
+      - name: Item content locale
+        run: php tests/item-content-locale.php
       # A description that leads with the category blurb reads fine on one page and is a
       # duplicate across every city in that category -- the part that differs sits past
       # where a search engine stops reading.

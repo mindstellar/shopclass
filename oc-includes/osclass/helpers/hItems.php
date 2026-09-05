@@ -198,6 +198,47 @@ function osc_item_title($locale = '')
 }
 
 /**
+ * The locale the current item's title and description actually resolve to.
+ *
+ * osc_item_title() falls back — the visitor's locale, then the site default, then
+ * any locale that has text — so on a multilingual site an edit form could show one
+ * language's text in a field named for another. Saving then wrote that text back
+ * under the visitor's locale and left the original in place, so every edit from a
+ * different language added another untranslated copy. Posting under the locale the
+ * text came from keeps an edit an edit.
+ *
+ * Falls back to the visitor's locale when the item has no text at all, which is the
+ * right locale for content being written for the first time.
+ *
+ * @return string
+ */
+function osc_item_content_locale()
+{
+    $item    = osc_item();
+    $locales = isset($item['locale']) && is_array($item['locale']) ? $item['locale'] : array();
+    $current = osc_current_user_locale();
+
+    // Read the item's own locale map rather than osc_item_field(), which falls back
+    // to any locale that has text and so never reports one as missing.
+    if (isset($locales[$current]['s_title']) && $locales[$current]['s_title'] != '') {
+        return $current;
+    }
+
+    $default = osc_language();
+    if (isset($locales[$default]['s_title']) && $locales[$default]['s_title'] != '') {
+        return $default;
+    }
+
+    foreach ($locales as $code => $data) {
+        if (isset($data['s_title']) && $data['s_title'] != '') {
+            return (string)$code;
+        }
+    }
+
+    return $current;
+}
+
+/**
  * Gets category from current item
  *
  * @param string $locale

@@ -67,6 +67,10 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - `ItemForm::title_input()` and `description_textarea()` defaulted to the `en_US` locale;
   they now default to the visitor's. `ItemForm::locale_field_id()` returns the id these
   fields actually carry, so a theme can label them.
+- Editing a listing posted in another language wrote its text back under the language
+  being browsed in and left the original untouched, so each edit added another
+  untranslated copy. The form now posts under the locale the text came from;
+  `osc_item_content_locale()` reports which that is.
 - The publish form filled the region and city selects from the first country in the list
   while the country select still read "Select a country", offering another country's
   places. Both now stay empty until a country is chosen.

@@ -418,7 +418,14 @@ class ItemForm extends Form
      */
     private static function field_locale($locale = null)
     {
-        return $locale === null || $locale === '' ? osc_current_user_locale() : $locale;
+        if ($locale !== null && $locale !== '') {
+            return $locale;
+        }
+
+        // Editing posts under the locale the text on screen came from, not the one
+        // being browsed in, so an edit updates the translation it shows instead of
+        // copying it into a second one.
+        return osc_is_edit_page() ? osc_item_content_locale() : osc_current_user_locale();
     }
 
     /**

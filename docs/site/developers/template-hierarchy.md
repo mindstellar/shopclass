@@ -108,5 +108,11 @@ The two `selected_*` calls prefer the **posted** value, which matters without
 JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
+The title and description inputs pick their own locale — the visitor's when
+publishing, and when editing the one the listing's text actually came from, so an
+edit updates the translation it is showing instead of copying it into a second
+one. `osc_item_content_locale()` reports that locale and
+`ItemForm::locale_field_id()` the id these fields carry, which is not their name.
+
 Core loads the uploader and the location combobox from the head on both routes,
 so you no longer enqueue `osc-uploader` or `osc-ui-common` before the form.
