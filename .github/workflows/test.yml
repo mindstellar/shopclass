@@ -135,6 +135,11 @@ jobs:
       # page into a second, self-canonicalising URL that Google indexes separately.
       - name: Sitemap search URLs
         run: php tests/sitemap-search-url.php
+      # A token in a GET form lands in the query string: shared in links, kept in
+      # referrers, and unique per visitor, so every search URL becomes its own cache
+      # entry. Skipping a POST form is worse -- its action rejects every submission.
+      - name: CSRF form injection
+        run: php tests/csrf-form-injection.php
       # Comments are on by default, so a renamed field or a dropped hook here breaks
       # posting on every theme that uses core's block, with nothing to see on the page.
       - name: Item comments view

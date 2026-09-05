@@ -141,6 +141,13 @@ class Csrf
                 if (strpos($m[1], 'nocsrf') !== false) {
                     continue;
                 }
+                // A GET form cannot need a token: CSRF protects state changes, and a
+                // state change is never a GET. Stamping one anyway put the token in the
+                // query string -- shared in links, kept in referrers and logs, and
+                // unique per visitor, which makes every search URL its own cache entry.
+                if (preg_match('/\bmethod\s*=\s*(["\']?)get\1/i', $m[1])) {
+                    continue;
+                }
                 $form_data_html = str_replace($m[0], "<form{$m[1]}>" . $this->tokenForm(), $form_data_html);
             }
         }

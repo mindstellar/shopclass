@@ -878,10 +878,14 @@ function osc_item_tinymce_header()
 }
 
 /**
- * Load what the public item form (publish/edit) needs, from the head.
+ * Load what the public location and photo fields need, from the head.
  *
- * oscAutocomplete drives the location fields for
- * ItemForm::location_javascript_new(); osc-uploader is the photo field.
+ * oscAutocomplete drives the location fields on the item form and the search
+ * bar's town/city field; osc-uploader is the photo field.
+ *
+ * The search bar lives on the home and search pages in every bundled theme, so
+ * those routes load the combobox too -- a theme that renders one elsewhere
+ * enqueues osc-ui-common itself, from the head.
  *
  * Styles print on the header hook, so a stylesheet enqueued while the body is
  * rendering never lands -- ItemForm::ajax_photos() enqueues its own assets, but
@@ -889,13 +893,18 @@ function osc_item_tinymce_header()
  */
 function osc_ui_common_header()
 {
-    if (!osc_is_publish_page() && !osc_is_edit_page()) {
+    $form = osc_is_publish_page() || osc_is_edit_page();
+    if (!$form && !osc_is_home_page() && !osc_is_search_page()) {
         return;
     }
+
     osc_enqueue_script('osc-ui-common');
     osc_enqueue_style('osc-ui-common');
-    osc_enqueue_script('osc-uploader');
-    osc_enqueue_style('osc-uploader');
+
+    if ($form) {
+        osc_enqueue_script('osc-uploader');
+        osc_enqueue_style('osc-uploader');
+    }
 }
 osc_add_hook('header', 'osc_ui_common_header');
 osc_add_hook('header', 'osc_head_hook_guard', 1);

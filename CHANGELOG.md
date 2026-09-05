@@ -56,6 +56,9 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Core loads the photo uploader and the location combobox itself on the publish and edit
   routes, so a theme no longer enqueues them by hand above its form.
 
+- Core wires the search bar's town/city field: an input carrying `data-ac="location_cities"`
+  gets suggestions and resolves the chosen row's id, and `osc-ui-common` now loads on the
+  home and search pages. Both bundled themes had written this binder themselves.
 - `osc_show_item_comments()` renders a listing's comment thread and post form, so a theme
   gets the feature — on by default — without laying out a form whose field names are core's.
   It fires `item_comments_before`, `comment_form` and `item_comments_after`, and ships
@@ -63,6 +66,10 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 
 ### Fixed
 
+- CSRF tokens were injected into GET forms, so a search submitted with the token in its
+  URL — shared in links, kept in referrers, and unique per visitor, which gave every
+  search its own canonical and its own cache entry. GET forms are skipped now; `nocsrf`
+  is no longer needed on them.
 - Form labels pointed at the field's name rather than its id, so any control with an id of
   its own — every custom field on the listing form and search — had a label that focused
   nothing and left the field unnamed to a screen reader.

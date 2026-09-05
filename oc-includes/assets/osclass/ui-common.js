@@ -200,3 +200,82 @@ function oscAutocomplete(input, opts) {
         initCustomFieldAutocomplete();
     }
 })();
+
+// ---------------------------------------------------------------------------
+// Location autocomplete: wire every input[data-ac] to core's location endpoints
+// (location_countries | location_regions | location_cities), which LIKE-match the
+// typed term and return {id, value} rows.
+//
+// Data-attribute driven, so a theme renders the input and nothing else:
+//
+//   data-ac              the ajax action to call
+//   data-ac-url          base URL to post to (osc_base_url(true))
+//   data-ac-target       selector of the hidden input the chosen row's id goes into
+//   data-ac-scope        selector whose value narrows the search (region for a city)
+//   data-ac-scope-param  the parameter name that value is sent as
+//   data-ac-clears       comma-separated selectors emptied when this field changes
+//
+// Both bundled themes wrote this binder themselves against the same attributes.
+// oscAutocomplete() guards on data-osc-ac-init, so a theme that still ships its
+// own copy simply wins the race and this becomes a no-op for that field.
+// ---------------------------------------------------------------------------
+(function () {
+    function initLocationAutocomplete() {
+        if (typeof oscAutocomplete !== 'function') { return; }
+        var inputs = document.querySelectorAll('input[data-ac]');
+        for (var i = 0; i < inputs.length; i++) {
+            (function (input) {
+                var action = input.getAttribute('data-ac');
+                var base = input.getAttribute('data-ac-url');
+                if (!action || !base) { return; }
+
+                var targetSel = input.getAttribute('data-ac-target');
+                var hidden = targetSel ? document.querySelector(targetSel) : null;
+                var scopeSel = input.getAttribute('data-ac-scope');
+                var scopeParam = input.getAttribute('data-ac-scope-param');
+                var clears = (input.getAttribute('data-ac-clears') || '').split(',');
+
+                function clearDependents() {
+                    if (hidden) { hidden.value = ''; }
+                    for (var c = 0; c < clears.length; c++) {
+                        if (!clears[c]) { continue; }
+                        var el = document.querySelector(clears[c]);
+                        if (el) { el.value = ''; }
+                    }
+                }
+
+                oscAutocomplete(input, {
+                    minLength: 2,
+                    // Resolved per fetch, not once: a scoped field — a city inside the
+                    // region chosen a moment ago — must read the scope as it is now.
+                    source: function () {
+                        var u = base + (base.indexOf('?') > -1 ? '&' : '?')
+                            + 'page=ajax&action=' + encodeURIComponent(action);
+                        if (scopeSel && scopeParam) {
+                            var s = document.querySelector(scopeSel);
+                            if (s && s.value) {
+                                u += '&' + scopeParam + '=' + encodeURIComponent(s.value);
+                            }
+                        }
+                        return u;
+                    },
+                    // Typing again invalidates the id resolved from the last choice.
+                    onSearch: clearDependents,
+                    onSelect: function (item) {
+                        if (hidden) { hidden.value = item.id != null ? item.id : ''; }
+                        for (var c = 0; c < clears.length; c++) {
+                            if (!clears[c]) { continue; }
+                            var el = document.querySelector(clears[c]);
+                            if (el) { el.value = ''; }
+                        }
+                    }
+                });
+            })(inputs[i]);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLocationAutocomplete);
+    } else {
+        initLocationAutocomplete();
+    }
+})();
