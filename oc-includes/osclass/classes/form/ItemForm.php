@@ -1616,8 +1616,9 @@ class ItemForm extends Form
 
     public static function ajax_photos($resources = null)
     {
-        // The field cannot work without these, and both bundled themes enqueued
-        // them by hand at the top of their own form.
+        // Core enqueues both from the head for the publish and edit routes. These
+        // cover a caller somewhere else: the script still lands (scripts print in
+        // the footer), the stylesheet only if the head has not been flushed yet.
         osc_enqueue_script('osc-uploader');
         osc_enqueue_style('osc-uploader');
 

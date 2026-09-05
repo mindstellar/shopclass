@@ -878,10 +878,14 @@ function osc_item_tinymce_header()
 }
 
 /**
- * Load the shared oscAutocomplete combobox on the public item form (publish/edit),
- * where ItemForm::location_javascript_new() drives the location fields with it. It
- * replaces a jQuery-UI widget and pulls in no jQuery of its own.
- * (The photo uploader self-enqueues from ItemForm::ajax_photos when it renders.)
+ * Load what the public item form (publish/edit) needs, from the head.
+ *
+ * oscAutocomplete drives the location fields for
+ * ItemForm::location_javascript_new(); osc-uploader is the photo field.
+ *
+ * Styles print on the header hook, so a stylesheet enqueued while the body is
+ * rendering never lands -- ItemForm::ajax_photos() enqueues its own assets, but
+ * by then the head has been flushed and only the script survives.
  */
 function osc_ui_common_header()
 {
@@ -890,6 +894,8 @@ function osc_ui_common_header()
     }
     osc_enqueue_script('osc-ui-common');
     osc_enqueue_style('osc-ui-common');
+    osc_enqueue_script('osc-uploader');
+    osc_enqueue_style('osc-uploader');
 }
 osc_add_hook('header', 'osc_ui_common_header');
 osc_add_hook('header', 'osc_head_hook_guard', 1);

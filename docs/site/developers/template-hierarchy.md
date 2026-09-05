@@ -108,5 +108,5 @@ The two `selected_*` calls prefer the **posted** value, which matters without
 JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
-`ItemForm::ajax_photos()` enqueues the uploader itself — you no longer call
-`osc_enqueue_script('osc-uploader')` before it.
+Core loads the uploader and the location combobox from the head on both routes,
+so you no longer enqueue `osc-uploader` or `osc-ui-common` before the form.

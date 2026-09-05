@@ -53,8 +53,8 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   `route_hidden()`, `location_record()`, `selected_country()`, `selected_region()` and
   `plugin_item_fields()` — so a theme stops deriving the action, the hidden fields and the
   location defaults for itself. Both bundled themes had written the same branch.
-- `ItemForm::ajax_photos()` enqueues the uploader it renders, rather than every theme
-  remembering to.
+- Core loads the photo uploader and the location combobox itself on the publish and edit
+  routes, so a theme no longer enqueues them by hand above its form.
 - Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
   three settings pages, sign in, register, the two password-reset steps, the public profile and
   the plugin account slot — when the theme ships none. A theme that ships one still wins.
