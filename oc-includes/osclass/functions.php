@@ -210,14 +210,27 @@ function meta_title()
                     $text = __('Public profile') . ' - ' . osc_user_name();
                     break;
                 case ('change_email'):
-                    $text = __('Change my email');
-                    break;
                 case ('change_username'):
-                    $text = __('Change my username');
-                    break;
                 case ('change_password'):
-                    $text = __('Change my password');
+                    // One page answers all three routes.
+                    $text = __('Sign-in details');
                     break;
+                case ('delete'):
+                    $text = __('Delete your account');
+                    break;
+            }
+            break;
+        case ('billing'):
+            switch ($section) {
+                case ('buy'):
+                case ('checkout'):
+                    $text = __('Buy credits');
+                    break;
+                case ('orders'):
+                    $text = __('Your orders');
+                    break;
+                default:
+                    $text = __('Credits');
             }
             break;
         case ('contact'):
@@ -227,7 +240,9 @@ function meta_title()
             $text = Rewrite::newInstance()->get_title();
             break;
         default:
-            $text = osc_page_title();
+            // Empty, not the site name: the tail below adds that. Setting it here
+            // produced "Site - Site" on any route without a case of its own.
+            $text = '';
             break;
     }
 
@@ -237,6 +252,12 @@ function meta_title()
         } else {
             $text = osc_page_title();
         }
+    }
+
+    // The home page skips the block above, so a route with no case of its own --
+    // home included -- still ends up titled rather than blank.
+    if ($text === '') {
+        $text = osc_page_title();
     }
 
     return osc_apply_filter('meta_title_filter', $text);

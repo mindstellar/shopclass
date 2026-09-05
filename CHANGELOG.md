@@ -59,6 +59,12 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Deleting an account was a nav entry alongside Alerts and Credits. It sits at the foot of
   the profile page now, past everything routine.
 - The listings page printed a pager reading "1" when everything fitted on one page.
+- The credits, buy and orders pages were titled "Site name - Site name", and the
+  account-delete page carried only the site name. Any route without a title case of its own
+  had the site name doubled.
+- `?page=register` with no action answered 200 with an empty body.
+- A long word in a heading — a search term, a listing title — pushed the page wider than a
+  phone screen instead of wrapping.
 - The credits pages ignored a theme's own button and panel styling, because their markup
   carried only the older `oe-bill-*` class names. Each element now also carries the published
   name, so restyling the documented vocabulary reaches them.

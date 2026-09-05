@@ -49,7 +49,9 @@ if (!defined('ABS_PATH')) {
      theme's links, which is what makes a core-rendered page read as part of the
      site rather than as a panel dropped into it. */
   body.oe-page a{color:var(--oe-teal);}
-  .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;}
+  /* Headings carry user text -- a member's name, a listing title -- so one
+     long token must wrap rather than widen the page. */
+  .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;overflow-wrap:anywhere;}
   .oe-page h2{font-size:1.0625rem;font-weight:600;margin:0 0 12px;}
 
   /* The strip that tells a visitor whose site this is. */

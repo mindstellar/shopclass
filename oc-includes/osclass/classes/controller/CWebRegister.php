@@ -40,6 +40,10 @@ class CWebRegister extends BaseModel
     public function doModel()
     {
         switch ($this->action) {
+            // No action is the form: ?page=register with nothing else is a URL a
+            // person can type, and it used to fall through the switch and answer
+            // 200 with an empty body. Core's own links carry the action.
+            default:
             case ('register'):       //register user
                 $this->doView(osc_locate_template(array('user-register.php'), 'user-register'));
                 break;
