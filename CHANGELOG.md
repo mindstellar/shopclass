@@ -9,7 +9,8 @@ and widget zones they own, and whether core may write the document head. The pag
 account deletion, credits, buy and orders — render inside the theme rather than on a page of
 their own, and a theme can add a view without a patch to core. A theme that declares nothing
 behaves exactly as it did. Core now also renders every account and sign-in page itself when the
-theme ships none, using a documented class vocabulary a theme restyles in CSS alone.
+theme ships none, using a documented class vocabulary a theme restyles in CSS alone. In the
+admin, Listings → Locations is rebuilt to page, search and install countries on sites of any size.
 
 ### Security
 

@@ -131,6 +131,10 @@ msgstr ""
 msgid "%s can't be disabled because it's the default language"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s could not be read from the catalog"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "%s couldn't be deleted because it has listings associated to it"
 msgstr ""
@@ -171,6 +175,16 @@ msgstr ""
 msgid "%s has been updated"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid ""
+"%s is already installed. Preview its update on the Data tab before "
+"importing it again."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s is installed with its regions and cities"
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "%s is invalid."
 msgstr ""
@@ -181,6 +195,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
 msgid "%s is too long, the maximum is %d characters"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s is updated from the catalog"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "%s locations are still to be counted. Continue counting to finish."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
@@ -940,16 +962,16 @@ msgstr ""
 msgid "Leave a comment"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Listing counts are recalculated"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Listings"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Listings' settings have been updated"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
-msgid "Location imported successfully"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
@@ -1637,6 +1659,10 @@ msgstr ""
 msgid "See all of your listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "Select a country to import"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Selected languages have been disabled for the backoffice (oc-admin)"
 msgstr ""
@@ -1906,6 +1932,18 @@ msgstr ""
 msgid "The cache has been cleared"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no country with the code %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no country with the code %s. Add it by hand instead."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no such country"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The comment doesn't exist"
 msgstr ""
@@ -1957,6 +1995,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 msgid "The comments have been unblocked"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The country code must be two letters, like IN or DE"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
@@ -2092,6 +2134,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The listing you are trying to delete couldn't be deleted"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The location catalog could not be reached. Try again in a few minutes."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -2355,6 +2401,10 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "There were some problems adding the country"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "There were some problems editing the country"
 msgstr ""
 
@@ -2391,6 +2441,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "This listing doesn't exist"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "This location no longer exists."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
