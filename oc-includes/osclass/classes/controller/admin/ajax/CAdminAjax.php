@@ -1101,6 +1101,12 @@ class CAdminAjax extends AdminSecBaseModel
                     echo json_encode(array('error' => 0));
                 }
                 break;
+            case 'location_search':
+            case 'location_impact':
+            case 'location_record':
+                header('Content-Type: application/json');
+                echo json_encode($this->locationRead($this->action));
+                break;
             case 'error_permissions':
                 echo json_encode(array('error' => __("You don't have the necessary permissions")));
                 break;
@@ -1111,6 +1117,60 @@ class CAdminAjax extends AdminSecBaseModel
         // clear all keep variables into session
         Session::newInstance()->_dropKeepForm();
         Session::newInstance()->_clearVariables();
+    }
+
+    /**
+     * Answer one of the location admin reads: search, delete impact or a single record.
+     *
+     * @param string $action location_search|location_impact|location_record
+     *
+     * @return array<string,mixed> the result, or ['error' => message]
+     */
+    private function locationRead(string $action): array
+    {
+        $query = new \mindstellar\location\LocationAdminQuery();
+        // Values are bound, never rendered, so they are read without the tag filter.
+        $level = Params::getParamString('level', false, false, false);
+
+        try {
+            switch ($action) {
+                case 'location_search':
+                    return $query->searchAll(
+                        Params::getParamString('q', false, false, false),
+                        Params::getParamInt('per', 10)
+                    );
+                case 'location_impact':
+                    // id[] for a selection, id for one row.
+                    $ids = Params::getParamArray('id', false, false, false);
+                    if ($ids === array() && Params::getParamString('id', false, false, false) !== '') {
+                        $ids = array(Params::getParamString('id', false, false, false));
+                    }
+                    if ($ids === array()) {
+                        return array('error' => __('No locations selected'));
+                    }
+                    $impact = $query->impact($level, $ids);
+                    if ($impact['found'] < $impact['requested']) {
+                        return array('error' => __('Some of the selected locations no longer exist'));
+                    }
+
+                    return $impact;
+                default:
+                    $record = $query->record($level, Params::getParamString('id', false, false, false));
+
+                    return $record ?? array('error' => __('Location not found'));
+            }
+        } catch (InvalidArgumentException $e) {
+            switch ($e->getCode()) {
+                case \mindstellar\location\LocationAdminQuery::ERR_BAD_ID:
+                    return array('error' => __('Invalid location id'));
+                case \mindstellar\location\LocationAdminQuery::ERR_TOO_MANY:
+                    return array('error' => __('Too many locations selected'));
+                default:
+                    return array('error' => __('Unknown location level'));
+            }
+        } catch (\mindstellar\database\DbException $e) {
+            return array('error' => __('Locations could not be read'));
+        }
     }
 
     //hopefully generic...

@@ -403,3 +403,8 @@ jobs:
       # shared by 117 villages matching one of them retires the other 116.
       - name: Location matching
         run: php tests/location-matching.php
+      # A total counting the wrong rows is a pager that stops early, an unescaped '%' or '_'
+      # matches places nobody typed, and an impact number missing a cascade branch tells the
+      # admin a delete is safe when it removes listings.
+      - name: Location admin query
+        run: php tests/location-admin-query.php

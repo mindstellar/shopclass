@@ -873,6 +873,7 @@ return array(
     'mindstellar\\forms\\FieldValidator' => $baseDir . '/oc-includes/osclass/classes/forms/FieldValidator.php',
     'mindstellar\\forms\\FormContextRegistry' => $baseDir . '/oc-includes/osclass/classes/forms/FormContextRegistry.php',
     'mindstellar\\forms\\FormService' => $baseDir . '/oc-includes/osclass/classes/forms/FormService.php',
+    'mindstellar\\location\\LocationAdminQuery' => $baseDir . '/oc-includes/osclass/classes/location/LocationAdminQuery.php',
     'mindstellar\\location\\LocationCatalog' => $baseDir . '/oc-includes/osclass/classes/location/LocationCatalog.php',
     'mindstellar\\location\\LocationImporter' => $baseDir . '/oc-includes/osclass/classes/location/LocationImporter.php',
     'mindstellar\\logger\\OsclassErrors' => $baseDir . '/oc-includes/osclass/classes/logger/OsclassErrors.php',

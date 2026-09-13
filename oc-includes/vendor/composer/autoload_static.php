@@ -1000,6 +1000,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\forms\\FieldValidator' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FieldValidator.php',
         'mindstellar\\forms\\FormContextRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormContextRegistry.php',
         'mindstellar\\forms\\FormService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormService.php',
+        'mindstellar\\location\\LocationAdminQuery' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/location/LocationAdminQuery.php',
         'mindstellar\\location\\LocationCatalog' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/location/LocationCatalog.php',
         'mindstellar\\location\\LocationImporter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/location/LocationImporter.php',
         'mindstellar\\logger\\OsclassErrors' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/logger/OsclassErrors.php',
