@@ -45,6 +45,32 @@
 require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
 
+// The media screen moves its watermark into osc_uploads_path(), so that is a scratch folder
+// of its own rather than the shared temp dir the bootstrap would otherwise point it at.
+$GLOBALS['fakeUploads'] = rtrim((string)tempnam(sys_get_temp_dir(), 'oscuploads_'), '/');
+@unlink($GLOBALS['fakeUploads']);
+@mkdir($GLOBALS['fakeUploads']);
+if (!defined('UPLOADS_PATH')) {
+    define('UPLOADS_PATH', $GLOBALS['fakeUploads'] . '/');
+}
+register_shutdown_function(static function () {
+    foreach ((array)glob($GLOBALS['fakeUploads'] . '/{,.}*', GLOB_BRACE) as $file) {
+        if (is_file($file)) {
+            @unlink($file);
+        }
+    }
+    @rmdir($GLOBALS['fakeUploads']);
+});
+
+// move_uploaded_file() only moves a file PHP itself received, and a CLI run receives none.
+// The call is unqualified inside the form's namespace, so this stand-in answers it: it moves
+// what the test marked as uploaded and refuses anything else, as the real one does.
+$GLOBALS['uploaded'] = array();
+eval('namespace mindstellar\\admin\\form;'
+     . ' function move_uploaded_file($from, $to) {'
+     . ' if (!isset($GLOBALS["uploaded"][$from])) { return false; }'
+     . ' unset($GLOBALS["uploaded"][$from]); return rename($from, $to); }');
+
 $admin = scratchdb_session('osc_settings_screen_forms');
 
 if (!defined('OC_ADMIN')) {
@@ -98,6 +124,12 @@ if (!function_exists('osc_csrf_check')) {
         $GLOBALS['csrfChecks'][] = Params::getParam('action');
 
         return true;
+    }
+}
+if (!function_exists('osc_csrf_token_url')) {
+    function osc_csrf_token_url()
+    {
+        return 'CSRFName=test&CSRFToken=test';
     }
 }
 foreach (array('error', 'ok', 'warning', 'info') as $kind) {
@@ -282,6 +314,7 @@ foreach (array(
     'Billing',
     'Permalinks',
     'Sitemap',
+    'Media',
 ) as $screen) {
     require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettings' . $screen . '.php';
 }
@@ -292,6 +325,7 @@ use mindstellar\admin\form\KeywordBlockSettingsForm;
 use mindstellar\admin\form\LatestSearchSettingsForm;
 use mindstellar\admin\form\MailServerSettingsForm;
 use mindstellar\admin\form\MainSettingsForm;
+use mindstellar\admin\form\MediaSettingsForm;
 use mindstellar\admin\form\PermalinkSettingsForm;
 use mindstellar\admin\form\SitemapSettingsForm;
 use mindstellar\admin\form\SpamSettingsForm;
@@ -329,10 +363,11 @@ function seed_pref(mysqli $admin, string $name, string $value, string $type = 'S
 }
 
 /** Put a request in front of a real controller the way a browser would. */
-function drive(string $controller, string $action, array $fields = array()): array
+function drive(string $controller, string $action, array $fields = array(), array $files = array()): array
 {
-    $_GET  = array('page' => 'settings', 'action' => $action);
-    $_POST = $fields;
+    $_GET   = array('page' => 'settings', 'action' => $action);
+    $_POST  = $fields;
+    $_FILES = $files;
     Params::init();
     $GLOBALS['flashes']    = array();
     $GLOBALS['redirects']  = array();
@@ -597,6 +632,35 @@ pin(
     keymap(SitemapSettingsForm::register())
 );
 pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsForm::registerRobots()));
+// Two position selects write one preference, each only while its watermark type is chosen.
+// The type itself and the text options are no preference: the type is read back from which
+// watermark is set, and the options travel as one JSON preference the after_save writes.
+pin(
+    'the media screen, where both watermark positions are one key',
+    array(
+        'dimThumbnail'          => 'osclass/dimThumbnail',
+        'dimPreview'            => 'osclass/dimPreview',
+        'dimNormal'             => 'osclass/dimNormal',
+        'keep_original_image'   => 'osclass/keep_original_image',
+        'force_jpeg'            => 'osclass/force_jpeg',
+        'jpeg_quality'          => 'osclass/jpeg_quality',
+        'force_aspect_image'    => 'osclass/force_aspect_image',
+        'maxSizeKb'             => 'osclass/maxSizeKb',
+        'use_imagick'           => 'osclass/use_imagick',
+        'watermark_type'        => '(not stored)',
+        'watermark_text'        => 'osclass/watermark_text',
+        'watermark_width'       => '(not stored)',
+        'watermark_height'      => '(not stored)',
+        'text_offset_x'         => '(not stored)',
+        'text_offset_y'         => '(not stored)',
+        'text_angle'            => '(not stored)',
+        'watermark_text_color'  => 'osclass/watermark_text_color',
+        'background_color'      => '(not stored)',
+        'watermark_text_place'  => 'osclass/watermark_place',
+        'watermark_image_place' => 'osclass/watermark_place',
+    ),
+    keymap(MediaSettingsForm::register())
+);
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -1169,6 +1233,243 @@ pin('a write that fails is reported', array('error:robots.txt could not be saved
 pin('and is not treated as saved', array(), $run['redirects']);
 check('the box comes back with what was typed', strpos($run['drawn'], "User-agent: failed\n</textarea>") !== false);
 
+harness_section('media, and the watermark it uploads');
+
+foreach (array(
+    array('dimThumbnail', '240x200'),
+    array('dimPreview', '480x340'),
+    array('dimNormal', '640x480'),
+    array('maxSizeKb', '2048', 'INTEGER'),
+    array('keep_original_image', '1', 'BOOLEAN'),
+    array('watermark_text', ''),
+    array('watermark_text_color', ''),
+    array('watermark_place', 'centre'),
+    array('watermark_image', '/an/earlier/watermark.png'),
+) as $seed) {
+    seed_pref($admin, $seed[0], $seed[1], $seed[2] ?? 'STRING');
+}
+osc_reset_preferences();
+
+$limitKb = MediaSettingsForm::uploadLimitKb();
+$run     = drive('CAdminSettingsMedia', 'media');
+pin('the media screen is drawn', array('settings/media.php'), $run['views']);
+check('with an image set, Image is the type shown', strpos($run['drawn'], 'id="watermark_image" name="watermark_type" value="image" checked') !== false);
+check('its block is drawn open', strpos($run['drawn'], 'id="watermark_image_box" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;image&quot;]">') !== false);
+check('and the text block hidden', strpos($run['drawn'], 'id="watermark_text_box" class="table-backoffice-form" data-osc-depends="watermark_type" data-osc-depends-value="[&quot;text&quot;]" hidden>') !== false);
+check('the text options show their defaults before any are saved', strpos($run['drawn'], 'name="watermark_width" class="input-text field-num" value="200"') !== false);
+
+$media = array(
+    'dimThumbnail'         => '240X200',
+    'dimPreview'           => '480x340',
+    'dimNormal'            => ' 640x480 ',
+    'keep_original_image'  => '1',
+    'jpeg_quality'         => '70',
+    'maxSizeKb'            => '1024',
+    'use_imagick'          => '1',
+    'watermark_type'       => 'text',
+    'watermark_text'       => 'Hello <b>there</b>',
+    'watermark_text_color' => '#ff0000',
+    'watermark_width'      => '150',
+    'watermark_height'     => '40',
+    'text_offset_x'        => '5',
+    'text_offset_y'        => '',
+    'text_angle'           => '15',
+    'background_color'     => '#00ff00',
+    'watermark_text_place' => 'br',
+    'watermark_image_place' => 'tl',
+);
+$run = drive('CAdminSettingsMedia', 'media_post', $media);
+pin('the media save is CSRF-checked', array('media_post'), $run['csrf']);
+pin('and reports one success', array('ok:Media config has been updated'), flashed($run));
+pin('and goes back to the screen', array('https://example.test/oc-admin/index.php?page=settings&action=media'), $run['redirects']);
+pin('an image size is lower-cased', array('240x200', 'STRING'), pref($admin, 'dimThumbnail'));
+pin('and trimmed', array('640x480', 'STRING'), pref($admin, 'dimNormal'));
+pin('a ticked switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'keep_original_image'));
+pin('an unticked one stores a zero', array('0', 'BOOLEAN'), pref($admin, 'force_jpeg'));
+pin(
+    'ImageMagick is on only where the library is loaded',
+    array(extension_loaded('imagick') ? '1' : '0', 'STRING'),
+    pref($admin, 'use_imagick')
+);
+pin('the JPEG quality lands as a number', array('70', 'INTEGER'), pref($admin, 'jpeg_quality'));
+pin('the maximum size too', array('1024', 'INTEGER'), pref($admin, 'maxSizeKb'));
+pin('a text watermark writes its text, stripped of tags', array('Hello there', 'STRING'), pref($admin, 'watermark_text'));
+pin('and its colour', array('#ff0000', 'STRING'), pref($admin, 'watermark_text_color'));
+pin('the text position, not the image one', array('br', 'STRING'), pref($admin, 'watermark_place'));
+pin('and clears the image', array('', 'STRING'), pref($admin, 'watermark_image'));
+pin(
+    'the text options land as one JSON object, the key order and the int casts as they were',
+    array('{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', 'STRING'),
+    pref($admin, 'watermark_text_options')
+);
+foreach (array('watermark_type', 'watermark_width', 'text_angle', 'background_color', 'watermark_text_place', 'watermark_image_place') as $control) {
+    check('"' . $control . '" is stored in no preference row of its own', pref($admin, $control) === null);
+}
+
+$run = drive('CAdminSettingsMedia', 'media_post', array('watermark_type' => 'none') + $media);
+pin('no watermark clears the text', array('', 'STRING'), pref($admin, 'watermark_text'));
+pin('its colour', array('', 'STRING'), pref($admin, 'watermark_text_color'));
+pin('and the image', array('', 'STRING'), pref($admin, 'watermark_image'));
+pin('and writes no position', array('br', 'STRING'), pref($admin, 'watermark_place'));
+pin('nor the text options', '{"watermark_width":150,"watermark_height":40,"text_offset_x":5,"text_offset_y":0,"text_angle":15,"background_color":"#00ff00"}', pref($admin, 'watermark_text_options')[0]);
+
+/** A file as PHP hands a POST upload to the request: marked as received, then described. */
+function upload(string $bytes, int $error = UPLOAD_ERR_OK, bool $received = true): array
+{
+    $tmp = (string)tempnam(sys_get_temp_dir(), 'oscupload_');
+    file_put_contents($tmp, $bytes);
+    register_shutdown_function(static fn () => @unlink($tmp));
+    if ($received) {
+        $GLOBALS['uploaded'][$tmp] = true;
+    }
+
+    return array('watermark_image' => array(
+        'name'     => 'watermark.png',
+        'type'     => 'image/png',
+        'tmp_name' => $error === UPLOAD_ERR_OK ? $tmp : '',
+        'error'    => $error,
+        'size'     => $error === UPLOAD_ERR_OK ? strlen($bytes) : 0,
+    ));
+}
+
+$png       = (string)base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+$watermark = osc_uploads_path() . '/watermark.png';
+$image     = array('watermark_type' => 'image') + $media;
+@unlink($watermark);
+
+$run = drive('CAdminSettingsMedia', 'media_post', $image, upload($png));
+pin('a PNG is taken', array('ok:Media config has been updated'), flashed($run));
+pin('and put where the watermark has always lived', $png, (string)@file_get_contents($watermark));
+pin('which is what the preference names', array($watermark, 'STRING'), pref($admin, 'watermark_image'));
+pin('the image position is written', array('tl', 'STRING'), pref($admin, 'watermark_place'));
+pin('and the text watermark is cleared', array('', 'STRING'), pref($admin, 'watermark_text'));
+
+// A text left behind with no colour: the refusal below redraws the screen, and a stored text
+// and colour together would have it render the preview through the image library.
+seed_pref($admin, 'watermark_text', 'kept');
+osc_reset_preferences();
+$run = drive('CAdminSettingsMedia', 'media_post', array('watermark_image_place' => 'bl') + $image);
+pin('no upload keeps the image that is there', array($watermark, 'STRING'), pref($admin, 'watermark_image'));
+pin('while the rest of the image type is written', array('bl', 'STRING'), pref($admin, 'watermark_place'));
+pin('and clears the text', array('', 'STRING'), pref($admin, 'watermark_text'));
+
+seed_pref($admin, 'watermark_text', 'kept');
+osc_reset_preferences();
+$run = drive('CAdminSettingsMedia', 'media_post', array('dimPreview' => '999x999', 'watermark_image_place' => 'tr') + $image, upload('GIF89a not a png'));
+pin('a file that is not a PNG is refused', array('warning:The watermark image has to be a .PNG file'), flashed($run));
+pin('with no redirect', array(), $run['redirects']);
+pin('and the screen is redrawn', array('settings/media.php'), $run['views']);
+check('with what was typed still in it', strpos($run['drawn'], 'value="999x999"') !== false);
+pin('nothing beside it is written', array('480x340', 'STRING'), pref($admin, 'dimPreview'));
+pin('not the position', array('bl', 'STRING'), pref($admin, 'watermark_place'));
+pin('not the text it would have cleared', array('kept', 'STRING'), pref($admin, 'watermark_text'));
+pin('and the watermark on disk is untouched', $png, (string)@file_get_contents($watermark));
+
+$run = drive('CAdminSettingsMedia', 'media_post', $image, upload('', UPLOAD_ERR_INI_SIZE));
+pin('an upload PHP itself refused is refused too, not skipped', array('warning:There was a problem uploading the watermark image'), flashed($run));
+pin('and writes nothing', array('kept', 'STRING'), pref($admin, 'watermark_text'));
+
+// A real PNG that cannot be moved: validation passed, so what saved stays saved and the move
+// is what is reported.
+@unlink($watermark);
+$run = drive('CAdminSettingsMedia', 'media_post', $image, upload($png, UPLOAD_ERR_OK, false));
+pin('a PNG that cannot be moved into place says so, and only that', array('error:There was a problem uploading the watermark image'), flashed($run));
+pin('the rest of the save stands', array('', 'STRING'), pref($admin, 'watermark_text'));
+pin('the image that was there is still named', array($watermark, 'STRING'), pref($admin, 'watermark_image'));
+pin('and the screen is gone back to', 1, count($run['redirects']));
+
+// Validation checks the file only for a submitted image type, so a before_save listener that
+// switches the type afterwards must not get an unchecked file moved into place.
+file_put_contents($watermark, $png);
+$toImage = static function ($values, $pageId) {
+    if ($pageId === MediaSettingsForm::PAGE_ID) {
+        $values['watermark_type'] = 'image';
+    }
+
+    return $values;
+};
+osc_add_filter('admin_form_before_save', $toImage);
+$run = drive('CAdminSettingsMedia', 'media_post', $media, upload('GIF89a not a png'));
+osc_remove_filter('admin_form_before_save', $toImage);
+pin('a type switched to image after validation still has its file checked', array('error:The watermark image has to be a .PNG file'), flashed($run));
+pin('and the file is not moved', $png, (string)@file_get_contents($watermark));
+pin('nor named', array($watermark, 'STRING'), pref($admin, 'watermark_image'));
+
+$run = drive('CAdminSettingsMedia', 'media_post', array('watermark_type' => 'sepia') + $media);
+pin('a watermark type the screen never offered is refused', array('warning:Watermark type is not one of the available options'), flashed($run));
+
+// Refused, where the hand-written screen corrected a bare number to NxN and anything else to
+// 100x100 behind a browser check that had already refused both.
+foreach (array(
+    array('200', 'warning:Thumbnail size is not in the expected format', 'a bare number is refused'),
+    array('10x10px', 'warning:Thumbnail size is not in the expected format', 'and so is a size with anything after it'),
+    array('', 'warning:Thumbnail size cannot be left empty', 'and a blank one'),
+) as $case) {
+    $run = drive('CAdminSettingsMedia', 'media_post', array('dimThumbnail' => $case[0], 'jpeg_quality' => '33') + $media);
+    pin($case[2], array($case[1]), flashed($run));
+}
+pin('none of them writes anything', array('70', 'INTEGER'), pref($admin, 'jpeg_quality'));
+check('and the box carries the shape the browser checks', strpos($run['drawn'], 'name="dimThumbnail" class="input-text field-num" value="" pattern="[0-9]+[xX][0-9]+" required') !== false);
+
+// Corrected rather than refused, as getParamInt() and the clamp did.
+foreach (array(
+    array('0', '82', 'a zero JPEG quality is the default'),
+    array('101', '82', 'so is one past 100'),
+    array('abc', '82', 'and one with no number in it'),
+    array('1', '1', 'the lowest quality is kept'),
+    array('100', '100', 'and the highest'),
+) as $case) {
+    $run = drive('CAdminSettingsMedia', 'media_post', array('jpeg_quality' => $case[0]) + $media);
+    pin($case[2], array($case[1], 'INTEGER'), pref($admin, 'jpeg_quality'));
+}
+pin('none of them is a refusal', array('ok:Media config has been updated'), flashed($run));
+
+foreach (array(
+    array('', 'warning:Maximum size cannot be left empty', 'a blank maximum size is refused'),
+    array('0', 'warning:Maximum size must be 1 or more', 'and a zero'),
+    array('12.5', 'warning:Maximum size must be a whole number', 'and a decimal'),
+    array('lots', 'warning:Maximum size must be a number', 'and a word'),
+) as $case) {
+    $run = drive('CAdminSettingsMedia', 'media_post', array('maxSizeKb' => $case[0]) + $media);
+    pin($case[2], array($case[1]), flashed($run));
+}
+
+$run = drive('CAdminSettingsMedia', 'media_post', array('maxSizeKb' => (string)($limitKb + 1), 'dimPreview' => '500x500') + $media);
+pin('a maximum size past what PHP allows is lowered to it', array((string)$limitKb, 'INTEGER'), pref($admin, 'maxSizeKb'));
+pin(
+    'with a warning rather than a success',
+    array('warning:You cannot set a maximum file size higher than the one allowed in the PHP configuration: <b>' . $limitKb . ' KB</b>'),
+    flashed($run)
+);
+pin('while the rest still saves', array('500x500', 'STRING'), pref($admin, 'dimPreview'));
+pin('and goes back to the screen', 1, count($run['redirects']));
+
+// The limit arithmetic. The hand-written save read "1G" as 1 and multiplied: 1024 KB.
+pin('a gigabyte is a million kilobytes, not 1024', 1048576, MediaSettingsForm::sizeToKb('1G'));
+pin('megabytes', 8192, MediaSettingsForm::sizeToKb('8M'));
+pin('a lower-case suffix', 8192, MediaSettingsForm::sizeToKb('8m'));
+pin('kilobytes as they are', 512, MediaSettingsForm::sizeToKb('512K'));
+pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsForm::sizeToKb('1048576'));
+pin('and the controller\'s own converter answers the same', 1048576, (new CAdminSettingsMedia())->_sizeToKB('1G'));
+$memory = (string)ini_get('memory_limit');
+ini_set('memory_limit', '-1');
+check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsForm::uploadLimitKb() > 0);
+pin(
+    'so the smallest limit left is the one that applies',
+    min(MediaSettingsForm::sizeToKb((string)ini_get('upload_max_filesize')), MediaSettingsForm::sizeToKb((string)ini_get('post_max_size')) ?: PHP_INT_MAX),
+    MediaSettingsForm::uploadLimitKb()
+);
+ini_set('memory_limit', $memory);
+
+pin('the maximum size names PHP\'s limit', '<span class="callout-warning">Maximum size PHP configuration allows: 2048 KB</span>', MediaSettingsForm::sizeHelp(2048));
+pin('and says nothing when PHP sets none', '', MediaSettingsForm::sizeHelp(PHP_INT_MAX));
+$unlimited = shell_exec(escapeshellarg(PHP_BINARY) . ' -d upload_max_filesize=0 -d post_max_size=0 -d memory_limit=-1 -r '
+    . escapeshellarg('require "' . ABS_PATH . 'oc-includes/vendor/autoload.php"; echo mindstellar\admin\form\MediaSettingsForm::uploadLimitKb();'));
+pin('which is what every limit set to unlimited answers', (string)PHP_INT_MAX, trim((string)$unlimited));
+
+$run = drive('CAdminSettingsMedia', 'images_post');
+pin('regenerating is still the sibling action it was, CSRF and all', array('images_post'), $run['csrf']);
+
 /* ---------------------------------------------------------------------------------------
  * What the page around the form still reaches for. A declared field's id is derived from
  * its name -- field-<name> -- while the hand-written view it replaced wrote its own. Where
@@ -1190,6 +1491,7 @@ $screenViews = array(
     'settings/billing.php'    => array('CAdminSettingsBilling', 'billing'),
     'settings/permalinks.php' => array('CAdminSettingsPermalinks', 'permalinks'),
     'settings/sitemap.php'    => array('CAdminSettingsSitemap', 'sitemap'),
+    'settings/media.php'      => array('CAdminSettingsMedia', 'media'),
 );
 $drawn = array();
 foreach ($screenViews as $view => $screen) {
@@ -1247,6 +1549,35 @@ check(
 check(
     'and so does the robots.txt one',
     strpos($drawn['settings/sitemap.php'], 'name="sitemap_robots_form"><input type="hidden" name="page" value="settings"/><input type="hidden" name="action" value="sitemap_robots_post"/>') !== false
+);
+// The keep-original recommendation still reaches for the three radios and the switch by id,
+// and a forked theme's copy of the old script also drives the two blocks by theirs.
+foreach (array(
+    'id="watermark_none"',
+    'id="watermark_text"',
+    'id="watermark_image"',
+    'id="keep_original_image"',
+    'id="watermark_text_box"',
+    'id="watermark_image_box"',
+    'id="colorpickerField1"',
+    'id="colorpickerField2"',
+    'id="watermark_text_place"',
+    'id="watermark_image_place"',
+    'id="watermark_image_file"',
+    'id="dialog-watermark-warning"',
+) as $needle) {
+    check('the media screen still draws ' . $needle, strpos($drawn['settings/media.php'], $needle) !== false);
+}
+check(
+    'the media form keeps its name and action, and posts multipart so the watermark arrives',
+    strpos($drawn['settings/media.php'], 'name="media_form" enctype="multipart/form-data"><input type="hidden" name="page" value="settings"/><input type="hidden" name="action" value="media_post"/>') !== false
+);
+check('the file control keeps the name the save reads', strpos($drawn['settings/media.php'], 'type="file" id="watermark_image_file" name="watermark_image"') !== false);
+check('a declared form without the option posts as it always did', strpos($drawn['settings/sitemap.php'], 'enctype=') === false);
+check(
+    'and the blocks are hidden and shown by the shared attribute',
+    strpos($drawn['settings/media.php'], 'id="watermark_text_box" class="table-backoffice-form" data-osc-depends="watermark_type"') !== false
+    && strpos($drawn['settings/media.php'], 'id="watermark_image_box" data-osc-depends="watermark_type"') !== false
 );
 
 $missing = array();
@@ -1321,6 +1652,8 @@ pin(
     __get('custom_urls')
 );
 unlink($GLOBALS['fakeRoot'] . '/robots.txt');
+drive('CAdminSettingsMedia', 'media');
+pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsForm::uploadLimitKb(), __get('max_size_upload'));
 // Source scan, not proof: the keyword-block screen is a data table around its form and
 // drawing one needs half the admin theme, so the export is held at source level here.
 $keywordSrc = (string)file_get_contents(
@@ -1364,6 +1697,10 @@ $screens = array(
         array('sitemap_number', 'sitemap_categories', 'sitemap_cat_city', 'sitemap_robots'),
         array('custom_urls'),
     ),
+    'settings/media.php'        => array(
+        'CAdminSettingsMedia.php',
+        array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'text_angle', 'watermark_image'),
+    ),
 );
 foreach ($screens as $view => $screen) {
     [$controller, $fields] = $screen;
@@ -1394,6 +1731,14 @@ foreach ($screens as $view => $screen) {
     );
 }
 
+$mediaView = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/settings/media.php');
+check('media.php no longer validates by hand what the declaration refuses', strpos($mediaView, 'oscValidateForm') === false);
+check('nor shows and hides the watermark blocks by hand', strpos($mediaView, 'style.display') === false);
+check(
+    'CAdminSettingsMedia.php reads no upload of its own',
+    strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php'), 'getFiles') === false
+);
+
 // The four keys that are not the field's own name are the ones a rename would break
 // silently, so the declarations are held to spelling them.
 foreach (array(
@@ -1402,6 +1747,7 @@ foreach (array(
     'AdvancedSettingsForm.php'     => array('subdomain_type', 'subdomain_host'),
     'SpamSettingsForm.php'         => array('recaptcha_version'),
     'PermalinkSettingsForm.php'    => array('rewriteEnabled'),
+    'MediaSettingsForm.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
 ) as $file => $keys) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/' . $file);
     foreach ($keys as $key) {

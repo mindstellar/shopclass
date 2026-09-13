@@ -284,7 +284,8 @@ if (!function_exists('osc_admin_settings_form')) {
      *                                        defaulting to the generic settings controller's;
      *                           'actions' => the submit row, as osc_admin_form_actions()
      *                                        takes it;
-     *                           'name', 'url' => attributes of the form element.
+     *                           'name', 'url' => attributes of the form element;
+     *                           'upload'  => true to post multipart/form-data.
      *
      * @return void
      */

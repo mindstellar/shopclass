@@ -38,7 +38,9 @@ final class SettingsForm
      *                                    'actions' => the submit row, as
      *                                                 osc_admin_form_actions() takes it;
      *                                    'name'    => the form's name attribute;
-     *                                    'url'     => the form's action attribute
+     *                                    'url'     => the form's action attribute;
+     *                                    'upload'  => true to post multipart/form-data,
+     *                                                 for a page drawing a file control
      *
      * @return void
      */
@@ -57,6 +59,7 @@ final class SettingsForm
         osc_admin_form_open(array(
             'url'    => $opts['url'] ?? null,
             'name'   => $opts['name'] ?? null,
+            'upload' => !empty($opts['upload']),
             'page'   => $route['page'] ?? null,
             'action' => $route['action'] ?? null,
             'fields' => array_diff_key($route, array('page' => true, 'action' => true)),

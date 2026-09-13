@@ -126,4 +126,11 @@ foreach (array('sitemap_settings_post', 'sitemap_robots_post') as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }
 
+/* The media save moved into a declaration as well, while regenerating is a link the view builds
+   from a URL rather than a form either scan reads, so it is named here or nobody checks it. */
+pin('scanned from MediaSettingsForm.php: media_post', 'MediaSettingsForm.php', $posted['media_post'] ?? '');
+foreach (array('media', 'media_post', 'images_post') as $action) {
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
 exit(harness_result());

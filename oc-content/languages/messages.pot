@@ -2258,7 +2258,7 @@ msgstr ""
 msgid "The username was updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "The watermark image has to be a .PNG file"
 msgstr ""
 
@@ -2332,7 +2332,7 @@ msgstr ""
 msgid "There was a problem removing the theme"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "There was a problem uploading the watermark image"
 msgstr ""
 

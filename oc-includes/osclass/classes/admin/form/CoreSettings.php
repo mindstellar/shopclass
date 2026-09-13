@@ -96,18 +96,24 @@ final class CoreSettings
      * @param array<string,mixed>|null $values values to show, when a rejected save is being
      *                                         redrawn
      * @param array<string,mixed>      $opts   'name' => the form's name attribute,
-     *                                         'actions' => the submit row
+     *                                         'actions' => the submit row,
+     *                                         'upload' => true for a form carrying a file
      *
      * @return array<string,mixed> view variables for osc_admin_settings_form()
      */
     public static function vars(string $pageId, string $action, ?array $values = null, array $opts = array()): array
     {
-        return array(
+        $vars = array(
             'id'      => $pageId,
             'values'  => $values ?? osc_settings_values($pageId),
             'route'   => array('page' => 'settings', 'action' => $action),
             'name'    => $opts['name'] ?? null,
             'actions' => $opts['actions'] ?? array(),
         );
+        if (!empty($opts['upload'])) {
+            $vars['upload'] = true;
+        }
+
+        return $vars;
     }
 }

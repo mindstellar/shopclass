@@ -232,6 +232,10 @@ msgstr ""
 msgid "%s must be a number"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "%s must be a whole number"
+msgstr ""
+
 #: oc-admin/themes/modern/users/frm.php
 msgid "%s on %s"
 msgstr ""
@@ -1230,11 +1234,11 @@ msgid ""
 "backend. "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Background Color"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Background Hexadecimal color value"
 msgstr ""
 
@@ -1382,11 +1386,11 @@ msgstr ""
 msgid "Books - Magazines"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Bottom Left"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Bottom Right"
 msgstr ""
 
@@ -1651,7 +1655,7 @@ msgstr ""
 msgid "Cell Phones - Accessories"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Centre"
 msgstr ""
 
@@ -2043,7 +2047,7 @@ msgstr ""
 msgid "Complete"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Compression quality for saved JPEGs, from 1 (smallest file) to "
 msgstr ""
 
@@ -3550,19 +3554,19 @@ msgstr ""
 msgid "For security, type <b>your current password</b>"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Force JPEG"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Force JPEG extension."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Force aspect"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Force image aspect."
 msgstr ""
 
@@ -3606,7 +3610,7 @@ msgstr ""
 msgid "Free listings per seller"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid ""
 "Freetype library is required. How to <a target=\"_blank\" rel=\"noopener\" "
 "href=\"%s\">install/configure</a>"
@@ -4007,12 +4011,12 @@ msgid ""
 "blank"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Image"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Image may occupy more space than usual."
 msgstr ""
 
@@ -4020,15 +4024,15 @@ msgstr ""
 msgid "Image processing"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Image sizes"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "ImageMagick"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "ImageMagick library is not loaded"
 msgstr ""
 
@@ -4329,7 +4333,7 @@ msgstr ""
 msgid "It could be an integer (days from original publishing date it will "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "It has to be a .PNG image"
 msgstr ""
 
@@ -4343,7 +4347,7 @@ msgstr ""
 msgid "It may be useful to know what queries users make."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "It's faster and consumes less resources than GD library."
 msgstr ""
 
@@ -4360,7 +4364,7 @@ msgstr ""
 msgid "Items"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "JPEG quality"
 msgstr ""
 
@@ -4404,7 +4408,7 @@ msgstr ""
 msgid "June"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "KB"
 msgstr ""
 
@@ -4420,7 +4424,7 @@ msgstr ""
 msgid "Keep local copies"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Keep original image, unaltered after uploading."
 msgstr ""
 
@@ -5178,20 +5182,12 @@ msgstr ""
 msgid "Maximum items removed per run"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Maximum size"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Maximum size PHP configuration allows: %d KB"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Maximum size: this field is required"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Maximum size: this field must only contain numeric characters"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -5207,6 +5203,7 @@ msgid "Media"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Media Settings"
 msgstr ""
 
@@ -5816,7 +5813,7 @@ msgstr ""
 msgid "No version was specified."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "No white background will be added to keep the size."
 msgstr ""
 
@@ -5843,8 +5840,8 @@ msgid "Non-profit - Volunteer"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
-#: oc-admin/themes/modern/settings/media.php
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "None"
@@ -5858,16 +5855,8 @@ msgstr ""
 msgid "None yet"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Normal size"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Normal size: is not in the correct format"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Normal size: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -6194,7 +6183,7 @@ msgstr ""
 msgid "Orders appear here as soon as a payment plugin takes its first payment."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Original size"
 msgstr ""
 
@@ -6533,7 +6522,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Position"
 msgstr ""
 
@@ -6558,20 +6547,12 @@ msgstr ""
 msgid "Preview"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Preview Watermark"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Preview size"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Preview size: is not in the correct format"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Preview size: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
@@ -7050,7 +7031,7 @@ msgstr ""
 msgid "Restaurant - Food Service"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Restrictions"
 msgstr ""
 
@@ -7621,7 +7602,7 @@ msgid ""
 "the folder permissions so the web server user can write to it."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Shopclass doesn't check the watermark image size"
 msgstr ""
 
@@ -8066,19 +8047,23 @@ msgid "Testing…"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Text"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Text Color"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Text angle"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Text offset_x"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Text offset_y"
 msgstr ""
 
@@ -8323,7 +8308,7 @@ msgid ""
 "if you need "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid ""
 "The sizes listed below determine the maximum dimensions in pixels to use "
 "when uploading a image."
@@ -8656,16 +8641,8 @@ msgstr ""
 msgid "Thu"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Thumbnail size"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Thumbnail size: is not in the correct format"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/media.php
-msgid "Thumbnail size: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
@@ -8778,11 +8755,11 @@ msgstr ""
 msgid "Tools"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Top Left"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Top Right"
 msgstr ""
 
@@ -9147,7 +9124,7 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Uploaded images will be saved in JPG/JPEG format, "
 msgstr ""
 
@@ -9187,7 +9164,7 @@ msgstr ""
 msgid "Url for edit listing"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Use ImageMagick instead of GD library"
 msgstr ""
 
@@ -9520,31 +9497,31 @@ msgstr ""
 msgid "Warn about expiration"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark Height"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark Image Settings"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark Text"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark Text Settings"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark Width"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Watermark type"
 msgstr ""
 
@@ -10154,7 +10131,7 @@ msgstr ""
 msgid "previously approved comments"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/media.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "px"
 msgstr ""
 
