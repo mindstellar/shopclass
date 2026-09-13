@@ -120,6 +120,7 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   changed since it loaded, staying quiet until something has.
 - A preference-backed page writes only the values that actually differ, so a save that
   changes nothing says so instead of reporting success.
+- Locations shows one level at a time, 50 rows a page, with a path, listing counts and status; its page-level global JS functions are removed.
 
 ### Fixed
 

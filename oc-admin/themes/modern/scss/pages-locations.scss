@@ -1,0 +1,374 @@
+// =============================================================================
+// Locations (settings/locations.php): one level of the tree, its path, and the
+// add/edit/delete/import forms shown inline or in a dialog.
+// Colour through var(--osc-*) only; directions through logical properties.
+// =============================================================================
+
+// ---- Path and head ----------------------------------------------------------
+.loc-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  justify-content: space-between;
+  margin-block-end: 1rem;
+}
+
+.loc-path ol {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 1.0625rem;
+  gap: .25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.loc-path li {
+  align-items: center;
+  display: inline-flex;
+  gap: .25rem;
+
+  & + li::before {
+    color: var(--osc-ink-muted);
+    content: "\f285"; // chevron-right
+    font-family: "bootstrap-icons";
+    font-size: .75em;
+    line-height: 1;
+  }
+
+  &:dir(rtl) + li::before {
+    transform: scaleX(-1);
+  }
+
+  a {
+    color: var(--osc-bronze);
+    text-decoration-line: none;
+
+    &:hover {
+      text-decoration-line: underline;
+    }
+  }
+
+  [aria-current] {
+    color: var(--osc-ink);
+    font-weight: 600;
+  }
+}
+
+.loc-path [aria-current]:focus {
+  outline: none;
+}
+
+.loc-path [aria-current]:focus-visible {
+  border-radius: $border-radius-sm;
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
+// ---- Toolbar ----------------------------------------------------------------
+.loc-toolbar {
+  #bulk-actions {
+    margin-block-end: 0;
+  }
+}
+
+.loc-count {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0;
+}
+
+// ---- Table ------------------------------------------------------------------
+.loc-list-region {
+  transition: opacity 150ms ease-out;
+
+  &[aria-busy="true"] {
+    opacity: .55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.loc-table-wrap {
+  overflow-x: auto;
+}
+
+.loc-table {
+  margin-block-end: 0;
+
+  > tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .col-bulkactions {
+    inline-size: 2.75rem;
+  }
+}
+
+.loc-col-name {
+  min-inline-size: 12rem;
+}
+
+.table > tbody .loc-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+}
+
+.table > tbody a.loc-name {
+  align-items: baseline;
+  display: inline-flex;
+  gap: .3rem;
+
+  &:hover .loc-drill {
+    color: var(--osc-bronze);
+    transform: translateX(2px);
+  }
+
+  &:hover .loc-drill:dir(rtl) {
+    transform: scaleX(-1) translateX(2px);
+  }
+}
+
+.loc-drill {
+  color: var(--osc-ink-muted);
+  font-size: .75rem;
+  transition: transform 150ms ease-out, color 150ms ease-out;
+
+  &:dir(rtl) {
+    transform: scaleX(-1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.loc-slug {
+  color: var(--osc-ink-muted);
+  display: inline-block;
+  font-size: .8125rem;
+  margin-inline-start: .6rem;
+  overflow-wrap: anywhere;
+}
+
+.loc-col-count,
+.loc-table th.col-numeric {
+  inline-size: 1%;
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
+.loc-col-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.loc-col-status,
+.loc-col-actions {
+  inline-size: 1%;
+  white-space: nowrap;
+}
+
+.loc-col-actions {
+  text-align: end;
+}
+
+.table > tbody a.loc-edit {
+  align-items: center;
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  font-size: .875rem;
+  gap: .35rem;
+  padding: .25rem .5rem;
+
+  &:hover {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-bronze);
+    text-decoration-line: none;
+  }
+}
+
+// ---- Forms ------------------------------------------------------------------
+.loc-inline-form {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  margin-block-end: 1.5rem;
+  max-inline-size: 34rem;
+}
+
+.loc-dialog {
+  inline-size: min(32rem, calc(100vw - 2rem));
+}
+
+.loc-form {
+  .osc-dialog-title {
+    line-height: 1.4;
+  }
+
+  .osc-dialog-text + .osc-dialog-text {
+    margin-block-start: .5rem;
+  }
+
+  .osc-dialog-text + .loc-field {
+    margin-block-start: 1rem;
+  }
+}
+
+.loc-form-danger .osc-dialog-title > i {
+  color: var(--osc-danger);
+}
+
+.loc-form-context {
+  color: var(--osc-ink-muted);
+  margin: -.35rem 0 1rem;
+}
+
+.loc-field {
+  margin-block-end: 1rem;
+
+  &:last-child {
+    margin-block-end: 0;
+  }
+
+  .form-text {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    margin: .35rem 0 0;
+  }
+}
+
+.loc-code-input {
+  inline-size: 6rem;
+  text-transform: uppercase;
+}
+
+.loc-form-error,
+.loc-form-notice {
+  align-items: flex-start;
+  border-radius: $border-radius;
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 1rem;
+  padding: .6rem .75rem;
+
+  &::before {
+    font-family: "bootstrap-icons";
+    line-height: 1.5;
+  }
+}
+
+.loc-form-error {
+  background-color: var(--osc-danger-tint);
+  color: var(--osc-danger);
+
+  &::before {
+    content: "\f336"; // exclamation-octagon-fill
+  }
+}
+
+.loc-form-notice {
+  background-color: var(--osc-bench-sunk);
+  color: var(--osc-ink);
+  margin-block-start: 1rem;
+
+  &::before {
+    color: var(--osc-ink-muted);
+    content: "\f430"; // info-circle-fill
+  }
+}
+
+// Delete sits under its own rule, away from Save.
+.loc-form-aside {
+  border-block-start: 1px solid var(--osc-rule);
+  padding: .85rem 1.35rem;
+}
+
+.loc-delete-link {
+  color: var(--osc-danger);
+  font-size: .875rem;
+  text-decoration-line: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-danger);
+    text-decoration-line: underline;
+  }
+}
+
+// ---- Phones: each row becomes name + edit, with counts and status beneath ----
+@media (max-width: 575.98px) {
+  .loc-table {
+    thead {
+      display: none;
+    }
+
+    > tbody > tr:not(.osc-table-empty-row) {
+      align-items: center;
+      background-color: var(--osc-bench);
+      border-block-end: 1px solid var(--osc-rule);
+      display: flex;
+      flex-wrap: wrap;
+      padding-block: .5rem;
+
+      &:last-child {
+        border-block-end: 0;
+      }
+
+      > td {
+        border-block-end: 0;
+        display: block;
+        padding-block: .15rem;
+      }
+
+      > .col-bulkactions {
+        flex: 0 0 2.75rem;
+      }
+
+      // A full-width break after Edit, so the counts always start a second line.
+      &::after {
+        content: "";
+        flex-basis: 100%;
+        order: 3;
+      }
+
+      > .loc-col-name {
+        flex: 1 1 0;
+        min-inline-size: 0;
+        order: 1;
+      }
+
+      > .loc-col-actions {
+        flex: 0 0 auto;
+        inline-size: auto;
+        order: 2;
+      }
+
+      > .loc-col-count,
+      > .loc-col-status {
+        color: var(--osc-ink-muted);
+        font-size: .8125rem;
+        inline-size: auto;
+        order: 4;
+        padding-inline: 0 1rem;
+      }
+
+      > .loc-col-count::before {
+        content: attr(data-col-name) " ";
+      }
+
+      > .loc-col-count:nth-child(3) {
+        margin-inline-start: 3.25rem;
+      }
+    }
+  }
+
+  .loc-slug {
+    display: block;
+    margin-inline-start: 0;
+  }
+}
