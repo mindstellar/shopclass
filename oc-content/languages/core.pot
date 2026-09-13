@@ -4157,35 +4157,35 @@ msgstr ""
 msgid "Inactive"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include categories"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include categories with cities"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include categories with regions"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include cities"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include countries"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include in sitemap"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include pages"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Include regions"
 msgstr ""
 
@@ -4988,7 +4988,7 @@ msgstr ""
 msgid "Maintenance mode is: <strong>%s</strong>"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Make a backup before changing your robots.txt file."
 msgstr ""
 
@@ -5949,7 +5949,7 @@ msgstr ""
 msgid "November"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid ""
 "Number of URLs per XML item sitemap file. Extra listings roll into "
 "additional "
@@ -7144,8 +7144,8 @@ msgstr ""
 #: oc-admin/themes/modern/items/settings.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/settings/sitemap.php
 #: oc-admin/themes/modern/users/settings.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Save changes"
@@ -7163,7 +7163,7 @@ msgstr ""
 msgid "Save pricing"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Save robots.txt"
 msgstr ""
 
@@ -7782,6 +7782,7 @@ msgid "Sitemap"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "Sitemap settings"
 msgstr ""
 
@@ -8895,11 +8896,11 @@ msgstr ""
 msgid "URL"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "URLs"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "URLs per sitemap file"
 msgstr ""
 
@@ -10186,10 +10187,11 @@ msgid "reporters"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt contents"
 msgstr ""
 

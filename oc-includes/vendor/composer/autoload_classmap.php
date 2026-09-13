@@ -829,6 +829,7 @@ return array(
     'mindstellar\\admin\\form\\MailServerSettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php',
     'mindstellar\\admin\\form\\MainSettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/form/MainSettingsForm.php',
     'mindstellar\\admin\\form\\PermalinkSettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php',
+    'mindstellar\\admin\\form\\SitemapSettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php',
     'mindstellar\\admin\\form\\SpamSettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/form/SpamSettingsForm.php',
     'mindstellar\\admin\\form\\store\\PreferenceStore' => $baseDir . '/oc-includes/osclass/classes/admin/form/store/PreferenceStore.php',
     'mindstellar\\admin\\form\\store\\Store' => $baseDir . '/oc-includes/osclass/classes/admin/form/store/Store.php',

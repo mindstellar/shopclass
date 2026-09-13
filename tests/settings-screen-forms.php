@@ -118,6 +118,8 @@ $GLOBALS['fakeRoot'] = rtrim((string)tempnam(sys_get_temp_dir(), 'oscroot_'), '/
 @mkdir($GLOBALS['fakeRoot']);
 register_shutdown_function(static function () {
     @unlink($GLOBALS['fakeRoot'] . '/.htaccess');
+    @unlink($GLOBALS['fakeRoot'] . '/robots.txt');
+    @rmdir($GLOBALS['fakeRoot'] . '/robots.txt');
     @rmdir($GLOBALS['fakeRoot']);
 });
 if (!function_exists('osc_base_path')) {
@@ -158,6 +160,24 @@ if (!function_exists('osc_calculate_location_slug')) {
     function osc_calculate_location_slug($type)
     {
         $GLOBALS['effects'][] = 'slug:' . $type;
+    }
+}
+if (!function_exists('osc_sitemap_clear_cache')) {
+    function osc_sitemap_clear_cache()
+    {
+        $GLOBALS['effects'][] = 'sitemap:clear';
+    }
+}
+if (!function_exists('osc_sitemap_default_robots_txt')) {
+    function osc_sitemap_default_robots_txt()
+    {
+        return "User-agent: *\nDisallow: /oc-admin/\n";
+    }
+}
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($withIndex = false)
+    {
+        return 'https://example.test/';
     }
 }
 foreach (array('premium', 'slot', 'item_upgrades', 'seller_limits') as $product) {
@@ -261,6 +281,7 @@ foreach (array(
     'SpamnBots',
     'Billing',
     'Permalinks',
+    'Sitemap',
 ) as $screen) {
     require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettings' . $screen . '.php';
 }
@@ -272,6 +293,7 @@ use mindstellar\admin\form\LatestSearchSettingsForm;
 use mindstellar\admin\form\MailServerSettingsForm;
 use mindstellar\admin\form\MainSettingsForm;
 use mindstellar\admin\form\PermalinkSettingsForm;
+use mindstellar\admin\form\SitemapSettingsForm;
 use mindstellar\admin\form\SpamSettingsForm;
 use mindstellar\admin\form\store\PreferenceStore;
 use mindstellar\settings\SettingsPageRegistry;
@@ -558,6 +580,23 @@ pin(
     array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login'),
     keymap(SpamSettingsForm::registerAkismet()) + keymap(SpamSettingsForm::registerAlerts())
 );
+// The sitemap readers ask for these exact keys in the osclass section, and robots.txt is a
+// file: a preference row under its name would be a second copy nothing reads.
+pin(
+    'the sitemap settings, every one under its own name',
+    array(
+        'sitemap_number'      => 'osclass/sitemap_number',
+        'sitemap_categories'  => 'osclass/sitemap_categories',
+        'sitemap_pages'       => 'osclass/sitemap_pages',
+        'sitemap_cities'      => 'osclass/sitemap_cities',
+        'sitemap_regions'     => 'osclass/sitemap_regions',
+        'sitemap_countries'   => 'osclass/sitemap_countries',
+        'sitemap_cat_regions' => 'osclass/sitemap_cat_regions',
+        'sitemap_cat_city'    => 'osclass/sitemap_cat_city',
+    ),
+    keymap(SitemapSettingsForm::register())
+);
+pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsForm::registerRobots()));
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -1033,6 +1072,103 @@ check(
 );
 unset($_SERVER['SERVER_SOFTWARE']);
 
+harness_section('sitemap, and the robots.txt it writes');
+
+// Nothing saved yet: the count is the default and categories and pages are included, because
+// the sitemap itself treats an unset preference that way.
+$run = drive('CAdminSettingsSitemap', 'sitemap');
+pin('the screen is drawn', array('settings/sitemap.php'), $run['views']);
+check('an unsaved count shows the default', strpos($run['drawn'], 'name="sitemap_number" class="input-text field-num" value="5000"') !== false);
+check('categories show included before they are ever saved', strpos($run['drawn'], 'name="sitemap_categories" id="sitemap_categories" value="1" checked') !== false);
+check('and so do pages', strpos($run['drawn'], 'name="sitemap_pages" id="sitemap_pages" value="1" checked') !== false);
+check('while a location toggle starts off', strpos($run['drawn'], 'name="sitemap_cities" id="sitemap_cities" value="1" />') !== false);
+check('the robots.txt box starts from the default body', strpos($run['drawn'], "Disallow: /oc-admin/\n</textarea>") !== false);
+
+$sitemap = array(
+    'sitemap_number'     => '1234',
+    'sitemap_categories' => '1',
+    'sitemap_cities'     => '1',
+);
+$run = drive('CAdminSettingsSitemap', 'sitemap_settings_post', $sitemap);
+pin('the save is CSRF-checked', array('sitemap_settings_post'), $run['csrf']);
+pin('the count lands as a number', array('1234', 'INTEGER'), pref($admin, 'sitemap_number'));
+pin('a ticked toggle is a boolean', array('1', 'BOOLEAN'), pref($admin, 'sitemap_cities'));
+pin('an unticked default-on toggle stores the zero that switches it off', array('0', 'BOOLEAN'), pref($admin, 'sitemap_pages'));
+pin('and an unticked location toggle a zero too', array('0', 'BOOLEAN'), pref($admin, 'sitemap_cat_city'));
+pin('the cached sitemap is cleared exactly once', array('sitemap:clear'), $run['effects']);
+pin('the save reports itself once', array('ok:Sitemap settings have been updated'), flashed($run));
+pin('and goes back to the screen', array('https://example.test/oc-admin/index.php?page=settings&action=sitemap'), $run['redirects']);
+$run = drive('CAdminSettingsSitemap', 'sitemap');
+check('pages opted out stay opted out on the next draw', strpos($run['drawn'], 'name="sitemap_pages" id="sitemap_pages" value="1" />') !== false);
+
+// Corrected rather than refused, exactly as getParamInt() and the clamp did.
+foreach (array(
+    array('', '5000', 'a blank count is the default'),
+    array('0', '5000', 'so is a zero'),
+    array('-7', '5000', 'and a negative one'),
+    array('abc', '5000', 'and one with no number in it'),
+    array('2.5', '2', 'a decimal is stored whole'),
+    array('999999', (string)Sitemap::MAX_SITEMAP_URLS, 'and a count past one file\'s limit is held to it'),
+) as $case) {
+    $run = drive('CAdminSettingsSitemap', 'sitemap_settings_post', array('sitemap_number' => $case[0]) + $sitemap);
+    pin($case[2], array($case[1], 'INTEGER'), pref($admin, 'sitemap_number'));
+}
+pin('none of them is a refusal', array('ok:Sitemap settings have been updated'), flashed($run));
+
+// A zero written before the clamp existed reads as the default rather than as a zero box.
+seed_pref($admin, 'sitemap_number', '0', 'INTEGER');
+osc_reset_preferences();
+$run = drive('CAdminSettingsSitemap', 'sitemap');
+check('a stored zero draws the default', strpos($run['drawn'], 'name="sitemap_number" class="input-text field-num" value="5000"') !== false);
+
+$robots = $GLOBALS['fakeRoot'] . '/robots.txt';
+@unlink($robots);
+$typed = "User-agent: *\r\nDisallow: /x?a=1&b=2\r\n# keep <this>\r\n";
+$run   = drive('CAdminSettingsSitemap', 'sitemap_robots_post', array('sitemap_robots' => $typed));
+pin('the robots save is CSRF-checked', array('sitemap_robots_post'), $run['csrf']);
+// Raw: the XSS filter would turn the & into &amp; and delete the <angle-bracketed> word, and the
+// trim every declared box gets would drop the final newline.
+pin(
+    'robots.txt is written as typed, with its line endings made the file\'s own',
+    "User-agent: *\nDisallow: /x?a=1&b=2\n# keep <this>\n",
+    (string)file_get_contents($robots)
+);
+pin('and the write says so', array('ok:robots.txt has been updated'), flashed($run));
+pin('a written file goes back to the screen', 1, count($run['redirects']));
+check('the box is stored in no preference row', pref($admin, 'sitemap_robots') === null);
+pin('and clears nothing: the sitemap did not change', array(), $run['effects']);
+
+$run = drive('CAdminSettingsSitemap', 'sitemap');
+check('the next draw shows the file, escaped', strpos($run['drawn'], "Disallow: /x?a=1&amp;b=2\n# keep &lt;this&gt;\n</textarea>") !== false);
+
+// A root with no folder under it: nothing there can be written, whoever runs this.
+$realRoot             = $GLOBALS['fakeRoot'];
+$GLOBALS['fakeRoot']  = $realRoot . '/missing';
+$run = drive('CAdminSettingsSitemap', 'sitemap_robots_post', array('sitemap_robots' => "User-agent: refused\n"));
+$GLOBALS['fakeRoot']  = $realRoot;
+pin(
+    'an unwritable robots.txt is refused',
+    array('warning:robots.txt is not writable. Fix the file or folder permissions and try again'),
+    flashed($run)
+);
+pin('with no redirect', array(), $run['redirects']);
+pin('and the screen is redrawn', array('settings/sitemap.php'), $run['views']);
+check('with what was typed still in the box', strpos($run['drawn'], "User-agent: refused\n</textarea>") !== false);
+check('and its save button disabled', strpos($run['drawn'], 'disabled="disabled"') !== false);
+pin('the file that is there is untouched', "User-agent: *\nDisallow: /x?a=1&b=2\n# keep <this>\n", (string)file_get_contents($robots));
+
+// A write that fails after the check passed: robots.txt is a folder, which is writable and
+// cannot be written as a file.
+unlink($robots);
+mkdir($robots);
+set_error_handler(static fn () => true, E_WARNING);
+$run = drive('CAdminSettingsSitemap', 'sitemap_robots_post', array('sitemap_robots' => "User-agent: failed\n"));
+restore_error_handler();
+rmdir($robots);
+pin('a write that fails is reported', array('error:robots.txt could not be saved'), flashed($run));
+pin('and is not treated as saved', array(), $run['redirects']);
+check('the box comes back with what was typed', strpos($run['drawn'], "User-agent: failed\n</textarea>") !== false);
+
 /* ---------------------------------------------------------------------------------------
  * What the page around the form still reaches for. A declared field's id is derived from
  * its name -- field-<name> -- while the hand-written view it replaced wrote its own. Where
@@ -1053,6 +1189,7 @@ $screenViews = array(
     'settings/spamNbots.php'  => array('CAdminSettingsSpamnBots', 'spamNbots'),
     'settings/billing.php'    => array('CAdminSettingsBilling', 'billing'),
     'settings/permalinks.php' => array('CAdminSettingsPermalinks', 'permalinks'),
+    'settings/sitemap.php'    => array('CAdminSettingsSitemap', 'sitemap'),
 );
 $drawn = array();
 foreach ($screenViews as $view => $screen) {
@@ -1088,6 +1225,28 @@ check(
 check(
     'and it is hidden and shown by the shared attribute rather than a listener of its own',
     strpos($drawn['settings/permalinks.php'], 'id="custom_rules" data-osc-depends="rewrite_enabled"') !== false
+);
+// No script on the sitemap screen reaches for these today, but a forked theme's copy may, and
+// the declared defaults would have moved every one of them to field-<name>.
+foreach (array(
+    'id="sitemap_number"',
+    'id="submit_sitemap_settings"',
+    'id="sitemap_robots"',
+    'name="settings_form"',
+    'name="sitemap_robots_form"',
+) as $needle) {
+    check('the sitemap screen still draws ' . $needle, strpos($drawn['settings/sitemap.php'], $needle) !== false);
+}
+foreach (array_keys(SitemapSettingsForm::TOGGLES) as $toggle) {
+    check('and the toggle id "' . $toggle . '"', strpos($drawn['settings/sitemap.php'], 'id="' . $toggle . '"') !== false);
+}
+check(
+    'the settings form posts the action it always did',
+    strpos($drawn['settings/sitemap.php'], 'name="settings_form"><input type="hidden" name="page" value="settings"/><input type="hidden" name="action" value="sitemap_settings_post"/>') !== false
+);
+check(
+    'and so does the robots.txt one',
+    strpos($drawn['settings/sitemap.php'], 'name="sitemap_robots_form"><input type="hidden" name="page" value="settings"/><input type="hidden" name="action" value="sitemap_robots_post"/>') !== false
 );
 
 $missing = array();
@@ -1130,6 +1289,38 @@ drive('CAdminSettingsBilling', 'billing');
 pin('the billing screen still exports whether billing is on', true, (bool)__get('billing_enabled'));
 drive('CAdminSettingsSpamnBots', 'spamNbots');
 pin('the spam screen still exports the Akismet key status', 3, (int)__get('akismet_status'));
+seed_pref($admin, 'sitemap_number', '777', 'INTEGER');
+seed_pref($admin, 'sitemap_categories', '1', 'BOOLEAN');
+seed_pref($admin, 'sitemap_pages', '0', 'BOOLEAN');
+seed_pref($admin, 'sitemap_cities', '1', 'BOOLEAN');
+seed_pref($admin, 'custom_urls', '[{"url":"https://example.test/a","freq":"daily","lastmod":"2026-01-02"}]');
+osc_reset_preferences();
+file_put_contents($GLOBALS['fakeRoot'] . '/robots.txt', "User-agent: *\n");
+drive('CAdminSettingsSitemap', 'sitemap');
+pin(
+    'the sitemap screen still exports its preferences, typed as they were',
+    array(
+        'sitemap_number'      => 777,
+        'sitemap_categories'  => true,
+        'sitemap_pages'       => false,
+        'sitemap_cities'      => true,
+        'sitemap_regions'     => false,
+        'sitemap_countries'   => false,
+        'sitemap_cat_regions' => false,
+        'sitemap_cat_city'    => false,
+    ),
+    __get('prefs')
+);
+pin('the robots.txt body', "User-agent: *\n", __get('robots_content'));
+pin('whether it can be written', true, __get('robots_writable'));
+pin('whether it exists', true, __get('robots_exists'));
+pin('the sitemap index address', 'https://example.test/sitemapindex.xml', __get('sitemap_index_url'));
+pin(
+    'and the custom URL list',
+    array(array('url' => 'https://example.test/a', 'freq' => 'daily', 'lastmod' => '2026-01-02')),
+    __get('custom_urls')
+);
+unlink($GLOBALS['fakeRoot'] . '/robots.txt');
 // Source scan, not proof: the keyword-block screen is a data table around its form and
 // drawing one needs half the admin theme, so the export is held at source level here.
 $keywordSrc = (string)file_get_contents(
@@ -1168,9 +1359,15 @@ $screens = array(
         'CAdminSettingsPermalinks.php',
         array('rewrite_enabled', 'rewrite_item_url', 'seo_url_search_prefix'),
     ),
+    'settings/sitemap.php'      => array(
+        'CAdminSettingsSitemap.php',
+        array('sitemap_number', 'sitemap_categories', 'sitemap_cat_city', 'sitemap_robots'),
+        array('custom_urls'),
+    ),
 );
 foreach ($screens as $view => $screen) {
     [$controller, $fields] = $screen;
+    $handWritten           = $screen[2] ?? array();
     $viewSrc = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/' . $view);
     $ctrlSrc = (string)file_get_contents(
         ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/' . $controller
@@ -1187,9 +1384,13 @@ foreach ($screens as $view => $screen) {
             !preg_match("/'name'\\s*=>\\s*'" . preg_quote($field, '/') . "'/", $viewSrc)
         );
     }
-    check(
-        $controller . ' has no osc_set_preference of its own',
-        strpos($ctrlSrc, 'osc_set_preference') === false
+    // A screen may keep a list that is not a settings form, and it may write that list and
+    // nothing else by hand.
+    preg_match_all("/osc_set_preference\\(\\s*('([^']*)')?/", $ctrlSrc, $writes);
+    pin(
+        $controller . ' writes no preference by hand' . ($handWritten === array() ? '' : ' but ' . implode(', ', $handWritten)),
+        array(),
+        array_values(array_diff($writes[2], $handWritten))
     );
 }
 

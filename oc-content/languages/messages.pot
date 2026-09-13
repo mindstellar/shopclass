@@ -2849,15 +2849,15 @@ msgstr ""
 msgid "optional"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt could not be saved"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt has been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
 msgstr ""
 

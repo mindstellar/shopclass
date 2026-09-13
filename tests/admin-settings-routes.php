@@ -119,4 +119,11 @@ foreach (array(
     check('routed: ' . $action, isset($routed[$action]));
 }
 
+/* The sitemap screen's two forms moved into a declaration, so the scan now finds their actions
+   there and nowhere else; name them so the move cannot take them out of its sight. */
+foreach (array('sitemap_settings_post', 'sitemap_robots_post') as $action) {
+    pin('scanned from SitemapSettingsForm.php: ' . $action, 'SitemapSettingsForm.php', $posted[$action] ?? '');
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
 exit(harness_result());

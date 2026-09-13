@@ -13,33 +13,18 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\SitemapSettingsForm;
+
 /**
- * Admin screen for the core XML sitemap generator: URLs-per-file and the
- * include toggles, custom-URL CRUD (the `custom_urls` JSON preference), a
- * robots.txt editor, and a manual regenerate / clear-cache action.
+ * Admin screen for the core XML sitemap generator. The settings and robots.txt forms are
+ * declared in SitemapSettingsForm; the custom-URL list (the `custom_urls` JSON preference)
+ * and the regenerate / clear-cache action are handled here.
  *
  * Class CAdminSettingsSitemap
  */
 class CAdminSettingsSitemap extends AdminSecBaseModel
 {
-    /** @var string[] Boolean include-toggle preference keys, all under the `sitemap` group. */
-    private static $toggleKeys = array(
-        'sitemap_categories',
-        'sitemap_pages',
-        'sitemap_cities',
-        'sitemap_regions',
-        'sitemap_countries',
-        'sitemap_cat_regions',
-        'sitemap_cat_city',
-    );
-
-    /**
-     * @var string[] Toggles that default to ON: categories and static pages are
-     *               core content, included unless the admin explicitly opts out.
-     *               (The location toggles above default to off/opt-in.)
-     */
-    private static $defaultOnToggleKeys = array('sitemap_categories', 'sitemap_pages');
-
     /** @var string[] Allowed `changefreq` values for a custom URL (sitemaps.org). */
     private static $allowedFreq = array('always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never');
 
@@ -62,24 +47,16 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
     {
         switch ($this->action) {
             case ('sitemap'):
-                $this->_exportView();
-                $this->doView('settings/sitemap.php');
+                $this->drawForms();
                 break;
             case ('sitemap_settings_post'):
                 osc_csrf_check();
 
-                $number = Params::getParamInt('sitemap_number');
-                if ($number <= 0) {
-                    $number = 5000;
+                $result = CoreSettings::attempt(SitemapSettingsForm::register());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SitemapSettingsForm::PAGE_ID, $result['values']);
+                    break;
                 }
-                $number = min($number, Sitemap::MAX_SITEMAP_URLS);
-                osc_set_preference('sitemap_number', $number, Sitemap::PREF_GROUP, 'INTEGER');
-
-                foreach (self::$toggleKeys as $key) {
-                    osc_set_preference($key, Params::getParam($key) != '' ? 1 : 0, Sitemap::PREF_GROUP, 'BOOLEAN');
-                }
-
-                osc_sitemap_clear_cache();
 
                 osc_add_flash_ok_message(_m('Sitemap settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=sitemap');
@@ -134,25 +111,14 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
             case ('sitemap_robots_post'):
                 osc_csrf_check();
 
-                $path     = $this->_robotsPath();
-                $writable = file_exists($path) ? is_writable($path) : is_writable(dirname($path));
-
-                if (!$writable) {
-                    osc_add_flash_error_message(
-                        _m('robots.txt is not writable. Fix the file or folder permissions and try again'),
-                        'admin'
-                    );
-                } else {
-                    // Raw, because robots.txt is a plain-text file, not markup: the default
-                    // XSS filter turns "Disallow: /x?a=1&b=2" into "&amp;" and deletes any
-                    // <angle-bracketed> word in a comment, both silently.
-                    $content = str_replace("\r\n", "\n", (string) Params::getParam('sitemap_robots', false, false));
-                    if (file_put_contents($path, $content, LOCK_EX) === false) {
-                        osc_add_flash_error_message(_m('robots.txt could not be saved'), 'admin');
-                    } else {
-                        osc_add_flash_ok_message(_m('robots.txt has been updated'), 'admin');
-                    }
+                // An unwritable file is refused in validation; a write that fails anyway is
+                // reported by the after_save, and either way the typed content comes back.
+                $result = CoreSettings::attempt(SitemapSettingsForm::registerRobots());
+                if ($result['errors'] !== array() || !SitemapSettingsForm::robotsWritten()) {
+                    $this->drawForms(SitemapSettingsForm::PAGE_ROBOTS, $result['values']);
+                    break;
                 }
+
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=sitemap');
                 break;
             case ('sitemap_regenerate'):
@@ -168,39 +134,35 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
     }
 
     /**
-     * Gather every value the template needs and export it to the view.
+     * Draw the screen: two declared forms, at most one of which is being handed back what
+     * was typed into it, beside the custom-URL list.
+     *
+     * @param string     $rejected the page id of the form that was refused, if any
+     * @param array|null $values   that form's submitted values
      *
      * @return void
      */
-    private function _exportView()
+    private function drawForms(string $rejected = '', ?array $values = null)
     {
-        $prefs = array('sitemap_number' => (int) osc_get_preference('sitemap_number', Sitemap::PREF_GROUP));
-        if ($prefs['sitemap_number'] <= 0) {
-            $prefs['sitemap_number'] = 5000;
-        }
-        foreach (self::$toggleKeys as $key) {
-            $prefs[$key] = osc_get_bool_preference($key, Sitemap::PREF_GROUP);
-        }
-        // Categories and pages default to on: an unset preference is "included",
-        // so the checkbox shows checked until the admin explicitly opts out.
-        foreach (self::$defaultOnToggleKeys as $key) {
-            $prefs[$key] = osc_get_preference($key, Sitemap::PREF_GROUP) !== '0';
-        }
+        $forms = SitemapSettingsForm::formVars($rejected, $values);
 
-        $path    = $this->_robotsPath();
-        $exists  = file_exists($path);
-        $content = $exists ? (string) file_get_contents($path) : '';
-        if (trim($content) === '') {
-            $content = osc_sitemap_default_robots_txt();
+        // The names these have always had: a replaced admin theme's own view still reads
+        // them, and View::_get() answers '' for a key nobody exported.
+        $shown = $forms['settings']['values'];
+        $prefs = array('sitemap_number' => (int) $shown['sitemap_number']);
+        foreach (array_keys(SitemapSettingsForm::TOGGLES) as $key) {
+            $prefs[$key] = !empty($shown[$key]);
         }
-        $writable = $exists ? is_writable($path) : is_writable(dirname($path));
+        $path = SitemapSettingsForm::robotsPath();
 
+        $this->_exportVariableToView('sitemap_forms', $forms);
         $this->_exportVariableToView('prefs', $prefs);
         $this->_exportVariableToView('custom_urls', $this->_customUrls());
-        $this->_exportVariableToView('robots_content', $content);
-        $this->_exportVariableToView('robots_writable', $writable);
-        $this->_exportVariableToView('robots_exists', $exists);
+        $this->_exportVariableToView('robots_content', (string) $forms['robots']['values'][SitemapSettingsForm::ROBOTS]);
+        $this->_exportVariableToView('robots_writable', SitemapSettingsForm::robotsWritable());
+        $this->_exportVariableToView('robots_exists', file_exists($path));
         $this->_exportVariableToView('sitemap_index_url', osc_base_url() . 'sitemapindex.xml');
+        $this->doView('settings/sitemap.php');
     }
 
     /**
@@ -230,16 +192,6 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
     {
         osc_set_preference('custom_urls', json_encode($list), Sitemap::PREF_GROUP, 'STRING');
         osc_sitemap_clear_cache();
-    }
-
-    /**
-     * Absolute path of the site's robots.txt.
-     *
-     * @return string
-     */
-    private function _robotsPath()
-    {
-        return osc_base_path() . 'robots.txt';
     }
 
     /**

@@ -107,6 +107,8 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   string. Nothing in core reads either.
 - Permalinks saves through a declaration too; writing `.htaccess` and rebuilding the rewrite
   cache run only after a successful save.
+- Sitemap saves through a declaration too; a robots.txt that cannot be written comes back
+  with what was typed instead of being discarded.
 - The friendly-URL structure boxes hide and show through the shared conditional-field
   attribute instead of a script of their own.
 - A declared settings page's action row follows the page as you scroll and counts what has

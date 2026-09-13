@@ -259,7 +259,7 @@ jobs:
       # guard in the source that no branch reaches is the same install as no guard.
       - name: Admin account form
         run: php tests/admin-account-form.php
-      # The nine settings screens that save through their declarations. Four of their
+      # The ten settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,
       # contact_attachment, purge_latest_searches -- so a key spelled wrong saves happily
@@ -270,8 +270,10 @@ jobs:
       # numbers are clamped rather than refused because a zero sign-in window shuts the form
       # for everyone. Permalinks adds the two save-time effects: the rewrite rules go to disk
       # and the rule cache is rebuilt once on a save and never on a refusal, or a rejected
-      # form leaves a .htaccess describing a structure nothing stored. It drives the
-      # controllers and reads t_preference back with raw SQL.
+      # form leaves a .htaccess describing a structure nothing stored. Sitemap writes
+      # robots.txt byte for byte (the trim every declared box gets would drop its final
+      # newline) and an unwritable file comes back with what was typed instead of being
+      # lost to a redirect. It drives the controllers and reads t_preference back with raw SQL.
       - name: Settings screen forms
         run: php tests/settings-screen-forms.php
       # A declared text field is read with the XSS check off, so without the default here

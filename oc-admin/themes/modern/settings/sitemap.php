@@ -10,6 +10,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/**
+ * The chrome around the declared sitemap settings and robots.txt forms. The custom-URL list
+ * and the regenerate button store nothing a declaration describes and are still drawn here.
+ */
+
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => __('Sitemap'),
@@ -17,21 +22,10 @@ osc_admin_page(array(
                     . 'include, any custom URLs to append, and the robots.txt that advertises it to search engines.'),
 ));
 
-$prefs           = __get('prefs');
-$custom_urls     = __get('custom_urls');
-$robots_content  = __get('robots_content');
-$robots_writable = __get('robots_writable');
+$forms             = __get('sitemap_forms');
+$custom_urls       = __get('custom_urls');
+$robots_writable   = __get('robots_writable');
 $sitemap_index_url = __get('sitemap_index_url');
-
-$sitemapChecks = array(
-    'sitemap_categories'  => __('Include categories'),
-    'sitemap_pages'       => __('Include pages'),
-    'sitemap_cities'      => __('Include cities'),
-    'sitemap_regions'     => __('Include regions'),
-    'sitemap_countries'   => __('Include countries'),
-    'sitemap_cat_regions' => __('Include categories with regions'),
-    'sitemap_cat_city'    => __('Include categories with cities'),
-);
 
 $freqOptions = array(
     'hourly'  => __('Hourly'),
@@ -53,35 +47,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <div id="sitemap-general-settings">
         <?php osc_admin_form_section(__('Sitemap settings')); ?>
-        <?php osc_admin_form_open(array(
-            'name'   => 'settings_form',
-            'page'   => 'settings',
-            'action' => 'sitemap_settings_post',
-        )); ?>
-                <?php
-                osc_admin_number(array(
-                    'id'     => 'sitemap_number',
-                    'name'   => 'sitemap_number',
-                    'label'  => __('URLs per sitemap file'),
-                    'value'  => $prefs['sitemap_number'],
-                    'min'    => 1,
-                    'suffix' => __('URLs'),
-                    'help'   => __('Number of URLs per XML item sitemap file. Extra listings roll into additional '
-                                   . 'sitemaps automatically. Keep this low if you hit memory or timeout errors.'),
-                ));
-                osc_admin_form_row_open(__('Include in sitemap'));
-                foreach ($sitemapChecks as $key => $label) {
-                    osc_admin_checkbox(array(
-                        'id'      => $key,
-                        'name'    => $key,
-                        'label'   => $label,
-                        'checked' => !empty($prefs[$key]),
-                    ));
-                }
-                osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_close(array(
-                    array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'submit_sitemap_settings')),
-                )); ?>
+        <?php osc_admin_settings_form($forms['settings']['id'], $forms['settings']); ?>
     </div>
 
     <div id="sitemap-custom-urls" class="separate-top">
@@ -169,29 +135,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <?php _e('robots.txt is not writable by the web server. Fix the file or folder permissions before saving changes here.'); ?>
             </div>
         <?php } ?>
-        <?php osc_admin_form_open(array(
-            'name'   => 'sitemap_robots_form',
-            'page'   => 'settings',
-            'action' => 'sitemap_robots_post',
-        )); ?>
-                <?php osc_admin_textarea(array(
-                    'id'        => 'sitemap_robots',
-                    'name'      => 'sitemap_robots',
-                    'label'     => __('robots.txt contents'),
-                    'value'     => $robots_content,
-                    'rows'      => 10,
-                    'width'     => 'key',
-                    'monospace' => true,
-                    'help_html' => '<span class="text-danger">'
-                        . osc_esc_html(__('Make a backup before changing your robots.txt file.')) . '</span>',
-                )); ?>
-                <?php osc_admin_form_close(array(
-                    array(
-                        'label' => __('Save robots.txt'),
-                        'type'  => 'submit',
-                        'attrs' => $robots_writable ? array() : array('disabled' => 'disabled'),
-                    ),
-                )); ?>
+        <?php osc_admin_settings_form($forms['robots']['id'], $forms['robots']); ?>
     </div>
 
     <?php osc_admin_action_section(array(
