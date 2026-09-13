@@ -942,7 +942,7 @@ a.loc-hit-name {
 
 .loc-outage-icon {
   color: var(--osc-ink-muted);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   line-height: 1;
 }
 
@@ -1179,6 +1179,30 @@ a.loc-hit-name {
 
 // ---- Phones: each row becomes name + edit, with counts and status beneath ----
 @media (max-width: 575.98px) {
+  // Drilled in: the path collapses to one link back to its parent level.
+  .loc-path-drilled li {
+    display: none;
+
+    &:nth-last-child(2) {
+      display: inline-flex;
+
+      &::before {
+        content: "\f284"; // chevron-left, points back
+        font-family: "bootstrap-icons";
+        font-size: .75em;
+        line-height: 1;
+      }
+
+      &:dir(rtl)::before {
+        transform: scaleX(-1);
+      }
+
+      a {
+        padding-block: .3rem;
+      }
+    }
+  }
+
   .loc-table {
     thead {
       display: none;

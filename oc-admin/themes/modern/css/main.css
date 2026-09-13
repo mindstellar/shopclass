@@ -13112,7 +13112,7 @@ ul.showing-results {
 .cat-drawer {
   background-color: var(--osc-bench);
   border-inline-start: 1px solid var(--osc-rule);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--osc-shadow-modal);
   color: var(--osc-ink);
   display: flex;
   flex-direction: column;
@@ -18672,7 +18672,7 @@ a.loc-hit-name:hover {
 
 .loc-outage-icon {
   color: var(--osc-ink-muted);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   line-height: 1;
 }
 
@@ -18886,6 +18886,24 @@ a.loc-hit-name:hover {
 }
 
 @media (max-width: 575.98px) {
+  .loc-path-drilled li {
+    display: none;
+  }
+  .loc-path-drilled li:nth-last-child(2) {
+    display: inline-flex;
+  }
+  .loc-path-drilled li:nth-last-child(2)::before {
+    content: "\f284";
+    font-family: "bootstrap-icons";
+    font-size: 0.75em;
+    line-height: 1;
+  }
+  .loc-path-drilled li:nth-last-child(2):dir(rtl)::before {
+    transform: scaleX(-1);
+  }
+  .loc-path-drilled li:nth-last-child(2) a {
+    padding-block: 0.3rem;
+  }
   .loc-table thead {
     display: none;
   }

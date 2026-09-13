@@ -70,7 +70,7 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
 ?>
 <div class="loc-list" data-loc-summary="<?php echo osc_esc_html($summary); ?>" data-loc-level="<?php echo osc_esc_html($level); ?>">
     <div class="loc-head">
-        <nav class="loc-path" aria-label="<?php echo osc_esc_html(__('Location path')); ?>">
+        <nav class="loc-path<?php echo $level !== 'country' ? ' loc-path-drilled' : ''; ?>" aria-label="<?php echo osc_esc_html(__('Location path')); ?>">
             <ol>
                 <?php if ($level === 'country') { ?>
                     <li><span aria-current="page"><?php _e('All countries'); ?></span></li>
