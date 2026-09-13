@@ -10,9 +10,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\location\LocationAdminView;
+
 /*
- * One level of the location tree: path, add action, the rows of one page and the pager.
- * Served inside the page and alone as ?partial=list, so every link is a plain GET URL.
+ * One level of the location tree: path, search, the rows of one page and the pager, or the
+ * everywhere-search hits. Served inside the page and alone as ?partial=list, so every link
+ * is a plain GET URL.
  */
 $loc   = __get('locations');
 $level = $loc['level'];
@@ -21,11 +24,14 @@ $url   = static fn (array $params = array()): string => $base . ($params === arr
     array_filter($params, static fn ($v): bool => $v !== '' && $v !== null && $v !== 0)
 ));
 
+$q           = $loc['q'];
+$scope       = $loc['scope'];
 $countryCode = $loc['country']['code'] ?? '';
 $regionId    = $loc['region']['id'] ?? 0;
-$view        = array(
-    'country' => $countryCode,
-    'region'  => $regionId,
+$parentName  = $level === 'city' ? ($loc['region']['name'] ?? '') : ($loc['country']['name'] ?? '');
+$here        = array('country' => $countryCode, 'region' => $regionId);
+$view        = $here + array(
+    'q'       => $scope === 'level' ? $q : '',
     'pageNum' => $loc['page'] > 1 ? $loc['page'] : null,
 );
 
@@ -36,17 +42,33 @@ $nouns = array(
 );
 $addLabels = array('country' => __('Add country'), 'region' => __('Add region'), 'city' => __('Add city'));
 
-if ($loc['found']) {
+if (!$loc['found']) {
+    $summary = __('Location not found');
+} elseif ($scope === 'all') {
+    $hitCount = count($loc['hits']['countries']) + count($loc['hits']['regions']) + count($loc['hits']['cities']);
+    $summary  = sprintf(__('Matches: %s'), number_format($hitCount));
+} else {
+    $total   = (int) $loc['total'];
+    $counted = $q === '' ? $nouns[$level]($total) : sprintf(array(
+        'country' => _n('%1$s country starting with “%2$s”', '%1$s countries starting with “%2$s”', $total),
+        'region'  => _n('%1$s region starting with “%2$s”', '%1$s regions starting with “%2$s”', $total),
+        'city'    => _n('%1$s city starting with “%2$s”', '%1$s cities starting with “%2$s”', $total),
+    )[$level], number_format($total), $q);
     $first   = $loc['total'] === 0 ? 0 : (($loc['page'] - 1) * $loc['per']) + 1;
     $last    = min($loc['total'], $loc['page'] * $loc['per']);
     $summary = $loc['total'] > $loc['per']
-        ? sprintf(__('Showing %1$s–%2$s of %3$s'), number_format($first), number_format($last), $nouns[$level]($loc['total']))
-        : $nouns[$level]($loc['total']);
-} else {
-    $summary = __('Location not found');
+        ? sprintf(__('Showing %1$s–%2$s of %3$s'), number_format($first), number_format($last), $counted)
+        : $counted;
 }
+
+$placeholders = array(
+    'country' => __('Search countries'),
+    'region'  => sprintf(__('Search regions in %s'), $parentName),
+    'city'    => sprintf(__('Search cities in %s'), $parentName),
+);
+$showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
 ?>
-<div class="loc-list" data-loc-summary="<?php echo osc_esc_html($summary); ?>">
+<div class="loc-list" data-loc-summary="<?php echo osc_esc_html($summary); ?>" data-loc-level="<?php echo osc_esc_html($level); ?>">
     <div class="loc-head">
         <nav class="loc-path" aria-label="<?php echo osc_esc_html(__('Location path')); ?>">
             <ol>
@@ -72,13 +94,62 @@ if ($loc['found']) {
                     'label'   => $addLabels[$level],
                     'url'     => $url($view + array('form' => 'add')),
                     'icon'    => 'bi-plus-lg',
-                    'variant' => $level === 'country' && $loc['total'] === 0 ? 'secondary' : 'primary',
+                    'variant' => $level === 'country' && $loc['levelTotal'] === 0 ? 'secondary' : 'primary',
                     'attrs'   => array('data-loc-form' => ''),
                 )); ?>
             </div>
         <?php } ?>
     </div>
 
+    <?php if ($showSearch) { ?>
+        <div class="loc-toolbar">
+            <?php osc_admin_form_open(array(
+                'method'     => 'get',
+                'page'       => 'settings',
+                'action'     => 'locations',
+                'fields'     => $here,
+                'class'      => 'loc-search',
+                'horizontal' => false,
+                'csrf'       => false,
+            )); ?>
+                <div class="loc-search-box">
+                    <label class="visually-hidden" for="loc-q"><?php echo osc_esc_html($placeholders[$level]); ?></label>
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input class="form-control" id="loc-q" name="q" type="search" autocomplete="off" spellcheck="false"
+                           maxlength="<?php echo LocationAdminView::MAX_QUERY; ?>" aria-keyshortcuts="/"
+                           value="<?php echo osc_esc_html($q); ?>"
+                           placeholder="<?php echo osc_esc_html($scope === 'all' ? __('Search all locations') : $placeholders[$level]); ?>"
+                           data-loc-placeholder-level="<?php echo osc_esc_html($placeholders[$level]); ?>"
+                           data-loc-placeholder-all="<?php echo osc_esc_html(__('Search all locations')); ?>"/>
+                    <kbd class="loc-search-key" aria-hidden="true">/</kbd>
+                </div>
+                <fieldset class="loc-scope">
+                    <legend class="visually-hidden"><?php _e('Search in'); ?></legend>
+                    <input type="radio" name="scope" id="loc-scope-level" value="" <?php echo $scope === 'level' ? 'checked' : ''; ?>/>
+                    <label for="loc-scope-level"><?php _e('This level'); ?></label>
+                    <input type="radio" name="scope" id="loc-scope-all" value="all" <?php echo $scope === 'all' ? 'checked' : ''; ?>/>
+                    <label for="loc-scope-all"><?php _e('Everywhere'); ?></label>
+                </fieldset>
+                <button type="submit" class="btn btn-secondary btn-sm loc-search-submit"><?php _e('Search'); ?></button>
+            <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
+
+            <?php if ($loc['initials'] !== null) {
+                $letter = mb_strlen($q) === 1 ? mb_strtoupper($q) : ''; ?>
+                <nav class="loc-az" aria-label="<?php echo osc_esc_html(__('Names starting with')); ?>">
+                    <ol>
+                        <li><a href="<?php echo osc_esc_html($url($here)); ?>" data-loc-nav
+                               <?php echo $q === '' ? 'aria-current="true"' : ''; ?>><?php _e('All'); ?></a></li>
+                        <?php foreach ($loc['initials'] as $char) { ?>
+                            <li><a href="<?php echo osc_esc_html($url($here + array('q' => $char))); ?>" data-loc-nav
+                                   <?php echo $letter === $char ? 'aria-current="true"' : ''; ?>><?php echo osc_esc_html($char); ?></a></li>
+                        <?php } ?>
+                    </ol>
+                </nav>
+            <?php } ?>
+        </div>
+    <?php } ?>
+
+    <div class="loc-body">
     <?php if (!$loc['found']) {
         osc_admin_empty(array(
             'icon'   => 'bi-geo-alt',
@@ -92,7 +163,68 @@ if ($loc['found']) {
                 'attrs' => array('data-loc-nav' => ''),
             ),
         ));
-    } elseif ($level === 'country' && $loc['total'] === 0) {
+    } elseif ($scope === 'all') {
+        $groups = array(
+            'city'    => array(__('Cities'), $loc['hits']['cities'], $loc['hitsMore']['cities']),
+            'region'  => array(__('Regions'), $loc['hits']['regions'], $loc['hitsMore']['regions']),
+            'country' => array(__('Countries'), $loc['hits']['countries'], $loc['hitsMore']['countries']),
+        ); ?>
+        <div class="loc-results">
+            <?php if ($hitCount === 0) {
+                osc_admin_empty(array(
+                    'icon'   => 'bi-search',
+                    'title'  => sprintf(__('Nothing named “%s” anywhere'), $q),
+                    'text'   => __('Names are matched from their first letters.'),
+                    'action' => array(
+                        'label' => __('Clear search'),
+                        'url'   => $url($here),
+                        'attrs' => array('data-loc-nav' => ''),
+                    ),
+                ));
+            }
+            foreach ($groups as $hitLevel => [$heading, $hits, $more]) {
+                if ($hits === array()) {
+                    continue;
+                } ?>
+                <section class="loc-hits" aria-labelledby="loc-hits-<?php echo $hitLevel; ?>">
+                    <h3 class="loc-hits-title" id="loc-hits-<?php echo $hitLevel; ?>"><?php echo osc_esc_html($heading); ?></h3>
+                    <ul class="loc-hits-list">
+                        <?php foreach ($hits as $hit) {
+                            $links = LocationAdminView::hitLinks($hitLevel, $hit); ?>
+                            <li class="loc-hit">
+                                <span class="loc-hit-main">
+                                    <?php if ($links['open'] !== null) { ?>
+                                        <a class="loc-hit-name" href="<?php echo osc_esc_html($url($links['open'])); ?>" data-loc-nav>
+                                            <?php echo osc_esc_html($hit['name']); ?>
+                                        </a>
+                                    <?php } else { ?>
+                                        <span class="loc-hit-name"><?php echo osc_esc_html($hit['name']); ?></span>
+                                    <?php } ?>
+                                    <span class="loc-hit-path<?php echo $hitLevel === 'country' ? ' osc-mono' : ''; ?>">
+                                        <?php echo osc_esc_html($hitLevel === 'country' ? $hit['code'] : implode(' › ', $links['path'])); ?>
+                                    </span>
+                                    <?php if (isset($hit['active']) && !$hit['active']) {
+                                        osc_admin_status('inactive', __('Hidden'));
+                                    } ?>
+                                </span>
+                                <?php if ($links['edit'] !== null) { ?>
+                                    <a class="loc-edit" href="<?php echo osc_esc_html($url($links['edit'])); ?>" data-loc-form
+                                       aria-label="<?php echo osc_esc_html(sprintf(__('Edit %s'), $hit['name'])); ?>">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i><?php _e('Edit'); ?>
+                                    </a>
+                                <?php } ?>
+                            </li>
+                        <?php } ?>
+                    </ul>
+                    <?php if ($more) { ?>
+                        <p class="loc-hits-more">
+                            <?php echo osc_esc_html(sprintf(__('Only the first %s are shown. Type more of the name to narrow it.'), LocationAdminView::HITS_PER_LEVEL)); ?>
+                        </p>
+                    <?php } ?>
+                </section>
+            <?php } ?>
+        </div>
+    <?php } elseif ($level === 'country' && $loc['levelTotal'] === 0) {
         osc_admin_empty(array(
             'icon'   => 'bi-globe2',
             'title'  => __('No locations yet'),
@@ -105,9 +237,23 @@ if ($loc['found']) {
                 'attrs'   => array('data-loc-form' => ''),
             ),
         ));
+    } elseif ($loc['rows'] === array() && $q !== '') {
+        osc_admin_empty(array(
+            'icon'   => 'bi-search',
+            'title'  => $level === 'country'
+                ? sprintf(__('No country named “%s”'), $q)
+                : sprintf(__('Nothing named “%1$s” in %2$s'), $q, $parentName),
+            'text'   => __('Names are matched from their first letters.'),
+            'action' => array(
+                'label' => __('Search everywhere'),
+                'url'   => $url($here + array('q' => $q, 'scope' => 'all')),
+                'icon'  => 'bi-search',
+                'attrs' => array('data-loc-nav' => '', 'data-loc-scope-all' => ''),
+            ),
+        ));
     } else {
         $hasRows = $loc['rows'] !== array();
-        $colspan = $level === 'country' ? 5 : ($level === 'region' ? 6 : 5);
+        $colspan = $level === 'region' ? 6 : 5;
         osc_admin_form_open(array(
             'method'     => 'get',
             'page'       => 'settings',
@@ -117,17 +263,20 @@ if ($loc['found']) {
             'horizontal' => false,
             'csrf'       => false,
         )); ?>
-            <?php if ($hasRows) { ?>
-                <div class="osc-toolbar osc-toolbar-between loc-toolbar">
-                    <?php osc_admin_bulk_actions(array('options_html' => static function () { ?>
-                        <select id="bulk_actions" name="form" class="select-box-extra form-select">
-                            <option value=""><?php _e('Bulk actions'); ?></option>
-                            <option value="delete"><?php _e('Delete'); ?></option>
-                        </select>
-                    <?php })); ?>
-                    <p class="loc-count"><?php echo osc_esc_html($summary); ?></p>
-                </div>
-            <?php } ?>
+            <div class="loc-tablebar">
+                <p class="loc-count"><?php echo osc_esc_html($summary); ?></p>
+                <?php if ($hasRows) { ?>
+                    <div class="loc-bulk" data-loc-bulk>
+                        <span class="loc-selected" data-loc-selected></span>
+                        <?php osc_admin_bulk_actions(array('options_html' => static function () { ?>
+                            <select id="bulk_actions" name="form" class="select-box-extra form-select">
+                                <option value=""><?php _e('Bulk actions'); ?></option>
+                                <option value="delete"><?php _e('Delete'); ?></option>
+                            </select>
+                        <?php })); ?>
+                    </div>
+                <?php } ?>
+            </div>
             <div class="loc-table-wrap">
                 <table class="table loc-table loc-table-<?php echo osc_esc_html($level); ?>">
                     <thead>
@@ -153,7 +302,6 @@ if ($loc['found']) {
                     </thead>
                     <tbody>
                     <?php if (!$hasRows) {
-                        $parentName = $level === 'city' ? $loc['region']['name'] : $loc['country']['name'];
                         osc_admin_table_empty($colspan, array(
                             'icon'   => 'bi-geo-alt',
                             'title'  => $level === 'city'
@@ -170,7 +318,6 @@ if ($loc['found']) {
                     <?php foreach ($loc['rows'] as $row) {
                         $id   = $level === 'country' ? $row['code'] : $row['id'];
                         $name = $row['name'];
-                        $edit = $url($view + array('form' => 'edit', 'id' => $id));
                         if ($level === 'country') {
                             $drill = $url(array('country' => $row['code']));
                             $meta  = $row['code'] . ($row['slug'] !== '' ? ' · ' . $row['slug'] : '');
@@ -180,7 +327,11 @@ if ($loc['found']) {
                         } else {
                             $drill = null;
                             $meta  = $row['slug'];
-                        } ?>
+                        }
+                        $edit    = '<a class="loc-edit" href="' . osc_esc_html($url($view + array('form' => 'edit', 'id' => $id)))
+                            . '" data-loc-form aria-label="' . osc_esc_html(sprintf(__('Edit %s'), $name)) . '">'
+                            . '<i class="bi bi-pencil" aria-hidden="true"></i>' . osc_esc_html(__('Edit')) . '</a>';
+                        $actions = osc_apply_filter('admin_locations_row_actions', array('edit' => $edit), $level, $row); ?>
                         <tr>
                             <td class="col-bulkactions">
                                 <input type="checkbox" name="id[]" value="<?php echo osc_esc_html($id); ?>"
@@ -218,10 +369,7 @@ if ($loc['found']) {
                                 </td>
                             <?php } ?>
                             <td class="loc-col-actions">
-                                <a class="loc-edit" href="<?php echo osc_esc_html($edit); ?>" data-loc-form
-                                   aria-label="<?php echo osc_esc_html(sprintf(__('Edit %s'), $name)); ?>">
-                                    <i class="bi bi-pencil" aria-hidden="true"></i><?php _e('Edit'); ?>
-                                </a>
+                                <?php echo is_array($actions) ? implode('', $actions) : $edit; ?>
                             </td>
                         </tr>
                     <?php } ?>
@@ -235,7 +383,8 @@ if ($loc['found']) {
             'per_page' => $loc['per'],
             'page'     => $loc['page'],
             'base_url' => $base,
-            'params'   => array_filter(array('country' => $countryCode, 'region' => $regionId)),
+            'params'   => array_filter($here + array('q' => $q)),
         ));
     } ?>
+    </div>
 </div>

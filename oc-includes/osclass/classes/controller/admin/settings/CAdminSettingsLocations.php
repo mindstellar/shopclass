@@ -17,6 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\location\LocationAdminQuery;
+use mindstellar\location\LocationAdminView;
 
 /**
  * Class CAdminSettingsLocations
@@ -96,13 +97,12 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->redirectTo($this->listUrl(array(
                 'country' => Params::getParamString('country_code'),
                 'region'  => Params::getParamInt('region'),
-                'pageNum' => Params::getParamInt('pageNum'),
-            )));
+            ) + $this->keep()));
         }
 
         $list = $this->listModel();
         $this->_exportVariableToView('locations', $list);
-        $form = $this->formModel($list);
+        $form = $this->formModel($list, $partial !== 'form');
         $this->_exportVariableToView('locationForm', $form);
 
         if (!$list['found']) {
@@ -136,31 +136,54 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $per      = LocationAdminQuery::DEFAULT_PER;
         $regionId = Params::getParamInt('region');
         $country  = strtoupper(trim(Params::getParamString('country_code') ?: Params::getParamString('country')));
+        // Bound as a LIKE prefix and escaped on output, so read without the tag filter.
+        $search = LocationAdminView::search(
+            Params::getParamString('q', false, false, false),
+            Params::getParamString('scope')
+        );
 
         $model = array(
-            'base'    => osc_admin_base_url(true) . '?page=settings&action=locations',
-            'level'   => 'country',
-            'found'   => true,
-            'missing' => null,
-            'country' => null,
-            'region'  => null,
+            'base'       => osc_admin_base_url(true) . '?page=settings&action=locations',
+            'level'      => 'country',
+            'found'      => true,
+            'missing'    => null,
+            'country'    => null,
+            'region'     => null,
+            'q'          => $search['q'],
+            'scope'      => $search['scope'],
+            'hits'       => null,
+            'hitsMore'   => null,
+            'levelTotal' => 0,
+            'initials'   => null,
         );
 
         if ($regionId > 0) {
             $model['level'] = 'city';
-            $fetch          = static fn (int $p): array => $query->cities($regionId, '', $p, $per);
+            $fetch          = static fn (string $q, int $p, int $n = 0): array => $query->cities($regionId, $q, $p, $n ?: $per);
         } elseif ($country !== '') {
             $model['level'] = 'region';
-            $fetch          = static fn (int $p): array => $query->regions($country, '', $p, $per);
+            $fetch          = static fn (string $q, int $p, int $n = 0): array => $query->regions($country, $q, $p, $n ?: $per);
         } else {
-            $fetch = static fn (int $p): array => $query->countries('', $p, $per);
+            $fetch = static fn (string $q, int $p, int $n = 0): array => $query->countries($q, $p, $n ?: $per);
         }
 
-        $result = $fetch($page);
-        // A page past the end (after a delete, or a stale link) shows the last page instead.
-        if ($result['rows'] === array() && $result['total'] > 0 && $page > 1) {
-            $result = $fetch((int) ceil($result['total'] / $per));
+        if ($search['scope'] === 'all') {
+            // Everywhere lists no rows of this level; one is read for its parent and total.
+            $result         = $fetch('', 1, 1);
+            $result['rows'] = array();
+            $split             = LocationAdminView::splitHits($query->searchAll($search['q'], LocationAdminView::HITS_PER_LEVEL + 1));
+            $model['hits']     = $split['hits'];
+            $model['hitsMore'] = $split['more'];
+        } else {
+            $result = $fetch($search['q'], $page);
+            // A page past the end (after a delete, or a stale link) shows the last page instead.
+            if ($result['rows'] === array() && $result['total'] > 0 && $page > 1) {
+                $result = $fetch($search['q'], (int) ceil($result['total'] / $per));
+            }
         }
+        $model['levelTotal'] = $search['q'] === '' || $search['scope'] === 'all'
+            ? $result['total']
+            : $fetch('', 1, 1)['total'];
 
         if ($model['level'] !== 'country') {
             $parent = $result['parent'];
@@ -180,6 +203,13 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             }
         }
 
+        if ($model['found'] && LocationAdminView::showAlphabet($model['levelTotal'], $search['scope'])) {
+            $model['initials'] = $query->initials(
+                $model['level'],
+                $model['level'] === 'city' ? $regionId : ($model['level'] === 'region' ? $country : null)
+            );
+        }
+
         return $model + array(
             'rows'  => $result['rows'],
             'total' => $result['total'],
@@ -191,12 +221,13 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     /**
      * The add/edit/delete/import form asked for with ?form=…, or null.
      *
-     * @param array<string,mixed> $list the list model the form belongs to
+     * @param array<string,mixed> $list       the list model the form belongs to
+     * @param bool                $withCounts false when the script fetches the edit form's counts itself
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    private function formModel(array $list): ?array
+    private function formModel(array $list, bool $withCounts): ?array
     {
         $kind = Params::getParamString('form');
         if (!in_array($kind, self::FORMS, true) || !$list['found']) {
@@ -209,7 +240,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         switch ($kind) {
             case 'edit':
-                $record = $query->record($level, Params::getParamString('id', false, false, false), false);
+                $record = $query->record($level, Params::getParamString('id', false, false, false), $withCounts);
                 if ($record === null) {
                     $form['error'] = __('This location no longer exists.');
                 }
@@ -242,7 +273,11 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                     static fn ($id): string => $level === 'country' ? strtoupper(trim((string) $id)) : (string) (int) $id,
                     $ids
                 )));
-                $form['record'] = count($form['ids']) === 1 ? $query->record($level, $form['ids'][0], false) : null;
+                $form['record']  = count($form['ids']) === 1 ? $query->record($level, $form['ids'][0], false) : null;
+                $form['confirm'] = LocationAdminView::confirmPhrase(
+                    $impact,
+                    $form['record'] === null ? null : (string) $form['record']['name']
+                );
                 break;
             case 'import':
                 $form['catalog'] = array();
@@ -317,7 +352,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $mCountries = new Country();
         $code       = Params::getParamString('country_code');
         $name       = Params::getParamString('e_country');
-        $back       = $this->listUrl(array('pageNum' => Params::getParamInt('pageNum')));
+        $back       = $this->listUrl($this->keep());
 
         if (!osc_validate_min($name, 1)) {
             $this->respond('error', _m('Country name cannot be blank'), $back);
@@ -350,7 +385,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (!isset($country['pk_c_code'])) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
-        $back = $this->listUrl(array('country' => $country['pk_c_code'], 'pageNum' => Params::getParamInt('pageNum')));
+        $back = $this->listUrl(array('country' => $country['pk_c_code']) + $this->keep());
 
         if (!osc_validate_min($regionName, 1)) {
             $this->respond('error', _m('Region name cannot be blank'), $back);
@@ -382,10 +417,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (!is_array($aRegion)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
-        $back = $this->listUrl(array(
-            'country' => $aRegion['fk_c_country_code'],
-            'pageNum' => Params::getParamInt('pageNum'),
-        ));
+        $back = $this->listUrl(array('country' => $aRegion['fk_c_country_code']) + $this->keep());
 
         if (!osc_validate_min($newRegion, 1)) {
             $this->respond('error', _m('Region name cannot be blank'), $back);
@@ -414,11 +446,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (!is_array($region)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
-        $back = $this->listUrl(array(
-            'country' => $region['fk_c_country_code'],
-            'region'  => $regionId,
-            'pageNum' => Params::getParamInt('pageNum'),
-        ));
+        $back = $this->listUrl(array('country' => $region['fk_c_country_code'], 'region' => $regionId) + $this->keep());
 
         if (!osc_validate_min($newCity, 1)) {
             $this->respond('error', _m('New city name cannot be blank'), $back);
@@ -456,8 +484,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $back   = $this->listUrl(array(
             'country' => is_array($region) ? $region['fk_c_country_code'] : '',
             'region'  => (int) $city['fk_i_region_id'],
-            'pageNum' => Params::getParamInt('pageNum'),
-        ));
+        ) + $this->keep());
 
         if (!osc_validate_min($newCity, 1)) {
             $this->respond('error', _m('City name cannot be blank'), $back);
@@ -535,8 +562,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $back = $this->listUrl(array(
             'country' => $level === 'country' ? '' : $country,
             'region'  => $level === 'city' ? $region : 0,
-            'pageNum' => Params::getParamInt('pageNum'),
-        ));
+        ) + $this->keep());
 
         if ($posted === array()) {
             $this->respond('error', $none, $back);
@@ -637,6 +663,18 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         }
         $this->redirectTo($redirect);
         exit;
+    }
+
+    /**
+     * The page and search a write came from, so its redirect lands back on them.
+     *
+     * @return array<string,string|int>
+     */
+    private function keep(): array
+    {
+        $search = LocationAdminView::search(Params::getParamString('q', false, false, false), '');
+
+        return array('q' => $search['q'], 'pageNum' => Params::getParamInt('pageNum'));
     }
 
     /**

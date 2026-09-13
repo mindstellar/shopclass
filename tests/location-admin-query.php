@@ -241,6 +241,26 @@ pin('"\\" matches only a literal backslash', array('Back\\slash'), array_column(
 pin('a lone "%" is not "everything"', 0, $q->cities($bigRegion, '%', 1, 50)['total']);
 pin('a lone "_" is not "any one character"', 0, $q->cities($bigRegion, '_', 1, 50)['total']);
 
+harness_section('initials()');
+
+pin('city initials, upper-cased, in order', array('5', 'B', 'S', 'T'), $q->initials('city', $bigRegion));
+$admin->query("INSERT INTO {$prefix}t_city (fk_i_region_id, s_name, s_slug, fk_c_country_code, b_active) VALUES ($aaSecond, '(Old) Mill', 'old-mill', 'AA', 1), ($aaSecond, 'łódź', 'lodz', 'AA', 1)");
+pin('punctuation skipped, multibyte upper-cased', array('V', 'Ł'), $q->initials('city', $aaSecond));
+$admin->query("DELETE FROM {$prefix}t_city WHERE fk_i_region_id = $aaSecond AND s_slug IN ('old-mill', 'lodz')");
+pin('region initials', array('1', 'B', 'R'), $q->initials('region', 'AA'));
+pin('country initials', array('A', 'B', 'G'), $q->initials('country', null));
+pin('more than max: no strip', null, $q->initials('city', $bigRegion, 3));
+pin('exactly max: strip', array('5', 'B', 'S', 'T'), $q->initials('city', $bigRegion, 4));
+pin('empty level: no strip', null, $q->initials('city', 999999999));
+$plan = osc_db_select(
+    'EXPLAIN SELECT DISTINCT UPPER(LEFT(s_name, 1)) AS i FROM ' . DB_TABLE_PREFIX . 't_city WHERE fk_i_region_id = ? ORDER BY i LIMIT 38',
+    array($bigRegion)
+);
+check('city initials read the region index', in_array($plan[0]['key'] ?? '', array('idx_region_name', 'fk_i_region_id'), true), (string) ($plan[0]['key'] ?? 'NULL'));
+$start = microtime(true);
+$q->initials('city', $bigRegion);
+check('city initials of a 20k region under 50 ms', (microtime(true) - $start) < 0.05);
+
 /* ---------------------------------------------------------------------------
  * searchAll()
  * ------------------------------------------------------------------------ */

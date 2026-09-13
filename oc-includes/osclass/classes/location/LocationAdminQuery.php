@@ -186,6 +186,48 @@ final class LocationAdminQuery
     }
 
     /**
+     * The distinct first letters and digits of the names at one level, upper-cased and in
+     * collation order, for a jump strip. Null when there are more than $max, or none.
+     *
+     * @param string          $level  country|region|city
+     * @param string|int|null $parent country code for regions, region id for cities
+     * @param int             $max
+     *
+     * @return array<int,string>|null
+     * @throws InvalidArgumentException on an unknown level
+     * @throws DbException
+     */
+    public function initials(string $level, string|int|null $parent, int $max = 36): ?array
+    {
+        self::assertLevel($level);
+        switch ($level) {
+            case 'country':
+                $sql    = 'SELECT DISTINCT UPPER(LEFT(s_name, 1)) AS i FROM ' . $this->table('t_country');
+                $params = array();
+                break;
+            case 'region':
+                $sql    = 'SELECT DISTINCT UPPER(LEFT(s_name, 1)) AS i FROM ' . $this->table('t_region') . ' WHERE fk_c_country_code = ?';
+                $params = array((string) $parent);
+                break;
+            default:
+                $sql    = 'SELECT DISTINCT UPPER(LEFT(s_name, 1)) AS i FROM ' . $this->table('t_city') . ' WHERE fk_i_region_id = ?';
+                $params = array((int) $parent);
+                break;
+        }
+        $limit = max(1, $max) + 2;
+        $out   = array();
+        foreach (osc_db_select($sql . ' ORDER BY i LIMIT ' . $limit, $params) as $row) {
+            $char = trim((string) $row['i']);
+            // Only letters and digits make a useful jump; names starting otherwise stay searchable.
+            if (preg_match('/^[\p{L}\p{N}]$/u', $char) === 1 && !in_array($char, $out, true)) {
+                $out[] = $char;
+            }
+        }
+
+        return $out === array() || count($out) > $max ? null : $out;
+    }
+
+    /**
      * Name-prefix search across all three levels, each with the names of its parents.
      *
      * @param string $q

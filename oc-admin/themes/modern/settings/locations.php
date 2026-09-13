@@ -35,14 +35,38 @@ osc_admin_page(array(
 osc_enqueue_script('admin-location');
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Locations')); ?>
+    <?php $inDrawer = is_array($locationForm) && in_array($locationForm['kind'], array('add', 'edit'), true)
+        && ($locationForm['kind'] === 'add' || $locationForm['record'] !== null); ?>
     <div class="locations-app"
+         data-ajax="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax'); ?>"
+         data-base="<?php echo osc_esc_html($locations['base']); ?>"
          data-i18n='<?php echo osc_esc_html(json_encode(array(
+             'loading'       => __('Loading…'),
              'loadError'     => __('The list could not be loaded. Check your connection and try again.'),
              'saveError'     => __('Something went wrong. Please try again.'),
              'nothingPicked' => __('Select at least one location to delete.'),
              'noAction'      => __('Choose a bulk action first.'),
+             'selected'      => __('Selected: %s'),
+             'countsError'   => __('Could not be counted'),
+             'slugTaken'     => __('%s already uses this slug. Saving makes one from the name instead.'),
+             'searchError'   => __('The search could not be run. Check your connection and try again.'),
+             'matches'       => __('Matches: %s'),
+             'cities'        => __('Cities'),
+             'regions'       => __('Regions'),
+             'countries'     => __('Countries'),
+             'edit'          => __('Edit'),
+             'editName'      => __('Edit %s'),
+             'hidden'        => __('Hidden'),
+             'nothingTitle'  => __('Nothing named “%s” anywhere'),
+             'nothingText'   => __('Names are matched from their first letters.'),
+             'clearSearch'   => __('Clear search'),
+             'hitsMore'      => sprintf(
+                 __('Only the first %s are shown. Type more of the name to narrow it.'),
+                 \mindstellar\location\LocationAdminView::HITS_PER_LEVEL
+             ),
+             'hitsLimit'     => \mindstellar\location\LocationAdminView::HITS_PER_LEVEL,
          ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
-        <?php if (is_array($locationForm)) { ?>
+        <?php if (is_array($locationForm) && !$inDrawer) { ?>
             <section class="loc-inline-form" aria-label="<?php echo osc_esc_html(__('Location form')); ?>">
                 <?php osc_current_admin_theme_path('settings/locations/form.php'); ?>
             </section>
@@ -51,6 +75,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_current_admin_theme_path('settings/locations/list.php'); ?>
         </div>
         <p id="loc-announce" class="visually-hidden" aria-live="polite"></p>
+        <div class="osc-drawer-backdrop<?php echo $inDrawer ? ' is-open' : ''; ?>" id="loc-drawer-backdrop"<?php echo $inDrawer ? '' : ' hidden'; ?>></div>
+        <div class="osc-drawer loc-drawer<?php echo $inDrawer ? ' is-open' : ''; ?>" id="loc-drawer" role="dialog" aria-modal="true"
+             aria-labelledby="loc-drawer-title"<?php echo $inDrawer ? '' : ' hidden'; ?>>
+            <?php if ($inDrawer) {
+                osc_current_admin_theme_path('settings/locations/form.php');
+            } ?>
+        </div>
         <dialog id="locationModal" class="osc-dialog loc-dialog"
                 aria-label="<?php echo osc_esc_html(__('Location form')); ?>"></dialog>
     </div>

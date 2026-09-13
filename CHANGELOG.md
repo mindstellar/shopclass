@@ -121,6 +121,7 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - A preference-backed page writes only the values that actually differ, so a save that
   changes nothing says so instead of reporting success.
 - Locations shows one level at a time, 50 rows a page, with a path, listing counts and status; its page-level global JS functions are removed.
+- Locations adds search (this level or everywhere) with an A–Z strip, edits in a side drawer, and asks for the name before a delete that removes listings.
 
 ### Fixed
 

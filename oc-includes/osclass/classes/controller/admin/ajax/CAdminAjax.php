@@ -1136,7 +1136,7 @@ class CAdminAjax extends AdminSecBaseModel
             switch ($action) {
                 case 'location_search':
                     return $query->searchAll(
-                        Params::getParamString('q', false, false, false),
+                        \mindstellar\location\LocationAdminView::search(Params::getParamString('q', false, false, false), 'all')['q'],
                         Params::getParamInt('per', 10)
                     );
                 case 'location_impact':

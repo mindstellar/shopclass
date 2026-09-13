@@ -1275,127 +1275,7 @@
 
 
 
-// ---- Slide-over drawer (edit) ----------------------------------------------
-// A drawer is an elevated overlay, so it earns a shadow (one of the system's
-// two). It slides from the inline-end edge and traps focus while open.
-.cat-drawer-backdrop {
-  background-color: rgba(0, 0, 0, .32);
-  inset: 0;
-  opacity: 0;
-  position: fixed;
-  transition: opacity var(--osc-duration-base, 200ms) var(--osc-ease);
-  visibility: hidden;
-  z-index: $zindex-modal-backdrop;
-}
-
-.cat-drawer {
-  background-color: var(--osc-bench);
-  border-inline-start: 1px solid var(--osc-rule);
-  box-shadow: -12px 0 32px rgba(0, 0, 0, .16);
-  display: flex;
-  flex-direction: column;
-  inline-size: min(30rem, 100%);
-  inset-block: 0;
-  inset-inline-end: 0;
-  position: fixed;
-  transform: translateX(100%);
-  transition: transform var(--osc-duration-base, 200ms) var(--osc-ease-out, cubic-bezier(0.22, 1, 0.36, 1));
-  z-index: $zindex-modal;
-
-  [dir="rtl"] & {
-    transform: translateX(-100%);
-  }
-}
-
-.categories-app.drawer-open {
-  .cat-drawer-backdrop {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .cat-drawer {
-    transform: translateX(0);
-  }
-}
-
-.cat-drawer-head {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--osc-rule);
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  padding: 1.1rem 1.25rem;
-}
-
-.cat-drawer-eyebrow {
-  color: var(--osc-ink-muted);
-  display: block;
-  font-size: .8125rem;
-  font-weight: 500;
-  letter-spacing: .01em;
-}
-
-.cat-drawer-title {
-  color: var(--osc-ink);
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.3;
-  margin: .1rem 0 0;
-  overflow-wrap: anywhere;
-}
-
-.cat-drawer-close {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: $border-radius;
-  color: var(--osc-ink-muted);
-  cursor: pointer;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 1.15rem;
-  height: 2rem;
-  justify-content: center;
-  width: 2rem;
-
-  &:hover,
-  &:focus-visible {
-    background-color: var(--osc-chrome-hover);
-    color: var(--osc-ink);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--osc-bronze);
-    outline-offset: -2px;
-  }
-}
-
-.cat-drawer-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 1.25rem;
-}
-
-// A quiet loading placeholder while the editor HTML is fetched.
-.cat-drawer-loading {
-  align-items: center;
-  color: var(--osc-ink-muted);
-  display: flex;
-  gap: .6rem;
-  justify-content: center;
-  padding: 3rem 1rem;
-
-  > i {
-    animation: cat-spin 700ms linear infinite;
-    font-size: 1.25rem;
-  }
-}
-
-@keyframes cat-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+// The slide-over drawer (.cat-drawer) is the shared .osc-drawer in ui-patterns.scss.
 
 // ---- Edit form inside the drawer -------------------------------------------
 // The markup comes from CategoryForm (field names are a hard contract); these
@@ -1575,14 +1455,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cat-drawer,
-  .cat-drawer-backdrop,
   .cat-disclosure > i {
     transition: none;
-  }
-
-  .cat-drawer-loading > i {
-    animation: none;
   }
 }
 
@@ -1602,11 +1476,6 @@
 @media (max-width: 34rem) {
   .categories-app {
     --cat-indent: 1.1rem;
-  }
-
-  // On narrow screens the drawer is full width.
-  .cat-drawer {
-    inline-size: 100%;
   }
 
   // The row becomes two lines: [handle · disclosure · name · actions] on top,

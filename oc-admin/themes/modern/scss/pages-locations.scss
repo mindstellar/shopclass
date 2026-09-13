@@ -1,6 +1,6 @@
 // =============================================================================
-// Locations (settings/locations.php): one level of the tree, its path, and the
-// add/edit/delete/import forms shown inline or in a dialog.
+// Locations (settings/locations.php): one level of the tree, its path and search,
+// the add/edit drawer and the delete/import dialogs.
 // Colour through var(--osc-*) only; directions through logical properties.
 // =============================================================================
 
@@ -67,17 +67,201 @@
   outline-offset: 2px;
 }
 
-// ---- Toolbar ----------------------------------------------------------------
+// ---- Search and A–Z ---------------------------------------------------------
 .loc-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1.25rem;
+  margin-block-end: 1rem;
+}
+
+.loc-search {
+  align-items: center;
+  display: flex;
+  flex: 1 1 26rem;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  max-inline-size: 40rem;
+}
+
+.loc-search-box {
+  flex: 1 1 14rem;
+  position: relative;
+
+  > .bi-search {
+    color: var(--osc-ink-muted);
+    inset-block-start: 50%;
+    inset-inline-start: .75rem;
+    pointer-events: none;
+    position: absolute;
+    transform: translateY(-50%);
+  }
+
+  .form-control {
+    padding-inline: 2.25rem 2.5rem;
+  }
+
+  // The native clear button sits where the shortcut hint is; Esc clears instead.
+  .form-control::-webkit-search-cancel-button {
+    display: none;
+  }
+}
+
+.loc-search-key {
+  background-color: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  font-family: $font-family-monospace;
+  font-size: .8125rem;
+  inset-block-start: 50%;
+  inset-inline-end: .6rem;
+  line-height: 1;
+  padding: .2rem .45rem;
+  pointer-events: none;
+  position: absolute;
+  transform: translateY(-50%);
+}
+
+.loc-search-box:focus-within .loc-search-key,
+.loc-search-box:has(.form-control:not(:placeholder-shown)) .loc-search-key {
+  display: none;
+}
+
+// Two radios drawn as one segmented switch; the checked one carries tint, weight and a dot.
+.loc-scope {
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius-sm;
+  display: inline-flex;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 2px;
+
+  input {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  label {
+    align-items: center;
+    border-radius: $border-radius-sm;
+    color: var(--osc-ink-muted);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: .875rem;
+    gap: .35rem;
+    padding: .3rem .7rem;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: var(--osc-chrome-hover);
+      color: var(--osc-ink);
+    }
+  }
+
+  input:checked + label {
+    background-color: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+    font-weight: 600;
+
+    &::before {
+      background-color: currentColor;
+      border-radius: 50%;
+      block-size: .4rem;
+      content: "";
+      inline-size: .4rem;
+    }
+  }
+
+  input:focus-visible + label {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.loc-az ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.loc-az a {
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  display: inline-block;
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5rem;
+  min-inline-size: 1.6rem;
+  padding-inline: .3rem;
+  text-align: center;
+  text-decoration-line: none;
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+
+  &[aria-current] {
+    background-color: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+    font-weight: 600;
+    text-decoration-line: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+// ---- Count and bulk bar -----------------------------------------------------
+.loc-tablebar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  justify-content: space-between;
+  margin-block-end: .6rem;
+  min-block-size: 2.25rem;
+}
+
+.loc-count {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: 0;
+}
+
+.loc-bulk {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+
+  &[hidden] {
+    display: none;
+  }
+
   #bulk-actions {
     margin-block-end: 0;
   }
 }
 
-.loc-count {
-  color: var(--osc-ink-muted);
-  font-size: .8125rem;
-  margin: 0;
+.loc-selected {
+  color: var(--osc-ink);
+  font-size: .875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  &:empty {
+    display: none;
+  }
 }
 
 // ---- Table ------------------------------------------------------------------
@@ -223,11 +407,6 @@
   color: var(--osc-danger);
 }
 
-.loc-form-context {
-  color: var(--osc-ink-muted);
-  margin: -.35rem 0 1rem;
-}
-
 .loc-field {
   margin-block-end: 1rem;
 
@@ -282,15 +461,210 @@
   }
 }
 
-// Delete sits under its own rule, away from Save.
-.loc-form-aside {
+// ---- Everywhere search hits --------------------------------------------------
+.loc-results {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.loc-hits-title {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  margin: 0 0 .4rem;
+}
+
+.loc-hits-list {
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.loc-hit {
+  align-items: center;
+  background-color: var(--osc-bench);
+  display: flex;
+  gap: .5rem 1rem;
+  justify-content: space-between;
+  padding: .55rem .75rem;
+
+  & + & {
+    border-block-start: 1px solid var(--osc-rule);
+  }
+
+  &:first-child {
+    border-start-start-radius: $border-radius;
+    border-start-end-radius: $border-radius;
+  }
+
+  &:last-child {
+    border-end-start-radius: $border-radius;
+    border-end-end-radius: $border-radius;
+  }
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+  }
+
+  .loc-edit {
+    align-items: center;
+    border-radius: $border-radius-sm;
+    color: var(--osc-ink-muted);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: .875rem;
+    gap: .35rem;
+    padding: .25rem .5rem;
+    text-decoration-line: none;
+
+    &:hover {
+      background-color: var(--osc-bench-sunk);
+      color: var(--osc-bronze);
+    }
+  }
+}
+
+.loc-hit-main {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem .75rem;
+  min-inline-size: 0;
+}
+
+.loc-hit-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+a.loc-hit-name {
+  text-decoration-line: none;
+
+  &:hover {
+    color: var(--osc-bronze);
+    text-decoration-line: underline;
+  }
+}
+
+.loc-hit-path {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+}
+
+.loc-hits-more {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: .4rem 0 0;
+}
+
+// ---- Drawer -----------------------------------------------------------------
+.loc-drawer-panel,
+.loc-drawer-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.loc-drawer:focus {
+  outline: none;
+}
+
+.loc-form-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: 0 0 1rem;
+}
+
+.loc-field .form-control[aria-invalid="true"] {
+  background-color: var(--osc-danger-tint);
+  border-color: var(--osc-danger);
+}
+
+.loc-field-error {
+  align-items: flex-start;
+  color: var(--osc-danger);
+  display: flex;
+  font-size: .875rem;
+  gap: .4rem;
+  margin: .35rem 0 0;
+
+  &::before {
+    content: "\f33a"; // exclamation-circle-fill
+    font-family: "bootstrap-icons";
+    line-height: 1.5;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.loc-facts {
   border-block-start: 1px solid var(--osc-rule);
-  padding: .85rem 1.35rem;
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.1rem;
+
+  .osc-deflist-row {
+    grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr);
+    padding-block: .5rem;
+  }
+
+  dd {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.loc-facts-title {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 .6rem;
+}
+
+.loc-fact-pending,
+.loc-fact-error {
+  color: var(--osc-ink-muted);
+}
+
+.loc-fact-pending {
+  animation: loc-pulse 1.2s ease-in-out infinite alternate;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes loc-pulse {
+  to {
+    opacity: .45;
+  }
+}
+
+.loc-fact-error::before {
+  content: "\f33a"; // exclamation-circle-fill
+  font-family: "bootstrap-icons";
+  font-size: .8125rem;
+  margin-inline-end: .35rem;
+}
+
+// Delete sits under its own rule, away from Save.
+.loc-drawer-danger {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1rem;
+  padding-block-start: .85rem;
 }
 
 .loc-delete-link {
+  align-items: center;
   color: var(--osc-danger);
+  display: inline-flex;
   font-size: .875rem;
+  gap: .4rem;
   text-decoration-line: none;
 
   &:hover,
@@ -298,6 +672,39 @@
     color: var(--osc-danger);
     text-decoration-line: underline;
   }
+}
+
+// ---- Consequence dialog -----------------------------------------------------
+.loc-consequences {
+  color: var(--osc-ink);
+  line-height: 1.55;
+  margin: 0 0 .75rem;
+  padding-inline-start: 1.1rem;
+
+  li + li {
+    margin-block-start: .3rem;
+  }
+
+  li::marker {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.loc-confirm {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius;
+  margin-block-start: 1rem;
+  padding: .75rem;
+
+  .form-label {
+    color: var(--osc-ink);
+    font-size: 1rem;
+  }
+}
+
+.loc-confirm-phrase {
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 // ---- Phones: each row becomes name + edit, with counts and status beneath ----
@@ -319,7 +726,18 @@
         border-block-end: 0;
       }
 
+      // The row, not its cells, carries the hover and selection wash once cells wrap.
+      &:hover {
+        background-color: var(--osc-bench-warm);
+      }
+
+      &:has(.col-bulkactions input:checked) {
+        background-color: var(--osc-bronze-tint);
+      }
+
       > td {
+        --bs-table-bg-state: transparent;
+        background-color: transparent;
         border-block-end: 0;
         display: block;
         padding-block: .15rem;
@@ -370,5 +788,26 @@
   .loc-slug {
     display: block;
     margin-inline-start: 0;
+  }
+
+  .loc-search {
+    flex-basis: 100%;
+  }
+
+  .loc-search-key {
+    display: none;
+  }
+
+  .loc-az {
+    inline-size: 100%;
+    overflow-x: auto;
+
+    ol {
+      flex-wrap: nowrap;
+    }
+  }
+
+  .loc-hit {
+    align-items: flex-start;
   }
 }

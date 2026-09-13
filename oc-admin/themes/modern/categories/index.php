@@ -192,21 +192,20 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
             </ul>
         <?php } ?>
 
-        <!-- Edit drawer -->
-        <div class="cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
-        <aside class="cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
+        <div class="osc-drawer-backdrop cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
+        <aside class="osc-drawer cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
                aria-labelledby="catDrawerTitle" hidden>
-            <header class="cat-drawer-head">
+            <header class="osc-drawer-head cat-drawer-head">
                 <div>
                     <span class="cat-drawer-eyebrow"><?php _e('Edit category'); ?></span>
-                    <h2 class="cat-drawer-title" id="catDrawerTitle"></h2>
+                    <h2 class="osc-drawer-title cat-drawer-title" id="catDrawerTitle"></h2>
                 </div>
-                <button type="button" class="cat-drawer-close" id="catDrawerClose"
+                <button type="button" class="osc-drawer-close cat-drawer-close" id="catDrawerClose"
                         aria-label="<?php echo osc_esc_html(__('Close')); ?>">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </header>
-            <div class="cat-drawer-body" id="catDrawerBody"></div>
+            <div class="osc-drawer-body cat-drawer-body" id="catDrawerBody"></div>
         </aside>
 
         <!-- Delete confirmation -->

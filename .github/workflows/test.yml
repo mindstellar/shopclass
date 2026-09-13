@@ -408,3 +408,7 @@ jobs:
       # admin a delete is safe when it removes listings.
       - name: Location admin query
         run: php tests/location-admin-query.php
+      # A delete that removes listings must ask for a typed confirm, and a confirm pattern a
+      # name with brackets makes invalid is one browsers silently skip.
+      - name: Location admin view
+        run: php tests/location-admin-view.php
