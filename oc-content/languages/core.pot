@@ -411,7 +411,7 @@ msgstr ""
 msgid "Accepted keywords: %s"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Access key"
 msgstr ""
 
@@ -467,7 +467,7 @@ msgstr ""
 msgid "Active"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Active storage"
 msgstr ""
 
@@ -881,7 +881,7 @@ msgstr ""
 msgid "Always show"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Amazon S3-compatible"
 msgstr ""
 
@@ -1419,7 +1419,7 @@ msgstr ""
 msgid "Browse plugins"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Bucket"
 msgstr ""
 
@@ -2640,7 +2640,7 @@ msgstr ""
 msgid "Delete admin"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Delete after upload"
 msgstr ""
 
@@ -3229,7 +3229,7 @@ msgstr ""
 msgid "Encrypts outgoing mail over TLS and secures tokens."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Endpoint"
 msgstr ""
 
@@ -3908,7 +3908,7 @@ msgstr ""
 msgid "How long a listing must wait before it can be bumped again."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "How long a signed URL stays valid (60-604800)."
 msgstr ""
 
@@ -4420,7 +4420,7 @@ msgstr ""
 msgid "Keep entries for"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Keep local copies"
 msgstr ""
 
@@ -4628,11 +4628,11 @@ msgstr ""
 msgid "Leave blank to keep the current password."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Leave blank to keep the currently saved secret key"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid ""
 "Leave the provider-specific placeholders (e.g. {region}, {account_id}) "
 "filled in "
@@ -4889,11 +4889,11 @@ msgstr ""
 msgid "Loading…"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Local copies"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Local disk"
 msgstr ""
 
@@ -6146,7 +6146,7 @@ msgstr ""
 msgid "Optional. Leave blank to use today's date."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid ""
 "Optional. Overrides the URL used to serve files, e.g. a CDN domain in front "
 "of the bucket."
@@ -6370,7 +6370,7 @@ msgid ""
 "import it as a substring match. Keywords already on file are skipped."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Path-style URLs"
 msgstr ""
 
@@ -6530,7 +6530,7 @@ msgstr ""
 msgid "Preferences"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid ""
 "Prefills the connection fields below with a starting point for the selected "
 "provider. "
@@ -6609,7 +6609,7 @@ msgid ""
 "Turnstile. "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Provider"
 msgstr ""
 
@@ -6623,7 +6623,7 @@ msgstr ""
 msgid "Public Profile"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Public URL"
 msgstr ""
 
@@ -6810,10 +6810,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/settings/locations.php
-#: oc-admin/themes/modern/settings/storage.php
 #: oc-admin/themes/modern/stats/users.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Region"
 msgstr ""
 
@@ -6969,7 +6969,7 @@ msgstr ""
 msgid "Require login for alerts"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Required by MinIO and most self-hosted setups; leave off for AWS."
 msgstr ""
 
@@ -7279,7 +7279,7 @@ msgstr ""
 msgid "Second password: this field is required"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Secret key"
 msgstr ""
 
@@ -7449,7 +7449,7 @@ msgstr ""
 msgid "September"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Serve files through time-limited signed URLs."
 msgstr ""
 
@@ -7733,11 +7733,11 @@ msgstr ""
 msgid "Sign-in protection"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Signed URL TTL"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Signed URLs"
 msgstr ""
 
@@ -7913,6 +7913,7 @@ msgid "Storage"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Storage Settings"
 msgstr ""
 
@@ -9176,11 +9177,11 @@ msgstr ""
 msgid "Use native php function for timezones list."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Use path-style bucket URLs."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Use this for a private bucket. Leave off for a public bucket or CDN."
 msgstr ""
 
@@ -10182,7 +10183,7 @@ msgstr ""
 msgid "s_source_file is not a valid url"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/storage.php
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "seconds"
 msgstr ""
 

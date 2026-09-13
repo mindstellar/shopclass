@@ -315,6 +315,7 @@ foreach (array(
     'Permalinks',
     'Sitemap',
     'Media',
+    'Storage',
 ) as $screen) {
     require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettings' . $screen . '.php';
 }
@@ -329,6 +330,7 @@ use mindstellar\admin\form\MediaSettingsForm;
 use mindstellar\admin\form\PermalinkSettingsForm;
 use mindstellar\admin\form\SitemapSettingsForm;
 use mindstellar\admin\form\SpamSettingsForm;
+use mindstellar\admin\form\StorageSettingsForm;
 use mindstellar\admin\form\store\PreferenceStore;
 use mindstellar\settings\SettingsPageRegistry;
 
@@ -660,6 +662,26 @@ pin(
         'watermark_image_place' => 'osclass/watermark_place',
     ),
     keymap(MediaSettingsForm::register())
+);
+// The storage adapter, the worker and the connection test all read these exact keys, and the
+// Better S3 adoption writes the same ones by hand.
+pin(
+    'the storage screen, every one under its own name',
+    array(
+        'storage_active'         => 'osclass/storage_active',
+        'storage_s3_provider'    => 'osclass/storage_s3_provider',
+        'storage_s3_bucket'      => 'osclass/storage_s3_bucket',
+        'storage_s3_region'      => 'osclass/storage_s3_region',
+        'storage_s3_endpoint'    => 'osclass/storage_s3_endpoint',
+        'storage_s3_access_key'  => 'osclass/storage_s3_access_key',
+        'storage_s3_secret_key'  => 'osclass/storage_s3_secret_key',
+        'storage_s3_path_style'  => 'osclass/storage_s3_path_style',
+        'storage_s3_public_url'  => 'osclass/storage_s3_public_url',
+        'storage_s3_signed_urls' => 'osclass/storage_s3_signed_urls',
+        'storage_s3_signed_ttl'  => 'osclass/storage_s3_signed_ttl',
+        'storage_keep_local'     => 'osclass/storage_keep_local',
+    ),
+    keymap(StorageSettingsForm::register())
 );
 
 /* ------------------------------------------------------------------------------------ */
@@ -1470,6 +1492,188 @@ pin('which is what every limit set to unlimited answers', (string)PHP_INT_MAX, t
 $run = drive('CAdminSettingsMedia', 'images_post');
 pin('regenerating is still the sibling action it was, CSRF and all', array('images_post'), $run['csrf']);
 
+harness_section('storage, and the connection it keeps');
+
+// Nothing saved yet: local disk, the custom provider and the default lifetime.
+$run = drive('CAdminSettingsStorage', 'storage');
+pin('the storage screen is drawn', array('settings/storage.php'), $run['views']);
+check('an unsaved backend shows local disk', strpos($run['drawn'], '<option value="local" selected>') !== false);
+check('an unsaved provider opens on custom', strpos($run['drawn'], '<option value="custom" selected>') !== false);
+check('an unsaved lifetime shows 900', strpos($run['drawn'], 'name="storage_s3_signed_ttl" class="input-text field-num" value="900"') !== false);
+check('and local copies are kept', strpos($run['drawn'], '<option value="all" selected>') !== false);
+
+$storage = array(
+    'storage_active'         => 's3',
+    'storage_s3_provider'    => 'aws',
+    'storage_s3_bucket'      => 'my-bucket',
+    'storage_s3_region'      => 'eu-west-1',
+    'storage_s3_endpoint'    => 'https://s3.eu-west-1.amazonaws.com',
+    'storage_s3_access_key'  => 'AKIAEXAMPLE',
+    'storage_s3_secret_key'  => 'first&secret<key> ',
+    'storage_s3_path_style'  => '1',
+    'storage_s3_public_url'  => 'https://cdn.example.test/media',
+    'storage_s3_signed_urls' => '1',
+    'storage_s3_signed_ttl'  => '3600',
+    'storage_keep_local'     => 'none',
+);
+$payloads = array();
+$spy      = static function (...$args) use (&$payloads) {
+    $payloads[] = $args;
+
+    return $args[0];
+};
+osc_add_filter('admin_form_before_save', $spy);
+osc_add_hook('admin_form_after_save', $spy);
+osc_add_hook('settings_page_saved', $spy);
+$run = drive('CAdminSettingsStorage', 'storage_post', $storage);
+osc_remove_filter('admin_form_before_save', $spy);
+osc_remove_hook('admin_form_after_save', $spy);
+osc_remove_hook('settings_page_saved', $spy);
+
+pin('the storage save is CSRF-checked', array('storage_post'), $run['csrf']);
+pin('and reports the success it always did', array('ok:Storage settings updated'), flashed($run));
+pin('and goes back to the screen', array('https://example.test/oc-admin/index.php?page=settings&action=storage'), $run['redirects']);
+pin('the backend is written', array('s3', 'STRING'), pref($admin, 'storage_active'));
+pin('the provider', array('aws', 'STRING'), pref($admin, 'storage_s3_provider'));
+pin('the bucket', array('my-bucket', 'STRING'), pref($admin, 'storage_s3_bucket'));
+pin('a typed region', array('eu-west-1', 'STRING'), pref($admin, 'storage_s3_region'));
+pin('the endpoint', array('https://s3.eu-west-1.amazonaws.com', 'STRING'), pref($admin, 'storage_s3_endpoint'));
+pin('the access key', array('AKIAEXAMPLE', 'STRING'), pref($admin, 'storage_s3_access_key'));
+pin('the secret, exactly as typed', array('first&secret<key> ', 'STRING'), pref($admin, 'storage_s3_secret_key'));
+pin('a ticked path-style switch', array('1', 'BOOLEAN'), pref($admin, 'storage_s3_path_style'));
+pin('the public URL', array('https://cdn.example.test/media', 'STRING'), pref($admin, 'storage_s3_public_url'));
+pin('a ticked signed-URL switch', array('1', 'BOOLEAN'), pref($admin, 'storage_s3_signed_urls'));
+pin('the lifetime, typed as it always was', array('3600', 'STRING'), pref($admin, 'storage_s3_signed_ttl'));
+pin('and local copies', array('none', 'STRING'), pref($admin, 'storage_keep_local'));
+
+// Each of the three is handed the submission; not one of them is handed the secret key.
+pin('before_save, after_save and settings_page_saved each ran once', 3, count($payloads));
+foreach ($payloads as $args) {
+    $values = $args[0] === StorageSettingsForm::PAGE_ID ? $args[1] : $args[0];
+    check('a hook payload carries no secret key', is_array($values) && !array_key_exists('storage_s3_secret_key', $values));
+    check('while it still carries the rest', is_array($values) && ($values['storage_s3_bucket'] ?? null) === 'my-bucket');
+}
+check('the typed secret appears nowhere in any payload', strpos(serialize($payloads), 'first&secret') === false);
+
+// Keep-if-blank: a blank box leaves the stored key where it is.
+$run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_secret_key' => '', 'storage_s3_bucket' => 'renamed') + $storage);
+pin('a blank secret leaves the stored one alone', array('first&secret<key> ', 'STRING'), pref($admin, 'storage_s3_secret_key'));
+pin('while the rest saves', array('renamed', 'STRING'), pref($admin, 'storage_s3_bucket'));
+$run = drive('CAdminSettingsStorage', 'storage_post', array_diff_key($storage, array('storage_s3_secret_key' => true)));
+pin('so does a request with no secret in it', array('first&secret<key> ', 'STRING'), pref($admin, 'storage_s3_secret_key'));
+$run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_secret_key' => array('x')) + $storage);
+pin('and one posting the box as a list', array('first&secret<key> ', 'STRING'), pref($admin, 'storage_s3_secret_key'));
+$run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_secret_key' => 'zq-second-key') + $storage);
+pin('a new one replaces it', array('zq-second-key', 'STRING'), pref($admin, 'storage_s3_secret_key'));
+
+$run = drive('CAdminSettingsStorage', 'storage');
+check('the stored secret is never drawn back', strpos($run['drawn'], 'zq-second-key') === false);
+check(
+    'the box draws empty over the keep-it hint',
+    strpos($run['drawn'], 'name="storage_s3_secret_key" class="input-text field-key" value="" autocomplete="off" spellcheck="false" autocomplete="new-password" placeholder="Leave blank to keep the currently saved secret key"') !== false
+);
+check('the form reopens on the stored provider', strpos($run['drawn'], '<option value="aws" selected>') !== false);
+ob_start();
+$redraw = StorageSettingsForm::formVars(array('storage_s3_secret_key' => 'typed-then-refused') + $storage);
+osc_admin_settings_form($redraw['id'], $redraw);
+check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), 'typed-then-refused') === false);
+
+// Corrected rather than refused, exactly as the hand-written save did.
+foreach (array(
+    array('storage_active', 'local', 'local', 'local stays local'),
+    array('storage_active', 'S3', 'local', 'a backend that is not exactly s3 is local'),
+    array('storage_active', 'ftp', 'local', 'and so is one never offered'),
+    array('storage_active', array('s3'), 'local', 'and one posted as a list'),
+    array('storage_s3_provider', 'r2', 'r2', 'a known provider is kept'),
+    array('storage_s3_provider', 'dropbox', 'custom', 'an unknown provider is custom'),
+    array('storage_s3_provider', '', 'custom', 'and so is a blank one'),
+    array('storage_s3_provider', array('aws'), 'custom', 'and one posted as a list'),
+    array('storage_keep_local', 'all', 'all', 'keeping local copies is kept'),
+    array('storage_keep_local', 'NONE', 'all', 'anything but exactly none keeps them'),
+    array('storage_keep_local', 'some', 'all', 'including a value never offered'),
+    array('storage_s3_endpoint', 'http://minio_s3:9000', 'http://minio_s3:9000', 'an http endpoint is kept, underscore host and all'),
+    array('storage_s3_endpoint', 'HTTPS://S3.EXAMPLE.TEST', 'HTTPS://S3.EXAMPLE.TEST', 'the scheme is matched in any case'),
+    array('storage_s3_endpoint', 'javascript:alert(1)', '', 'a javascript: endpoint is blank'),
+    array('storage_s3_endpoint', 'data:text/html;base64,PHNjcmlwdD4=', '', 'and a data: one'),
+    array('storage_s3_endpoint', 'ftp://files.example.test', '', 'and an ftp one'),
+    array('storage_s3_endpoint', 's3.example.test', '', 'and one with no scheme'),
+    array('storage_s3_endpoint', 'https://s3 .example.test', 'https://s3.example.test', 'osc_sanitize_url runs first'),
+    array('storage_s3_public_url', 'javascript:alert(document.cookie)', '', 'a javascript: public URL is blank'),
+    array('storage_s3_public_url', 'data:image/svg+xml,<svg onload=alert(1)>', '', 'and a data: one'),
+    array('storage_s3_public_url', ' javascript://https://cdn.example.test', '', 'and a javascript: one hiding an https inside'),
+    array('storage_s3_public_url', 'https://cdn.example.test/"><script>alert(1)</script>', 'https://cdn.example.test/"&gt;', 'and markup is stripped before it is stored'),
+    array('storage_s3_public_url', '', '', 'a blank public URL stays blank'),
+    array('storage_s3_signed_ttl', '3600', '3600', 'a lifetime in range is kept'),
+    array('storage_s3_signed_ttl', '1', '60', 'one below 60 is raised to it'),
+    array('storage_s3_signed_ttl', '60', '60', '60 is kept'),
+    array('storage_s3_signed_ttl', '604800', '604800', 'and so is a week'),
+    array('storage_s3_signed_ttl', '999999', '604800', 'past a week is held to a week'),
+    array('storage_s3_signed_ttl', '0', '900', 'a zero is 900'),
+    array('storage_s3_signed_ttl', '-5', '900', 'and so is a negative one'),
+    array('storage_s3_signed_ttl', '', '900', 'and a blank one'),
+    array('storage_s3_signed_ttl', 'soon', '900', 'and one with no number in it'),
+    array('storage_s3_signed_ttl', array('3600'), '900', 'and one posted as a list'),
+) as $case) {
+    $run = drive('CAdminSettingsStorage', 'storage_post', array($case[0] => $case[1]) + $storage);
+    pin($case[3], $case[2], pref($admin, $case[0])[0] ?? null);
+}
+pin('none of them is a refusal', array('ok:Storage settings updated'), flashed($run));
+
+// A checkbox is its presence.
+$run = drive('CAdminSettingsStorage', 'storage_post', array_diff_key($storage, array('storage_s3_path_style' => true, 'storage_s3_signed_urls' => true)));
+pin('an unticked path-style switch stores the zero that switches it off', array('0', 'BOOLEAN'), pref($admin, 'storage_s3_path_style'));
+pin('and so does an unticked signed-URL switch', array('0', 'BOOLEAN'), pref($admin, 'storage_s3_signed_urls'));
+
+// The region fallback runs at the write, against the provider as it was corrected and as any
+// before_save listener left it.
+foreach (array(
+    array('r2', '', 'auto', 'a blank region under a provider that locks it is the preset region'),
+    array('r2', '   ', 'auto', 'and so is one that is only spaces'),
+    array('r2', 'weur', 'weur', 'a region typed under a locking provider is kept'),
+    array('aws', '', '', 'a blank region under a provider that does not lock it stays blank'),
+    array('R2', '', '', 'a provider that is not a known preset locks nothing'),
+    array('r2', array('weur'), 'auto', 'a region posted as a list under a locking provider is the preset region'),
+    array(array('r2'), '', '', 'nor does one posted as a list'),
+) as $case) {
+    $run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_provider' => $case[0], 'storage_s3_region' => $case[1]) + $storage);
+    pin($case[3], $case[2], pref($admin, 'storage_s3_region')[0] ?? null);
+}
+pin('the fallback follows the provider that was stored', array('custom', 'STRING'), pref($admin, 'storage_s3_provider'));
+
+$toR2 = static function ($values, $pageId) {
+    if ($pageId === StorageSettingsForm::PAGE_ID) {
+        $values['storage_s3_provider'] = 'r2';
+    }
+
+    return $values;
+};
+osc_add_filter('admin_form_before_save', $toR2);
+$run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_provider' => 'aws', 'storage_s3_region' => '') + $storage);
+osc_remove_filter('admin_form_before_save', $toR2);
+pin('a provider a before_save listener switches to r2 is stored', array('r2', 'STRING'), pref($admin, 'storage_s3_provider'));
+pin('and a blank region under it is the preset region', array('auto', 'STRING'), pref($admin, 'storage_s3_region'));
+check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsForm.php'), 'Params::') === false);
+
+pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsForm::provider('r2'), StorageSettingsForm::provider('nope'), StorageSettingsForm::provider(null)));
+pin('region', array('auto', '', 'x'), array(StorageSettingsForm::region('', 'r2'), StorageSettingsForm::region('', 'custom'), StorageSettingsForm::region('x', 'r2')));
+pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsForm::ttl('59'), StorageSettingsForm::ttl('604801'), StorageSettingsForm::ttl('0'), StorageSettingsForm::ttl(array())));
+
+// The Better S3 adoption writes the endpoint through the controller's own guard, which has to
+// answer exactly as the declared one does.
+$guard = new ReflectionMethod('CAdminSettingsStorage', '_httpUrlOrEmpty');
+$guard->setAccessible(true);
+foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
+    pin(
+        'the adoption guard and the declared one agree on "' . $url . '"',
+        StorageSettingsForm::httpUrlOrEmpty($url),
+        $guard->invoke(new CAdminSettingsStorage(), $url)
+    );
+}
+
+$run = drive('CAdminSettingsStorage', 'storage_migrate_post', array('op' => 'adopt_better_s3'));
+pin('adoption is still its own CSRF-checked action', array('storage_migrate_post'), $run['csrf']);
+pin('and with nothing to adopt, still says so', array('error:Better S3 is not configured; nothing to adopt.'), flashed($run));
+
 /* ---------------------------------------------------------------------------------------
  * What the page around the form still reaches for. A declared field's id is derived from
  * its name -- field-<name> -- while the hand-written view it replaced wrote its own. Where
@@ -1492,6 +1696,7 @@ $screenViews = array(
     'settings/permalinks.php' => array('CAdminSettingsPermalinks', 'permalinks'),
     'settings/sitemap.php'    => array('CAdminSettingsSitemap', 'sitemap'),
     'settings/media.php'      => array('CAdminSettingsMedia', 'media'),
+    'settings/storage.php'    => array('CAdminSettingsStorage', 'storage'),
 );
 $drawn = array();
 foreach ($screenViews as $view => $screen) {
@@ -1580,6 +1785,30 @@ check(
     && strpos($drawn['settings/media.php'], 'id="watermark_image_box" data-osc-depends="watermark_type"') !== false
 );
 
+// The provider-preset script finds the provider by id, the three boxes it fills by name, and
+// the public-URL hint it rewrites by id; the two switches keep the ids their labels point at.
+foreach (array(
+    'id="storage_provider" name="storage_s3_provider"',
+    'name="storage_s3_endpoint"',
+    'name="storage_s3_region"',
+    'name="storage_s3_path_style"',
+    'id="storage_public_url_hint"',
+    'id="storage_s3_path_style"',
+    'id="storage_s3_signed_urls"',
+    'name="storage_s3_secret_key"',
+) as $needle) {
+    check('the storage screen still draws ' . $needle, strpos($drawn['settings/storage.php'], $needle) !== false);
+}
+check(
+    'the storage form keeps its name and action',
+    strpos($drawn['settings/storage.php'], 'name="storage_form"><input type="hidden" name="page" value="settings"/><input type="hidden" name="action" value="storage_post"/>') !== false
+);
+check('and the preset script is still on the page', strpos((string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/settings/storage.php'), 'regionField.readOnly = !!preset.region_locked') !== false);
+check('the two URL boxes still ask the browser for an http(s) URL', substr_count($drawn['settings/storage.php'], 'inputmode="url" pattern="[Hh][Tt][Tt][Pp][Ss]?://.*"') === 2);
+foreach (array('storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $sibling) {
+    check('the sibling action "' . $sibling . '" is still posted from the page', strpos($drawn['settings/storage.php'], 'value="' . $sibling . '"') !== false);
+}
+
 $missing = array();
 foreach ($drawn as $view => $html) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/' . $view);
@@ -1654,6 +1883,45 @@ pin(
 unlink($GLOBALS['fakeRoot'] . '/robots.txt');
 drive('CAdminSettingsMedia', 'media');
 pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsForm::uploadLimitKb(), __get('max_size_upload'));
+foreach (array(
+    array('storage_active', 's3'),
+    array('storage_s3_provider', 'r2'),
+    array('storage_s3_endpoint', 'https://acct.r2.cloudflarestorage.com'),
+    array('storage_s3_region', 'auto'),
+    array('storage_s3_bucket', 'shots'),
+    array('storage_s3_access_key', 'AK'),
+    array('storage_s3_secret_key', 'never-exported'),
+    array('storage_s3_path_style', '1'),
+    array('storage_s3_public_url', 'https://pub.example.test'),
+    array('storage_s3_signed_urls', '0'),
+    array('storage_s3_signed_ttl', '0'),
+    array('storage_keep_local', ''),
+) as $seed) {
+    seed_pref($admin, $seed[0], $seed[1]);
+}
+osc_reset_preferences();
+drive('CAdminSettingsStorage', 'storage');
+pin(
+    'the storage screen still exports its preferences, typed as they were',
+    array(
+        'storage_active'         => 's3',
+        'storage_s3_provider'    => 'r2',
+        'storage_s3_endpoint'    => 'https://acct.r2.cloudflarestorage.com',
+        'storage_s3_region'      => 'auto',
+        'storage_s3_bucket'      => 'shots',
+        'storage_s3_access_key'  => 'AK',
+        'storage_s3_path_style'  => true,
+        'storage_s3_public_url'  => 'https://pub.example.test',
+        'storage_s3_signed_urls' => false,
+        'storage_s3_signed_ttl'  => 900,
+        'storage_keep_local'     => 'all',
+    ),
+    __get('prefs')
+);
+pin('the provider presets', mindstellar\storage\ProviderPresets::PRESETS, __get('provider_presets'));
+pin('the queue counts', array('pending', 'error', 'dead_letters'), array_keys((array)__get('queue_stats')));
+pin('whether Better S3 is active', false, __get('better_s3_active'));
+pin('and whether it is configured', false, __get('better_s3_configured'));
 // Source scan, not proof: the keyword-block screen is a data table around its form and
 // drawing one needs half the admin theme, so the export is held at source level here.
 $keywordSrc = (string)file_get_contents(
@@ -1701,7 +1969,50 @@ $screens = array(
         'CAdminSettingsMedia.php',
         array('dimThumbnail', 'maxSizeKb', 'jpeg_quality', 'use_imagick', 'watermark_type', 'watermark_text', 'watermark_text_place', 'watermark_image_place', 'background_color', 'text_angle', 'watermark_image'),
     ),
+    // The Better S3 adoption writes the same keys the form does, so its allowance is the case
+    // it lives in, never a key name: a key-name allowance would hide the same write anywhere.
+    'settings/storage.php'      => array(
+        'CAdminSettingsStorage.php',
+        array_keys(SettingsPageRegistry::instance()->fields(StorageSettingsForm::register())),
+        array(),
+        array('adopt_better_s3'),
+    ),
 );
+
+/**
+ * The source with one switch arm cut out: from its case label to the next label, default or
+ * closing brace at the same depth. Null unless exactly one arm has that label.
+ */
+function without_case(string $src, string $label): ?array
+{
+    $lines = explode("\n", $src);
+    $start = null;
+    foreach ($lines as $i => $line) {
+        if (preg_match("/^(\\s*)case\\s*\\(?\\s*'" . preg_quote($label, '/') . "'\\s*\\)?\\s*:/", $line, $m)) {
+            if ($start !== null) {
+                return null;
+            }
+            $start  = $i;
+            $indent = strlen($m[1]);
+        }
+    }
+    if ($start === null) {
+        return null;
+    }
+    $end = count($lines);
+    for ($i = $start + 1; $i < count($lines); $i++) {
+        if (preg_match('/^(\\s*)(case\\b|default\\b|\\})/', $lines[$i], $m) && strlen($m[1]) <= $indent) {
+            $end = $i;
+            break;
+        }
+    }
+
+    return array(
+        'rest' => implode("\n", array_merge(array_slice($lines, 0, $start), array_slice($lines, $end))),
+        'cut'  => implode("\n", array_slice($lines, $start, $end - $start)),
+    );
+}
+
 foreach ($screens as $view => $screen) {
     [$controller, $fields] = $screen;
     $handWritten           = $screen[2] ?? array();
@@ -1709,6 +2020,16 @@ foreach ($screens as $view => $screen) {
     $ctrlSrc = (string)file_get_contents(
         ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/' . $controller
     );
+    // A sibling action may write by hand; cut out the arm it lives in, and only that arm.
+    foreach ($screen[3] ?? array() as $sibling) {
+        $split = without_case($ctrlSrc, $sibling);
+        check($controller . ' has exactly one "' . $sibling . '" arm to allow', $split !== null);
+        if ($split === null) {
+            continue;
+        }
+        check('the "' . $sibling . '" allowance holds no other action', preg_match_all('/\\bcase\\b/', $split['cut']) === 1);
+        $ctrlSrc = $split['rest'];
+    }
 
     check(basename($view) . ' draws its form from the declaration', strpos($viewSrc, 'osc_admin_settings_form(') !== false);
     foreach ($fields as $field) {
@@ -1730,6 +2051,16 @@ foreach ($screens as $view => $screen) {
         array_values(array_diff($writes[2], $handWritten))
     );
 }
+
+// The save arm itself, read on its own: it holds nothing but the declared save.
+$storageSrc = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php');
+$storagePost = without_case($storageSrc, 'storage_post');
+check('CAdminSettingsStorage.php has one storage_post arm', $storagePost !== null);
+$storagePost = (string)($storagePost['cut'] ?? '');
+check('storage_post saves through the declaration', strpos($storagePost, 'CoreSettings::attempt(StorageSettingsForm::register())') !== false);
+check('and writes no preference of its own', strpos($storagePost, 'osc_set_preference') === false);
+check('and reads nothing out of the request', strpos($storagePost, 'Params::') === false);
+check('the adoption still writes its keys by hand, where the allowance says', strpos((string)(without_case($storageSrc, 'adopt_better_s3')['cut'] ?? ''), "osc_set_preference('storage_s3_secret_key'") !== false);
 
 $mediaView = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/settings/media.php');
 check('media.php no longer validates by hand what the declaration refuses', strpos($mediaView, 'oscValidateForm') === false);

@@ -259,7 +259,7 @@ jobs:
       # guard in the source that no branch reaches is the same install as no guard.
       - name: Admin account form
         run: php tests/admin-account-form.php
-      # The eleven settings screens that save through their declarations. Four of their
+      # The twelve settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,
       # contact_attachment, purge_latest_searches -- so a key spelled wrong saves happily
@@ -274,8 +274,10 @@ jobs:
       # robots.txt byte for byte (the trim every declared box gets would drop its final
       # newline) and an unwritable file comes back with what was typed instead of being
       # lost to a redirect. Media refuses a watermark that is not a PNG before anything is
-      # written, and its form posts multipart, or the upload never reaches the save. It drives
-      # the controllers and reads t_preference back with raw SQL.
+      # written, and its form posts multipart, or the upload never reaches the save. Storage
+      # blanks any public URL that is not http(s), because it is built into every image a
+      # visitor loads, and a blank secret key keeps the stored one or remote storage stops
+      # authenticating. It drives the controllers and reads t_preference back with raw SQL.
       - name: Settings screen forms
         run: php tests/settings-screen-forms.php
       # A declared text field is read with the XSS check off, so without the default here

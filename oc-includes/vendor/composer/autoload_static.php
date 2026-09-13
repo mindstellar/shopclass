@@ -959,6 +959,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\admin\\form\\PermalinkSettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php',
         'mindstellar\\admin\\form\\SitemapSettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php',
         'mindstellar\\admin\\form\\SpamSettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/SpamSettingsForm.php',
+        'mindstellar\\admin\\form\\StorageSettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/StorageSettingsForm.php',
         'mindstellar\\admin\\form\\store\\PreferenceStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/store/PreferenceStore.php',
         'mindstellar\\admin\\form\\store\\Store' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/store/Store.php',
         'mindstellar\\admin\\form\\store\\StoreException' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/form/store/StoreException.php',

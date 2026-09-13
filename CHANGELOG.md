@@ -112,6 +112,8 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   with what was typed instead of being discarded.
 - Media saves through a declaration too; a watermark that is not a PNG now refuses the whole
   save instead of saving everything else beside an error.
+- Storage saves through a declaration too; a secret key containing `&` or `<` is now stored as
+  typed instead of being mangled.
 - The friendly-URL structure boxes hide and show through the shared conditional-field
   attribute instead of a script of their own.
 - A declared settings page's action row follows the page as you scroll and counts what has

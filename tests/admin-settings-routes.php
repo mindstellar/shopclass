@@ -133,4 +133,14 @@ foreach (array('media', 'media_post', 'images_post') as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }
 
+/* The storage save moved into a declaration too. The connection test, the queue run and the
+   migrations stay forms in the view, and each is still named so none drops out of routing. */
+pin('scanned from StorageSettingsForm.php: storage_post', 'StorageSettingsForm.php', $posted['storage_post'] ?? '');
+foreach (array('storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
+    pin('scanned from storage.php: ' . $action, 'storage.php', $posted[$action] ?? '');
+}
+foreach (array('storage', 'storage_post', 'storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
 exit(harness_result());
