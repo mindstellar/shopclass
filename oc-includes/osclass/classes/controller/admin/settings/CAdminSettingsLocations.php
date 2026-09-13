@@ -992,6 +992,10 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (isset($params['pageNum']) && (int) $params['pageNum'] <= 1) {
             unset($params['pageNum']);
         }
+        // Some rows store the country code lowercase; every URL this builds carries it upper.
+        if (isset($params['country']) && is_string($params['country'])) {
+            $params['country'] = strtoupper($params['country']);
+        }
         $params = array_filter($params, static fn ($v): bool => $v !== '' && $v !== 0 && $v !== null);
 
         return osc_admin_base_url(true) . '?page=settings&action=locations'

@@ -262,6 +262,25 @@ $q->initials('city', $bigRegion);
 check('city initials of a 20k region under 50 ms', (microtime(true) - $start) < 0.05);
 
 /* ---------------------------------------------------------------------------
+ * Country code case: the importer stores fk_c_country_code lowercase on some
+ * region/city rows; every code this class hands back must be upper.
+ * ------------------------------------------------------------------------ */
+
+harness_section('country code case');
+
+seed_country($admin, 'MT', 'Malta');
+$mtRegion = seed_region($admin, 'mt', 'Gozo');
+$mtCity   = seed_city($admin, $mtRegion, 'Valletta', 'mt');
+
+pin('regions(): lowercase-stored code returns upper', 'MT', $q->regions('MT', '', 1, 50)['rows'][0]['country']);
+pin('cities(): lowercase-stored code returns upper', 'MT', $q->cities($mtRegion, '', 1, 50)['rows'][0]['country']);
+pin('cities(): parent country code is upper', 'MT', $q->cities($mtRegion, '', 1, 50)['parent']['country']['code']);
+pin('record(region): lowercase-stored code returns upper', 'MT', $q->record('region', $mtRegion)['country']['code']);
+pin('record(city): lowercase-stored code returns upper', 'MT', $q->record('city', $mtCity)['country']['code']);
+pin('searchAll() regions: lowercase-stored code returns upper', 'MT', $q->searchAll('Gozo')['regions'][0]['country']);
+pin('searchAll() cities: lowercase-stored code returns upper', 'MT', $q->searchAll('Valletta')['cities'][0]['country']);
+
+/* ---------------------------------------------------------------------------
  * searchAll()
  * ------------------------------------------------------------------------ */
 

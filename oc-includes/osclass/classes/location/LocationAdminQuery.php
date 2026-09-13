@@ -123,7 +123,8 @@ final class LocationAdminQuery
             $id    = (int) $row['pk_i_id'];
             $out[] = array(
                 'id'       => $id,
-                'country'  => (string) $row['fk_c_country_code'],
+                // The importer stores some rows lowercase; every code leaving this class is upper.
+                'country'  => strtoupper((string) $row['fk_c_country_code']),
                 'name'     => (string) $row['s_name'],
                 'slug'     => (string) $row['s_slug'],
                 'active'   => (int) $row['b_active'] === 1,
@@ -174,7 +175,7 @@ final class LocationAdminQuery
                 'id'       => $id,
                 'region'   => (int) $row['fk_i_region_id'],
                 // The region's country wins, as in searchAll() and record(); old city rows may carry none.
-                'country'  => $parent['country']['code'] ?? self::nullableString($row['fk_c_country_code']),
+                'country'  => $parent['country']['code'] ?? self::upperNullable($row['fk_c_country_code']),
                 'name'     => (string) $row['s_name'],
                 'slug'     => (string) $row['s_slug'],
                 'active'   => (int) $row['b_active'] === 1,
@@ -272,7 +273,7 @@ final class LocationAdminQuery
                 'name'         => (string) $row['s_name'],
                 'slug'         => (string) $row['s_slug'],
                 'active'       => (int) $row['b_active'] === 1,
-                'country'      => (string) $row['fk_c_country_code'],
+                'country'      => strtoupper((string) $row['fk_c_country_code']),
                 'country_name' => $row['country_name'] === null ? null : (string) $row['country_name'],
             );
         }
@@ -295,7 +296,7 @@ final class LocationAdminQuery
                 'active'       => (int) $row['b_active'] === 1,
                 'region'       => (int) $row['fk_i_region_id'],
                 'region_name'  => $row['region_name'] === null ? null : (string) $row['region_name'],
-                'country'      => $row['country_code'] === null ? null : (string) $row['country_code'],
+                'country'      => self::upperNullable($row['country_code']),
                 'country_name' => $row['country_name'] === null ? null : (string) $row['country_name'],
             );
         }
@@ -428,7 +429,7 @@ final class LocationAdminQuery
                     return null;
                 }
                 $record = self::placeRecord('region', $row) + array(
-                    'country' => array('code' => (string) $row['fk_c_country_code'], 'name' => self::nullableString($row['country_name'])),
+                    'country' => array('code' => strtoupper((string) $row['fk_c_country_code']), 'name' => self::nullableString($row['country_name'])),
                     'region'  => null,
                 );
                 break;
@@ -449,7 +450,7 @@ final class LocationAdminQuery
                 $record = self::placeRecord('city', $row) + array(
                     'country' => $row['country_code'] === null
                         ? null
-                        : array('code' => (string) $row['country_code'], 'name' => self::nullableString($row['country_name'])),
+                        : array('code' => strtoupper((string) $row['country_code']), 'name' => self::nullableString($row['country_name'])),
                     'region'  => array('id' => (int) $row['fk_i_region_id'], 'name' => self::nullableString($row['region_name'])),
                 );
                 break;
@@ -690,6 +691,18 @@ final class LocationAdminQuery
     private static function nullableString(mixed $value): ?string
     {
         return $value === null ? null : (string) $value;
+    }
+
+    /**
+     * A country code, upper-cased; null stays null. The importer stores some rows lowercase.
+     *
+     * @param mixed $value
+     *
+     * @return string|null
+     */
+    private static function upperNullable(mixed $value): ?string
+    {
+        return $value === null ? null : strtoupper((string) $value);
     }
 
     /**
