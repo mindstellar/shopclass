@@ -1,6 +1,6 @@
 // =============================================================================
 // Locations (settings/locations.php): one level of the tree, its path and search,
-// the add/edit drawer and the delete/import dialogs.
+// the add/edit drawer, the delete dialog and the Data tab.
 // Colour through var(--osc-*) only; directions through logical properties.
 // =============================================================================
 
@@ -130,7 +130,8 @@
 }
 
 // Two radios drawn as one segmented switch; the checked one carries tint, weight and a dot.
-.loc-scope {
+.loc-scope,
+.loc-segmented {
   border: 1px solid var(--osc-rule-strong);
   border-radius: $border-radius-sm;
   display: inline-flex;
@@ -707,6 +708,475 @@ a.loc-hit-name {
   overflow-wrap: anywhere;
 }
 
+// ---- Tabs -------------------------------------------------------------------
+.loc-tabs {
+  margin-block-end: 1.25rem;
+}
+
+.loc-data-region {
+  transition: opacity 150ms ease-out;
+
+  &[aria-busy="true"] {
+    opacity: .55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.loc-data-loading {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: flex;
+  gap: .5rem;
+  padding-block: 2rem;
+}
+
+// ---- Data tab: sections -------------------------------------------------------
+.loc-section + .loc-section {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 2rem;
+  padding-block-start: 1.75rem;
+}
+
+.loc-section-head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 2rem;
+  justify-content: space-between;
+  margin-block-end: 1rem;
+}
+
+.loc-section-intro {
+  flex: 1 1 28rem;
+  max-inline-size: 44rem;
+}
+
+.loc-section-title {
+  color: var(--osc-ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0 0 .25rem;
+}
+
+.loc-section-text {
+  color: var(--osc-ink-muted);
+  margin: 0;
+  max-inline-size: 65ch;
+}
+
+.loc-release {
+  align-items: baseline;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: .875rem;
+  gap: .25rem 1rem;
+  margin: 0;
+
+  a {
+    align-items: baseline;
+    color: var(--osc-bronze);
+    display: inline-flex;
+    gap: .35rem;
+    text-decoration-line: none;
+
+    &:hover {
+      text-decoration-line: underline;
+    }
+  }
+}
+
+// ---- Data tab: catalog --------------------------------------------------------
+.loc-catalog-filter {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 1rem;
+  margin-block-end: .75rem;
+
+  .loc-search-box {
+    flex: 0 1 18rem;
+
+    .form-control {
+      padding-inline-end: .75rem;
+    }
+  }
+}
+
+.loc-segmented-count {
+  color: var(--osc-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.loc-segmented input:checked + label .loc-segmented-count {
+  color: inherit;
+}
+
+.loc-busy-note {
+  align-items: center;
+  background-color: var(--osc-info-tint);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 .75rem;
+  padding: .6rem .75rem;
+
+  &::before {
+    animation: loc-spin 1s linear infinite;
+    color: var(--osc-info);
+    content: "\f130"; // arrow-repeat
+    font-family: "bootstrap-icons";
+    line-height: 1;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      animation: none;
+    }
+  }
+}
+
+@keyframes loc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loc-catalog-table {
+  margin-block-end: 0;
+
+  > tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .loc-col-code {
+    color: var(--osc-ink-muted);
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+
+  td.loc-col-code {
+    font-size: .875rem;
+  }
+
+  .loc-col-country {
+    font-weight: 500;
+    min-inline-size: 10rem;
+  }
+
+  .loc-col-cities {
+    font-variant-numeric: tabular-nums;
+    inline-size: 1%;
+    padding-inline: 1rem;
+    white-space: nowrap;
+  }
+
+  // Catalog rows the busy import belongs to stay readable; the others dim.
+  &[aria-busy="true"] tbody tr:not(.is-busy) {
+    opacity: .6;
+  }
+}
+
+.loc-catalog-empty td {
+  color: var(--osc-ink-muted);
+  padding-block: 1.5rem;
+  text-align: center;
+}
+
+.loc-row-action {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  font-size: .875rem;
+  gap: .35rem;
+  padding: .25rem .5rem;
+
+  &:hover {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .4;
+  }
+
+  & + & {
+    margin-inline-start: .25rem;
+  }
+}
+
+.loc-row-action-main {
+  color: var(--osc-bronze);
+  font-weight: 600;
+}
+
+// ---- Data tab: catalog unreachable ---------------------------------------------
+.loc-outage {
+  align-items: flex-start;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.loc-outage-icon {
+  color: var(--osc-ink-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.loc-outage-title {
+  color: var(--osc-ink);
+  font-weight: 600;
+  margin: 0 0 .25rem;
+}
+
+.loc-outage-text {
+  color: var(--osc-ink-muted);
+  margin: 0;
+  max-inline-size: 60ch;
+}
+
+.loc-outage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-block-start: .9rem;
+}
+
+// ---- Data tab: listing counts ---------------------------------------------------
+.loc-recalc {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: space-between;
+}
+
+.loc-recalc-form {
+  flex: 0 0 auto;
+}
+
+.loc-recalc-progress {
+  margin-block-start: 1rem;
+  max-inline-size: 32rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  progress {
+    appearance: none;
+    background-color: var(--osc-rule);
+    block-size: .5rem;
+    border: 0;
+    border-radius: $border-radius-pill;
+    display: block;
+    inline-size: 100%;
+    overflow: hidden;
+
+    &::-webkit-progress-bar {
+      background-color: var(--osc-rule);
+    }
+
+    &::-webkit-progress-value {
+      background-color: var(--osc-bronze);
+      transition: inline-size 250ms ease-out;
+    }
+
+    &::-moz-progress-bar {
+      background-color: var(--osc-bronze);
+    }
+  }
+}
+
+.loc-recalc-status {
+  color: var(--osc-ink);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  margin: .45rem 0 0;
+}
+
+// ---- Preview report ---------------------------------------------------------------
+.loc-dialog-wide {
+  inline-size: min(40rem, calc(100vw - 2rem));
+
+  // A long report scrolls under its buttons.
+  .osc-dialog-actions {
+    background-color: var(--osc-bench);
+    border-block-start: 1px solid var(--osc-rule);
+    inset-block-end: 0;
+    margin-block-start: 1.35rem;
+    padding-block: .9rem;
+    position: sticky;
+  }
+}
+
+.loc-preview .osc-dialog-title:focus {
+  outline: none;
+}
+
+.loc-preview .osc-dialog-title:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
+.loc-preview-inline {
+  max-inline-size: 40rem;
+}
+
+.loc-preview .osc-dialog-text {
+  margin-block-end: 1rem;
+}
+
+.loc-preview-table {
+  margin-block-end: .75rem;
+
+  th,
+  td {
+    padding: .45rem .6rem;
+  }
+
+  tbody th {
+    color: var(--osc-ink);
+    font-weight: 600;
+  }
+
+  td {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  thead th {
+    white-space: normal;
+  }
+
+  .loc-preview-zero {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
+  }
+}
+
+.loc-preview-notes {
+  color: var(--osc-ink);
+  margin: 0;
+  padding-inline-start: 1.1rem;
+
+  li + li {
+    margin-block-start: .3rem;
+  }
+
+  li::marker {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.loc-renames {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1rem;
+  padding-block-start: .9rem;
+}
+
+.loc-renames-title {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.loc-renames-text {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: .15rem 0 0;
+}
+
+.loc-renames-list {
+  list-style: none;
+  margin: .6rem 0 0;
+  padding: 0;
+
+  li {
+    border-block-start: 1px solid var(--osc-rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .1rem .75rem;
+    justify-content: space-between;
+    padding-block: .4rem;
+  }
+
+  li:first-child {
+    border-block-start: 0;
+  }
+}
+
+.loc-renames-name {
+  color: var(--osc-ink);
+  font-weight: 500;
+}
+
+.loc-renames-level {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  font-weight: 400;
+  margin-inline-start: .4rem;
+}
+
+.loc-renames-slugs {
+  align-items: baseline;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: .8125rem;
+  gap: .1rem .4rem;
+  overflow-wrap: anywhere;
+
+  .bi:dir(rtl) {
+    transform: scaleX(-1);
+  }
+}
+
+// ---- Add country: import from the catalog instead ---------------------------------
+.loc-offer {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius;
+  margin-block-end: 1rem;
+  padding: .75rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .btn {
+    margin-block-start: .6rem;
+  }
+}
+
+.loc-offer-text {
+  color: var(--osc-ink);
+  margin: 0;
+}
+
 // ---- Phones: each row becomes name + edit, with counts and status beneath ----
 @media (max-width: 575.98px) {
   .loc-table {
@@ -809,5 +1279,100 @@ a.loc-hit-name {
 
   .loc-hit {
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .loc-catalog-table .loc-col-cities {
+    display: none;
+  }
+
+  // Code, name and actions on one line; the status beneath.
+  .loc-catalog-table {
+    thead {
+      display: none;
+    }
+
+    > tbody > tr:not(.loc-catalog-empty):not([hidden]) {
+      align-items: center;
+      border-block-end: 1px solid var(--osc-rule);
+      display: flex;
+      flex-wrap: wrap;
+      padding-block: .45rem;
+
+      &:last-child {
+        border-block-end: 0;
+      }
+
+      > td {
+        --bs-table-bg-state: transparent;
+        background-color: transparent;
+        border-block-end: 0;
+        padding-block: .1rem;
+      }
+
+      > .loc-col-code {
+        flex: 0 0 3rem;
+        inline-size: auto;
+      }
+
+      > .loc-col-country {
+        flex: 1 1 0;
+        min-inline-size: 0;
+      }
+
+      > .loc-col-actions {
+        flex: 0 0 auto;
+        inline-size: auto;
+        padding-inline-start: 0;
+      }
+
+      &::after {
+        content: "";
+        flex-basis: 100%;
+        order: 3;
+      }
+
+      > .loc-col-status {
+        inline-size: auto;
+        margin-inline-start: 3rem;
+        order: 4;
+      }
+    }
+  }
+
+  .loc-catalog-filter .loc-search-box {
+    flex-basis: 100%;
+  }
+
+  .loc-segmented {
+    flex-wrap: wrap;
+  }
+
+  .loc-preview-table {
+    font-size: .875rem;
+    table-layout: fixed;
+
+    th,
+    td {
+      padding-inline: .4rem;
+    }
+
+    thead th {
+      vertical-align: bottom;
+    }
+
+    th:first-child {
+      inline-size: 4.25rem;
+    }
+  }
+}
+
+.loc-catalog-empty a {
+  color: var(--osc-bronze);
+  margin-inline-start: .5rem;
+
+  &[hidden] {
+    display: none;
   }
 }

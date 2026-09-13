@@ -80,4 +80,7 @@ $status-badge: (
         "failed":    (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
         "refunded":  (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
         "cancelled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
+
+        // Location catalog rows: newer data is waiting for an installed country.
+        "update":    (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f139"), // ⬆ arrow in a disc
 );

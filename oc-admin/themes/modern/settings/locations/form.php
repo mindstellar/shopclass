@@ -13,7 +13,7 @@
 use mindstellar\location\LocationAdminView;
 
 /*
- * The add and edit drawers and the delete and import dialogs. Rendered into the page for
+ * The add and edit drawers and the delete dialog. Rendered into the page for
  * ?form=…, and alone as ?partial=form for the script; both post the same type= fields.
  */
 $loc  = __get('locations');
@@ -118,6 +118,11 @@ switch ($form['kind']) {
         ));
         $drawerHead($title, '', $subtitle); ?>
             <div class="osc-drawer-body">
+                <?php if ($level === 'country') {
+                    // First in the form, so Enter adds rather than imports.
+                    ?>
+                    <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true"><?php echo osc_esc_html($title); ?></button>
+                <?php } ?>
                 <p class="loc-form-error" role="alert" hidden></p>
                 <div class="loc-field">
                     <label class="form-label" for="loc-f-name"><?php _e('Name'); ?></label>
@@ -131,6 +136,16 @@ switch ($form['kind']) {
                                required minlength="2" maxlength="2" pattern="[A-Za-z]{2}" autocomplete="off"
                                aria-describedby="loc-f-code-help"/>
                         <p class="form-text" id="loc-f-code-help"><?php _e('Two letters, as in IN, DE or MT.'); ?></p>
+                    </div>
+                    <div class="loc-offer" data-loc-offer>
+                        <p class="loc-offer-text" data-loc-offer-text aria-live="polite">
+                            <?php _e('A country in the catalog can be imported with its regions and cities instead.'); ?>
+                        </p>
+                        <button type="submit" class="btn btn-secondary btn-sm" name="import_instead" value="1" formnovalidate
+                                data-loc-offer-button data-loc-busy="<?php echo osc_esc_html(__('Importing…')); ?>">
+                            <i class="bi bi-download" aria-hidden="true"></i>
+                            <span><?php _e('Import from the catalog instead'); ?></span>
+                        </button>
                     </div>
                 <?php } else { ?>
                     <p class="form-text loc-form-note"><?php _e('The slug is made from the name. You can change it after saving.'); ?></p>
@@ -348,57 +363,6 @@ switch ($form['kind']) {
             <div class="osc-dialog-actions">
                 <a class="btn btn-secondary btn-sm" href="<?php echo osc_esc_html($back); ?>" data-loc-cancel><?php _e('Cancel'); ?></a>
                 <button type="submit" class="btn btn-danger btn-sm"><?php echo osc_esc_html($confirm[$level]); ?></button>
-            </div>
-        <?php osc_admin_form_close(null, array('horizontal' => false));
-        break;
-
-    case 'import':
-        $groups = array(__('Update available') => array(), __('Not installed') => array());
-        foreach ($form['catalog'] as $row) {
-            $groups[$row['installed'] ? __('Update available') : __('Not installed')][] = $row;
-        }
-
-        osc_admin_form_open(array(
-            'page'       => 'settings',
-            'action'     => 'locations',
-            'fields'     => array('type' => 'locations_import'),
-            'class'      => 'loc-form',
-            'horizontal' => false,
-        )); ?>
-            <div class="osc-dialog-body">
-                <h2 class="osc-dialog-title"><?php _e('Import locations'); ?></h2>
-                <p class="loc-form-error" role="alert" hidden></p>
-                <p class="osc-dialog-text">
-                    <?php _e('Import a country with its regions and cities. Countries you already have appear only when newer data is available for them.'); ?>
-                </p>
-                <?php if ($form['catalog'] === array()) { ?>
-                    <p class="loc-form-notice"><?php _e('No countries available right now'); ?></p>
-                <?php } else { ?>
-                    <div class="loc-field">
-                        <label class="form-label" for="loc-f-import"><?php _e('Country'); ?></label>
-                        <select class="form-select" id="loc-f-import" name="location" required>
-                            <option value=""><?php _e('Select option'); ?></option>
-                            <?php foreach ($groups as $label => $rows) {
-                                if ($rows === array()) {
-                                    continue;
-                                } ?>
-                                <optgroup label="<?php echo osc_esc_html($label); ?>">
-                                    <?php foreach ($rows as $row) { ?>
-                                        <option value="<?php echo osc_esc_html($row['code']); ?>"><?php echo osc_esc_html($row['name']); ?></option>
-                                    <?php } ?>
-                                </optgroup>
-                            <?php } ?>
-                        </select>
-                    </div>
-                <?php } ?>
-            </div>
-            <div class="osc-dialog-actions">
-                <a class="btn btn-secondary btn-sm" href="<?php echo osc_esc_html($back); ?>" data-loc-cancel><?php _e('Cancel'); ?></a>
-                <?php if ($form['catalog'] !== array()) { ?>
-                    <button type="submit" class="btn btn-submit btn-sm" data-loc-busy="<?php echo osc_esc_html(__('Importing…')); ?>">
-                        <?php _e('Import'); ?>
-                    </button>
-                <?php } ?>
             </div>
         <?php osc_admin_form_close(null, array('horizontal' => false));
         break;

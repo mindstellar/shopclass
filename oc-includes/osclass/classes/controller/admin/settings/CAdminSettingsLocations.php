@@ -18,6 +18,8 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
+use mindstellar\location\LocationCatalog;
+use mindstellar\location\LocationImporter;
 
 /**
  * Class CAdminSettingsLocations
@@ -25,7 +27,13 @@ use mindstellar\location\LocationAdminView;
 class CAdminSettingsLocations extends AdminSecBaseModel
 {
     /** Forms the screen can show, as ?form=… */
-    private const FORMS = array('add', 'edit', 'delete', 'import');
+    private const FORMS = array('add', 'edit', 'delete');
+
+    /** Seconds an import or preview may run; the largest countries take under a minute. */
+    private const IMPORT_TIME_LIMIT = 300;
+
+    /** Session key holding a preview report between its POST and the page that shows it. */
+    private const PREVIEW_SESSION = 'osc_location_preview';
 
     /**
      * Boots the admin controller and fires the init_admin_settings_locations hook.
@@ -88,9 +96,19 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                 $this->guard();
                 $this->importLocation();
                 break;
+            case ('locations_preview'):
+                $this->guard();
+                $this->previewLocation();
+                break;
         }
 
         $partial = Params::getParamString('partial');
+        $tab     = Params::getParamString('tab') === 'data' ? 'data' : 'browse';
+
+        // Import moved from a dialog to the Data tab.
+        if ($partial === '' && Params::getParamString('form') === 'import') {
+            $this->redirectTo($this->dataUrl());
+        }
 
         // Old deep links named the country twice (country_code=IN&country=India).
         if ($partial === '' && Params::getParamString('country_code') !== '') {
@@ -100,12 +118,23 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             ) + $this->keep()));
         }
 
+        if ($partial === 'data') {
+            $this->_exportVariableToView('locationData', $this->dataModel());
+            header('X-Osc-Partial: data');
+            header('Cache-Control: no-store');
+            osc_current_admin_theme_path('settings/locations/data.php');
+
+            return;
+        }
+
         $list = $this->listModel();
         $this->_exportVariableToView('locations', $list);
         $form = $this->formModel($list, $partial !== 'form');
         $this->_exportVariableToView('locationForm', $form);
+        $this->_exportVariableToView('locationTab', $tab);
+        $this->_exportVariableToView('locationData', $tab === 'data' && $partial === '' ? $this->dataModel() : null);
 
-        if (!$list['found']) {
+        if (!$list['found'] && $tab === 'browse') {
             http_response_code(404);
         }
 
@@ -279,19 +308,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                     $form['record'] === null ? null : (string) $form['record']['name']
                 );
                 break;
-            case 'import':
-                $form['catalog'] = array();
-                try {
-                    foreach ((new \mindstellar\location\LocationCatalog())->status() as $row) {
-                        if (($row['file'] === '' && $row['ndjson'] === '') || ($row['installed'] && $row['current'])) {
-                            continue;
-                        }
-                        $form['catalog'][] = $row;
-                    }
-                } catch (Throwable $e) {
-                    $form['catalog'] = array();
-                }
-                break;
         }
 
         return $form;
@@ -305,7 +321,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function guard(): void
     {
         if (defined('DEMO')) {
-            $this->respond('warning', _m("This action can't be done because it's a demo site"), $this->listUrl());
+            $this->respond('warning', _m("This action can't be done because it's a demo site"), $this->backUrl());
         }
         // A fetch() caller reads the CSRF refusal as JSON rather than following a redirect.
         if ($this->isXhr() && !defined('IS_AJAX')) {
@@ -322,6 +338,34 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $mCountries  = new Country();
         $countryCode = strtoupper(trim(Params::getParamString('c_country')));
         $countryName = trim(Params::getParamString('country'));
+
+        // The add form's secondary button: take the country from the catalog instead.
+        if (Params::getParamString('import_instead') === '1') {
+            $status = $this->catalogStatus();
+            switch (LocationAdminView::importInsteadRefusal($countryCode, $status)) {
+                case 'malformed':
+                    $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
+                    break;
+                case 'unknown':
+                    $this->respond(
+                        'error',
+                        sprintf(_m('The catalog has no country with the code %s. Add it by hand instead.'), $countryCode),
+                        $this->listUrl()
+                    );
+                    break;
+                case 'installed':
+                    $this->respond(
+                        'error',
+                        sprintf(
+                            _m('%s is already installed. Preview its update on the Data tab before importing it again.'),
+                            LocationAdminView::importOffer($countryCode, $status)['name']
+                        ),
+                        $this->dataUrl()
+                    );
+                    break;
+            }
+            $this->runImport($countryCode, $this->listUrl());
+        }
 
         if (!osc_validate_min($countryName, 1)) {
             $this->respond('error', _m('Country name cannot be blank'), $this->listUrl());
@@ -592,15 +636,238 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     }
 
     /**
+     * Install or update one country from the catalog (`location` is its code, or an old file name).
+     *
      * @return void
      */
     private function importLocation(): void
     {
-        $location = Params::getParamString('location');
-        if ($location !== '' && osc_install_json_locations($location) === true) {
-            $this->respond('ok', _m('Location imported successfully'), $this->listUrl());
+        $location = trim(Params::getParamString('location'));
+        if ($location === '') {
+            $this->respond('error', _m('Select a country to import'), $this->backUrl());
         }
-        $this->respond('error', _m('There was a problem importing the selected location'), $this->listUrl());
+        $this->runImport($location, $this->backUrl());
+    }
+
+    /**
+     * @param string $location country code or published file name
+     * @param string $back     where the answer sends the admin
+     *
+     * @return void
+     */
+    private function runImport(string $location, string $back): void
+    {
+        $status = $this->catalogStatus();
+        $entry  = LocationAdminView::catalogEntry($location, $status);
+        if ($entry === null) {
+            $this->respond('error', $status === array()
+                ? _m('The location catalog could not be reached. Try again in a few minutes.')
+                : _m('The catalog has no such country'), $back);
+        }
+
+        $this->allowLongRun();
+        $this->releaseSession();
+        $imported = osc_install_json_locations((string) $entry['code']) === true;
+        $this->resumeSession();
+        if (!$imported) {
+            $this->respond('error', _m('There was a problem importing the selected location'), $back);
+        }
+        $this->respond(
+            'ok',
+            sprintf(
+                !empty($entry['installed']) ? _m('%s is updated from the catalog') : _m('%s is installed with its regions and cities'),
+                (string) $entry['name']
+            ),
+            $back
+        );
+    }
+
+    /**
+     * Run the importer as a dry run for one catalog country and show what it would change:
+     * JSON with the rendered report for the script, otherwise a redirect to the Data tab
+     * that shows it once.
+     *
+     * @return void
+     * @throws \Exception
+     */
+    private function previewLocation(): void
+    {
+        $code   = strtoupper(trim(Params::getParamString('location')));
+        $status = $this->catalogStatus();
+        if ($status === array()) {
+            $this->respond('error', _m('The location catalog could not be reached. Try again in a few minutes.'), $this->dataUrl());
+        }
+        $offer = LocationAdminView::importOffer($code, $status);
+        if ($offer === null) {
+            $this->respond('error', sprintf(_m('The catalog has no country with the code %s'), $code), $this->dataUrl());
+        }
+
+        $entry = null;
+        foreach ($status as $row) {
+            if (strcasecmp((string) $row['code'], $offer['code']) === 0) {
+                $entry = $row;
+                break;
+            }
+        }
+
+        $this->allowLongRun();
+        $this->releaseSession();
+        $report  = (new LocationImporter(true))->importCountry(new LocationCatalog(), $entry);
+        $this->resumeSession();
+        $preview = LocationAdminView::previewReport($report, $this->renamedNames($report['renames'] ?? array())) + $offer;
+
+        if (isset($preview['error'])) {
+            $this->respond('error', sprintf(_m('%s could not be read from the catalog'), $offer['name']), $this->dataUrl());
+        }
+
+        if ($this->isXhr()) {
+            $this->_exportVariableToView('locationPreview', $preview);
+            ob_start();
+            osc_current_admin_theme_path('settings/locations/preview.php');
+            $this->respond('ok', '', $this->dataUrl(), array('html' => (string) ob_get_clean()));
+        }
+
+        Session::newInstance()->_set(self::PREVIEW_SESSION, $preview);
+        $this->redirectTo($this->dataUrl(array('preview' => $offer['code'])));
+    }
+
+    /**
+     * What the Data tab shows: the catalog with its filter, whether it could be read, the
+     * release, the counts recalculation and a preview waiting to be shown.
+     *
+     * @return array<string,mixed>
+     */
+    private function dataModel(): array
+    {
+        $catalog   = new LocationCatalog();
+        $reachable = false;
+        $status    = array();
+        $release   = '';
+        try {
+            $reachable = $catalog->manifest(Params::getParamInt('refresh') === 1) !== null;
+            if ($reachable) {
+                $status  = $catalog->status();
+                $release = LocationAdminView::releaseDate($catalog->release());
+            }
+        } catch (Throwable $e) {
+            $reachable = false;
+        }
+
+        $rows   = LocationAdminView::catalogRows($status);
+        $counts = LocationAdminView::catalogCounts($rows);
+        $filter = LocationAdminView::catalogFilter(
+            Params::getParamString('find', false, false, false),
+            Params::getParamString('show'),
+            $counts['installed']
+        );
+
+        $preview = null;
+        $code    = strtoupper(Params::getParamString('preview'));
+        $stored  = Session::newInstance()->_get(self::PREVIEW_SESSION);
+        if ($code !== '' && is_array($stored)) {
+            Session::newInstance()->_drop(self::PREVIEW_SESSION);
+            $preview = ($stored['code'] ?? '') === $code ? $stored : null;
+            $this->_exportVariableToView('locationPreview', $preview);
+        }
+
+        return array(
+            'base'      => osc_admin_base_url(true) . '?page=settings&action=locations',
+            'url'       => $this->dataUrl(),
+            'reachable' => $reachable,
+            'release'   => $release,
+            'rows'      => $rows,
+            'counts'    => $counts,
+            'find'      => $filter['find'],
+            'show'      => $filter['show'],
+            'preview'   => $preview,
+            'recalc'    => LocationAdminView::recalcProgress(
+                (int) LocationsTmp::newInstance()->count(),
+                (int) osc_get_preference('location_todo')
+            ),
+        );
+    }
+
+    /**
+     * The catalog rows, or none when the catalog cannot be read.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function catalogStatus(): array
+    {
+        try {
+            return (new LocationCatalog())->status();
+        } catch (Throwable $e) {
+            return array();
+        }
+    }
+
+    /**
+     * Current names of the rows a preview renames, looked up after its rollback.
+     *
+     * @param array<int,array<string,mixed>> $renames
+     *
+     * @return array<string,array<int,string>>
+     */
+    private function renamedNames(array $renames): array
+    {
+        $ids = array('REGION' => array(), 'CITY' => array());
+        foreach (array_slice($renames, 0, LocationAdminView::PREVIEW_RENAMES) as $rename) {
+            if (isset($ids[$rename['type'] ?? ''])) {
+                $ids[$rename['type']][] = (int) $rename['id'];
+            }
+        }
+
+        $names = array();
+        foreach (array('REGION' => 't_region', 'CITY' => 't_city') as $type => $table) {
+            if ($ids[$type] === array()) {
+                continue;
+            }
+            $rows = osc_db_select(
+                'SELECT pk_i_id, s_name FROM ' . DB_TABLE_PREFIX . $table
+                . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids[$type]), '?')) . ')',
+                $ids[$type]
+            );
+            foreach ($rows as $row) {
+                $names[$type][(int) $row['pk_i_id']] = (string) $row['s_name'];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * Unlock the session file for the length of an import, so the admin's other requests
+     * (another tab, the Data tab reloading) are not queued behind it.
+     *
+     * @return void
+     */
+    private function releaseSession(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+
+    /**
+     * Take the session back after an import, so its flash message is saved.
+     *
+     * @return void
+     */
+    private function resumeSession(): void
+    {
+        if (session_status() === PHP_SESSION_NONE && session_id() !== '' && !headers_sent()) {
+            session_start();
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function allowLongRun(): void
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(self::IMPORT_TIME_LIMIT);
+        }
     }
 
     /**
@@ -635,18 +902,23 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     /**
      * Finish a write: JSON for a fetch() caller, otherwise a flash message and a redirect.
      *
-     * @param string $status   ok|error|warning
-     * @param string $message
-     * @param string $redirect the list the write belongs to
+     * @param string              $status   ok|error|warning
+     * @param string              $message
+     * @param string              $redirect the list the write belongs to
+     * @param array<string,mixed> $extra    more fields for the JSON answer
      *
      * @return never
      */
-    private function respond(string $status, string $message, string $redirect)
+    private function respond(string $status, string $message, string $redirect, array $extra = array())
     {
         if ($this->isXhr()) {
             header('Content-Type: application/json');
             header('Cache-Control: no-store');
-            echo json_encode(array('ok' => $status === 'ok', 'message' => $message, 'redirect' => $redirect));
+            // Tags escaped, so the CSRF injector finds no <form> inside the JSON.
+            echo json_encode(
+                array('ok' => $status === 'ok', 'message' => $message, 'redirect' => $redirect) + $extra,
+                JSON_HEX_TAG
+            );
             exit;
         }
 
@@ -683,6 +955,29 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function isXhr(): bool
     {
         return strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
+
+    /**
+     * The Data tab URL, with extra query values.
+     *
+     * @param array<string,string> $params
+     *
+     * @return string
+     */
+    private function dataUrl(array $params = array()): string
+    {
+        return osc_admin_base_url(true) . '?page=settings&action=locations&tab=data'
+            . ($params === array() ? '' : '&' . http_build_query($params));
+    }
+
+    /**
+     * Where a write answers to: the Data tab when it was posted from there, else the list.
+     *
+     * @return string
+     */
+    private function backUrl(): string
+    {
+        return Params::getParamString('tab') === 'data' ? $this->dataUrl() : $this->listUrl();
     }
 
     /**

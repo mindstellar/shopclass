@@ -86,6 +86,7 @@ class CAdminAjax extends AdminSecBaseModel
                         'installed' => (bool) $row['installed'],
                         'current'   => (bool) $row['current'],
                         'rows'      => (int) $row['rows'],
+                        'regions'   => (int) ($row['regions'] ?? 0),
                     );
                 }
                 echo json_encode(array(

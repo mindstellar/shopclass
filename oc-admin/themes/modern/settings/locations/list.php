@@ -231,10 +231,10 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
             'text'   => __('Install a country from the catalog, or add one by hand.'),
             'action' => array(
                 'label'   => __('Install a country'),
-                'url'     => $url(array('form' => 'import')),
+                'url'     => $url(array('tab' => 'data')),
                 'icon'    => 'bi-download',
                 'variant' => 'primary',
-                'attrs'   => array('data-loc-form' => ''),
+                'attrs'   => array('data-loc-tab' => 'data'),
             ),
         ));
     } elseif ($loc['rows'] === array() && $q !== '') {

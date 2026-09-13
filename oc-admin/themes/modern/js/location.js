@@ -9,8 +9,8 @@
 
 /*
  * Locations screen (settings/locations.php). Every link and form works as plain GET/POST;
- * this swaps the list in place, searches as you type, edits in a drawer and confirms
- * deletes in a dialog.
+ * this swaps the list in place, searches as you type, edits in a drawer, confirms
+ * deletes in a dialog and runs the Data tab's imports, previews and recount in place.
  */
 (function () {
     'use strict';
@@ -20,6 +20,9 @@
         + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const SEARCH_DELAY = 250;
     const SLUG_DELAY = 300;
+    const RECALC_DELAY = 250;
+    // Polls in a row without the queue shrinking before a recount gives up.
+    const RECALC_STALLS = 3;
 
     function init() {
         const app = document.querySelector('.locations-app');
@@ -41,6 +44,8 @@
         const announcer = document.getElementById('loc-announce');
         const drawer = document.getElementById('loc-drawer');
         const backdrop = document.getElementById('loc-drawer-backdrop');
+        const dataRegion = document.getElementById('loc-data');
+        const csrf = app.getAttribute('data-csrf') || '';
 
         let listRequest = null;
         let formRequest = null;
@@ -50,10 +55,54 @@
         let slugTimer = 0;
         let drawerOpener = null;
         let dialogOpener = null;
+        let dataRequest = null;
+        let catalogPromise = null;
+        let catalogJob = null;
+        let recalcJob = null;
+        let currentTab = app.getAttribute('data-tab') === 'data' ? 'data' : 'browse';
+        let browseHref = currentTab === 'browse' ? window.location.href : base;
+        let listStale = false;
 
         // ---- Small helpers --------------------------------------------------------
         function format(template, value) {
             return String(template || '').replace('%s', value);
+        }
+
+        // Numbered placeholders (%1$s, %2$s) and %% as the server's sprintf() reads them.
+        function formatN(template, values) {
+            return String(template || '').replace(/%(\d)\$s|%%/g, function (match, index) {
+                return match === '%%' ? '%' : String(values[Number(index) - 1]);
+            });
+        }
+
+        function postForm(url, body) {
+            return fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: XHR,
+                body: body
+            }).then(function (response) {
+                // The body decides, not the header: the CSRF refusal is JSON sent as text/html.
+                return response.text().then(function (text) {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        // A gateway gave up: posting again would only start the same long job.
+                        if (response.status >= 500) {
+                            return { error: response.status === 502 || response.status === 504 ? i18n.serverTimeout : i18n.saveError };
+                        }
+                        return null;
+                    }
+                });
+            });
+        }
+
+        function formBody(form, submitter) {
+            const body = new URLSearchParams(new FormData(form));
+            if (submitter && submitter.name) {
+                body.append(submitter.name, submitter.value);
+            }
+            return body;
         }
 
         // Same grouping as the server's number_format().
@@ -203,6 +252,8 @@
                     inline.remove();
                 }
                 setHistory(opts.history, href);
+                browseHref = href;
+                listStale = false;
                 enhanceList();
                 const list = region.querySelector('.loc-list');
                 if (list) {
@@ -519,6 +570,69 @@
             }
             focusFirst(drawer);
             loadCounts();
+            prepareOffer();
+        }
+
+        // ---- Add country: import from the catalog instead -----------------------
+        function catalog() {
+            if (!catalogPromise) {
+                catalogPromise = getJson(ajax + '&action=location_catalog').then(function (data) {
+                    return data && Array.isArray(data.countries) ? data.countries : [];
+                }).catch(function () {
+                    catalogPromise = null;
+                    return [];
+                });
+            }
+            return catalogPromise;
+        }
+
+        // The offer is hidden until the typed code names a catalog country.
+        function prepareOffer() {
+            const offer = drawer.querySelector('[data-loc-offer]');
+            if (offer) {
+                offer.hidden = true;
+                const code = drawer.querySelector('#loc-f-code');
+                if (code && code.value.trim() !== '') {
+                    updateOffer(code);
+                }
+            }
+        }
+
+        function updateOffer(input) {
+            const offer = drawer.querySelector('[data-loc-offer]');
+            if (!offer) {
+                return;
+            }
+            const code = input.value.trim().toUpperCase();
+            if (!/^[A-Z]{2}$/.test(code)) {
+                offer.hidden = true;
+                return;
+            }
+            catalog().then(function (countries) {
+                if (!offer.isConnected || input.value.trim().toUpperCase() !== code) {
+                    return;
+                }
+                const row = countries.find(function (country) {
+                    return String(country.code).toUpperCase() === code;
+                });
+                const text = offer.querySelector('[data-loc-offer-text]');
+                const button = offer.querySelector('[data-loc-offer-button]');
+                if (!row) {
+                    offer.hidden = true;
+                    return;
+                }
+                if (row.installed) {
+                    text.textContent = format(i18n.offerInstalled, row.name);
+                    button.hidden = true;
+                } else {
+                    text.textContent = row.regions > 0
+                        ? formatN(i18n.offer, [row.name, number(row.regions), number(row.rows)])
+                        : format(i18n.offerPlain, row.name);
+                    button.hidden = false;
+                    button.querySelector('span').textContent = format(i18n.offerButton, row.name);
+                }
+                offer.hidden = false;
+            });
         }
 
         function closeDrawer(restoreFocus) {
@@ -650,6 +764,10 @@
             drawer.setAttribute('tabindex', '-1');
 
             drawer.addEventListener('input', function (event) {
+                if (event.target.id === 'loc-f-code') {
+                    updateOffer(event.target);
+                    return;
+                }
                 const input = event.target.closest('[data-loc-slug-check]');
                 if (input) {
                     clearTimeout(slugTimer);
@@ -664,7 +782,7 @@
                     return;
                 }
                 const items = Array.prototype.filter.call(drawer.querySelectorAll(FOCUSABLE), function (node) {
-                    return node.getClientRects().length > 0;
+                    return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
                 });
                 if (items.length === 0) {
                     event.preventDefault();
@@ -685,7 +803,7 @@
                 const form = event.target.closest('.loc-form');
                 if (form) {
                     event.preventDefault();
-                    submitForm(form);
+                    submitForm(form, event.submitter);
                 }
             });
 
@@ -723,6 +841,7 @@
             dialog.innerHTML = html;
             const form = dialog.querySelector('.loc-form');
             dialog.classList.toggle('osc-dialog-danger', !!(form && form.classList.contains('loc-form-danger')));
+            dialog.classList.toggle('loc-dialog-wide', !!(form && form.classList.contains('loc-preview')));
             const title = dialog.querySelector('.osc-dialog-title');
             if (title) {
                 title.id = 'loc-dialog-title';
@@ -733,6 +852,12 @@
             }
             if (!dialog.open) {
                 dialog.showModal();
+            }
+            if (form && form.classList.contains('loc-preview')) {
+                // A report is read from the top.
+                dialog.scrollTop = 0;
+                title.focus();
+                return;
             }
             // A destructive dialog never lands on its Delete button.
             focusFirst(dialog);
@@ -803,7 +928,7 @@
         dialog.addEventListener('close', function () {
             abortForm();
             dialog.innerHTML = '';
-            dialog.classList.remove('osc-dialog-danger');
+            dialog.classList.remove('osc-dialog-danger', 'loc-dialog-wide');
             if (dialogOpener && dialogOpener.isConnected) {
                 dialogOpener.focus();
             }
@@ -821,7 +946,7 @@
             const form = event.target.closest('.loc-form');
             if (form) {
                 event.preventDefault();
-                submitForm(form);
+                submitForm(form, event.submitter);
             }
         });
 
@@ -837,9 +962,11 @@
             }
         }
 
-        function submitForm(form) {
-            const button = form.querySelector('[type="submit"]');
-            const label = button ? button.textContent : '';
+        function submitForm(form, submitter) {
+            const button = submitter && submitter.hasAttribute('data-loc-busy')
+                ? submitter
+                : form.querySelector('[type="submit"]:not([tabindex="-1"])');
+            const label = button ? button.innerHTML : '';
             if (button) {
                 button.disabled = true;
                 if (button.hasAttribute('data-loc-busy')) {
@@ -851,35 +978,32 @@
             const idField = form.querySelector('[name="country_code"], [name="region_id"], [name="city_id"]');
             const editedId = type.indexOf('edit_') === 0 && idField ? idField.value : '';
 
-            fetch(form.getAttribute('action'), {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: XHR,
-                body: new URLSearchParams(new FormData(form))
-            }).then(function (response) {
-                // The body decides, not the header: the CSRF refusal is JSON sent as text/html.
-                return response.text().then(function (text) {
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        return null;
-                    }
-                });
-            }).then(function (result) {
+            postForm(form.getAttribute('action'), formBody(form, submitter)).then(function (result) {
                 if (result === null) {
                     // A login page or an error page: post the form normally and let the server answer.
+                    if (submitter && submitter.name) {
+                        form.append(el('input', { type: 'hidden', name: submitter.name, value: submitter.value }));
+                    }
                     HTMLFormElement.prototype.submit.call(form);
                     return;
                 }
                 if (result.error || !result.ok) {
-                    showFormError(form, result.msg || result.message || i18n.saveError);
+                    showFormError(form, result.msg || result.message || result.error || i18n.saveError);
                     return;
                 }
+                catalogPromise = null;
                 closeDialog();
                 closeDrawer(false);
                 flash('ok', result.message);
 
                 const target = new URL(result.redirect, window.location.href);
+                if (target.searchParams.get('tab') === 'data' || currentTab === 'data') {
+                    listStale = true;
+                    if (currentTab === 'data') {
+                        loadData(dataHref(), { history: false });
+                    }
+                    return;
+                }
                 const here = new URL(listHref(window.location.href));
                 const sameLevel = here.searchParams.get('scope') === 'all' || ['country', 'region'].every(function (key) {
                     return (target.searchParams.get(key) || '') === (here.searchParams.get(key) || '');
@@ -907,9 +1031,450 @@
                 showFormError(form, i18n.saveError);
             }).finally(function () {
                 if (button && button.isConnected) {
-                    button.textContent = label;
+                    button.innerHTML = label;
                     button.disabled = false;
                     syncConfirm(form);
+                }
+            });
+        }
+
+        // ---- Tabs -----------------------------------------------------------------
+        function dataHref() {
+            const url = new URL(base, window.location.href);
+            url.searchParams.set('tab', 'data');
+            if (dataRegion) {
+                const form = dataRegion.querySelector('.loc-catalog-filter');
+                if (form) {
+                    const state = filterState(form);
+                    if (state.find !== '') {
+                        url.searchParams.set('find', state.find);
+                    }
+                    if (state.show !== '') {
+                        url.searchParams.set('show', state.show);
+                    }
+                }
+            }
+            return url.toString();
+        }
+
+        function setTab(name) {
+            currentTab = name;
+            region.hidden = name !== 'browse';
+            if (dataRegion) {
+                dataRegion.hidden = name !== 'data';
+            }
+            app.querySelectorAll('[data-loc-tab]').forEach(function (link) {
+                if (!link.closest('.loc-tabs')) {
+                    return;
+                }
+                const current = link.getAttribute('data-loc-tab') === name;
+                link.classList.toggle('is-active', current);
+                if (current) {
+                    link.setAttribute('aria-current', 'page');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
+            });
+        }
+
+        function showBrowse(history) {
+            cancelData();
+            setTab('browse');
+            if (listStale || !region.querySelector('.loc-list')) {
+                loadList(browseHref, { history: history });
+            } else {
+                setHistory(history, browseHref);
+                const list = region.querySelector('.loc-list');
+                announce(list ? list.getAttribute('data-loc-summary') : '');
+            }
+        }
+
+        function cancelData() {
+            if (dataRequest) {
+                dataRequest.abort();
+                dataRequest = null;
+            }
+        }
+
+        // opts: history ('push' | 'replace' | false), focus (true to focus the tab link).
+        function loadData(href, opts) {
+            opts = opts || {};
+            if (!dataRegion) {
+                window.location.assign(href);
+                return;
+            }
+            cancelData();
+            cancelList();
+            setTab('data');
+            const request = new AbortController();
+            dataRequest = request;
+            dataRegion.setAttribute('aria-busy', 'true');
+            if (!dataRegion.querySelector('.loc-data')) {
+                dataRegion.replaceChildren(el('p', { class: 'loc-data-loading', role: 'status' }, [
+                    icon('bi-arrow-repeat'),
+                    el('span', { text: i18n.dataLoading })
+                ]));
+            }
+            const clean = new URL(href, window.location.href);
+            clean.searchParams.delete('refresh');
+
+            return fetch(withParam(href, 'partial', 'data'), {
+                credentials: 'same-origin',
+                headers: XHR,
+                signal: request.signal
+            }).then(function (response) {
+                if (!isPartial(response, 'data')) {
+                    window.location.assign(href);
+                    return null;
+                }
+                return response.text();
+            }).then(function (html) {
+                if (html === null || request.signal.aborted) {
+                    return;
+                }
+                const template = document.createElement('template');
+                template.innerHTML = html;
+                dataRegion.replaceChildren(template.content);
+                setHistory(opts.history, clean.toString());
+                enhanceData();
+                const count = dataRegion.querySelector('[data-loc-catalog-count]');
+                if (count) {
+                    announce(count.textContent.trim());
+                }
+            }).catch(function (error) {
+                if (error.name !== 'AbortError') {
+                    flash('error', i18n.loadError);
+                }
+            }).finally(function () {
+                if (dataRequest === request) {
+                    dataRequest = null;
+                    dataRegion.removeAttribute('aria-busy');
+                }
+            });
+        }
+
+        // ---- Data tab: catalog filter -----------------------------------------------
+        function filterState(form) {
+            const data = new FormData(form);
+            return {
+                find: String(data.get('find') || '').trim(),
+                show: String(data.get('show') || '')
+            };
+        }
+
+        function rowMatches(row, find, show) {
+            const state = row.getAttribute('data-state');
+            if (show === 'installed' ? state === 'available' : show !== 'all' && state !== show) {
+                return false;
+            }
+            if (find === '') {
+                return true;
+            }
+            return row.getAttribute('data-code') === find.toUpperCase()
+                || String(row.getAttribute('data-name') || '').indexOf(find.toLowerCase()) !== -1;
+        }
+
+        function applyFilter(updateUrl) {
+            const form = dataRegion && dataRegion.querySelector('.loc-catalog-filter');
+            if (!form) {
+                return;
+            }
+            const state = filterState(form);
+            const rows = dataRegion.querySelectorAll('.loc-catalog-table tbody tr[data-code]');
+            let visible = 0;
+            rows.forEach(function (row) {
+                const shown = rowMatches(row, state.find, state.show);
+                row.hidden = !shown;
+                visible += shown ? 1 : 0;
+            });
+            const empty = dataRegion.querySelector('[data-loc-catalog-empty]');
+            if (empty) {
+                empty.hidden = visible > 0;
+                const text = empty.querySelector('[data-loc-catalog-empty-text]');
+                if (text) {
+                    text.textContent = state.find !== '' ? format(i18n.noMatch, state.find) : i18n.noFilterMatch;
+                }
+                const all = empty.querySelector('[data-loc-show-all]');
+                if (all) {
+                    all.hidden = state.show === 'all';
+                }
+            }
+            const count = dataRegion.querySelector('[data-loc-catalog-count]');
+            if (count) {
+                count.textContent = formatN(i18n.showing, [number(visible), number(rows.length)]);
+            }
+            if (updateUrl && currentTab === 'data') {
+                setHistory('replace', dataHref());
+            }
+        }
+
+        function enhanceData() {
+            if (!dataRegion) {
+                return;
+            }
+            const submit = dataRegion.querySelector('.loc-catalog-filter .loc-search-submit');
+            if (submit) {
+                submit.hidden = true;
+            }
+            const inline = dataRegion.querySelector('.loc-preview-inline');
+            if (inline) {
+                // A preview shown after a plain POST moves into the dialog.
+                const form = inline.querySelector('.loc-preview');
+                if (form) {
+                    showDialog(inline.innerHTML, null);
+                }
+                inline.remove();
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('preview')) {
+                    url.searchParams.delete('preview');
+                    window.history.replaceState({ locations: true }, '', url.toString());
+                }
+            }
+            // A job started before the tab was reloaded keeps its buttons and progress.
+            paintCatalogJob();
+            paintRecalc();
+        }
+
+        // ---- Data tab: install, update, preview ---------------------------------------
+        // The running job lives here, not in the markup, so a reloaded tab shows it too.
+        function paintCatalogJob() {
+            if (!dataRegion) {
+                return;
+            }
+            const busy = catalogJob !== null;
+            const table = dataRegion.querySelector('.loc-catalog-table');
+            const box = dataRegion.querySelector('[data-loc-busy-note]');
+            if (table) {
+                if (busy) {
+                    table.setAttribute('aria-busy', 'true');
+                } else {
+                    table.removeAttribute('aria-busy');
+                }
+            }
+            dataRegion.querySelectorAll('[data-loc-catalog-action]').forEach(function (button) {
+                const active = busy && button.value === catalogJob.code && button.getAttribute('form') === catalogJob.form;
+                // An import and a recount at once lock the same rows.
+                button.disabled = busy || recountRunning();
+                if (active && !button.hasAttribute('data-loc-label-html')) {
+                    button.setAttribute('data-loc-label-html', button.innerHTML);
+                    button.textContent = catalogJob.label;
+                } else if (!active && button.hasAttribute('data-loc-label-html')) {
+                    button.innerHTML = button.getAttribute('data-loc-label-html');
+                    button.removeAttribute('data-loc-label-html');
+                }
+                const row = button.closest('tr');
+                if (row) {
+                    row.classList.toggle('is-busy', busy && row.getAttribute('data-code') === catalogJob.code);
+                }
+            });
+            if (box) {
+                box.textContent = busy ? catalogJob.note : '';
+                box.hidden = !busy;
+            }
+            const recount = dataRegion.querySelector('.loc-recalc-form [type="submit"]');
+            if (recount && !recountRunning()) {
+                recount.disabled = busy;
+            }
+        }
+
+        function recountRunning() {
+            return recalcJob !== null && recalcJob.running;
+        }
+
+        function runCatalogAction(form, submitter) {
+            if (catalogJob !== null || recountRunning() || !submitter) {
+                return;
+            }
+            const preview = form.id === 'loc-preview-form';
+            const row = submitter.closest('tr');
+            const name = row ? row.querySelector('.loc-col-country').textContent.trim() : submitter.value;
+            const job = {
+                code: submitter.value,
+                form: form.id,
+                label: preview ? i18n.previewBusy : (submitter.getAttribute('data-loc-busy') || i18n.installBusy),
+                note: format(i18n.longRun, name)
+            };
+            const body = formBody(form, submitter);
+            catalogJob = job;
+            paintCatalogJob();
+
+            postForm(form.getAttribute('action'), body).then(function (result) {
+                catalogJob = null;
+                if (result === null) {
+                    const current = dataRegion.querySelector('#' + job.form) || form;
+                    current.append(el('input', { type: 'hidden', name: 'location', value: job.code }));
+                    HTMLFormElement.prototype.submit.call(current);
+                    return;
+                }
+                paintCatalogJob();
+                if (result.error || !result.ok) {
+                    flash('error', result.msg || result.message || result.error || i18n.saveError);
+                    return;
+                }
+                if (preview) {
+                    const opener = dataRegion.querySelector('[form="' + job.form + '"][value="' + job.code + '"]');
+                    showDialog(result.html || '', opener);
+                    return;
+                }
+                catalogPromise = null;
+                flash('ok', result.message);
+                listStale = true;
+                loadData(dataHref(), { history: false });
+            }).catch(function () {
+                catalogJob = null;
+                paintCatalogJob();
+                flash('error', i18n.saveError);
+            });
+        }
+
+        // ---- Data tab: listing counts ---------------------------------------------------
+        function paintRecalc() {
+            const form = recalcJob && dataRegion ? dataRegion.querySelector('.loc-recalc-form') : null;
+            if (!form) {
+                return;
+            }
+            const button = form.querySelector('[type="submit"]');
+            const label = button.querySelector('span');
+            if (!label.hasAttribute('data-loc-label')) {
+                label.setAttribute('data-loc-label', label.textContent);
+            }
+            button.disabled = recalcJob.running;
+            label.textContent = recalcJob.running
+                ? i18n.recalcBusy
+                : (recalcJob.again ? i18n.recalcAgain : label.getAttribute('data-loc-label'));
+
+            const box = dataRegion.querySelector('[data-loc-recalc-progress]');
+            if (!box) {
+                return;
+            }
+            const done = recalcJob.total - recalcJob.pending;
+            const percent = recalcJob.total === 0 ? 100 : Math.floor(done * 100 / recalcJob.total);
+            box.hidden = false;
+            box.querySelector('progress').max = Math.max(1, recalcJob.total);
+            box.querySelector('progress').value = done;
+            box.querySelector('.loc-recalc-status').textContent = recalcJob.text
+                || formatN(i18n.recalcStep, [percent, number(done), number(recalcJob.total)]);
+        }
+
+        function runRecalc(form) {
+            if (recountRunning() || catalogJob !== null) {
+                return;
+            }
+            const job = { running: true, total: 0, pending: 0, text: '', again: false };
+            let stalls = 0;
+            recalcJob = job;
+            paintRecalc();
+            paintCatalogJob();
+
+            const update = function (pending) {
+                job.total = Math.max(job.total, pending);
+                job.pending = pending;
+                paintRecalc();
+            };
+            const finish = function (text, again) {
+                job.running = false;
+                job.text = text;
+                job.again = again;
+                paintRecalc();
+                paintCatalogJob();
+            };
+            const poll = function () {
+                postForm(ajax + '&action=location_stats&' + csrf, '').then(function (data) {
+                    if (!data || data.error || !data.status) {
+                        finish(i18n.recalcError, true);
+                        return;
+                    }
+                    const pending = Number(data.pending) || 0;
+                    if (data.status === 'done' || pending === 0) {
+                        update(0);
+                        finish(i18n.recalcDone, false);
+                        listStale = true;
+                        return;
+                    }
+                    stalls = pending < job.pending ? 0 : stalls + 1;
+                    update(pending);
+                    if (stalls >= RECALC_STALLS) {
+                        finish(i18n.recalcStalled, true);
+                        return;
+                    }
+                    window.setTimeout(poll, RECALC_DELAY);
+                }).catch(function () {
+                    finish(i18n.recalcError, true);
+                });
+            };
+
+            postForm(form.getAttribute('action'), formBody(form, null)).then(function (result) {
+                if (result === null) {
+                    recalcJob = null;
+                    paintCatalogJob();
+                    HTMLFormElement.prototype.submit.call(form.isConnected ? form : dataRegion.querySelector('.loc-recalc-form'));
+                    return;
+                }
+                if (result.error) {
+                    recalcJob = null;
+                    paintRecalcIdle();
+                    paintCatalogJob();
+                    flash('warning', result.msg || result.error);
+                    return;
+                }
+                job.total = Number(result.total) || 0;
+                update(Number(result.pending) || 0);
+                if (result.status === 'done') {
+                    update(0);
+                    finish(i18n.recalcDone, false);
+                    listStale = true;
+                    return;
+                }
+                window.setTimeout(poll, RECALC_DELAY);
+            }).catch(function () {
+                finish(i18n.recalcError, true);
+            });
+        }
+
+        // After a refusal nothing ran: the button goes back to how the server drew it.
+        function paintRecalcIdle() {
+            const button = dataRegion && dataRegion.querySelector('.loc-recalc-form [type="submit"]');
+            if (button) {
+                const label = button.querySelector('span');
+                button.disabled = false;
+                if (label.hasAttribute('data-loc-label')) {
+                    label.textContent = label.getAttribute('data-loc-label');
+                }
+            }
+        }
+
+        if (dataRegion) {
+            dataRegion.addEventListener('input', function (event) {
+                if (event.target.id === 'loc-find') {
+                    applyFilter(true);
+                }
+            });
+
+            dataRegion.addEventListener('change', function (event) {
+                if (event.target.matches('.loc-segmented input')) {
+                    applyFilter(true);
+                }
+            });
+
+            dataRegion.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && event.target.id === 'loc-find' && event.target.value !== '') {
+                    event.preventDefault();
+                    event.target.value = '';
+                    applyFilter(true);
+                }
+            });
+
+            dataRegion.addEventListener('submit', function (event) {
+                const form = event.target;
+                if (form.matches('.loc-catalog-filter')) {
+                    event.preventDefault();
+                    applyFilter(true);
+                } else if (form.matches('.loc-catalog-form')) {
+                    event.preventDefault();
+                    runCatalogAction(form, event.submitter);
+                } else if (form.matches('.loc-recalc-form')) {
+                    event.preventDefault();
+                    runRecalc(form);
                 }
             });
         }
@@ -928,6 +1493,38 @@
             if (cancel && drawer && drawer.contains(cancel)) {
                 event.preventDefault();
                 closeDrawer();
+                return;
+            }
+            const tab = event.target.closest('a[data-loc-tab]');
+            if (tab && dataRegion) {
+                event.preventDefault();
+                if (tab.getAttribute('data-loc-tab') === 'data') {
+                    if (currentTab !== 'data' || !dataRegion.querySelector('.loc-data')) {
+                        loadData(dataHref(), { history: 'push' });
+                    }
+                } else if (currentTab !== 'browse') {
+                    showBrowse('push');
+                }
+                return;
+            }
+            const showAll = event.target.closest('a[data-loc-show-all]');
+            if (showAll && dataRegion && dataRegion.contains(showAll)) {
+                event.preventDefault();
+                const radio = dataRegion.querySelector('#loc-show-all');
+                if (radio) {
+                    radio.checked = true;
+                    applyFilter(true);
+                    const find = dataRegion.querySelector('#loc-find');
+                    if (find) {
+                        find.focus();
+                    }
+                }
+                return;
+            }
+            const dataNav = event.target.closest('a[data-loc-data-nav]');
+            if (dataNav && dataRegion && dataRegion.contains(dataNav)) {
+                event.preventDefault();
+                loadData(dataNav.href, { history: 'replace' });
                 return;
             }
             const opener = event.target.closest('a[data-loc-form]');
@@ -1041,7 +1638,7 @@
             if (event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) {
                 return;
             }
-            const input = document.getElementById('loc-q');
+            const input = document.getElementById(currentTab === 'data' ? 'loc-find' : 'loc-q');
             if (input) {
                 event.preventDefault();
                 input.focus();
@@ -1050,14 +1647,22 @@
         });
 
         window.addEventListener('popstate', function () {
+            if (new URL(window.location.href).searchParams.get('tab') === 'data') {
+                loadData(window.location.href, { history: false });
+                return;
+            }
+            browseHref = window.location.href;
+            setTab('browse');
             loadList(window.location.href, { history: false });
         });
 
         // ---- Start ----------------------------------------------------------------
         enhanceList();
+        enhanceData();
         if (isDrawerOpen()) {
             focusFirst(drawer);
             loadCounts();
+            prepareOffer();
         }
     }
 

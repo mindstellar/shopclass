@@ -352,7 +352,8 @@
 //
 // The 1px border is paid for out of the padding (2px 10px -> 1px 9px) so the outline badge
 // occupies exactly the same box as a filled one and the column does not jitter row to row.
-.status-uninstalled .osc-status {
+.status-uninstalled .osc-status,
+.osc-status.status-uninstalled {
   background-color: transparent;
   border: 1px solid var(--osc-rule-strong);
   color: var(--osc-ink-muted);

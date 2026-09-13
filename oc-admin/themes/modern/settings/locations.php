@@ -15,6 +15,8 @@
 
 $locations    = __get('locations');
 $locationForm = __get('locationForm');
+$locationTab  = __get('locationTab') === 'data' ? 'data' : 'browse';
+$locationData = __get('locationData');
 
 osc_admin_page(array(
     'section' => __('Listings'),
@@ -25,8 +27,8 @@ osc_admin_page(array(
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
-            'url'   => $locations['base'] . '&form=import',
-            'title' => __('Import new'),
+            'url'   => $locations['base'] . '&form=add',
+            'title' => __('Add country'),
             'attrs' => array('id' => 'b_import', 'data-loc-form' => ''),
         ),
     ),
@@ -40,6 +42,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="locations-app"
          data-ajax="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax'); ?>"
          data-base="<?php echo osc_esc_html($locations['base']); ?>"
+         data-tab="<?php echo $locationTab; ?>"
+         data-csrf="<?php echo osc_esc_html(osc_csrf_token_url()); ?>"
          data-i18n='<?php echo osc_esc_html(json_encode(array(
              'loading'       => __('Loading…'),
              'loadError'     => __('The list could not be loaded. Check your connection and try again.'),
@@ -65,14 +69,51 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                  \mindstellar\location\LocationAdminView::HITS_PER_LEVEL
              ),
              'hitsLimit'     => \mindstellar\location\LocationAdminView::HITS_PER_LEVEL,
+             'dataLoading'   => __('Reading the location catalog…'),
+             'showing'       => __('Showing %1$s of %2$s countries'),
+             'noMatch'       => __('No country matches “%s”'),
+             'noFilterMatch' => __('No country matches this filter'),
+             'serverTimeout' => __('The server stopped waiting before the work finished. Try again; if it keeps happening, ask your host to allow requests of up to five minutes.'),
+             'previewBusy'   => __('Checking…'),
+             'installBusy'   => __('Installing…'),
+             'updateBusy'    => __('Updating…'),
+             'longRun'       => __('Reading %s from the catalog. A large country can take a minute or two; keep this page open.'),
+             'recalcBusy'    => __('Counting…'),
+             'recalcDone'    => __('Listing counts are up to date.'),
+             'recalcError'   => __('Counting stopped. Your connection may have dropped; continue to pick up where it stopped.'),
+             'recalcAgain'   => __('Continue counting'),
+             'recalcStalled' => __('Counting stopped because it was not moving forward. Try again in a few minutes.'),
+             'recalcStep'    => __('%1$s%% counted: %2$s of %3$s locations'),
+             'offer'         => __('The catalog has %1$s. Regions: %2$s. Cities: %3$s.'),
+             'offerPlain'    => __('The catalog has %s, with its regions and cities.'),
+             'offerButton'   => __('Import %s instead'),
+             'offerInstalled' => __('%s is already installed. Update it from the Data tab.'),
          ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
+        <nav class="loc-tabs" aria-label="<?php echo osc_esc_html(__('Location views')); ?>">
+            <ul class="osc-tabnav">
+                <?php foreach (array('browse' => __('Browse'), 'data' => __('Data')) as $tabKey => $tabLabel) {
+                    $current = $locationTab === $tabKey; ?>
+                    <li>
+                        <a href="<?php echo osc_esc_html($locations['base'] . ($tabKey === 'data' ? '&tab=data' : '')); ?>"
+                           data-loc-tab="<?php echo $tabKey; ?>"<?php echo $current ? ' class="is-active" aria-current="page"' : ''; ?>>
+                            <?php echo osc_esc_html($tabLabel); ?>
+                        </a>
+                    </li>
+                <?php } ?>
+            </ul>
+        </nav>
         <?php if (is_array($locationForm) && !$inDrawer) { ?>
             <section class="loc-inline-form" aria-label="<?php echo osc_esc_html(__('Location form')); ?>">
                 <?php osc_current_admin_theme_path('settings/locations/form.php'); ?>
             </section>
         <?php } ?>
-        <div id="loc-list" class="loc-list-region">
+        <div id="loc-list" class="loc-list-region"<?php echo $locationTab === 'data' ? ' hidden' : ''; ?>>
             <?php osc_current_admin_theme_path('settings/locations/list.php'); ?>
+        </div>
+        <div id="loc-data" class="loc-data-region"<?php echo $locationTab === 'data' ? '' : ' hidden'; ?>>
+            <?php if (is_array($locationData)) {
+                osc_current_admin_theme_path('settings/locations/data.php');
+            } ?>
         </div>
         <p id="loc-announce" class="visually-hidden" aria-live="polite"></p>
         <div class="osc-drawer-backdrop<?php echo $inDrawer ? ' is-open' : ''; ?>" id="loc-drawer-backdrop"<?php echo $inDrawer ? '' : ' hidden'; ?>></div>

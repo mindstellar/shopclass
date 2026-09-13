@@ -172,6 +172,8 @@ final class LocationCatalog
                 // it is the copy an import actually reads. It moves when the data moves.
                 'sha'  => $sha,
                 'rows' => (int) ($entry['settlements'] ?? $entry['i_cities'] ?? 0),
+                // 0 when the catalog does not say.
+                'regions' => (int) ($entry['regions'] ?? $entry['i_regions'] ?? 0),
             );
 
             // The older catalog published the two forms as separate files with independent
@@ -453,7 +455,7 @@ final class LocationCatalog
      * @param bool $refresh re-fetch the manifest instead of using the cache
      *
      * @return array<int, array{code:string,name:string,file:string,sha:string,ndjson:string,
-     *               ndjson_sha:string,installed:bool,current:bool,rows:int}>
+     *               ndjson_sha:string,installed:bool,current:bool,rows:int,regions:int}>
      */
     public function status(bool $refresh = false): array
     {
@@ -484,6 +486,7 @@ final class LocationCatalog
                 'installed'  => $isInstalled,
                 'current'    => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
                 'rows'       => (int) $entry['rows'],
+                'regions'    => (int) ($entry['regions'] ?? 0),
             );
         }
 

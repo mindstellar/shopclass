@@ -529,6 +529,47 @@ foreach (array(
 }
 
 /* ---------------------------------------------------------------------------
+ * Preview: the Data tab's dry run writes nothing.
+ * ------------------------------------------------------------------------ */
+
+harness_section('Catalog preview (dry run)');
+
+seed_country($admin, 'EE', 'Epsiland');
+$e1 = seed_region($admin, 'EE', 'Epsi One');
+seed_city($admin, $e1, 'Epsi Town', 'EE');
+seed_city($admin, $e1, 'Epsi Gone', 'EE');
+
+$snapshot = static function () use ($admin, $prefix): array {
+    $out = array();
+    foreach (array('t_country', 't_region', 't_city', 't_location_slug_history') as $table) {
+        $row = $admin->query("CHECKSUM TABLE {$prefix}{$table}")->fetch_assoc();
+        $out[$table] = array(
+            (int) $admin->query("SELECT COUNT(*) FROM {$prefix}{$table}")->fetch_row()[0],
+            (string) $row['Checksum'],
+        );
+    }
+
+    return $out;
+};
+$country = array(
+    'code' => 'EE', 'name' => 'Epsiland Renamed', 'slug' => 'epsiland-renamed',
+    'regions' => array(
+        array('name' => 'Epsi One', 'slug' => 'epsi-one-new', 'settlements' => array(
+            array('name' => 'Epsi Town', 'slug' => 'epsi-town-new'),
+            array('name' => 'Epsi Fresh', 'slug' => 'epsi-fresh'),
+        )),
+        array('name' => 'Epsi Two', 'slug' => 'epsi-two', 'settlements' => array(array('name' => 'Epsi Port', 'slug' => 'epsi-port'))),
+    ),
+);
+
+$before  = $snapshot();
+$report  = (new \mindstellar\location\LocationImporter(true))->import($country);
+$preview = \mindstellar\location\LocationAdminView::previewReport($report);
+check('the dry run found changes to report', !isset($report['error']) && $preview['changes'] === true, json_encode($report));
+check('the dry run counted a new region and new cities', $report['regions']['inserted'] === 1 && $report['cities']['inserted'] >= 2);
+pin('the dry run wrote nothing: counts and checksums unchanged', $before, $snapshot());
+
+/* ---------------------------------------------------------------------------
  * The AJAX endpoints (source scan: the controller needs a live admin session).
  * ------------------------------------------------------------------------ */
 
