@@ -495,20 +495,20 @@ final class LocationAdminQuery
         switch ($level) {
             case 'country':
                 $table  = $this->table('t_country');
-                $select = 'pk_c_code, s_name, s_slug';
-                $order  = 's_name, pk_c_code';
+                $pk     = 'pk_c_code';
+                $select = 't.pk_c_code, t.s_name, t.s_slug';
                 break;
             case 'region':
                 $table    = $this->table('t_region');
-                $select   = 'pk_i_id, fk_c_country_code, s_name, s_slug, b_active';
-                $order    = 's_name, pk_i_id';
+                $pk       = 'pk_i_id';
+                $select   = 't.pk_i_id, t.fk_c_country_code, t.s_name, t.s_slug, t.b_active';
                 $where[]  = 'fk_c_country_code = ?';
                 $params[] = (string) $parent;
                 break;
             default:
                 $table    = $this->table('t_city');
-                $select   = 'pk_i_id, fk_i_region_id, fk_c_country_code, s_name, s_slug, b_active';
-                $order    = 's_name, pk_i_id';
+                $pk       = 'pk_i_id';
+                $select   = 't.pk_i_id, t.fk_i_region_id, t.fk_c_country_code, t.s_name, t.s_slug, t.b_active';
                 $where[]  = 'fk_i_region_id = ?';
                 $params[] = (int) $parent;
                 break;
@@ -523,8 +523,12 @@ final class LocationAdminQuery
 
         return array(
             'SELECT COUNT(*) FROM ' . $table . $whereSql,
-            'SELECT ' . $select . ' FROM ' . $table . $whereSql
-            . ' ORDER BY ' . $order . ' LIMIT ' . $per . ' OFFSET ' . (($page - 1) * $per),
+            // Deferred join: page through the (parent, s_name) index, which carries the key, then
+            // fetch only that page's rows. A deep offset otherwise tips the optimizer into a table scan.
+            'SELECT ' . $select . ' FROM (SELECT ' . $pk . ' FROM ' . $table . $whereSql
+            . ' ORDER BY s_name, ' . $pk . ' LIMIT ' . $per . ' OFFSET ' . (($page - 1) * $per) . ') p'
+            . ' JOIN ' . $table . ' t ON t.' . $pk . ' = p.' . $pk
+            . ' ORDER BY t.s_name, t.' . $pk,
             $params,
             $page,
             $per,

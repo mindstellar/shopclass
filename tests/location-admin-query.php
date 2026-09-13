@@ -387,7 +387,7 @@ $explain = static function (array $args, int $index) use ($q, $listQuery): array
 
     return osc_db_select('EXPLAIN ' . $built[$index], $built[2]);
 };
-$describe = static fn (array $plan): string => implode('; ', array_map(static fn ($r) => ($r['key'] ?? 'NULL') . ' / ' . ($r['Extra'] ?? ''), $plan));
+$describe = static fn (array $plan): string => implode('; ', array_map(static fn ($r) => ($r['table'] ?? '') . ' ' . ($r['type'] ?? '') . ' ' . ($r['key'] ?? 'NULL') . ' / ' . ($r['Extra'] ?? ''), $plan));
 
 foreach (array(
     'cities, no search, deep page' => array(array('city', $bigRegion, '', 400, 50), 'idx_region_name'),
@@ -396,8 +396,13 @@ foreach (array(
 ) as $label => [$args, $index]) {
     $page  = $explain($args, 1);
     $count = $explain($args, 0);
-    check("$label: page query uses $index", ($page[0]['key'] ?? '') === $index, $describe($page));
-    check("$label: page query does not sort", stripos((string) ($page[0]['Extra'] ?? ''), 'filesort') === false, $describe($page));
+    // The page is a deferred join: the derived table pages keys off the index, the join reads at most a page of rows.
+    $ids    = array_values(array_filter($page, static fn ($r) => strcasecmp((string) ($r['select_type'] ?? ''), 'DERIVED') === 0))[0] ?? array();
+    $joined = array_values(array_filter($page, static fn ($r) => ($r['table'] ?? '') === 't'))[0] ?? array();
+    check("$label: page ids come from $index", ($ids['key'] ?? '') === $index, $describe($page));
+    check("$label: page ids read the index only", preg_match('/Using index(?! condition)/', (string) ($ids['Extra'] ?? '')) === 1, $describe($page));
+    check("$label: page ids do not sort", stripos((string) ($ids['Extra'] ?? ''), 'filesort') === false, $describe($page));
+    check("$label: page rows are fetched by primary key", ($joined['type'] ?? '') === 'eq_ref' && ($joined['key'] ?? '') === 'PRIMARY', $describe($page));
     // The optimizer may count through the single-column parent index instead; either is bounded by the parent.
     check("$label: count query reads by parent index, not a scan", ($count[0]['type'] ?? 'ALL') !== 'ALL' && ($count[0]['key'] ?? null) !== null, $describe($count));
 }
