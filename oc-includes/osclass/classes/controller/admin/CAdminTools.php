@@ -130,7 +130,12 @@ class CAdminTools extends AdminSecBaseModel
                         microtime(true) - $started
                     );
                     while ($pending > 0 && microtime(true) < $until) {
-                        $pending = (int) osc_update_location_stats();
+                        $next = (int) osc_update_location_stats();
+                        if ($next >= $pending) {
+                            // A batch's writes are all failing; stop spinning until the next run.
+                            break;
+                        }
+                        $pending = $next;
                     }
                     if ($pending > 0) {
                         osc_add_flash_info_message(sprintf(

@@ -273,6 +273,7 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - Untranslated strings under RTL no longer flip trailing punctuation to the front of the line.
 - CSRF tokens are no longer added to forms inside JSON responses.
 - The location recount no longer fails on places deleted while it runs.
+- The location recount keeps a batch queued when its write fails, and stops instead of polling forever.
 
 ## Shopclass 6.2.0
 

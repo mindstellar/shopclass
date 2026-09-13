@@ -45,6 +45,20 @@ function customHead()
             window.location = '<?php echo osc_admin_base_url(true) . '?page=tools&action=locations'; ?>';
         }
 
+        var lastPending = null;
+        var stalls = 0;
+
+        function showError(msg) {
+            var pct = document.querySelector('span#percent');
+            document.querySelectorAll('.spinner-border').forEach(function (el) { el.remove(); });
+            var p = pct ? pct.closest('p') : null;
+            if (p) {
+                var span = document.createElement('span');
+                span.textContent = ' ' + msg;
+                p.appendChild(span);
+            }
+        }
+
         function ajax_() {
             fetch('<?php echo osc_admin_base_url(true)?>?page=ajax&action=location_stats&<?php echo osc_csrf_token_url(); ?>', {
                 method: 'POST',
@@ -59,11 +73,19 @@ function customHead()
                     document.querySelectorAll('.spinner-border').forEach(function (el) { el.remove(); });
                 } else {
                     var pending = data.pending;
+                    stalls = (lastPending !== null && pending >= lastPending) ? stalls + 1 : 0;
+                    lastPending = pending;
+                    if (stalls >= 3) {
+                        showError('<?php echo osc_esc_js(__('Recount stalled. Try again later.')); ?>');
+                        return;
+                    }
                     var all = <?php echo osc_esc_js($all);?>;
                     var percent = parseInt(((all - pending) * 100) / all);
                     if (pct) { pct.innerHTML = percent; }
-                    ajax_();
+                    window.setTimeout(ajax_, 250);
                 }
+            }).catch(function () {
+                showError('<?php echo osc_esc_js(__('Recount failed. Try again later.')); ?>');
             });
         }
 

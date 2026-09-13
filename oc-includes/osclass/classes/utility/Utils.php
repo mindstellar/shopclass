@@ -331,7 +331,7 @@ class Utils
             foreach ($aLocations as $location) {
                 $id   = $location['id_location'];
                 $type = $location['e_type'];
-                $data = 0;
+                $data = null;
                 // update locations stats
                 switch ($type) {
                     case 'COUNTRY':
@@ -349,7 +349,9 @@ class Utils
                         break;
                 }
 
-                if ($data >= 0 && $type === 'COUNTRY') {
+                // Strict: these return bool, and a failed write must not be
+                // dequeued or it never gets retried.
+                if ($type === 'COUNTRY' && $data === true) {
                     $loctmp->delete(array(
                         'e_type'      => $location['e_type'],
                         'id_location' => $location['id_location']
@@ -358,7 +360,7 @@ class Utils
             }
             if (count($regionIds) > 0) {
                 $regionUpdate = RegionStats::newInstance()->updateAllStats($regionIds);
-                if ($regionUpdate >= 0) {
+                if ($regionUpdate === true) {
                     // batch delete $regionIds from locations_tmp
                     $loctmp->batchDelete($regionIds, 'REGION');
                 }
@@ -366,7 +368,7 @@ class Utils
 
             if (count($cityIds) > 0) {
                 $cityUpdate = CityStats::newInstance()->updateAllStats($cityIds);
-                if ($cityUpdate >= 0) {
+                if ($cityUpdate === true) {
                     // batch delete $cityIds from locations_tmp
                     $loctmp->batchDelete($cityIds, 'CITY');
                 }

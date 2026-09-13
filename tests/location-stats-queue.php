@@ -78,4 +78,34 @@ pin('regions', (string) $keepRegion, $scalar("SELECT GROUP_CONCAT(fk_i_region_id
 pin('cities', '2', $scalar("SELECT COUNT(*) FROM {$prefix}t_city_stats"));
 pin('the kept city among them', '1', $scalar("SELECT COUNT(*) FROM {$prefix}t_city_stats WHERE fk_i_city_id = $keepCity"));
 
+harness_section('a batch whose write fails is not dequeued');
+// Re-queue every surviving place, then take the region/city stats tables away
+// so their writes throw. Country stats stays up, so it should still drain.
+Utils::updateLocationStats(true);
+$admin->query("RENAME TABLE {$prefix}t_region_stats TO {$prefix}t_region_stats_away");
+$admin->query("RENAME TABLE {$prefix}t_city_stats TO {$prefix}t_city_stats_away");
+
+Utils::updateLocationStats(false, 10);
+
+pin('country ids drain despite the other tables being gone', '0', $scalar(
+    "SELECT COUNT(*) FROM {$prefix}t_locations_tmp WHERE e_type = 'COUNTRY'"
+));
+pin('the region id stays queued', '1', $scalar(
+    "SELECT COUNT(*) FROM {$prefix}t_locations_tmp WHERE e_type = 'REGION' AND id_location = $keepRegion"
+));
+pin('both city ids stay queued', '2', $scalar(
+    "SELECT COUNT(*) FROM {$prefix}t_locations_tmp WHERE e_type = 'CITY'"
+));
+
+$admin->query("RENAME TABLE {$prefix}t_region_stats_away TO {$prefix}t_region_stats");
+$admin->query("RENAME TABLE {$prefix}t_city_stats_away TO {$prefix}t_city_stats");
+
+harness_section('the queue drains once the write can succeed again');
+$left = -1;
+for ($batch = 0; $batch < 10 && $left !== 0; $batch++) {
+    $left = (int) Utils::updateLocationStats(false, 10);
+}
+pin('the queue drains', 0, $left);
+pin('the queue table is empty', '0', $scalar("SELECT COUNT(*) FROM {$prefix}t_locations_tmp"));
+
 exit(harness_result());
