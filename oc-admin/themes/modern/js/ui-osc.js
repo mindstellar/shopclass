@@ -403,9 +403,23 @@ document.addEventListener('click', function (e) {
 // Conditional fields: a form row carrying data-osc-depends="<field name>" is shown only
 // while that field is switched on, which is UX — the save path re-evaluates the same
 // relationship and discards a hidden field's value.
-// "On" matches the server: neither empty nor "0", and a master that is itself dependent
+// "On" matches the server: neither empty nor "0", or, for a row carrying
+// data-osc-depends-value, one of the listed values. A master that is itself dependent
 // counts as off while its own master is.
-function oscDependsOn(name, scope, seen) {
+function oscDependsValues(row) {
+    var raw = row.getAttribute('data-osc-depends-value');
+    if (raw === null) {
+        return null;
+    }
+    try {
+        var list = JSON.parse(raw);
+        return Array.isArray(list) ? list.map(String) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function oscDependsOn(name, scope, seen, values) {
     if (!name || seen.indexOf(name) !== -1) {
         return false;
     }
@@ -418,10 +432,10 @@ function oscDependsOn(name, scope, seen) {
     var masterRow = null;
     for (var i = 0; i < controls.length; i++) {
         var el = controls[i];
-        var value = (el.type === 'checkbox' || el.type === 'radio')
+        var value = String((el.type === 'checkbox' || el.type === 'radio')
             ? (el.checked ? (el.value === '' ? '1' : el.value) : '')
-            : el.value;
-        if (String(value).trim() !== '' && String(value) !== '0') {
+            : el.value);
+        if (values ? values.indexOf(value.trim()) !== -1 : (value.trim() !== '' && value !== '0')) {
             on = true;
         }
         if (!masterRow && el.closest) {
@@ -429,7 +443,7 @@ function oscDependsOn(name, scope, seen) {
         }
     }
     if (on && masterRow) {
-        on = oscDependsOn(masterRow.getAttribute('data-osc-depends'), scope, seen);
+        on = oscDependsOn(masterRow.getAttribute('data-osc-depends'), scope, seen, oscDependsValues(masterRow));
     }
     return on;
 }
@@ -457,7 +471,7 @@ function oscSyncDepends(root) {
     var rows = root.querySelectorAll('[data-osc-depends]');
     for (var i = 0; i < rows.length; i++) {
         var scope = (rows[i].closest && rows[i].closest('form')) || document;
-        var on = oscDependsOn(rows[i].getAttribute('data-osc-depends'), scope, []);
+        var on = oscDependsOn(rows[i].getAttribute('data-osc-depends'), scope, [], oscDependsValues(rows[i]));
         rows[i].hidden = !on;
         oscDependsRequired(rows[i], on);
     }

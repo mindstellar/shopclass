@@ -69,6 +69,7 @@ final class FormSpec
         'required',
         'disabled',
         'depends',
+        'depends_value',
         'translate',
         'purify',
         'options',
@@ -536,18 +537,26 @@ final class FormSpec
     }
 
     /**
-     * Show this field only while another field on the same page is switched on. Server
-     * side as well as client side: while the master is off the value is discarded and the
-     * field is not required.
+     * Show this field only while another field on the same page is switched on, or, given
+     * $value, while that field holds one of those values. Server side as well as client
+     * side: while the master is off the value is discarded and the field is not required.
      *
-     * @param string $master
+     * @param string                   $master
+     * @param string|string[]|null     $value
      *
      * @return self
      * @throws LogicException when no field has been added yet
      */
-    public function dependsOn(string $master): self
+    public function dependsOn(string $master, string|array|null $value = null): self
     {
-        return $this->set('depends', $master);
+        $this->set('depends', $master);
+        if ($value !== null) {
+            return $this->set('depends_value', $value);
+        }
+        // Re-pointing a field at an on/off master must not keep the value list it had.
+        unset($this->groups[$this->groupIndex]['fields'][$this->fieldIndex]['depends_value']);
+
+        return $this;
     }
 
     /**

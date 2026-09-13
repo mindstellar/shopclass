@@ -279,6 +279,40 @@ pin('and leaves anything above it alone', 9, call_user_func($clamped['sanitize']
 pin('a blank box is the floor too, not a zero', 3, call_user_func($clamped['sanitize'], ''));
 pin('and a whole number is what comes out', 4, call_user_func($clamped['sanitize'], '4.7'));
 
+// The value is dependsOn()'s second key. It has to land where the hand-written array puts
+// it whichever order the two were written in, or the equivalence below stops holding.
+$byMode = array('type' => 'text', 'name' => 'f', 'depends' => 'mode', 'depends_value' => 'text');
+pin(
+    'dependsOn() with a value writes depends and depends_value',
+    array('groups' => array(array('fields' => array($byMode)))),
+    osc_admin_form('t')->text('f')->dependsOn('mode', 'text')->toArray()
+);
+pin(
+    'and a list of values is carried as the list',
+    array('groups' => array(array('fields' => array(array_replace($byMode, array('depends_value' => array('text', 'image'))))))),
+    osc_admin_form('t')->text('f')->dependsOn('mode', array('text', 'image'))->toArray()
+);
+pin(
+    'which is the hand-written array in the other key order',
+    osc_admin_form('t')->field(array('depends_value' => 'text', 'type' => 'text', 'name' => 'f', 'depends' => 'mode'))->toArray(),
+    osc_admin_form('t')->text('f')->dependsOn('mode', 'text')->toArray()
+);
+pin(
+    'a later dependsOn() with no value drops the value list an earlier call set',
+    array('type' => 'text', 'name' => 'f', 'depends' => 'b_on'),
+    osc_admin_form('t')->text('f')->dependsOn('mode', 'text')->dependsOn('b_on')->toArray()['groups'][0]['fields'][0]
+);
+check(
+    'a null value writes no depends_value at all',
+    !array_key_exists('depends_value', osc_admin_form('t')->text('f')->dependsOn('mode', null)->toArray()['groups'][0]['fields'][0])
+);
+$keyOrder = (new ReflectionClass(FormSpec::class))->getConstant('FIELD_KEY_ORDER');
+pin(
+    'FIELD_KEY_ORDER places depends_value straight after depends',
+    'depends_value',
+    $keyOrder[array_search('depends', $keyOrder, true) + 1] ?? null
+);
+
 pin(
     'set() reaches a key with no method of its own',
     array('groups' => array(array('fields' => array(array('type' => 'text', 'name' => 'f', 'placeholder' => 'x'))))),

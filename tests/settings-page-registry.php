@@ -236,6 +236,80 @@ check('a depends on a field declared in a later group is accepted', register_err
         array('fields' => array(array('name' => 'b', 'type' => 'checkbox'))),
     ),
 )) === null);
+// A value to match with no master to match it against is a row that never hides and a key
+// nothing reads; an empty or non-string value is a row that never shows.
+$modeField = array('name' => 'mode', 'type' => 'select', 'options' => array('none' => 'None', 'text' => 'Text'));
+pin(
+    'a depends_value with no depends is refused',
+    'SettingsPageRegistry: page "dv1" field "a" depends_value needs a depends naming the field it is compared with',
+    register_error('dv1', array('title' => 'X', 'fields' => array(
+        $modeField,
+        array('name' => 'a', 'depends_value' => 'text'),
+    )))
+);
+foreach (array(
+    'an empty string'          => array('dv2', '', 'must hold only non-empty strings'),
+    'an empty list'            => array('dv3', array(), 'must be a string or a list of strings'),
+    'a number'                 => array('dv4', 1, 'must be a string or a list of strings'),
+    'a list holding an empty string' => array('dv5', array('text', ''), 'must hold only non-empty strings'),
+    'a list holding a number'  => array('dv6', array('text', 2), 'must hold only non-empty strings'),
+    'a list holding a list'    => array('dv7', array(array('text')), 'must hold only non-empty strings'),
+) as $label => [$pageId, $value, $why]) {
+    pin(
+        'a depends_value of ' . $label . ' is refused',
+        'SettingsPageRegistry: page "' . $pageId . '" field "a" depends_value ' . $why,
+        register_error($pageId, array('title' => 'X', 'fields' => array(
+            $modeField,
+            array('name' => 'a', 'depends' => 'mode', 'depends_value' => $value),
+        )))
+    );
+}
+check('a depends_value naming one value is accepted', register_error('dv8', array('title' => 'X', 'fields' => array(
+    $modeField,
+    array('name' => 'a', 'depends' => 'mode', 'depends_value' => 'text'),
+))) === null);
+check('and so is a list of them', register_error('dv9', array('title' => 'X', 'fields' => array(
+    $modeField,
+    array('name' => 'a', 'depends' => 'mode', 'depends_value' => array('none', 'text')),
+))) === null);
+// Only a choice list keeps the value the browser holds. A checkbox is stored as on or off and
+// a number or text box is rewritten on save, so the row shown and the value kept could differ.
+foreach (array(
+    'checkbox' => array('dv10', array('name' => 'm', 'type' => 'checkbox')),
+    'number'   => array('dv11', array('name' => 'm', 'type' => 'number')),
+    'text'     => array('dv12', array('name' => 'm', 'type' => 'text')),
+    'hidden'   => array('dv13', array('name' => 'm', 'type' => 'hidden')),
+) as $type => [$pageId, $master]) {
+    pin(
+        'a depends_value on a ' . $type . ' master is refused',
+        'SettingsPageRegistry: page "' . $pageId . '" field "a" depends on ' . $type . ' "m" with a depends_value: '
+        . 'only a select or radio master takes one',
+        register_error($pageId, array('title' => 'X', 'fields' => array(
+            $master,
+            array('name' => 'a', 'depends' => 'm', 'depends_value' => '1'),
+        )))
+    );
+}
+check('a radio master takes one', register_error('dv14', array('title' => 'X', 'fields' => array(
+    array('name' => 'm', 'type' => 'radio', 'options' => array('free' => 'Free', 'paid' => 'Paid')),
+    array('name' => 'a', 'depends' => 'm', 'depends_value' => 'paid'),
+))) === null);
+// A value the master never offers can never be chosen, so the row would never show.
+pin(
+    'a depends_value that is not one of the master\'s options is refused',
+    'SettingsPageRegistry: page "dv15" field "a" depends on "mode" with a depends_value "image", '
+    . 'which is not one of its options',
+    register_error('dv15', array('title' => 'X', 'fields' => array(
+        $modeField,
+        array('name' => 'a', 'depends' => 'mode', 'depends_value' => array('text', 'image')),
+    )))
+);
+// Option keys like '0' are ints once in a PHP array; the value is still the string.
+check('an integer option key matches its string', register_error('dv16', array('title' => 'X', 'fields' => array(
+    array('name' => 'm', 'type' => 'select', 'options' => array('0' => 'Off', '1' => 'On')),
+    array('name' => 'a', 'depends' => 'm', 'depends_value' => '0'),
+))) === null);
+
 // Only text and textarea expand over locales. Anywhere else the flag would be read on save
 // and ignored at render, so the page would store keys nothing on it can edit.
 check(

@@ -171,6 +171,9 @@ final class SettingsPageRegistry
      *                           one, and not a cycle. While that field is off, this one is
      *                           hidden, is not required, and its submitted value is
      *                           discarded rather than stored.
+     *   'depends_value' => string|string[] With 'depends' only: the field is on while the
+     *                           master's value is one of these, instead of while it is on.
+     *                           Only for a select or radio master, and only its option keys.
      *   'translate' => bool     text and textarea only: one control per enabled locale,
      *                           each stored under the field name plus the locale code.
      *   'purify'   => bool      text, textarea, tel and color only: false stores the value
@@ -451,6 +454,36 @@ final class SettingsPageRegistry
     }
 
     /**
+     * Hold a field's depends_value to its shape: set beside a 'depends', and a non-empty
+     * string or a non-empty list of them.
+     *
+     * @param string              $id
+     * @param array<string,mixed> $field
+     *
+     * @throws InvalidArgumentException on a depends_value that could never match.
+     */
+    private function checkDependsValue(string $id, array $field): void
+    {
+        $prefix = 'SettingsPageRegistry: page "' . $id . '" field "' . $field['name'] . '" depends_value ';
+        if (!isset($field['depends'])) {
+            throw new InvalidArgumentException($prefix . 'needs a depends naming the field it is compared with');
+        }
+
+        $values = $field['depends_value'];
+        if (is_string($values)) {
+            $values = array($values);
+        }
+        if (!is_array($values) || $values === array()) {
+            throw new InvalidArgumentException($prefix . 'must be a string or a list of strings');
+        }
+        foreach ($values as $value) {
+            if (!is_string($value) || $value === '') {
+                throw new InvalidArgumentException($prefix . 'must hold only non-empty strings');
+            }
+        }
+    }
+
+    /**
      * Check the shape of every group and field up front, so a typo in a spec is an
      * exception at registration time rather than a silently missing field on a page.
      *
@@ -464,9 +497,10 @@ final class SettingsPageRegistry
      */
     private function normaliseGroups(string $id, array $groups, array $store): array
     {
-        $out     = array();
-        $seen    = array();
-        $depends = array();
+        $out          = array();
+        $seen         = array();
+        $depends      = array();
+        $dependsValue = array();
 
         foreach ($groups as $group) {
             if (!is_array($group) || !isset($group['fields']) || !is_array($group['fields'])) {
@@ -567,13 +601,21 @@ final class SettingsPageRegistry
                     }
                     $depends[$field['name']] = $field['depends'];
                 }
+                if (array_key_exists('depends_value', $field)) {
+                    $this->checkDependsValue($id, $field);
+                    $dependsValue[$field['name']] = array_map('strval', (array)$field['depends_value']);
+                }
                 if (isset($seen[$field['name']])) {
                     throw new InvalidArgumentException(
                         'SettingsPageRegistry: page "' . $id . '" declares "' . $field['name'] . '" twice'
                     );
                 }
 
-                $seen[$field['name']] = array('type' => $type, 'translate' => !empty($field['translate']));
+                $seen[$field['name']] = array(
+                    'type'      => $type,
+                    'translate' => !empty($field['translate']),
+                    'options'   => is_array($field['options'] ?? null) ? array_map('strval', array_keys($field['options'])) : array(),
+                );
                 $field['type']        = $type;
                 $fields[]             = $field;
             }
@@ -604,6 +646,26 @@ final class SettingsPageRegistry
                 throw new InvalidArgumentException(
                     $prefix . 'translated field "' . $master . '", which has one value per locale'
                 );
+            }
+            if (!isset($dependsValue[$name])) {
+                continue;
+            }
+            // Only a choice list stores a value the browser holds verbatim. A number or a text
+            // box is rewritten on save, so the row shown and the value kept could disagree.
+            if (!in_array($seen[$master]['type'], array('select', 'radio'), true)) {
+                throw new InvalidArgumentException(
+                    $prefix . $seen[$master]['type'] . ' "' . $master
+                    . '" with a depends_value: only a select or radio master takes one'
+                );
+            }
+            // A value the master never offers is a row that never shows.
+            foreach ($dependsValue[$name] as $value) {
+                if (!in_array($value, $seen[$master]['options'], true)) {
+                    throw new InvalidArgumentException(
+                        $prefix . '"' . $master . '" with a depends_value "' . $value
+                        . '", which is not one of its options'
+                    );
+                }
             }
         }
 

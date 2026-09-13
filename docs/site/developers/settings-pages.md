@@ -89,6 +89,7 @@ Keys every field takes:
 | `sanitize` | `callable(mixed $value): mixed`, run before validation |
 | `validate` | `callable(mixed $value, array $field): ?string` — the error, or null |
 | `depends` | Another field on this page. While that field is off, this one is hidden, is not required, and its posted value is **discarded** |
+| `depends_value` | With `depends`: a string or list of strings. The field is on while the master's value is one of them. Only for a select or radio master, and each must be one of its option keys |
 | `translate` | `text`/`textarea` only: one control per enabled locale |
 | `purify` | `false` to store markup as submitted (see below) |
 | `column` | The key to store under, when it is not the field's own name |
@@ -98,6 +99,13 @@ Keys every field takes:
 `depends` is decided again on the server. The browser hides the row as a
 convenience; the save discards the value regardless of what was posted, so a
 hand-crafted request cannot set a field the form never showed.
+
+To follow one value of a select or radio, pass it as the second argument:
+
+```php
+->select('wm_type', __('Watermark', 'acme'), array('none' => __('None', 'acme'), 'text' => __('Text', 'acme')))
+->text('wm_text', __('Watermark text', 'acme'))->dependsOn('wm_type', 'text')
+```
 
 ## Text is stripped of tags
 

@@ -317,6 +317,9 @@ if (!function_exists('osc_settings_depends_met')) {
      * master that is itself switched off leaves its own control on screen with a value
      * still in it, and taking that at face value would keep a grandchild field alive.
      *
+     * A step with a 'depends_value' is met while the master's value, compared as a string,
+     * is one of those listed; a step without one while the master is on.
+     *
      * @param array  $fields declared fields, keyed by name
      * @param string $name
      * @param array  $values submitted values, keyed by field name
@@ -339,8 +342,21 @@ if (!function_exists('osc_settings_depends_met')) {
         }
         $seen[$name] = true;
 
-        return osc_settings_master_on($values[$master] ?? '')
-            && osc_settings_depends_met($fields, $master, $values, $seen);
+        $submitted = $values[$master] ?? '';
+        if (isset($field['depends_value'])) {
+            $wanted = array_map('strval', (array)$field['depends_value']);
+            $met    = false;
+            foreach ((array)$submitted as $one) {
+                if (!is_array($one) && in_array((string)$one, $wanted, true)) {
+                    $met = true;
+                    break;
+                }
+            }
+        } else {
+            $met = osc_settings_master_on($submitted);
+        }
+
+        return $met && osc_settings_depends_met($fields, $master, $values, $seen);
     }
 }
 

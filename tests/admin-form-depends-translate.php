@@ -483,6 +483,118 @@ $GLOBALS['preferences'] = array();
 submit('chainup', array('b_two' => '1', 's_three' => 'deep'));
 pin('declaration order does not change what is discarded', array('b_one'), stored('chainup'));
 
+harness_section('a dependent field that follows one value of its master');
+
+SettingsPageRegistry::instance()->register('byvalue', array(
+    'title'  => 'By value',
+    'fields' => array(
+        array('type' => 'checkbox', 'name' => 'b_wm', 'label' => 'Watermark on'),
+        array('type' => 'select', 'name' => 'wm_type', 'label' => 'Watermark', 'depends' => 'b_wm',
+              'options' => array('none' => 'None', 'text' => 'Text', 'image' => 'Image')),
+        array('type' => 'text', 'name' => 's_wm_text', 'label' => 'Text', 'required' => true,
+              'depends' => 'wm_type', 'depends_value' => 'text'),
+        array('type' => 'text', 'name' => 's_wm_image', 'label' => 'Image',
+              'depends' => 'wm_type', 'depends_value' => array('image')),
+        array('type' => 'text', 'name' => 's_wm_any', 'label' => 'Either',
+              'depends' => 'wm_type', 'depends_value' => array('text', 'image')),
+        array('type' => 'text', 'name' => 's_font', 'label' => 'Font', 'depends' => 's_wm_text'),
+        array('type' => 'select', 'name' => 'wm_pos', 'label' => 'Position',
+              'depends' => 'wm_type', 'depends_value' => 'text',
+              'options' => array('corner' => 'Corner', 'custom' => 'Custom')),
+        array('type' => 'text', 'name' => 's_offset', 'label' => 'Offset', 'depends' => 'wm_pos', 'depends_value' => 'custom'),
+        array('type' => 'radio', 'name' => 'r_plan', 'label' => 'Plan',
+              'options' => array('free' => 'Free', 'paid' => 'Paid', 'a&b' => 'Both', '0' => 'Zero')),
+        array('type' => 'text', 'name' => 's_card', 'label' => 'Card', 'required' => true,
+              'depends' => 'r_plan', 'depends_value' => 'paid'),
+        array('type' => 'text', 'name' => 's_amp', 'label' => 'Amp', 'depends' => 'r_plan', 'depends_value' => 'a&b'),
+        array('type' => 'text', 'name' => 's_zero', 'label' => 'Zero', 'depends' => 'r_plan', 'depends_value' => '0'),
+    ),
+));
+
+// Every dependent is posted with something in it, so what is stored is exactly the set
+// whose step is met. A required field is filled only where the case says so.
+$posted = array(
+    's_wm_image' => 'logo.png', 's_wm_any' => 'any', 's_font' => 'serif', 's_offset' => '12', 's_amp' => 'amp',
+    's_zero'     => 'zero', 'b_wm' => '1', 'wm_pos' => 'corner',
+);
+foreach (array(
+    'the master on a value no dependent names' => array(
+        array('wm_type' => 'none', 'r_plan' => 'free', 's_wm_text' => '', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 'wm_type'),
+    ),
+    // '0' is off under the on/off rule; named as a value it is simply a value.
+    'a "0" option named as the value' => array(
+        array('wm_type' => 'none', 'r_plan' => '0', 's_wm_text' => '', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_zero', 'wm_type'),
+    ),
+    'the select on "text"' => array(
+        array('wm_type' => 'text', 'r_plan' => 'free', 's_wm_text' => '(c) me', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_font', 's_wm_any', 's_wm_text', 'wm_pos', 'wm_type'),
+    ),
+    // The required text field is off here, so it is neither required nor stored -- and the
+    // font following it goes with it, although its own master still holds a value.
+    'the select on "image"' => array(
+        array('wm_type' => 'image', 'r_plan' => 'free', 's_wm_text' => '(c) me', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_wm_any', 's_wm_image', 'wm_type'),
+    ),
+    // A value step whose master is switched off by an on/off step above it: the select
+    // still says "text", and nothing under it survives.
+    'a value step under a checkbox that is off' => array(
+        array('b_wm' => '', 'wm_type' => 'text', 'wm_pos' => 'custom', 'r_plan' => 'free', 's_wm_text' => '(c) me', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan'),
+    ),
+    'a value step under a value step, both met' => array(
+        array('wm_type' => 'text', 'wm_pos' => 'custom', 'r_plan' => 'free', 's_wm_text' => '(c) me', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_font', 's_offset', 's_wm_any', 's_wm_text', 'wm_pos', 'wm_type'),
+    ),
+    // The position still says "custom", but its own step is not met, so the offset goes too.
+    'a value step under a value step whose own step is not met' => array(
+        array('wm_type' => 'image', 'wm_pos' => 'custom', 'r_plan' => 'free', 's_wm_text' => '', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_wm_any', 's_wm_image', 'wm_type'),
+    ),
+    'the radio on "paid", with its required field left empty' => array(
+        array('wm_type' => 'none', 'r_plan' => 'paid', 's_wm_text' => '', 's_card' => ''),
+        1,
+        array(),
+    ),
+    'the radio on "paid", filled in' => array(
+        array('wm_type' => 'none', 'r_plan' => 'paid', 's_wm_text' => '', 's_card' => '4242'),
+        0,
+        array('b_wm', 'r_plan', 's_card', 'wm_type'),
+    ),
+    'a value holding an ampersand' => array(
+        array('wm_type' => 'none', 'r_plan' => 'a&b', 's_wm_text' => '', 's_card' => ''),
+        0,
+        array('b_wm', 'r_plan', 's_amp', 'wm_type'),
+    ),
+    // A value a hand-made request invents is refused by the select itself, and no
+    // dependent is kept alive by it in the meantime.
+    'a master value the page never offered' => array(
+        array('wm_type' => 'TEXT', 'r_plan' => 'free', 's_wm_text' => 'x', 's_card' => ''),
+        1,
+        array(),
+    ),
+) as $label => [$params, $errorCount, $keys]) {
+    $GLOBALS['preferences'] = array();
+    $result = submit('byvalue', $params + $posted);
+    pin($label . ': errors', $errorCount, count($result['errors']));
+    pin($label . ': what is stored', $keys, stored('byvalue'));
+}
+
+$byValueFields = SettingsPageRegistry::instance()->fields('byvalue');
+// Straight at the rule, past the select's own validation: a string compare, not a loose one.
+check('"text" is met with the chain above it on', osc_settings_depends_met($byValueFields, 's_wm_text', array('b_wm' => true, 'wm_type' => 'text')) === true);
+check('"text " is not "text"', osc_settings_depends_met($byValueFields, 's_wm_text', array('b_wm' => true, 'wm_type' => 'text ')) === false);
+check('an int master value compares as its string', osc_settings_depends_met($byValueFields, 's_zero', array('r_plan' => 0)) === true);
+check('a missing master matches no value', osc_settings_depends_met($byValueFields, 's_wm_text', array('b_wm' => true)) === false);
+
 harness_section('the relationship reaches the markup');
 
 $html = render_settings_page('cond');
@@ -492,6 +604,22 @@ emits('the dependent row carries the master it follows', $html, 'data-osc-depend
 pin('and only the dependent row carries it', 1, substr_count($html, 'data-osc-depends='));
 emits('the row is still a form-row', $html, '<div class="form-row" data-osc-depends="b_enabled">');
 emits('and the control itself is unchanged', $html, 'id="field-s_key"');
+check('a row with no value to match carries no value list', strpos($html, 'data-osc-depends-value') === false, $html);
+
+$GLOBALS['preferences'] = array(
+    'byvalue/b_wm' => true, 'byvalue/wm_type' => 'none', 'byvalue/r_plan' => 'free', 'byvalue/s_wm_text' => '(c) me',
+);
+$byValueHtml = render_settings_page('byvalue');
+emits(
+    'a value is emitted beside the master, as a JSON list',
+    $byValueHtml,
+    '<div class="form-row" data-osc-depends="wm_type" data-osc-depends-value="[&quot;text&quot;]">'
+);
+emits('a list stays a list', $byValueHtml, 'data-osc-depends-value="[&quot;text&quot;,&quot;image&quot;]"');
+// Hex-escaped inside the JSON, so osc_esc_html() never meets an "&" it might take for an
+// entity and leave alone.
+emits('an ampersand reaches the attribute as a JSON escape', $byValueHtml, 'data-osc-depends-value="[&quot;a\\u0026b&quot;]"');
+pin('every value row carries one, and no on/off row does', 8, substr_count($byValueHtml, 'data-osc-depends-value='));
 
 $sharedScript = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/js/ui-osc.js');
 // The needles below live inside oscSyncDepends and its two helpers, which is a function
@@ -508,7 +636,7 @@ harness_section('the shared script, driven in a browser');
 // the committed stylesheet beside it, and asked what it does.
 $chrome = test_browser();
 // A contributor without Chrome is not blocked, but a CI run that skips this is green with
-// thirteen fewer assertions and nothing in the log says so.
+// every browser assertion below missing and nothing in the log says so.
 if ($chrome === '' && (string)getenv('CI') !== '') {
     check(
         'a browser is available to drive the shared script',
@@ -566,6 +694,30 @@ if ($chrome === '') {
     pin('typing in a box no row follows runs no sweep', 0, $counted['afterDependent'] ?? null);
     pin('and touching the master still runs exactly one', 1, $counted['afterMaster'] ?? null);
     check('the row it governs is still shown', ($counted['hidden'] ?? null) === false, var_export($counted, true));
+
+    // The same rows the server matrix above decides, read back from the browser: what the
+    // script shows has to be what the save keeps.
+    $valued = drive_page($chrome, $byValueHtml, 'depends-value-driver.js');
+    check('the depends-value browser run produced a reading', is_array($valued) && count($valued) === 10, var_export($valued, true));
+    $shown = static fn (int $i) => $valued[$i]['shown'] ?? null;
+    $flag  = static fn (int $i, string $key) => $valued[$i][$key] ?? null;
+    $full  = array('s_font', 's_offset', 's_wm_any', 's_wm_text', 'wm_pos');
+    pin('at load, on "none", no value row is shown', array(), $shown(0));
+    pin('and the required ones it hides are not required', array(false, false), array($flag(0, 'textRequired'), $flag(0, 'cardRequired')));
+    pin('the select on "text" shows its rows and the chain under them', array('s_font', 's_wm_any', 's_wm_text', 'wm_pos'), $shown(1));
+    pin('and gives the required flag back', true, $flag(1, 'textRequired'));
+    pin('a value step under a value step shows once both are met', $full, $shown(2));
+    pin('switching the checkbox above off hides every value step under it', array(), $shown(3));
+    pin('and lifts required again', false, $flag(3, 'textRequired'));
+    pin('switching it back on brings the whole chain back', $full, $shown(4));
+    pin('on "image" the text rows go, and every step under them with them', array('s_wm_any', 's_wm_image'), $shown(5));
+    pin('the radio on "paid" shows its row', array('s_card', 's_wm_any', 's_wm_image'), $shown(6));
+    pin('and its required flag comes back', true, $flag(6, 'cardRequired'));
+    pin('a value holding an ampersand survives the attribute', array('s_amp', 's_wm_any', 's_wm_image'), $shown(7));
+    pin('and the card row it replaced is not required', false, $flag(7, 'cardRequired'));
+    pin('a "0" value shows its row, although "0" is off under the on/off rule', array('s_wm_any', 's_wm_image', 's_zero'), $shown(8));
+    pin('a select master still counts as a master: one sweep', 1, $valued[9]['afterMaster'] ?? null);
+    pin('and a box nothing follows still runs none', 0, $valued[9]['afterDependent'] ?? null);
 }
 
 harness_section('the surface the render path added');

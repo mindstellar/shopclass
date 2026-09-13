@@ -94,6 +94,14 @@ class Field
             // convenience, not the rule.
             if (!empty($spec['depends'])) {
                 $opts['data'] = array('osc-depends' => (string)$spec['depends']);
+                // Hex-escaped so no "&" reaches osc_esc_html(), which leaves an existing
+                // entity alone and would hand the script a different string.
+                if (isset($spec['depends_value'])) {
+                    $opts['data']['osc-depends-value'] = json_encode(
+                        array_values(array_map('strval', (array)$spec['depends_value'])),
+                        JSON_HEX_AMP | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+                    );
+                }
             }
             osc_admin_form_row_open($rowLabel, $opts);
         }
