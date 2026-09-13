@@ -10,6 +10,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/* global osc, bootstrap */
+/* exported oscEscapeHTML, setJsMessage, bulkActionsSubmit */
+
 /* ===================================================
  * osc tooltip
  * ===================================================
@@ -120,6 +123,9 @@ function setJsMessage(alertClass, alertMessage) {
     var pTag = jsMessage.querySelector("p");
     pTag.setAttribute("class", alertClass);
     pTag.textContent = alertMessage;
+    ['ok', 'error', 'warning', 'info'].forEach(function (state) {
+        jsMessage.classList.toggle('flashmessage-' + state, state === alertClass);
+    });
     jsMessage.classList.remove('hide');
     jsMessage.removeAttribute('style');
 }

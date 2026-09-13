@@ -193,7 +193,7 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
         <?php } ?>
 
         <div class="osc-drawer-backdrop cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
-        <aside class="osc-drawer cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
+        <div class="osc-drawer cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
                aria-labelledby="catDrawerTitle" hidden>
             <header class="osc-drawer-head cat-drawer-head">
                 <div>
@@ -206,7 +206,7 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
                 </button>
             </header>
             <div class="osc-drawer-body cat-drawer-body" id="catDrawerBody"></div>
-        </aside>
+        </div>
 
         <!-- Delete confirmation -->
         <dialog class="osc-dialog osc-dialog-danger" id="catDeleteDialog">

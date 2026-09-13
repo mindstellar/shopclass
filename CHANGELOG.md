@@ -72,6 +72,13 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   admin theme's class names. Width follows the field's type, a trailing phrase is a `suffix`
   slot rather than a sentence split around `%s`, and every value is escaped. The admin theme's
   own copies still win where it defines them.
+- Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
+  three settings pages, sign in, register, the two password-reset steps, the public profile and
+  the plugin account slot — when the theme ships none. A theme that ships one still wins.
+- A published `.oe-*` class vocabulary for those pages, documented at
+  `docs/site/developers/account-pages.md`, so a theme restyles them in CSS with no PHP.
+- `osc_gui_account_view()` resolves one account view: the theme's file, then a parent theme's,
+  then core's page inside the theme's chrome, then core's own shell.
 
 ### Changed
 
@@ -226,16 +233,6 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 - The publish form filled the region and city selects from the first country in the list
   while the country select still read "Select a country", offering another country's
   places. Both now stay empty until a country is chosen.
-- Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
-  three settings pages, sign in, register, the two password-reset steps, the public profile and
-  the plugin account slot — when the theme ships none. A theme that ships one still wins.
-- A published `.oe-*` class vocabulary for those pages, documented at
-  `docs/site/developers/account-pages.md`, so a theme restyles them in CSS with no PHP.
-- `osc_gui_account_view()` resolves one account view: the theme's file, then a parent theme's,
-  then core's page inside the theme's chrome, then core's own shell.
-
-### Fixed
-
 - A theme that shipped no view for an account page rendered a blank document.
 - The profile page never showed the picture you had already set — only a file field and,
   once one existed, a checkbox to remove the thing you could not see.
@@ -270,6 +267,12 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
   chrome in `common/` rather than the theme root.
 - The credits, buy and orders pages each carried their own copy of the same stylesheet, which had
   drifted: an unstyled `History` heading, links in the browser's default blue, unbranded radios.
+- `npm run lint` now runs; added the missing ESLint flat config.
+- `setJsMessage()` now shows errors and warnings in their own tint instead of the info one.
+- The categories edit drawer no longer puts an invalid ARIA role on an `<aside>`.
+- Untranslated strings under RTL no longer flip trailing punctuation to the front of the line.
+- CSRF tokens are no longer added to forms inside JSON responses.
+- The location recount no longer fails on places deleted while it runs.
 
 ## Shopclass 6.2.0
 

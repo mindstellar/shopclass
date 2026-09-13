@@ -12910,6 +12910,15 @@ ul.showing-results {
   padding: 0.25rem 0.5rem;
 }
 
+[dir=rtl] .osc-dialog-text,
+[dir=rtl] .flashmessage p,
+[dir=rtl] .help-box,
+[dir=rtl] .form-text,
+[dir=rtl] .osc-empty-title,
+[dir=rtl] .osc-empty-text {
+  unicode-bidi: plaintext;
+}
+
 .page-head {
   align-items: baseline;
   display: flex;

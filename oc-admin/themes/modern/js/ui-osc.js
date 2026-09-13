@@ -4,6 +4,8 @@
  * Provides oscInitTabs() (the segmented locale/section tabs, replacing
  * jQuery-UI .tabs()) and wires the flash-message and help-box close buttons.
  */
+/* global osc */
+/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat */
 
 // Initialise every .osc-tab within `root` (default: document). Works on the
 // existing markup: a .osc-tab container holding `> ul > li > a[href="#panel"]`
@@ -414,7 +416,7 @@ function oscDependsValues(row) {
     try {
         var list = JSON.parse(raw);
         return Array.isArray(list) ? list.map(String) : [];
-    } catch (e) {
+    } catch {
         return [];
     }
 }

@@ -124,13 +124,6 @@
             if (typeof window.setJsMessage === 'function') {
                 window.setJsMessage(type, text);
             }
-            // setJsMessage leaves the box in its info tint whatever the message is.
-            const box = document.getElementById('jsMessage');
-            if (box) {
-                ['ok', 'error', 'warning', 'info'].forEach(function (state) {
-                    box.classList.toggle('flashmessage-' + state, state === type);
-                });
-            }
         }
 
         function withParam(href, name, value) {

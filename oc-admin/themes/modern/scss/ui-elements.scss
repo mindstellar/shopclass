@@ -521,3 +521,16 @@ ul.showing-results {
 .nav-tabs-sm .nav-link {
  padding: 0.25rem 0.5rem;
 }
+
+// RTL: keeps trailing "." "…" "?" on untranslated strings from jumping to the
+// front of the line. Scoped to translated-sentence copy blocks only.
+[dir="rtl"] {
+  .osc-dialog-text,
+  .flashmessage p,
+  .help-box,
+  .form-text,
+  .osc-empty-title,
+  .osc-empty-text {
+    unicode-bidi: plaintext;
+  }
+}
