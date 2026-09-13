@@ -114,8 +114,7 @@ class Csrf
     {
         ob_start();
         $injectCsrf = static function () {
-            $data = ob_get_clean();
-            $data = self::newInstance()->replaceForms($data);
+            $data = self::newInstance()->injectTokens(ob_get_clean(), headers_list());
             // The one moment the finished page exists as a string: after the tokens are
             // in, before anything reaches the client. Anything that needs the whole body
             // -- a validator to answer conditional requests with, a minifier, a late
@@ -129,6 +128,41 @@ class Csrf
         foreach ($functions as $f) {
             register_shutdown_function($f);
         }
+    }
+
+    /**
+     * Add tokens to the forms of an HTML response; any other body is returned untouched.
+     *
+     * @param string|false $body    The buffered response
+     * @param string[]     $headers As returned by headers_list()
+     *
+     * @return string|false
+     */
+    public function injectTokens($body, array $headers)
+    {
+        return self::isHtmlResponse($headers) ? $this->replaceForms($body) : $body;
+    }
+
+    /**
+     * Whether a response with these headers is HTML.
+     *
+     * No Content-Type means PHP's text/html default. A JSON endpoint that sends no
+     * Content-Type is still treated as HTML; it has to declare its type.
+     *
+     * @param string[] $headers
+     *
+     * @return bool
+     */
+    private static function isHtmlResponse(array $headers): bool
+    {
+        $type = '';
+        foreach ($headers as $header) {
+            if (preg_match('/^content-type\s*:\s*([^;]*)/i', $header, $m)) {
+                $type = strtolower(trim($m[1]));
+            }
+        }
+
+        return $type === '' || $type === 'text/html' || $type === 'application/xhtml+xml';
     }
 
     /**

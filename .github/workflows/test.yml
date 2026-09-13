@@ -408,6 +408,10 @@ jobs:
       # admin a delete is safe when it removes listings.
       - name: Location admin query
         run: php tests/location-admin-query.php
+      # A place deleted during a recount must leave the queue, not fail each batch and
+      # take the counts of the live places in that batch with it.
+      - name: Location stats queue
+        run: php tests/location-stats-queue.php
       # A delete that removes listings must ask for a typed confirm, and a confirm pattern a
       # name with brackets makes invalid is one browsers silently skip.
       - name: Location admin view

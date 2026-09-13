@@ -82,4 +82,47 @@ $mixed = '<form method="get"></form><form method="post"></form>';
 $out   = $csrf->replaceForms($mixed);
 pin('exactly one of the two is stamped', 1, substr_count($out, '<!--TOKEN-->'));
 
+harness_section('only HTML responses are rewritten');
+// A form inside a JSON string used to get token inputs spliced in, breaking the JSON.
+require_once ABS_PATH . 'oc-includes/osclass/classes/Csrf.php';
+
+final class CsrfResponse extends \mindstellar\Csrf
+{
+    public function __construct()
+    {
+    }
+
+    public function tokenForm()
+    {
+        return "<input type='hidden' name='CSRFName' value='x' />\n        <!--TOKEN-->";
+    }
+}
+
+$response = new CsrfResponse();
+$page     = '<form method="post"></form>';
+$json     = json_encode(array('html' => $page));
+
+$fromJson = $response->injectTokens($json, array('Content-Type: application/json'));
+pin('a JSON body with form markup is left as it was', $json, $fromJson);
+check('...and still parses', is_array(json_decode($fromJson, true)));
+check(
+    'lower-case header name with a charset',
+    $response->injectTokens($json, array('content-type: application/json; charset=utf-8')) === $json
+);
+check('an XML body is left alone', $response->injectTokens($page, array('Content-Type: text/xml')) === $page);
+
+$stamped = static function (array $headers) use ($response, $page): bool {
+    return strpos($response->injectTokens($page, $headers), '<!--TOKEN-->') !== false;
+};
+check('no Content-Type (PHP default is HTML)', $stamped(array('X-Frame-Options: SAMEORIGIN')));
+check('text/html', $stamped(array('Content-Type: text/html')));
+check('text/html; charset=UTF-8', $stamped(array('Content-Type: text/html; charset=UTF-8')));
+check('application/xhtml+xml', $stamped(array('Content-Type: application/xhtml+xml')));
+check('the last Content-Type wins', $stamped(array('Content-Type: application/json', 'Content-Type: text/html')));
+pin(
+    'the HTML path matches replaceForms() byte for byte',
+    $response->replaceForms($page),
+    $response->injectTokens($page, array('Content-Type: text/html; charset=UTF-8'))
+);
+
 exit(harness_result());
