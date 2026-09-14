@@ -79,31 +79,19 @@ $base     = osc_admin_base_url(true) . '?page=billing';
             </table>
         </div>
 
-        <?php foreach ($packages as $package) { ?>
-            <dialog id="package-delete-<?php echo (int) $package['pk_i_id']; ?>" class="osc-dialog osc-dialog-danger">
-                <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
-                    <input type="hidden" name="page" value="billing"/>
-                    <input type="hidden" name="action" value="package_delete"/>
-                    <input type="hidden" name="id" value="<?php echo (int) $package['pk_i_id']; ?>"/>
-                    <div class="osc-dialog-body">
-                        <p class="osc-dialog-title">
-                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-                            <?php printf(
-                                osc_esc_html(__('Delete "%s"?')),
-                                osc_esc_html($package['s_name'])
-                            ); ?>
-                        </p>
-                        <p class="osc-dialog-text">
-                            <?php _e('This only removes it from checkout. Orders already placed against it '
-                                     . 'keep their own record of what was paid.'); ?>
-                        </p>
-                    </div>
-                    <div class="osc-dialog-actions">
-                        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                        <button type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
-                    </div>
-                </form>
-            </dialog>
-        <?php } ?>
+        <?php foreach ($packages as $package) {
+            osc_admin_confirm_dialog(array(
+                'id'      => 'package-delete-' . (int) $package['pk_i_id'],
+                'fields'  => array(
+                    'page'   => 'billing',
+                    'action' => 'package_delete',
+                    'id'     => (int) $package['pk_i_id'],
+                ),
+                'title'   => sprintf(__('Delete "%s"?'), $package['s_name']),
+                'text'    => __('This only removes it from checkout. Orders already placed against it '
+                                . 'keep their own record of what was paid.'),
+                'confirm' => __('Delete'),
+            ));
+        } ?>
     <?php } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -404,7 +404,7 @@ $aux = customFrmText();
                             </div>
                             <div class="osc-dialog-actions">
                                 <button type="button" class="btn btn-dim btn-sm"
-                                        onclick="this.closest('dialog').close();"><?php _e('Cancel'); ?></button>
+                                        data-osc-dialog-close><?php _e('Cancel'); ?></button>
                                 <button id="alert-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
                             </div>
                         </form>

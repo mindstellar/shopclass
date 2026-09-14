@@ -35,46 +35,6 @@ function customHead()
 {
     ?>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            var form = document.getElementById('datatablesForm');
-            var bulkDialog = document.getElementById('dialog-bulk-actions');
-            var keywordDelete = document.getElementById('dialog-keyword-delete');
-
-            // Select-all toggles every row checkbox.
-
-            // Cancel buttons and a backdrop click close their <dialog>.
-            document.querySelectorAll('[data-osc-dialog-close]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var d = btn.closest('dialog');
-                    if (d) { d.close(); }
-                });
-            });
-            [keywordDelete, bulkDialog].forEach(function (d) {
-                if (d) {
-                    d.addEventListener('click', function (e) { if (e.target === d) { d.close(); } });
-                }
-            });
-
-            // Bulk actions: confirm in a dialog before the form is submitted.
-            var bulkSubmit = document.getElementById('bulk-actions-submit');
-            var bulkCancel = document.getElementById('bulk-actions-cancel');
-            if (bulkCancel) { bulkCancel.addEventListener('click', function () { bulkDialog.close(); }); }
-            // form.submit() is the native call, which does NOT re-fire the submit
-            // handler below — so confirming submits straight through.
-            if (bulkSubmit) { bulkSubmit.addEventListener('click', function () { form.submit(); }); }
-            if (form) {
-                form.addEventListener('submit', function (e) {
-                    var sel = document.getElementById('bulk_actions');
-                    if (!sel || sel.value === '') { e.preventDefault(); return; }
-                    e.preventDefault();
-                    var opt = sel.options[sel.selectedIndex];
-                    bulkDialog.querySelector('.osc-dialog-text').textContent = opt.getAttribute('data-dialog-content') || '';
-                    bulkSubmit.textContent = opt.text;
-                    bulkDialog.showModal();
-                });
-            }
-        });
-
         // Called by the keyword row action links.
         function delete_dialog(item_id) {
             var d = document.getElementById('dialog-keyword-delete');
@@ -197,14 +157,5 @@ osc_admin_pagination($aData);
         'confirm'    => __('Delete'),
         'confirm_id' => 'keyword-delete-submit',
     )); ?>
-    <dialog id="dialog-bulk-actions" class="osc-dialog">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-            <p class="osc-dialog-text"></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button id="bulk-actions-cancel" type="button" class="btn btn-dim btn-sm"><?php _e('Cancel'); ?></button>
-            <button id="bulk-actions-submit" type="button" class="btn btn-danger btn-sm"><?php echo osc_esc_html(__('Delete')); ?></button>
-        </div>
-    </dialog>
+    <?php osc_admin_bulk_confirm_dialog(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

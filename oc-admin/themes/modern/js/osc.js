@@ -156,8 +156,7 @@ function bulkActionsSubmit() {
     document.getElementById("datatablesForm").submit();
 }
 // Set up the bulkActions dialog. Only pages that render #bulkActionsModal use
-// this flow; others (e.g. ban rules) own their own confirm dialog, so this must
-// not touch their form or assume the dialog exists.
+// this flow, so this must not touch a form on a page without one.
 window.addEventListener('load', function () {
     var datatablesForm = document.getElementById("datatablesForm");
     var bulkActionsModal = document.getElementById("bulkActionsModal");

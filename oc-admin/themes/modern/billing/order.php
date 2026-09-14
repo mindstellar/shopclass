@@ -191,32 +191,24 @@ foreach ($order->getMeta() as $key => $value) {
         </div>
     </div>
 
-    <?php if ($order->isPaid()) { ?>
-        <dialog id="order-refund-dialog" class="osc-dialog osc-dialog-danger">
-            <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                <input type="hidden" name="page" value="billing"/>
-                <input type="hidden" name="action" value="order_refund"/>
-                <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                <div class="osc-dialog-body">
-                    <p class="osc-dialog-title">
-                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-                        <?php printf(osc_esc_html(__('Record a refund for order #%d?')), $order->getId()); ?>
-                    </p>
-                    <p class="osc-dialog-text">
-                        <?php printf(
-                            osc_esc_html(__('This takes %1$s credits back from %2$s. If they have already spent '
-                                            . 'them their balance will go below zero, and they will not be able to '
-                                            . 'spend again until it is back up.')),
-                            number_format($order->getCredits()),
-                            $user !== null ? osc_esc_html($user['s_username'] ?: $user['s_name']) : __('this user')
-                        ); ?>
-                    </p>
-                </div>
-                <div class="osc-dialog-actions">
-                    <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                    <button type="submit" class="btn btn-danger btn-sm"><?php _e('Record the refund'); ?></button>
-                </div>
-            </form>
-        </dialog>
-    <?php } ?>
+    <?php if ($order->isPaid()) {
+        osc_admin_confirm_dialog(array(
+            'id'      => 'order-refund-dialog',
+            'url'     => $actionUrl,
+            'fields'  => array(
+                'page'   => 'billing',
+                'action' => 'order_refund',
+                'id'     => (int) $order->getId(),
+            ),
+            'title'   => sprintf(__('Record a refund for order #%d?'), $order->getId()),
+            'text'    => sprintf(
+                __('This takes %1$s credits back from %2$s. If they have already spent '
+                   . 'them their balance will go below zero, and they will not be able to '
+                   . 'spend again until it is back up.'),
+                number_format($order->getCredits()),
+                $user !== null ? ($user['s_username'] ?: $user['s_name']) : __('this user')
+            ),
+            'confirm' => __('Record the refund'),
+        ));
+    } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
