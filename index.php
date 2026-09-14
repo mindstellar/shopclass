@@ -61,6 +61,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
         header('HTTP/1.1 503 Service Temporarily Unavailable');
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 900');
+        header('Cache-Control: no-store');
 
         $maintenanceMessage = osc_maintenance_visitor_message();
         if (!defined('OSC_MAINTENANCE_MESSAGE')) {
