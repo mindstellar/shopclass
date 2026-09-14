@@ -41,11 +41,11 @@
   --osc-success-tint: #e4f8e7;
   --osc-danger: #c22826;
   --osc-danger-tint: #ffe9e5;
-  --osc-danger-deep: rgb(155.2, 32, 30.4);
-  --osc-success-deep: rgb(26.1, 112.5, 55.8);
+  --osc-danger-deep: rgb(60.862745098%, 12.5490196078%, 11.9215686275%);
+  --osc-success-deep: rgb(10.2352941176%, 44.1176470588%, 21.8823529412%);
   --osc-warning: #ddbc28;
   --osc-warning-tint: #fdf4d2;
-  --osc-warning-deep: rgb(121.55, 103.4, 22);
+  --osc-warning-deep: rgb(47.6666666667%, 40.5490196078%, 8.6274509804%);
   --osc-info: #006c9c;
   --osc-info-tint: #e6f3fb;
   --osc-shadow-overlay: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -108,28 +108,28 @@
   --bs-danger-rgb: 194, 40, 38;
   --bs-light-rgb: 247, 249, 251;
   --bs-dark-rgb: 20, 24, 31;
-  --bs-primary-text-emphasis: rgb(4.4, 45.6, 42);
-  --bs-secondary-text-emphasis: rgb(38, 42.8, 48.8);
-  --bs-success-text-emphasis: rgb(11.6, 50, 24.8);
-  --bs-info-text-emphasis: rgb(0, 43.2, 62.4);
-  --bs-warning-text-emphasis: rgb(88.4, 75.2, 16);
-  --bs-danger-text-emphasis: rgb(77.6, 16, 15.2);
+  --bs-primary-text-emphasis: rgb(1.7254901961%, 17.8823529412%, 16.4705882353%);
+  --bs-secondary-text-emphasis: rgb(14.9019607843%, 16.7843137255%, 19.137254902%);
+  --bs-success-text-emphasis: rgb(4.5490196078%, 19.6078431373%, 9.7254901961%);
+  --bs-info-text-emphasis: rgb(0%, 16.9411764706%, 24.4705882353%);
+  --bs-warning-text-emphasis: rgb(34.6666666667%, 29.4901960784%, 6.2745098039%);
+  --bs-danger-text-emphasis: rgb(30.431372549%, 6.2745098039%, 5.9607843137%);
   --bs-light-text-emphasis: #46505d;
   --bs-dark-text-emphasis: #46505d;
-  --bs-primary-bg-subtle: rgb(206.2, 226.8, 225);
-  --bs-secondary-bg-subtle: rgb(223, 225.4, 228.4);
-  --bs-success-bg-subtle: rgb(209.8, 229, 216.4);
-  --bs-info-bg-subtle: rgb(204, 225.6, 235.2);
-  --bs-warning-bg-subtle: rgb(248.2, 241.6, 212);
-  --bs-danger-bg-subtle: rgb(242.8, 212, 211.6);
+  --bs-primary-bg-subtle: rgb(80.862745098%, 88.9411764706%, 88.2352941176%);
+  --bs-secondary-bg-subtle: rgb(87.4509803922%, 88.3921568627%, 89.568627451%);
+  --bs-success-bg-subtle: rgb(82.2745098039%, 89.8039215686%, 84.862745098%);
+  --bs-info-bg-subtle: rgb(80%, 88.4705882353%, 92.2352941176%);
+  --bs-warning-bg-subtle: rgb(97.3333333333%, 94.7450980392%, 83.137254902%);
+  --bs-danger-bg-subtle: rgb(95.2156862745%, 83.137254902%, 82.9803921569%);
   --bs-light-bg-subtle: #fbfcfd;
   --bs-dark-bg-subtle: #bcc4cf;
-  --bs-primary-border-subtle: rgb(157.4, 198.6, 195);
-  --bs-secondary-border-subtle: rgb(191, 195.8, 201.8);
-  --bs-success-border-subtle: rgb(164.6, 203, 177.8);
-  --bs-info-border-subtle: rgb(153, 196.2, 215.4);
-  --bs-warning-border-subtle: rgb(241.4, 228.2, 169);
-  --bs-danger-border-subtle: rgb(230.6, 169, 168.2);
+  --bs-primary-border-subtle: rgb(61.7254901961%, 77.8823529412%, 76.4705882353%);
+  --bs-secondary-border-subtle: rgb(74.9019607843%, 76.7843137255%, 79.137254902%);
+  --bs-success-border-subtle: rgb(64.5490196078%, 79.6078431373%, 69.7254901961%);
+  --bs-info-border-subtle: rgb(60%, 76.9411764706%, 84.4705882353%);
+  --bs-warning-border-subtle: rgb(94.6666666667%, 89.4901960784%, 66.2745098039%);
+  --bs-danger-border-subtle: rgb(90.431372549%, 66.2745098039%, 65.9607843137%);
   --bs-light-border-subtle: #eef1f5;
   --bs-dark-border-subtle: #8b95a3;
   --bs-white-rgb: 255, 255, 255;
@@ -163,7 +163,7 @@
   --bs-link-hover-color-rgb: 9, 98, 92;
   --bs-code-color: #d63384;
   --bs-highlight-color: #14181f;
-  --bs-highlight-bg: rgb(255, 242.6, 205.4);
+  --bs-highlight-bg: rgb(100%, 95.137254902%, 80.5490196078%);
   --bs-border-width: 1px;
   --bs-border-style: solid;
   --bs-border-color: #dde3ea;
@@ -202,46 +202,46 @@
   --bs-secondary-bg-rgb: 43, 51, 61;
   --bs-tertiary-color: rgba(221, 227, 234, 0.5);
   --bs-tertiary-color-rgb: 221, 227, 234;
-  --bs-tertiary-bg: rgb(31.5, 37.5, 46);
+  --bs-tertiary-bg: rgb(12.3529411765%, 14.7058823529%, 18.0392156863%);
   --bs-tertiary-bg-rgb: 32, 38, 46;
-  --bs-primary-text-emphasis: rgb(108.6, 170.4, 165);
-  --bs-secondary-text-emphasis: rgb(159, 166.2, 175.2);
-  --bs-success-text-emphasis: rgb(119.4, 177, 139.2);
-  --bs-info-text-emphasis: rgb(102, 166.8, 195.6);
-  --bs-warning-text-emphasis: rgb(234.6, 214.8, 126);
-  --bs-danger-text-emphasis: rgb(218.4, 126, 124.8);
+  --bs-primary-text-emphasis: rgb(42.5882352941%, 66.8235294118%, 64.7058823529%);
+  --bs-secondary-text-emphasis: rgb(62.3529411765%, 65.1764705882%, 68.7058823529%);
+  --bs-success-text-emphasis: rgb(46.8235294118%, 69.4117647059%, 54.5882352941%);
+  --bs-info-text-emphasis: rgb(40%, 65.4117647059%, 76.7058823529%);
+  --bs-warning-text-emphasis: rgb(92%, 84.2352941176%, 49.4117647059%);
+  --bs-danger-text-emphasis: rgb(85.6470588235%, 49.4117647059%, 48.9411764706%);
   --bs-light-text-emphasis: #f7f9fb;
   --bs-dark-text-emphasis: #dde3ea;
-  --bs-primary-bg-subtle: rgb(2.2, 22.8, 21);
-  --bs-secondary-bg-subtle: rgb(19, 21.4, 24.4);
-  --bs-success-bg-subtle: rgb(5.8, 25, 12.4);
-  --bs-info-bg-subtle: rgb(0, 21.6, 31.2);
-  --bs-warning-bg-subtle: rgb(44.2, 37.6, 8);
-  --bs-danger-bg-subtle: rgb(38.8, 8, 7.6);
+  --bs-primary-bg-subtle: rgb(0.862745098%, 8.9411764706%, 8.2352941176%);
+  --bs-secondary-bg-subtle: rgb(7.4509803922%, 8.3921568627%, 9.568627451%);
+  --bs-success-bg-subtle: rgb(2.2745098039%, 9.8039215686%, 4.862745098%);
+  --bs-info-bg-subtle: rgb(0%, 8.4705882353%, 12.2352941176%);
+  --bs-warning-bg-subtle: rgb(17.3333333333%, 14.7450980392%, 3.137254902%);
+  --bs-danger-bg-subtle: rgb(15.2156862745%, 3.137254902%, 2.9803921569%);
   --bs-light-bg-subtle: #2b333d;
-  --bs-dark-bg-subtle: rgb(21.5, 25.5, 30.5);
-  --bs-primary-border-subtle: rgb(6.6, 68.4, 63);
-  --bs-secondary-border-subtle: rgb(57, 64.2, 73.2);
-  --bs-success-border-subtle: rgb(17.4, 75, 37.2);
-  --bs-info-border-subtle: rgb(0, 64.8, 93.6);
-  --bs-warning-border-subtle: rgb(132.6, 112.8, 24);
-  --bs-danger-border-subtle: rgb(116.4, 24, 22.8);
+  --bs-dark-bg-subtle: rgb(8.431372549%, 10%, 11.9607843137%);
+  --bs-primary-border-subtle: rgb(2.5882352941%, 26.8235294118%, 24.7058823529%);
+  --bs-secondary-border-subtle: rgb(22.3529411765%, 25.1764705882%, 28.7058823529%);
+  --bs-success-border-subtle: rgb(6.8235294118%, 29.4117647059%, 14.5882352941%);
+  --bs-info-border-subtle: rgb(0%, 25.4117647059%, 36.7058823529%);
+  --bs-warning-border-subtle: rgb(52%, 44.2352941176%, 9.4117647059%);
+  --bs-danger-border-subtle: rgb(45.6470588235%, 9.4117647059%, 8.9411764706%);
   --bs-light-border-subtle: #46505d;
   --bs-dark-border-subtle: #2b333d;
   --bs-heading-color: inherit;
-  --bs-link-color: rgb(108.6, 170.4, 165);
-  --bs-link-hover-color: rgb(137.88, 187.32, 183);
+  --bs-link-color: rgb(42.5882352941%, 66.8235294118%, 64.7058823529%);
+  --bs-link-hover-color: rgb(54.0705882353%, 73.4588235294%, 71.7647058824%);
   --bs-link-color-rgb: 109, 170, 165;
   --bs-link-hover-color-rgb: 138, 187, 183;
-  --bs-code-color: rgb(230.4, 132.6, 181.2);
+  --bs-code-color: rgb(90.3529411765%, 52%, 71.0588235294%);
   --bs-highlight-color: #dde3ea;
-  --bs-highlight-bg: rgb(102, 77.2, 2.8);
+  --bs-highlight-bg: rgb(40%, 30.2745098039%, 1.0980392157%);
   --bs-border-color: #46505d;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.15);
-  --bs-form-valid-color: rgb(117, 183, 152.4);
-  --bs-form-valid-border-color: rgb(117, 183, 152.4);
-  --bs-form-invalid-color: rgb(234, 133.8, 143.4);
-  --bs-form-invalid-border-color: rgb(234, 133.8, 143.4);
+  --bs-form-valid-color: rgb(45.8823529412%, 71.7647058824%, 59.7647058824%);
+  --bs-form-valid-border-color: rgb(45.8823529412%, 71.7647058824%, 59.7647058824%);
+  --bs-form-invalid-color: rgb(91.7647058824%, 52.4705882353%, 56.2352941176%);
+  --bs-form-invalid-border-color: rgb(91.7647058824%, 52.4705882353%, 56.2352941176%);
 }
 
 *,
@@ -1997,13 +1997,13 @@ progress {
 
 .table-primary {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(206.2, 226.8, 225);
-  --bs-table-border-color: rgb(164.96, 181.44, 180);
-  --bs-table-striped-bg: rgb(195.89, 215.46, 213.75);
+  --bs-table-bg: rgb(80.862745098%, 88.9411764706%, 88.2352941176%);
+  --bs-table-border-color: rgb(64.6901960784%, 71.1529411765%, 70.5882352941%);
+  --bs-table-striped-bg: rgb(76.8196078431%, 84.4941176471%, 83.8235294118%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(185.58, 204.12, 202.5);
+  --bs-table-active-bg: rgb(72.7764705882%, 80.0470588235%, 79.4117647059%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(190.735, 209.79, 208.125);
+  --bs-table-hover-bg: rgb(74.7980392157%, 82.2705882353%, 81.6176470588%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2011,13 +2011,13 @@ progress {
 
 .table-secondary {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(223, 225.4, 228.4);
-  --bs-table-border-color: rgb(178.4, 180.32, 182.72);
-  --bs-table-striped-bg: rgb(211.85, 214.13, 216.98);
+  --bs-table-bg: rgb(87.4509803922%, 88.3921568627%, 89.568627451%);
+  --bs-table-border-color: rgb(69.9607843137%, 70.7137254902%, 71.6549019608%);
+  --bs-table-striped-bg: rgb(83.0784313725%, 83.9725490196%, 85.0901960784%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(200.7, 202.86, 205.56);
+  --bs-table-active-bg: rgb(78.7058823529%, 79.5529411765%, 80.6117647059%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(206.275, 208.495, 211.27);
+  --bs-table-hover-bg: rgb(80.8921568627%, 81.762745098%, 82.8509803922%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2025,13 +2025,13 @@ progress {
 
 .table-success {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(209.8, 229, 216.4);
-  --bs-table-border-color: rgb(167.84, 183.2, 173.12);
-  --bs-table-striped-bg: rgb(199.31, 217.55, 205.58);
+  --bs-table-bg: rgb(82.2745098039%, 89.8039215686%, 84.862745098%);
+  --bs-table-border-color: rgb(65.8196078431%, 71.8431372549%, 67.8901960784%);
+  --bs-table-striped-bg: rgb(78.1607843137%, 85.3137254902%, 80.6196078431%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(188.82, 206.1, 194.76);
+  --bs-table-active-bg: rgb(74.0470588235%, 80.8235294118%, 76.3764705882%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(194.065, 211.825, 200.17);
+  --bs-table-hover-bg: rgb(76.1039215686%, 83.068627451%, 78.4980392157%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2039,13 +2039,13 @@ progress {
 
 .table-info {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(204, 225.6, 235.2);
-  --bs-table-border-color: rgb(163.2, 180.48, 188.16);
-  --bs-table-striped-bg: rgb(193.8, 214.32, 223.44);
+  --bs-table-bg: rgb(80%, 88.4705882353%, 92.2352941176%);
+  --bs-table-border-color: rgb(64%, 70.7764705882%, 73.7882352941%);
+  --bs-table-striped-bg: rgb(76%, 84.0470588235%, 87.6235294118%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(183.6, 203.04, 211.68);
+  --bs-table-active-bg: rgb(72%, 79.6235294118%, 83.0117647059%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(188.7, 208.68, 217.56);
+  --bs-table-hover-bg: rgb(74%, 81.8352941176%, 85.3176470588%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2053,13 +2053,13 @@ progress {
 
 .table-warning {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(248.2, 241.6, 212);
-  --bs-table-border-color: rgb(198.56, 193.28, 169.6);
-  --bs-table-striped-bg: rgb(235.79, 229.52, 201.4);
+  --bs-table-bg: rgb(97.3333333333%, 94.7450980392%, 83.137254902%);
+  --bs-table-border-color: rgb(77.8666666667%, 75.7960784314%, 66.5098039216%);
+  --bs-table-striped-bg: rgb(92.4666666667%, 90.0078431373%, 78.9803921569%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(223.38, 217.44, 190.8);
+  --bs-table-active-bg: rgb(87.6%, 85.2705882353%, 74.8235294118%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(229.585, 223.48, 196.1);
+  --bs-table-hover-bg: rgb(90.0333333333%, 87.6392156863%, 76.9019607843%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2067,13 +2067,13 @@ progress {
 
 .table-danger {
   --bs-table-color: #000;
-  --bs-table-bg: rgb(242.8, 212, 211.6);
-  --bs-table-border-color: rgb(194.24, 169.6, 169.28);
-  --bs-table-striped-bg: rgb(230.66, 201.4, 201.02);
+  --bs-table-bg: rgb(95.2156862745%, 83.137254902%, 82.9803921569%);
+  --bs-table-border-color: rgb(76.1725490196%, 66.5098039216%, 66.3843137255%);
+  --bs-table-striped-bg: rgb(90.4549019608%, 78.9803921569%, 78.831372549%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(218.52, 190.8, 190.44);
+  --bs-table-active-bg: rgb(85.6941176471%, 74.8235294118%, 74.6823529412%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(224.59, 196.1, 195.73);
+  --bs-table-hover-bg: rgb(88.0745098039%, 76.9019607843%, 76.7568627451%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2082,12 +2082,12 @@ progress {
 .table-light {
   --bs-table-color: #000;
   --bs-table-bg: #f7f9fb;
-  --bs-table-border-color: rgb(197.6, 199.2, 200.8);
-  --bs-table-striped-bg: rgb(234.65, 236.55, 238.45);
+  --bs-table-border-color: rgb(77.4901960784%, 78.1176470588%, 78.7450980392%);
+  --bs-table-striped-bg: rgb(92.0196078431%, 92.7647058824%, 93.5098039216%);
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: rgb(222.3, 224.1, 225.9);
+  --bs-table-active-bg: rgb(87.1764705882%, 87.8823529412%, 88.5882352941%);
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: rgb(228.475, 230.325, 232.175);
+  --bs-table-hover-bg: rgb(89.5980392157%, 90.3235294118%, 91.0490196078%);
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2096,12 +2096,12 @@ progress {
 .table-dark {
   --bs-table-color: #fff;
   --bs-table-bg: #14181f;
-  --bs-table-border-color: rgb(67, 70.2, 75.8);
-  --bs-table-striped-bg: rgb(31.75, 35.55, 42.2);
+  --bs-table-border-color: rgb(26.2745098039%, 27.5294117647%, 29.7254901961%);
+  --bs-table-striped-bg: rgb(12.4509803922%, 13.9411764706%, 16.5490196078%);
   --bs-table-striped-color: #fff;
-  --bs-table-active-bg: rgb(43.5, 47.1, 53.4);
+  --bs-table-active-bg: rgb(17.0588235294%, 18.4705882353%, 20.9411764706%);
   --bs-table-active-color: #fff;
-  --bs-table-hover-bg: rgb(37.625, 41.325, 47.8);
+  --bs-table-hover-bg: rgb(14.7549019608%, 16.2058823529%, 18.7450980392%);
   --bs-table-hover-color: #fff;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -2599,7 +2599,7 @@ input.form-control-color.xlarge,
   }
 }
 .form-range::-webkit-slider-thumb:active {
-  background-color: rgb(181.8, 212.7, 210);
+  background-color: rgb(71.2941176471%, 83.4117647059%, 82.3529411765%);
 }
 .form-range::-webkit-slider-runnable-track {
   width: 100%;
@@ -2625,7 +2625,7 @@ input.form-control-color.xlarge,
   }
 }
 .form-range::-moz-range-thumb:active {
-  background-color: rgb(181.8, 212.7, 210);
+  background-color: rgb(71.2941176471%, 83.4117647059%, 82.3529411765%);
 }
 .form-range::-moz-range-track {
   width: 100%;
@@ -3245,12 +3245,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #0b7269;
   --bs-btn-border-color: #0b7269;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(9.35, 96.9, 89.25);
-  --bs-btn-hover-border-color: rgb(8.8, 91.2, 84);
+  --bs-btn-hover-bg: rgb(3.6666666667%, 38%, 35%);
+  --bs-btn-hover-border-color: rgb(3.4509803922%, 35.7647058824%, 32.9411764706%);
   --bs-btn-focus-shadow-rgb: 48, 135, 128;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(8.8, 91.2, 84);
-  --bs-btn-active-border-color: rgb(8.25, 85.5, 78.75);
+  --bs-btn-active-bg: rgb(3.4509803922%, 35.7647058824%, 32.9411764706%);
+  --bs-btn-active-border-color: rgb(3.2352941176%, 33.5294117647%, 30.8823529412%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #0b7269;
@@ -3262,12 +3262,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #5f6b7a;
   --bs-btn-border-color: #5f6b7a;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(80.75, 90.95, 103.7);
-  --bs-btn-hover-border-color: rgb(76, 85.6, 97.6);
+  --bs-btn-hover-bg: rgb(31.6666666667%, 35.6666666667%, 40.6666666667%);
+  --bs-btn-hover-border-color: rgb(29.8039215686%, 33.568627451%, 38.2745098039%);
   --bs-btn-focus-shadow-rgb: 119, 129, 142;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(76, 85.6, 97.6);
-  --bs-btn-active-border-color: rgb(71.25, 80.25, 91.5);
+  --bs-btn-active-bg: rgb(29.8039215686%, 33.568627451%, 38.2745098039%);
+  --bs-btn-active-border-color: rgb(27.9411764706%, 31.4705882353%, 35.8823529412%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #5f6b7a;
@@ -3279,12 +3279,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #1d7d3e;
   --bs-btn-border-color: #1d7d3e;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(24.65, 106.25, 52.7);
-  --bs-btn-hover-border-color: rgb(23.2, 100, 49.6);
+  --bs-btn-hover-bg: rgb(9.6666666667%, 41.6666666667%, 20.6666666667%);
+  --bs-btn-hover-border-color: rgb(9.0980392157%, 39.2156862745%, 19.4509803922%);
   --bs-btn-focus-shadow-rgb: 63, 145, 91;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(23.2, 100, 49.6);
-  --bs-btn-active-border-color: rgb(21.75, 93.75, 46.5);
+  --bs-btn-active-bg: rgb(9.0980392157%, 39.2156862745%, 19.4509803922%);
+  --bs-btn-active-border-color: rgb(8.5294117647%, 36.7647058824%, 18.2352941176%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #1d7d3e;
@@ -3296,11 +3296,11 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #006c9c;
   --bs-btn-border-color: #006c9c;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(0, 91.8, 132.6);
-  --bs-btn-hover-border-color: rgb(0, 86.4, 124.8);
+  --bs-btn-hover-bg: rgb(0%, 36%, 52%);
+  --bs-btn-hover-border-color: rgb(0%, 33.8823529412%, 48.9411764706%);
   --bs-btn-focus-shadow-rgb: 38, 130, 171;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(0, 86.4, 124.8);
+  --bs-btn-active-bg: rgb(0%, 33.8823529412%, 48.9411764706%);
   --bs-btn-active-border-color: #005175;
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
@@ -3313,12 +3313,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #ddbc28;
   --bs-btn-border-color: #ddbc28;
   --bs-btn-hover-color: #000;
-  --bs-btn-hover-bg: rgb(226.1, 198.05, 72.25);
-  --bs-btn-hover-border-color: rgb(224.4, 194.7, 61.5);
+  --bs-btn-hover-bg: rgb(88.6666666667%, 77.6666666667%, 28.3333333333%);
+  --bs-btn-hover-border-color: rgb(88%, 76.3529411765%, 24.1176470588%);
   --bs-btn-focus-shadow-rgb: 188, 160, 34;
   --bs-btn-active-color: #000;
-  --bs-btn-active-bg: rgb(227.8, 201.4, 83);
-  --bs-btn-active-border-color: rgb(224.4, 194.7, 61.5);
+  --bs-btn-active-bg: rgb(89.3333333333%, 78.9803921569%, 32.5490196078%);
+  --bs-btn-active-border-color: rgb(88%, 76.3529411765%, 24.1176470588%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #000;
   --bs-btn-disabled-bg: #ddbc28;
@@ -3330,12 +3330,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #c22826;
   --bs-btn-border-color: #c22826;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(164.9, 34, 32.3);
-  --bs-btn-hover-border-color: rgb(155.2, 32, 30.4);
+  --bs-btn-hover-bg: rgb(64.6666666667%, 13.3333333333%, 12.6666666667%);
+  --bs-btn-hover-border-color: rgb(60.862745098%, 12.5490196078%, 11.9215686275%);
   --bs-btn-focus-shadow-rgb: 203, 72, 71;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(155.2, 32, 30.4);
-  --bs-btn-active-border-color: rgb(145.5, 30, 28.5);
+  --bs-btn-active-bg: rgb(60.862745098%, 12.5490196078%, 11.9215686275%);
+  --bs-btn-active-border-color: rgb(57.0588235294%, 11.7647058824%, 11.1764705882%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #c22826;
@@ -3347,12 +3347,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #f7f9fb;
   --bs-btn-border-color: #f7f9fb;
   --bs-btn-hover-color: #000;
-  --bs-btn-hover-bg: rgb(209.95, 211.65, 213.35);
-  --bs-btn-hover-border-color: rgb(197.6, 199.2, 200.8);
+  --bs-btn-hover-bg: rgb(82.3333333333%, 83%, 83.6666666667%);
+  --bs-btn-hover-border-color: rgb(77.4901960784%, 78.1176470588%, 78.7450980392%);
   --bs-btn-focus-shadow-rgb: 210, 212, 213;
   --bs-btn-active-color: #000;
-  --bs-btn-active-bg: rgb(197.6, 199.2, 200.8);
-  --bs-btn-active-border-color: rgb(185.25, 186.75, 188.25);
+  --bs-btn-active-bg: rgb(77.4901960784%, 78.1176470588%, 78.7450980392%);
+  --bs-btn-active-border-color: rgb(72.6470588235%, 73.2352941176%, 73.8235294118%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #000;
   --bs-btn-disabled-bg: #f7f9fb;
@@ -3364,12 +3364,12 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-btn-bg: #14181f;
   --bs-btn-border-color: #14181f;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: rgb(55.25, 58.65, 64.6);
-  --bs-btn-hover-border-color: rgb(43.5, 47.1, 53.4);
+  --bs-btn-hover-bg: rgb(21.6666666667%, 23%, 25.3333333333%);
+  --bs-btn-hover-border-color: rgb(17.0588235294%, 18.4705882353%, 20.9411764706%);
   --bs-btn-focus-shadow-rgb: 55, 59, 65;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: rgb(67, 70.2, 75.8);
-  --bs-btn-active-border-color: rgb(43.5, 47.1, 53.4);
+  --bs-btn-active-bg: rgb(26.2745098039%, 27.5294117647%, 29.7254901961%);
+  --bs-btn-active-border-color: rgb(17.0588235294%, 18.4705882353%, 20.9411764706%);
   --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #14181f;
@@ -4784,7 +4784,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
   --bs-accordion-btn-icon-width: 1.25rem;
   --bs-accordion-btn-icon-transform: rotate(-180deg);
   --bs-accordion-btn-icon-transition: transform 0.2s ease-in-out;
-  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='rgb%284.4, 45.6, 42%29' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='rgb%281.7254901961%, 17.8823529412%, 16.4705882353%%29' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
   --bs-accordion-btn-focus-box-shadow: 0 0 0 3px rgba(11, 114, 105, 0.2);
   --bs-accordion-body-padding-x: 1.25rem;
   --bs-accordion-body-padding-y: 1rem;
@@ -4901,8 +4901,8 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
 }
 
 [data-bs-theme=dark] .accordion-button::after {
-  --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgb%28108.6, 170.4, 165%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3e%3c/svg%3e");
-  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgb%28108.6, 170.4, 165%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3e%3c/svg%3e");
+  --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgb%2842.5882352941%, 66.8235294118%, 64.7058823529%%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3e%3c/svg%3e");
+  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgb%2842.5882352941%, 66.8235294118%, 64.7058823529%%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3e%3c/svg%3e");
 }
 
 .breadcrumb {
