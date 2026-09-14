@@ -33,9 +33,57 @@ if (!isset($GLOBALS['failLabels'])) {
     $GLOBALS['failLabels'] = array();
 }
 
+if (!function_exists('harness_export')) {
+    /**
+     * Render a value var_export-style: quoted strings, bare numbers, bracketed arrays.
+     *
+     * Nesting stops at $maxDepth and the caller bounds the length, so a large or deeply
+     * nested value cannot flood the log.
+     *
+     * @param mixed $v
+     * @param int   $depth
+     * @param int   $maxDepth
+     *
+     * @return string
+     */
+    function harness_export($v, int $depth = 0, int $maxDepth = 3): string
+    {
+        if (is_array($v)) {
+            if ($v === array()) {
+                return '[]';
+            }
+            if ($depth >= $maxDepth) {
+                return 'array(' . count($v) . ')';
+            }
+            $isList = array_keys($v) === range(0, count($v) - 1);
+            $parts  = array();
+            foreach ($v as $k => $item) {
+                $parts[] = ($isList ? '' : harness_export($k, $depth + 1, $maxDepth) . ' => ')
+                    . harness_export($item, $depth + 1, $maxDepth);
+            }
+
+            return '[' . implode(', ', $parts) . ']';
+        }
+        if (is_object($v)) {
+            return 'object(' . get_class($v) . ')';
+        }
+        if (is_string($v)) {
+            return "'" . $v . "'";
+        }
+        if ($v === null || is_bool($v) || is_int($v) || is_float($v)) {
+            return var_export($v, true);
+        }
+
+        return gettype($v);
+    }
+}
+
 if (!function_exists('describe')) {
     /**
      * Render a value as type + content for assertion output.
+     *
+     * Arrays carry their contents, not just a count: two arrays of the same length that
+     * differ say nothing useful when both sides print as array(2).
      *
      * @param mixed $v
      *
@@ -59,7 +107,12 @@ if (!function_exists('describe')) {
             return 'string("' . $v . '")';
         }
         if (is_array($v)) {
-            return 'array(' . count($v) . ')';
+            $body = harness_export($v);
+            if (strlen($body) > 400) {
+                $body = substr($body, 0, 397) . '...';
+            }
+
+            return 'array(' . count($v) . ')' . $body;
         }
         if (is_object($v)) {
             return 'object(' . get_class($v) . ')';
@@ -265,6 +318,45 @@ if (!function_exists('harness_questions')) {
         $res->free();
 
         return (int)($row['Value'] ?? -1);
+    }
+}
+
+if (!function_exists('harness_sql_mode')) {
+    /**
+     * Read the effective session sql_mode off the singleton handle.
+     *
+     * @return string[] Uppercase mode names, empty when the probe fails
+     */
+    function harness_sql_mode(): array
+    {
+        $db  = DBConnectionClass::newInstance()->getOsclassDb();
+        $res = $db->query('SELECT @@SESSION.sql_mode AS m');
+        if (!$res) {
+            return array();
+        }
+        $row = $res->fetch_assoc();
+        $res->free();
+        $raw = (string)($row['m'] ?? '');
+
+        return $raw === '' ? array() : array_map('strtoupper', explode(',', $raw));
+    }
+}
+
+if (!function_exists('harness_strict_writes')) {
+    /**
+     * Whether the connection rejects out-of-range and mistyped writes instead of
+     * coercing them. Several models are pinned twice because the two outcomes are
+     * both real: which one a site gets depends on OSC_DB_STRICT_MODE.
+     *
+     * @return bool
+     */
+    function harness_strict_writes(): bool
+    {
+        $modes = harness_sql_mode();
+
+        return in_array('STRICT_TRANS_TABLES', $modes, true)
+            || in_array('STRICT_ALL_TABLES', $modes, true)
+            || in_array('TRADITIONAL', $modes, true);
     }
 }
 

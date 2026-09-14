@@ -48,9 +48,9 @@
  *    to reproduce those casts explicitly, so each one is pinned with a value that
  *    would land somewhere else without it.
  *
- * 3. Strict SQL mode is stripped from every connection, so an out-of-range
- *    counter is clamped rather than rejected: setNumItems($id, -1) reports
- *    success and stores 0.
+ * 3. Whether an out-of-range counter is clamped or rejected depends on the
+ *    connection, so setNumItems($id, -1) is pinned both ways behind
+ *    harness_strict_writes().
  *
  * 4. calculateAllStats() (private, reached through updateAllStats) parenthesises
  *    its premium/expiry test — `AND (b_premium = 1 || dt_expiration >= ?) AND` —
@@ -470,10 +470,20 @@ pin('and stores 0', $cityBravo . '=0', $rows());
 pin('a fractional city id is truncated onto that city', true, $model->setNumItems($cityBravo . '.9', 4));
 pin('and it landed on the truncated row', $cityBravo . '=4', $rows());
 
-harness_section('setNumItems — a negative count is clamped, not rejected (strict mode is off)');
+harness_section('setNumItems — a negative count');
 
-pin('a negative count still reports success', true, $model->setNumItems($cityBravo, -1));
-pin('the unsigned column clamped it to 0', $cityBravo . '=0', $rows());
+// i_num_items is UNSIGNED, so -1 cannot be stored. Loose mode clamps it to 0 and
+// reports success; strict mode refuses the write and leaves the row as it was.
+if (harness_strict_writes()) {
+    pin('a negative count is rejected', false, $quiet(static function () use ($model, $cityBravo) {
+        return $model->setNumItems($cityBravo, -1);
+    }));
+    pin('the row keeps its previous value', $cityBravo . '=4', $rows());
+} else {
+    pin('a negative count still reports success', true, $model->setNumItems($cityBravo, -1));
+    pin('the unsigned column clamped it to 0', $cityBravo . '=0', $rows());
+}
+$afterNegative = harness_strict_writes() ? $cityBravo . '=4' : $cityBravo . '=0';
 
 harness_section('setNumItems — rejected by the database');
 
@@ -488,7 +498,7 @@ pin('a non-numeric id casts to 0, which has no city, and returns bool false', fa
 pin('a null id casts to 0 and returns bool false', false, $quiet(static function () use ($model) {
     return $model->setNumItems(null, 3);
 }));
-pin('none of them wrote anything', $cityBravo . '=0', $rows());
+pin('none of them wrote anything', $afterNegative, $rows());
 
 harness_section('setNumItems — query cost');
 

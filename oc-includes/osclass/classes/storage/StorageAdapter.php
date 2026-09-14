@@ -50,6 +50,8 @@ interface StorageAdapter
     public function get(string $key): string|false;
 
     /**
+     * Whether anything is stored under $key.
+     *
      * @param string $key
      *
      * @return bool
@@ -57,6 +59,8 @@ interface StorageAdapter
     public function exists(string $key): bool;
 
     /**
+     * Remove whatever is stored under $key.
+     *
      * @param string $key
      *
      * @return bool

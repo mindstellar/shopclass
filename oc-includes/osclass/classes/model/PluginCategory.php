@@ -13,18 +13,23 @@
  */
 
 /**
+ * Model database for the t_plugin_category table (per-plugin category selections).
  *
+ * @package    Shopclass
+ * @subpackage Model
  */
 class PluginCategory extends DAO
 {
     /**
+     * It references to self object: PluginCategory.
+     * It is used as a singleton
      *
-     * @var
+     * @var PluginCategory
      */
     private static $instance;
 
     /**
-     *
+     * Set data related to t_plugin_category table
      */
     public function __construct()
     {
@@ -35,6 +40,7 @@ class PluginCategory extends DAO
     }
 
     /**
+     * Return the shared PluginCategory model instance, creating it on first use.
      *
      * @return \PluginCategory
      */
@@ -50,13 +56,9 @@ class PluginCategory extends DAO
     /**
      * Return all information given a category id
      *
-     * @access public
+     * @param int $categoryId
      *
-     * @param $categoryId
-     *
-     * @return array
-     * @since  unknown
-     *
+     * @return array<int,array<string,string|null>> Empty when nothing matches or the query failed
      */
     public function findByCategoryId($categoryId)
     {
@@ -75,12 +77,9 @@ class PluginCategory extends DAO
     /**
      * Return list of categories asociated with a plugin
      *
-     * @access public
-     *
      * @param string $plugin
      *
-     * @return array
-     * @since  unknown
+     * @return array<int,string> Category ids
      */
     public function listSelected($plugin)
     {
@@ -104,13 +103,10 @@ class PluginCategory extends DAO
     /**
      * Check if a category is asociated with a plugin
      *
-     * @access public
-     *
      * @param string $pluginName
      * @param int    $categoryId
      *
-     * @return bool
-     * @since  unknown
+     * @return bool False when the pairing does not exist or the query failed
      */
     public function isThisCategory($pluginName, $categoryId)
     {

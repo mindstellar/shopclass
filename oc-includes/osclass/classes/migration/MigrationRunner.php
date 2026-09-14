@@ -51,6 +51,7 @@ class MigrationRunner
      * pre-migration version self-bootstrap on their first run.
      *
      * @return void
+     * @throws \mindstellar\database\DbException
      */
     public function ensureLedger(): void
     {
@@ -69,6 +70,7 @@ class MigrationRunner
      * Names of migrations already recorded in the ledger.
      *
      * @return string[]
+     * @throws \mindstellar\database\DbException
      */
     public function applied(): array
     {
@@ -84,6 +86,7 @@ class MigrationRunner
      * Migration filenames present on disk but not yet applied, in run order.
      *
      * @return string[]
+     * @throws \mindstellar\database\DbException
      */
     public function pending(): array
     {
@@ -103,6 +106,7 @@ class MigrationRunner
      * upgrade retries from there.
      *
      * @return array{ok:bool,applied:string[],failed:?string,error:?string}
+     * @throws \mindstellar\database\DbException when the ledger itself cannot be read or written
      */
     public function run(): array
     {
@@ -131,6 +135,7 @@ class MigrationRunner
      * backfills against it would be wrong.
      *
      * @return void
+     * @throws \mindstellar\database\DbException
      */
     public function baseline(): void
     {
@@ -175,6 +180,8 @@ class MigrationRunner
      * @param string $name migration filename
      *
      * @return void
+     * @throws \RuntimeException on an unreadable or malformed migration file
+     * @throws \mindstellar\database\DbException on a failing statement
      */
     private function apply($name): void
     {
@@ -187,9 +194,13 @@ class MigrationRunner
     }
 
     /**
-     * @param string $path
+     * Run every statement of a `.sql` migration in file order.
+     *
+     * @param string $path absolute path to the migration file
      *
      * @return void
+     * @throws \RuntimeException when the file cannot be read
+     * @throws \mindstellar\database\DbException on a failing statement
      */
     private function applySql($path): void
     {
@@ -207,9 +218,12 @@ class MigrationRunner
     }
 
     /**
-     * @param string $path
+     * Require a `.php` migration and invoke the up() method of the object it returns.
+     *
+     * @param string $path absolute path to the migration file
      *
      * @return void
+     * @throws \RuntimeException when the file does not return an object with an up() method
      */
     private function applyPhp($path): void
     {
@@ -222,9 +236,12 @@ class MigrationRunner
     }
 
     /**
-     * @param string $name
+     * Mark one migration as applied in the ledger.
+     *
+     * @param string $name migration filename
      *
      * @return void
+     * @throws \mindstellar\database\DbException
      */
     private function record($name): void
     {

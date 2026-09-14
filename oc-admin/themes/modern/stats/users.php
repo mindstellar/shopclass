@@ -34,6 +34,8 @@ switch ($type) {
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -48,6 +50,11 @@ osc_admin_page(array(
                     . 'countries and regions where users live among those available on your site.'),
 ));
 
+/**
+ * Emit the user-statistics charts and the Google Visualization loader they need.
+ *
+ * @return void
+ */
 function customHead()
 {
     $users            = __get('users');

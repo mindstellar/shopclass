@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class Dump extends DAO
 {
@@ -25,13 +24,13 @@ class Dump extends DAO
      * It references to self object: Dump.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var Dump
      */
     private static $instance;
 
     /**
+     * Return the shared Dump model instance, creating it on first use.
+     *
      * @return \Dump
      */
     public static function newInstance()
@@ -63,7 +62,7 @@ class Dump extends DAO
     /**
      * Return all tables from database
      *
-     * @return array
+     * @return array<int,array<string,string>> One single-column row per table
      */
     public function showTables()
     {
@@ -220,13 +219,15 @@ class Dump extends DAO
     /**
      * Specific dump for t_category table
      *
-     * @param $result
-     * @param $num_fields
-     * @param $field_type
-     * @param $fields
-     * @param $index
-     * @param $num_rows
-     * @param $_str
+     * @param array<int,array<string,mixed>> $result
+     * @param int                             $num_fields
+     * @param array<int,int>                  $field_type Accepted for signature compatibility; unused
+     * @param \stdClass[]                     $fields     mysqli field metadata
+     * @param int                             $index
+     * @param int                             $num_rows
+     * @param string                          $_str       Dump text, appended to in place
+     *
+     * @return void
      */
     private function _dump_table_category($result, $num_fields, $field_type, $fields, $index, $num_rows, &$_str)
     {
@@ -282,9 +283,11 @@ class Dump extends DAO
      *
      * data =>  http://www.php.net/manual/es/mysqli-result.fetch-field.php#106064
      *
-     * @param $type
-     * @param $_str
-     * @param $value
+     * @param int                   $type  mysqli field type constant
+     * @param string                 $_str  Dump text, appended to in place
+     * @param string|int|float       $value
+     *
+     * @return void
      */
     private function _quotes($type, &$_str, $value)
     {
@@ -321,9 +324,9 @@ class Dump extends DAO
      * produced bytes are unchanged. The value being quoted originates from the
      * database being dumped, never from request input.
      *
-     * @param string $value
+     * @param string|int|float $value
      *
-     * @return string
+     * @return string|int|float Quoted text, or the value itself when it is emitted bare
      */
     private function quoteValue($value)
     {
@@ -342,8 +345,12 @@ class Dump extends DAO
     }
 
     /**
-     * @param $file
-     * @param $content
+     * Append text to the dump file, warning rather than throwing on failure.
+     *
+     * @param string $file
+     * @param string $content
+     *
+     * @return void
      */
     private function appendFile($file, $content)
     {

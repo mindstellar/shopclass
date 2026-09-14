@@ -483,8 +483,26 @@ case "$code" in
 esac
 
 # ---------------------------------------------------------------------------
-# Snapshot the schema + preferences before the package touches anything.
+# Settle core's own lazy state, then snapshot the schema + preferences before
+# the package touches anything.
 # ---------------------------------------------------------------------------
+# Not every core preference is written at install time. Some are created the
+# first time something needs them — rendering the search page mints a
+# search-alert token, and that writes alert_private_key and alert_public_key.
+# The pages visited during the lifecycle below therefore produced those rows
+# *between* the two snapshots, and the diff attributed them to the package: every
+# submission was reported as leaving behind preferences it had never created,
+# on a gate whose whole job is to notice exactly that. Visiting the same public
+# routes first moves those writes into the baseline, so what the diff reports is
+# the package's own doing.
+#
+# Deliberately the same routes the lifecycle uses, and deliberately quiet: a
+# failure here is not the package's problem, and the assertions that do matter
+# run against these URLs again once it is installed.
+for warm_path in "/index.php" "/index.php?page=search" "/index.php?page=item&id=1" "/index.php?page=contact"; do
+  http_get "$warm_path" >/dev/null 2>&1 || true
+done
+
 db_query "SHOW TABLES" | sort > "${WORK}/tables_before.txt"
 db_query "SELECT s_name FROM oc_t_preference" | sort > "${WORK}/prefs_before.txt"
 

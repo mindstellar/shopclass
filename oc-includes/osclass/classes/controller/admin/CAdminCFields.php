@@ -27,6 +27,9 @@ class CAdminCFields extends AdminSecBaseModel
     //specific for this class
     private Field $fieldManager;
 
+    /**
+     * Take the field manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -37,6 +40,13 @@ class CAdminCFields extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Show the submissions browser, or the forms builder with its field palette,
+     * categories and legacy loose-field warnings.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -126,6 +136,8 @@ class CAdminCFields extends AdminSecBaseModel
 
     /**
      * Form submissions browser: pick a form, filter by status, view entries.
+     *
+     * @return void
      */
     private function submissionsView()
     {
@@ -152,9 +164,8 @@ class CAdminCFields extends AdminSecBaseModel
             $status = null;
         }
 
-        // Paged like every other list screen. This used to fetch a flat 200 rows at
-        // offset 0, so a form past its two-hundredth entry simply stopped showing them
-        // with nothing on screen to say so.
+        // Paged like every other list screen: a flat fetch stops showing entries past its
+        // limit with nothing on screen to say so.
         $perPage = Params::getParamInt('iDisplayLength');
         if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
             $perPage = 25;

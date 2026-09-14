@@ -16,46 +16,77 @@
  */
 interface iObject_Cache
 {
+    /**
+     * Whether the backing store this driver needs is available on this system.
+     *
+     * @return bool
+     */
     public static function is_supported();
 
     /**
-     * @param     $key
-     * @param     $data
-     * @param int $expire
+     * Store data under a key only when that key is not already set.
      *
-     * @return mixed
+     * @param int|string $key
+     * @param mixed      $data
+     * @param int        $expire seconds; 0 means the driver's default expiration
+     *
+     * @return bool False when the key already exists, true on success.
      */
     public function add($key, $data, $expire = 0);
 
     /**
-     * @param     $key
-     * @param     $data
-     * @param int $expire
+     * Store data under a key, replacing anything already there.
      *
-     * @return mixed
+     * @param int|string $key
+     * @param mixed      $data
+     * @param int        $expire seconds; 0 means the driver's default expiration
+     *
+     * @return bool
      */
     public function set($key, $data, $expire = 0);
 
     /**
-     * @param      $key
-     * @param null $found
+     * Read the value stored under a key.
      *
-     * @return mixed
+     * @param int|string $key
+     * @param bool|null  $found set by reference to whether the key was present
+     *
+     * @return mixed False on a miss, the cached value otherwise.
      */
     public function get($key, &$found = null);
 
     /**
-     * @param $key
+     * Remove the value stored under a key.
      *
-     * @return mixed
+     * @param int|string $key
+     *
+     * @return bool False when nothing was deleted, true on success.
      */
     public function delete($key);
 
+    /**
+     * Discard everything this driver holds.
+     *
+     * @return bool
+     */
     public function flush();
 
-    public function stats(); // return string
+    /**
+     * Echo a debug panel of hit/miss counters for this request.
+     *
+     * @return void
+     */
+    public function stats();
 
+    /**
+     * The driver's identifier, i.e. the OSC_CACHE value that selects it.
+     *
+     * @return string
+     */
     public function _get_cache();
 
+    /**
+     * @return void
+     */
     public function __destruct();
 }

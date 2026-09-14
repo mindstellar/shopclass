@@ -17,6 +17,10 @@
  */
 class CWebUser extends WebSecBaseModel
 {
+    /**
+     * Boots the secured base controller, bounces the visitor home when accounts are
+     * disabled, and fires the `init_user` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +32,12 @@ class CWebUser extends WebSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Dispatches the signed-in account actions (dashboard, profile, alerts, listings,
+     * password and email changes, account deletion) and renders their views.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
@@ -39,7 +49,7 @@ class CWebUser extends WebSecBaseModel
                 //calling the view...
                 $this->_exportVariableToView('items', $aItems);
                 $this->_exportVariableToView('max_items', $max_items);
-                $this->doView('user-dashboard.php');
+                $this->doView(osc_locate_template(array('user-dashboard.php'), 'user-dashboard'));
                 break;
             case ('profile'):        //profile...
                 $aUser      = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
@@ -76,7 +86,7 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('cities', $aCities);
                 $this->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
 
-                $this->doView('user-profile.php');
+                $this->doView(osc_locate_template(array('user-profile.php'), 'user-profile'));
                 break;
             case ('profile_post'):   //profile post...
                 osc_csrf_check();
@@ -114,10 +124,10 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('alerts', $aAlerts);
                 View::newInstance()->_reset('alerts');
                 $this->_exportVariableToView('user', $user);
-                $this->doView('user-alerts.php');
+                $this->doView(osc_locate_template(array('user-alerts.php'), 'user-alerts'));
                 break;
             case ('change_email'):           //change email
-                $this->doView('user-change_email.php');
+                $this->doView(osc_locate_template(array('user-change_email.php'), 'user-change_email'));
                 break;
             case ('change_email_post'):      //change email post
                 osc_csrf_check();
@@ -161,7 +171,7 @@ class CWebUser extends WebSecBaseModel
                 }
                 break;
             case ('change_username'):        //change username
-                $this->doView('user-change_username.php');
+                $this->doView(osc_locate_template(array('user-change_username.php'), 'user-change_username'));
                 break;
             case ('change_username_post'):   //change username
                 osc_csrf_check();
@@ -196,7 +206,7 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_change_user_username_url());
                 break;
             case ('change_password'):        //change password
-                $this->doView('user-change_password.php');
+                $this->doView(osc_locate_template(array('user-change_password.php'), 'user-change_password'));
                 break;
             case 'change_password_post':    //change password post
                 osc_csrf_check();
@@ -270,7 +280,7 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('items_type', $itemType);
                 $this->_exportVariableToView('search_page', $page);
 
-                $this->doView('user-items.php');
+                $this->doView(osc_locate_template(array('user-items.php'), 'user-items'));
                 break;
             case 'activate_alert':
                 $email  = Params::getParam('email');
@@ -310,41 +320,106 @@ class CWebUser extends WebSecBaseModel
 
                 $this->redirectTo(osc_user_alerts_url());
                 break;
-            case 'delete':
-                $id     = Params::getParam('id');
-                $secret = Params::getParam('secret');
-                if (osc_is_web_user_logged_in()) {
-                    $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
-                    osc_run_hook('before_user_delete', $user);
-                    View::newInstance()->_exportVariableToView('user', $user);
-                    if (!empty($user) && osc_logged_user_id() == $id
-                        && $secret == $user['s_secret']
-                    ) {
-                        try {
-                            User::newInstance()->deleteUser(osc_logged_user_id());
-                        } catch (Exception $e) {
-                            trigger_error($e->getMessage(), E_USER_WARNING);
-                        }
-
-                        Session::newInstance()->_drop('userId');
-                        Session::newInstance()->_drop('userName');
-                        Session::newInstance()->_drop('userEmail');
-                        Session::newInstance()->_drop('userPhone');
-
-                        Cookie::newInstance()->pop('oc_userId');
-                        Cookie::newInstance()->pop('oc_userSecret');
-                        Cookie::newInstance()->set();
-
-                        osc_add_flash_ok_message(_m('Your account have been deleted'));
-                        $this->redirectTo(osc_base_url());
-                    } else {
-                        osc_add_flash_error_message(_m('Oops! you can not do that'));
-                        $this->redirectTo(osc_user_dashboard_url());
-                    }
-                } else {
-                    osc_add_flash_error_message(_m('Oops! you can not do that'));
-                    $this->redirectTo(osc_base_url());
+            case 'export':
+                // A copy of everything held about the person, for their own request.
+                // Signed in, and the id and secret in the link both matching the session,
+                // because it hands out the same data that deleting the account destroys.
+                $id     = Params::getParamInt('id');
+                $secret = Params::getParamString('secret');
+                if (!osc_is_web_user_logged_in()) {
+                    osc_add_flash_error_message(_m('Please sign in to download your data'));
+                    $this->redirectTo(osc_user_login_url());
+                    break;
                 }
+
+                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                if (empty($user) || osc_logged_user_id() != $id || $secret !== $user['s_secret']) {
+                    osc_add_flash_error_message(_m('That link is not valid'));
+                    $this->redirectTo(osc_user_profile_url());
+                    break;
+                }
+
+                $data = \mindstellar\privacy\PersonalData::export(osc_logged_user_id());
+                if ($data === null) {
+                    osc_add_flash_error_message(_m('Your data could not be prepared'));
+                    $this->redirectTo(osc_user_profile_url());
+                    break;
+                }
+
+                // Streamed rather than written somewhere and linked to. A file would need
+                // a location, a name nobody can guess and something to delete it later;
+                // sending the bytes straight to the person who asked needs none of that.
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+                header('Content-Type: application/json; charset=utf-8');
+                header('Content-Disposition: attachment; filename="my-data-' . date('Y-m-d') . '.json"');
+                header('X-Content-Type-Options: nosniff');
+                header('Cache-Control: private, no-store');
+                echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                exit;
+            case 'delete':
+                // GET must not delete. Older themes still point here with id and
+                // secret in the query string; those land on the confirm form and
+                // the query values are ignored. Mail scanners and prefetchers
+                // that only GET therefore cannot remove the account.
+                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                if (empty($user)) {
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo(osc_user_login_url());
+                    break;
+                }
+                $this->_exportVariableToView('user', $user);
+                $this->doView(osc_locate_template(array('user-delete_account.php'), 'user-delete_account'));
+                break;
+            case 'delete_post':
+                osc_csrf_check();
+                $userId = (int) osc_logged_user_id();
+                $user   = User::newInstance()->findByPrimaryKey($userId);
+                if (empty($user) || $userId < 1) {
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo(osc_user_login_url());
+                    break;
+                }
+
+                $password = Params::getParam('password', false, false);
+                if ($password === '') {
+                    osc_add_flash_warning_message(_m('Password cannot be blank'));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+                if (!osc_verify_password($password, $user['s_password'])) {
+                    osc_add_flash_error_message(_m("Current password doesn't match"));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+
+                osc_run_hook('before_user_delete', $user);
+                try {
+                    User::newInstance()->deleteUser($userId);
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                }
+
+                Session::newInstance()->_drop('userId');
+                Session::newInstance()->_drop('userName');
+                Session::newInstance()->_drop('userEmail');
+                Session::newInstance()->_drop('userPhone');
+                Session::newInstance()->_dropEphemeral('userId');
+                Session::newInstance()->_dropEphemeral('userName');
+                Session::newInstance()->_dropEphemeral('userEmail');
+                Session::newInstance()->_dropEphemeral('userPhone');
+                View::newInstance()->_erase('_loggedUser');
+
+                Cookie::newInstance()->pop('oc_userId');
+                Cookie::newInstance()->pop('oc_userSecret');
+                Cookie::newInstance()->set();
+
+                osc_add_flash_ok_message(_m('Your account have been deleted'));
+                $this->redirectTo(osc_base_url());
                 break;
         }
     }
@@ -417,14 +492,20 @@ class CWebUser extends WebSecBaseModel
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the account template, falling back to core's view when the theme has none.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        // Core has a fallback page for every account view. A theme that ships the view
+        // still wins; this only keeps a theme that does not from rendering blank.
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

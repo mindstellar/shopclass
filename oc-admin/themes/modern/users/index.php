@@ -33,6 +33,11 @@ osc_admin_page(array(
 ));
 
 //customize Head
+/**
+ * Emit the user list's script: autocomplete on the user filter fields.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -175,38 +180,19 @@ osc_admin_pagination($aData);
                         <div class="row row-cols-lg-2">
                             <div class="col-lg-6">
                                 <div class="row-wrapper">
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Email'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_open(__('Email')); ?>
                                             <input id="s_email" name="s_email" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_email')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Name'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('Name')); ?>
                                             <input id="s_name" name="s_name" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_name')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Username'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('Username')); ?>
                                             <input id="s_username" name="s_username" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_username')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Active'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('Active')); ?>
                                             <select id="b_active" name="b_active">
                                                 <option value="" <?php echo((Params::getParam('b_active') == '')
                                                     ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>
@@ -215,50 +201,30 @@ osc_admin_pagination($aData);
                                                 <option value="0" <?php echo((Params::getParam('b_active') == '0')
                                                     ? 'selected="selected"' : '') ?>><?php _e('OFF'); ?></option>
                                             </select>
-                                        </div>
-                                    </div>
+                                    <?php osc_admin_form_row_close(); ?>
                                 </div>
                             </div>
                             <div class="col">
                                 <div class="row-wrapper">
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Country'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_open(__('Country')); ?>
                                             <input id="countryName" name="countryName" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('countryName')); ?>"/>
                                             <input id="countryId" name="countryId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParam('countryId')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Region'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('Region')); ?>
                                             <input id="region" name="region" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('region')); ?>"/>
                                             <input id="regionId" name="regionId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParam('regionId')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('City'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('City')); ?>
                                             <input id="city" name="city" type="text"
                                                    value="<?php echo osc_esc_html(Params::getParam('city')); ?>"/>
                                             <input id="cityId" name="cityId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParam('cityId')); ?>"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-label">
-                                            <?php _e('Block'); ?>
-                                        </div>
-                                        <div class="form-controls">
+                                    <?php osc_admin_form_row_close(); ?>
+                                    <?php osc_admin_form_row_open(__('Block')); ?>
                                             <select id="b_enabled" name="b_enabled">
                                                 <option value="" <?php echo((Params::getParam('b_enabled') == '')
                                                     ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>
@@ -267,8 +233,7 @@ osc_admin_pagination($aData);
                                                 <option value="1" <?php echo((Params::getParam('b_enabled') == '1')
                                                     ? 'selected="selected"' : '') ?>><?php _e('OFF'); ?></option>
                                             </select>
-                                        </div>
-                                    </div>
+                                    <?php osc_admin_form_row_close(); ?>
                                 </div>
                             </div>
                             <div class="clear"></div>

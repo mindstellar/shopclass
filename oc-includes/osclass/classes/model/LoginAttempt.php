@@ -27,6 +27,9 @@ class LoginAttempt extends DAO
     /** @var LoginAttempt */
     private static $instance;
 
+    /**
+     * Set data related to t_login_attempt table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -42,6 +45,8 @@ class LoginAttempt extends DAO
     }
 
     /**
+     * Return the shared LoginAttempt model instance, creating it on first use.
+     *
      * @return LoginAttempt
      */
     public static function newInstance()
@@ -62,6 +67,7 @@ class LoginAttempt extends DAO
      * @param string $date    'Y-m-d H:i:s'
      *
      * @return int rows written
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function record($context, $account, $ip, $date)
     {
@@ -79,6 +85,7 @@ class LoginAttempt extends DAO
      * @param string $since 'Y-m-d H:i:s'
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function countByIp($ip, $since)
     {
@@ -97,6 +104,7 @@ class LoginAttempt extends DAO
      * @param string $since 'Y-m-d H:i:s'
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function countByIpContext($context, $ip, $since)
     {
@@ -115,6 +123,7 @@ class LoginAttempt extends DAO
      * @param string $since 'Y-m-d H:i:s'
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function countByAccount($context, $account, $since)
     {
@@ -134,6 +143,7 @@ class LoginAttempt extends DAO
      * @param string $since 'Y-m-d H:i:s'
      *
      * @return string|null 'Y-m-d H:i:s'
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function oldestByIp($ip, $since)
     {
@@ -153,6 +163,7 @@ class LoginAttempt extends DAO
      * @param string $since 'Y-m-d H:i:s'
      *
      * @return string|null 'Y-m-d H:i:s'
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function oldestByAccount($context, $account, $since)
     {
@@ -172,6 +183,7 @@ class LoginAttempt extends DAO
      * @param string $account
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function clearAccount($context, $account)
     {
@@ -187,6 +199,7 @@ class LoginAttempt extends DAO
      * @param string $ip
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function clearIp($ip)
     {
@@ -202,6 +215,7 @@ class LoginAttempt extends DAO
      * @param string $before 'Y-m-d H:i:s'
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function pruneBefore($before)
     {

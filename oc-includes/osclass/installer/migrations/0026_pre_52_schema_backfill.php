@@ -33,6 +33,14 @@ use mindstellar\migration\MigrationInterface;
  * every 6.x install, where struct.sql already produced exactly this shape.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Backfill the 5.0-5.2 schema changes that were only ever declared in struct.sql:
+     * s_direction, s_meta, the NUMBER field type and the widened user IP columns.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $locale = DB_TABLE_PREFIX . 't_locale';
@@ -74,6 +82,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {
@@ -91,6 +106,14 @@ return new class () implements MigrationInterface {
     /**
      * Whether $column exists and holds fewer than $length characters. A column that is
      * absent reports false: this migration widens, it does not create.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     * @param int        $length
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnShorterThan(Connection $conn, string $table, string $column, int $length): bool
     {

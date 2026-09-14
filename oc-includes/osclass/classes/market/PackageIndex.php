@@ -33,17 +33,30 @@ final class PackageIndex
     private string $type;
     private Catalog $catalog;
 
+    /**
+     * @param string $type self::TYPE_PLUGIN or self::TYPE_THEME
+     */
     private function __construct(string $type)
     {
         $this->type    = $type;
         $this->catalog = $type === self::TYPE_PLUGIN ? Catalog::forPlugins() : Catalog::forThemes();
     }
 
+    /**
+     * Index over the installed plugins and the plugin catalog.
+     *
+     * @return self
+     */
     public static function forPlugins(): self
     {
         return new self(self::TYPE_PLUGIN);
     }
 
+    /**
+     * Index over the installed themes and the theme catalog.
+     *
+     * @return self
+     */
     public static function forThemes(): self
     {
         return new self(self::TYPE_THEME);
@@ -55,9 +68,10 @@ final class PackageIndex
      *
      * @return array<string, array{slug:string, name:string, version:string, author:string,
      *              requires:string, requires_php:string, tested_up_to:string,
-     *              enabled:?bool, active:?bool, in_catalog:bool, catalog:?array,
+     *              enabled:?bool, active:?bool, in_catalog:bool,
+     *              catalog:array<string,mixed>|null,
      *              compatibility:array{status:string, blocked:bool, reason:string},
-     *              update:?array}>
+     *              update:array<string,mixed>|null}> keyed by slug
      */
     public function installed(): array
     {
@@ -124,7 +138,8 @@ final class PackageIndex
      * cannot run even though a newer, incompatible one exists.
      *
      * @return array<string, array{version:string, requires:string, requires_php:string,
-     *              tested:string, url:string, sha256:string, size:int}>
+     *              tested:string, url:string, sha256:string, size:int, published_at:string,
+     *              downloads:int}> keyed by slug
      */
     public function pendingUpdates(): array
     {
@@ -133,12 +148,21 @@ final class PackageIndex
 
     // ---- internals ----------------------------------------------------
 
-    /** installed() rows without the `update` key — shared by installed() and pendingUpdates(). */
+    /**
+     * installed() rows without the `update` key — shared by installed() and pendingUpdates().
+     *
+     * @return array<string, array<string,mixed>> keyed by slug
+     */
     private function rawInstalled(): array
     {
         return $this->type === self::TYPE_PLUGIN ? $this->rawInstalledPlugins() : $this->rawInstalledThemes();
     }
 
+    /**
+     * On-disk plugins joined with their catalog row and compatibility verdict.
+     *
+     * @return array<string, array<string,mixed>> keyed by slug
+     */
     private function rawInstalledPlugins(): array
     {
         $index = $this->catalog->index();
@@ -172,6 +196,11 @@ final class PackageIndex
         return $rows;
     }
 
+    /**
+     * On-disk themes joined with their catalog row and compatibility verdict.
+     *
+     * @return array<string, array<string,mixed>> keyed by slug
+     */
     private function rawInstalledThemes(): array
     {
         $index      = $this->catalog->index();
@@ -207,7 +236,13 @@ final class PackageIndex
         return $rows;
     }
 
-    /** @param array<string, array> $rows result of rawInstalled() */
+    /**
+     * Best safely-installable catalog version above each row's installed version.
+     *
+     * @param array<string, array<string,mixed>> $rows result of rawInstalled()
+     *
+     * @return array<string, array<string,mixed>> keyed by slug; only rows with an update
+     */
     private function pendingUpdatesFor(array $rows): array
     {
         $updates = $this->catalog->updates();
@@ -232,6 +267,13 @@ final class PackageIndex
         return $result;
     }
 
+    /**
+     * The bare directory slug behind a Plugins::listAll() "slug/index.php" key.
+     *
+     * @param string $file
+     *
+     * @return string
+     */
     private function pluginSlug(string $file): string
     {
         $slug = dirname($file);

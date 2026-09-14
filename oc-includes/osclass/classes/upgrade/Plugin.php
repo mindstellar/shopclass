@@ -33,6 +33,8 @@ use RuntimeException;
 class Plugin extends UpgradePackage
 {
     /**
+     * Extra actions after upgradeProcess is done; a plugin needs none.
+     *
      * @return bool
      */
     public function afterProcessUpgrade()
@@ -58,7 +60,10 @@ class Plugin extends UpgradePackage
      *                           's_requires_php' => minimum required PHP version (optional)
      *                           ]
      *
-     * @return array
+     * @param string $plugin_short_name bare slug, or the "slug/index.php" form Plugins::listAll() emits
+     *
+     * @return array<string,mixed>
+     * @throws \RuntimeException on an unknown plugin, a bad update uri, or an unusable remote payload
      */
     public static function getPackageInfo($plugin_short_name): array
     {

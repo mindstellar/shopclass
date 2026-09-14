@@ -295,15 +295,12 @@ index their stored `s_value` as today — no change to the value model.
 
 ---
 
-## 12. Open questions
+## 12. Resolved
 
-- Field in **multiple groups** — allow it (link table) or one-group-only (column)?
-  Recommend one-group to start.
-- Per-category **override of an inherited field** (hide/re-order/re-require) — Phase
-  1 refinement or Phase 2? Recommend Phase 2, stored in the group↔category link's
-  `s_meta`.
-- Cascading options: how large before we need `t_meta_field_option`? Pick a
-  threshold (e.g. >50 options) to trigger the table-backed path.
-- Do we migrate the flat `s_options` string to the option table for all
-  DROPDOWN/RADIO fields, or only for cascading ones? Recommend only-when-needed to
-  avoid a big migration.
+The questions this document opened are settled by what shipped: a field belongs to any
+number of forms (the builder shows how many), inherited fields resolve down the category
+path, and options stayed on `s_options` rather than moving to a table — the threshold that
+would have justified one has not been reached.
+
+User-facing documentation is at
+[mindstellar.com/docs/use/forms-and-custom-fields](https://mindstellar.com/docs/use/forms-and-custom-fields/).

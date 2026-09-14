@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\billing\Billing;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
+use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 
@@ -38,6 +39,9 @@ class CAdminBilling extends AdminSecBaseModel
     /** Rows per page across the section. */
     private const PER_PAGE = 25;
 
+    /**
+     * Let plugins hook the billing section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -45,6 +49,13 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested billing action, after sending the request away when billing
+     * is switched off.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -76,6 +87,18 @@ class CAdminBilling extends AdminSecBaseModel
             case ('wallet_adjust'):
                 $this->walletAdjustPost();
                 break;
+            case ('packages'):
+                $this->packagesView();
+                break;
+            case ('package'):
+                $this->packageView();
+                break;
+            case ('package_post'):
+                $this->packagePost();
+                break;
+            case ('package_delete'):
+                $this->packageDeletePost();
+                break;
             default:
                 $this->ordersView();
                 break;
@@ -84,6 +107,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * The orders list, filtered and paged.
+     *
+     * @return void
      */
     private function ordersView()
     {
@@ -113,6 +138,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * One order, its ledger entries, and whatever can still be done to it.
+     *
+     * @return void
      */
     private function orderView()
     {
@@ -139,6 +166,14 @@ class CAdminBilling extends AdminSecBaseModel
      * The offline path (bank transfer, cash) has no callback to wait for, and a gateway
      * whose webhook never arrived leaves an order stuck pending with the money already
      * taken. Both need a person to be able to say "this was paid".
+     *
+     * This is also the one path allowed to reopen a `failed` order -- a provider
+     * retrying payment on the same order after an earlier failure is ordinary, and an
+     * admin confirming it by hand is the deliberate act that makes it safe. Nothing
+     * about a gateway callback ever grants that; Billing::markPaid()'s $allowFailed
+     * is passed true only here.
+     *
+     * @return void
      */
     private function orderPaidPost()
     {
@@ -150,14 +185,18 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
         }
 
-        if (Billing::markPaid($order, $order->getExternalRef())) {
+        $wasFailed = $order->getStatus() === Order::STATUS_FAILED;
+
+        if (Billing::markPaid($order, $order->getExternalRef(), true)) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId()),
+                $wasFailed
+                    ? sprintf(_m('Order #%d was marked failed and is now marked paid; the credits have been added'), $order->getId())
+                    : sprintf(_m('Order #%d is marked paid and the credits have been added'), $order->getId()),
                 'admin'
             );
         } else {
-            // markPaid() is guarded on the order still being pending, so this is the
-            // benign double-submit rather than a failure.
+            // markPaid() is guarded on the order still being pending or failed, so
+            // this is the benign double-submit rather than a failure.
             osc_add_flash_warning_message(_m('That order had already been settled'), 'admin');
         }
 
@@ -166,6 +205,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * Record a refund the provider has already made. Core never asks a gateway to refund.
+     *
+     * @return void
      */
     private function orderRefundPost()
     {
@@ -191,6 +232,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * Every wallet holding credit.
+     *
+     * @return void
      */
     private function creditsView()
     {
@@ -209,6 +252,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * One user's balance and the ledger behind it.
+     *
+     * @return void
      */
     private function walletView()
     {
@@ -239,6 +284,9 @@ class CAdminBilling extends AdminSecBaseModel
      * Writes through Wallet like everything else, so the change lands in the ledger with
      * a reason and is visible on the same screen that made it. There is no path here that
      * edits a balance without leaving a record.
+     *
+     * @return void
+     * @throws DbException when the ledger write fails
      */
     private function walletAdjustPost()
     {
@@ -282,10 +330,134 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
+     * The package catalogue -- what a buyer can choose at checkout.
+     *
+     * @return void
+     */
+    private function packagesView()
+    {
+        $this->_exportVariableToView('packages', Packages::all());
+        $this->doView('billing/packages.php');
+    }
+
+    /**
+     * Add or edit one package.
+     *
+     * @return void
+     */
+    private function packageView()
+    {
+        $id      = Params::getParamInt('id');
+        $package = $id > 0 ? Packages::find($id) : null;
+        if ($id > 0 && $package === null) {
+            osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+        }
+
+        $this->_exportVariableToView('package', $package);
+        $this->doView('billing/package.php');
+    }
+
+    /**
+     * Create or update a package.
+     *
+     * The amount arrives as decimal currency and is validated before it is converted
+     * to micros -- Orders::create() trusts this row completely at checkout, so a bad
+     * amount has to be caught here, never there.
+     *
+     * @return void
+     */
+    private function packagePost()
+    {
+        osc_csrf_check();
+
+        $id        = Params::getParamInt('id');
+        $back      = osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : '');
+        $name      = trim(Params::getParamString('name'));
+        $amountRaw = trim(Params::getParamString('amount'));
+        $currency  = strtoupper(trim(Params::getParamString('currency')));
+        $credits   = Params::getParamInt('credits');
+        $position  = Params::getParamInt('position');
+        $enabled   = Params::getParam('enabled') != '' ? 1 : 0;
+
+        if ($name === '') {
+            osc_add_flash_error_message(_m('Enter a name for this package'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if ($amountRaw === '' || !is_numeric($amountRaw) || (float) $amountRaw < 0) {
+            osc_add_flash_error_message(_m('Enter a valid amount, 0 or more'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if ($credits < 1) {
+            osc_add_flash_error_message(_m('Credits must be at least 1'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+            osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        $data = array(
+            's_name'     => $name,
+            // Money is entered as decimal currency and stored as micros -- integer
+            // maths only, the value is never kept as a float past this line.
+            'i_amount'   => (int) round((float) $amountRaw * 1000000),
+            's_currency' => $currency,
+            'i_credits'  => $credits,
+            'i_position' => max(0, $position),
+            'b_enabled'  => $enabled,
+        );
+
+        try {
+            if ($id > 0) {
+                if (Packages::find($id) === null) {
+                    osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+                }
+                Packages::update($id, $data);
+                osc_add_flash_ok_message(_m('Package updated'), 'admin');
+            } else {
+                Packages::create($data);
+                osc_add_flash_ok_message(_m('Package created'), 'admin');
+            }
+        } catch (InvalidArgumentException $e) {
+            osc_add_flash_error_message(_m('That package could not be saved'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+    }
+
+    /**
+     * Remove a package from the catalogue. Orders already placed against it carry
+     * their own copy of the amount and credits, so deleting it never touches history.
+     *
+     * @return void
+     */
+    private function packageDeletePost()
+    {
+        osc_csrf_check();
+
+        $id = Params::getParamInt('id');
+        if (Packages::delete($id)) {
+            osc_add_flash_ok_message(_m('Package deleted'), 'admin');
+        } else {
+            osc_add_flash_error_message(_m('That package no longer exists'), 'admin');
+        }
+
+        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
+    }
+
+    /**
      * Ledger rows attached to one order — the credit it minted, and the reversal if it
      * was refunded.
      *
-     * @return array<int,array>
+     * @param int $orderId
+     *
+     * @return array<int,array<string,mixed>>
      */
     private function ledgerForOrder($orderId)
     {
@@ -301,7 +473,7 @@ class CAdminBilling extends AdminSecBaseModel
      *
      * @param Order[] $orders
      *
-     * @return array<int,array>
+     * @return array<int,array<string,mixed>>
      */
     private function usersFor(array $orders)
     {
@@ -329,7 +501,9 @@ class CAdminBilling extends AdminSecBaseModel
     /**
      * Only a status the system actually uses may reach a query.
      *
-     * @return string
+     * @param string $status
+     *
+     * @return string the status, or '' when it is not one the system uses
      */
     private function allowedStatus($status)
     {

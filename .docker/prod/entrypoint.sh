@@ -53,8 +53,10 @@ write_real_ip_conf
 write_microcache_conf() {
     http_conf=/etc/nginx/microcache_http.conf
     php_conf=/etc/nginx/microcache_php.conf
+    server_conf=/etc/nginx/microcache_server.conf
     : > "$http_conf"
     : > "$php_conf"
+    : > "$server_conf"
 
     case "${OSC_MICROCACHE:-}" in
         1|on|true|yes|On|TRUE|YES)
@@ -62,10 +64,10 @@ write_microcache_conf() {
             chown -R nginx:nginx /var/cache/nginx 2>/dev/null || true
             cat >> "$http_conf" <<'CONF'
 fastcgi_cache_path /var/cache/nginx/microcache levels=1:2 keys_zone=MICROCACHE:10m
-                   max_size=200m inactive=60s use_temp_path=off;
+                   max_size=500m inactive=1d use_temp_path=off;
 map $http_cookie $mc_private {
     default 0;
-    "~(^|;\s*)(osclass|oc_userId|oc_adminId|oc_userLocale)=" 1;
+    "~(^|;\s*)(oc_cache_bypass|oc_userLocale|osclass|PHPSESSID)=" 1;
 }
 CONF
             cat >> "$php_conf" <<'CONF'
@@ -78,7 +80,28 @@ fastcgi_cache_use_stale  updating error timeout http_500 http_503;
 fastcgi_cache_background_update on;
 add_header X-Cache $upstream_cache_status always;
 CONF
-            echo "entrypoint: public-page micro-cache on."
+            # Where an entry can be removed before its window is up. Purging is what
+            # makes a window longer than thirty seconds defensible, so the location
+            # is written whenever the cache is: the nginx-cache plugin finds it
+            # already there, and without the plugin it is an endpoint nothing calls.
+            #
+            # $1 is the path being purged and $is_args$args its query, so the key
+            # built here is the one the block above filed the page under. They must
+            # stay identical: a purge that computes a different key answers 412 and
+            # deletes nothing, which is also what a page that was never cached
+            # answers, so the mistake reports nothing.
+            #
+            # No credentials, so the allow list is the whole of the access control.
+            # php-fpm runs in this container and reaches nginx over the loopback.
+            cat >> "$server_conf" <<'CONF'
+location ~ ^/purge(/.*)$ {
+    allow 127.0.0.1;
+    allow ::1;
+    deny all;
+    fastcgi_cache_purge MICROCACHE "$scheme$request_method$host$1$is_args$args";
+}
+CONF
+            echo "entrypoint: public-page micro-cache on, purge location at /purge."
             ;;
     esac
 
@@ -151,7 +174,14 @@ SH
             echo "auth off"
         fi
     } > /etc/msmtprc
-    chmod 600 /etc/msmtprc
+    # Readable by the php-fpm worker (www-data), not only root: sendmail_path is
+    # "msmtp -t" with no -C, so a web request reads /etc/msmtprc as www-data. Left at
+    # 0600 root, every WEB-context email (contact, registration, password reset, and
+    # theme features like the IP-complaint notices) failed with "no configuration file
+    # available", while cron mail — run as root — worked and hid it. Group-read only,
+    # never world: this file holds the SMTP password when SMTP_USER is set.
+    chown root:www-data /etc/msmtprc
+    chmod 640 /etc/msmtprc
     printf 'sendmail_path = "/usr/bin/msmtp -t"\n' > "$ini"
     echo "entrypoint: mail relay -> ${host}:${port} (auth: ${SMTP_USER:+on}${SMTP_USER:-off})."
 }

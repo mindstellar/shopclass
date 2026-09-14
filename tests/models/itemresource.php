@@ -741,7 +741,45 @@ harness_section('ItemResource::deleteResourcesIds');
 
 pin('an id that matches nothing returns int 0', 0, $model->deleteResourcesIds(array(999999)));
 pin('a null id list returns int 0 — it is wrapped into a one-element list', 0, $model->deleteResourcesIds(null));
-pin('a non-numeric id returns int 0', 0, $model->deleteResourcesIds('abc'));
+/* A non-numeric id reaches the DELETE as a string compared against an integer
+ * column. MySQL's strict modes make that truncation an ERROR, so the statement
+ * never runs and the method reports false; a loose connection -- and MariaDB
+ * however strict it is set -- truncates to 0, matches nothing and reports 0.
+ *
+ * The server is asked rather than guessed at, and asked with the model's own
+ * statement: the same QueryBuilder, the same whereIn() that compiles to "IN (?)",
+ * and the same value the pin below passes. An "= ?" probe would be a weaker
+ * guarantee -- MySQL collapses a one-element IN to =, so the two agree today but
+ * nothing holds them together. It runs against a throwaway copy of the table,
+ * carrying one real row so the predicate is genuinely evaluated, which leaves the
+ * fixtures untouched whichever way the server answers. */
+$probeTable = $table . '_strict_probe';
+osc_db_execute('CREATE TABLE ' . $probeTable . ' LIKE ' . $table);
+osc_db_execute('INSERT INTO ' . $probeTable . ' SELECT * FROM ' . $table . ' LIMIT 1');
+$numericCompareIsFatal = static function () use ($probeTable): bool {
+    $previous = error_reporting(E_ALL & ~E_WARNING);
+    try {
+        osc_db_table($probeTable)->whereIn('pk_i_id', array('abc'))->delete();
+
+        return false;
+    } catch (\mindstellar\database\DbException $e) {
+        return true;
+    } finally {
+        error_reporting($previous);
+    }
+};
+$numericCompareFatal = $numericCompareIsFatal();
+pin(
+    'the probe deleted nothing from its copy, so it is measuring the comparison and not a match',
+    1,
+    (int) osc_db_scalar('SELECT COUNT(*) FROM ' . $probeTable)
+);
+osc_db_execute('DROP TABLE ' . $probeTable);
+pin(
+    'a non-numeric id deletes nothing',
+    $numericCompareFatal ? false : 0,
+    $model->deleteResourcesIds('abc')
+);
 pin('a list holding only null returns int 0', 0, $model->deleteResourcesIds(array(null)));
 pin(
     'an EMPTY list returns bool false, not int 0 — the clause is invalid and the query never runs',

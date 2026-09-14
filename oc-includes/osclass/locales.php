@@ -12,7 +12,9 @@
  */
 
 /**
- * @return array
+ * Read every translation folder and return its locale descriptor, keyed by locale code.
+ *
+ * @return array<string,array<string,mixed>>
  */
 function osc_listLocales()
 {
@@ -41,7 +43,10 @@ function osc_listLocales()
 }
 
 /**
- * @return bool
+ * Insert or refresh a database row for every locale found on disk, importing its mail
+ * templates the first time a locale is seen.
+ *
+ * @return bool False as soon as one locale row fails to insert, true otherwise
  */
 function osc_checkLocales()
 {
@@ -67,22 +72,11 @@ function osc_checkLocales()
             }
 
             // inserting e-mail translations
-            if (file_exists(osc_translations_path() . $locale['locale_code'] . '/mail.json')) {
-                $mailJson = file_get_contents(osc_translations_path() . $locale['locale_code'] . '/mail.json');
+            $mailJsonPath = osc_translations_path() . $locale['locale_code'] . '/mail.json';
+            if (file_exists($mailJsonPath)) {
+                $mailJson = file_get_contents($mailJsonPath);
                 if ($mailJson) {
                     Page::newInstance()->importEmailJsonTemplates($mailJson);
-                }
-            } else {
-                // old templates
-                $path = osc_translations_path() . $locale['locale_code'] . '/mail.sql';
-                if (file_exists($path)) {
-                    $sql  = file_get_contents($path);
-
-                    try {
-                        \mindstellar\database\Connection::instance()->executeScript($sql);
-                    } catch (\mindstellar\database\DbException $e) {
-                        return false;
-                    }
                 }
             }
         } else {
@@ -94,7 +88,9 @@ function osc_checkLocales()
 }
 
 /**
- * @return array
+ * List the locale codes that have a folder under the translations path.
+ *
+ * @return array<int,string>
  */
 function osc_listLanguageCodes()
 {

@@ -15,6 +15,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\security\PluginAjaxFile;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
@@ -27,6 +28,10 @@ define('IS_AJAX', true);
  */
 class CAdminAjax extends AdminSecBaseModel
 {
+    /**
+     * Mark the request as ajax and reduce a moderator to the handful of actions their
+     * role may reach.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -39,6 +44,13 @@ class CAdminAjax extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested ajax action and emit its JSON, then drop the session's
+     * kept form state.
+     *
+     * @return void
+     */
     public function doModel()
     {
         //specific things for this class
@@ -74,6 +86,7 @@ class CAdminAjax extends AdminSecBaseModel
                         'installed' => (bool) $row['installed'],
                         'current'   => (bool) $row['current'],
                         'rows'      => (int) $row['rows'],
+                        'regions'   => (int) ($row['regions'] ?? 0),
                     );
                 }
                 echo json_encode(array(
@@ -808,7 +821,15 @@ class CAdminAjax extends AdminSecBaseModel
                     break;
                 }
 
-                require_once osc_plugins_path() . $file;
+                // This ends in require_once, so resolve the path before running it:
+                // .php only, and inside the plugins directory once symlinks are followed.
+                $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
+                if ($resolved === null) {
+                    echo json_encode(array('error' => 'no valid file'));
+                    break;
+                }
+
+                require_once $resolved;
                 break;
             case 'test_mail':
                 $title = sprintf(__('Test email, %s'), osc_page_title());
@@ -1081,6 +1102,12 @@ class CAdminAjax extends AdminSecBaseModel
                     echo json_encode(array('error' => 0));
                 }
                 break;
+            case 'location_search':
+            case 'location_impact':
+            case 'location_record':
+                header('Content-Type: application/json');
+                echo json_encode($this->locationRead($this->action));
+                break;
             case 'error_permissions':
                 echo json_encode(array('error' => __("You don't have the necessary permissions")));
                 break;
@@ -1091,6 +1118,60 @@ class CAdminAjax extends AdminSecBaseModel
         // clear all keep variables into session
         Session::newInstance()->_dropKeepForm();
         Session::newInstance()->_clearVariables();
+    }
+
+    /**
+     * Answer one of the location admin reads: search, delete impact or a single record.
+     *
+     * @param string $action location_search|location_impact|location_record
+     *
+     * @return array<string,mixed> the result, or ['error' => message]
+     */
+    private function locationRead(string $action): array
+    {
+        $query = new \mindstellar\location\LocationAdminQuery();
+        // Values are bound, never rendered, so they are read without the tag filter.
+        $level = Params::getParamString('level', false, false, false);
+
+        try {
+            switch ($action) {
+                case 'location_search':
+                    return $query->searchAll(
+                        \mindstellar\location\LocationAdminView::search(Params::getParamString('q', false, false, false), 'all')['q'],
+                        Params::getParamInt('per', 10)
+                    );
+                case 'location_impact':
+                    // id[] for a selection, id for one row.
+                    $ids = Params::getParamArray('id', false, false, false);
+                    if ($ids === array() && Params::getParamString('id', false, false, false) !== '') {
+                        $ids = array(Params::getParamString('id', false, false, false));
+                    }
+                    if ($ids === array()) {
+                        return array('error' => __('No locations selected'));
+                    }
+                    $impact = $query->impact($level, $ids);
+                    if ($impact['found'] < $impact['requested']) {
+                        return array('error' => __('Some of the selected locations no longer exist'));
+                    }
+
+                    return $impact;
+                default:
+                    $record = $query->record($level, Params::getParamString('id', false, false, false));
+
+                    return $record ?? array('error' => __('Location not found'));
+            }
+        } catch (InvalidArgumentException $e) {
+            switch ($e->getCode()) {
+                case \mindstellar\location\LocationAdminQuery::ERR_BAD_ID:
+                    return array('error' => __('Invalid location id'));
+                case \mindstellar\location\LocationAdminQuery::ERR_TOO_MANY:
+                    return array('error' => __('Too many locations selected'));
+                default:
+                    return array('error' => __('Unknown location level'));
+            }
+        } catch (\mindstellar\database\DbException $e) {
+            return array('error' => __('Locations could not be read'));
+        }
     }
 
     //hopefully generic...
@@ -1204,16 +1285,37 @@ class CAdminAjax extends AdminSecBaseModel
         return in_array($type, array('plugin', 'theme'), true) ? $type : null;
     }
 
+    /**
+     * The cached catalog for the requested package kind.
+     *
+     * @param string $type 'theme', otherwise plugins
+     *
+     * @return Catalog
+     */
     private static function marketCatalog($type)
     {
         return $type === 'theme' ? Catalog::forThemes() : Catalog::forPlugins();
     }
 
+    /**
+     * The installed/available package index for the requested package kind.
+     *
+     * @param string $type 'theme', otherwise plugins
+     *
+     * @return PackageIndex
+     */
     private static function marketPackageIndex($type)
     {
         return $type === 'theme' ? PackageIndex::forThemes() : PackageIndex::forPlugins();
     }
 
+    /**
+     * The installer for the requested package kind.
+     *
+     * @param string $type 'theme', otherwise plugins
+     *
+     * @return Installer
+     */
     private static function marketInstaller($type)
     {
         return $type === 'theme' ? Installer::forThemes() : Installer::forPlugins();
@@ -1228,7 +1330,9 @@ class CAdminAjax extends AdminSecBaseModel
      * plugin's leftovers, an upgrade interrupted half way -- and the site owner is
      * better off knowing that happened than having it fixed silently.
      *
-     * @param array $repairs statements the repair pass applied
+     * @param array<int,string> $repairs statements the repair pass applied
+     *
+     * @return void
      */
     private function flashSchemaRepairs($repairs)
     {
@@ -1448,10 +1552,10 @@ class CAdminAjax extends AdminSecBaseModel
      * the host allowlist on every read -- both happen here, on the response path, rather than
      * trusting whatever is already sitting in the cache.
      *
-     * @param string $slug
-     * @param array  $raw  Catalog::detail()'s sanitised (but not description-purified) array
+     * @param string              $slug
+     * @param array<string,mixed> $raw  Catalog::detail()'s sanitised (but not description-purified) array
      *
-     * @return array
+     * @return array<string,mixed>
      */
     private static function marketBuildDetail($slug, array $raw)
     {
@@ -1475,7 +1579,7 @@ class CAdminAjax extends AdminSecBaseModel
      * in, so a host that was allowed when this slug was cached and is not allowed today (or a
      * cache entry that predates a stricter policy) still can't reach the dialog's DOM.
      *
-     * @param array $raw
+     * @param array<string,mixed> $raw
      *
      * @return array<int, array{src:string, caption:string}>
      */
@@ -1509,9 +1613,9 @@ class CAdminAjax extends AdminSecBaseModel
      * `updates.json` and this detail payload) does not carry the catalog's `published_at`
      * field through, so there is nothing to surface here without a `Catalog.php` change.
      *
-     * @param array $raw
+     * @param array<string,mixed> $raw
      *
-     * @return array
+     * @return array<int,array<string,mixed>>
      */
     private static function marketSanitizeVersions(array $raw)
     {
@@ -1558,7 +1662,7 @@ class CAdminAjax extends AdminSecBaseModel
      * is derived from the issue tracker URL instead: a GitHub issue tracker always lives at
      * "<repo>/issues".
      *
-     * @param array $raw
+     * @param array<string,mixed> $raw
      *
      * @return array{homepage:?string, repo:?string, issues:?string, docs:?string}
      */
@@ -1608,7 +1712,6 @@ class CAdminAjax extends AdminSecBaseModel
      * every `<img>` that survives purification is re-checked against the same package host
      * allowlist that governs `screenshots[].src` and the support links (marketDropUnallowedHostUrls()).
      *
-
      * @param mixed $html
      *
      * @return string
@@ -1695,7 +1798,10 @@ class CAdminAjax extends AdminSecBaseModel
     }
 
     /**
-     * @param $file
+     * Render an admin theme template. Ajax actions answer with JSON, so this is only
+     * reached by the few that draw an iframe.
+     *
+     * @param string $file Path relative to the admin theme
      *
      * @return void
      */

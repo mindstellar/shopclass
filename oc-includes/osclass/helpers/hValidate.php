@@ -150,14 +150,14 @@ function osc_validate_range($value, $min = 6, $max = 255)
 /**
  * Validate if exist $city, $region, $country in db
  *
- * @param string $city
- * @param        $sCity
- * @param string $region
- * @param        $sRegion
- * @param string $country
- * @param        $sCountry
+ * @param int|string $city     City id
+ * @param string     $sCity    Free-text city name
+ * @param int|string $region   Region id
+ * @param string     $sRegion  Free-text region name
+ * @param string     $country  Country code
+ * @param string     $sCountry Free-text country name
  *
- * @return boolean
+ * @return bool
  */
 function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCountry)
 {
@@ -190,9 +190,9 @@ function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCou
 /**
  * Validate if exist category $value and is enabled in db
  *
- * @param string $value
+ * @param int|string $value Category id
  *
- * @return boolean
+ * @return bool
  */
 function osc_validate_category($value)
 {
@@ -345,8 +345,8 @@ function osc_validate_email($email, $required = true)
 /**
  * validate username, accept letters plus underline, without separators
  *
- * @param $value
- * @param $min
+ * @param string $value
+ * @param int    $min
  *
  * @return bool
  */
@@ -358,7 +358,9 @@ function osc_validate_username($value, $min = 1)
 /**
  * Validate locale  string. Check against available locale list
  *
- * @param $locale
+ * @param string $locale
+ * @param bool   $admin  Check the admin locale list instead of the public one
+ *
  * @return bool
  * @since 4.0
  * @author maddrid <https://github.com/maddrid>

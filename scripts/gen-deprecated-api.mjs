@@ -10,7 +10,8 @@
  *   2. `@deprecated` docblock tags immediately above a function, method, or
  *      class declaration — including the free-text `@deprecated since X.Y.Z`
  *      style used throughout utils.php, which predates the Deprecate class
- *      and has no runtime call site at all.
+ *      and has no runtime call site at all. A replacement is read from a `use X`
+ *      phrase in the tag body, falling back to the block's first `@see`.
  *
  * A symbol carrying both (e.g. utils.php's version_compare2) is merged, not
  * duplicated — the call site wins for fields it provides, since it is the
@@ -283,10 +284,15 @@ function findDeprecatedDocblocks(rawText, starts) {
       .join(' ')
       .trim();
 
+    // A replacement is often written as a sibling @see rather than inside the tag
+    // body, so carry the first one as a fallback for parseDeprecatedTag().
+    const seeMatch = body.match(/@see\s+([^\s*]+)/);
+
     const blockEndIndex = m.index + m[0].length;
     results.push({
       endLine: lineAt(starts, blockEndIndex - 1),
       tagText,
+      see: seeMatch ? seeMatch[1].replace(/[.,;]+$/, '') : null,
     });
   }
   return results;
@@ -297,7 +303,9 @@ function scanDocblocks(rawText, lineInfo, starts) {
   const blocks = findDeprecatedDocblocks(rawText, starts);
 
   for (const block of blocks) {
-    const { since, replacement } = parseDeprecatedTag(block.tagText);
+    const parsed = parseDeprecatedTag(block.tagText);
+    const since = parsed.since;
+    const replacement = parsed.replacement ?? block.see;
 
     // The declaration a docblock documents is the next non-blank source line
     // after it — look a few lines ahead to skip blank lines and attributes

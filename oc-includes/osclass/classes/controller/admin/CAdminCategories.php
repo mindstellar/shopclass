@@ -24,6 +24,9 @@ class CAdminCategories extends AdminSecBaseModel
     //specific for this class
     private Category $categoryManager;
 
+    /**
+     * Take the category manager for the admin's own locale.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -34,6 +37,12 @@ class CAdminCategories extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested categories action, otherwise draw the category tree.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();

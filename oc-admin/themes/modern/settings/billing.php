@@ -10,6 +10,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/**
+ * The chrome around the five declared billing forms. Each form -- its heading, its intro,
+ * its route, its fields, their values and the submit row -- is core's, drawn from the
+ * declaration the controller saves through. The payment-method table below them is a list
+ * of what is installed and belongs to the view.
+ */
+
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => __('Billing settings'),
@@ -17,41 +24,14 @@ osc_admin_page(array(
                     . 'Shopclass keeps the record of what was bought; a payment plugin handles the money.'),
 ));
 
-$billingEnabled = (bool)__get('billing_enabled');
-$gateways       = __get('gateways');
+$forms    = __get('billing_forms');
+$gateways = __get('gateways');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
-    <form method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
-        <input type="hidden" name="page" value="settings"/>
-        <input type="hidden" name="action" value="billing_post"/>
-        <fieldset>
-            <div class="form-horizontal">
-                <?php osc_admin_page_head(__('Billing')); ?>
-
-                <p class="form-intro">
-                    <?php _e('Turn this on to sell things on your site — featured listings, posting credits, '
-                             . 'or whatever a payment plugin offers. Leave it off and nothing changes: posting '
-                             . 'stays free and unlimited, and the Billing menu stays hidden.'); ?>
-                </p>
-
-                <?php osc_admin_form_row_open(__('Selling on this site')); ?>
-                    <?php osc_admin_checkbox(array(
-                        'id'      => 'billing_enabled',
-                        'name'    => 'billing_enabled',
-                        'label'   => __('Enable billing'),
-                        'checked' => $billingEnabled,
-                        'help'    => __('Switching this off later hides the Billing menu but keeps every order '
-                                        . 'and balance exactly as it is. Nothing is deleted.'),
-                    )); ?>
-                <?php osc_admin_form_row_close(); ?>
-
-                <?php osc_admin_form_actions(array(
-                    array('label' => __('Save settings'), 'type' => 'submit'),
-                )); ?>
-            </div>
-        </fieldset>
-    </form>
+    <?php foreach (array('switch', 'pricing', 'offline', 'upgrades', 'limits') as $part) {
+        osc_admin_settings_form($forms[$part]['id'], $forms[$part]);
+    } ?>
 
     <?php osc_admin_page_head(__('Payment methods'));
 

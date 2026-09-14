@@ -16,6 +16,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\AdminAccountForm;
+
 /**
  * Class CAdminAdmins
  */
@@ -24,6 +26,9 @@ class CAdminAdmins extends AdminSecBaseModel
     //specific for this class
     private Admin $adminManager;
 
+    /**
+     * Hold a moderator to their own account and take the admin manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -44,223 +49,45 @@ class CAdminAdmins extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested admins action: the add/edit form, its save, a batch delete,
+     * or the paginated list.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
 
         switch ($this->action) {
-            case ('add'):        // callin add view
-                $this->_exportVariableToView('admin', null);
-                $this->doView('admins/frm.php');
+            case ('add'):
+                $this->drawForm(null);
                 break;
             case ('add_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+                if ($this->refusedByDemo()) {
+                    break;
                 }
                 osc_csrf_check();
-                // adding a new admin
-                $sPassword        = Params::getParam('s_password', false, false);
-                $sCurrentPassword = Params::getParam('old_password', false, false);
-                $sName            = Params::getParam('s_name');
-                $sEmail           = Params::getParam('s_email');
-                $sUserName        = Params::getParam('s_username');
-                $bModerator       = Params::getParam('b_moderator') == 0 ? 0 : 1;
-
-                // cleaning parameters
-                $sPassword        = strip_tags($sPassword);
-                $sPassword        = trim($sPassword);
-                $sCurrentPassword = strip_tags($sCurrentPassword);
-                $sCurrentPassword = trim($sCurrentPassword);
-                $sName            = strip_tags($sName);
-                $sName            = trim($sName);
-                $sEmail           = strip_tags($sEmail);
-                $sEmail           = trim($sEmail);
-                $sUserName        = strip_tags($sUserName);
-                $sUserName        = trim($sUserName);
-
-                // Checks for legit data
-                if (!osc_validate_email($sEmail, true)) {
-                    osc_add_flash_warning_message(_m('Email invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-                if (!osc_validate_username($sUserName)) {
-                    osc_add_flash_warning_message(_m('Username invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-                if ($sName == '') {
-                    osc_add_flash_warning_message(_m('Name invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-                if ($sPassword == '') {
-                    osc_add_flash_warning_message(_m('Password invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-                $admin = $this->adminManager->findByEmail($sEmail);
-                if ($admin) {
-                    osc_add_flash_warning_message(_m('Email already in use'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-                $admin = $this->adminManager->findByUsername($sUserName);
-                if ($admin) {
-                    osc_add_flash_warning_message(_m('Username already in use'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-
-                $currentAdmin = $this->adminManager->findByPrimaryKey(osc_logged_admin_id());
-                if ($sCurrentPassword == '' || !isset($currentAdmin['s_password']) || $currentAdmin['s_password'] == ''
-                    || !osc_verify_password($sCurrentPassword, $currentAdmin['s_password'])
-                ) {
-                    osc_add_flash_warning_message(_m('Incorrent current password'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=add');
-                }
-
-                $array = array(
-                    's_password'  => osc_hash_password($sPassword),
-                    's_name'      => $sName,
-                    's_email'     => $sEmail,
-                    's_username'  => $sUserName,
-                    'b_moderator' => $bModerator
-                );
-
-                $isInserted = $this->adminManager->insert($array);
-
-                if ($isInserted) {
-                    // send email
-                    osc_run_hook('hook_email_new_admin', array(
-                        's_name'     => $sName,
-                        's_username' => $sUserName,
-                        's_password' => $sPassword,
-                        's_email'    => $sEmail
-                    ));
-                    osc_add_flash_ok_message(_m('The admin has been added'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('There has been an error adding a new admin'), 'admin');
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+                $this->saveAdmin(null);
                 break;
-            case ('edit'):       // calling edit admin view
-                $adminEdit = null;
-                $adminId   = Params::getParam('id');
-
-                if ($adminId != '') {
-                    $adminEdit = $this->adminManager->findByPrimaryKey((int)$adminId);
-                } elseif (Session::newInstance()->_get('adminId') != '') {
-                    $adminEdit = $this->adminManager->findByPrimaryKey(Session::newInstance()->_get('adminId'));
+            case ('edit'):
+                $adminId = $this->adminRowId(true);
+                if ($adminId === null) {
+                    break;
                 }
-
-                if (count($adminEdit) == 0) {
-                    osc_add_flash_error_message(_m('There is no admin with this id'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
-
-                $this->_exportVariableToView('admin', $adminEdit);
-                $this->doView('admins/frm.php');
+                $this->drawForm($adminId);
                 break;
             case ('edit_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+                if ($this->refusedByDemo()) {
+                    break;
                 }
                 osc_csrf_check();
-                // updating a new admin
-                $iUpdated = 0;
-                $adminId  = Params::getParam('id');
-
-                $sPassword    = Params::getParam('s_password', false, false);
-                $sPassword2   = Params::getParam('s_password2', false, false);
-                $sOldPassword = Params::getParam('old_password', false, false);
-                $sName        = Params::getParam('s_name');
-                $sEmail       = Params::getParam('s_email');
-                $sUserName    = Params::getParam('s_username');
-                $bModerator   = Params::getParam('b_moderator') == 0 ? 0 : 1;
-
-                // cleaning parameters
-                $sPassword  = strip_tags($sPassword);
-                $sPassword  = trim($sPassword);
-                $sPassword2 = strip_tags($sPassword2);
-                $sPassword2 = trim($sPassword2);
-                $sName      = strip_tags($sName);
-                $sName      = trim($sName);
-                $sEmail     = strip_tags($sEmail);
-                $sEmail     = trim($sEmail);
-                $sUserName  = strip_tags($sUserName);
-                $sUserName  = trim($sUserName);
-
-                // Checks for legit data
-                if (!osc_validate_email($sEmail, true)) {
-                    osc_add_flash_warning_message(_m('Email invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
+                $adminId = $this->adminRowId(false);
+                if ($adminId === null) {
+                    break;
                 }
-                if (!osc_validate_username($sUserName)) {
-                    osc_add_flash_warning_message(_m('Username invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                }
-                if ($sName == '') {
-                    osc_add_flash_warning_message(_m('Name invalid'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                }
-
-                $aAdmin = $this->adminManager->findByPrimaryKey($adminId);
-
-                if (count($aAdmin) == 0) {
-                    osc_add_flash_error_message(_m("This admin doesn't exist"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
-
-                if (($aAdmin['s_email'] != $sEmail) && $this->adminManager->findByEmail($sEmail)) {
-                    osc_add_flash_warning_message(_m('Existing email'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                }
-
-                if (($aAdmin['s_username'] != $sUserName) && $this->adminManager->findByUsername($sUserName)) {
-                    osc_add_flash_warning_message(_m('Existing username'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                }
-
-                $conditions = array('pk_i_id' => $adminId);
-                $array      = array();
-
-                if ($sPassword != '') {
-                    if ($sPassword == $sPassword2) {
-                        $array['s_password'] = osc_hash_password($sPassword);
-                    } else {
-                        osc_add_flash_warning_message(
-                            _m("The password couldn't be updated. Passwords don't match"),
-                            'admin'
-                        );
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                    }
-                }
-
-                $currentAdmin = $this->adminManager->findByPrimaryKey(osc_logged_admin_id());
-                if ($sOldPassword == '' || !isset($currentAdmin['s_password']) || $currentAdmin['s_password'] == ''
-                    || !osc_verify_password($sOldPassword, $currentAdmin['s_password'])
-                ) {
-                    osc_add_flash_warning_message(_m('Incorrent current password'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit&id=' . $adminId);
-                }
-
-                if ($adminId != osc_logged_admin_id()) {
-                    $array['b_moderator'] = $bModerator;
-                }
-
-                $array['s_name']     = Params::getParam('s_name');
-                $array['s_username'] = $sUserName;
-                $array['s_email']    = $sEmail;
-
-                $iUpdated = $this->adminManager->update($array, $conditions);
-                osc_run_hook('admin_edit_completed', $adminId, $iUpdated);
-
-                if ($iUpdated > 0) {
-                    osc_add_flash_ok_message(_m('The admin has been updated'), 'admin');
-                }
-
-                if ($this->isModerator()) {
-                    $this->redirectTo(osc_admin_base_url(true));
-                } else {
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
+                $this->saveAdmin($adminId);
                 break;
             case ('delete'):
                 if (defined('DEMO')) {
@@ -397,6 +224,152 @@ class CAdminAdmins extends AdminSecBaseModel
 
     //hopefully generic...
 
+    /**
+     * Whether this install refuses the write outright. A demo site shows every screen and
+     * saves none of them.
+     *
+     * @return bool
+     */
+    private function refusedByDemo()
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+
+        osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+
+        return true;
+    }
+
+    /**
+     * The administrator account this request is about, or null once the admin has been
+     * sent away because it named none. The key is parsed rather than cast -- (int) reads
+     * ' 12 ' and '12abc' as 12 -- and held to a row that is really there before anything
+     * is written, so a key nobody chose cannot fall through to an insert.
+     *
+     * Only the drawn form falls back to the session, which is the "my profile" link with
+     * no id on it; a submission names its row or is refused. Every row of t_admin is in
+     * scope for a screen only an administrator can reach, and the moderator who can reach
+     * it is held to their own id in the constructor.
+     *
+     * @param bool $draw the form is being drawn rather than saved
+     *
+     * @return int|null
+     */
+    private function adminRowId($draw)
+    {
+        $requested = Params::getParam('id');
+        $id        = is_string($requested) && preg_match('/^[1-9][0-9]*$/', $requested) ? (int)$requested : 0;
+
+        if ($id === 0 && $draw && $requested === '') {
+            $id = osc_logged_admin_id();
+        }
+
+        if ($id > 0 && AdminAccountForm::row($id) !== array()) {
+            return $id;
+        }
+
+        // Two wordings for one condition, kept because both are already translated and
+        // each is the one its own path has always shown.
+        osc_add_flash_error_message(
+            $draw ? _m('There is no admin with this id') : _m("This admin doesn't exist"),
+            'admin'
+        );
+        $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+
+        return null;
+    }
+
+    /**
+     * Draw the screen for one account: the stored values, or the ones a rejected save is
+     * handing back to be corrected.
+     *
+     * @param int|null   $id
+     * @param array|null $values
+     *
+     * @return void
+     */
+    private function drawForm($id, ?array $values = null)
+    {
+        $canSetType = $this->canSetType($id);
+        $pageId     = AdminAccountForm::register($id !== null, $canSetType);
+
+        // The row itself, for the admin_profile_form hook a plugin adds its own controls
+        // through. Null while an account is being added, exactly as before.
+        $this->_exportVariableToView('admin', $id === null ? null : AdminAccountForm::row($id));
+        $this->_exportVariableToView('admin_form', AdminAccountForm::formVars(
+            $id,
+            $values ?? osc_settings_values($pageId, $id),
+            $canSetType
+        ));
+        $this->doView('admins/frm.php');
+    }
+
+    /**
+     * Store an account through its declaration -- inserting when $id is null and updating
+     * the row it names otherwise. A rejected submission is drawn again with what was
+     * typed still in it, rather than thrown away with a redirect.
+     *
+     * @param int|null $id
+     *
+     * @return void
+     */
+    private function saveAdmin($id)
+    {
+        $result = osc_settings_save(AdminAccountForm::register($id !== null, $this->canSetType($id)), $id);
+
+        if ($result['errors'] !== array()) {
+            foreach ($result['errors'] as $error) {
+                osc_add_flash_warning_message($error, 'admin');
+            }
+            $this->drawForm($id, $result['values']);
+
+            return;
+        }
+
+        if ($id === null) {
+            // The plaintext password, which is what the welcome email carries and the only
+            // reason it is still in hand here: the column took the hash.
+            osc_run_hook('hook_email_new_admin', array(
+                's_name'     => $result['values']['s_name'],
+                's_username' => $result['values']['s_username'],
+                's_password' => $result['values']['s_password'],
+                's_email'    => $result['values']['s_email'],
+            ));
+            osc_add_flash_ok_message(_m('The admin has been added'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+
+            return;
+        }
+
+        osc_run_hook('admin_edit_completed', $id, $result['updated']);
+
+        // An update that changed nothing affects no rows and is still a save: the store
+        // throws when a write fails and refuses a key with no row behind it, so there is
+        // nothing left for a zero to mean.
+        osc_add_flash_ok_message(_m('The admin has been updated'), 'admin');
+
+        if ($this->isModerator()) {
+            $this->redirectTo(osc_admin_base_url(true));
+
+            return;
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+    }
+
+    /**
+     * Whether the account type is this administrator's to change. Their own never is:
+     * the field is not declared for it, so nothing can write the column either.
+     *
+     * @param int|null $id
+     *
+     * @return bool
+     */
+    private function canSetType($id)
+    {
+        return $id === null || $id !== osc_logged_admin_id();
+    }
 }
 
 /* file end: ./oc-admin/CAdminAdmins.php */

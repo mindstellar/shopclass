@@ -43,9 +43,11 @@ $pb_is_builder     = ($pb_saved_spec !== null && !empty($pb_saved_spec['builder'
 $pb_location       = $pb_is_builder ? ('page.' . $pb_page_id) : '';
 
 /**
- * @param string $return
+ * One value from the page form's add/edit copy, keyed by name.
  *
- * @return mixed
+ * @param string $return One of 'edit', 'title', 'action_frm' or 'btn_text'
+ *
+ * @return bool|string 'edit' is a bool, the rest are strings
  */
 function customFrmText($return = 'title')
 {
@@ -71,7 +73,9 @@ osc_admin_page(array(
 ));
 
 /**
- * @param $string
+ * Filter callback for `admin_title`: prefix the browser title with the form's title.
+ *
+ * @param string $string
  *
  * @return string
  */
@@ -86,6 +90,11 @@ osc_add_filter('admin_title', 'customPageTitle');
 // "#s_text"), never the whole page, so plugin textareas in the meta rail are
 // left alone. Paste is cleaned the way a WYSIWYG should: Word/Docs style cruft
 // is dropped, semantic tags are kept, and images are not inlined as data URIs.
+/**
+ * Emit the page form's TinyMCE setup for the per-language content editors.
+ *
+ * @return void
+ */
 function customHead()
 {
     // Editor images go to the media library (unattached, reusable), so the flow
@@ -99,33 +108,10 @@ function customHead()
                 return;
             }
             var uploadUrl = <?php echo json_encode($uploadUrl); ?>;
-            var cfg = {
-                selector: 'textarea[name$="#s_text"]',
-                promotion: false,
-                branding: false,
-                menubar: false,
-                height: 460,
-                relative_urls: false,
-                remove_script_host: false,
-                convert_urls: false,
-                entity_encoding: 'raw',
-                plugins: 'advlist anchor autolink charmap code fullscreen image insertdatetime'
-                    + ' link lists media preview searchreplace table visualblocks',
-                toolbar: 'undo redo | blocks | bold italic underline | bullist numlist'
-                    + ' | link image media table | alignleft aligncenter alignright'
-                    + ' | removeformat | visualblocks code fullscreen preview',
-                // Paste handling — clean what comes in from Word / Google Docs.
-                smart_paste: true,
-                paste_as_text: false,
-                paste_merge_formats: true,
-                paste_data_images: false,
-                paste_remove_styles_if_webkit: true,
-                paste_webkit_styles: 'none',
-                // Only the light oxide skin ships, so the editor is a consistent
-                // "sheet of paper" in both themes rather than a half-dark panel.
-                content_style: 'body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,'
-                    + 'Helvetica Neue,Arial,sans-serif;font-size:16px;line-height:1.55;color:#14181f}'
-            };
+            var cfg = <?php echo osc_tinymce_config('full', array(
+                'selector' => 'textarea[name$="#s_text"]',
+                'height'   => 460,
+            )); ?>;
             // Drag/drop and paste auto-upload straight to the library; the image
             // dialog's picker opens the media library (browse existing or upload).
             cfg.automatic_uploads = true;

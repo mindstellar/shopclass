@@ -23,6 +23,9 @@ class CAdminItemComments extends AdminSecBaseModel
 {
     private ItemComment $itemCommentManager;
 
+    /**
+     * Take the comment manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -35,8 +38,10 @@ class CAdminItemComments extends AdminSecBaseModel
     //Business Layer...
 
     /**
-     * @return bool|false
-     * @throws \Exception
+     * Dispatch the requested comments action: bulk actions, a single status change, the
+     * edit form and its save, a delete, otherwise the paginated list.
+     *
+     * @return false|null false when the status action was given nothing usable to act on
      */
     public function doModel()
     {
@@ -322,9 +327,11 @@ class CAdminItemComments extends AdminSecBaseModel
     //hopefully generic...
 
     /**
-     * @param $commentId
+     * Fire the hook that emails the comment's author once their comment goes live.
      *
-     * @throws \Exception
+     * @param int|string $commentId
+     *
+     * @return void
      */
     public function sendCommentActivated($commentId)
     {

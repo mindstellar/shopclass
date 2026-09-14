@@ -47,8 +47,8 @@ class FormBuilder
     /**
      * Form constructor.
      *
-     * @param \mindstellar\form\base\formInputs $input
-     * @param array                             $formSchema
+     * @param \mindstellar\form\base\FormInputs|null $formInputs Defaults to a new FormInputs instance
+     * @param array<string,mixed>                    $formSchema
      *                                  $exampleFormSchema = [
      *                                  'csrf' => true // if csrf is required, default true
      *                                  'attributes' => [
@@ -114,12 +114,12 @@ class FormBuilder
     /**
      * AddForm method, it will generate basic formSchema
      *
-     * @param string $name        required
-     * @param bool   $csrf        default true
-     * @param array  $attributes  [Optional]
-     * @param array  $inputSchema [optional] if already set then it will override the default inputSchema
+     * @param string                         $name        required
+     * @param bool                           $csrf        default true
+     * @param array<string,mixed>            $attributes  [Optional]
+     * @param array<int,array<string,mixed>> $inputSchema [optional] merged over the current inputSchema
      *
-     * @return $this
+     * @return \mindstellar\form\base\FormBuilder
      */
     public function addForm(string $name, bool $csrf = true, array $attributes = [], array $inputSchema = []): FormBuilder
     {
@@ -133,8 +133,9 @@ class FormBuilder
     }
 
     /**
-     * Add csrf token to form
+     * Push the csrf token inputs into the schema, or flag the form as csrf-exempt.
      *
+     * @return void
      */
     protected function addCsrfToken()
     {
@@ -151,10 +152,10 @@ class FormBuilder
     /**
      * Add a new hidden input
      *
-     * @param string $name
-     * @param string $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param string              $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -174,9 +175,9 @@ class FormBuilder
     /**
      * Add Common options for all inputs
      *
-     * @param array $options
+     * @param array<string,mixed> $options
      *
-     * @return $this
+     * @return \mindstellar\form\base\FormBuilder
      */
     public function addCommonInputOptions(array $options = []): FormBuilder
     {
@@ -188,9 +189,9 @@ class FormBuilder
     /**
      * Add Common attributes for all inputs
      *
-     * @param array $attributes
+     * @param array<string,mixed> $attributes
      *
-     * @return $this
+     * @return \mindstellar\form\base\FormBuilder
      */
     public function addCommonInputAttributes(array $attributes = []): FormBuilder
     {
@@ -219,10 +220,10 @@ class FormBuilder
     /**
      * Add a new text input
      *
-     * @param string $name
-     * @param string $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param string              $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -242,10 +243,10 @@ class FormBuilder
     /**
      * Add a new password input
      *
-     * @param string $name
-     * @param string $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param string              $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -265,10 +266,10 @@ class FormBuilder
     /**
      * Add a new textarea input
      *
-     * @param string $name
-     * @param string $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param string              $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -288,10 +289,10 @@ class FormBuilder
     /**
      * Add a new select input
      *
-     * @param string       $name
-     * @param array|string $values
-     * @param array        $attributes
-     * @param array        $options
+     * @param string                $name
+     * @param string|int|array|null $values     The currently selected value
+     * @param array<string,mixed>   $attributes
+     * @param array<string,mixed>   $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -311,10 +312,10 @@ class FormBuilder
     /**
      * Add a new checkbox input
      *
-     * @param string $name
-     * @param array  $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param array<string,mixed> $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -334,10 +335,10 @@ class FormBuilder
     /**
      * Add a new radio input
      *
-     * @param string $name
-     * @param        $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param mixed               $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -357,9 +358,9 @@ class FormBuilder
     /**
      * Add a new file input
      *
-     * @param string $name
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return \mindstellar\form\base\FormBuilder
      */
@@ -414,8 +415,10 @@ class FormBuilder
     }
 
     /**
-     * render form inputs from given schema
+     * Render every input in the schema, merging in the common options and attributes.
+     *
      * @return string
+     * @throws \Exception when an input has no name
      */
     private function renderInputs(): string
     {

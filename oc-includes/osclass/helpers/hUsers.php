@@ -41,7 +41,7 @@ function osc_user_field($field, $locale = '')
 /**
  * Gets user array from view
  *
- * @return array
+ * @return array<string,mixed>|string Empty string when there is no current user
  */
 function osc_user()
 {
@@ -248,9 +248,9 @@ function osc_logged_user_phone()
 /**
  * Gets user's profile url
  *
- * @param null $id
+ * @param int|null $id Defaults to the current user
  *
- * @return string
+ * @return string Empty string when no user id is known
  */
 function osc_user_public_profile_url($id = null)
 {
@@ -274,8 +274,8 @@ function osc_user_public_profile_url($id = null)
 /**
  * Gets current items page from public profile
  *
- * @param string $page
- * @param bool   $itemsPerPage
+ * @param int|string $page
+ * @param int|false  $itemsPerPage
  *
  * @return string
  */
@@ -655,7 +655,7 @@ function osc_user_longitude()
 /**
  * Gets type (company/user) of current user
  *
- * @return float
+ * @return bool
  */
 function osc_user_is_company()
 {
@@ -675,7 +675,7 @@ function osc_user_items_validated()
 /**
  * Gets number of comments validated of current user
  *
- * @return int
+ * @return int|string
  */
 function osc_user_comments_validated()
 {
@@ -685,7 +685,7 @@ function osc_user_comments_validated()
 /**
  * Gets number of users
  *
- * @param string $condition
+ * @param string $condition 'active', 'enabled', or empty for every user
  *
  * @return int
  */
@@ -723,7 +723,7 @@ function osc_alert_field($field)
 /**
  * Gets next alert if there is, else return null
  *
- * @return array
+ * @return bool False once the loop is exhausted
  */
 function osc_has_alerts()
 {
@@ -747,7 +747,7 @@ function osc_count_alerts()
 /**
  * Gets current alert fomr view
  *
- * @return array
+ * @return array<string,mixed>|string Empty string when there is none
  */
 function osc_alert()
 {
@@ -875,7 +875,7 @@ function osc_has_user_avatar(?int $userId = null): bool
 /**
  * Gets next user in users array
  *
- * @return array
+ * @return bool False once the loop is exhausted
  */
 function osc_prepare_user_info()
 {

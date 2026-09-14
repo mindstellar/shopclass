@@ -25,6 +25,9 @@ class StorageQueue extends DAO
      */
     private static $instance;
 
+    /**
+     * Set data related to t_storage_queue table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -48,6 +51,8 @@ class StorageQueue extends DAO
     }
 
     /**
+     * Return the shared StorageQueue model instance, creating it on first use.
+     *
      * @return StorageQueue
      */
     public static function newInstance()
@@ -63,9 +68,9 @@ class StorageQueue extends DAO
      * Queue a job. The payload is trimmed to a minimal, self-contained
      * snapshot; duplicates are allowed since handlers are idempotent.
      *
-     * @param string $type
-     * @param string $storageId
-     * @param array  $snapshot
+     * @param string              $type
+     * @param string              $storageId
+     * @param array<string,mixed> $snapshot Resource row fields the handler needs
      */
     public function enqueue(string $type, string $storageId, array $snapshot): void
     {
@@ -142,7 +147,7 @@ class StorageQueue extends DAO
      *
      * @param int $batch
      *
-     * @return array
+     * @return array<int,array<string,string|null>> The claimed rows, empty when none were due
      */
     public function claim(int $batch = 20): array
     {
@@ -197,6 +202,8 @@ class StorageQueue extends DAO
     }
 
     /**
+     * Remove a finished job from the queue.
+     *
      * @param int $id
      */
     public function complete(int $id): void
@@ -238,9 +245,11 @@ class StorageQueue extends DAO
     }
 
     /**
-     * @param string $status
+     * Count the queued jobs in one status.
      *
-     * @return int
+     * @param string $status pending|running|error
+     *
+     * @return int 0 when the query failed
      */
     public function countByStatus(string $status): int
     {
@@ -252,9 +261,11 @@ class StorageQueue extends DAO
     }
 
     /**
+     * The most recent jobs that exhausted their retries, newest first.
+     *
      * @param int $limit
      *
-     * @return array
+     * @return array<int,array<string,string|null>>
      */
     public function deadLetters(int $limit = 50): array
     {

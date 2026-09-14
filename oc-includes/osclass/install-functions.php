@@ -15,8 +15,10 @@ use mindstellar\utility\Utils;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**
- * @param $value
- * @param $xss_check
+ * Strip every tag from a raw server value, unless the caller opted out.
+ *
+ * @param string $value
+ * @param bool   $xss_check False returns the value untouched
  *
  * @return string
  */
@@ -26,32 +28,20 @@ function _purify($value, $xss_check)
         return $value;
     }
 
-    $_config = HTMLPurifier_Config::createDefault();
-    $_config->set('HTML.Allowed', '');
-    // Strips all tags, so nothing needs persisting: use the in-memory NullCache rather than
-    // writing serializer blobs into oc-content/uploads/ (which may not yet exist during install).
-    $_config->set('Cache.DefinitionImpl', null);
-
-    $_purifier = new HTMLPurifier($_config);
-
-    if (is_array($value)) {
-        foreach ($value as $k => &$v) {
-            $v = _purify($v, $xss_check); // recursive
-        }
-    } else {
-        $value = $_purifier->purify($value);
-    }
-
-    return $value;
+    // The same strip-every-tag purifier the request layer uses, so the installer cannot
+    // sanitise to a different standard than the site it is installing.
+    return Params::stripTags($value);
 }
 
 /**
- * @param      $param
- * @param bool $htmlencode
- * @param bool $xss_check
- * @param bool $quotes_encode
+ * Read one $_SERVER value, stripped and optionally HTML-encoded.
  *
- * @return string
+ * @param string $param         Key to read; an empty key returns ''
+ * @param bool   $htmlencode
+ * @param bool   $xss_check
+ * @param bool   $quotes_encode Encode quotes too when $htmlencode is on
+ *
+ * @return string Empty string when the key is missing
  */
 function getServerParam($param, $htmlencode = false, $xss_check = true, $quotes_encode = true)
 {
@@ -244,22 +234,37 @@ function get_requirements()
 }
 
 /**
+ * Whether every requirement to install Shopclass is met.
+ *
+ * @param array<string,array{requirement:string,fn:bool,solution:string}> $array
+ *
+ * @return bool True when nothing is missing
+ * @since 6.3.0
+ */
+function requirements_met($array)
+{
+    foreach ($array as $v) {
+        if (!$v['fn']) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
  * Check if some of the requirements to install Shopclass are correct or not
  *
- * @param $array
+ * @param array<string,array{requirement:string,fn:bool,solution:string}> $array
  *
- * @return boolean Check if all the requirements are correct
+ * @return bool True when at least one requirement is NOT met
+ * @deprecated since 6.3.0 use requirements_met() instead, which answers the way its name reads
+ * @see requirements_met()
  * @since 1.2
  */
 function check_requirements($array)
 {
-    foreach ($array as $k => $v) {
-        if (!$v['fn']) {
-            return true;
-        }
-    }
-
-    return false;
+    return !requirements_met($array);
 }
 
 /**
@@ -483,7 +488,9 @@ function install_nonce_check()
 /**
  * insert/update preference allow_report_osclass
  *
- * @param $value
+ * @param int|string $value Boolean preference value, 1 or 0
+ *
+ * @return void
  */
 function set_allow_report_osclass($value)
 {
@@ -500,7 +507,7 @@ function set_allow_report_osclass($value)
 /**
  * Install Shopclass database
  *
- * @return mixed Error messages of the installation
+ * @return array{error:string,field?:string}|false False on success, an error payload otherwise
  * @since 1.2
  *
  */
@@ -581,6 +588,14 @@ function oc_install()
 
     // When the configuration comes from the environment there is no config.php
     // to write or check — the database settings are managed externally.
+    //
+    // So an env-only install does NOT get OSC_DB_STRICT_MODE, which a config.php
+    // install has written into it below: there is no file to write it to, and
+    // defaulting it on for every OSC_CONFIG_FROM_ENV deploy would flip existing
+    // containers to strict on their next image pull. config-loader.php cannot tell
+    // the two apart — it runs before the database is reachable, and config.php is
+    // the only marker of a fresh install there is. Set OSC_DB_STRICT_MODE=1 in the
+    // environment to opt a container in.
     $writesConfig = !(defined('OSC_CONFIG_FROM_ENV') && OSC_CONFIG_FROM_ENV);
 
     if ($writesConfig) {
@@ -664,15 +679,6 @@ function oc_install()
 
     );
 
-    $install_lang_sql = ABS_PATH . 'oc-content/languages/' . osc_current_admin_locale() . '/mail.sql';
-    $default_lang_sql = ABS_PATH . 'oc-includes/osclass/installer/mail.sql';
-
-    if (file_exists($install_lang_sql)) {
-        $required_files[] = $install_lang_sql;
-    } else {
-        $required_files[] = $default_lang_sql;
-    }
-
     $sql = '';
     foreach ($required_files as $file) {
         if (!file_exists($file)) {
@@ -687,6 +693,28 @@ function oc_install()
     } catch (\mindstellar\database\DbException $e) {
         return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
+
+    // Email templates, after pages.sql has created the rows they describe. The
+    // chosen language ships its own set; where it does not, the bundled English one
+    // is imported under that language rather than under en_US, so the site still has
+    // templates for the locale it actually runs in.
+    $mail_json = ABS_PATH . 'oc-content/languages/' . osc_current_admin_locale() . '/mail.json';
+    if (!file_exists($mail_json)) {
+        $mail_json = ABS_PATH . 'oc-includes/osclass/installer/mail.json';
+    }
+
+    $mail_templates = @file_get_contents($mail_json);
+    if ($mail_templates === false) {
+        return array('error' => sprintf(__('The file %s doesn\'t exist'), $mail_json));
+    }
+
+    $decoded = json_decode($mail_templates, true);
+    if (is_array($decoded)) {
+        $decoded['language'] = osc_current_admin_locale();
+        $mail_templates      = json_encode($decoded);
+    }
+
+    Page::newInstance()->importEmailJsonTemplates($mail_templates);
 
     // Seed the installer's own preference rows through the parameterized API,
     // grouped in one transaction so a mid-write failure leaves none of them
@@ -733,7 +761,7 @@ function oc_install()
 /**
  * Insert the example data (categories and emails) on all available locales
  *
- * @return mixed Error messages of the installation
+ * @return void
  * @since 2.4
  */
 function oc_install_example_data()
@@ -747,10 +775,12 @@ function oc_install_example_data()
 
     if (!function_exists('osc_apply_filter')) {
         /**
-         * @param $dummyfilter
-         * @param $str
+         * Installer stand-in for the plugin filter helper: returns the value unchanged.
          *
-         * @return mixed
+         * @param string $dummyfilter Filter name, ignored
+         * @param mixed  $str
+         *
+         * @return mixed The value it was given
          */
         function osc_apply_filter($dummyfilter, $str)
         {
@@ -769,6 +799,12 @@ function oc_install_example_data()
 
         $mCat->insert($fields, $aFieldsDescription);
     }
+
+    // Posting a listing goes through the billing helper for the seller's limits.
+    // It is required here rather than in the bootstrap because it reads a preference
+    // as it loads, and during bootstrap there is no database to read one from.
+    require_once LIB_PATH . 'osclass/helpers/hTheme.php';
+    require_once LIB_PATH . 'osclass/helpers/hBilling.php';
 
     $mItem = new ItemActions(true);
 
@@ -798,6 +834,17 @@ function oc_install_example_data()
     );
 }
 
+/**
+ * Define the database and path constants the rest of the installer needs, if not already set.
+ *
+ * @param string $dbhost
+ * @param string $dbname
+ * @param string $username
+ * @param string $password
+ * @param string $tableprefix
+ *
+ * @return void
+ */
 function define_install_constants($dbhost, $dbname, $username, $password, $tableprefix)
 {
 
@@ -819,7 +866,7 @@ function define_install_constants($dbhost, $dbname, $username, $password, $table
  * @param string $dbhost      Database host
  * @param string $tableprefix Prefix for table names
  *
- * @return mixed Error messages of the installation
+ * @return void
  * @since 1.2
  *
  */
@@ -849,6 +896,14 @@ define('DB_HOST', getenv('DB_HOST') ?: '$dbhost');
 /** Database Table prefix */
 define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: '$tableprefix');
 
+/**
+ * Keep the server's own strict SQL modes instead of relaxing them.
+ *
+ * With this on, a value the column cannot hold is rejected rather than silently
+ * cut short or clamped. Remove the line to go back to the relaxed modes.
+ */
+define('OSC_DB_STRICT_MODE', true);
+
 define('REL_WEB_URL', '$rel_url');
 
 defined('WEB_PATH') or define('WEB_PATH', '$abs_url');
@@ -861,12 +916,13 @@ CONFIG;
 /**
  * Create config from config-sample.php file
  *
- * @param $dbname
- * @param $username
- * @param $password
- * @param $dbhost
- * @param $tableprefix
+ * @param string $dbname
+ * @param string $username
+ * @param string $password
+ * @param string $dbhost
+ * @param string $tableprefix
  *
+ * @return bool False when config-sample.php cannot be read or config.php cannot be written
  * @since 1.2
  */
 function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
@@ -917,6 +973,9 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 }
 
 /**
+ * Whether a usable database configuration exists and carries the installed sentinel.
+ * Any configuration, connection or query failure counts as not installed.
+ *
  * @return bool
  */
 function is_osclass_installed()
@@ -947,9 +1006,12 @@ function is_osclass_installed()
 }
 
 /**
- * @param $password
+ * Commit the install sentinel, ping the search engines if opted in, and return the
+ * credentials for the finish screen.
  *
- * @return array
+ * @param string $password Plain-text admin password, echoed back for display
+ *
+ * @return array{s_email:string,admin_user:string,password:string}
  */
 function finish_installation($password)
 {
@@ -988,12 +1050,22 @@ function finish_installation($password)
 
 /**
  * Menus
+ *
+ * @param array<string,mixed>|null $form_data
+ * @param string|null              $error
+ *
+ * @return void
  */
 function display_database_config($form_data = null, $error = null)
 {
     include_once 'installer/gui/install-database.php';
 }
 
+/**
+ * Render the installer's target-directory step.
+ *
+ * @return void
+ */
 function display_target()
 {
     include_once 'installer/gui/install-target.php';
@@ -1004,6 +1076,8 @@ function display_target()
  * the ping_search_engines preference is recorded by the finalize transaction in
  * finish_installation(). Best-effort: each request is isolated so a slow or dead
  * endpoint can never block the finish screen.
+ *
+ * @return void
  */
 function install_ping_search_engines()
 {
@@ -1023,7 +1097,11 @@ function install_ping_search_engines()
 }
 
 /**
- * @param $password
+ * Render the installer's finish step.
+ *
+ * @param string $password Plain-text admin password shown on the screen
+ *
+ * @return void
  */
 function display_finish($password)
 {
@@ -1031,7 +1109,10 @@ function display_finish($password)
 }
 
 /**
- * @return array
+ * Create the admin account and the site's identity preferences, then mail the
+ * credentials to the address given on the form.
+ *
+ * @return array{email_status:string,s_password:string} email_status carries the mailer error, or '' on success
  */
 function basic_info()
 {
@@ -1109,33 +1190,4 @@ function basic_info()
             's_password'   => $password
         );
     }
-}
-
-/**
- * @return bool
- */
-function install_locations()
-{
-    $location = Params::getParam('locationsql');
-    if ($location) {
-        $sql = osc_file_get_contents(osc_get_locations_sql_url($location));
-        if ($sql) {
-            $conn = \mindstellar\database\ConnectionManager::newInstance();
-            $locationDb = new \mindstellar\database\Connection($conn->getHandle());
-            // A failed locations import is not fatal to the install: the dataset is
-            // optional, and the previous layer likewise reported success regardless.
-            try {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 0');
-                $locationDb->executeScript($sql);
-            } catch (\mindstellar\database\DbException $e) {
-                error_log('Location dataset import failed: ' . $e->getMessage());
-            } finally {
-                $locationDb->execute('SET FOREIGN_KEY_CHECKS = 1');
-            }
-
-            return true;
-        }
-    }
-
-    return false;
 }

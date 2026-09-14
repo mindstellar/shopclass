@@ -23,8 +23,10 @@
 /**
  * Run a hook
  *
- * @param callable-string      $hook
- * @param mixed ...$args
+ * @param string $hook
+ * @param mixed  ...$args
+ *
+ * @return void
  */
 function osc_run_hook($hook, ...$args)
 {
@@ -34,9 +36,9 @@ function osc_run_hook($hook, ...$args)
 /**
  * Apply a filter to a text
  *
- * @param       $hook
- * @param       $content
- * @param mixed ...$args
+ * @param string $hook
+ * @param mixed  $content
+ * @param mixed  ...$args
  *
  * @return mixed
  */
@@ -102,10 +104,10 @@ function osc_remove_filter($hook, $function)
 /**
  * If the plugin is attached to the category
  *
- * @param string $name
- * @param int    $id
+ * @param string $name Plugin name
+ * @param int    $id   Category id
  *
- * @return boolean
+ * @return bool
  */
 function osc_is_this_category($name, $id)
 {
@@ -115,9 +117,9 @@ function osc_is_this_category($name, $id)
 /**
  * Returns plugin's information
  *
- * @param $plugin
+ * @param string $plugin 'dir/index.php' path
  *
- * @return array
+ * @return array<string,string>
  */
 function osc_plugin_get_info($plugin)
 {
@@ -127,9 +129,13 @@ function osc_plugin_get_info($plugin)
 /**
  * Check if there's a new version of the plugin
  *
- * @param string $plugin
+ * A single-plugin convenience over the package index; core reads the index directly.
  *
- * @return boolean
+ * @param string $plugin 'dir/index.php' path
+ *
+ * @return bool
+ * @deprecated since 6.3.0 use mindstellar\market\PackageIndex::forPlugins()->pendingUpdates() instead
+ * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_plugin_check_update($plugin)
 {
@@ -152,7 +158,7 @@ function osc_register_plugin($path, $function)
 /**
  * Get list of the plugins
  *
- * @return array
+ * @return array<string,array<int,array<int,callable>>>
  */
 function osc_get_plugins()
 {
@@ -198,9 +204,9 @@ function osc_plugin_configure_view($plugin)
 /**
  * Gets the path to a plugin's resource
  *
- * @param string $file
+ * @param string $file Path relative to PLUGINS_PATH
  *
- * @return string
+ * @return string|false False when the file does not exist
  */
 function osc_plugin_resource($file)
 {
@@ -222,8 +228,8 @@ function osc_plugin_configure_url($plugin)
 /**
  * Gets the ajax url
  *
- * @param string $hook
- * @param array  $params
+ * @param string               $hook
+ * @param array<string,string> $params
  *
  * @return string
  * @since 3.1
@@ -236,8 +242,8 @@ function osc_admin_ajax_hook_url($hook = '', $params = array())
 /**
  * Gets the ajax url
  *
- * @param string $hook
- * @param array  $params
+ * @param string               $hook
+ * @param array<string,string> $params
  *
  * @return string
  * @since 3.0
@@ -250,9 +256,9 @@ function osc_ajax_hook_url($hook = '', $params = array())
 /**
  * Gets the ajax url
  *
- * @param string $admin
- * @param string $hook
- * @param array  $params
+ * @param bool                 $admin  Build the admin URL instead of the public one
+ * @param string               $hook
+ * @param array<string,string> $params
  *
  * @return string
  * @since 3.1

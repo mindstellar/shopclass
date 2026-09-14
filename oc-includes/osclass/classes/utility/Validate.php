@@ -30,10 +30,10 @@ class Validate
      * common method to validate value
      * Validate before using these values, this will only sanitize the requested param
      *
-     * @param string $value  name of param
-     * @param string $type   What type is the variable (bool, domain, email, float, int, ip, url)
-     * @param array  $option Options for filter_var
-     *                       https://www.php.net/manual/en/filter.filters.validate.php
+     * @param mixed               $value
+     * @param string              $type    What type is the variable (bool, domain, email, float, int, ip, url)
+     * @param array<string,mixed> $options Options for filter_var
+     *                                     https://www.php.net/manual/en/filter.filters.validate.php
      *
      * @return false|int|float|string will return false on failure
      */
@@ -45,8 +45,8 @@ class Validate
     /**
      * Validate bool using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return bool
      */
@@ -58,8 +58,8 @@ class Validate
     /**
      * Validate domain using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|string
      */
@@ -71,8 +71,8 @@ class Validate
     /**
      * Validate email using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|string
      */
@@ -84,8 +84,8 @@ class Validate
     /**
      * Validate float using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|float
      */
@@ -97,8 +97,8 @@ class Validate
     /**
      * Validate int using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|int
      */
@@ -110,8 +110,8 @@ class Validate
     /**
      * Validate IP using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|string
      */
@@ -123,8 +123,8 @@ class Validate
     /**
      * Validate URL using filter_var
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed                  $value
+     * @param array<string,mixed>    $options
      *
      * @return false|string
      */
@@ -134,9 +134,11 @@ class Validate
     }
 
     /**
-     * @param $value
-     * @param $type
-     * @param $options
+     * Thin wrapper over filter_var(), so every validator funnels through one place.
+     *
+     * @param mixed               $value
+     * @param int                 $type    a FILTER_VALIDATE_* constant
+     * @param array<string,mixed> $options
      *
      * @return false|int|float|string will return false on failure
      */
@@ -218,8 +220,7 @@ class Validate
     /**
      * Validate $value is a number or a numeric string
      *
-     * @param string  $value
-     * @param boolean $required
+     * @param string|int|float $value
      *
      * @return boolean
      */
@@ -292,12 +293,12 @@ class Validate
     /**
      * Validate if exist $city, $region, $country in db
      *
-     * @param string $city
-     * @param        $sCity
-     * @param string $region
-     * @param        $sRegion
-     * @param string $country
-     * @param        $sCountry
+     * @param int|string  $city     city id
+     * @param string|null $sCity    free-text city name, used when no id was picked
+     * @param int|string  $region   region id
+     * @param string|null $sRegion  free-text region name
+     * @param string      $country  country code
+     * @param string|null $sCountry free-text country name
      *
      * @return boolean
      */
@@ -415,8 +416,8 @@ class Validate
     /**
      * Validate locale code string
      *
-     * @param      $string
-     * @param bool $admin
+     * @param string $string
+     * @param bool   $admin  check the admin locales instead of the public ones
      *
      * @return bool
      */
@@ -501,8 +502,8 @@ class Validate
     /**
      * validate username, accept letters plus underline, without separators
      *
-     * @param $value
-     * @param $min
+     * @param string $value
+     * @param int    $min   minimum length
      *
      * @return bool
      */

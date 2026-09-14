@@ -28,6 +28,9 @@ class Rewrite
     private $http_referer;
     private $rulesRebuilt = false;
 
+    /**
+     * Start with empty dispatch state and the persisted rule table.
+     */
     public function __construct()
     {
         $this->request_uri     = '';
@@ -41,7 +44,9 @@ class Rewrite
     }
 
     /**
-     * @return array
+     * The persisted rule table, as regexp => rewritten uri.
+     *
+     * @return array<string,string>
      */
     public function getRules()
     {
@@ -54,6 +59,11 @@ class Rewrite
         return is_array($rules) ? $rules : array();
     }
 
+    /**
+     * Serialize the current rule table into the preference cache.
+     *
+     * @return void
+     */
     public function setRules()
     {
         Preference::newInstance()->replace('rewrite_rules', serialize($this->rules));
@@ -103,6 +113,8 @@ class Rewrite
      * Serialize the current rule table into the cache and stamp its version.
      * A read-only database (replica) makes the write fail; the rules stay valid
      * in memory for this request, so the failure is swallowed rather than fatal.
+     *
+     * @return void
      */
     private function persistRules()
     {
@@ -119,6 +131,8 @@ class Rewrite
      * Populate the rule table from the permalink preferences. This is the single
      * source of truth for the site's friendly-URL structure. Fires the
      * before/after_rewrite_rules hooks so plugin-contributed rules are included.
+     *
+     * @return void
      */
     public function buildRules()
     {
@@ -332,6 +346,31 @@ class Rewrite
         $rewrite->addRule('^' . osc_get_preference('rewrite_user_change_email_confirm')
             . '/([0-9]+)/(.*?)/?$', 'index.php?page=user&action=change_email_confirm&userId=$1&code=$2');
 
+        // Billing's three navigable pages. Registered specific-first: the buy path nests
+        // under the wallet's by default, and while both patterns are $-anchored -- which
+        // already keeps them apart -- the order is what stays correct if an admin renames
+        // one into something that does overlap. The gateway callback keeps its
+        // ?page=billing&action=callback form: gateways hold that URL on their side, and a
+        // rule added here would never reach the ones already registered.
+        //
+        // Each path is checked before it is compiled. This table is rebuilt whenever
+        // OSCLASS_VERSION moves, which happens the moment new code is deployed -- before
+        // the release's migration has seeded these preferences, and on a front-end request
+        // that never goes near the upgrade screen. An empty path would compile to '^/?$'
+        // and answer the homepage with the wallet.
+        $billingRoutes = array(
+            'rewrite_billing_buy'    => 'index.php?page=billing&action=buy',
+            'rewrite_billing_orders' => 'index.php?page=billing&action=orders',
+            'rewrite_billing_wallet' => 'index.php?page=billing',
+        );
+        foreach ($billingRoutes as $billingPref => $billingTarget) {
+            $billingPath = trim((string)osc_get_preference($billingPref), '/');
+            if ($billingPath === '') {
+                continue;
+            }
+            $rewrite->addRule('^' . $billingPath . '/?$', $billingTarget);
+        }
+
         // Page rules
         $pos_pID   = stripos($page_url, '{PAGE_ID}');
         $pos_pSlug = stripos($page_url, '{PAGE_SLUG}');
@@ -438,7 +477,9 @@ class Rewrite
     /**
      * add multiple rewrite rules
      *
-     * @param $rules
+     * @param array<int,array{0:string,1:string}> $rules
+     *
+     * @return void
      */
     public function addRules($rules)
     {
@@ -454,8 +495,10 @@ class Rewrite
     /**
      * Add rewrite rules
      *
-     * @param $regexp
-     * @param $uri
+     * @param string $regexp
+     * @param string $uri
+     *
+     * @return void
      */
     public function addRule($regexp, $uri)
     {
@@ -467,14 +510,18 @@ class Rewrite
     }
 
     /**
-     * @param        $id
-     * @param        $regexp
-     * @param        $url
-     * @param        $file
-     * @param bool   $user_menu
+     * Register a route: a URI pattern served by a file, outside the rule table.
+     *
+     * @param string $id
+     * @param string $regexp
+     * @param string $url       Template used for reverse routing; {name} marks a capture
+     * @param string $file      File to include when the route matches
+     * @param bool   $user_menu Show the route in the user dashboard menu
      * @param string $location
      * @param string $section
      * @param string $title
+     *
+     * @return void
      */
     public function addRoute(
         $id,
@@ -505,10 +552,11 @@ class Rewrite
      * Run hook on given root
      * $id will be used as hook name
      *
-     * @param string   $id
-     * @param string   $regexp
-     * @param string   $url
-     * @param callable $callback
+     * @param string $id
+     * @param string $regexp
+     * @param string $url
+     *
+     * @return void
      */
     public function addRouteHook(
         $id,
@@ -528,7 +576,7 @@ class Rewrite
     /**
      * Get all registered routes
      *
-     * @return array
+     * @return array<string,array<string,mixed>> Routes keyed by id
      */
     public function getRoutes()
     {
@@ -538,6 +586,7 @@ class Rewrite
     /**
      * Init Rewrite Class
      *
+     * @return void
      */
     public function init()
     {
@@ -592,7 +641,7 @@ class Rewrite
             if ($rewrite['not_found']) {
                 $this->set_location('error');
                 header('HTTP/1.1 404 Not Found');
-                osc_current_web_theme_path('404.php');
+                osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
                 exit;
             }
             $request_uri = $rewrite['uri'];
@@ -612,11 +661,33 @@ class Rewrite
      * Write a resolved param map into Params. The single sink through which every
      * resolve*() result reaches request state.
      *
-     * @param array $params key => value pairs to set
+     * A value the POST body already supplies is left alone. A form's hidden page/action
+     * say what to do; the URL it posts to only says where that form was rendered, and
+     * writing the route over the body made a form that posts to its own page's permalink
+     * arrive as whatever the route declared -- silently, because the POST still rendered
+     * 200 on the page it came from. That is how buying credits stopped working the day the
+     * buy page gained a permalink.
+     *
+     * This grants nothing new. The same body posted to index.php was always in full
+     * control -- no rule matches there, so nothing overwrote it -- and every controller
+     * treats Params as untrusted either way. It only makes a POST behave the same whether
+     * it is aimed at the permalink or at index.php.
+     *
+     * @param array<string,mixed> $params key => value pairs to set
+     *
+     * @return void
      */
     private function applyParams(array $params)
     {
+        $posted = strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false)) === 'POST'
+            ? Params::getParamsAsArray('post')
+            : array();
+
         foreach ($params as $k => $v) {
+            // An empty posted value is not an answer -- the route still fills it in.
+            if (isset($posted[$k]) && $posted[$k] !== '') {
+                continue;
+            }
             Params::setParam($k, $v);
         }
     }
@@ -625,7 +696,9 @@ class Rewrite
      * Apply a resolveRoute() result: its params, plus location/section/title when
      * the route carried them (a controller route leaves those null).
      *
-     * @param array $match
+     * @param array<string,mixed> $match A resolveRoute() result
+     *
+     * @return void
      */
     private function applyMatch(array $match)
     {
@@ -646,6 +719,8 @@ class Rewrite
      * and strip it from $_SERVER['REQUEST_URI'] so it never reaches dispatch.
      *
      * @param string $request_uri
+     *
+     * @return void
      */
     private function captureHttpReferer($request_uri)
     {
@@ -747,6 +822,8 @@ class Rewrite
     }
 
     /**
+     * The shared Rewrite instance, created on first call.
+     *
      * @return \Rewrite
      */
     public static function newInstance()
@@ -827,13 +904,22 @@ class Rewrite
     }
 
     /**
-     * @param $regexp
+     * Drop one rewrite rule.
+     *
+     * @param string $regexp
+     *
+     * @return void
      */
     public function removeRule($regexp)
     {
         unset($this->rules[$regexp]);
     }
 
+    /**
+     * Drop every rewrite rule.
+     *
+     * @return void
+     */
     public function clearRules()
     {
         unset($this->rules);
@@ -841,6 +927,8 @@ class Rewrite
     }
 
     /**
+     * The request URI after the rule table has rewritten it.
+     *
      * @return string
      */
     public function get_request_uri()
@@ -849,6 +937,8 @@ class Rewrite
     }
 
     /**
+     * The request URI as it arrived, before any rewriting.
+     *
      * @return string
      */
     public function get_raw_request_uri()
@@ -857,6 +947,8 @@ class Rewrite
     }
 
     /**
+     * The location this request dispatched to.
+     *
      * @return string
      */
     public function get_location()
@@ -865,7 +957,11 @@ class Rewrite
     }
 
     /**
-     * @param $location
+     * Override the dispatched location.
+     *
+     * @param string $location
+     *
+     * @return void
      */
     public function set_location($location)
     {
@@ -873,6 +969,8 @@ class Rewrite
     }
 
     /**
+     * The section this request dispatched to.
+     *
      * @return string
      */
     public function get_section()
@@ -881,6 +979,8 @@ class Rewrite
     }
 
     /**
+     * The title declared by the matched route.
+     *
      * @return string
      */
     public function get_title()
@@ -889,6 +989,8 @@ class Rewrite
     }
 
     /**
+     * The referer captured out of the request URI's http_referer argument.
+     *
      * @return string
      */
     public function get_http_referer()

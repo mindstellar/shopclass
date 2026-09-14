@@ -41,6 +41,11 @@ class FormSubmission
     /** @var FormSubmission */
     private static $instance;
 
+    /**
+     * Return the shared FormSubmission model instance, creating it on first use.
+     *
+     * @return self
+     */
     public static function newInstance(): self
     {
         if (!self::$instance instanceof self) {
@@ -50,16 +55,33 @@ class FormSubmission
         return self::$instance;
     }
 
+    /**
+     * Whether $status is one of the triage statuses this model accepts.
+     *
+     * @param string $status
+     *
+     * @return bool
+     */
     public static function isValidStatus(string $status): bool
     {
         return in_array($status, self::STATUSES, true);
     }
 
+    /**
+     * A fresh query builder over the submissions table.
+     *
+     * @return QueryBuilder
+     */
     private function table(): QueryBuilder
     {
         return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
     }
 
+    /**
+     * A fresh query builder over the submission-values table.
+     *
+     * @return QueryBuilder
+     */
     private function valueTable(): QueryBuilder
     {
         return osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE);
@@ -73,7 +95,8 @@ class FormSubmission
      * @param int         $contextId
      * @param int|null    $userId      logged-in submitter, or null
      * @param string|null $ip
-     * @param array       $values      fieldId => scalar, or fieldId => [multiKey => scalar]
+     * @param array<int|string,scalar|array<string,scalar>> $values fieldId => scalar,
+     *                                 or fieldId => [multiKey => scalar]
      *
      * @return int|false the new submission id, or false on failure
      */
@@ -122,7 +145,13 @@ class FormSubmission
     /**
      * Submissions for a form (newest first), optionally filtered by status.
      *
-     * @return array
+     * @param int         $formId
+     * @param string|null $status An unrecognised status is ignored rather than rejected
+     * @param int         $limit
+     * @param int         $offset
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function listByForm(int $formId, ?string $status = null, int $limit = 50, int $offset = 0): array
     {
@@ -136,6 +165,15 @@ class FormSubmission
         return $q->orderBy('dt_created', 'DESC')->limit($limit)->offset($offset)->get();
     }
 
+    /**
+     * Count a form's submissions, optionally filtered by status.
+     *
+     * @param int         $formId
+     * @param string|null $status An unrecognised status is ignored rather than rejected
+     *
+     * @return int
+     * @throws \mindstellar\database\DbException on a query failure
+     */
     public function countByForm(int $formId, ?string $status = null): int
     {
         $q = $this->table()->where('fk_i_group_id', $formId);
@@ -151,7 +189,10 @@ class FormSubmission
     /**
      * Status => count for a form (only non-zero statuses appear).
      *
+     * @param int $formId
+     *
      * @return array<string,int>
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function statusCounts(int $formId): array
     {
@@ -168,6 +209,14 @@ class FormSubmission
         return $out;
     }
 
+    /**
+     * One submission row by its primary key.
+     *
+     * @param int $id
+     *
+     * @return array<string,mixed>|null Null when the id is unknown
+     * @throws \mindstellar\database\DbException on a query failure
+     */
     public function findByPrimaryKey(int $id): ?array
     {
         return $this->table()->where('pk_i_id', $id)->first();
@@ -177,7 +226,10 @@ class FormSubmission
      * The stored values for a submission, keyed by field id. A field with s_multi
      * parts (a date range) becomes an array; a scalar field a string.
      *
-     * @return array<int,mixed>
+     * @param int $submissionId
+     *
+     * @return array<int,string|array<string,string>>
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function valuesFor(int $submissionId): array
     {
@@ -199,6 +251,14 @@ class FormSubmission
         return $out;
     }
 
+    /**
+     * Move a submission to another triage status.
+     *
+     * @param int    $id
+     * @param string $status
+     *
+     * @return bool False for an unrecognised status or a failed write
+     */
     public function setStatus(int $id, string $status): bool
     {
         if (!self::isValidStatus($status)) {
@@ -215,6 +275,10 @@ class FormSubmission
 
     /**
      * Delete a submission (its values cascade via FK).
+     *
+     * @param int $id
+     *
+     * @return bool False when the delete failed
      */
     public function delete(int $id): bool
     {
@@ -234,6 +298,8 @@ class FormSubmission
     /**
      * Delete every submission for a form (values cascade). Used when a form is
      * deleted or an admin purges. Returns affected rows or false.
+     *
+     * @param int $formId
      *
      * @return int|false
      */

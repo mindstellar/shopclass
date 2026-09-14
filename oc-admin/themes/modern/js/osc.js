@@ -10,6 +10,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/* global osc, bootstrap */
+/* exported oscEscapeHTML, setJsMessage, bulkActionsSubmit */
+
 /* ===================================================
  * osc tooltip
  * ===================================================
@@ -120,6 +123,9 @@ function setJsMessage(alertClass, alertMessage) {
     var pTag = jsMessage.querySelector("p");
     pTag.setAttribute("class", alertClass);
     pTag.textContent = alertMessage;
+    ['ok', 'error', 'warning', 'info'].forEach(function (state) {
+        jsMessage.classList.toggle('flashmessage-' + state, state === alertClass);
+    });
     jsMessage.classList.remove('hide');
     jsMessage.removeAttribute('style');
 }
@@ -163,13 +169,11 @@ window.addEventListener('load', function () {
     }
 });
 
-// Row actions live in-flow beneath each listing title and are always visible: they are quick
-// actions, so a keyboard or touch user must reach them in one click, not perform a hover the
-// pointer alone can do. (The old code revealed them on mouseover only — a WCAG 2.1.1 failure —
-// and the stylesheet reserved 2.5rem of dead space under every row so the reveal wouldn't reflow
-// the table. Both are gone.) This enhancer only (a) tags the one destructive link so the
-// stylesheet can hold it apart from the routine ones, and (b) drives the "More" overflow list as
-// an accessible click-to-open disclosure.
+// Row actions live in-flow beneath each listing title and are always visible: a keyboard or
+// touch user must reach them in one click, and revealing them on hover is a WCAG 2.1.1
+// failure. This enhancer only (a) tags the one destructive link so the stylesheet can hold it
+// apart from the routine ones, and (b) drives the "More" overflow list as an accessible
+// click-to-open disclosure.
 window.addEventListener('load', function () {
     var actionsDivs = document.querySelectorAll('#datatablesForm .actions');
     actionsDivs.forEach(function (actions) {

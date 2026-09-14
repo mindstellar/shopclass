@@ -29,12 +29,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input type="hidden" name="action" value="add_post"/>
                     <input type="hidden" name="page" value="languages"/>
 
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Language package (.zip)'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox"><input type="file" name="package" id="package"/></div>
-                        </div>
-                    </div>
+                    <?php osc_admin_field(array(
+                        'type'  => 'file',
+                        'id'    => 'package',
+                        'name'  => 'package',
+                        'label' => __('Language package (.zip)'),
+                        'attrs' => array('accept' => '.zip'),
+                    )); ?>
                     <?php osc_admin_form_actions(array(
                         array('label' => __('Upload'), 'type' => 'submit', 'variant' => 'primary'),
                     )); ?>

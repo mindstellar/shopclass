@@ -19,6 +19,9 @@ use mindstellar\utility\Validate;
  */
 class CWebLanguage extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the `init_language` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -26,6 +29,12 @@ class CWebLanguage extends BaseModel
     }
 
     // business layer...
+    /**
+     * Applies the requested `locale` param when it is a valid locale code, then redirects
+     * back to the referring page (or the base URL when there is none).
+     *
+     * @return void
+     */
     public function doModel()
     {
         $locale = Params::getParam('locale');
@@ -46,7 +55,9 @@ class CWebLanguage extends BaseModel
     // hopefully generic...
 
     /**
-     * @param $file
+     * No-op: this controller always redirects and never renders a template.
+     *
+     * @param string $file
      *
      * @return void
      */

@@ -1,22 +1,8 @@
-// The alias layer is gone.
+// No Sass alias layer. A component naming a Sass colour is compiled to one value and can
+// never follow a theme, so components read var(--osc-*) from _brand.scss instead.
 //
-// It used to restate the whole palette as Sass variables — $color-blue, $color-gray-soft,
-// $color-error-border, and the Bootstrap-3-era alert set ($info-bg: #D9EDF7, a blue) — which
-// components then consumed. Every one of those was a colour flattened at build time, so every
-// component that named one was a component that could never see a theme change (The Token
-// Indirection Rule). They now read var(--osc-*) from _brand.scss instead, and the aliases are
-// deleted rather than left lying around to be picked up again.
-//
-// Deleting them also removed the last references to BOOTSTRAP'S OWN palette. $color-red-border
-// was shade-color($red, 20%) — a shade of stock #dc3545, not of our $danger — so .btn-error
-// had been drawing its border in a red that appears nowhere in this design system. $color-blue
-// and its hover/border pair were shades of #0d6efd, sitting in the stylesheet in defiance of
-// The Blue Exile Rule and kept alive only by the fact that nothing used them.
-//
-// These are Sass variables, not CSS class names: nothing outside this stylesheet can reference
-// them, so removing them is not a compatibility event. The .btn-submit CLASS is a different
-// matter and stays exactly where it is. (.btn-blue — a misleading @extend .btn-primary — has
-// been removed; its two bundled call sites moved to .btn-primary, which is what it rendered as.)
+// This is about Sass variables, not CSS class names: the .btn-submit class stays exactly
+// where it is, because plugins we cannot see render against it.
 
 // The legacy dark controls (.btn-black, .action-btn-black, .bg-black-light) are now tokenised
 // as inverse ink controls and flip with the theme (see ui-elements.scss). $color-gray-hardblack
@@ -26,9 +12,6 @@ $color-gray-ash: $gray-500;
 
 $border-color: $color-gray-ash;
 // Status badges — three signals each: a TINT, a SHAPE, and the WORD (the Three-Signal Rule).
-// Colour was previously the only signal, and "active" was
-// $blue-500 — stock Bootstrap #0d6efd — which made the most-seen badge in the admin
-// the single clearest tell that this was an unstyled Bootstrap template.
 //
 // Colour here encodes SEVERITY, not identity: good / neutral / bad. The icon silhouette
 // and the word encode the specific state. Two reasons it is built this way rather than
@@ -97,4 +80,7 @@ $status-badge: (
         "failed":    (tint: var(--osc-danger-tint),  ink: var(--osc-danger),       icon: "\f567"), // ⊘ slashed ring
         "refunded":  (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
         "cancelled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f28a"), // ○ hollow ring
+
+        // Location catalog rows: newer data is waiting for an installed country.
+        "update":    (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f139"), // ⬆ arrow in a disc
 );

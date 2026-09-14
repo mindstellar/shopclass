@@ -27,6 +27,13 @@ use mindstellar\migration\MigrationInterface;
  * than replays; this migration brings an existing install up to the same state.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_resource, the polymorphic (s_owner_type, i_owner_id) resource table.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_resource ('

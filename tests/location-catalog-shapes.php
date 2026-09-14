@@ -81,6 +81,8 @@ $manifest = array(
             'name'   => 'Malta',
             'files'  => array('data' => 'data/MT.ndjson', 'json' => 'json/MT.json'),
             'sha256' => array('data' => str_repeat('a', 64)),
+            'regions'     => 69,
+            'settlements' => 121,
         ),
     ),
 );
@@ -134,6 +136,9 @@ check('the country name survives', $mt['name'] === 'Malta');
 check('the streaming file survives', $mt['data'] === 'data/MT.ndjson');
 check('the whole-file form survives', $mt['json'] === 'json/MT.json');
 check('the data checksum survives', $mt['sha'] === str_repeat('a', 64));
+check('the settlement count survives as rows', $mt['rows'] === 121);
+check('the region count survives, for the add form\'s import offer', $mt['regions'] === 69);
+check('an older manifest without region counts reads as 0', LocationCatalog::normalizeManifest($legacyManifest)['countries'][0]['regions'] === 0);
 
 // The published manifest describes four formats per country with a checksum and a byte
 // count for each; two are read. Carrying the rest is pure per-read cost.

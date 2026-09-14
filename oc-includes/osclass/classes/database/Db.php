@@ -277,6 +277,7 @@ class Db
      * @param callable $fn
      *
      * @return mixed The value returned by $fn
+     * @throws RuntimeException when the transaction cannot be opened
      * @throws Throwable Re-throws whatever $fn throws, after rolling back
      */
     public static function transaction(callable $fn)

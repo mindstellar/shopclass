@@ -40,10 +40,18 @@ final class PageTemplateRegistry
     /** @var array<string,array> registered template specs, keyed by id */
     private array $templates = [];
 
+    /**
+     * Singleton: obtain the registry through instance().
+     */
     private function __construct()
     {
     }
 
+    /**
+     * Shared registry instance, created on first use.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -125,6 +133,10 @@ final class PageTemplateRegistry
     /**
      * The spec for a registered template, or null when the id is not registered
      * (e.g. its plugin is deactivated).
+     *
+     * @param string $id
+     *
+     * @return array<string,mixed>|null
      */
     public function get(string $id): ?array
     {
@@ -143,6 +155,10 @@ final class PageTemplateRegistry
 
     /**
      * Whether $id is a well-formed page template id.
+     *
+     * @param string $id
+     *
+     * @return bool
      */
     public static function isValidId(string $id): bool
     {

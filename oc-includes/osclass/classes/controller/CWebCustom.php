@@ -17,6 +17,9 @@
  */
 class CWebCustom extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the `init_custom` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -25,6 +28,12 @@ class CWebCustom extends BaseModel
     }
 
     //Business Layer...
+    /**
+     * Resolves the custom page to render from a registered route (or the deprecated `file`
+     * param), rejects traversal and admin paths with a 404, and renders it.
+     *
+     * @return void
+     */
     public function doModel()
     {
         $user_menu = false;
@@ -58,10 +67,13 @@ class CWebCustom extends BaseModel
         // point at a file in the theme root, so a theme can serve its own controllers without a
         // parallel router; the deprecated, request-controlled ?file= param is NOT granted the
         // theme-root path and stays limited to the plugins directories as before. The traversal /
-        // admin-folder guard above applies to every branch.
+        // admin-folder guard above applies to every branch. $file may also name a registered
+        // render target (see osc_register_render_target()): the request supplies only an id
+        // there, never a path, so it carries none of the traversal risk the checks above guard.
         if (!file_exists(osc_plugins_path() . $file)
             && !file_exists(osc_themes_path() . osc_theme() . '/plugins/' . $file)
             && !($fromRoute && file_exists(osc_themes_path() . osc_theme() . '/' . $file))
+            && osc_render_target($file) === null
         ) {
             $this->do404();
 
@@ -74,26 +86,30 @@ class CWebCustom extends BaseModel
         if ($user_menu) {
             if (osc_is_web_user_logged_in()) {
                 Params::setParam('in_user_menu', true);
-                $this->doView('user-custom.php');
+                $this->doView(osc_locate_template(array('user-custom.php'), 'user-custom'));
             } else {
                 $this->redirectTo(osc_user_login_url());
             }
         } else {
-            $this->doView('custom.php');
+            $this->doView(osc_locate_template(array('custom.php'), 'custom'));
         }
     }
 
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the custom template, letting the account/page view helpers claim it first.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file) && !osc_gui_page_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

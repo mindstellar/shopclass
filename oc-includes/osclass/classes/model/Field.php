@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class Field extends DAO
 {
@@ -25,8 +24,6 @@ class Field extends DAO
      * It references to self object: Field.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var Field
      */
     private static $instance;
@@ -34,6 +31,7 @@ class Field extends DAO
     /**
      * Current locale code
      *
+     * @var string
      */
     public $currentLocaleCode;
 
@@ -57,9 +55,7 @@ class Field extends DAO
      * It creates a new Field object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return Field
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -73,12 +69,9 @@ class Field extends DAO
     /**
      * Find a field by its id.
      *
-     * @access public
-     *
      * @param int $id
      *
-     * @return array Field information. If there's no information, return an empty array.
-     * @since  unknown
+     * @return array<string,mixed> Field information. If there's no information, return an empty array.
      */
     public function findByPrimaryKey($id)
     {
@@ -97,9 +90,9 @@ class Field extends DAO
     /**
      * Extend s_meta json column to field array
      *
-     * @param array $field
+     * @param array<string,mixed> $field
      *
-     * @return array
+     * @return array<string,mixed>
      */
     private function extendField($field)
     {
@@ -124,12 +117,9 @@ class Field extends DAO
     /**
      * Delete a field and all information associated with it
      *
-     * @access public
-     *
      * @param int $id
      *
-     * @return bool on success
-     * @since  unknown
+     * @return int|false Rows removed from t_meta_fields, or false on a null id or a failure
      */
     public function deleteByPrimaryKey($id)
     {
@@ -178,9 +168,7 @@ class Field extends DAO
     /**
      * Get all the rows from the table $tableName
      *
-     * @access public
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,mixed>>
      */
     public function listAll()
     {
@@ -253,7 +241,7 @@ class Field extends DAO
      *
      * @param int $groupId
      *
-     * @return array
+     * @return array<int,array<string,mixed>> Ordered by their position in the form
      */
     public function findByGroup($groupId)
     {
@@ -287,12 +275,9 @@ class Field extends DAO
      * (a loose field, via t_meta_categories) or through a group assigned to the
      * category (t_meta_group_categories). De-duplicated by field id and ordered.
      *
-     * @access public
-     *
      * @param int $id
      *
-     * @return array Field information. If there's no information, return an empty array.
-     * @since  unknown
+     * @return array<int,array<string,mixed>> Field information. If there's no information, return an empty array.
      */
     public function findByCategory($id)
     {
@@ -310,17 +295,28 @@ class Field extends DAO
         // Loose fields directly assigned (and in NO form), plus grouped fields whose
         // form is assigned to the category — form membership now comes from the link
         // table t_meta_group_fields (a field can be in several forms).
-        $sql = 'SELECT query.* FROM ('
-            . 'SELECT mf.*, 0 AS cf_group_position FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mf.pk_i_id = mc.fk_i_field_id'
-            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
+        // The union carries ids and group positions only, it is collapsed to one row
+        // per field inside its own subquery, and the field columns are read back from
+        // t_meta_fields with no GROUP BY in sight: selecting whole rows alongside a
+        // GROUP BY is rejected under ONLY_FULL_GROUP_BY. MIN() also makes a field that
+        // is both loose and grouped sort as loose rather than as whichever row the
+        // server reached first.
+        $sql = 'SELECT mf.*, query.cf_group_position'
+            . ' FROM ' . $p . 't_meta_fields mf JOIN ('
+            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position FROM ('
+            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position'
+            . ' FROM ' . $p . 't_meta_fields mfa, ' . $p . 't_meta_categories mc'
+            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mfa.pk_i_id = mc.fk_i_field_id'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mfa.pk_i_id)'
             . ' UNION '
-            . 'SELECT mf.*, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mf'
-            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
+            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mfb'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mfb.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
             . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
             . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
-            . ') AS query GROUP BY query.pk_i_id ORDER BY query.cf_group_position ASC, query.i_position ASC';
+            . ') AS u GROUP BY u.pk_i_id'
+            . ') AS query ON query.pk_i_id = mf.pk_i_id'
+            . ' ORDER BY query.cf_group_position ASC, mf.i_position ASC';
 
         try {
             $fields = osc_db_select($sql, array_merge($path, $path));
@@ -337,15 +333,11 @@ class Field extends DAO
     }
 
     /**
-     * Find a field by its name
+     * The ids of every searchable field that applies to the given categories.
      *
-     * @access public
+     * @param array<int,int|string>|int|string $ids Category ids or slugs
      *
-     * @param mixed $ids
-     *
-     * @return array Fields' id
-     * @since  unknown
-     *
+     * @return array<int,string> Fields' id
      */
     public function findIDSearchableByCategories($ids)
     {
@@ -414,14 +406,10 @@ class Field extends DAO
     /**
      * Find fields from a category and an item
      *
-     * @access public
+     * @param int $catId
+     * @param int $itemId
      *
-     * @param $catId
-     * @param $itemId
-     *
-     * @return array Field information. If there's no information, return an empty array.
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>> Field information. If there's no information, return an empty array.
      */
     public function findByCategoryItem($catId, $itemId)
     {
@@ -502,9 +490,9 @@ class Field extends DAO
      * be assigned to the item's exact category, which hid the value of an inherited
      * or grouped field — the value was stored but never shown.
      *
-     * @param $itemId
+     * @param int $itemId
      *
-     * @return array
+     * @return array<int,array<string,mixed>> Empty when the id is not numeric or the query failed
      */
     public function findByItem($itemId)
     {
@@ -541,12 +529,9 @@ class Field extends DAO
     /**
      * Find a field by its name
      *
-     * @access public
-     *
      * @param string $name
      *
-     * @return array Field information. If there's no information, return an empty array.
-     * @since  unknown
+     * @return array<string,mixed> Field information. If there's no information, return an empty array.
      */
     public function findByName($name)
     {
@@ -566,10 +551,10 @@ class Field extends DAO
      * Return an array with from and to date values
      * given a meta field id
      *
-     * @param $item_id
-     * @param $field_id
+     * @param int $item_id
+     * @param int $field_id
      *
-     * @return array
+     * @return array<string,string|null> Keyed by s_multi ('from'/'to'); empty when there is no value
      */
     public function getDateIntervalByPrimaryKey($item_id, $field_id)
     {
@@ -596,12 +581,9 @@ class Field extends DAO
     /**
      * Gets which categories are associated with that field
      *
-     * @access public
+     * @param int $id
      *
-     * @param string $id
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,string> Category ids, as strings
      */
     public function categories($id)
     {
@@ -627,18 +609,15 @@ class Field extends DAO
     /**
      * Insert a new field
      *
-     * @access public
+     * @param string                     $name
+     * @param string                     $type
+     * @param string                     $slug       Derived from $name when empty
+     * @param bool|int                   $required
+     * @param string                     $options    Serialised option list, stored verbatim
+     * @param array<int,int|string>|null $categories
      *
-     * @param string $name
-     * @param string $type
-     * @param string $slug
-     * @param bool   $required
-     * @param array  $options
-     * @param array  $categories
-     *
-     * @return bool
-     * @since  unknown
-     *
+     * @return int The new field id, or 0 when a category link failed
+     * @throws \mindstellar\database\DbException when the field row itself cannot be written
      */
     public function insertField($name, $type, $slug, $required, $options, $categories = null)
     {
@@ -686,14 +665,11 @@ class Field extends DAO
     }
 
     /**
-     * Find a field by its name
-     *
-     * @access public
+     * Find a field by its slug
      *
      * @param string $slug
      *
-     * @return array Field information. If there's no information, return an empty array.
-     * @since  unknown
+     * @return array<string,mixed> Field information. If there's no information, return an empty array.
      */
     public function findBySlug($slug)
     {
@@ -712,13 +688,10 @@ class Field extends DAO
     /**
      * Save the categories linked to a field
      *
-     * @access public
+     * @param int                        $id
+     * @param array<int,int|string>|null $categories
      *
-     * @param int   $id
-     * @param array $categories
-     *
-     * @return bool
-     * @since  unknown
+     * @return bool False for an empty list, or when any row was rejected
      */
     public function insertCategories($id, $categories = null)
     {
@@ -749,12 +722,9 @@ class Field extends DAO
     /**
      * Removes categories from a field
      *
-     * @access public
-     *
      * @param int $id
      *
-     * @return bool on success
-     * @since  unknown
+     * @return int|false Rows removed, or false on a null id or a query failure
      */
     public function cleanCategoriesFromField($id)
     {
@@ -777,14 +747,11 @@ class Field extends DAO
     /**
      * Update a field value
      *
-     * @access public
+     * @param int                             $itemId
+     * @param int                             $field
+     * @param string|array<string,string|null> $value A map writes one row per s_multi key
      *
-     * @param int          $itemId
-     * @param int          $field
-     * @param string|array $value
-     *
-     * @return bool|\DBRecordsetClass false on fail, int of num. of affected rows
-     * @since  unknown
+     * @return bool|null True/false for a scalar value; null once a multi-value map is written
      */
     public function replace($itemId, $field, $value)
     {
@@ -822,11 +789,11 @@ class Field extends DAO
     /**
      * Update JSON fieldName in s_meta json column
      *
-     * @param int   $metaId
-     * @param int   $fieldName
-     * @param mixed $fieldValue
+     * @param int    $metaId
+     * @param string $fieldName
+     * @param mixed  $fieldValue An empty string or null removes the key
      *
-     * @return bool
+     * @return int|false Rows updated, or false on a null id or a query failure
      */
     public function updateJsonMeta($metaId, $fieldName, $fieldValue)
     {
@@ -866,11 +833,11 @@ class Field extends DAO
     /**
      * Get JSON fieldValue from s_meta json column
      *
-     * @param int    $metaId
-     * @param string $fieldName
-     * @param array  $field
+     * @param string                   $fieldName
+     * @param array<string,mixed>|null $field   An already-loaded field row, read instead of $metaId
+     * @param int|null                 $metaId  Field id to read when $field is null
      *
-     * @return mixed
+     * @return mixed False when the key is absent, unreadable, or both sources are null
      */
     public function getJsonMetaValue($fieldName, $field = null, $metaId = null)
     {

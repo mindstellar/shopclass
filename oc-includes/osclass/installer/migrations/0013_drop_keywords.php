@@ -23,6 +23,13 @@ use mindstellar\migration\MigrationInterface;
  * Idempotent: DROP TABLE IF EXISTS is a no-op when the table is already absent.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Drop the legacy t_keywords table.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute('DROP TABLE IF EXISTS ' . DB_TABLE_PREFIX . 't_keywords');

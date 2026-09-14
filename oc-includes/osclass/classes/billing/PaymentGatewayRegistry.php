@@ -33,10 +33,16 @@ final class PaymentGatewayRegistry
     /** @var array<string,PaymentGateway> registered gateways, keyed by id */
     private array $gateways = array();
 
+    /** Private: the registry is a singleton, reached through instance(). */
     private function __construct()
     {
     }
 
+    /**
+     * The shared registry.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -50,6 +56,9 @@ final class PaymentGatewayRegistry
      * Register a gateway. Re-registering an id replaces the previous implementation,
      * which is what lets a site override a bundled gateway with its own.
      *
+     * @param PaymentGateway $gateway
+     *
+     * @return void
      * @throws InvalidArgumentException on an invalid id or an unusable currency list
      */
     public function register(PaymentGateway $gateway): void
@@ -71,12 +80,21 @@ final class PaymentGatewayRegistry
         $this->gateways[$id] = $gateway;
     }
 
+    /**
+     * One registered gateway, or null when nothing registered that id.
+     *
+     * @param string $id
+     *
+     * @return PaymentGateway|null
+     */
     public function get(string $id): ?PaymentGateway
     {
         return $this->gateways[$id] ?? null;
     }
 
     /**
+     * Every registered gateway, configured or not, keyed by id.
+     *
      * @return array<string,PaymentGateway>
      */
     public function all(): array
@@ -109,7 +127,13 @@ final class PaymentGatewayRegistry
         return $out;
     }
 
-    /** Lower-case slug, matching the spelling used for widget and field type ids. */
+    /**
+     * Lower-case slug, matching the spelling used for widget and field type ids.
+     *
+     * @param string $id
+     *
+     * @return bool
+     */
     public static function isValidId(string $id): bool
     {
         return (bool) preg_match('/^[a-z0-9_.-]{1,60}$/', $id);

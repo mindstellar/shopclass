@@ -29,10 +29,10 @@
  *    `!$length`, which does reject 0, giving the two methods genuinely
  *    different bad-input costs.
  *
- * 2. Strict SQL mode is stripped from every connection, so an out-of-range
- *    counter is clamped rather than rejected: setNumItems($code, -1) reports
- *    success and stores 0. An explicit NULL into the NOT NULL primary key is
- *    still an error, and is the reachable failure path for the writes.
+ * 2. Whether an out-of-range counter is clamped or rejected depends on the
+ *    connection, so setNumItems($code, -1) is pinned both ways behind
+ *    harness_strict_writes(). An explicit NULL into the NOT NULL primary key is
+ *    an error under either mode, and is the reachable failure path for the writes.
  *
  * 3. DBCommandClass::escape() passes a NUMERIC value through unquoted, so a
  *    country code that is_numeric() reached MySQL as a number and the CHAR
@@ -327,11 +327,40 @@ pin('no counter moved', '12=2,US=4', $rows());
  * exactly as before. Callers pass codes read from request params or the
  * database, i.e. strings, so this residue is not reachable in practice — but it
  * is the honest boundary of the change and is pinned as such. */
-pin('an int 0 still coerces and decrements an alphabetic row', 1, $model->decreaseNumItems(0));
-pin('US moved, because the comparison was numeric', '12=2,US=3', $rows());
+/* Some servers remove the residue outright: comparing a CHAR column against a
+ * number in a data-change statement is a truncation ERROR under MySQL's strict
+ * modes, while MariaDB leaves it a warning however strict it is set -- and on
+ * MariaDB even that depends on the plan, so the probe reproduces the model's
+ * WHERE clause exactly and only the assignment is made a no-op. */
+$numericCompareIsFatal = static function () use ($table): bool {
+    try {
+        osc_db_execute(
+            'UPDATE ' . $table . ' SET i_num_items = i_num_items'
+            . ' WHERE i_num_items > 0 AND fk_c_country_code = ?',
+            array(0)
+        );
 
-pin('a numeric code that matches its own row decrements only that row', 1, $model->decreaseNumItems('12'));
-pin('only the numeric-coded row moved', '12=1,US=3', $rows());
+        return false;
+    } catch (\mindstellar\database\DbException $e) {
+        return true;
+    }
+};
+
+if ($quiet($numericCompareIsFatal)) {
+    pin('an int 0 is refused, so nothing is decremented', false, $quiet(static function () use ($model) {
+        return $model->decreaseNumItems(0);
+    }));
+    pin('no counter moved', '12=2,US=4', $rows());
+
+    pin('a numeric code that matches its own row decrements only that row', 1, $model->decreaseNumItems('12'));
+    pin('only the numeric-coded row moved', '12=1,US=4', $rows());
+} else {
+    pin('an int 0 still coerces and decrements an alphabetic row', 1, $model->decreaseNumItems(0));
+    pin('US moved, because the comparison was numeric', '12=2,US=3', $rows());
+
+    pin('a numeric code that matches its own row decrements only that row', 1, $model->decreaseNumItems('12'));
+    pin('only the numeric-coded row moved', '12=1,US=3', $rows());
+}
 
 /* ----------------------------------------------------------------------------
  * setNumItems() — absolute upsert. No length guard at all.
@@ -353,10 +382,18 @@ pin('and stores its integer prefix', 'US=9', $rows());
 pin('a null count returns bool true', true, $model->setNumItems('US', null));
 pin('and stores 0', 'US=0', $rows());
 
-harness_section('setNumItems — a negative count is clamped, not rejected (strict mode is off)');
+harness_section('setNumItems — a negative count');
 
-pin('a negative count still reports success', true, $model->setNumItems('US', -1));
-pin('the unsigned column clamped it to 0', 'US=0', $rows());
+// i_num_items is UNSIGNED, so -1 cannot be stored. Loose mode clamps it to 0 and
+// reports success; strict mode refuses the write. The row already reads 0 either way.
+if (harness_strict_writes()) {
+    pin('a negative count is rejected', false, $quiet(static function () use ($model) {
+        return $model->setNumItems('US', -1);
+    }));
+} else {
+    pin('a negative count still reports success', true, $model->setNumItems('US', -1));
+}
+pin('the counter reads 0', 'US=0', $rows());
 
 harness_section('setNumItems — rejected by the database');
 

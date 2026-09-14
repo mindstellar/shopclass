@@ -24,9 +24,9 @@
  * defaults.
  *
  * Recognised variables: DB_HOST (accepts "host:port"), DB_PORT, DB_NAME,
- * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, optionally REL_WEB_URL / WEB_PATH, and the
- * object cache — OSC_CACHE (driver name) plus OSC_CACHE_HOST / OSC_CACHE_PORT for the
- * memcached/memcache server.
+ * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
+ * REL_WEB_URL / WEB_PATH, and the object cache — OSC_CACHE (driver name) plus
+ * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached/memcache server.
  *
  * Safe to include more than once.
  */
@@ -55,6 +55,10 @@ if (!$oscIgnoreFile && is_file($oscConfigFile)) {
 
 /**
  * Read an environment variable, treating unset and empty-string as "not set".
+ *
+ * @param string $name
+ *
+ * @return string|null
  */
 $oscEnv = static function ($name) {
     $value = getenv($name);
@@ -94,6 +98,19 @@ if (!defined('WEB_PATH') && $oscEnv('WEB_PATH') !== null) {
 // in config.php still wins; anything falsy or unset leaves DEMO undefined.
 if (!defined('DEMO') && filter_var((string)getenv('OSC_DEMO'), FILTER_VALIDATE_BOOLEAN)) {
     define('DEMO', true);
+}
+
+// Strict SQL modes (optional). Lets an env-only deploy keep the server's own strict
+// modes without a config.php, the same opt-in the installer writes for a new install.
+// A value in config.php still wins; anything falsy or unset leaves the constant
+// undefined, so an existing deploy is unaffected.
+//
+// Higher stakes than the OSC_DEMO/OSC_CACHE bridges below, which only change a UI
+// lockdown or swap a cache backend: this one can turn a plugin's silently truncated
+// write into a hard failure mid-request. In a shared base image or a PaaS where one
+// environment serves several apps, set it per-app rather than globally.
+if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_MODE'), FILTER_VALIDATE_BOOLEAN)) {
+    define('OSC_DB_STRICT_MODE', true);
 }
 
 // Object-cache backend (optional). OSC_CACHE names the driver — 'apcu', 'memcached',

@@ -18,7 +18,11 @@
 class CategoryForm extends Form
 {
     /**
-     * @param array $category
+     * Echo the hidden input carrying the category id.
+     *
+     * @param array<string,mixed> $category
+     *
+     * @return void
      */
     public static function primary_input_hidden($category)
     {
@@ -27,10 +31,14 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array $categories
-     * @param array $category
-     * @param null $default_item
-     * @param string $name
+     * Echo a select box of the whole category tree, with the given category selected.
+     *
+     * @param array<int,array<string,mixed>> $categories   Nested category tree
+     * @param array<string,mixed>|null       $category     The currently selected category
+     * @param string|null                    $default_item Placeholder option label
+     * @param string                         $name
+     *
+     * @return void
      */
     public static function category_select(
         $categories,
@@ -45,10 +53,12 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array $array
-     * @param int $deep
+     * Flatten a nested category tree into the select-options shape, indenting by depth.
      *
-     * @return array
+     * @param array<int,array<string,mixed>> $array
+     * @param int                            $deep
+     *
+     * @return array<int,array<string,mixed>>
      */
     private static function prepareOptionsArray($array, $deep)
     {
@@ -69,10 +79,14 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array $categories
-     * @param array $category
-     * @param null $default_item
-     * @param int  $deep
+     * Echo the <option> rows for a category tree, recursing into subcategories.
+     *
+     * @param array<int,array<string,mixed>> $categories
+     * @param array<string,mixed>|null       $category     The currently selected category
+     * @param string|null                    $default_item Unused
+     * @param int                            $deep
+     *
+     * @return void
      */
     public static function subcategory_select(
         $categories,
@@ -96,9 +110,13 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array|null $categories
-     * @param array|null $selected
-     * @param int  $depth
+     * Echo a nested checkbox list of the category tree, ticking the selected ids.
+     *
+     * @param array<int,array<string,mixed>>|null $categories
+     * @param int[]|null                          $selected   Checked category ids
+     * @param int                                 $depth
+     *
+     * @return void
      */
     public static function categories_tree($categories = null, $selected = null, $depth = 0)
     {
@@ -122,7 +140,11 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * Echo the expiration-days text input.
+     *
+     * @param array<string,mixed>|null $category
+     *
+     * @return void
      */
     public static function expiration_days_input_text($category = null)
     {
@@ -132,7 +154,11 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * Echo the category position text input.
+     *
+     * @param array<string,mixed>|null $category
+     *
+     * @return void
      */
     public static function position_input_text($category = null)
     {
@@ -142,7 +168,11 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * Echo the "enabled" checkbox, ticked when the category is enabled.
+     *
+     * @param array<string,mixed>|null $category
+     *
+     * @return void
      */
     public static function enabled_input_checkbox($category = null)
     {
@@ -154,7 +184,11 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array|null $category
+     * Echo the "apply to subcategories" checkbox, for root categories only.
+     *
+     * @param array<string,mixed>|null $category
+     *
+     * @return void
      */
     public static function apply_changes_to_subcategories($category = null)
     {
@@ -166,7 +200,11 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param null $category
+     * Echo the "price enabled" checkbox for a category.
+     *
+     * @param array<string,mixed>|null $category
+     *
+     * @return void
      */
     public static function price_enabled_for_category($category = null)
     {
@@ -179,8 +217,12 @@ class CategoryForm extends Form
     }
 
     /**
-     * @param array $locales
-     * @param array|null $category
+     * Echo the tabbed per-locale name, slug and description fields for a category.
+     *
+     * @param array<int,array<string,mixed>> $locales
+     * @param array<string,mixed>|null       $category
+     *
+     * @return void
      */
     public static function multilanguage_name_description($locales, $category = null)
     {
@@ -208,11 +250,11 @@ class CategoryForm extends Form
                 . '" class="category-details-form">';
             $contentTemp .= '<div class="form-controls"><label>' . __('Name') . '</label><input id="'
                 . $name . '" type="text" name="' . $name . '" value="'
-                . osc_esc_html(htmlentities($value, ENT_COMPAT, 'UTF-8')) . '"/></div>';
+                . osc_esc_html(htmlentities($value, ENT_COMPAT, 'UTF-8', false)) . '"/></div>';
 
             $contentTemp .= '<div class="form-controls"><label>' . __('Slug') . '</label><input id="'
-                . $name . '" type="text" name="' . $nameSlug . '" value="'
-                . urldecode($valueSlug) . '" /></div>';
+                . $nameSlug . '" type="text" name="' . $nameSlug . '" value="'
+                . osc_esc_html(urldecode($valueSlug)) . '" /></div>';
 
             $contentTemp .= '<div class="form-controls"><label>' . __('Description') . '</label>';
             $contentTemp .= '<textarea id="' . $nameTextarea . '" name="' . $nameTextarea

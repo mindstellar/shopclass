@@ -21,6 +21,8 @@
 
 /**
  * Draws menu with sections and subsections
+ *
+ * @return void
  */
 function osc_draw_admin_menu()
 {
@@ -30,12 +32,14 @@ function osc_draw_admin_menu()
 /**
  * Add menu entry
  *
- * @param        $menu_title
- * @param        $url
- * @param        $menu_id
- * @param string $capability
- * @param null   $icon_url
- * @param null   $position
+ * @param string      $menu_title
+ * @param string      $url
+ * @param string      $menu_id
+ * @param string      $capability
+ * @param string|null $icon_url
+ * @param int|null    $position
+ *
+ * @return void
  */
 function osc_add_admin_menu_page(
     $menu_title,
@@ -50,6 +54,8 @@ function osc_add_admin_menu_page(
 
 /**
  * Remove the whole menu
+ *
+ * @return void
  */
 function osc_remove_admin_menu()
 {
@@ -57,9 +63,11 @@ function osc_remove_admin_menu()
 }
 
 /**
- * Remove menu section with id $id_menu
+ * Remove menu section with id $menu_id
  *
- * @param $menu_id
+ * @param string $menu_id
+ *
+ * @return void
  */
 function osc_remove_admin_menu_page($menu_id)
 {
@@ -67,13 +75,15 @@ function osc_remove_admin_menu_page($menu_id)
 }
 
 /**
- * Add submenu under menu id $id_menu, with $array information
+ * Add submenu under menu id $menu_id
  *
- * @param        $menu_id
- * @param        $submenu_title
- * @param        $url
- * @param        $submenu_id
+ * @param string $menu_id
+ * @param string $submenu_title
+ * @param string $url
+ * @param string $submenu_id
  * @param string $capability
+ *
+ * @return void
  */
 function osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id, $capability = 'administrator')
 {
@@ -81,10 +91,12 @@ function osc_add_admin_submenu_page($menu_id, $submenu_title, $url, $submenu_id,
 }
 
 /**
- * Remove submenu with id $id_submenu under menu id $id_menu
+ * Remove submenu with id $submenu_id under menu id $menu_id
  *
- * @param $menu_id
- * @param $submenu_id
+ * @param string $menu_id
+ * @param string $submenu_id
+ *
+ * @return void
  */
 function osc_remove_admin_submenu_page($menu_id, $submenu_id)
 {
@@ -92,13 +104,14 @@ function osc_remove_admin_submenu_page($menu_id, $submenu_id)
 }
 
 /**
- * Add submenu divider under menu id $id_menu, with $array information
+ * Add submenu divider under menu id $menu_id
  *
- * @param      $menu_id
- * @param      $submenu_title
- * @param      $submenu_id
- * @param null $capability
+ * @param string      $menu_id
+ * @param string      $submenu_title
+ * @param string      $submenu_id
+ * @param string|null $capability
  *
+ * @return void
  * @since 3.1
  */
 function osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $capability = null)
@@ -107,11 +120,12 @@ function osc_add_admin_submenu_divider($menu_id, $submenu_title, $submenu_id, $c
 }
 
 /**
- * Remove submenu divider with id $id_submenu under menu id $id_menu
+ * Remove submenu divider with id $submenu_id under menu id $menu_id
  *
- * @param $menu_id
- * @param $submenu_id
+ * @param string $menu_id
+ * @param string $submenu_id
  *
+ * @return void
  * @since 3.1
  */
 function osc_remove_admin_submenu_divider($menu_id, $submenu_id)
@@ -120,13 +134,15 @@ function osc_remove_admin_submenu_divider($menu_id, $submenu_id)
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the listings menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -134,13 +150,15 @@ function osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = n
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the categories menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -148,13 +166,15 @@ function osc_admin_menu_categories($submenu_title, $url, $submenu_id, $capabilit
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the pages menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_pages($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -162,13 +182,15 @@ function osc_admin_menu_pages($submenu_title, $url, $submenu_id, $capability = n
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the appearance menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -176,13 +198,15 @@ function osc_admin_menu_appearance($submenu_title, $url, $submenu_id, $capabilit
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the plugins menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_plugins($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -190,13 +214,15 @@ function osc_admin_menu_plugins($submenu_title, $url, $submenu_id, $capability =
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the settings menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_settings($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -204,13 +230,15 @@ function osc_admin_menu_settings($submenu_title, $url, $submenu_id, $capability 
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the tools menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_tools($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -218,13 +246,15 @@ function osc_admin_menu_tools($submenu_title, $url, $submenu_id, $capability = n
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the users menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_users($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -232,13 +262,15 @@ function osc_admin_menu_users($submenu_title, $url, $submenu_id, $capability = n
 }
 
 /**
- * Add submenu into items menu page
+ * Add a submenu entry under the stats menu page
  *
- * @param      $submenu_title
- * @param      $url
- * @param      $submenu_id
- * @param null $capability
- * @param null $icon_url
+ * @param string      $submenu_title
+ * @param string      $url
+ * @param string      $submenu_id
+ * @param string|null $capability
+ * @param string|null $icon_url
+ *
+ * @return void
  */
 function osc_admin_menu_stats($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null)
 {
@@ -246,7 +278,9 @@ function osc_admin_menu_stats($submenu_title, $url, $submenu_id, $capability = n
 }
 
 /**
- * @return string
+ * Id of the admin menu section matching the current request URL.
+ *
+ * @return string Empty string when nothing matches
  */
 function osc_current_menu()
 {

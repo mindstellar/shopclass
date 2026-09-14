@@ -32,8 +32,10 @@ use mindstellar\utility\Sanitize;
 final class FieldValidator
 {
     /**
-     * @param array $fields resolved + extended field rows (Field::findByGroup shape)
-     * @param array $meta   raw posted values keyed by field id
+     * Sanitise and validate a whole submission, dropping fields hidden by their rules.
+     *
+     * @param array<int,array<string,mixed>> $fields resolved + extended field rows (Field::findByGroup shape)
+     * @param array<int|string,mixed>        $meta   raw posted values keyed by field id
      *
      * @return array{values: array<int,mixed>, errors: string[]}
      */
@@ -83,6 +85,11 @@ final class FieldValidator
      * Evaluate one conditional-logic condition against the submitted values (keyed
      * by controlling field slug). Same semantics as the client engine and the item
      * form's server re-evaluation.
+     *
+     * @param mixed               $cond       Condition array, or anything else to mean "no condition"
+     * @param array<string,mixed> $slugValues Submitted values keyed by field slug
+     *
+     * @return bool
      */
     public static function evaluateCondition($cond, array $slugValues): bool
     {
@@ -112,8 +119,9 @@ final class FieldValidator
     /**
      * Sanitise a raw posted value by its storage primitive.
      *
-     * @param string $eType
-     * @param mixed  $value
+     * @param string                       $eType
+     * @param mixed                        $value
+     * @param \mindstellar\utility\Sanitize $sanitize
      *
      * @return mixed
      */
@@ -145,6 +153,11 @@ final class FieldValidator
 
     /**
      * Whether a sanitised value should be stored.
+     *
+     * @param string $eType
+     * @param mixed  $value
+     *
+     * @return bool
      */
     private static function hasValue($eType, $value): bool
     {
@@ -161,6 +174,11 @@ final class FieldValidator
     /**
      * Per-field validation. Returns an error message or null. Mirrors
      * ItemActions::validateMetaFields plus the field-type registry validators.
+     *
+     * @param array<string,mixed> $f          One resolved field row
+     * @param mixed               $value      The sanitised value
+     * @param bool                $required
+     * @param array<string,mixed> $slugValues Submitted values keyed by field slug
      *
      * @return string|null
      */

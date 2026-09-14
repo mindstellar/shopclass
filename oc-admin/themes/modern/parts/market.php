@@ -100,9 +100,11 @@ function osc_market_installed_art($type, $slug)
  * The osc-thumb tile markup shared with the Appearance grid: real art, or the
  * hash-tinted placeholder with the package's initial overlaid.
  *
- * @param array  $art  {src, has} from osc_market_browse_art()/osc_market_installed_art()
- * @param string $slug
- * @param string $name
+ * @param array{src:string,has:bool} $art  From osc_market_browse_art()/osc_market_installed_art()
+ * @param string                     $slug
+ * @param string                     $name
+ *
+ * @return void
  */
 function osc_market_render_thumb($art, $slug, $name)
 {
@@ -125,7 +127,9 @@ function osc_market_render_thumb($art, $slug, $name)
  * never a verdict against this install; the tint still comes from the locally-evaluated
  * status so an incompatible or untested package still reads differently at a glance.
  *
- * @param array $compat {status, blocked, reason, badge}
+ * @param array<string,mixed> $compat {status, blocked, reason, badge}
+ *
+ * @return void
  */
 function osc_market_render_compat_badge($compat)
 {
@@ -144,7 +148,9 @@ function osc_market_render_compat_badge($compat)
  * (Compatibility::evaluate() returns blocked:false for it), so this must never read as a
  * warning -- just a fact the owner might want before installing.
  *
- * @param array $compat row's `compat`
+ * @param array<string,mixed> $compat Row's `compat`
+ *
+ * @return void
  */
 function osc_market_render_untested_note($compat)
 {
@@ -246,10 +252,12 @@ function osc_market_blocked_reason($meta, $compat)
  * the reason it is blocked. Shared between the card and (via the same markup, cloned
  * by JS) the detail dialog.
  *
- * @param array  $row     browse or update row
- * @param array  $meta    $aMarketMeta
- * @param string $mode    'install' or 'update'
- * @param string $label   button label when the action is available
+ * @param array<string,mixed> $row   Browse or update row
+ * @param array<string,mixed> $meta  $aMarketMeta
+ * @param string              $mode  'install' or 'update'
+ * @param string              $label Button label when the action is available
+ *
+ * @return void
  */
 function osc_market_render_action($row, $meta, $mode, $label)
 {
@@ -278,8 +286,10 @@ function osc_market_render_action($row, $meta, $mode, $label)
  * The .callout banner for catalog state: never fetched, fetch failed, not writable,
  * or in-app installs disabled. Several can be true at once; each gets its own line.
  *
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<string,mixed> $meta $aMarketMeta
+ * @param string              $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_meta_notices($meta, $type)
 {
@@ -327,9 +337,11 @@ function osc_market_render_meta_notices($meta, $type)
  * already-rendered cards) and a card grid, one card per catalog package not
  * currently installed.
  *
- * @param array  $rows $aMarketBrowse
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<int,array<string,mixed>> $rows $aMarketBrowse
+ * @param array<string,mixed>            $meta $aMarketMeta
+ * @param string                         $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_browse($rows, $meta, $type)
 {
@@ -430,9 +442,11 @@ function osc_market_render_browse($rows, $meta, $type)
  * The Updates tab: an "Update all" action and one row per installed package with a
  * pending, compatible update.
  *
- * @param array  $rows $aMarketUpdates
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<int,array<string,mixed>> $rows $aMarketUpdates
+ * @param array<string,mixed>            $meta $aMarketMeta
+ * @param string                         $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_updates($rows, $meta, $type)
 {
@@ -510,6 +524,8 @@ function osc_market_render_updates($rows, $meta, $type)
  * inline error rather than a blank dialog.
  *
  * @param string $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_detail_dialog($type)
 {

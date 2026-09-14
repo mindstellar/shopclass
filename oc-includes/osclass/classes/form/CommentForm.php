@@ -18,7 +18,11 @@
 class CommentForm extends Form
 {
     /**
-     * @param null $comment
+     * Echo the hidden comment id input, preferring the id kept in the failed-submit session.
+     *
+     * @param array<string,mixed>|null $comment
+     *
+     * @return void
      */
     public static function primary_input_hidden($comment = null)
     {
@@ -35,7 +39,11 @@ class CommentForm extends Form
     }
 
     /**
-     * @param null $comment
+     * Echo the comment title input, preferring the value kept in the failed-submit session.
+     *
+     * @param array<string,mixed>|null $comment
+     *
+     * @return void
      */
     public static function title_input_text($comment = null)
     {
@@ -50,7 +58,11 @@ class CommentForm extends Form
     }
 
     /**
-     * @param null $comment
+     * Echo the author name input, preferring the value kept in the failed-submit session.
+     *
+     * @param array<string,mixed>|null $comment
+     *
+     * @return void
      */
     public static function author_input_text($comment = null)
     {
@@ -65,7 +77,11 @@ class CommentForm extends Form
     }
 
     /**
-     * @param null $comment
+     * Echo the author email input, preferring the value kept in the failed-submit session.
+     *
+     * @param array<string,mixed>|null $comment
+     *
+     * @return void
      */
     public static function email_input_text($comment = null)
     {
@@ -80,7 +96,11 @@ class CommentForm extends Form
     }
 
     /**
-     * @param null $comment
+     * Echo the comment body textarea, preferring the value kept in the failed-submit session.
+     *
+     * @param array<string,mixed>|null $comment
+     *
+     * @return void
      */
     public static function body_input_textarea($comment = null)
     {
@@ -95,7 +115,12 @@ class CommentForm extends Form
     }
 
     /**
-     * @param bool $admin
+     * Echo (or enqueue) the client-side validation script for the comment form.
+     *
+     * @param bool $admin   Render for the admin comment editor rather than the public theme
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
      */
     public static function js_validation($admin = false, $enqueue = false)
     {

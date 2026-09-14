@@ -55,42 +55,42 @@ class QueryBuilder
     /**
      * Selected columns (raw identifiers). Empty means SELECT *.
      *
-     * @var array
+     * @var array<int,string>
      */
     private $columns = [];
 
     /**
      * WHERE conditions. Each is a descriptor array keyed by 'type'.
      *
-     * @var array
+     * @var array<int,array<string,mixed>>
      */
     private $wheres = [];
 
     /**
      * JOIN clauses.
      *
-     * @var array
+     * @var array<int,array{type:string,table:string,first:string,operator:string,second:string}>
      */
     private $joins = [];
 
     /**
      * GROUP BY columns (raw identifiers).
      *
-     * @var array
+     * @var array<int,string>
      */
     private $groups = [];
 
     /**
      * HAVING conditions.
      *
-     * @var array
+     * @var array<int,array{column:string,operator:string,value:mixed,boolean:string}>
      */
     private $havings = [];
 
     /**
      * ORDER BY clauses, each ['column' => string, 'direction' => 'ASC'|'DESC'].
      *
-     * @var array
+     * @var array<int,array{column:string,direction:string}>
      */
     private $orders = [];
 
@@ -174,8 +174,8 @@ class QueryBuilder
      * empty array yields a condition that matches nothing (`1 = 0`) rather than
      * emitting invalid SQL.
      *
-     * @param string $column
-     * @param array  $values
+     * @param string           $column
+     * @param array<int,mixed> $values An empty list compiles to a never-matching condition
      *
      * @return self A cloned builder
      * @throws DbException on an invalid identifier
@@ -205,8 +205,8 @@ class QueryBuilder
      * matching $params, and must never interpolate untrusted input. Nothing in
      * $expr is validated or quoted by the builder.
      *
-     * @param string $expr   Raw boolean SQL (may contain '?' placeholders)
-     * @param array  $params Values for the placeholders in $expr
+     * @param string           $expr   Raw boolean SQL (may contain '?' placeholders)
+     * @param array<int,mixed> $params Values for the placeholders in $expr
      *
      * @return self A cloned builder
      */
@@ -221,8 +221,8 @@ class QueryBuilder
     /**
      * OR variant of whereRaw(). Same trusted-SQL contract.
      *
-     * @param string $expr
-     * @param array  $params
+     * @param string           $expr
+     * @param array<int,mixed> $params
      *
      * @return self A cloned builder
      */
@@ -444,7 +444,7 @@ class QueryBuilder
     /**
      * Run the compiled SELECT and return every matching row.
      *
-     * @return array
+     * @return array<int,array<string,mixed>>
      * @throws DbException
      */
     public function get(): array
@@ -457,7 +457,7 @@ class QueryBuilder
     /**
      * Run the compiled SELECT with LIMIT 1 and return the first row, or null.
      *
-     * @return array|null
+     * @return array<string,mixed>|null
      * @throws DbException
      */
     public function first(): ?array
@@ -525,7 +525,7 @@ class QueryBuilder
      * INSERT a single row and return the new AUTO_INCREMENT id. Columns are
      * validated identifiers; values are bound.
      *
-     * @param array $data Column => value map
+     * @param array<string,mixed> $data Column => value map
      *
      * @return int
      * @throws DbException when $data is empty or a column is invalid
@@ -551,7 +551,7 @@ class QueryBuilder
      * validated identifiers; values are bound. REFUSES to run without a WHERE
      * clause to prevent an accidental full-table update.
      *
-     * @param array $data Column => value map
+     * @param array<string,mixed> $data Column => value map
      *
      * @return int
      * @throws DbException when $data is empty or there is no WHERE clause
@@ -612,7 +612,7 @@ class QueryBuilder
     /**
      * Return the bound parameters for the compiled SELECT, in order.
      *
-     * @return array
+     * @return array<int,mixed>
      */
     public function getBindings(): array
     {
@@ -713,7 +713,7 @@ class QueryBuilder
     /**
      * Compile the full SELECT statement and its bindings.
      *
-     * @return array [string $sql, array $bindings]
+     * @return array{0:string,1:array<int,mixed>}
      */
     private function compileSelect(): array
     {
@@ -771,7 +771,7 @@ class QueryBuilder
     /**
      * Compile the WHERE clause and collect its bindings in order.
      *
-     * @return array [string $sql, array $bindings]
+     * @return array{0:string,1:array<int,mixed>}
      */
     private function compileWheres(): array
     {
@@ -788,9 +788,9 @@ class QueryBuilder
      * leading WHERE keyword) and its bindings, in order. Recurses into nested
      * groups so a group's own AND/OR structure is preserved inside parentheses.
      *
-     * @param array $wheres
+     * @param array<int,array<string,mixed>> $wheres
      *
-     * @return array [string $sql, array $bindings]
+     * @return array{0:string,1:array<int,mixed>}
      */
     private function compileWhereConditions(array $wheres): array
     {
@@ -833,7 +833,7 @@ class QueryBuilder
     /**
      * Compile the HAVING clause and collect its bindings in order.
      *
-     * @return array [string $sql, array $bindings]
+     * @return array{0:string,1:array<int,mixed>}
      */
     private function compileHavings(): array
     {

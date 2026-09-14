@@ -36,6 +36,16 @@ define('DB_HOST', getenv('DB_HOST') ?: 'db_host'); // i.e localhost,
 /** Database Table prefix */
 define('DB_TABLE_PREFIX', getenv('DB_TABLE_PREFIX') ?: 'oc_');
 
+/**
+ * Keep the server's own strict SQL modes instead of relaxing them.
+ *
+ * With this on, a value the column cannot hold is rejected rather than silently
+ * cut short or clamped. New installs get it; an install upgraded from an older
+ * release does not, because a plugin that has been writing over-long values for
+ * years would begin to fail. Remove the line to go back to the relaxed modes.
+ */
+define('OSC_DB_STRICT_MODE', true);
+
 /** Website relative root path */
 define('REL_WEB_URL', 'rel_here');
 

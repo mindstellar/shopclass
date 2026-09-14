@@ -245,3 +245,179 @@
   color: var(--osc-danger);
   font-weight: 500;
 }
+
+// ---- Slide-over drawer ------------------------------------------------------
+// Editing beside a list without leaving it. An elevated overlay, so it takes the
+// Modal shadow; it slides in from the inline-end edge and the script traps focus.
+// Open with .is-open on the drawer and its backdrop. The .cat-drawer names are the
+// categories screen's original spelling and stay as aliases.
+.osc-drawer-backdrop,
+.cat-drawer-backdrop {
+  background-color: rgba(0, 0, 0, .32);
+  inset: 0;
+  opacity: 0;
+  position: fixed;
+  transition: opacity var(--osc-duration-base, 200ms) var(--osc-ease, ease-out);
+  visibility: hidden;
+  z-index: $zindex-modal-backdrop;
+}
+
+.osc-drawer,
+.cat-drawer {
+  background-color: var(--osc-bench);
+  border-inline-start: 1px solid var(--osc-rule);
+  box-shadow: var(--osc-shadow-modal);
+  color: var(--osc-ink);
+  display: flex;
+  flex-direction: column;
+  inline-size: min(30rem, 100%);
+  inset-block: 0;
+  inset-inline-end: 0;
+  position: fixed;
+  transform: translateX(100%);
+  transition: transform var(--osc-duration-base, 200ms) var(--osc-ease-out, cubic-bezier(.22, 1, .36, 1));
+  z-index: $zindex-modal;
+
+  &:dir(rtl) {
+    transform: translateX(-100%);
+  }
+}
+
+.osc-drawer-backdrop.is-open,
+.drawer-open .cat-drawer-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+.osc-drawer.is-open,
+.drawer-open .cat-drawer {
+  transform: translateX(0);
+}
+
+.osc-drawer-head,
+.cat-drawer-head {
+  align-items: flex-start;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+}
+
+.cat-drawer-eyebrow {
+  color: var(--osc-ink-muted);
+  display: block;
+  font-size: .8125rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+
+.osc-drawer-title,
+.cat-drawer-title {
+  color: var(--osc-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: .1rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.osc-drawer-subtitle {
+  color: var(--osc-ink-muted);
+  font-size: 1rem;
+  line-height: 1.45;
+  margin: .2rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.osc-drawer-close,
+.cat-drawer-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+  block-size: 2rem;
+  inline-size: 2rem;
+  justify-content: center;
+  margin-inline-end: -.4rem;
+  text-decoration-line: none;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+.osc-drawer-body,
+.cat-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem;
+}
+
+.osc-drawer-foot {
+  border-block-start: 1px solid var(--osc-rule);
+  flex: 0 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.osc-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.osc-drawer-loading,
+.cat-drawer-loading {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: flex;
+  gap: .6rem;
+  justify-content: center;
+  padding: 3rem 1rem;
+
+  > i {
+    animation: osc-drawer-spin 700ms linear infinite;
+    font-size: 1.25rem;
+  }
+}
+
+@keyframes osc-drawer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 34rem) {
+  .osc-drawer,
+  .cat-drawer {
+    inline-size: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osc-drawer,
+  .cat-drawer,
+  .osc-drawer-backdrop,
+  .cat-drawer-backdrop {
+    transition: none;
+  }
+
+  .osc-drawer-loading > i,
+  .cat-drawer-loading > i {
+    animation: none;
+  }
+}

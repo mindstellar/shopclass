@@ -16,6 +16,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\BanRuleForm;
+
 /**
  * Class CAdminUsers
  */
@@ -24,6 +26,9 @@ class CAdminUsers extends AdminSecBaseModel
     //specific for this class
     private $userManager;
 
+    /**
+     * Take the user manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -34,6 +39,13 @@ class CAdminUsers extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested users action: create, edit and their saves, the activate,
+     * enable and delete toggles, alerts, ban rules, user settings and login-as-user.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -570,42 +582,34 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->doView('users/ban.php');
                 break;
             case ('edit_ban_rule'):
-                $this->_exportVariableToView('rule', BanRule::newInstance()->findByPrimaryKey(Params::getParam('id')));
+                $ruleId = $this->banRuleRowId();
+                if ($ruleId === null) {
+                    break;
+                }
+                $this->_exportVariableToView(
+                    'ban_rule_form',
+                    BanRuleForm::formVars($ruleId, osc_settings_values(BanRuleForm::register(), $ruleId))
+                );
                 $this->doView('users/ban_frm.php');
                 break;
             case ('edit_ban_rule_post'):
                 osc_csrf_check();
-                if (Params::getParam('s_ip') == '' && Params::getParam('s_email') == '') {
-                    osc_add_flash_warning_message(_m('Both rules can not be empty'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+                $ruleId = $this->banRuleRowId();
+                if ($ruleId === null) {
+                    break;
                 }
-
-                BanRule::newInstance()->update(array(
-                    's_name'  => Params::getParam('s_name'),
-                    's_ip'    => Params::getParam('s_ip'),
-                    's_email' => strtolower(Params::getParam('s_email'))
-                ), array('pk_i_id' => Params::getParam('id')));
-                osc_add_flash_ok_message(_m('Rule updated correctly'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+                $this->saveBanRule($ruleId);
                 break;
             case ('create_ban_rule'):
-                $this->_exportVariableToView('rule', null);
+                $this->_exportVariableToView(
+                    'ban_rule_form',
+                    BanRuleForm::formVars(null, osc_settings_values(BanRuleForm::register()))
+                );
                 $this->doView('users/ban_frm.php');
                 break;
             case ('create_ban_rule_post'):
                 osc_csrf_check();
-                if (Params::getParam('s_ip') == '' && Params::getParam('s_email') == '') {
-                    osc_add_flash_warning_message(_m('Both rules can not be empty'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
-                }
-
-                BanRule::newInstance()->insert(array(
-                    's_name'  => Params::getParam('s_name'),
-                    's_ip'    => Params::getParam('s_ip'),
-                    's_email' => strtolower(Params::getParam('s_email'))
-                ));
-                osc_add_flash_ok_message(_m('Rule saved correctly'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+                $this->saveBanRule(null);
                 break;
             case ('delete_ban_rule'):         //delete ban rules
                 osc_csrf_check();
@@ -773,6 +777,65 @@ class CAdminUsers extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * The ban rule this request is about, or null once the admin has been sent away
+     * because it named none. The key is read through Params, so it arrives either on the
+     * query string or in the form's own hidden route field, and it is held to a decimal
+     * with a row behind it before anything is written. No ownership check is needed here
+     * only because every row of t_ban_rule is in scope for a screen only an administrator
+     * can reach; a table whose rows belong to individual users needs one, or whoever can
+     * reach the screen can name a row that is not theirs.
+     *
+     * @return int|null
+     */
+    private function banRuleRowId()
+    {
+        $requested = Params::getParam('id');
+        $id        = is_string($requested) && preg_match('/^[1-9][0-9]*$/', $requested) ? (int)$requested : 0;
+
+        if ($id > 0 && BanRule::newInstance()->findByPrimaryKey($id)) {
+            return $id;
+        }
+
+        osc_add_flash_error_message(_m('That ban rule no longer exists'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+
+        return null;
+    }
+
+    /**
+     * Store a ban rule through its declaration -- inserting when $id is null and updating
+     * the row it names otherwise. A rejected submission is drawn again with the values
+     * that were rejected still in it, rather than thrown away with a redirect.
+     *
+     * @param int|null $id
+     *
+     * @return void
+     */
+    private function saveBanRule($id)
+    {
+        $result = osc_settings_save(BanRuleForm::register(), $id);
+
+        if ($result['errors'] !== array()) {
+            foreach ($result['errors'] as $error) {
+                osc_add_flash_error_message($error, 'admin');
+            }
+            $this->_exportVariableToView('ban_rule_form', BanRuleForm::formVars($id, $result['values']));
+            $this->doView('users/ban_frm.php');
+
+            return;
+        }
+
+        // An update that changed nothing affects no rows and is still a save: the store
+        // throws when a write fails and refuses a key with no row behind it, so there is
+        // nothing left for a zero to mean.
+        osc_add_flash_ok_message(
+            $id === null ? _m('Rule saved correctly') : _m('Rule updated correctly'),
+            'admin'
+        );
+        $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+    }
 
     /**
      * Handle an avatar file upload / removal for the edited user.

@@ -27,6 +27,11 @@ class Cleanup extends DAO
 
     private static $instance;
 
+    /**
+     * The shared Cleanup instance, created on first call.
+     *
+     * @return self
+     */
     public static function newInstance()
     {
         if (!self::$instance instanceof self) {
@@ -38,6 +43,10 @@ class Cleanup extends DAO
 
     /**
      * Whether a rule targets users (vs listings).
+     *
+     * @param string $rule
+     *
+     * @return bool
      */
     public static function isUserRule($rule)
     {
@@ -46,6 +55,9 @@ class Cleanup extends DAO
 
     /**
      * How many rows a rule currently matches — for the preview counts on the screen.
+     *
+     * @param string $rule
+     * @param int    $days
      *
      * @return int
      */
@@ -64,7 +76,11 @@ class Cleanup extends DAO
      * The next batch of rows a rule matches: [{pk_i_id, s_secret}] for listings,
      * [{pk_i_id}] for users.
      *
-     * @return array
+     * @param string $rule
+     * @param int    $days
+     * @param int    $limit Batch size; forced to at least 1
+     *
+     * @return array<int,array<string,string>>
      */
     public function candidates($rule, $days, $limit)
     {
@@ -138,6 +154,10 @@ class Cleanup extends DAO
 
     /**
      * Delete up to $limit rows matched by a rule. Returns the number actually deleted.
+     *
+     * @param string $rule
+     * @param int    $days
+     * @param int    $limit
      *
      * @return int
      */

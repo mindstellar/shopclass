@@ -57,6 +57,10 @@ class Item extends FormInputs
      */
     private $userLocales;
 
+    /**
+     * @param \mindstellar\utility\Escape|null   $escape   Defaults to a new Escape instance
+     * @param \mindstellar\utility\Sanitize|null $sanitize Defaults to a new Sanitize instance
+     */
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         parent::__construct($escape, $sanitize);
@@ -68,6 +72,8 @@ class Item extends FormInputs
     }
 
     /**
+     * The shared admin item form instance.
+     *
      * @return \mindstellar\form\admin\Item
      */
     public static function instance(): Item
@@ -82,8 +88,10 @@ class Item extends FormInputs
     /**
      * Generate MultiLanguage Title Description Fields for Item
      *
-     * @param null $locales
-     * @param null $item
+     * @param array<string,mixed>|null $item     Defaults to the current item
+     * @param bool                     $with_tab Also print the locale tab strip
+     *
+     * @return void
      */
     public function printMultiLangTitleDesc($item = null, $with_tab = true)
     {
@@ -93,15 +101,11 @@ class Item extends FormInputs
         if ($with_tab) {
             $this->printMultiLangTab();
         }
-        echo '<div class="tab-content mb-3" id="multiLangTabsContent" >';
+        echo '<div class="mb-3" id="multiLangTabsContent">';
 
         foreach ($this->userLocales as $locale) {
-            // Add class active if $defaultLocale is equal to $locale['pk_c_code']
-            $active = '';
-            if ($locale['pk_c_code'] === $this->defaultLocaleCode) {
-                $active = 'show active';
-            }
-            echo '<div class="tab-pane fade ' . $active . '" id="' . $locale['pk_c_code'] . '" role="tabpanel">';
+            $hidden = ($locale['pk_c_code'] === $this->defaultLocaleCode) ? '' : ' hidden';
+            echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             $this->printItemTitleInput($locale, $item);
             $this->printItemDescriptionInput($locale, $item);
             echo '</div>';
@@ -111,20 +115,18 @@ class Item extends FormInputs
 
     /**
      * Print MultiLang Tab
+     *
+     * @return void
      */
     public function printMultiLangTab()
     {
         if (count($this->userLocales) > 1) {
-            echo '<div id="language-tab" class="mt-3">';
-            echo '<ul class="nav nav-tabs" id="multiLangTabs" role="tablist">';
+            echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
+            echo '<ul>';
             foreach ($this->userLocales as $locale) {
-                $active = '';
-                if ($locale['pk_c_code'] === $this->defaultLocaleCode) {
-                    $active = 'show active';
-                }
-                echo '<li class="nav-item"><a class="nav-link btn-sm ' . $active . '" href="#' . $locale['pk_c_code']
-                     . '" data-bs-toggle="tab">'
-                     . $locale['s_name'] . '</a></li>';
+                $active = ($locale['pk_c_code'] === $this->defaultLocaleCode) ? ' class="ui-tabs-active ui-state-active"' : '';
+                echo '<li' . $active . '><a href="#' . osc_esc_html($locale['pk_c_code']) . '">'
+                     . osc_esc_html($locale['s_name']) . '</a></li>';
             }
             echo '</ul>';
             echo '</div>';
@@ -134,8 +136,10 @@ class Item extends FormInputs
     /**
      * Print Item Title Input
      *
-     * @param                                   $locale
-     * @param array                             $item
+     * @param array<string,mixed>      $locale
+     * @param array<string,mixed>|null $item
+     *
+     * @return void
      */
     private function printItemTitleInput($locale, ?array $item = null)
     {
@@ -163,8 +167,10 @@ class Item extends FormInputs
     /**
      * Print Item Description Text Area
      *
-     * @param                                   $locale
-     * @param array                             $item
+     * @param array<string,mixed>      $locale
+     * @param array<string,mixed>|null $item
+     *
+     * @return void
      */
     private function printItemDescriptionInput($locale, ?array $item = null)
     {
@@ -192,8 +198,8 @@ class Item extends FormInputs
     /**
      * print price field and Currency Select Input
      *
-     * @param array|null $currencies
-     * @param array|null $item
+     * @return void
+     * @throws \Exception when an input name is empty
      */
     public function itemPrice()
     {
@@ -238,8 +244,9 @@ class Item extends FormInputs
     /**
      * Print Price Input without currency select
      *
-     * @param array $item
+     * @param array<string,mixed>|null $item
      *
+     * @return void
      */
     private function printPriceInput(?array $item = null)
     {

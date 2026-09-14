@@ -21,7 +21,6 @@
  */
 
 use mindstellar\Csrf;
-use OpensslCryptor\Cryptor;
 
 /**
  * bcrypt work factor used by osc_hash_password().
@@ -43,7 +42,7 @@ if (!defined('BCRYPT_COST')) {
 /**
  * Creates a random password.
  *
- * @param int password $length. Default to 8.
+ * @param int $length
  *
  * @return string
  */
@@ -88,6 +87,7 @@ function osc_csrf_token_form()
 /**
  * Check if CSRF token is valid, die in other case
  *
+ * @return void
  * @since 3.1
  */
 function osc_csrf_check()
@@ -98,8 +98,8 @@ function osc_csrf_check()
 /**
  * Check if an email and/or IP are banned
  *
- * @param string $email
- * @param string $ip
+ * @param string      $email
+ * @param string|null $ip    Defaults to the request's REMOTE_ADDR
  *
  * @return int 0: not banned, 1: email is banned, 2: IP is banned
  * @since 3.1
@@ -124,10 +124,10 @@ function osc_is_banned($email = '', $ip = null)
 /**
  * Check if IP is banned
  *
- * @param string $ip
- * @param string $rules (optional, to savetime and resources)
+ * @param string                              $ip
+ * @param array<int,array<string,mixed>>|null $rules Pass the rule list to save a query
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_ip_banned($ip, $rules = null)
@@ -167,10 +167,10 @@ function osc_is_ip_banned($ip, $rules = null)
 /**
  * Check if email is banned
  *
- * @param string $email
- * @param string $rules (optional, to savetime and resources)
+ * @param string                              $email
+ * @param array<int,array<string,mixed>>|null $rules Pass the rule list to save a query
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_email_banned($email, $rules = null)
@@ -201,7 +201,7 @@ function osc_is_email_banned($email, $rules = null)
  *
  * @param string $username
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_username_blacklisted($username)
@@ -223,11 +223,10 @@ function osc_is_username_blacklisted($username)
 /**
  * Verify an user's password
  *
- * @param $password string
- * @param $hash
+ * @param string $password
+ * @param string $hash
  *
  * @return bool
- *
  * @hash  bcrypt/sha1
  * @since 3.3
  */
@@ -287,7 +286,7 @@ function osc_login_throttle_message($seconds)
  * has been re-hashed. The aim is to remove the step change that gives an answer
  * in a single request, not to reach constant time.
  *
- * @param $password string
+ * @param string $password
  *
  * @return bool always false, so callers can use it in place of a real check
  */
@@ -313,10 +312,9 @@ function osc_dummy_password_verify($password)
 /**
  * Hash a password in available method (bcrypt/sha1)
  *
- * @param $password plain-text
+ * @param string $password plain-text
  *
  * @return string hashed password
- *
  * @since 3.3
  */
 function osc_hash_password($password)
@@ -328,69 +326,139 @@ function osc_hash_password($password)
 }
 
 /**
- * @param $alert
+ * Encrypt an alert payload into an AES-256-GCM token: nonce, tag, then ciphertext.
  *
- * @return string
+ * @param string $alert
+ *
+ * @return string Empty string when encryption fails
  */
 function osc_encrypt_alert($alert)
 {
-    $string = osc_genRandomPassword(32) . $alert;
     osc_set_alert_private_key(); // ensure the persistent keys exist
     osc_set_alert_public_key();
-    $key = hash('sha256', osc_get_alert_private_key(), true);
 
-    if (function_exists('openssl_digest') && function_exists('openssl_encrypt') && function_exists('openssl_decrypt')
-        && in_array('aes-256-ctr', openssl_get_cipher_methods(true))
-        && in_array('sha256', openssl_get_md_methods(true))
-    ) {
-        return Cryptor::Encrypt($string, $key, 0);
+    // AES-GCM: 12-byte nonce (the size the mode is defined for) and a full 16-byte tag.
+    $iv  = random_bytes(12);
+    $tag = '';
+
+    $ciphertext = openssl_encrypt(
+        (string)$alert,
+        'aes-256-gcm',
+        osc_alert_cipher_key(),
+        OPENSSL_RAW_DATA,
+        $iv,
+        $tag,
+        '',
+        16
+    );
+
+    if ($ciphertext === false) {
+        return '';
     }
 
-    // COMPATIBILITY
-    while (strlen($string) % 32 != 0) {
-        $string .= "\0";
-    }
-
-    $cipher = new phpseclib\Crypt\Rijndael();
-    $cipher->disablePadding();
-    $cipher->setBlockLength(256);
-    $cipher->setKey($key);
-    $cipher->setIV($key);
-
-    return $cipher->encrypt($string);
+    return $iv . $tag . $ciphertext;
 }
 
 /**
- * @param $string
+ * Decrypt an alert token, falling back to the legacy unauthenticated format.
  *
- * @return string
+ * @param string $string
+ *
+ * @return string Empty string when the token cannot be read
  */
 function osc_decrypt_alert($string)
 {
-    $key = hash('sha256', osc_get_alert_private_key(), true);
+    $string = (string)$string;
 
-    if (function_exists('openssl_digest') && function_exists('openssl_encrypt') && function_exists('openssl_decrypt')
-        && in_array('aes-256-ctr', openssl_get_cipher_methods(true))
-        && in_array('sha256', openssl_get_md_methods(true))
-    ) {
-        try {
-            return trim(substr(Cryptor::Decrypt($string, $key, 0), 32));
-        } catch (Exception $e) {
-            trigger_error($e->getMessage().' in '.$e->getFile().' at line '.$e->getLine(), E_USER_WARNING);
+    $ivLen  = 12;
+    $tagLen = 16;
+
+    if (strlen($string) > $ivLen + $tagLen) {
+        $plain = openssl_decrypt(
+            substr($string, $ivLen + $tagLen),
+            'aes-256-gcm',
+            osc_alert_cipher_key(),
+            OPENSSL_RAW_DATA,
+            substr($string, 0, $ivLen),
+            substr($string, $ivLen, $tagLen)
+        );
+
+        // A failed tag is the signal that this is not a token of this format --
+        // either an older one, or a forgery. Both fall through to the legacy read,
+        // which is itself checked by the caller.
+        if ($plain !== false) {
+            return $plain;
         }
     }
 
-    // COMPATIBILITY
-
-    $cipher = new phpseclib\Crypt\Rijndael();
-    $cipher->disablePadding();
-    $cipher->setBlockLength(256);
-    $cipher->setKey($key);
-    $cipher->setIV($key);
-
-    return trim(substr($cipher->decrypt($string), 32));
+    return osc_decrypt_alert_legacy($string);
 }
 
+/**
+ * Read a token minted before alert tokens were authenticated.
+ *
+ * The old format was AES-256-CTR with no MAC: `IV(16) . ciphertext`, the plaintext
+ * carrying 32 random characters that were stripped after decryption. CTR is
+ * malleable, so tampering with one of these produces a controlled change to the
+ * plaintext rather than the garbage the surrounding code assumed -- the JSON parse
+ * on the result is what actually rejects a forgery here, and it is a weaker check
+ * than a tag. Kept only so a token already in a rendered page still resolves after
+ * an upgrade; nothing mints this format any more.
+ *
+ * @param string $string
+ *
+ * @return string
+ */
+function osc_decrypt_alert_legacy($string)
+{
+    if (strlen($string) <= 16) {
+        return '';
+    }
+
+    $plain = openssl_decrypt(
+        substr($string, 16),
+        'aes-256-ctr',
+        openssl_digest(hash('sha256', osc_get_alert_private_key(), true), 'sha256', true),
+        OPENSSL_RAW_DATA,
+        substr($string, 0, 16)
+    );
+
+    if ($plain === false) {
+        return '';
+    }
+
+    $plain = trim(substr($plain, 32));
+
+    // CTR decryption cannot fail: fed a forgery, or anything that simply is not a
+    // token of this format, it returns bytes rather than an error. A real alert
+    // payload is UTF-8 JSON, so anything that is not even UTF-8 was never a token
+    // and is reported as such instead of being handed back as binary noise.
+    if ($plain === '' || !preg_match('//u', $plain)) {
+        return '';
+    }
+
+    return $plain;
+}
+
+/**
+ * Encryption key for alert tokens, derived from the install's persistent alert key.
+ *
+ * Derived rather than used directly so the value handed to the cipher is bound to
+ * this one purpose: the same stored key backing a second use later cannot then share
+ * key material with this one.
+ *
+ * @return string 32 raw bytes
+ */
+function osc_alert_cipher_key()
+{
+    return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_alert_private_key(), true);
+}
+
+/**
+ * Mint the install's persistent alert public key if it has none yet.
+ *
+ * @return void
+ */
 function osc_set_alert_public_key()
 {
     if (!osc_get_preference('alert_public_key')) {
@@ -415,6 +483,11 @@ function osc_get_alert_public_key()
     return osc_get_preference('alert_public_key');
 }
 
+/**
+ * Mint the install's persistent alert private key if it has none yet.
+ *
+ * @return void
+ */
 function osc_set_alert_private_key()
 {
     if (!osc_get_preference('alert_private_key')) {
@@ -439,9 +512,11 @@ function osc_get_alert_private_key()
 }
 
 /**
- * @param $length
+ * A random base64-ish string of $length characters, from the best entropy source available.
  *
- * @return bool|string
+ * @param int $length
+ *
+ * @return string
  */
 function osc_random_string($length)
 {

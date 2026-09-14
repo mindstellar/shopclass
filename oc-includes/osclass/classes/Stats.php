@@ -30,6 +30,8 @@ class Stats
     private static $instance;
 
     /**
+     * The shared Stats instance, created on first call.
+     *
      * @return \Stats
      */
     public static function newInstance()
@@ -50,10 +52,10 @@ class Stats
      * or the bare column -- so each caller supplies its own rather than sharing a
      * single definition.
      *
-     * @param string $date
-     * @param array  $map
+     * @param string                                 $date Bucket granularity: 'day' | 'week' | 'month'
+     * @param array<string,array{0:string,1:string}> $map
      *
-     * @return array
+     * @return array{0:string,1:string} the SELECT expression and the GROUP BY expression
      */
     private function bucket($date, array $map)
     {
@@ -92,10 +94,12 @@ class Stats
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Registrations per bucket since $from_date, newest bucket first.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_users_count($from_date, $date = 'day')
     {
@@ -108,14 +112,16 @@ class Stats
         $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
             . ' FROM ' . DB_TABLE_PREFIX . 't_user'
             . ' WHERE dt_reg_date >= ?'
-            . ' GROUP BY ' . $groupBy
-            . ' ORDER BY dt_reg_date DESC';
+            . ' GROUP BY ' . $groupBy . ', ' . $dDate
+            . ' ORDER BY MAX(dt_reg_date) DESC';
 
         return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array
+     * Registered users per country.
+     *
+     * @return array<int,array<string,string>>
      */
     public function users_by_country()
     {
@@ -125,7 +131,9 @@ class Stats
     }
 
     /**
-     * @return array
+     * Registered users per region.
+     *
+     * @return array<int,array<string,string>>
      */
     public function users_by_region()
     {
@@ -135,7 +143,9 @@ class Stats
     }
 
     /**
-     * @return array
+     * The average number of listings per contact email, as a single row.
+     *
+     * @return array<int,array<string,string>>
      */
     public function items_by_user()
     {
@@ -146,7 +156,9 @@ class Stats
     }
 
     /**
-     * @return array
+     * The five most recently registered users.
+     *
+     * @return array<int,array<string,string>>
      */
     public function latest_users()
     {
@@ -156,10 +168,12 @@ class Stats
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Published listings per bucket since $from_date, newest bucket first.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_items_count($from_date, $date = 'day')
     {
@@ -172,33 +186,42 @@ class Stats
         $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
             . ' FROM ' . DB_TABLE_PREFIX . 't_item'
             . ' WHERE dt_pub_date >= ?'
-            . ' GROUP BY ' . $groupBy
-            . ' ORDER BY dt_pub_date DESC';
+            . ' GROUP BY ' . $groupBy . ', ' . $dDate
+            . ' ORDER BY MAX(dt_pub_date) DESC';
 
         return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array
+     * The five most recently published listings, with location and description.
+     *
+     * @return array<int,array<string,string>>
      */
     public function latest_items()
     {
+        // One description row per listing is chosen in the WHERE clause rather than
+        // collapsed afterwards: t_item_description is keyed on (item, locale), so
+        // GROUP BY i.pk_i_id left its columns undetermined and the whole query was
+        // rejected under ONLY_FULL_GROUP_BY.
         $sql = 'SELECT l.*, i.*, d.*'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_item i, ' . DB_TABLE_PREFIX . 't_item_location l, '
-            . DB_TABLE_PREFIX . 't_item_description d'
-            . ' WHERE l.fk_i_item_id = i.pk_i_id AND d.fk_i_item_id = i.pk_i_id'
-            . ' GROUP BY i.pk_i_id'
-            . ' ORDER BY dt_pub_date DESC'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_item i'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_item_description d ON d.fk_i_item_id = i.pk_i_id'
+            . ' WHERE d.fk_c_locale_code = (SELECT MIN(d2.fk_c_locale_code) FROM '
+            . DB_TABLE_PREFIX . 't_item_description d2 WHERE d2.fk_i_item_id = i.pk_i_id)'
+            . ' ORDER BY i.dt_pub_date DESC'
             . ' LIMIT 5';
 
         return $this->rows($sql);
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Comments per bucket since $from_date, newest bucket first.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_comments_count($from_date, $date = 'day')
     {
@@ -211,14 +234,16 @@ class Stats
         $sql = 'SELECT ' . $dDate . ' as d_date, COUNT(pk_i_id) as num'
             . ' FROM ' . DB_TABLE_PREFIX . 't_item_comment'
             . ' WHERE dt_pub_date >= ?'
-            . ' GROUP BY ' . $groupBy
-            . ' ORDER BY dt_pub_date DESC';
+            . ' GROUP BY ' . $groupBy . ', ' . $dDate
+            . ' ORDER BY MAX(dt_pub_date) DESC';
 
         return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @return array|false
+     * The five most recent comments, with their listing.
+     *
+     * @return array<int,array<string,string>>|false false when the query fails
      */
     public function latest_comments()
     {
@@ -232,10 +257,12 @@ class Stats
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Site-wide view and report totals per bucket since $from_date.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_reports_count($from_date, $date = 'day')
     {
@@ -257,16 +284,18 @@ class Stats
         $sql = 'SELECT ' . $dDate . ' as d_date, ' . $sums
             . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats_daily'
             . ' WHERE dt_date >= ?'
-            . ' GROUP BY ' . $groupBy;
+            . ' GROUP BY ' . $groupBy . ', ' . $dDate;
 
         return $this->rows($sql, array($from_date));
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Alerts created per bucket since $from_date.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_alerts_count($from_date, $date = 'day')
     {
@@ -274,10 +303,12 @@ class Stats
     }
 
     /**
-     * @param        $from_date
-     * @param string $date
+     * Distinct alert subscribers per bucket since $from_date.
      *
-     * @return array
+     * @param string $from_date Inclusive lower bound, as a SQL datetime
+     * @param string $date      Bucket granularity: 'day' | 'week' | 'month'
+     *
+     * @return array<int,array<string,string>>
      */
     public function new_subscribers_count($from_date, $date = 'day')
     {
@@ -303,7 +334,7 @@ class Stats
         return 'SELECT ' . $dDate . ' as d_date, ' . $aggregate . ' as num'
             . ' FROM ' . DB_TABLE_PREFIX . 't_alerts'
             . ' WHERE dt_date >= ? AND dt_unsub_date IS NULL'
-            . ' GROUP BY ' . $groupBy
-            . ' ORDER BY dt_date ASC';
+            . ' GROUP BY ' . $groupBy . ', ' . $dDate
+            . ' ORDER BY MAX(dt_date) ASC';
     }
 }

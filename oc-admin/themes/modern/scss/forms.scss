@@ -30,10 +30,90 @@
 }
 
 .form-actions {
+  align-items: center;
   background: var(--osc-bench-warm);
   border-radius: 4px;
+  // Flex + gap so multiple buttons (Save + Cancel, …) are spaced; the renderer emits them
+  // with no whitespace between, so a block container left them touching.
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
   padding: 12px 16px;
   width: 100%;
+}
+
+// The action row of a declared settings page, which counts what has changed since load.
+// Opt-in via the attribute: an existing screen's action row is untouched.
+//
+// Sticky rather than fixed, so it stops at the form's own end instead of floating over a
+// page that has nothing left to save.
+.form-actions[data-osc-dirty-bar] {
+  bottom: 0;
+  position: sticky;
+  // Above the rows it slides over, below the sidebar and any dialog.
+  z-index: 3;
+
+  // The count sits before the buttons and pushes them to the row's end -- inline-end in
+  // both directions, so this does not need an RTL stylesheet.
+  .form-actions-status {
+    color: var(--osc-ink-muted);
+    font-size: .875rem;
+    margin: 0;
+    margin-inline-end: auto;
+  }
+
+  // Quiet until touched: on an untouched form the row is part of the page, not a prompt.
+  &.is-dirty {
+    box-shadow: 0 -1px 0 var(--osc-rule), 0 -6px 16px -12px rgb(0 0 0 / .4);
+
+    .form-actions-status {
+      color: var(--osc-ink);
+      font-weight: 600;
+    }
+  }
+}
+
+// A sticky row that slides under a fixed element is worse than one that does not move.
+@media (prefers-reduced-motion: reduce) {
+  .form-actions[data-osc-dirty-bar] {
+    position: static;
+  }
+}
+
+// A titled block of actions (osc_admin_action_section): the "do a thing" panels — connection
+// test, queue, migration, cleanup — that are not label|control forms. A section heading, an
+// optional intro, then each action as a button with its own help line, on a steady rhythm.
+.settings-actions {
+  margin-block-start: 1.5rem;
+  max-width: 68ch;
+
+  // Its heading is a section head, not a page head: separate it from the block above.
+  .render-title {
+    margin-block-start: 0;
+  }
+
+  & + .settings-actions {
+    margin-block-start: 2rem;
+  }
+}
+
+.settings-action {
+  margin-block-end: 1.25rem;
+
+  &:last-child {
+    margin-block-end: 0;
+  }
+
+  // Each action carries its own mini <form>; keep the button on the flow line.
+  form {
+    display: inline;
+  }
+}
+
+.settings-action-help {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-sm;
+  margin-block: .4rem 0;
 }
 
 .form-horizontal {
@@ -68,6 +148,18 @@
 
   .form-actions {
     padding-inline-start: 170px;
+  }
+
+  // A row that stacks its label above a full-width control instead of the two-column
+  // layout above. Reset what the flex .form-label picked up for that column (right
+  // alignment, top offset) since this label now just sits on its own line.
+  .form-row-stacked {
+    display: block;
+
+    .form-label {
+      padding-block-start: 0;
+      text-align: start;
+    }
   }
 }
 

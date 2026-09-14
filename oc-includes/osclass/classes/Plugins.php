@@ -23,14 +23,19 @@ class Plugins
     private static $installed;
     private static $enabled;
 
+    /**
+     * Nothing to set up; every member of this class is static.
+     */
     public function __construct()
     {
     }
 
     /**
-     * @param       $hook
-     * @param       $content
-     * @param mixed ...$args
+     * Run every callback registered on a filter hook, threading $content through them.
+     *
+     * @param string $hook
+     * @param mixed  $content Value to filter; returned unchanged when nothing is registered
+     * @param mixed  ...$args Extra arguments passed to each callback
      *
      * @return mixed
      */
@@ -55,7 +60,9 @@ class Plugins
     }
 
     /**
-     * @param $plugin
+     * Whether a plugin (as 'dir/index.php') is in the installed list.
+     *
+     * @param string $plugin
      *
      * @return bool
      */
@@ -72,14 +79,16 @@ class Plugins
     }
 
     /**
-     * @return array
+     * The installed plugins, as 'dir/index.php' paths.
+     *
+     * @return string[]
      */
     public static function listInstalled()
     {
         if (isset(self::$installed)) {
             return self::$installed;
         }
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
         if (is_array($plugins_list)) {
             self::$installed = $plugins_list;
 
@@ -90,7 +99,9 @@ class Plugins
     }
 
     /**
-     * @param $plugin
+     * Whether a plugin (as 'dir/index.php') is in the active list.
+     *
+     * @param string $plugin
      *
      * @return bool
      */
@@ -107,14 +118,16 @@ class Plugins
     }
 
     /**
-     * @return array
+     * The active plugins, as 'dir/index.php' paths.
+     *
+     * @return string[]
      */
     public static function listEnabled()
     {
         if (isset(self::$enabled)) {
             return self::$enabled;
         }
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
         if (is_array($plugins_list)) {
             self::$enabled = $plugins_list;
 
@@ -125,8 +138,10 @@ class Plugins
     }
 
     /**
-     * @param $a
-     * @param $b
+     * Case-insensitive natural comparison of two plugin info arrays by name.
+     *
+     * @param array<string,string> $a
+     * @param array<string,string> $b
      *
      * @return int
      */
@@ -136,9 +151,11 @@ class Plugins
     }
 
     /**
-     * @param $uri
+     * The plugin declaring this update URI, as 'dir/index.php'.
      *
-     * @return bool|mixed
+     * @param string $uri
+     *
+     * @return string|false false when no plugin declares it
      */
     public static function findByUpdateURI($uri)
     {
@@ -154,9 +171,11 @@ class Plugins
     }
 
     /**
-     * @param bool $sort
+     * Every plugin found on disk, as 'dir/index.php' paths.
      *
-     * @return array
+     * @param bool $sort Order them enabled, then installed, then the rest — each by name
+     *
+     * @return string[]
      */
     public static function listAll($sort = true)
     {
@@ -211,9 +230,11 @@ class Plugins
     }
 
     /**
-     * @param $plugin
+     * The header fields declared in a plugin's index.php, parsed once and cached.
      *
-     * @return array
+     * @param string $plugin 'dir/index.php' path
+     *
+     * @return array<string,string>
      */
     public static function getInfo($plugin)
     {
@@ -301,9 +322,11 @@ class Plugins
     }
 
     /**
-     * @param $path
+     * Absolute path to a file inside the plugins directory, if it exists.
      *
-     * @return bool|string
+     * @param string $path Path relative to the plugins directory
+     *
+     * @return string|false
      */
     public static function resource($path)
     {
@@ -313,8 +336,12 @@ class Plugins
     }
 
     /**
-     * @param $path
-     * @param $function
+     * Register the callback that runs when this plugin is installed.
+     *
+     * @param string   $path     The plugin's own __FILE__
+     * @param callable $function
+     *
+     * @return void
      */
     public static function register($path, $function)
     {
@@ -327,9 +354,13 @@ class Plugins
     }
 
     /**
-     * @param          $hook
+     * Register a callback on a hook, unless that exact callback is already on it.
+     *
+     * @param string   $hook
      * @param callable $function
-     * @param int      $priority
+     * @param int      $priority 0-10; lower runs first
+     *
+     * @return void
      */
     public static function addHook($hook, $function, $priority = 5)
     {
@@ -355,15 +386,18 @@ class Plugins
     }
 
     /**
-     * @param $path
+     * Install and activate a plugin.
      *
-     * @return array|bool
+     * @param string $path 'dir/index.php' path
+     *
+     * @return true|array<string,string> true on success, else an array carrying error_code
      */
     public static function install($path)
     {
         osc_run_hook('before_plugin_install');
+        self::resetOpcache();
 
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return array('error_code' => 'error_installed');
@@ -399,8 +433,12 @@ class Plugins
     }
 
     /**
-     * @param callable-string  $hook
-     * @param mixed ...$args
+     * Run every callback registered on an action hook, in priority order.
+     *
+     * @param string $hook
+     * @param mixed  ...$args Arguments passed to each callback
+     *
+     * @return void
      */
     public static function runHook($hook, ...$args)
     {
@@ -421,15 +459,18 @@ class Plugins
     }
 
     /**
-     * @param $path
+     * Add a plugin to the active list and fire its enable hook.
      *
-     * @return bool
+     * @param string $path 'dir/index.php' path
+     *
+     * @return bool false when it was already active
      */
     public static function activate($path)
     {
         osc_run_hook('before_plugin_activate');
+        self::resetOpcache();
 
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return false;
@@ -447,17 +488,32 @@ class Plugins
         return true;
     }
 
+    /**
+     * Re-read the preferences and load the active plugins again.
+     *
+     * @return void
+     */
     public static function reload()
     {
         osc_reset_preferences();
         self::init();
     }
 
+    /**
+     * Load the active plugins.
+     *
+     * @return void
+     */
     public static function init()
     {
         self::loadActive();
     }
 
+    /**
+     * Include every active plugin's entry file, which is what registers its hooks.
+     *
+     * @return void
+     */
     public static function loadActive()
     {
 
@@ -475,9 +531,27 @@ class Plugins
     }
 
     /**
+     * Drop the compiled-bytecode (opcache) cache so a plugin's code change takes
+     * effect immediately. With opcache.validate_timestamps=Off (the usual production
+     * setting) a just-installed, updated, activated or deactivated plugin would keep
+     * running the OLD bytecode until php-fpm restarts — which looks like the change
+     * "not taking", or worse, runs a stale class against new state and fatals. Called
+     * from a web request (the normal admin flow) this clears the FPM pool's cache so
+     * the next request recompiles from disk. Public so theme activation can reuse it.
+     *
+     * @return void
+     */
+    public static function resetOpcache()
+    {
+        if (function_exists('opcache_reset') && ini_get('opcache.enable')) {
+            @opcache_reset();
+        }
+    }
+
+    /**
      * Check if hook had run previously
      *
-     * @param $hook
+     * @param string $hook
      *
      * @return bool
      * @since 4.0.0
@@ -490,7 +564,7 @@ class Plugins
     /**
      * Check if hook is registered
      *
-     * @param $hook
+     * @param string $hook
      *
      * @return bool
      * @since 4.0.0
@@ -513,15 +587,18 @@ class Plugins
     }
 
     /**
-     * @param $path
+     * Deactivate a plugin, run its uninstall hook and drop it from the installed list.
      *
-     * @return bool
+     * @param string $path 'dir/index.php' path
+     *
+     * @return bool false when the installed list could not be read
      */
     public static function uninstall($path)
     {
         osc_run_hook('before_plugin_uninstall');
+        self::resetOpcache();
 
-        $plugins_list = unserialize(osc_installed_plugins());
+        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
 
         $path = str_replace(PLUGINS_PATH, '', $path);
         if (!is_array($plugins_list)) {
@@ -554,15 +631,18 @@ class Plugins
     }
 
     /**
-     * @param $path
+     * Remove a plugin from the active list and fire its disable hook.
      *
-     * @return bool
+     * @param string $path 'dir/index.php' path
+     *
+     * @return bool false when the active list could not be read
      */
     public static function deactivate($path)
     {
         osc_run_hook('before_plugin_deactivate');
+        self::resetOpcache();
 
-        $plugins_list = unserialize(osc_active_plugins());
+        $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
 
         $path = str_replace(osc_plugins_path(), '', $path);
         // check if there is some plugin enabled
@@ -590,7 +670,11 @@ class Plugins
     }
 
     /**
-     * @param $plugin
+     * Drop every category association held by a plugin.
+     *
+     * @param string $plugin The plugin's short name
+     *
+     * @return void
      */
     public static function cleanCategoryFromPlugin($plugin)
     {
@@ -600,8 +684,10 @@ class Plugins
     }
 
     /**
-     * @param $name
-     * @param $id
+     * Whether a plugin is associated with a category.
+     *
+     * @param string $name The plugin's short name
+     * @param int    $id   Category id
      *
      * @return bool
      */
@@ -611,25 +697,42 @@ class Plugins
     }
 
     /**
-     * @param $plugin
+     * Whether the catalogue offers this plugin a version it can safely move to.
+     *
+     * Reads the same PackageIndex the admin list and the toolbar counter read, so one
+     * plugin's answer can never disagree with the count beside it. A catalogue failure
+     * is absorbed as "no update", exactly as _osc_check_plugins_update() does -- a
+     * network problem must not surface as an update prompt.
+     *
+     * @param string $plugin 'dir/index.php' path
      *
      * @return bool
+     * @deprecated since 6.3.0 use mindstellar\market\PackageIndex::forPlugins()->pendingUpdates() instead
+     * @see \mindstellar\market\PackageIndex::pendingUpdates()
      */
     public static function checkUpdate($plugin)
     {
-        $info = self::getInfo($plugin);
+        try {
+            $pending = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
+        } catch (\Throwable $e) {
+            return false;
+        }
 
-        return osc_check_plugin_update($info['plugin_update_uri'], $info['version']);
+        return isset($pending[dirname($plugin)]);
     }
 
     /**
-     * @param $path
+     * Redirect to a plugin's configuration screen, resolving a plugin name to its path.
+     *
+     * @param string $path 'dir/index.php' path, or the plugin's declared name
+     *
+     * @return void
      */
     public static function configureView($path)
     {
         $plugin = str_replace(PLUGINS_PATH, '', $path);
         if (stripos($plugin, '.php') === false) {
-            $plugins_list = unserialize(osc_active_plugins());
+            $plugins_list = unserialize(osc_active_plugins(), array('allowed_classes' => false));
             if (is_array($plugins_list)) {
                 foreach ($plugins_list as $p) {
                     $data = self::getInfo($p);
@@ -644,8 +747,12 @@ class Plugins
     }
 
     /**
-     * @param $categories
-     * @param $plugin
+     * Associate a plugin with the given categories, and their subcategories.
+     *
+     * @param int[]  $categories
+     * @param string $plugin     The plugin's short name
+     *
+     * @return void
      */
     public static function addToCategoryPlugin($categories, $plugin)
     {
@@ -675,8 +782,12 @@ class Plugins
     }
 
     /**
-     * @param $hook
-     * @param $function
+     * Unregister a callback from a hook, whatever priority it was added at.
+     *
+     * @param string   $hook
+     * @param callable $function
+     *
+     * @return void
      */
     public static function removeHook($hook, $function)
     {
@@ -691,6 +802,11 @@ class Plugins
         }
     }
 
+    /**
+     * Every registered hook, as hook name => priority => list of callbacks.
+     *
+     * @return array<string,array<int,array<int,callable>>>
+     */
     public static function getActive()
     {
         return self::$hooks;

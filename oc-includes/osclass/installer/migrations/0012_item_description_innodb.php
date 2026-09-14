@@ -36,6 +36,13 @@ use mindstellar\migration\MigrationInterface;
  * an engine without that.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Convert t_item_description to InnoDB, unless it is absent or already InnoDB.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_description';

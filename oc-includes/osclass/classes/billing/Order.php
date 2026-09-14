@@ -43,6 +43,19 @@ final class Order
     /** @var array<string,mixed> */
     private array $meta;
 
+    /**
+     * @param int                 $id          t_billing_order primary key
+     * @param int                 $userId      Who is paying
+     * @param string              $gateway     Id of the gateway handling the payment
+     * @param string|null         $externalRef The provider's own id, once it has one
+     * @param int                 $amount      Micros (value x 1,000,000)
+     * @param string              $currency    ISO 4217 code
+     * @param int                 $credits     Credits minted when the order settles
+     * @param string              $status      One of the STATUS_* constants
+     * @param array<string,mixed> $meta        Plugin-owned metadata
+     * @param string              $date        Creation datetime
+     * @param string|null         $paidDate    Settlement datetime, once paid
+     */
     public function __construct(
         private int $id,
         private int $userId,
@@ -93,56 +106,99 @@ final class Order
         );
     }
 
+    /**
+     * The t_billing_order primary key.
+     *
+     * @return int
+     */
     public function getId(): int
     {
         return $this->id;
     }
 
+    /**
+     * Who is paying.
+     *
+     * @return int
+     */
     public function getUserId(): int
     {
         return $this->userId;
     }
 
+    /**
+     * Id of the gateway handling this payment.
+     *
+     * @return string
+     */
     public function getGateway(): string
     {
         return $this->gateway;
     }
 
+    /**
+     * The provider's own id for the payment, or null before it reports one.
+     *
+     * @return string|null
+     */
     public function getExternalRef(): ?string
     {
         return $this->externalRef;
     }
 
-    /** Amount in micros (value x 1,000,000). */
+    /**
+     * Amount in micros (value x 1,000,000).
+     *
+     * @return int
+     */
     public function getAmount(): int
     {
         return $this->amount;
     }
 
-    /** ISO 4217 code, e.g. 'USD'. */
+    /**
+     * ISO 4217 code, e.g. 'USD'.
+     *
+     * @return string
+     */
     public function getCurrency(): string
     {
         return $this->currency;
     }
 
-    /** Credits minted when this order is paid. */
+    /**
+     * Credits minted when this order is paid.
+     *
+     * @return int
+     */
     public function getCredits(): int
     {
         return $this->credits;
     }
 
+    /**
+     * Where the order stands: one of the STATUS_* constants.
+     *
+     * @return string
+     */
     public function getStatus(): string
     {
         return $this->status;
     }
 
-    /** @return array<string,mixed> plugin-owned metadata */
+    /**
+     * Plugin-owned metadata, decoded from s_meta.
+     *
+     * @return array<string,mixed>
+     */
     public function getMeta(): array
     {
         return $this->meta;
     }
 
     /**
+     * One metadata entry, or $default when the gateway never stored it.
+     *
      * @param string $key
      * @param mixed  $default
      *
@@ -153,16 +209,31 @@ final class Order
         return $this->meta[$key] ?? $default;
     }
 
+    /**
+     * When the order was created.
+     *
+     * @return string
+     */
     public function getDate(): string
     {
         return $this->date;
     }
 
+    /**
+     * When the order settled, or null while it has not.
+     *
+     * @return string|null
+     */
     public function getPaidDate(): ?string
     {
         return $this->paidDate;
     }
 
+    /**
+     * Whether the money is in and the credits are minted.
+     *
+     * @return bool
+     */
     public function isPaid(): bool
     {
         return $this->status === self::STATUS_PAID;
@@ -170,6 +241,8 @@ final class Order
 
     /**
      * Whether this order is still awaiting settlement, and so may still transition.
+     *
+     * @return bool
      */
     public function isPending(): bool
     {

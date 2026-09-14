@@ -93,7 +93,7 @@ function osc_timezone()
 /**
  * Gets csrf session name
  *
- * @return int
+ * @return string
  */
 function osc_csrf_name()
 {
@@ -113,7 +113,7 @@ function osc_reg_user_post_comments()
 /**
  * Gets if only users can contact to seller
  *
- * @return boolean
+ * @return string '1' when only registered users may contact a seller
  */
 function osc_reg_user_can_contact()
 {
@@ -331,7 +331,7 @@ function osc_moderate_items()
 /**
  * Gets if admin needs to moderate newly posted items.
  *
- * @return int
+ * @return bool
  */
 function osc_moderate_admin_post()
 {
@@ -341,7 +341,7 @@ function osc_moderate_admin_post()
 /**
  * Gets if admin needs to moderate edited items.
  *
- * @return int
+ * @return bool
  */
 function osc_moderate_admin_edit()
 {
@@ -536,7 +536,7 @@ function osc_allowed_extension()
 /**
  * Gets if use of imagick is enabled or not
  *
- * @return string
+ * @return bool
  */
 function osc_use_imagick()
 {
@@ -776,7 +776,7 @@ function osc_recaptcha_private_key()
 /**
  * Gets if third party sources are allowed to install new plugins and themes
  *
- * @return int
+ * @return bool
  */
 function osc_market_external_sources()
 {
@@ -866,7 +866,7 @@ function osc_mailserver_password()
 /**
  * Gets if use SSL on the mailserver
  *
- * @return boolean
+ * @return string '1' when the mailserver connection uses SSL
  */
 function osc_mailserver_ssl()
 {
@@ -964,6 +964,8 @@ function osc_save_latest_searches()
 }
 
 /**
+ * How long latest searches are kept before they are purged.
+ *
  * @return string
  */
 function osc_purge_latest_searches()
@@ -1142,7 +1144,7 @@ function osc_comment_spam_delay()
 /**
  * Gets if parent categories are enabled or not
  *
- * @return boolean
+ * @return string '1' when a parent category may be selected
  */
 function osc_selectable_parent_categories()
 {
@@ -1165,7 +1167,7 @@ function osc_max_latest_items_at_home()
  * @param string $key
  * @param string $section
  *
- * @return mixed
+ * @return string Empty string when the preference is not set
  */
 function osc_get_preference($key, $section = 'osclass')
 {
@@ -1178,7 +1180,7 @@ function osc_get_preference($key, $section = 'osclass')
  * @param string $key
  * @param string $section
  *
- * @return string
+ * @return bool
  */
 function osc_get_bool_preference($key, $section = 'osclass')
 {
@@ -1195,7 +1197,7 @@ function osc_get_bool_preference($key, $section = 'osclass')
  *
  * @param string $section
  *
- * @return array
+ * @return array<string,string> Empty when the section is not loaded
  */
 function osc_get_preference_section($section = 'osclass')
 {
@@ -1225,7 +1227,7 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
  * @param string $key
  * @param string $section
  *
- * @return boolean
+ * @return int|false Rows deleted, or false when the delete could not run
  */
 function osc_delete_preference($key = '', $section = 'osclass')
 {
@@ -1235,7 +1237,7 @@ function osc_delete_preference($key = '', $section = 'osclass')
 /**
  * Reload preferences
  *
- * @return bool <array>
+ * @return bool False when nothing could be read
  */
 function osc_reset_preferences()
 {

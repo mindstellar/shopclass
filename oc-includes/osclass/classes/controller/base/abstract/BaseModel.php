@@ -24,6 +24,9 @@ abstract class BaseModel
     protected $ajax;
     protected $time;
 
+    /**
+     * Canonicalises the request host, resolves subdomain routing params and boots the web theme.
+     */
     public function __construct()
     {
         // this is necessary because if HTTP_HOST doesn't have the PORT the parse_url is null
@@ -62,8 +65,12 @@ abstract class BaseModel
     }
 
     /**
-     * @param      $url
-     * @param null $code
+     * Sends a Location header to $url and terminates the request.
+     *
+     * @param string   $url
+     * @param int|null $code HTTP status to send with the redirect; PHP's default (302) when null
+     *
+     * @return void
      */
     public function redirectTo($url, $code = null)
     {
@@ -71,7 +78,11 @@ abstract class BaseModel
     }
 
     /**
-     * @param $host
+     * Maps the request's subdomain onto a search/user parameter, or 404s when it resolves to nothing.
+     *
+     * @param string $host request host, without the port
+     *
+     * @return void
      */
     private function subdomain_params($host)
     {
@@ -93,7 +104,7 @@ abstract class BaseModel
                             Params::setParam('page', 'search');
                         }
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'country') {
                     $country = Country::newInstance()->findBySlug($subdomain);
@@ -102,7 +113,7 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $country['s_slug']);
                         Params::setParam('sCountry', $country['pk_c_code']);
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'region') {
                     $region = Region::newInstance()->findBySlug($subdomain);
@@ -112,7 +123,7 @@ abstract class BaseModel
                         Params::setParam('sRegion', $region['pk_i_id']);
                     } else {
                         $this->locationSubdomainSlugRedirect('REGION', $subdomain, $match[1], $subhost);
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'city') {
                     $city = City::newInstance()->findBySlug($subdomain);
@@ -122,7 +133,7 @@ abstract class BaseModel
                         Params::setParam('sCity', $city['pk_i_id']);
                     } else {
                         $this->locationSubdomainSlugRedirect('CITY', $subdomain, $match[1], $subhost);
-                        $this->do400();
+                        $this->do404();
                     }
                 } elseif ($subdomain_type === 'user') {
                     $user = User::newInstance()->findByUsername($subdomain);
@@ -131,10 +142,10 @@ abstract class BaseModel
                         $this->_exportVariableToView('subdomain_slug', $user['s_username']);
                         Params::setParam('sUser', $user['pk_i_id']);
                     } else {
-                        $this->do400();
+                        $this->do404();
                     }
                 } else {
-                    $this->do400();
+                    $this->do404();
                 }
             }
         }
@@ -145,7 +156,7 @@ abstract class BaseModel
      * 301 to the same URL with the current slug swapped into the subdomain. Falls
      * through (returns without redirecting) on a history miss, a target row that no
      * longer exists, or a current slug that would not change the URL -- the caller
-     * then do400()s.
+     * then do404()s.
      *
      * The default search-URL scheme embeds the row id ({slug}-r{id}) and self-heals
      * on rename, but subdomain routing resolves purely by slug with nothing to fall
@@ -183,7 +194,7 @@ abstract class BaseModel
         $model   = $type === 'REGION' ? Region::newInstance() : City::newInstance();
         $current = $model->findByPrimaryKey((int)$history['fk_i_id']);
         if (!$current || !isset($current['pk_i_id'])) {
-            return; // target row is gone -> let the caller do400()
+            return; // target row is gone -> let the caller do404()
         }
 
         $currentSlug = $current['s_slug'];
@@ -207,16 +218,25 @@ abstract class BaseModel
 
     //to export variables at the business layer
 
+    /**
+     * Retained for themes and plugins that call it. Core no longer uses it: a URL that
+     * resolves to nothing is Not Found, not Bad Request.
+     *
+     * @return void
+     */
     public function do400()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 400 Bad Request');
-        osc_current_web_theme_path('404.php');
+        $this->sendErrorCacheHeaders();
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
     /**
+     * Reads the page and action request params into the controller.
      *
+     * @return void
      * @since 3.9.0
      */
     protected function setParams()
@@ -225,6 +245,9 @@ abstract class BaseModel
         $this->action = Params::getParam('action');
     }
 
+    /**
+     * Prints the request duration as an HTML comment on non-ajax debug requests.
+     */
     public function __destruct()
     {
         if (!$this->ajax && OSC_DEBUG) {
@@ -233,6 +256,8 @@ abstract class BaseModel
     }
 
     /**
+     * Seconds elapsed since the controller was constructed.
+     *
      * @return float
      */
     public function getTime()
@@ -243,8 +268,12 @@ abstract class BaseModel
     }
 
     /**
-     * @param $key
-     * @param $value
+     * Makes a value available to the view under $key.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _exportVariableToView($key, $value)
     {
@@ -252,37 +281,72 @@ abstract class BaseModel
     }
 
     /**
-     * @param null $key
+     * Dumps one exported view variable, or all of them when $key is null.
+     *
+     * @param string|null $key
+     *
+     * @return void
      */
     public function _view($key = null)
     {
         View::newInstance()->_view($key);
     }
 
+    /**
+     * Renders the theme's 404 template with a 404 status and terminates the request.
+     *
+     * @return void
+     */
     public function do404()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 404 Not Found');
-        osc_current_web_theme_path('404.php');
+        $this->sendErrorCacheHeaders();
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
+    /**
+     * Retained for themes and plugins that call it. Core no longer uses it: 410 claims a URL
+     * is permanently gone, which a restore or a re-import makes untrue, and search engines
+     * treat it almost identically to 404.
+     *
+     * @return void
+     */
     public function do410()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 410 Gone');
-        osc_current_web_theme_path('404.php');
+        $this->sendErrorCacheHeaders();
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
+    }
+
+    /**
+     * Error pages exit before index.php can stamp Cache-Control, so stamp it here — a crawler
+     * walking dead listing URLs is otherwise a full theme render per hit. An identified visitor
+     * is downgraded to `private, no-store` by osc_response_is_cacheable().
+     *
+     * @return void
+     */
+    private function sendErrorCacheHeaders()
+    {
+        osc_mark_response_cacheable();
+        osc_send_response_cache_headers();
     }
     /**
      *  Functions that will have to be rewritten in the class that extends from this
+     *
+     * @return void
      */
     abstract protected function doModel();
 
     /**
-     * @param $file
+     * Renders the given template file.
      *
-     * @return mixed
+     * @param string $file
+     *
+     * @return void
      */
     abstract protected function doView($file);
 }

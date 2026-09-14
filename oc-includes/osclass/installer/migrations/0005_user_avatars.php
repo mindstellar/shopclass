@@ -36,6 +36,13 @@ return new class () implements MigrationInterface {
         'avatar_dimensions'    => array('200x200', 'STRING'),
     );
 
+    /**
+     * Seed the user-avatar preferences (enabled_user_avatars, avatar_dimensions).
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';

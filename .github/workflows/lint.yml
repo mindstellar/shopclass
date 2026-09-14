@@ -44,6 +44,20 @@ jobs:
           php-version: '8.3'
           coverage: none
 
+      # Nothing installs dependencies at release -- the zip is a git archive of the
+      # committed vendor tree -- so the PHP floor is otherwise only enforced at
+      # resolution time, on whichever machine last ran composer.
+      #
+      # `install --dry-run` is what actually enforces it: it resolves the lock against
+      # config.platform (pinned to 8.0.0) and fails on any package requiring more.
+      # `check-platform-reqs` is deliberately NOT used for this -- it compares against
+      # the PHP the runner happens to have, so on a 8.3 runner it passes a lock that
+      # needs 8.3 and the floor goes unchecked.
+      - name: Dependencies still resolve against the PHP floor
+        run: |
+          composer validate --no-check-publish --no-check-all
+          composer install --dry-run --no-interaction --no-scripts
+
       # The formatter is a pinned PHAR rather than a composer dep, so that it
       # never lands in the committed oc-includes/vendor tree shipped in the zip.
       - name: Fetch php-cs-fixer

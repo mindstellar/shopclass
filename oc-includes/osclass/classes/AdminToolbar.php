@@ -25,11 +25,16 @@ class AdminToolbar
     private static $instance;
     private $nodes = array();
 
+    /**
+     * Start with an empty node set.
+     */
     public function __construct()
     {
     }
 
     /**
+     * The shared AdminToolbar instance, created on first call.
+     *
      * @return \AdminToolbar
      */
     public static function newInstance()
@@ -41,12 +46,19 @@ class AdminToolbar
         return self::$instance;
     }
 
+    /**
+     * Initialization hook; the toolbar needs no setup of its own.
+     *
+     * @return void
+     */
     public function init()
     {
     }
 
     /**
      * Add toolbar menus and add menus running hook add_admin_toolbar_menus
+     *
+     * @return void
      */
     public function add_menus()
     {
@@ -69,8 +81,9 @@ class AdminToolbar
     /**
      * Add a node to the menu.
      *
-     * @param $array
+     * @param array<string,mixed> $array Node definition; ignored unless it carries an 'id'
      *
+     * @return void
      * @todo implement parent nodes
      *
      */
@@ -84,7 +97,7 @@ class AdminToolbar
     /**
      * Add a submenu to the menu.
      *
-     * @param $array $args - The arguments for each subitem.
+     * @param array<string,mixed> $array The arguments for each subitem.
      *               - id         - string    - The ID of the mainitem.
      *               - parentid   - string    - The ID of the parent item.
      *               - title      - string    - The title of the node.
@@ -92,6 +105,8 @@ class AdminToolbar
      *               - meta       - array     - Meta data including the following keys: html, class, onclick, target,
      *               title, tabindex.
      *               - target     - string    - _blank
+     *
+     * @return void
      */
     public function add_submenu($array)
     {
@@ -104,6 +119,8 @@ class AdminToolbar
      * Remove entry with id $id
      *
      * @param string $id
+     *
+     * @return void
      */
     public function remove_menu($id)
     {
@@ -111,10 +128,12 @@ class AdminToolbar
     }
 
     /**
-     * Remove entry with id $id
+     * Remove the submenu entry $id under parent $parentid
      *
      * @param string $parentid
      * @param string $id
+     *
+     * @return void
      */
     public function remove_submenu($parentid, $id)
     {
@@ -129,6 +148,8 @@ class AdminToolbar
      * <div>
      *   <a></a>
      * </div>
+     *
+     * @return void
      */
     public function render()
     {

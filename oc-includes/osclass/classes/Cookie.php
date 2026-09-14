@@ -22,6 +22,9 @@ class Cookie
     public $val;
     public $expires;
 
+    /**
+     * Read the request's identity cookie, if any, into the value bag.
+     */
     public function __construct()
     {
         $this->val     = array();
@@ -47,6 +50,8 @@ class Cookie
     }
 
     /**
+     * The shared Cookie instance, created on first call.
+     *
      * @return \Cookie
      */
     public static function newInstance()
@@ -59,8 +64,12 @@ class Cookie
     }
 
     /**
-     * @param $var
-     * @param $value
+     * Set one value in the bag, and mirror it into $_COOKIE for this request.
+     *
+     * @param string $var
+     * @param string $value
+     *
+     * @return void
      */
     public function push($var, $value)
     {
@@ -69,18 +78,32 @@ class Cookie
     }
 
     /**
-     * @param $var
+     * Drop one value from the bag and from $_COOKIE.
+     *
+     * @param string $var
+     *
+     * @return void
      */
     public function pop($var)
     {
         unset($this->val[$var], $_COOKIE[$var]);
     }
 
+    /**
+     * Empty the value bag; nothing is written until set() is called.
+     *
+     * @return void
+     */
     public function clear()
     {
         $this->val = array();
     }
 
+    /**
+     * Write the bag out as the identity cookie, plus the cache-bypass flag.
+     *
+     * @return void
+     */
     public function set()
     {
         $cookie_val = '';
@@ -107,6 +130,16 @@ class Cookie
             $options['expires'] = time() - 3600;
         }
         setcookie($this->name, $cookie_val, $options);
+
+        // Companion cache-bypass flag with a fixed, domain-independent NAME. The identity
+        // cookie above is named md5(WEB_PATH); a reverse proxy / CDN config cannot hardcode
+        // that per-site hash, so a cache in front of the app cannot tell a logged-in visitor
+        // from an anonymous one by cookie name and would serve them the cached anonymous copy.
+        // This flag rides the identity cookie's exact lifecycle — "1" whenever any identity or
+        // locale value is present, expired in lockstep on logout — so the proxy contract
+        // (osc_cache_relevant_cookies) can match one stable name. It carries no secret; its
+        // presence alone means "do not serve this request a cached public page".
+        setcookie('oc_cache_bypass', $cookie_val === '' ? '' : '1', $options);
     }
 
     /**
@@ -115,7 +148,7 @@ class Cookie
      * SameSite=Lax — still sent on top-level navigation, so following a link into the site
      * keeps the visitor remembered while blocking the cookie on cross-site subrequests.
      *
-     * @return array
+     * @return array<string,mixed> setcookie() options array
      */
     private function cookieOptions()
     {
@@ -136,6 +169,8 @@ class Cookie
     }
 
     /**
+     * How many values the bag currently holds.
+     *
      * @return int
      */
     public function num_vals()
@@ -144,9 +179,11 @@ class Cookie
     }
 
     /**
-     * @param $str
+     * One value from the bag, or '' when it is not set.
      *
-     * @return mixed|string
+     * @param string $str
+     *
+     * @return string
      */
     public function get_value($str)
     {
@@ -160,7 +197,11 @@ class Cookie
     //$tm: time in seconds
 
     /**
-     * @param $tm
+     * Set the cookie lifetime in seconds from now; 0 makes it a browser-session cookie.
+     *
+     * @param int $tm
+     *
+     * @return void
      */
     public function set_expires($tm)
     {

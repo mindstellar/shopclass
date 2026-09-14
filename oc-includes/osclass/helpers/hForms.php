@@ -80,7 +80,7 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0, $enqu
  * the widget type. An item-only form full of item-meta fields is deliberately not
  * listed here.
  *
- * @return array
+ * @return array<int,array{value:string,label:string}>
  */
 function osc_form_widget_options()
 {
@@ -109,7 +109,7 @@ function osc_form_widget_options()
  * @param string $contextType
  * @param int    $contextId
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
 {
@@ -124,8 +124,8 @@ function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
  * Register a form placement-context type so its submissions read sensibly in the
  * admin. Thin wrapper over FormContextRegistry::register().
  *
- * @param string $type
- * @param array  $spec
+ * @param string              $type
+ * @param array<string,mixed> $spec
  *
  * @return void
  */
@@ -141,7 +141,7 @@ function osc_register_form_context($type, $spec)
  * @param string $type
  * @param int    $id
  *
- * @return array
+ * @return array{label:string,url:string|null}
  */
 function osc_form_context_display($type, $id)
 {
@@ -153,9 +153,9 @@ function osc_form_context_display($type, $id)
  * in. A page-builder block lives at location "page.<id>"; anything else is keyed
  * by the widget row id. Phase 3 stamps this pair onto each submission.
  *
- * @param array|null $widgetRow
+ * @param array<string,mixed>|null $widgetRow
  *
- * @return array [string $type, int $id]
+ * @return array{0:string,1:int} [string $type, int $id]
  */
 function osc_form_context_from_widget($widgetRow)
 {

@@ -26,6 +26,13 @@ use mindstellar\migration\MigrationInterface;
  * migration brings an existing install up to the same state.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add i_order to t_widget, unless the column is already there.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         if ($this->columnExists($conn, DB_TABLE_PREFIX . 't_widget', 'i_order')) {
@@ -40,6 +47,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {

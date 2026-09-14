@@ -22,8 +22,8 @@ use mindstellar\fields\FieldTypeRegistry;
  *
  * See FieldTypeRegistry::register() for the $spec shape.
  *
- * @param string $id
- * @param array  $spec
+ * @param string              $id
+ * @param array<string,mixed> $spec
  *
  * @return void
  */
@@ -35,7 +35,7 @@ function osc_register_field_type($id, $spec)
 /**
  * All registered field types, keyed by id.
  *
- * @return array
+ * @return array<string,array<string,mixed>>
  */
 function osc_field_types()
 {
@@ -47,7 +47,7 @@ function osc_field_types()
  *
  * @param string $id
  *
- * @return array|null
+ * @return array<string,mixed>|null
  */
 function osc_field_type($id)
 {
@@ -72,7 +72,7 @@ function osc_field_type_storage($id)
  * their id directly in e_type. extendField() merges s_meta into the row, so a
  * persisted 'type' surfaces as $field['type'].
  *
- * @param array $field a field row (post extendField merge) or a raw row.
+ * @param array<string,mixed> $field a field row (post extendField merge) or a raw row
  *
  * @return string
  */
@@ -216,7 +216,7 @@ osc_register_field_type('AUTOCOMPLETE', array(
 /**
  * All field groups.
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_field_groups()
 {
@@ -229,7 +229,7 @@ function osc_get_field_groups()
  *
  * @param int $categoryId
  *
- * @return array each element: group row with a 'fields' array.
+ * @return array<int,array<string,mixed>> each element: group row with a 'fields' array
  */
 function osc_get_category_field_groups($categoryId)
 {

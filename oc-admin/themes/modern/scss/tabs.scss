@@ -68,3 +68,39 @@
     }
   }
 }
+
+// .osc-tabnav — a row of navigation tabs (each an <a> to another URL, one current),
+// styled as a quiet underline strip. The URL-navigation sibling of .osc-tab above,
+// which is the JS-driven in-page panel widget; this one has no script.
+.osc-tabnav {
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    margin: 0;
+  }
+
+  a {
+    border-block-end: 2px solid transparent;
+    color: var(--osc-ink-muted);
+    display: block;
+    font-weight: 500;
+    margin-block-end: -1px;
+    padding: .5rem .9rem;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--osc-ink);
+    }
+
+    &.is-active {
+      border-block-end-color: var(--osc-bronze);
+      color: var(--osc-bronze);
+    }
+  }
+}

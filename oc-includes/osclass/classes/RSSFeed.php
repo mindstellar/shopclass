@@ -38,13 +38,20 @@ class RSSFeed
     private $description;
     private $items;
 
+    /**
+     * Start with an empty item set.
+     */
     public function __construct()
     {
         $this->items = array();
     }
 
     /**
-     * @param $title
+     * Set the channel title.
+     *
+     * @param string $title
+     *
+     * @return void
      */
     public function setTitle($title)
     {
@@ -52,7 +59,11 @@ class RSSFeed
     }
 
     /**
-     * @param $link
+     * Set the channel link.
+     *
+     * @param string $link
+     *
+     * @return void
      */
     public function setLink($link)
     {
@@ -60,7 +71,11 @@ class RSSFeed
     }
 
     /**
-     * @param $description
+     * Set the channel description.
+     *
+     * @param string $description
+     *
+     * @return void
      */
     public function setDescription($description)
     {
@@ -68,7 +83,11 @@ class RSSFeed
     }
 
     /**
-     * @param $item
+     * Append one listing to the feed; values are raw and escaped at serialization.
+     *
+     * @param array<string,mixed> $item See the class docblock for the recognised keys
+     *
+     * @return void
      */
     public function addItem($item)
     {
@@ -153,6 +172,8 @@ class RSSFeed
     /**
      * Emit the feed to the output buffer. Callers that already sent the
      * Content-type header keep working unchanged.
+     *
+     * @return void
      */
     public function dumpXML()
     {
@@ -167,6 +188,8 @@ class RSSFeed
      * @param DOMElement  $parent
      * @param string      $name
      * @param string      $value
+     *
+     * @return void
      */
     private function appendCData($dom, $parent, $name, $value)
     {

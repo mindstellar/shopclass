@@ -22,6 +22,9 @@ if (!defined('ABS_PATH')) {
 class CAdminStats extends AdminSecBaseModel
 {
     //specific for this class
+    /**
+     * Let plugins hook the stats section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -31,6 +34,12 @@ class CAdminStats extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Draw the requested stats report: listing reports, comments, items or users.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();

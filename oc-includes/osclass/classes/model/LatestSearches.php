@@ -24,7 +24,7 @@ class LatestSearches extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_latest_searches table
      */
     public function __construct()
     {
@@ -38,6 +38,8 @@ class LatestSearches extends DAO
     }
 
     /**
+     * Return the shared LatestSearches model instance, creating it on first use.
+     *
      * @return \LatestSearches
      */
     public static function newInstance()
@@ -52,19 +54,17 @@ class LatestSearches extends DAO
     /**
      * Get last searches, given a limit.
      *
-     * @access public
+     * @param int $limit A non-numeric value returns every row
      *
-     * @param int $limit
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<int,array{d_date:string,s_search:string,i_total:string}>|false False on a query failure
      */
     public function getSearches($limit = 20)
     {
         // The COUNT(...) AS alias in a comma-separated column list is rejected
         // by the builder's identifier allowlist, so this stays hand-written SQL.
-        $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
+        // d_date is the group's most recent hit rather than an arbitrary member's:
+        // a bare d_date beside GROUP BY s_search is rejected under ONLY_FULL_GROUP_BY.
+        $sql = 'SELECT MAX(d_date) AS d_date, s_search, COUNT(s_search) as i_total FROM '
             . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
 
         // A non-numeric $limit leaves the clause off entirely and returns every
@@ -87,13 +87,10 @@ class LatestSearches extends DAO
     /**
      * Get last searches, given since time.
      *
-     * @access public
+     * @param int|null $time Unix timestamp; null means seven days ago
+     * @param int      $limit A non-numeric value returns every row
      *
-     * @param int $time
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<int,array{d_date:string,s_search:string,i_total:string}>|false False on a query failure
      */
     public function getSearchesByDate($time = null, $limit = 20)
     {
@@ -105,7 +102,7 @@ class LatestSearches extends DAO
         // what the method name and its $time parameter describe. An exact equality
         // here matched only rows written in the same second as the cutoff, so it
         // returned nothing for any realistic input.
-        $sql = 'SELECT d_date, s_search, COUNT(s_search) as i_total FROM '
+        $sql = 'SELECT MAX(d_date) AS d_date, s_search, COUNT(s_search) as i_total FROM '
             . $this->getTableName() . ' WHERE d_date >= ? GROUP BY s_search ORDER BY d_date DESC';
         $params = array(date('Y-m-d H:i:s', $time));
 
@@ -126,12 +123,10 @@ class LatestSearches extends DAO
     /**
      * Purge n last searches.
      *
-     * @access public
+     * @param int|null $number Offset of the newest search to keep; null is a no-op
      *
-     * @param int $number
-     *
-     * @return bool
-     * @since  unknown
+     * @return int|false Rows deleted, or false when there is nothing to purge
+     * @throws \mindstellar\database\DbException on a negative $number or a query failure
      */
     public function purgeNumber($number = null)
     {
@@ -139,7 +134,8 @@ class LatestSearches extends DAO
             return false;
         }
 
-        $sql = 'SELECT d_date FROM ' . $this->getTableName() . ' GROUP BY s_search ORDER BY d_date DESC';
+        $sql = 'SELECT MAX(d_date) AS d_date FROM ' . $this->getTableName()
+            . ' GROUP BY s_search ORDER BY d_date DESC';
 
         // $number is an OFFSET, not a row count: the clause is MySQL's comma form
         // ("LIMIT <offset>, <count>"), so this selects the single row $number
@@ -166,12 +162,9 @@ class LatestSearches extends DAO
     /**
      * Purge all searches by date.
      *
-     * @access public
+     * @param string|null $date 'Y-m-d H:i:s'; null is a no-op
      *
-     * @param string $date
-     *
-     * @return bool
-     * @since  unknown
+     * @return int|false Rows deleted, or false on a no-op or a query failure
      */
     public function purgeDate($date = null)
     {

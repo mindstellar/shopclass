@@ -85,10 +85,10 @@ class Connection
     /**
      * Run a SELECT and return every row as an associative array.
      *
-     * @param string $sql
-     * @param array  $params Positional values for the '?' placeholders in $sql
+     * @param string           $sql
+     * @param array<int,mixed> $params Positional values for the '?' placeholders in $sql
      *
-     * @return array List of rows (empty when none match)
+     * @return array<int,array<string,mixed>> List of rows (empty when none match)
      * @throws DbException
      */
     public function select(string $sql, array $params = []): array
@@ -127,10 +127,10 @@ class Connection
     /**
      * Run a SELECT and return the first row, or null when there are no rows.
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string           $sql
+     * @param array<int,mixed> $params
      *
-     * @return array|null
+     * @return array<string,mixed>|null
      * @throws DbException
      */
     public function selectOne(string $sql, array $params = []): ?array
@@ -143,8 +143,8 @@ class Connection
     /**
      * Run a SELECT and return the first column of the first row, or null.
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string           $sql
+     * @param array<int,mixed> $params
      *
      * @return mixed
      * @throws DbException
@@ -166,8 +166,8 @@ class Connection
     /**
      * Run an INSERT/UPDATE/DELETE and return the number of affected rows.
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string           $sql
+     * @param array<int,mixed> $params
      *
      * @return int
      * @throws DbException
@@ -220,8 +220,8 @@ class Connection
     /**
      * Run an INSERT and return the generated AUTO_INCREMENT id.
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string           $sql
+     * @param array<int,mixed> $params
      *
      * @return int
      * @throws DbException
@@ -351,9 +351,9 @@ class Connection
      * Prepare $sql, bind $params as positional parameters, execute, hand the
      * live statement to $consume, and always close the statement afterwards.
      *
-     * @param string   $sql
-     * @param array    $params
-     * @param callable $consume Receives the executed mysqli_stmt, returns the result
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     * @param callable         $consume Receives the executed mysqli_stmt, returns the result
      *
      * @return mixed Whatever $consume returns
      * @throws DbException
@@ -384,8 +384,10 @@ class Connection
      * invoked through call_user_func_array over an array of references into a
      * local values array.
      *
-     * @param \mysqli_stmt $stmt
-     * @param array        $params
+     * @param \mysqli_stmt     $stmt
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException on a param that is neither scalar nor null
      */
     private function bindParams(\mysqli_stmt $stmt, array $params): void
     {
@@ -468,9 +470,9 @@ class Connection
      * shows real values; when OSC_DEBUG_DB_EXPLAIN is on a SELECT's plan is captured
      * too. Debug-only: the raw execution path never interpolates.
      *
-     * @param string $sql
-     * @param array  $params
-     * @param float  $start microtime(true) captured before the query ran
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     * @param float             $start microtime(true) captured before the query ran
      */
     private function logQuery(string $sql, array $params, float $start): void
     {
@@ -499,8 +501,8 @@ class Connection
      * escaped through the live connection and quoted by type so the rendered query
      * is valid SQL a developer can copy and run.
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string           $sql
+     * @param array<int,mixed> $params
      *
      * @return string
      */
@@ -537,9 +539,9 @@ class Connection
      * diagnostics, not part of the request. Goes straight through prepare/execute so
      * it is not itself logged or recursively explained.
      *
-     * @param string $sql     the original SQL (with '?' placeholders)
-     * @param array  $params
-     * @param string $display the inlined SQL used as the log key
+     * @param string           $sql     the original SQL (with '?' placeholders)
+     * @param array<int,mixed> $params
+     * @param string           $display the inlined SQL used as the log key
      */
     private function explainQuery(string $sql, array $params, string $display): void
     {

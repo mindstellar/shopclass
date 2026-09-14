@@ -449,13 +449,17 @@ if (!function_exists('seed_item')) {
         string $locale = 'en_US',
         string $country = 'US'
     ): int {
+        // dt_first_pub_date mirrors dt_pub_date, the same as a real ItemActions::add()
+        // insert (and the migration's backfill for a row that predates the column) --
+        // a fixture that left it NULL would make dt_first_pub_date's whole point
+        // (surviving a bump that moves dt_pub_date) untestable.
         $id = seed_exec(
             $admin,
             'INSERT INTO ' . DB_TABLE_PREFIX . 't_item
-             (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_mod_date, f_price, i_price,
+             (fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, f_price, i_price,
               fk_c_currency_code, s_contact_name, s_contact_email, s_ip, b_premium,
               b_enabled, b_active, b_spam, s_secret, dt_expiration)
-             VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?,
+             VALUES (?, ?, NOW(), NOW(), NOW(), ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?,
                      DATE_ADD(NOW(), INTERVAL 30 DAY))',
             'iidissssiis',
             array(

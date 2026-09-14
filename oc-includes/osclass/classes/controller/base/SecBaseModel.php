@@ -21,6 +21,9 @@ class SecBaseModel extends BaseModel
 {
     private $grant;
 
+    /**
+     * Boots the base controller and refuses the request when the visitor is not logged in.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -29,6 +32,11 @@ class SecBaseModel extends BaseModel
         $this->init();
     }
 
+    /**
+     * Logs out and shows the auth-failure page unless the visitor is logged in.
+     *
+     * @return void
+     */
     protected function init()
     {
         if (!$this->isLogged()) {
@@ -38,6 +46,11 @@ class SecBaseModel extends BaseModel
         }
     }
 
+    /**
+     * Destroys the session.
+     *
+     * @return void
+     */
     public function logout()
     {
         //destroying session
@@ -47,19 +60,32 @@ class SecBaseModel extends BaseModel
     //destroying current session
 
     /**
-     * @param $grant
+     * Stores the granting object used to authorise the request.
+     *
+     * @param mixed $grant
+     *
+     * @return void
      */
     public function setGranting($grant)
     {
         $this->grant = $grant;
     }
 
+    /**
+     * No-op: secured pages that need model work override this.
+     *
+     * @return void
+     */
     public function doModel()
     {
     }
 
     /**
-     * @param $file
+     * No-op: secured pages that render a template override this.
+     *
+     * @param string $file
+     *
+     * @return void
      */
     public function doView($file)
     {

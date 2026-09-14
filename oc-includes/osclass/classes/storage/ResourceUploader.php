@@ -50,9 +50,9 @@ final class ResourceUploader
      * @param string $ownerType
      * @param int    $ownerId
      * @param string $tmpFile   absolute path to the uploaded temp file
-     * @param array  $options
+     * @param array{variants?:array<string,string>,keep_original?:bool,watermark?:bool} $options
      *
-     * @return array|false the inserted resource row, or false on any failure
+     * @return array<string,mixed>|false the inserted resource row, or false on any failure
      */
     public function upload(string $ownerType, int $ownerId, string $tmpFile, array $options = array()): array|false
     {
@@ -172,7 +172,7 @@ final class ResourceUploader
      * delete path (osc_deleteResource): remove local files when nothing has been
      * offloaded, otherwise queue a remote delete job.
      *
-     * @param array $resourceRow
+     * @param array<string,mixed> $resourceRow a t_resource row
      *
      * @return void
      */
@@ -223,7 +223,7 @@ final class ResourceUploader
      * Remove a resource's files, or queue their removal when the row lives on (or
      * an install has configured) a remote adapter. Never touches the database.
      *
-     * @param array $row
+     * @param array<string,mixed> $row a t_resource row
      *
      * @return void
      */
@@ -252,9 +252,9 @@ final class ResourceUploader
     /**
      * Best-effort removal of the working temp files produced during an upload.
      *
-     * @param string $tmpFile
-     * @param string $normalTmp
-     * @param array  $secondary
+     * @param string                $tmpFile
+     * @param string                $normalTmp
+     * @param array<string,string>  $secondary variant suffix => temp path
      *
      * @return void
      */

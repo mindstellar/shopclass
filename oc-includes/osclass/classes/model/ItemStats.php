@@ -29,7 +29,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class ItemStats extends DAO
 {
@@ -37,8 +36,6 @@ class ItemStats extends DAO
      * It references to self object: ItemStats.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var ItemStats
      */
     private static $instance;
@@ -90,9 +87,7 @@ class ItemStats extends DAO
      * It creates a new ItemStats object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return ItemStats
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -106,13 +101,10 @@ class ItemStats extends DAO
     /**
      * Increase the stat column given column name and item id
      *
-     * @access public
-     *
      * @param string $column
      * @param int    $itemId
      *
      * @return bool
-     * @since  unknown
      */
     public function increase($column, $itemId)
     {
@@ -155,10 +147,8 @@ class ItemStats extends DAO
      * write on the site; this collapses a page's worth into a single multi-row
      * upsert plus a single rollup upsert, whatever the block size.
      *
-     * @access public
-     *
-     * @param string $column
-     * @param array  $itemIds
+     * @param string                $column
+     * @param array<int,int|string> $itemIds
      *
      * @return bool false if the column is rejected or the statement fails
      * @since  5.3.0
@@ -204,6 +194,8 @@ class ItemStats extends DAO
      *
      * @param string $column already validated against self::COUNTERS
      * @param int    $by
+     *
+     * @return void
      */
     private function increaseDaily($column, $by)
     {
@@ -248,12 +240,9 @@ class ItemStats extends DAO
     /**
      * Insert an empty row into table item stats
      *
-     * @access public
-     *
      * @param int $itemId Item id
      *
      * @return bool
-     * @since  unknown
      */
     public function emptyRow($itemId)
     {
@@ -265,8 +254,6 @@ class ItemStats extends DAO
 
     /**
      * Drop rollup rows older than $date. Backs the retention sweep on cron.
-     *
-     * @access public
      *
      * @param string $date
      *
@@ -291,11 +278,9 @@ class ItemStats extends DAO
     /**
      * Return number of views of an item
      *
-     * @access public
+     * @param int|null $itemId Item id
      *
-     * @param int $itemId Item id
-     *
-     * @return int
+     * @return int|string|null The summed views as a string, int 0 on a null id or a query failure
      * @since  2.3.3
      */
     public function getViews($itemId)
@@ -328,10 +313,9 @@ class ItemStats extends DAO
     }
 
     /**
-     * Return number of views of an item
+     * Return the summed views across every listing.
      *
-     * @access public
-     * @return int
+     * @return int|string|null The sum as a string, int 0 on a query failure
      * @since  2.3.3
      */
     public function getAllViews()

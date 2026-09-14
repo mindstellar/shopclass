@@ -28,6 +28,8 @@ switch ($type) {
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -41,6 +43,11 @@ osc_admin_page(array(
     'help'    => __('See how many listings from your site have been reported as spam, expired, duplicate, etc.'),
 ));
 
+/**
+ * Emit the report-statistics charts and the Google Visualization loader they need.
+ *
+ * @return void
+ */
 function customHead()
 {
     $reports = __get('reports');

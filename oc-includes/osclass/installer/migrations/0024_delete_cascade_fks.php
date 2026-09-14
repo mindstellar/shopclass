@@ -67,6 +67,14 @@ return new class () implements MigrationInterface {
         array('t_city_stats', 'fk_i_city_id', 't_city', 'pk_i_id'),
     );
 
+    /**
+     * Rebuild each dependent foreign key with ON DELETE CASCADE, clearing the orphan
+     * rows that would otherwise block the ADD.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         foreach (self::CASCADE_KEYS as $key) {
@@ -113,6 +121,12 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $table exists in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function tableExists(Connection $conn, string $table): bool
     {
@@ -127,6 +141,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether the named foreign key deletes in cascade.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $constraint
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function isCascade(Connection $conn, string $table, string $constraint): bool
     {
@@ -146,7 +167,13 @@ return new class () implements MigrationInterface {
      * than one means a previous schema reconcile appended a duplicate instead of
      * replacing the key.
      *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     * @param string     $parent Fully prefixed referenced table name
+     *
      * @return string[]
+     * @throws \mindstellar\database\DbException
      */
     private function constraintNames(Connection $conn, string $table, string $column, string $parent): array
     {

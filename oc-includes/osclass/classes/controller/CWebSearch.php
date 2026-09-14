@@ -20,6 +20,10 @@ class CWebSearch extends BaseModel
     public $mSearch;
     public $uri;
 
+    /**
+     * Boots the base controller, opens the Search model, and resolves the friendly search
+     * URI into request params (category slug, location, feed), 404ing when it matches nothing.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -89,16 +93,13 @@ class CWebSearch extends BaseModel
                         );
 
                         $categorySlug = $tmp[count($tmp) - 1];
-                        $category     = Category::newInstance()->findBySlug($categorySlug);
-
                         Params::setParam('sCategory', $categorySlug);
                     } else {
                         $categorySlug = Params::getParam('sCategory');
-                        $category     = Category::newInstance()->findBySlug($categorySlug);
-
                         Params::setParam('sCategory', $categorySlug);
                     }
-                    if (count($category) === 0) {
+                    $category = self::findCategory($categorySlug);
+                    if (empty($category)) {
                         $this->categorySlugRedirect($categorySlug);
                         $this->do404();
                     }
@@ -119,6 +120,12 @@ class CWebSearch extends BaseModel
     }
 
     //Business Layer...
+    /**
+     * Runs the listing search, exports the results and paging/canonical data to the view,
+     * and renders the search template or the requested feed.
+     *
+     * @return void
+     */
     public function doModel()
     {
         osc_run_hook('before_search');
@@ -194,11 +201,7 @@ class CWebSearch extends BaseModel
         // consolidates paginated and sort permutations of the same set onto one indexable
         // URL, and gives page 1 a canonical it previously lacked (SEO CORE-1/CORE-2).
         if ($this->uri !== 'feed' && !Params::existParam('sFeed')) {
-            $canonicalParams = $uriParams;
-            foreach (array('iPage', 'sOrder', 'iOrderType', 'page', 'action', 'sParams', 'sFeed') as $drop) {
-                unset($canonicalParams[$drop]);
-            }
-            $this->_exportVariableToView('canonical', osc_search_url($canonicalParams));
+            $this->_exportVariableToView('canonical', osc_search_url(self::canonicalParams($uriParams)));
         }
 
         ////////////////////////////////
@@ -571,6 +574,14 @@ class CWebSearch extends BaseModel
 
         $aItems = osc_apply_filter('pre_show_items', $aItems);
 
+        // Batch-load highlight/urgent/bump state for the whole page in one query,
+        // instead of the two per card osc_item_is_highlighted()/osc_item_is_urgent()
+        // would otherwise cost inside the theme's listing loop. Gated so a site with
+        // billing off never runs the query at all.
+        if (osc_billing_enabled()) {
+            osc_prime_item_upgrades($aItems);
+        }
+
         $iStart    = $p_iPage * $p_iPageSize;
         $iEnd      = min(($p_iPage + 1) * $p_iPageSize, $iTotalItems);
         $iNumPages = ceil($iTotalItems / $p_iPageSize);
@@ -735,14 +746,34 @@ class CWebSearch extends BaseModel
         } else {
             // Public search / category results: cacheable for anonymous visitors.
             osc_mark_response_cacheable();
-            $this->doView('search.php');
+
+            // A theme may specialise a single category's results page. The token
+            // comes from the request as it stands -- resolving it to a row would
+            // cost a query on every search, and a file that does not exist is not
+            // worth one.
+            $viewCandidates = array();
+            if (count($p_sCategory) === 1) {
+                $viewCategory = reset($p_sCategory);
+                if (is_string($viewCategory)) {
+                    $segments     = explode('/', trim($viewCategory, '/'));
+                    $viewCategory = end($segments);
+                    if (preg_match('/^[a-zA-Z0-9_-]+$/', $viewCategory)) {
+                        $viewCandidates[] = 'search-' . $viewCategory . '.php';
+                    }
+                }
+            }
+            $viewCandidates[] = 'search.php';
+
+            $this->doView(osc_locate_template($viewCandidates, 'search'));
         }
     }
 
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the given theme template between the `before_html` and `after_html` hooks.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
@@ -752,6 +783,61 @@ class CWebSearch extends BaseModel
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Resolve an sCategory value, which may be either a slug or an id.
+     *
+     * Slug first, because that is what a friendly URL carries. An id is just as
+     * legitimate — osc_search_url() emits ids and a category <select> submits
+     * them — and resolving only by slug 404s a category that plainly exists.
+     *
+     * @param string $value
+     *
+     * @return array<string,mixed> The category row, or an empty array when there is no such category
+     */
+    public static function findCategory($value)
+    {
+        $category = Category::newInstance()->findBySlug($value);
+        if (empty($category) && is_numeric($value)) {
+            $byId = Category::newInstance()->findByPrimaryKey($value);
+            if (!empty($byId)) {
+                return $byId;
+            }
+        }
+
+        return is_array($category) ? $category : array();
+    }
+
+    /**
+     * The params that identify the result set a listing-index page is about,
+     * from the ones the request happened to carry.
+     *
+     * What survives is what makes two URLs different pages: the category, the
+     * place, a typed query, a seller. What is dropped either re-orders or
+     * narrows the same set — paging, sort, and the price / photo / premium /
+     * custom-field facets, each of which multiplies into its own crawlable URL
+     * that would otherwise self-canonicalise as if it were a page of its own.
+     *
+     * @param array<string,mixed> $params
+     *
+     * @return array<string,mixed>
+     */
+    public static function canonicalParams(array $params)
+    {
+        $drop = array(
+            // routing
+            'page', 'action', 'sParams', 'sFeed',
+            // same set, different slice or order
+            'iPage', 'iPagesize', 'sOrder', 'iOrderType', 'sShowAs',
+            // same set, narrowed
+            'sPriceMin', 'sPriceMax', 'meta', 'bPic', 'bPremium',
+        );
+        foreach ($drop as $key) {
+            unset($params[$key]);
+        }
+
+        return $params;
     }
 
     /**

@@ -14,6 +14,8 @@
  */
 
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -40,12 +42,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <input type="hidden" name="action" value="import_post"/>
         <fieldset>
             <div class="form-horizontal">
-                <div class="form-row">
-                    <div class="form-label"><?php _e('File (.sql)'); ?></div>
-                    <div class="form-controls">
-                        <input type="file" name="sql" id="sql"/>
-                    </div>
-                </div>
+                <?php osc_admin_field(array(
+                    'type'  => 'file',
+                    'id'    => 'sql',
+                    'name'  => 'sql',
+                    'label' => __('File (.sql)'),
+                    'attrs' => array('accept' => '.sql'),
+                )); ?>
                 <?php osc_admin_form_actions(array(
                     array('label' => __('Import data'), 'type' => 'submit', 'variant' => 'primary'),
                 )); ?>

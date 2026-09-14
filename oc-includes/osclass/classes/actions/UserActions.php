@@ -19,6 +19,26 @@ use mindstellar\utility\Sanitize;
  */
 class UserActions
 {
+    /**
+     * Widths of the t_user columns an account form fills, from struct.sql.
+     * tests/strict-write-guards.php reads this and pins it against the live schema, so a
+     * column that is widened cannot leave a stale limit rejecting values it would now hold.
+     */
+    public const COLUMN_WIDTHS = array(
+        's_name'         => 100,
+        's_username'     => 100,
+        's_email'        => 100,
+        's_website'      => 100,
+        's_phone_land'   => 45,
+        's_phone_mobile' => 45,
+        's_country'      => 80,
+        's_region'       => 100,
+        's_city'         => 100,
+        's_city_area'    => 200,
+        's_address'      => 100,
+        's_zip'          => 15,
+    );
+
     public $is_admin;
     public $manager;
     /**
@@ -29,7 +49,7 @@ class UserActions
     /**
      * UserActions constructor.
      *
-     * @param $is_admin
+     * @param bool $is_admin Run as an admin edit rather than a front-end one
      */
     public function __construct($is_admin)
     {
@@ -40,7 +60,8 @@ class UserActions
 
     /**
      * Add user data
-     * @return int
+     *
+     * @return int|string 1 on success, 2 when activation is pending, else an error message
      */
     public function add()
     {
@@ -77,12 +98,20 @@ class UserActions
             $error[]     = 5;
         }
 
+        $too_long = $this->tooLongFields($input);
+        if ($too_long !== '') {
+            $flash_error .= $too_long;
+            $error[]     = 11;
+        }
+
         if (is_array(Params::getParam('s_info'))) {
             foreach (Params::getParam('s_info') as $key => $value) {
-                // validate max length to 512 chars
-                $valid = osc_validate_text($value, 256, false);
-                if (!$valid) {
-                    $flash_error .= _m('The field %s is too long', $key) . PHP_EOL;
+                // s_info is TEXT, so the limit is 65535 *bytes*, not characters.
+                // osc_validate_text() is a minimum-length gate: at 256 it demanded
+                // 256 consecutive alphanumerics, which no prose containing a space
+                // can satisfy, and reported the failure as "too long".
+                if (strlen((string) $value) > 65535) {
+                    $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html($key)) . PHP_EOL;
                     $error[]     = 11;
                 }
             }
@@ -131,6 +160,17 @@ class UserActions
         }
 
         $userId = $this->manager->insertGetId($input);
+
+        // insertGetId() swallows the database error and answers 0, so an unchecked call
+        // walked on with $userId = 0 -- writing the log against no user, mailing an
+        // activation link for a row that does not exist and telling the visitor the
+        // account was created. Stop here instead and say so.
+        if ($userId <= 0) {
+            trigger_error('User insert produced no row; registration aborted.', E_USER_WARNING);
+            osc_run_hook('user_register_failed', array(12));
+
+            return _m('Your account could not be created. Please try again.') . PHP_EOL;
+        }
 
         if ($input['s_username'] == '') {
             $this->manager->update(
@@ -192,9 +232,10 @@ class UserActions
 
     /**
      * Prepare and sanitize user input data
-     * @param $is_add
      *
-     * @return array
+     * @param bool $is_add Build a row for an insert rather than an update
+     *
+     * @return array<string,mixed>
      */
     public function prepareData($is_add)
     {
@@ -274,10 +315,52 @@ class UserActions
     }
 
     /**
-     * Edit user data
-     * @param $userId
+     * Field-level rejection for anything wider than the column that has to hold it.
      *
-     * @return int
+     * prepareData() sanitises but never shortens, so an over-long value reaches
+     * t_user as it was typed. A relaxed connection cuts it short and stores the
+     * remainder; a strict one refuses the whole statement. Neither is something to
+     * hand a visitor, so the value is refused by name before either can happen.
+     *
+     * @param array $input Row as prepareData() built it
+     *
+     * @return string Accumulated flash error, empty when every field fits
+     */
+    private function tooLongFields(array $input)
+    {
+        $labels = array(
+            's_name'         => _m('Name'),
+            's_username'     => _m('Username'),
+            's_email'        => _m('E-mail'),
+            's_website'      => _m('Website'),
+            's_phone_land'   => _m('Landline'),
+            's_phone_mobile' => _m('Mobile'),
+            's_country'      => _m('Country'),
+            's_region'       => _m('Region'),
+            's_city'         => _m('City'),
+            's_city_area'    => _m('Municipality'),
+            's_address'      => _m('Address'),
+            's_zip'          => _m('Zip code'),
+        );
+
+        $flash_error = '';
+        foreach (self::COLUMN_WIDTHS as $column => $width) {
+            if (!isset($input[$column]) || osc_validate_max((string)$input[$column], $width)) {
+                continue;
+            }
+            $flash_error .= sprintf(_m('%s is too long, the maximum is %d characters'), $labels[$column], $width)
+                . PHP_EOL;
+        }
+
+        return $flash_error;
+    }
+
+    /**
+     * Edit user data
+     *
+     * @param int $userId
+     *
+     * @return int|string 1 on success, 2 when a new email needs validating, else an error message
      */
     public function edit($userId)
     {
@@ -313,12 +396,22 @@ class UserActions
             $error[]     = 7;
         }
 
+        $too_long = $this->tooLongFields($input);
+        if ($too_long !== '') {
+            $flash_error .= $too_long;
+            $error[]     = 11;
+        }
+
         $flash_error = osc_apply_filter('user_edit_flash_error', $flash_error, $userId);
         if ($flash_error != '') {
             return $flash_error;
         }
 
-        $this->manager->update($input, array('pk_i_id' => $userId));
+        if ($this->manager->update($input, array('pk_i_id' => $userId)) === false) {
+            trigger_error('User update wrote no row; profile save aborted.', E_USER_WARNING);
+
+            return _m('Your profile could not be saved. Please try again.') . PHP_EOL;
+        }
 
         if ($this->is_admin) {
             Item::newInstance()->update(array(
@@ -402,7 +495,7 @@ class UserActions
      * consulted — and a captcha token verifies exactly once, so there is only ever one
      * place to do it. CWebLogin's 'recover_post' does it, mirroring CAdminLogin.
      *
-     * @return int
+     * @return int 0 when the email was sent, 1 when the address matched no enabled account
      */
     public function recover_password()
     {
@@ -427,7 +520,8 @@ class UserActions
 
     /**
      * Activate User
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return bool
      */
@@ -482,7 +576,8 @@ class UserActions
 
     /**
      * Deactive user
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return bool
      */
@@ -520,7 +615,8 @@ class UserActions
 
     /**
      * Enable User
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return bool
      */
@@ -557,7 +653,8 @@ class UserActions
 
     /**
      * Disable user
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return bool
      */
@@ -594,7 +691,8 @@ class UserActions
 
     /**
      * Resend user activation email
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return int
      */
@@ -624,7 +722,8 @@ class UserActions
 
     /**
      * Bootstrap user login
-     * @param $user_id
+     *
+     * @param int $user_id
      *
      * @return int
      */

@@ -11,12 +11,11 @@
 // block (its stock cool-grey dark), from the bootstrap import on line 5 of main.scss. A
 // custom property is won by the last matching rule of equal specificity, so to re-point
 // --bs-body-bg (and the rest) to the warm bench, this block must come AFTER Bootstrap's.
-// _brand.scss is imported BEFORE Bootstrap and could never do it; that is the whole reason
-// this is a separate file at the end of the import list rather than more lines in _brand.
+// _brand.scss is imported BEFORE Bootstrap and could never do it, so this is a separate
+// file at the end of the import list.
 //
 // Every colour here is a token. Components already read var(--osc-*) / var(--bs-*), so
-// re-pointing the tokens is the entire theme — there is almost no per-component dark CSS,
-// which is the payoff of the migration that preceded this.
+// re-pointing the tokens is the entire theme.
 //
 // CONTRAST. Every pair a component actually forms is measured against its bar — 4.5:1 for
 // body and badge text, 3:1 for an icon glyph or a control border (WCAG 1.4.11). The figure
@@ -41,6 +40,9 @@
   --osc-chrome-edge:   #3a424f;
   --osc-chrome-hover:  rgba(255, 255, 255, .06);
   --osc-nav-label:     var(--osc-ink-muted); // 6.31:1 on the dark chrome — no darkening needed
+  // The --osc-sidebar-* layer (see _brand.scss) aliases the base tokens above, so the rail
+  // picks up these dark values automatically — no sidebar override needed here unless the
+  // rail is rethemed to diverge from the chrome.
 
   // --- Lines -----------------------------------------------------------------
   --osc-rule:          #333a45; // decorative divider — deliberately low contrast
@@ -88,10 +90,8 @@
   --osc-shadow-modal:   0 16px 48px rgba(0, 0, 0, .60);
 
   // ---------------------------------------------------------------------------
-  // Bootstrap surface tokens. Components we did not write (form controls, dropdowns, the
-  // grid, tables) read these, and Bootstrap's own dark block set them to its stock cool
-  // greys a few rules earlier. Re-point the load-bearing ones to the warm bench so the
-  // whole admin is one material, not our tokens over a cold Bootstrap shell.
+  // Bootstrap surface tokens, which its own dark block set to stock cool greys a few
+  // rules earlier. Re-pointed here so the whole admin is one material.
   // ---------------------------------------------------------------------------
   --bs-body-bg:            var(--osc-bench);
   --bs-body-bg-rgb:        26, 31, 39;   // = --osc-bench #1a1f27 (cool). Was 33,30,26 (#211e1a),

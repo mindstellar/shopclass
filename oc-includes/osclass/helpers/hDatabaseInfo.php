@@ -26,7 +26,8 @@ use mindstellar\utility\Deprecate;
  * Gets database name
  *
  * @return string
- * @deprecated 4.0.0
+ * @deprecated since 4.0.0
+ * @see DB_NAME constant
  */
 function osc_db_name()
 {
@@ -39,7 +40,8 @@ function osc_db_name()
  * Gets database host
  *
  * @return string
- * @deprecated 4.0.0
+ * @deprecated since 4.0.0
+ * @see DB_HOST constant
  */
 function osc_db_host()
 {
@@ -52,7 +54,8 @@ function osc_db_host()
  * Gets database user
  *
  * @return string
- * @deprecated 4.0.0
+ * @deprecated since 4.0.0
+ * @see DB_USER constant
  */
 function osc_db_user()
 {
@@ -65,7 +68,8 @@ function osc_db_user()
  * Gets database password
  *
  * @return string
- * @deprecated 4.0.0
+ * @deprecated since 4.0.0
+ * @see DB_PASSWORD constant
  */
 function osc_db_password()
 {

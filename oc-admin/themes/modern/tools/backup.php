@@ -14,6 +14,8 @@
  */
 
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -38,31 +40,31 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <input type="hidden" name="page" value="tools"/>
                 <fieldset>
                     <div class="form-horizontal">
-                        <div class="form-row">
-                            <div class="form-label"><?php _e('Backup folder'); ?></div>
-                            <div class="form-controls">
-                                <input type="text" class="input-large" name="bck_dir"
-                                       value="<?php echo osc_esc_html(osc_base_path()); ?>"/>
-                                <div class="callout-warning">
-                                    <?php _e("If you don't specify a backup folder, the backup files will be "
-                                             . "created in the root of your Shopclass installation."); ?>
-                                </div>
-                                <div class="help-box">
-                                    <?php _e('This is the folder in which your backups will be created. We recommend that you choose a non-public path.'); ?>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                        <div class="form-label"><?php _e('Backup Method');?></div>
-                            <div class="form-controls">
-                                <select class="form-select form-select-sm" name="action">
-                                    <option><?php _e('Choose backup method'); ?></option>
-                                    <option value="backup-sql"><?php _e('Backup SQL (store on server)'); ?></option>
-                                    <option value="backup-sql_file"><?php _e('Backup SQL (download file)'); ?></option>
-                                    <option value="backup-zip"><?php _e('Backup files (store on server)'); ?></option>
-                                </select>
-                            </div>
-                        </div>
+                        <?php
+                        osc_admin_text(array(
+                            'name'      => 'bck_dir',
+                            'label'     => __('Backup folder'),
+                            'value'     => osc_base_path(),
+                            'width'     => 'key',
+                            'help_html' => '<span class="callout-warning">' . osc_esc_html(__(
+                                "If you don't specify a backup folder, the backup files will be created in the "
+                                . 'root of your Shopclass installation.'
+                            )) . '</span> ' . osc_esc_html(__(
+                                'This is the folder in which your backups will be created. We recommend that you '
+                                . 'choose a non-public path.'
+                            )),
+                        ));
+                        osc_admin_select(array(
+                            'name'        => 'action',
+                            'label'       => __('Backup Method'),
+                            'placeholder' => __('Choose backup method'),
+                            'width'       => 'text',
+                            'options'     => array(
+                                'backup-sql'      => __('Backup SQL (store on server)'),
+                                'backup-sql_file' => __('Backup SQL (download file)'),
+                                'backup-zip'      => __('Backup files (store on server)'),
+                            ),
+                        )); ?>
                         <?php osc_admin_form_actions(array(
                             array('label' => __('Submit'), 'type' => 'submit', 'variant' => 'primary'),
                         )); ?>

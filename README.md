@@ -39,6 +39,9 @@ paths) so existing extensions keep working, while replacing the legacy frontend:
 a Bootstrap 5 admin theme, jQuery removed from the core, PHP 8 throughout, and a
 first-class maintenance/cleanup toolset built in.
 
+**Coming from Osclass?** [What happened to Osclass, and how to upgrade](https://mindstellar.com/osclass/)
+walks through the history, what carries over, and the upgrade path from a 3.x or 5.x install.
+
 ## Features
 
 - 🗂️ Listings with photos, categories, and hierarchical locations
@@ -73,19 +76,19 @@ first-class maintenance/cleanup toolset built in.
 
 **1 · Check server** — the installer confirms your PHP version, extensions and folder permissions up front, so nothing fails halfway through.
 
-<img src="docs/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
+<img src="docs/site/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
 
 **2 · Connect database** — enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
 
-<img src="docs/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
+<img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
 
 **3 · Your site** — pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
 
-<img src="docs/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
+<img src="docs/site/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
 
 **4 · Done** — copy your admin password (it's also e-mailed to you) and open the admin panel.
 
-<img src="docs/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
+<img src="docs/site/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
@@ -138,7 +141,7 @@ The runtime needs no build tools, but the admin theme's CSS/JS are compiled from
 source. You only need Node to work on them.
 
 ```bash
-git clone --recursive git@github.com:mindstellar/shopclass.git
+git clone git@github.com:mindstellar/shopclass.git
 cd shopclass
 npm install
 npm run build        # vendor assets + SCSS → CSS + JS
@@ -149,6 +152,16 @@ Compiled output (`oc-admin/themes/modern/css/main.css`, `oc-includes/assets/…`
 is **committed** — releases are cut with `git archive`, so whatever is committed
 is exactly what users receive. Rebuild and commit the output with any SCSS/JS
 change.
+
+The same applies to PHP dependencies. Nothing runs `composer install` at release,
+so `oc-includes/vendor/` is the library users actually get: a change to
+`composer.json` that is not accompanied by a rebuilt vendor tree ships the old
+code under the new version number. Run `composer update <package>` and commit
+`vendor/` alongside the manifest. CI fails the build otherwise.
+
+Dependencies must also resolve on the PHP floor. `config.platform` pins composer
+to 8.0.0, so a package requiring more is refused at resolution even when your own
+PHP is newer.
 
 ### Run it with Docker
 
@@ -276,6 +289,10 @@ please don't modify the marks or imply endorsement.
 
 ## Documentation
 
+**[mindstellar.com/docs](https://mindstellar.com/docs/)** — installing, configuring
+and extending Shopclass. The pages are written in [`docs/site/`](docs/site/) and
+published from there, so corrections are a pull request against this repository.
+
 - [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
 - [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.
 
@@ -317,6 +334,8 @@ notices are retained in [NOTICE](NOTICE) as that license requires.
 
 ## Links
 
+- 🏠 [Website](https://mindstellar.com) · [Live demo](https://demo.mindstellar.com)
+- 🧭 [Coming from Osclass](https://mindstellar.com/osclass/)
 - 📦 [Releases](https://github.com/mindstellar/shopclass/releases)
 - 🐛 [Issues](https://github.com/mindstellar/shopclass/issues)
 - 💬 [Discussions](https://github.com/mindstellar/shopclass/discussions)

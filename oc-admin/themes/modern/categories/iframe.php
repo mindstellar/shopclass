@@ -26,24 +26,20 @@ $locales     = OSCLocale::newInstance()->listAllEnabled();
         <fieldset>
             <div class="row g-3">
                 <div class="col-12">
-                    <div class="form-row">
-                        <?php CategoryForm::multilanguage_name_description($locales, $category); ?>
-                    </div>
+                    <?php CategoryForm::multilanguage_name_description($locales, $category); ?>
                 </div>
                 <div class="col-12">
-                    <div class="form-row">
-                        <div class="cat-edit-group">
-                            <label for="i_expiration_days"><?php _e('Expiration (days)'); ?></label>
-                            <div class="input micro">
-                                <?php CategoryForm::expiration_days_input_text($category); ?>
-                                <p class="help-inline"><?php _e('Zero means listings in this category never expire.'); ?></p>
-                                <label><?php CategoryForm::price_enabled_for_category($category); ?>
-                                    <span><?php _e('Show the price field on listings in this category'); ?></span></label>
-                                <?php if ($has_subcats) { ?>
-                                    <label><?php CategoryForm::apply_changes_to_subcategories($category); ?>
-                                        <span><?php _e('Apply the expiration and price changes to all subcategories'); ?></span></label>
-                                <?php } ?>
-                            </div>
+                    <div class="cat-edit-group">
+                        <label for="i_expiration_days"><?php _e('Expiration (days)'); ?></label>
+                        <div class="input micro">
+                            <?php CategoryForm::expiration_days_input_text($category); ?>
+                            <p class="help-inline"><?php _e('Zero means listings in this category never expire.'); ?></p>
+                            <label><?php CategoryForm::price_enabled_for_category($category); ?>
+                                <span><?php _e('Show the price field on listings in this category'); ?></span></label>
+                            <?php if ($has_subcats) { ?>
+                                <label><?php CategoryForm::apply_changes_to_subcategories($category); ?>
+                                    <span><?php _e('Apply the expiration and price changes to all subcategories'); ?></span></label>
+                            <?php } ?>
                         </div>
                     </div>
                 </div>

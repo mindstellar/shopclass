@@ -19,6 +19,9 @@ class AdminThemes extends Themes
 {
     private static $instance;
 
+    /**
+     * Selects the admin theme configured in preferences.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -26,6 +29,8 @@ class AdminThemes extends Themes
     }
 
     /**
+     * Shared AdminThemes instance, created on first use.
+     *
      * @return \AdminThemes
      */
     public static function newInstance()
@@ -37,6 +42,12 @@ class AdminThemes extends Themes
         return self::$instance;
     }
 
+    /**
+     * Point theme_url at the admin theme directory, or at the built-in gui/ when
+     * the theme is missing.
+     *
+     * @return void
+     */
     public function setCurrentThemeUrl()
     {
         if ($this->theme_exists) {
@@ -46,6 +57,12 @@ class AdminThemes extends Themes
         }
     }
 
+    /**
+     * Point theme_path at the admin theme directory, or at the built-in gui/ when
+     * the theme is missing.
+     *
+     * @return void
+     */
     public function setCurrentThemePath()
     {
         if (file_exists(osc_admin_base_path() . 'themes/' . $this->theme . '/')) {

@@ -72,6 +72,13 @@ final class Orders
         return new Order($id, $userId, $gateway, null, $amount, $currency, $credits, Order::STATUS_PENDING, $meta, $now);
     }
 
+    /**
+     * One order, or null when no order has that id.
+     *
+     * @param int $id
+     *
+     * @return Order|null
+     */
     public static function find(int $id): ?Order
     {
         $row = self::table()->where('pk_i_id', $id)->first();
@@ -82,6 +89,11 @@ final class Orders
     /**
      * Look an order up by the gateway's own reference. This is how a webhook that
      * carries only the provider's id finds its way back to our record.
+     *
+     * @param string $gateway
+     * @param string $externalRef
+     *
+     * @return Order|null
      */
     public static function findByGatewayRef(string $gateway, string $externalRef): ?Order
     {
@@ -96,14 +108,27 @@ final class Orders
     /**
      * Move an order to $status, optionally stamping the gateway's reference.
      *
-     * Guarded on the current status being pending, so a replayed webhook cannot
-     * re-settle an order that already settled -- the update matches no row and
+     * Guarded by default on the current status being pending, so a replayed webhook
+     * cannot re-settle an order that already settled -- the update matches no row and
      * returns false. The caller treats that as "already handled", not as an error.
      *
+     * @param int      $id
+     * @param string   $status      One of the Order::STATUS_* constants
+     * @param string|null $externalRef The gateway's own reference, when it has one
+     * @param string[] $from Statuses eligible to transition from. Widen this only for
+     *                       the admin "mark paid" escape hatch reopening a `failed`
+     *                       order (Billing::markPaid()'s $allowFailed) -- no gateway
+     *                       callback route passes anything but the default.
+     *
      * @return bool whether this call was the one that changed the row
+     * @throws InvalidArgumentException on an unknown status
      */
-    public static function settle(int $id, string $status, ?string $externalRef = null): bool
-    {
+    public static function settle(
+        int $id,
+        string $status,
+        ?string $externalRef = null,
+        array $from = array(Order::STATUS_PENDING)
+    ): bool {
         if (!in_array($status, Order::STATUSES, true)) {
             throw new InvalidArgumentException('Orders: unknown status "' . $status . '"');
         }
@@ -119,7 +144,7 @@ final class Orders
         try {
             $changed = self::table()
                 ->where('pk_i_id', $id)
-                ->where('s_status', Order::STATUS_PENDING)
+                ->whereIn('s_status', $from)
                 ->update($data);
         } catch (DbException $e) {
             // uq_gateway_ref: this external reference is already attached to another
@@ -134,6 +159,10 @@ final class Orders
     /**
      * A refund arrives after settlement, so it is the one transition that starts
      * from paid rather than pending.
+     *
+     * @param int $id
+     *
+     * @return bool whether this call was the one that changed the row
      */
     public static function refund(int $id): bool
     {
@@ -146,6 +175,12 @@ final class Orders
     }
 
     /**
+     * One user's order history.
+     *
+     * @param int $userId
+     * @param int $limit
+     * @param int $offset
+     *
      * @return Order[] newest first
      */
     public static function forUser(int $userId, int $limit = 25, int $offset = 0): array
@@ -161,6 +196,12 @@ final class Orders
     }
 
     /**
+     * Orders across the whole site.
+     *
+     * @param int         $limit
+     * @param int         $offset
+     * @param string|null $status Restrict to one Order::STATUS_* value
+     *
      * @return Order[] newest first, optionally filtered by status
      */
     public static function recent(int $limit = 25, int $offset = 0, ?string $status = null): array
@@ -173,6 +214,13 @@ final class Orders
         return array_map(static fn (array $row): Order => Order::fromRow($row), $q->get());
     }
 
+    /**
+     * How many orders exist, optionally in one status.
+     *
+     * @param string|null $status
+     *
+     * @return int
+     */
     public static function countAll(?string $status = null): int
     {
         $q = self::table();
@@ -187,6 +235,8 @@ final class Orders
      * The admin orders list: filter by status, gateway and user, newest first.
      *
      * @param array $filters 'status', 'gateway', 'user_id' — any may be omitted
+     * @param int   $limit
+     * @param int   $offset
      *
      * @return Order[]
      */
@@ -202,6 +252,13 @@ final class Orders
         return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
     }
 
+    /**
+     * How many orders the same filter matches, for the admin pager.
+     *
+     * @param array $filters Same keys as search()
+     *
+     * @return int
+     */
     public static function searchCount(array $filters): int
     {
         return self::filtered($filters)->count();
@@ -227,6 +284,8 @@ final class Orders
      * Totals for the orders header, over the current filter rather than over everything —
      * a figure that ignores the filter above it is a figure that gets misread.
      *
+     * @param array $filters Same keys as search()
+     *
      * @return array{count:int, paid:int, pending:int}
      */
     public static function summary(array $filters): array
@@ -238,6 +297,13 @@ final class Orders
         );
     }
 
+    /**
+     * The admin list's filter clauses, shared by search() and searchCount().
+     *
+     * @param array $filters Same keys as search()
+     *
+     * @return QueryBuilder
+     */
     private static function filtered(array $filters): QueryBuilder
     {
         $q = self::table();
@@ -255,6 +321,11 @@ final class Orders
         return $q;
     }
 
+    /**
+     * Query builder bound to the order table.
+     *
+     * @return QueryBuilder
+     */
     private static function table(): QueryBuilder
     {
         return osc_db_table(DB_TABLE_PREFIX . self::TABLE);

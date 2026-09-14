@@ -24,7 +24,7 @@ class Breadcrumb
     /**
      * Breadcrumb constructor.
      *
-     * @param array $lang
+     * @param array<string,string> $lang Title overrides, keyed as in setTitles()
      */
     public function __construct($lang = array())
     {
@@ -37,8 +37,9 @@ class Breadcrumb
     /**
      * Set the texts for the breadcrumb
      *
-     * @param $lang
+     * @param array<string,string> $lang Overrides for the default titles; unknown keys are ignored
      *
+     * @return void
      * @since 3.1
      *
      */
@@ -77,6 +78,11 @@ class Breadcrumb
         }
     }
 
+    /**
+     * Build the breadcrumb levels for the current location and section.
+     *
+     * @return void
+     */
     public function init()
     {
         if (in_array(
@@ -377,6 +383,8 @@ class Breadcrumb
     }
 
     /**
+     * The routed location this breadcrumb was built for.
+     *
      * @return string
      */
     public function getLocation()
@@ -385,7 +393,11 @@ class Breadcrumb
     }
 
     /**
-     * @param $location
+     * Override the routed location.
+     *
+     * @param string $location
+     *
+     * @return void
      */
     public function setLocation($location)
     {
@@ -393,7 +405,11 @@ class Breadcrumb
     }
 
     /**
-     * @param $level
+     * Append one breadcrumb level; a non-array is ignored.
+     *
+     * @param array{url?:string,title:string} $level
+     *
+     * @return void
      */
     public function addLevel($level)
     {
@@ -404,6 +420,8 @@ class Breadcrumb
     }
 
     /**
+     * The routed section this breadcrumb was built for.
+     *
      * @return string
      */
     public function getSection()
@@ -412,7 +430,11 @@ class Breadcrumb
     }
 
     /**
-     * @param $section
+     * Override the routed section.
+     *
+     * @param string $section
+     *
+     * @return void
      */
     public function setSection($section)
     {
@@ -420,7 +442,9 @@ class Breadcrumb
     }
 
     /**
-     * @return array
+     * The breadcrumb levels, in order.
+     *
+     * @return array<int,array{url?:string,title:string}>
      */
     public function getaLevel()
     {
@@ -428,7 +452,11 @@ class Breadcrumb
     }
 
     /**
-     * @param $aLevel
+     * Replace the whole level list.
+     *
+     * @param array<int,array{url?:string,title:string}> $aLevel
+     *
+     * @return void
      */
     public function setaLevel($aLevel)
     {
@@ -436,6 +464,8 @@ class Breadcrumb
     }
 
     /**
+     * Render the levels as a schema.org BreadcrumbList `<ul>`, or '' when there are none.
+     *
      * @param string $separator
      *
      * @return string

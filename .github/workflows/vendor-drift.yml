@@ -1,0 +1,71 @@
+# Verifies that what is committed under oc-includes matches what the manifests claim.
+#
+# Releases are cut with `git archive` from a tag: nothing installs dependencies on a
+# user's behalf, so the committed vendor and assets trees ARE the product. A bump
+# that edits composer.json/package.json without rebuilding them ships the old library
+# under the new version number, and the only symptom is that a fixed bug is still
+# there. Dependabot raises exactly that shape of change.
+name: Vendor Drift
+
+on:
+  push:
+    branches-ignore:
+      - develop
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'LICENSE-APACHE'
+      - 'NOTICE'
+      - '.gitignore'
+  workflow_call:
+
+jobs:
+  vendor-drift:
+    name: Vendor matches the manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      # Compares composer.lock against composer's own record of the vendor tree.
+      # Both are committed, so this needs no network and cannot flake on a mirror.
+      - name: PHP dependencies match the lock
+        run: php tests/vendor-sync.php
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # copy-assets is a straight copy out of node_modules, so with the lockfile
+      # pinned it reproduces byte for byte.
+      - name: Rebuild vendored assets
+        run: npm run assets
+
+      - name: Assets match what is committed
+        run: |
+          if ! git diff --quiet -- oc-includes/assets/ oc-admin/themes/modern/scss/bootstrap/; then
+            echo "::error::Vendored assets are out of date. Run 'npm run assets' and commit the result."
+            git diff --stat -- oc-includes/assets/ oc-admin/themes/modern/scss/bootstrap/
+            exit 1
+          fi
+          echo "Vendored assets match the lockfile."

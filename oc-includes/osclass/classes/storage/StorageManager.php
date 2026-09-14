@@ -29,10 +29,18 @@ class StorageManager
 
     private bool $booted = false;
 
+    /**
+     * Not instantiable: use instance().
+     */
     private function __construct()
     {
     }
 
+    /**
+     * The process-wide registry.
+     *
+     * @return StorageManager
+     */
     public static function instance(): StorageManager
     {
         if (self::$instance === null) {
@@ -42,11 +50,25 @@ class StorageManager
         return self::$instance;
     }
 
+    /**
+     * Adds an adapter under its own id, replacing any adapter already registered there.
+     *
+     * @param StorageAdapter $adapter
+     *
+     * @return void
+     */
     public function register(StorageAdapter $adapter): void
     {
         $this->adapters[$adapter->getId()] = $adapter;
     }
 
+    /**
+     * The adapter registered under $id.
+     *
+     * @param string $id
+     *
+     * @return StorageAdapter|null null when nothing is registered under $id
+     */
     public function adapter(string $id): ?StorageAdapter
     {
         return $this->adapters[$id] ?? null;
@@ -56,6 +78,8 @@ class StorageManager
      * The remote adapter configured as active, if one is set and registered.
      * Returns null when the active preference is unset, still 'local', or
      * points at an adapter no plugin has registered.
+     *
+     * @return StorageAdapter|null
      */
     public function remote(): ?StorageAdapter
     {
@@ -71,6 +95,10 @@ class StorageManager
      * The adapter that owns $resource, based on its s_storage column.
      * Falls back to the local adapter when the stored id isn't registered
      * (e.g. the plugin that provided it was deactivated).
+     *
+     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     *
+     * @return StorageAdapter
      */
     public function forResource(array $resource): StorageAdapter
     {
@@ -82,6 +110,8 @@ class StorageManager
     /**
      * Registers the bundled local adapter and the core resource-url filters.
      * Safe to call more than once; only runs once.
+     *
+     * @return void
      */
     public function boot(): void
     {
@@ -100,8 +130,11 @@ class StorageManager
     }
 
     /**
-     * @param string     $path
-     * @param array|null $resource
+     * resource_path filter: swaps the local uploads prefix for the remote adapter's public
+     * base, for a resource stored in a public remote bucket.
+     *
+     * @param string                   $path
+     * @param array<string,mixed>|null $resource
      *
      * @return string
      */
@@ -120,8 +153,10 @@ class StorageManager
     }
 
     /**
-     * @param string     $url
-     * @param array|null $resource
+     * resource_url filter: presigns the main variant for a private remote bucket.
+     *
+     * @param string                   $url
+     * @param array<string,mixed>|null $resource
      *
      * @return string
      */
@@ -131,8 +166,10 @@ class StorageManager
     }
 
     /**
-     * @param string     $url
-     * @param array|null $resource
+     * resource_thumbnail_url filter: presigns the thumbnail variant for a private remote bucket.
+     *
+     * @param string                   $url
+     * @param array<string,mixed>|null $resource
      *
      * @return string
      */
@@ -142,8 +179,10 @@ class StorageManager
     }
 
     /**
-     * @param string     $url
-     * @param array|null $resource
+     * resource_preview_url filter: presigns the preview variant for a private remote bucket.
+     *
+     * @param string                   $url
+     * @param array<string,mixed>|null $resource
      *
      * @return string
      */
@@ -153,8 +192,10 @@ class StorageManager
     }
 
     /**
-     * @param string     $url
-     * @param array|null $resource
+     * resource_original_url filter: presigns the original variant for a private remote bucket.
+     *
+     * @param string                   $url
+     * @param array<string,mixed>|null $resource
      *
      * @return string
      */
@@ -171,9 +212,9 @@ class StorageManager
      * requested variant, falling back to the original URL whenever the
      * adapter can't produce one.
      *
-     * @param array|null $resource
-     * @param string     $variant
-     * @param string     $fallbackUrl
+     * @param array<string,mixed>|null $resource
+     * @param string                    $variant     one of ResourceLocator::VARIANTS
+     * @param string                    $fallbackUrl
      *
      * @return string
      */

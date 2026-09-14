@@ -24,6 +24,9 @@ class CAdminEmails extends AdminSecBaseModel
     //specific for this class
     private Page $emailManager;
 
+    /**
+     * Take the page manager the email templates are stored through.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -34,6 +37,12 @@ class CAdminEmails extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Draw or save one email template, otherwise list them all.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();

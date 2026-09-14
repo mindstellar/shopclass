@@ -94,7 +94,7 @@ function osc_sanitize_username($value)
  *
  * @param string $value value to sanitize
  *
- * @return string sanitized
+ * @return int|string sanitized
  */
 function osc_sanitize_int($value)
 {
@@ -145,15 +145,100 @@ function osc_sanitize_phone($value)
 }
 
 /**
+ * Reduce a value to plain text, taking every tag out along with what it contained.
+ *
+ * The filter is the one Params::getParam() runs over request data, applied to a value read
+ * from somewhere else. Like that one it escapes what it keeps, so the result is stored
+ * pre-escaped and stays inert wherever it is printed.
+ *
+ * @param array|string $value value to sanitize
+ *
+ * @return array|string same shape as $value
+ */
+function osc_sanitize_text($value)
+{
+    if (is_array($value)) {
+        return array_map('osc_sanitize_text', $value);
+    }
+    if (!is_string($value)) {
+        return $value;
+    }
+
+    return Params::purifyText($value);
+}
+
+/**
+ * Sanitise rich text to the markup a Shopclass editor can legitimately produce.
+ *
+ * The listing description is read with Params' XSS check switched off wherever a rich
+ * editor is in use -- the check strips every tag, which would eat the formatting the
+ * editor exists to produce -- and nothing replaced it, so a description was stored exactly
+ * as submitted. A poster did not even need the editor's source view: the raw HTML went
+ * through the ordinary form POST, and `<script>` in a description ran for every visitor
+ * who opened the listing.
+ *
+ * So: an allow-list rather than all-or-nothing. Everything the toolbars can emit survives
+ * -- inline formatting, lists, links, headings, quotes, tables, images, and the colour
+ * spans the admin listing editor's forecolor button writes. Scripts, iframes, event
+ * handlers, and any URL scheme that is not http/https/mailto do not.
+ *
+ * Arrays are walked, so a per-locale description map can be passed straight in.
+ *
+ * The definition cache is deliberately off: a cached one is written to disk, the existing
+ * purifier avoids that for the same reason, and this runs when a listing is saved rather
+ * than when one is read.
+ *
+ * @param array|string $value
+ *
+ * @return array|string same shape as $value
+ */
+function osc_sanitize_html($value)
+{
+    static $purifier = null;
+
+    if (is_array($value)) {
+        foreach ($value as $k => $v) {
+            $value[$k] = osc_sanitize_html($v);
+        }
+
+        return $value;
+    }
+
+    if (!is_string($value) || $value === '') {
+        return $value;
+    }
+
+    if ($purifier === null) {
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', osc_apply_filter('sanitize_html_allowed', implode(',', array(
+            'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
+            'a[href|title|rel]', 'h3', 'h4', 'blockquote', 'hr',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'span[style]', 'img[src|alt|width|height]',
+        ))));
+        // forecolor writes a colour span; nothing else needs inline CSS, and every
+        // property left out is one that cannot be abused for overlay or exfiltration.
+        $config->set('CSS.AllowedProperties', array(
+            'color', 'background-color', 'text-align',
+            'font-weight', 'font-style', 'text-decoration',
+        ));
+        $config->set('URI.AllowedSchemes', array('http' => true, 'https' => true, 'mailto' => true));
+        $config->set('Cache.DefinitionImpl', null);
+        $purifier = new HTMLPurifier($config);
+    }
+
+    return $purifier->purify($value);
+}
+
+/**
  * Escape html
  *
  * Formats text so that it can be safely placed in a form field in the event it has HTML tags.
+ * Existing entities are left intact.
  *
- * @access  public
+ * @param string $str
  *
- * @param string
- *
- * @return  string
+ * @return string
  * @version 2.4
  */
 function osc_esc_html($str = '')
@@ -183,8 +268,6 @@ function osc_esc_html($str = '')
 
 /**
  * Escape single quotes, double quotes, <, >, & and line endings
- *
- * @access  public
  *
  * @param string $str
  *

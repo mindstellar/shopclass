@@ -44,6 +44,7 @@ class Cli
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
+        'storage:work'        => ['cmdStorageWork', 'Drain the storage-offload queue and nothing else (--max-seconds=)'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
@@ -65,7 +66,11 @@ class Cli
     ];
 
     /**
+     * Entry point: dispatch one CLI invocation.
+     *
      * @param array<int, string> $argv arguments after the script name
+     *
+     * @return int Process exit code
      */
     public static function run(array $argv): int
     {
@@ -73,7 +78,11 @@ class Cli
     }
 
     /**
+     * Route the first argument to its command handler, reporting an unknown verb.
+     *
      * @param array<int, string> $argv
+     *
+     * @return int Process exit code; 2 for an unknown command, 1 on a thrown error
      */
     public function dispatch(array $argv): int
     {
@@ -129,6 +138,8 @@ class Cli
      * for this verb instead of oc-load.php. Idempotent: a no-op once installed.
      *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdInstall(array $args): int
     {
@@ -308,7 +319,11 @@ class Cli
     }
 
     /**
+     * Run the due scheduled tasks for one or every cron type.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdCron(array $args): int
     {
@@ -340,7 +355,11 @@ class Cli
     }
 
     /**
+     * Repair a drifted schema, then run the pending migrations.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdDbUpgrade(array $args): int
     {
@@ -394,6 +413,8 @@ class Cli
      * A no-op on every install that isn't running from that image layout.
      *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdPackageReconcile(array $args): int
     {
@@ -418,7 +439,11 @@ class Cli
     }
 
     /**
+     * Flush the object cache.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdCacheFlush(array $args): int
     {
@@ -431,7 +456,74 @@ class Cli
     }
 
     /**
+     * Turn the storage-offload queue crank, and nothing else.
+     *
+     * The queue is otherwise drained only from the generic `cron` hook, which means
+     * `cron --type=hourly` -- and that runs the whole hourly schedule: expiry mail,
+     * purges, stats. Nobody can safely run that every two minutes, so the queue got at
+     * most one 20-second pass an hour, which does not keep up with a busy site's uploads
+     * and never clears a backlog. Auto-cron cannot help either: it reaches the site over
+     * HTTP at its own public URL, which an origin behind a proxy cannot hairpin back to.
+     *
+     * This runs the worker alone, so it is safe on a tight schedule:
+     *
+     *     * * * * * php oc-cli.php storage:work --max-seconds=50
+     *
+     * The remote is registered first, the same way the cron hook does it, so the adapter
+     * resolves regardless of the context this is invoked from.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
+     */
+    private function cmdStorageWork(array $args): int
+    {
+        $maxSeconds = (int) ($args['max-seconds'] ?? 20);
+        if ($maxSeconds < 1) {
+            $this->err("--max-seconds must be 1 or more.\n");
+
+            return 2;
+        }
+
+        osc_storage_register_remote();
+        if (\mindstellar\storage\StorageManager::instance()->adapter('s3') === null) {
+            // Not an error: a site with no remote configured queues nothing, and a cron
+            // entry left in place through a config change should not start alarming.
+            $this->out("No remote storage configured — nothing to drain.\n");
+
+            return 0;
+        }
+
+        $queue   = \StorageQueue::newInstance();
+        $before  = $queue->countByStatus('pending');
+        $started = time();
+
+        \mindstellar\storage\StorageWorker::run($maxSeconds);
+
+        $after   = $queue->countByStatus('pending');
+        $failed  = $queue->countByStatus('failed');
+        $elapsed = time() - $started;
+
+        $this->out(sprintf(
+            "Drained %d job(s) in %ds — %d pending, %d failed.\n",
+            max(0, $before - $after),
+            $elapsed,
+            $after,
+            $failed
+        ));
+
+        // A backlog that is still draining is the normal case on a schedule, so it is
+        // not a failure. Jobs the worker gave up on are, and they are what a cron log
+        // should be able to notice.
+        return $failed > 0 ? 1 : 0;
+    }
+
+    /**
+     * Pre-generate every sitemap document into the cache.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 1 when any document failed
      */
     private function cmdSitemapWarm(array $args): int
     {
@@ -444,7 +536,11 @@ class Cli
     }
 
     /**
+     * Create an admin account, generating a password when none is given.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdUserCreateAdmin(array $args): int
     {
@@ -498,7 +594,11 @@ class Cli
     }
 
     /**
+     * Reset an admin password, generating one when none is given.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdUserResetPassword(array $args): int
     {
@@ -560,6 +660,10 @@ class Cli
     /**
      * Normalise a plugin reference to the `folder/index.php` form the Plugins
      * registry stores, so the CLI can accept the bare folder name.
+     *
+     * @param string $plugin Folder name, or an existing folder/index.php path
+     *
+     * @return string
      */
     private function normalisePluginPath(string $plugin): string
     {
@@ -569,7 +673,11 @@ class Cli
     }
 
     /**
+     * List every plugin found on disk with its status and version.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdPluginList(array $args): int
     {
@@ -599,7 +707,11 @@ class Cli
     }
 
     /**
+     * Enable an installed plugin.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdPluginActivate(array $args): int
     {
@@ -634,7 +746,11 @@ class Cli
     }
 
     /**
+     * Disable an active plugin.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdPluginDeactivate(array $args): int
     {
@@ -664,7 +780,11 @@ class Cli
     }
 
     /**
+     * List the installed public themes, marking the active one.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdThemeList(array $args): int
     {
@@ -685,7 +805,11 @@ class Cli
     }
 
     /**
+     * Set the active public theme.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdThemeActivate(array $args): int
     {
@@ -708,6 +832,7 @@ class Cli
         }
 
         osc_set_preference('theme', $theme);
+        \Plugins::resetOpcache();
         // Mirror the admin activation hook so plugins/themes can react.
         osc_run_hook('theme_activate', $theme);
 
@@ -721,6 +846,8 @@ class Cli
      * anything else since those are the only two registries.
      *
      * @param array<string, mixed> $args
+     *
+     * @return string|null 'plugin' or 'theme'; null when --type was something else
      */
     private function marketType(array $args): ?string
     {
@@ -737,6 +864,8 @@ class Cli
     /**
      * Refuses state-changing market operations under DEMO or when package
      * installs are disabled for this deployment.
+     *
+     * @return int 0 when the operation may proceed, 1 when it is refused
      */
     private function marketWriteGuard(): int
     {
@@ -754,6 +883,13 @@ class Cli
         return 0;
     }
 
+    /**
+     * A byte count as a human-readable size.
+     *
+     * @param int $bytes
+     *
+     * @return string 'unknown size' for a non-positive count
+     */
     private function formatBytes(int $bytes): string
     {
         if ($bytes <= 0) {
@@ -775,7 +911,9 @@ class Cli
      * Prints slug, target version, size, and source host before an install/update
      * actually touches disk, per the market's "say what you're about to do" contract.
      *
-     * @param array<string, mixed> $target a versionEntry: version, url, size, ...
+     * @param string               $slug
+     * @param array<string, mixed> $target   a versionEntry: version, url, size, ...
+     * @param bool                 $isUpdate Word it as an update rather than an install
      */
     private function printInstallPlan(string $slug, array $target, bool $isUpdate = false): void
     {
@@ -791,7 +929,11 @@ class Cli
     }
 
     /**
+     * Print the outcome of an installer run and turn it into an exit code.
+     *
      * @param array<string, mixed> $result Installer::install()/update() return shape
+     *
+     * @return int 0 on success, 1 on failure
      */
     private function reportInstallerResult(array $result): int
     {
@@ -818,7 +960,11 @@ class Cli
     }
 
     /**
+     * Refetch the package catalog for one registry.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdMarketRefresh(array $args): int
     {
@@ -855,7 +1001,11 @@ class Cli
     }
 
     /**
+     * Search the package catalog.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdMarketSearch(array $args): int
     {
@@ -905,7 +1055,11 @@ class Cli
     }
 
     /**
+     * Print the catalog entry for one package.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdMarketInfo(array $args): int
     {
@@ -955,7 +1109,11 @@ class Cli
     }
 
     /**
+     * Install one package from the catalog.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdMarketInstall(array $args): int
     {
@@ -999,7 +1157,11 @@ class Cli
     }
 
     /**
+     * Update one package, or every installed one, from the catalog.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int The worst exit code of the packages attempted
      */
     private function cmdMarketUpdate(array $args): int
     {
@@ -1049,7 +1211,11 @@ class Cli
     }
 
     /**
+     * Run the environment and health checks.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 1 when any check failed
      */
     private function cmdDoctor(array $args): int
     {
@@ -1136,7 +1302,11 @@ class Cli
     }
 
     /**
+     * Print the installed Shopclass version.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdVersion(array $args): int
     {
@@ -1146,7 +1316,11 @@ class Cli
     }
 
     /**
+     * Print the command list.
+     *
      * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
      */
     private function cmdHelp(array $args): int
     {
@@ -1160,6 +1334,13 @@ class Cli
         return 0;
     }
 
+    /**
+     * Compare the installed location data against the published catalog.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success
+     */
     private function cmdLocationStatus(array $args): int
     {
         $catalog = new \mindstellar\location\LocationCatalog();
@@ -1198,6 +1379,13 @@ class Cli
         return 0;
     }
 
+    /**
+     * Install or update the location data for one country, or for every stale one.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 1 when any country failed
+     */
     private function cmdLocationUpdate(array $args): int
     {
         $all     = array_key_exists('all', $args);
@@ -1276,7 +1464,11 @@ class Cli
     }
 
     /**
+     * Summarise a location import's row counts as one line.
+     *
      * @param array<string, int> $counts
+     *
+     * @return string 'no changes' when every count is zero
      */
     private function locationCounts(array $counts): string
     {
@@ -1290,11 +1482,21 @@ class Cli
         return $parts === array() ? 'no changes' : implode(', ', $parts);
     }
 
+    /**
+     * Write to standard output.
+     *
+     * @param string $text
+     */
     private function out(string $text): void
     {
         fwrite(STDOUT, $text);
     }
 
+    /**
+     * Write to standard error.
+     *
+     * @param string $text
+     */
     private function err(string $text): void
     {
         fwrite(STDERR, $text);

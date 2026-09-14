@@ -26,6 +26,8 @@ class ResourceLocator
     public const VARIANTS = ['', '_original', '_preview', '_thumbnail'];
 
     /**
+     * The variant suffixes a resource can have on disk.
+     *
      * @return string[]
      */
     public static function variants(): array
@@ -36,8 +38,8 @@ class ResourceLocator
     /**
      * Absolute local filesystem path for $resource's $variant.
      *
-     * @param array  $resource
-     * @param string $variant
+     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param string               $variant  one of self::VARIANTS
      *
      * @return string
      */
@@ -50,8 +52,8 @@ class ResourceLocator
     /**
      * Storage key for $resource's $variant, relative to oc-content/uploads/.
      *
-     * @param array  $resource
-     * @param string $variant
+     * @param array<string,mixed> $resource a t_item_resource or t_resource row
+     * @param string               $variant  one of self::VARIANTS
      *
      * @return string
      */
@@ -64,7 +66,7 @@ class ResourceLocator
     /**
      * Directory portion of the storage key (the part before the filename).
      *
-     * @param array $resource
+     * @param array<string,mixed> $resource a t_item_resource or t_resource row
      *
      * @return string
      */

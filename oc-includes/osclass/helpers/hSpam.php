@@ -66,7 +66,9 @@ function osc_report_threshold()
  * lifecycle hooks fire and the search index stays in step), then record why in
  * the moderation log. Reversible — an admin re-enables it from the usual screen.
  *
- * @param array $item item row-shaped array as fired by posted_item / edited_item
+ * @param array<string,mixed> $item item row-shaped array as fired by posted_item / edited_item
+ *
+ * @return void
  */
 function osc_keyword_spam_enforce($item)
 {
@@ -95,8 +97,8 @@ function osc_keyword_spam_enforce($item)
  * inserted when it contains a blocked keyword. Wired onto the pre_item_add_error
  * filter, so returning a non-empty string aborts the insert.
  *
- * @param string $flash_error the accumulated validation error
- * @param array  $aItem       the submitted item data (locale-keyed title/desc)
+ * @param string              $flash_error the accumulated validation error
+ * @param array<string,mixed> $aItem       the submitted item data (locale-keyed title/desc)
  *
  * @return string
  */
@@ -138,6 +140,8 @@ function osc_keyword_spam_hard_block($flash_error, $aItem)
  *
  * @param int    $id
  * @param string $as report reason
+ *
+ * @return void
  */
 function osc_item_report_record($id, $as)
 {
@@ -182,6 +186,8 @@ function osc_item_report_record($id, $as)
  * do not immediately auto-block it again.
  *
  * @param int $id
+ *
+ * @return void
  */
 function osc_item_report_clear($id)
 {

@@ -23,10 +23,10 @@
 /**
  * Gets locale generic field
  *
- * @param $field
- * @param $locale
+ * @param string $field
+ * @param string $locale
  *
- * @return string
+ * @return mixed Empty string when the field is not set
  */
 function osc_locale_field($field, $locale = '')
 {
@@ -36,7 +36,7 @@ function osc_locale_field($field, $locale = '')
 /**
  * Gets locale object
  *
- * @return array
+ * @return array<string,mixed>|null
  */
 function osc_locale()
 {
@@ -53,7 +53,7 @@ function osc_locale()
 /**
  * Gets list of locales
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_locales()
 {
@@ -70,7 +70,7 @@ function osc_get_locales()
 /**
  * Private function to count locales
  *
- * @return boolean
+ * @return int
  */
 function osc_priv_count_locales()
 {
@@ -94,9 +94,7 @@ function osc_goto_first_locale()
  */
 function osc_count_web_enabled_locales()
 {
-    if (!View::newInstance()->_exists('locales')) {
-        View::newInstance()->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
-    }
+    osc_get_locales();
 
     return osc_priv_count_locales();
 }
@@ -104,13 +102,11 @@ function osc_count_web_enabled_locales()
 /**
  * Iterator for enabled locales for website
  *
- * @return bool
+ * @return bool False once the loop is exhausted
  */
 function osc_has_web_enabled_locales()
 {
-    if (!View::newInstance()->_exists('locales')) {
-        View::newInstance()->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
-    }
+    osc_get_locales();
 
     return View::newInstance()->_next('locales');
 }
@@ -218,7 +214,7 @@ function osc_locale_text_direction()
 /**
  * Gets current locale's number of decimals
  *
- * @return string
+ * @return int|string
  */
 function osc_locale_num_dec()
 {
@@ -237,7 +233,7 @@ function osc_locale_num_dec()
 /**
  * Gets list of enabled admin locales
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  * @since 4.0.0
  */
 function osc_get_admin_locales()
@@ -255,9 +251,9 @@ function osc_get_admin_locales()
 /**
  * Gets list of enabled locales
  *
- * @param bool $indexed_by_pk
+ * @param bool $indexed_by_pk Key the list by locale code
  *
- * @return array
+ * @return array<int|string,array<string,mixed>>
  */
 function osc_all_enabled_locales_for_admin($indexed_by_pk = false)
 {
@@ -267,7 +263,7 @@ function osc_all_enabled_locales_for_admin($indexed_by_pk = false)
 /**
  * Gets current locale object
  *
- * @return array
+ * @return array<string,mixed>|false False when the locale row is gone
  */
 function osc_get_current_user_locale()
 {
@@ -317,9 +313,13 @@ function osc_current_user_locale()
  *
  * The locale used to live in $_SESSION, which started a PHP session — and made the
  * response uncacheable — the moment an anonymous visitor switched language. A
- * standalone, long-lived cookie keeps the choice without a session. The value is
- * validated against the installed locales both here and on read, because it is later
+ * standalone cookie keeps the choice without a session. The value is validated
+ * against the installed locales both here and on read, because it is later
  * concatenated into a translation .mo file path.
+ *
+ * It expires after a day: carrying it makes every response personalized (see
+ * osc_cache_relevant_cookies()), so a longer life opts a visitor out of the shared
+ * cache well past the visit the choice was made in.
  *
  * @param string $locale
  *
@@ -332,7 +332,7 @@ function osc_set_current_user_locale($locale)
     }
 
     $options = array(
-        'expires'  => time() + (86400 * 365),
+        'expires'  => time() + 86400,
         'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
         'httponly' => true,
         'samesite' => 'Lax',

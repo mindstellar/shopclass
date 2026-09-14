@@ -29,7 +29,6 @@ const TARGETS = [
   { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/LICENSE.md'] },
   { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/css/bootstrap.min.*', 'bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
-  { dest: `${ASSETS}/chart-js`, flatten: true, src: ['chart.js/dist/chart.min.js', 'chart.js/LICENSE.md'] },
   { dest: `${ASSETS}/sortablejs`, flatten: true, src: ['sortablejs/Sortable.min.js', 'sortablejs/LICENSE'] },
   { dest: `${ASSETS}/fonts/open-sans`, flatten: true, src: ['npm-font-open-sans/fonts/Regular/OpenSans-Regular.ttf', 'npm-font-open-sans/LICENSE'] },
 

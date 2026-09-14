@@ -43,6 +43,7 @@ class LogDatabase
     }
 
     /**
+     * The shared query log for this request.
      *
      * @return \LogDatabase
      */
@@ -56,11 +57,14 @@ class LogDatabase
     }
 
     /**
+     * Record one executed query, its duration and any error it reported.
      *
-     * @param $sql
-     * @param $time
-     * @param $errorLevel
-     * @param $errorDescription
+     * @param string    $sql
+     * @param float|int $time             seconds spent executing
+     * @param int       $errorLevel       driver error number; 0 when the query succeeded
+     * @param string    $errorDescription empty when the query succeeded
+     *
+     * @return void
      */
     public function addMessage($sql, $time, $errorLevel, $errorDescription)
     {
@@ -73,9 +77,12 @@ class LogDatabase
     }
 
     /**
+     * Record the EXPLAIN plan collected for one query.
      *
-     * @param      $sql
-     * @param      $results
+     * @param string                        $sql
+     * @param array<int,array<string,mixed>> $results EXPLAIN rows
+     *
+     * @return void
      */
     public function addExplainMessage($sql, $results)
     {
@@ -89,6 +96,8 @@ class LogDatabase
      * Render the request's query log as a self-contained, collapsible panel docked
      * to the bottom of the page. Styles are inlined and namespaced so the panel looks
      * the same over any theme, light or dark, and never inherits or leaks CSS.
+     *
+     * @return void
      */
     public function printMessages()
     {
@@ -373,6 +382,8 @@ CSS;
     }
 
     /**
+     * How many queries ran during this request.
+     *
      * @return int
      */
     public function getTotalNumberQueries()
@@ -381,7 +392,9 @@ CSS;
     }
 
     /**
-     * @return int
+     * Total time spent in queries during this request, in seconds.
+     *
+     * @return float|int
      */
     public function getTotalQueriesTime()
     {
@@ -394,7 +407,9 @@ CSS;
     }
 
     /**
-     * @return bool
+     * Append the request's query log to oc-content/queries.log.
+     *
+     * @return bool False when the file could not be written.
      */
     public function writeMessages()
     {
@@ -446,9 +461,11 @@ CSS;
     }
 
     /**
-     * @param $filename
+     * Whether the log file (or the directory it would be created in) is not writable.
      *
-     * @return bool
+     * @param string $filename
+     *
+     * @return bool True when writing would fail.
      */
     private function isFileWritableExists($filename)
     {
@@ -458,7 +475,9 @@ CSS;
     }
 
     /**
-     * @return bool
+     * Append the request's EXPLAIN plans to oc-content/explain_queries.log.
+     *
+     * @return bool False when the file could not be written.
      */
     public function writeExplainMessages()
     {

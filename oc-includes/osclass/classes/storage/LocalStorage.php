@@ -24,11 +24,25 @@ use mindstellar\utility\FileSystem;
  */
 class LocalStorage implements StorageAdapter
 {
+    /**
+     * Adapter id stored in t_item_resource.s_storage.
+     *
+     * @return string
+     */
     public function getId(): string
     {
         return 'local';
     }
 
+    /**
+     * Copies the file into UPLOADS_PATH . $key, overwriting whatever is there.
+     *
+     * @param string $localPath
+     * @param string $key
+     * @param string $contentType Ignored: the local filesystem stores no content type
+     *
+     * @return bool false when the copy failed
+     */
     public function put(string $localPath, string $key, string $contentType): bool
     {
         try {
@@ -40,6 +54,13 @@ class LocalStorage implements StorageAdapter
         }
     }
 
+    /**
+     * Reads the file stored under $key.
+     *
+     * @param string $key
+     *
+     * @return string|false false when the file is missing or unreadable
+     */
     public function get(string $key): string|false
     {
         $path = UPLOADS_PATH . $key;
@@ -50,11 +71,25 @@ class LocalStorage implements StorageAdapter
         return file_get_contents($path);
     }
 
+    /**
+     * Whether UPLOADS_PATH . $key exists.
+     *
+     * @param string $key
+     *
+     * @return bool
+     */
     public function exists(string $key): bool
     {
         return file_exists(UPLOADS_PATH . $key);
     }
 
+    /**
+     * Removes the file under $key; refuses directories and missing paths.
+     *
+     * @param string $key
+     *
+     * @return bool
+     */
     public function delete(string $key): bool
     {
         $path = UPLOADS_PATH . $key;
@@ -71,16 +106,33 @@ class LocalStorage implements StorageAdapter
         }
     }
 
+    /**
+     * Public URL under oc-content/uploads/.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
     public function url(string $key): string
     {
         return osc_base_url() . 'oc-content/uploads/' . $key;
     }
 
+    /**
+     * Always false: this adapter is the local filesystem.
+     *
+     * @return bool
+     */
     public function isRemote(): bool
     {
         return false;
     }
 
+    /**
+     * Always true: uploads are served directly by the web server.
+     *
+     * @return bool
+     */
     public function isPublic(): bool
     {
         return true;

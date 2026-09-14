@@ -24,6 +24,9 @@ class CAdminItems extends AdminSecBaseModel
     //specific for this class
     private Item $itemManager;
 
+    /**
+     * Take the item manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -36,8 +39,11 @@ class CAdminItems extends AdminSecBaseModel
     //Business Layer...
 
     /**
-     * @return bool|false
-     * @throws \Exception
+     * Dispatch the requested listings action: bulk actions, the per-listing status,
+     * premium, spam and stat toggles, the edit and post forms, item settings, and the
+     * reported-listings screen.
+     *
+     * @return false|null false when a status action was given nothing usable to act on
      */
     public function doModel()
     {

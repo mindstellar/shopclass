@@ -17,6 +17,10 @@
  */
 class CWebLogin extends BaseModel
 {
+    /**
+     * Boots the base controller, bounces the visitor home when accounts are disabled,
+     * and fires the `init_login` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +32,12 @@ class CWebLogin extends BaseModel
     }
 
     //Business Layer...
+    /**
+     * Handles the login, activation-resend and password recovery/reset actions; with no
+     * action it renders the login form.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
@@ -230,7 +240,7 @@ class CWebLogin extends BaseModel
                 $this->redirectTo(osc_user_login_url());
                 break;
             case ('recover'):        //form to recover the password (in this case we have the form in /gui/)
-                $this->doView('user-recover.php');
+                $this->doView(osc_locate_template(array('user-recover.php'), 'user-recover'));
                 break;
             case ('recover_post'):   //post execution to recover the password
                 osc_csrf_check();
@@ -284,7 +294,7 @@ class CWebLogin extends BaseModel
                 $user = User::newInstance()
                     ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
                 if ($user) {
-                    $this->doView('user-forgot_password.php');
+                    $this->doView(osc_locate_template(array('user-forgot_password.php'), 'user-forgot_password'));
                 } else {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'));
                     $this->redirectTo(osc_base_url());
@@ -346,21 +356,28 @@ class CWebLogin extends BaseModel
                 if (osc_logged_user_id()) {
                     $this->redirectTo(osc_user_dashboard_url());
                 }
-                $this->doView('user-login.php');
+                $this->doView(osc_locate_template(array('user-login.php'), 'user-login'));
         }
     }
 
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the account template, marked noindex.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
+        // A sign-in form has nothing to rank for, and every account page behind it
+        // redirects here — so this one URL stands in for all of them in a crawl.
+        $this->_exportVariableToView('meta_noindex', true);
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         osc_run_hook('after_html');
     }
 }

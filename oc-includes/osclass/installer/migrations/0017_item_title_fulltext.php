@@ -25,6 +25,13 @@ use mindstellar\migration\MigrationInterface;
  * scans the table.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add the s_title FULLTEXT index to t_item_description, unless it is already there.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_description';

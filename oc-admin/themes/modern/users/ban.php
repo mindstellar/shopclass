@@ -32,6 +32,11 @@ osc_admin_page(array(
 ));
 
 //customize Head
+/**
+ * Emit the ban-rule list's script: row selection, bulk actions and the delete dialogs.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -69,7 +74,7 @@ function customHead()
                     if (!sel || sel.value === '') { e.preventDefault(); return; }
                     e.preventDefault();
                     var opt = sel.options[sel.selectedIndex];
-                    bulkDialog.querySelector('.form-row').textContent = opt.getAttribute('data-dialog-content') || '';
+                    bulkDialog.querySelector('.osc-dialog-text').textContent = opt.getAttribute('data-dialog-content') || '';
                     bulkSubmit.textContent = opt.text;
                     bulkDialog.showModal();
                 });
@@ -161,7 +166,7 @@ osc_admin_pagination($aData);
     <dialog id="dialog-bulk-actions" class="osc-dialog">
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
-            <p class="osc-dialog-text form-row"></p>
+            <p class="osc-dialog-text"></p>
         </div>
         <div class="osc-dialog-actions">
             <button id="bulk-actions-cancel" type="button" class="btn btn-dim btn-sm"><?php _e('Cancel'); ?></button>

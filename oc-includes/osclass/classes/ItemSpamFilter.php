@@ -58,6 +58,8 @@ class ItemSpamFilter
     private $compiledRegexPatterns = array();
 
     /**
+     * The shared ItemSpamFilter instance, created on first call.
+     *
      * @return ItemSpamFilter
      */
     public static function newInstance()

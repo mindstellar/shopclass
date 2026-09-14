@@ -50,6 +50,13 @@ if (!isset($drivers[$activeDriver])) {
 $active     = $drivers[$activeDriver];
 $persistent = !empty($active['persists']);
 
+/**
+ * Whether the named object-cache driver has a class on this install and reports itself usable.
+ *
+ * @param string $driver Driver name, as it appears after the `Object_Cache_` prefix
+ *
+ * @return bool
+ */
 function cacheDriverSupported($driver)
 {
     $class = 'Object_Cache_' . $driver;

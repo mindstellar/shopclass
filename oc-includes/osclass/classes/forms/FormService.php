@@ -31,6 +31,9 @@ final class FormService
 {
     private string $linkTable;
 
+    /**
+     * FormService constructor.
+     */
     public function __construct()
     {
         $this->linkTable = DB_TABLE_PREFIX . 't_meta_group_fields';

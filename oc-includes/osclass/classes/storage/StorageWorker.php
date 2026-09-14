@@ -31,7 +31,12 @@ use Throwable;
 class StorageWorker
 {
     /**
-     * @param int $maxSeconds
+     * Claims and processes queued jobs until the queue is drained or the time budget
+     * is spent. Returns immediately when nothing is pending.
+     *
+     * @param int $maxSeconds wall-clock budget for this tick
+     *
+     * @return void
      */
     public static function run(int $maxSeconds = 20): void
     {
@@ -54,8 +59,13 @@ class StorageWorker
     }
 
     /**
-     * @param StorageQueue $queue
-     * @param array        $job
+     * Dispatches one job to its handler, marking it complete or failed. Never throws:
+     * every error is recorded on the job row instead.
+     *
+     * @param StorageQueue        $queue
+     * @param array<string,mixed> $job a t_storage_queue row
+     *
+     * @return void
      */
     private static function process(StorageQueue $queue, array $job): void
     {
@@ -99,8 +109,11 @@ class StorageWorker
     /**
      * Idempotent: removing a key/file that's already gone is not an error.
      *
-     * @param array $job
-     * @param array $snapshot
+     * @param array<string,mixed> $job      a t_storage_queue row
+     * @param array<string,mixed> $snapshot the resource snapshot; `local` false keeps local files
+     *
+     * @return void
+     * @throws \RuntimeException when a local file exists but cannot be removed
      */
     private static function handleDelete(array $job, array $snapshot): void
     {
@@ -129,8 +142,11 @@ class StorageWorker
      * Idempotent: re-running re-uploads and re-verifies without side effects
      * beyond the ones already applied.
      *
-     * @param array $job
-     * @param array $snapshot
+     * @param array<string,mixed> $job      a t_storage_queue row
+     * @param array<string,mixed> $snapshot the resource snapshot
+     *
+     * @return void
+     * @throws \RuntimeException when the uploaded base object cannot be read back
      */
     private static function handleOffload(array $job, array $snapshot): void
     {
@@ -179,8 +195,11 @@ class StorageWorker
      * copies. Idempotent: re-running overwrites the same local files and
      * re-flips a row that may already be 'local'.
      *
-     * @param array $job
-     * @param array $snapshot
+     * @param array<string,mixed> $job      a t_storage_queue row
+     * @param array<string,mixed> $snapshot the resource snapshot
+     *
+     * @return void
+     * @throws \RuntimeException when the adapter is unknown or a variant cannot be downloaded
      */
     private static function handleRestore(array $job, array $snapshot): void
     {
@@ -217,8 +236,10 @@ class StorageWorker
      * remotely and confirmed absent locally. Idempotent: re-running just
      * re-flips a row that may already point at the adapter.
      *
-     * @param array $job
-     * @param array $snapshot
+     * @param array<string,mixed> $job      a t_storage_queue row
+     * @param array<string,mixed> $snapshot the resource snapshot
+     *
+     * @return void
      */
     private static function handleAdopt(array $job, array $snapshot): void
     {
@@ -247,8 +268,10 @@ class StorageWorker
      * page came back. Running this in the worker (not the admin request) is what
      * lets a catalogue of any size migrate without the request timing out.
      *
-     * @param array $job
-     * @param array $snapshot the seed payload: op, source, offset
+     * @param array<string,mixed> $job      a t_storage_queue row; s_storage is the target
+     * @param array<string,mixed> $snapshot the seed payload: op, source, offset
+     *
+     * @return void
      */
     private static function handleSeed(array $job, array $snapshot): void
     {
@@ -284,9 +307,9 @@ class StorageWorker
      * queued before this upgrade have no owner fields, so they take the item path
      * exactly as before.
      *
-     * @param array $snapshot
+     * @param array<string,mixed> $snapshot
      *
-     * @return array|null the row, or null when it no longer exists
+     * @return array<string,mixed>|null the row, or null when it no longer exists
      */
     private static function resolveRow(array $snapshot): ?array
     {
@@ -310,8 +333,8 @@ class StorageWorker
      * Point a resource row at a storage adapter, dispatching to the owning model.
      * Both model updates flush their own row/owner cache.
      *
-     * @param array  $snapshot
-     * @param string $storageId
+     * @param array<string,mixed> $snapshot
+     * @param string               $storageId
      *
      * @return void
      */
@@ -336,7 +359,7 @@ class StorageWorker
      * dropped. Owner snapshots clear the Resource::findByOwner cache; item
      * snapshots keep the exact legacy behaviour (osc_invalidate_item_cache).
      *
-     * @param array $snapshot
+     * @param array<string,mixed> $snapshot
      *
      * @return void
      */
@@ -365,8 +388,10 @@ class StorageWorker
      * regenerateResourceImages() enqueues the offload back to remote
      * storage via the existing listener.
      *
-     * @param array $job
-     * @param array $snapshot
+     * @param array<string,mixed> $job      a t_storage_queue row; unused, the snapshot carries the id
+     * @param array<string,mixed> $snapshot the resource snapshot
+     *
+     * @return void
      */
     private static function handleRegenerate(array $job, array $snapshot): void
     {
