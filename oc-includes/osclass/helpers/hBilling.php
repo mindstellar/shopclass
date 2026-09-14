@@ -170,6 +170,21 @@ function osc_billing_offline_instructions(): string
     return $v === null ? '' : (string) $v;
 }
 
+/**
+ * The gateway's display name for an order list, falling back to the stored id when
+ * the plugin that took the payment is no longer installed.
+ *
+ * @param string $gatewayId
+ *
+ * @return string
+ */
+function osc_billing_gateway_name(string $gatewayId): string
+{
+    $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
+
+    return $gateway !== null ? $gateway->getName() : $gatewayId;
+}
+
 /*
  * Item upgrades: bump, highlight, urgent. Every one of the three ships disabled --
  * *_enabled and *_credits are deliberately separate preferences, because an enabled

@@ -138,7 +138,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                                 <span class="text-muted"><?php _e('Deleted user'); ?></span>
                             <?php } ?>
                         </td>
-                        <td><?php echo osc_esc_html($order->getGateway()); ?></td>
+                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
                         <td class="col-numeric">
                             <?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?>
                         </td>

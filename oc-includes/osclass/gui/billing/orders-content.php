@@ -90,7 +90,7 @@ $formatMoney = static function (int $micros, string $currency): string {
                 <?php foreach ($orders as $order) { ?>
                     <tr>
                         <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
-                        <td><?php echo osc_esc_html($order->getGateway()); ?></td>
+                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
                         <td class="oe-num oe-bill-num">
                             <?php echo osc_esc_html($formatMoney($order->getAmount(), $order->getCurrency())); ?>
                         </td>

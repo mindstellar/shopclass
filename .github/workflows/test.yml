@@ -262,6 +262,11 @@ jobs:
       # guard in the source that no branch reaches is the same install as no guard.
       - name: Admin account form
         run: php tests/admin-account-form.php
+      # The row-declaration migration dropped the e-mail row's own field and put the
+      # mobile field under its label instead, deleting the cell phone row -- so Users ->
+      # Add always failed with an invalid-email error.
+      - name: Admin user form
+        run: php tests/admin-user-form.php
       # The twelve settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,

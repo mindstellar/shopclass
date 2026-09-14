@@ -226,7 +226,10 @@ $aux = customFrmText();
                                         <?php UserForm::username_text($user); ?>
                                         <div id="available"></div>
                                 <?php osc_admin_form_row_close(); ?>
-                                <?php osc_admin_form_row_open(__('E-mail')); ?>
+                                <?php osc_admin_form_row_open('', array('label_html' => sprintf('%s <em>%s</em>', __('E-mail'), __('(required)')))); ?>
+                                        <?php UserForm::email_text($user); ?>
+                                <?php osc_admin_form_row_close(); ?>
+                                <?php osc_admin_form_row_open(__('Cell phone')); ?>
                                         <?php UserForm::mobile_text($user); ?>
                                 <?php osc_admin_form_row_close(); ?>
                                 <?php osc_admin_form_row_open(__('Phone')); ?>

@@ -138,6 +138,8 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
 
 ### Fixed
 
+- Users → Add failed with an invalid-email error: the form had lost its E-mail field.
+- Order lists show the payment gateway's name instead of its id.
 - The admin account form's e-mail box refuses an invalid address instead of silently rewriting
   it — `john doe@example.test` was stored as `johndoe@example.test` and reported as saved.
 - Admin and mail-server passwords are stored exactly as typed; one with a leading or trailing
