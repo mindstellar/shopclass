@@ -1825,13 +1825,11 @@ foreach ($drawn as $view => $html) {
         }
     }
 }
-// Pinned as a list rather than asserted empty: the test-mail button was dropped from this
-// screen long before the form was declared, and its listener has been guarded and inert
-// ever since. Recording it is honest; asserting nothing is missing would mean deleting the
-// check that matters.
+// The mail-server screen's test-email button and message box are declared as form
+// actions now, so every id and form name a script names is drawn again.
 pin(
     'every id and form name a script names is one the page draws',
-    array('mailserver.php: #testMail', 'mailserver.php: #testMail_message'),
+    array(),
     $missing
 );
 
