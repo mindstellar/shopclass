@@ -838,12 +838,7 @@ class CAdminUsers extends AdminSecBaseModel
     }
 
     /**
-     * Handle an avatar file upload / removal for the edited user.
-     *
-     * Replace semantics: one avatar per user, so any previous avatar is removed
-     * before a new one is stored. A posted remove_avatar just clears it. The file
-     * is validated as a real image and size-capped before it is accepted. No-op
-     * when the feature is disabled or no file was sent.
+     * Handle an avatar file upload / removal for a user.
      *
      * @param int $userId
      *
@@ -851,55 +846,7 @@ class CAdminUsers extends AdminSecBaseModel
      */
     private function handleAvatarUpload($userId)
     {
-        $userId = (int)$userId;
-        if ($userId <= 0) {
-            return;
-        }
-
-        if (Params::getParam('remove_avatar') != '') {
-            (new \mindstellar\storage\ResourceUploader())
-                ->deleteByOwner(\mindstellar\model\Resource::OWNER_USER, $userId);
-
-            return;
-        }
-
-        if (!osc_get_preference('enabled_user_avatars')) {
-            return;
-        }
-
-        $avatar = Params::getFiles('avatar');
-        if (empty($avatar) || !isset($avatar['error']) || $avatar['error'] != UPLOAD_ERR_OK) {
-            return;
-        }
-        if (!isset($avatar['tmp_name']) || !is_uploaded_file($avatar['tmp_name'])) {
-            return;
-        }
-
-        $maxSize = osc_max_size_kb() * 1024;
-        if (isset($avatar['size']) && $avatar['size'] > $maxSize) {
-            osc_add_flash_error_message(_m('The avatar you tried to upload exceeds the maximum size'), 'admin');
-
-            return;
-        }
-
-        try {
-            ImageProcessing::fromFile($avatar['tmp_name']);
-        } catch (Throwable $e) {
-            osc_add_flash_error_message(_m('The avatar you tried to upload is not a valid image'), 'admin');
-
-            return;
-        }
-
-        $dimensions = osc_get_preference('avatar_dimensions') ?: '200x200';
-
-        $uploader = new \mindstellar\storage\ResourceUploader();
-        $uploader->deleteByOwner(\mindstellar\model\Resource::OWNER_USER, $userId);
-        $uploader->upload(\mindstellar\model\Resource::OWNER_USER, $userId, $avatar['tmp_name'], array(
-            'variants' => array(
-                'normal'    => $dimensions,
-                'thumbnail' => '64x64',
-            ),
-        ));
+        \mindstellar\storage\AvatarUpload::handle((int)$userId, 'admin');
     }
 
 }

@@ -1558,10 +1558,8 @@ msgstr ""
 #: oc-admin/themes/modern/items/reported.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/currencies.php
-#: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/alerts.php
-#: oc-admin/themes/modern/users/ban.php
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -1650,8 +1648,6 @@ msgid "Can't write in config.php file. Check if the file is writable."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/page-block-form.php
-#: oc-admin/themes/modern/billing/order.php
-#: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/comments/frm.php
@@ -1666,11 +1662,9 @@ msgstr ""
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/currency_form.php
-#: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/media.php
-#: oc-admin/themes/modern/users/ban.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Cancel"

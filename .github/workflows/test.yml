@@ -328,6 +328,8 @@ jobs:
       # as the page was requested. The confirm view must not call deleteUser.
       - name: Account delete is POST
         run: php tests/user-delete-get.php
+      - name: Avatar upload
+        run: php tests/avatar-upload.php
       # An unrouted settings action does not error -- it renders a different settings page
       # and discards the post, so the only symptom is preferences that never save.
       - name: Admin settings routes
@@ -361,6 +363,9 @@ jobs:
       # .info and .online address for years while accepting a local part with a space in it.
       - name: Email validation
         run: php tests/validate-email.php
+      # The username availability check stripped dots that registration keeps.
+      - name: Sanitize drift
+        run: php tests/sanitize-drift.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression

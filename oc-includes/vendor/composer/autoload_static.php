@@ -1024,6 +1024,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\RememberMe' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RememberMe.php',
         'mindstellar\\security\\SigningKey' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SigningKey.php',
         'mindstellar\\settings\\SettingsPageRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/settings/SettingsPageRegistry.php',
+        'mindstellar\\storage\\AvatarUpload' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/AvatarUpload.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',
         'mindstellar\\storage\\ProviderPresets' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ProviderPresets.php',
         'mindstellar\\storage\\ResourceLocator' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ResourceLocator.php',

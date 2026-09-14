@@ -897,6 +897,7 @@ return array(
     'mindstellar\\security\\RememberMe' => $baseDir . '/oc-includes/osclass/classes/security/RememberMe.php',
     'mindstellar\\security\\SigningKey' => $baseDir . '/oc-includes/osclass/classes/security/SigningKey.php',
     'mindstellar\\settings\\SettingsPageRegistry' => $baseDir . '/oc-includes/osclass/classes/settings/SettingsPageRegistry.php',
+    'mindstellar\\storage\\AvatarUpload' => $baseDir . '/oc-includes/osclass/classes/storage/AvatarUpload.php',
     'mindstellar\\storage\\LocalStorage' => $baseDir . '/oc-includes/osclass/classes/storage/LocalStorage.php',
     'mindstellar\\storage\\ProviderPresets' => $baseDir . '/oc-includes/osclass/classes/storage/ProviderPresets.php',
     'mindstellar\\storage\\ResourceLocator' => $baseDir . '/oc-includes/osclass/classes/storage/ResourceLocator.php',

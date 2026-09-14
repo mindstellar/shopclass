@@ -356,7 +356,7 @@ class CWebAjax extends BaseModel
                 require_once $resolved;
                 break;
             case 'check_username_availability':
-                $username = osc_sanitize_username(Params::getParam('s_username'));
+                $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
                 if (osc_is_username_blacklisted($username)) {
                     echo json_encode(array('exists' => 1, 's_username' => $username));
                 } else {
