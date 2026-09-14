@@ -83,6 +83,8 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
 
 ### Changed
 
+- Admin list tables show dates as `2026-09-14 06:14`, with the long date on hover. The
+  `admin_date_format` filter changes the format.
 - **New installs keep the database server's strict SQL modes; upgrades opt in.** Every
   connection has always had `NO_ZERO_DATE`, `ONLY_FULL_GROUP_BY`, `STRICT_TRANS_TABLES`,
   `STRICT_ALL_TABLES` and `TRADITIONAL` stripped from it, so a value too long for its column

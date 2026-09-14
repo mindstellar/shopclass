@@ -187,7 +187,7 @@ class AlertsDataTable extends DataTable
 
                 $row['alert'] = implode(', ', $pieces);
                 // fourth row
-                $row['date'] = osc_format_date($aRow['dt_date']);
+                $row['date'] = osc_admin_date($aRow['dt_date'], true);
 
                 $row = osc_apply_filter('alerts_processing_row', $row, $aRow);
 

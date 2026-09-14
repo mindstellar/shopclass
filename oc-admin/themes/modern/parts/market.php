@@ -350,7 +350,10 @@ function osc_market_render_browse($rows, $meta, $type)
     if ($meta['last_checked']) {
         ?>
         <p class="market-last-checked">
-            <?php echo osc_esc_html(sprintf(__('Last checked %s.'), osc_format_date(date('Y-m-d H:i:s', $meta['last_checked'])))); ?>
+            <?php echo sprintf(
+                osc_esc_html(__('Last checked %s.')),
+                osc_admin_date(date('Y-m-d H:i:s', $meta['last_checked']))
+            ); ?>
         </p>
         <?php
     }

@@ -210,7 +210,7 @@ class CommentsDataTable extends DataTable
                     osc_esc_html($aRow['s_author_name']) . ' (<a target="_blank" href="' . osc_esc_html(osc_item_url()) . '">'
                     . osc_esc_html(osc_item_title()) . '</a>)' . $actions;
                 $row['comment'] = osc_esc_html($aRow['s_body']);
-                $row['date']    = osc_format_date($aRow['dt_pub_date']);
+                $row['date']    = osc_admin_date($aRow['dt_pub_date'], true);
 
                 $row = osc_apply_filter('comments_processing_row', $row, $aRow);
 

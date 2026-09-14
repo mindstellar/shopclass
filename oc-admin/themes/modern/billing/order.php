@@ -86,9 +86,9 @@ $rows[] = array(
     'value' => $order->getExternalRef() ?: __('None yet'),
     'mono'  => (bool)$order->getExternalRef(),
 );
-$rows[] = array('label' => __('Created'), 'value' => osc_format_date($order->getDate()));
+$rows[] = array('label' => __('Created'), 'value' => osc_admin_date($order->getDate(), true), 'html' => true);
 if ($order->getPaidDate() !== null) {
-    $rows[] = array('label' => __('Paid'), 'value' => osc_format_date($order->getPaidDate()));
+    $rows[] = array('label' => __('Paid'), 'value' => osc_admin_date($order->getPaidDate(), true), 'html' => true);
 }
 foreach ($order->getMeta() as $key => $value) {
     if (is_scalar($value)) {
@@ -137,7 +137,7 @@ foreach ($order->getMeta() as $key => $value) {
                                     <?php echo osc_esc_html(($amount > 0 ? '+' : '') . number_format($amount)); ?>
                                 </td>
                                 <td class="col-numeric"><?php echo number_format((int)$entry['i_balance_after']); ?></td>
-                                <td><?php echo osc_esc_html(osc_format_date($entry['dt_date'])); ?></td>
+                                <td><?php echo osc_admin_date($entry['dt_date'], true); ?></td>
                             </tr>
                         <?php } ?>
                         </tbody>

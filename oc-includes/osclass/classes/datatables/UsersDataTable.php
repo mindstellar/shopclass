@@ -288,13 +288,9 @@ class UsersDataTable extends DataTable
                     . rawurlencode($aRow['s_name']) . '">' . osc_esc_html($aRow['s_email']) . '</a>' . $actions;
                 $row['username']      = osc_esc_html($aRow['s_username']);
                 $row['name']          = osc_esc_html($aRow['s_name']);
-                $row['date']          =
-                    osc_format_date($aRow['dt_reg_date'], osc_date_format() . ' ' . osc_time_format());
+                $row['date']          = osc_admin_date($aRow['dt_reg_date']);
                 $row['items']         = $aRow['i_items'];
-                $row['update_date']   = ($aRow['dt_mod_date'] != null) ? osc_format_date(
-                    $aRow['dt_mod_date'],
-                    osc_date_format() . ' ' . osc_time_format()
-                ) : '';
+                $row['update_date']   = osc_admin_date($aRow['dt_mod_date']);
 
                 $row = osc_apply_filter('users_processing_row', $row, $aRow);
 

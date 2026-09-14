@@ -182,7 +182,7 @@ class MediaDataTable extends DataTable
                     '<a href="#" onclick="return delete_dialog(\'' . $aRow['pk_i_id'] . '\');" >' . __('Delete') . '</a>';
                 $row['attached_to'] = '<a target="_blank" href="' . osc_item_url_ns($aRow['fk_i_item_id']) . '">item #'
                     . $aRow['fk_i_item_id'] . '</a>';
-                $row['date']        = osc_format_date($aRow['dt_pub_date']);
+                $row['date']        = osc_admin_date($aRow['dt_pub_date'], true);
 
                 $row = osc_apply_filter('media_processing_row', $row, $aRow);
 

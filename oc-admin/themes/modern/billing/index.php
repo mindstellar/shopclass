@@ -149,7 +149,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()
                             ); ?>
                         </td>
-                        <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
+                        <td><?php echo osc_admin_date($order->getDate(), true); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>

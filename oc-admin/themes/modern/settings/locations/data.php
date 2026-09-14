@@ -45,7 +45,7 @@ foreach ($rows as $row) {
 }
 $releaseText = '';
 if ($data['release'] !== '') {
-    $releaseText = sprintf(__('Catalog release %s'), osc_format_date($data['release']));
+    $releaseText = sprintf(osc_esc_html(__('Catalog release %s')), osc_admin_date($data['release'], true));
 }
 ?>
 <div class="loc-data" data-loc-data-url="<?php echo osc_esc_html($data['url']); ?>">
@@ -66,7 +66,7 @@ if ($data['release'] !== '') {
             <?php if ($data['reachable']) { ?>
                 <p class="loc-release">
                     <?php if ($releaseText !== '') { ?>
-                        <span><?php echo osc_esc_html($releaseText); ?></span>
+                        <span><?php echo $releaseText; ?></span>
                     <?php } ?>
                     <a href="<?php echo osc_esc_html($data['url'] . '&refresh=1'); ?>" data-loc-data-nav>
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><?php _e('Check for updates'); ?>

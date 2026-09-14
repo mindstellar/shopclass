@@ -148,7 +148,7 @@ class LogsDataTable extends DataTable
             }
 
             $row            = array();
-            $row['date']    = osc_esc_html($aRow['dt_date']);
+            $row['date']    = osc_admin_date($aRow['dt_date']);
             $row['who']     = $this->whoLabel($aRow);
             $row['section'] = osc_esc_html($aRow['s_section']);
             $row['action']  = osc_esc_html($aRow['s_action']);

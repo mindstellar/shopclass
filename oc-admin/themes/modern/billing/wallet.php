@@ -95,7 +95,7 @@ $reasonWords = array(
                                         <span class="text-muted">&mdash;</span>
                                     <?php } ?>
                                 </td>
-                                <td><?php echo osc_esc_html(osc_format_date($entry['dt_date'])); ?></td>
+                                <td><?php echo osc_admin_date($entry['dt_date'], true); ?></td>
                             </tr>
                         <?php } ?>
                         </tbody>

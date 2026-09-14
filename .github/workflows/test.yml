@@ -326,6 +326,11 @@ jobs:
       # the only thing between a poster and script running for every visitor.
       - name: Rich-text sanitiser
         run: php tests/sanitize-html.php
+      # Admin list tables show a compact date with the long, site-formatted value kept on
+      # hover and for screen readers -- the format, the filter a plugin overrides it with,
+      # and the <time> markup all go through one helper.
+      - name: Admin date format
+        run: php tests/admin-date-format.php
       # Auto-cron's three decisions -- run in-process on FPM, after the response, under a
       # bounded time limit -- are one small block that is easy to undo while tidying.
       - name: Auto-cron dispatch

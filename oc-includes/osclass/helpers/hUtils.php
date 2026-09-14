@@ -359,6 +359,48 @@ function osc_format_date($date, $dateformat = null)
 }
 
 /**
+ * Compact numeric format for an admin list table date column.
+ *
+ * 'admin_date_format' filter args: ($format, $dateOnly).
+ *
+ * @param bool $dateOnly True for a date with no time part
+ *
+ * @return string PHP date() format
+ */
+function osc_admin_date_format($dateOnly = false)
+{
+    $format = $dateOnly ? 'Y-m-d' : 'Y-m-d H:i';
+
+    return osc_apply_filter('admin_date_format', $format, $dateOnly);
+}
+
+/**
+ * Renders a date for an admin list table: a compact, unambiguous value with the
+ * site's long format kept on hover and for screen readers.
+ *
+ * Same date conversion as osc_format_date() -- only the display format differs.
+ *
+ * @param string $date     A date string parseable by strtotime()
+ * @param bool   $dateOnly True to render without a time part
+ *
+ * @return string Escaped <time> element, or '' when $date is empty
+ */
+function osc_admin_date($date, $dateOnly = false)
+{
+    if ($date == null || $date === '') {
+        return '';
+    }
+
+    $time  = strtotime($date);
+    $long  = osc_format_date($date, osc_date_format() . ' ' . osc_time_format());
+    $short = date(osc_admin_date_format($dateOnly), $time);
+    $iso   = date($dateOnly ? 'Y-m-d' : 'Y-m-d\TH:i', $time);
+
+    return '<time datetime="' . osc_esc_html($iso) . '" title="' . osc_esc_html($long) . '">'
+        . osc_esc_html($short) . '</time>';
+}
+
+/**
  * Escapes letters and numbers of a string
  *
  * @param string $string
