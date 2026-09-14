@@ -35,28 +35,10 @@
 
 define('ABS_PATH', dirname(__DIR__) . '/');
 
+require_once __DIR__ . '/lib/harness.php';
+
 $view  = ABS_PATH . 'oc-admin/themes/modern/upgrade/index.php';
 $model = ABS_PATH . 'oc-includes/osclass/classes/upgrade/Osclass.php';
-
-$ok = 0;
-$failed = 0;
-
-/**
- * @param string $label
- * @param bool   $passed
- * @param string $detail
- */
-function check($label, $passed, $detail = '')
-{
-    global $ok, $failed;
-    if ($passed) {
-        $ok++;
-        echo "PASS  $label\n";
-    } else {
-        $failed++;
-        echo "FAIL  $label" . ($detail !== '' ? "\n        $detail" : '') . "\n";
-    }
-}
 
 foreach (array($view, $model) as $file) {
     if (!is_readable($file)) {
@@ -147,9 +129,6 @@ check(
     $resetPos !== false && $rebuildPos !== false && $resetPos < $rebuildPos
 );
 
-echo "\n----------------------------------------\n";
-echo "RESULT: $ok passed, $failed failed\n";
-
-exit($failed === 0 ? 0 : 1);
+exit(harness_result());
 
 /* file end: ./tests/upgrade-payload-contract.php */

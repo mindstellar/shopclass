@@ -54,10 +54,7 @@ function osc_run_hook($hook, ...$args)
     );
 }
 
-function osc_apply_filter($hook, $content = '', ...$args)
-{
-    return $content;
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 function osc_base_url($withIndex = false)
 {
@@ -72,11 +69,6 @@ function osc_current_user_locale()
 function osc_get_locales()
 {
     return $GLOBALS['locales'];
-}
-
-function __($key, $domain = 'core')
-{
-    return $key;
 }
 
 /** Counts reads, which is the point of the memo the helper drops. */

@@ -31,24 +31,10 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 define('ABS_PATH', dirname(__DIR__) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
+require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/location/LocationImporter.php';
 
 use mindstellar\location\LocationImporter;
-
-$ok = 0;
-$failed = 0;
-
-function check(string $label, bool $passed, string $detail = ''): void
-{
-    global $ok, $failed;
-    if ($passed) {
-        $ok++;
-        echo "PASS  $label\n";
-    } else {
-        $failed++;
-        echo "FAIL  $label" . ($detail !== '' ? "  ($detail)" : '') . "\n";
-    }
-}
 
 $class = new ReflectionClass(LocationImporter::class);
 
@@ -292,9 +278,6 @@ $accented = str_repeat('é', 55);
 check('length is counted in characters, not bytes', !$long($accented), strlen($accented) . ' bytes');
 check('and one character past the limit still fails', $long(str_repeat('é', 56)));
 
-echo "\n----------------------------------------\n";
-echo "RESULT: $ok passed, $failed failed\n";
-
-exit($failed === 0 ? 0 : 1);
+exit(harness_result());
 
 /* file end: ./tests/location-matching.php */

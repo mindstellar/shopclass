@@ -96,15 +96,6 @@ function osc_add_hook($hook, $fn, $priority = 5)
     $GLOBALS['hooks'][$hook][] = $fn;
 }
 
-function osc_run_hook($hook, ...$args)
-{
-}
-
-function osc_apply_filter($hook, $content = '', ...$args)
-{
-    return $content;
-}
-
 function osc_admin_base_url($index = false)
 {
     return 'https://example.test/oc-admin/index.php';
@@ -140,10 +131,7 @@ function osc_sanitize_text($value)
     return $value;
 }
 
-function __($key, $domain = 'core')
-{
-    return $key;
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 

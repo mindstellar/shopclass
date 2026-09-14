@@ -25,12 +25,7 @@
 require_once __DIR__ . '/lib/harness.php';
 
 // hHttpCache is a pure helper; osc_apply_filter is the only core function it reaches for.
-if (!function_exists('osc_apply_filter')) {
-    function osc_apply_filter($tag, $value)
-    {
-        return $value;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
 
 $root     = dirname(__DIR__);

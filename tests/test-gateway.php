@@ -50,10 +50,7 @@ function _m($key)
 {
     return $key;
 }
-function __($key, $domain = 'core')
-{
-    return $key;
-}
+require_once __DIR__ . '/lib/stubs.php';
 function osc_route_url($id, $args = array())
 {
     return WEB_PATH . 'index.php?page=route&route=' . $id . '&' . http_build_query($args);

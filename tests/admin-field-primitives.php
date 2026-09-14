@@ -35,12 +35,7 @@ if (!defined('ABS_PATH')) {
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 if (!class_exists('Params')) {
     class Params

@@ -200,10 +200,7 @@ function __get($key)
 {
     return $GLOBALS['viewVars'][$key] ?? null;
 }
-function __($s)
-{
-    return $s;
-}
+require_once __DIR__ . '/lib/stubs.php';
 function _e($s)
 {
     echo $s;
@@ -211,10 +208,6 @@ function _e($s)
 function _n($one, $many, $n)
 {
     return (int) $n === 1 ? $one : $many;
-}
-function osc_esc_html($s)
-{
-    return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 }
 function osc_run_hook($name, ...$args)
 {

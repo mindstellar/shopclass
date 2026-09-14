@@ -96,15 +96,6 @@ function osc_add_hook($hook, $fn, $priority = 5)
 {
 }
 
-function osc_run_hook($hook, ...$args)
-{
-}
-
-function osc_apply_filter($hook, $content = '', ...$args)
-{
-    return $content;
-}
-
 function osc_admin_base_url($index = false)
 {
     return 'https://example.test/oc-admin/index.php';
@@ -124,12 +115,9 @@ function osc_validate_url($value, $required = false, $headers = false)
     return (bool)filter_var($value, FILTER_VALIDATE_URL);
 }
 
-function __($key, $domain = 'core')
-{
-    return $key;
-}
-
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 

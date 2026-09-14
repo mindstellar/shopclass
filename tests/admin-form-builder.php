@@ -52,10 +52,7 @@ use mindstellar\settings\SettingsPageRegistry;
 // --- the slice of core the helper leans on -----------------------------------------
 $GLOBALS['hooks'] = array();
 
-function __($key, $domain = 'core')
-{
-    return $key;
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 function osc_add_hook($hook, $fn, $priority = 5)
 {

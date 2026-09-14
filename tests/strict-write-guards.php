@@ -84,15 +84,10 @@ if (!function_exists('_m')) {
         return $key;
     }
 }
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
-
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';

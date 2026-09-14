@@ -171,10 +171,7 @@ function osc_validate_url($value, $required = false, $headers = false)
     return (bool)filter_var($value, FILTER_VALIDATE_URL);
 }
 
-function __($key, $domain = 'core')
-{
-    return $key;
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';

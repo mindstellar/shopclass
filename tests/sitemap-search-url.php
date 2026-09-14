@@ -35,10 +35,7 @@ function osc_get_preference($key, $section = 'osclass')
 {
     return '';
 }
-function osc_apply_filter($hook, $content, ...$args)
-{
-    return $content;
-}
+require_once __DIR__ . '/lib/stubs.php';
 function osc_subdomain_type()
 {
     return '';

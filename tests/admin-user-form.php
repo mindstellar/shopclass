@@ -41,12 +41,6 @@ if (!function_exists('osc_plugins_path')) {
     }
 }
 
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
 if (!function_exists('_e')) {
     function _e($key, $domain = 'core')
     {
@@ -79,6 +73,9 @@ if (!function_exists('osc_current_admin_theme_url')) {
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
+// After hPlugins.php, so stubs.php's guarded osc_run_hook()/osc_apply_filter() stand-ins
+// stay out of the way and only __() (hTranslations.php is never loaded here) is filled in.
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';

@@ -480,12 +480,7 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';

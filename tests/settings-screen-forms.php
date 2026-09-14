@@ -85,12 +85,6 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
 if (!function_exists('_m')) {
     function _m($key)
     {
@@ -233,6 +227,8 @@ if (!function_exists('osc_current_admin_theme_url')) {
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';

@@ -74,12 +74,6 @@ if (!function_exists('osc_plugins_path')) {
 }
 
 // The declared save path leans on these four and on nothing else that needs a request.
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
 if (!function_exists('osc_admin_base_url')) {
     function osc_admin_base_url($index = false)
     {
@@ -93,6 +87,8 @@ if (!function_exists('osc_add_admin_submenu_page')) {
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';

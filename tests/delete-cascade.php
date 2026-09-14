@@ -74,12 +74,7 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 // Field and Category resolve the current locale in their constructors, through
 // osc_current_user_locale() -> osc_language(). These are the real helpers: with

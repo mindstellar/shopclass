@@ -103,14 +103,7 @@ function osc_item_city()
 {
     return $GLOBALS['ctx']['item_city'];
 }
-function osc_apply_filter($hook, $content, ...$args)
-{
-    return $content;
-}
-function __($key, $domain = 'core')
-{
-    return $key;
-}
+require_once __DIR__ . '/lib/stubs.php';
 function _n($single, $plural, $count, $domain = 'core')
 {
     return $count == 1 ? $single : $plural;

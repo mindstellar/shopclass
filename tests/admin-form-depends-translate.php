@@ -134,10 +134,6 @@ function osc_add_hook($hook, $fn, $priority = 5)
 {
 }
 
-function osc_run_hook($hook, ...$args)
-{
-}
-
 /** The real filter runner in miniature: listeners chain and the last return wins. */
 function osc_apply_filter($hook, $content = '', ...$args)
 {
@@ -147,6 +143,8 @@ function osc_apply_filter($hook, $content = '', ...$args)
 
     return $content;
 }
+
+require_once __DIR__ . '/lib/stubs.php';
 
 /** Register a filter listener for the duration of one assertion, and drop it after. */
 function listen(string $hook, callable $fn): void
@@ -195,11 +193,6 @@ function osc_validate_email($email, $required = true)
 function osc_validate_url($value, $required = false, $headers = false)
 {
     return (bool)filter_var($value, FILTER_VALIDATE_URL);
-}
-
-function __($key, $domain = 'core')
-{
-    return $key;
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';

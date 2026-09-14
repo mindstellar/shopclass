@@ -37,12 +37,9 @@ function osc_apply_filter($hook, $content, ...$args)
 
     return $content;
 }
-function __($key, $domain = 'core')
-{
-    return $key;
-}
-
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hUtils.php';
 require_once __DIR__ . '/lib/harness.php';
 
