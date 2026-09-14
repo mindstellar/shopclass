@@ -348,6 +348,9 @@ with too: every listing index now has its own description and a single canonical
 
 ### Fixed
 
+- A dead SMTP host no longer holds a php-fpm worker for five minutes; `osc_sendMail()` caps
+  connect and command timeouts at 15 seconds, and Mail Settings' **Send a test email**
+  button is restored.
 - A search carrying a category id rather than a slug returned 404, though the category
   existed. Both spellings now resolve.
 - A static page built from blocks rendered with no `<head>` — no title, description or
