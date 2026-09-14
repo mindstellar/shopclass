@@ -140,20 +140,21 @@ class Csrf
      */
     public function injectTokens($body, array $headers)
     {
-        return self::isHtmlResponse($headers) ? $this->replaceForms($body) : $body;
+        return self::isHtmlResponse($body, $headers) ? $this->replaceForms($body) : $body;
     }
 
     /**
      * Whether a response with these headers is HTML.
      *
-     * No Content-Type means PHP's text/html default. A JSON endpoint that sends no
-     * Content-Type is still treated as HTML; it has to declare its type.
+     * No Content-Type means PHP's text/html default, unless the body is valid JSON:
+     * many ajax actions echo JSON without declaring it.
      *
+     * @param string   $body
      * @param string[] $headers
      *
      * @return bool
      */
-    private static function isHtmlResponse(array $headers): bool
+    private static function isHtmlResponse($body, array $headers): bool
     {
         $type = '';
         foreach ($headers as $header) {
@@ -162,7 +163,16 @@ class Csrf
             }
         }
 
-        return $type === '' || $type === 'text/html' || $type === 'application/xhtml+xml';
+        if ($type === '') {
+            $start = ltrim((string) $body)[0] ?? '';
+            if (($start === '{' || $start === '[') && json_decode((string) $body) !== null) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return $type === 'text/html' || $type === 'application/xhtml+xml';
     }
 
     /**

@@ -110,6 +110,13 @@ check(
     $response->injectTokens($json, array('content-type: application/json; charset=utf-8')) === $json
 );
 check('an XML body is left alone', $response->injectTokens($page, array('Content-Type: text/xml')) === $page);
+pin('JSON with no Content-Type is left alone', $json, $response->injectTokens($json, array('X-Frame-Options: SAMEORIGIN')));
+pin('a JSON list with no Content-Type is left alone', "[$json]", $response->injectTokens("[$json]", array()));
+check(
+    'a body that only starts like JSON is still stamped',
+    strpos($response->injectTokens('{ not json ' . $page, array()), '<!--TOKEN-->') !== false
+);
+check('an empty body with no Content-Type is fine', $response->injectTokens('', array()) === '');
 
 $stamped = static function (array $headers) use ($response, $page): bool {
     return strpos($response->injectTokens($page, $headers), '<!--TOKEN-->') !== false;

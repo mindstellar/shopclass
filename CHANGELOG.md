@@ -147,6 +147,9 @@ can show a banner instead of closing the site.
 - The username check and change-username form no longer strip dots that registration keeps.
 - The username blacklist catches dotted and underscored look-alikes such as `ad.min`.
 - An empty username blacklist, or one with a trailing comma, no longer refuses every username.
+- Photo uploads match the file extension exactly; `photo.pn` or a name with no extension is refused.
+- A real photo is no longer refused when the browser sends a generic file type for it.
+- CSRF tokens are no longer injected into JSON replies that do not declare a content type.
 - Users → Add failed with an invalid-email error: the form had lost its E-mail field.
 - Order lists show the payment gateway's name instead of its id.
 - The admin account form's e-mail box refuses an invalid address instead of silently rewriting
