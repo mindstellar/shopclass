@@ -23,6 +23,13 @@ use mindstellar\migration\MigrationInterface;
  * Idempotent: a DELETE matching no rows is a no-op, so re-running is safe.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Delete the alert_email_instant page and its per-locale descriptions.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(

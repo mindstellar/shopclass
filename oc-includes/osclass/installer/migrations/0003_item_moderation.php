@@ -45,6 +45,14 @@ return new class () implements MigrationInterface {
         'report_threshold'        => array('5', 'INTEGER'),
     );
 
+    /**
+     * Create the keyword-block, item-report and moderation-log tables, then seed the
+     * moderation preferences.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $this->createKeywordBlock($conn);
@@ -53,6 +61,13 @@ return new class () implements MigrationInterface {
         $this->seedPreferences($conn);
     }
 
+    /**
+     * Create t_keyword_block, the moderation keyword blocklist.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function createKeywordBlock(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_keyword_block ('
@@ -67,6 +82,13 @@ return new class () implements MigrationInterface {
         $conn->execute($sql);
     }
 
+    /**
+     * Create t_item_report_log in the utf8mb3 shape a classifieds theme's own import uses.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function createReportLog(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_report_log ('
@@ -82,6 +104,13 @@ return new class () implements MigrationInterface {
         $conn->execute($sql);
     }
 
+    /**
+     * Create t_item_moderation_log, the record of why a listing was hidden.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function createModerationLog(Connection $conn): void
     {
         $sql = 'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_item_moderation_log ('
@@ -99,6 +128,13 @@ return new class () implements MigrationInterface {
         $conn->execute($sql);
     }
 
+    /**
+     * Seed the moderation preferences, never overwriting a value already set.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function seedPreferences(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';

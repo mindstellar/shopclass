@@ -23,6 +23,8 @@ class Styles extends Dependencies
 
     /**
      * Initialize Scripts class
+     *
+     * @return void
      */
     public static function init()
     {
@@ -39,6 +41,8 @@ class Styles extends Dependencies
 
     /**
      * Print the HTML tags to load the styles
+     *
+     * @return void
      */
     public function printStyles()
     {
@@ -51,6 +55,8 @@ class Styles extends Dependencies
 
     /**
      * Get the css styles urls
+     *
+     * @return string[]
      */
     public function getStyles(): array
     {
@@ -79,6 +85,8 @@ class Styles extends Dependencies
     }
 
     /**
+     * The shared Styles instance, created on first call.
+     *
      * @return \Styles
      */
     public static function newInstance(): Styles
@@ -93,8 +101,10 @@ class Styles extends Dependencies
     /**
      * Add style to be loaded
      *
-     * @param $id
-     * @param $url
+     * @param string $id
+     * @param string $url
+     *
+     * @return void
      */
     public function addStyle($id, $url)
     {
@@ -106,7 +116,9 @@ class Styles extends Dependencies
     /**
      * Remove style to not be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function removeStyle($id)
     {
@@ -116,7 +128,9 @@ class Styles extends Dependencies
     /**
      * Enqueue Style to be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function enqueue($id)
     {
@@ -126,7 +140,9 @@ class Styles extends Dependencies
     /**
      * Remove Style to not be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function removeFromQueue($id)
     {

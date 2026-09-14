@@ -43,42 +43,60 @@ $enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
                 <input type="hidden" name="id" value="<?php echo (int) $package['pk_i_id']; ?>"/>
             <?php } ?>
 
-            <?php osc_admin_form_row_open(__('Name'), array('for' => 'pkg-name')); ?>
-                <input type="text" class="form-control" id="pkg-name" name="name" required
-                       value="<?php echo osc_esc_html($name); ?>"/>
-            <?php osc_admin_form_row_close(); ?>
-
-            <?php osc_admin_form_row_open(__('Price'), array('for' => 'pkg-amount')); ?>
-                <input type="number" min="0" step="0.01" class="input-small" id="pkg-amount" name="amount" required
-                       value="<?php echo osc_esc_html($amount); ?>"/>
-                <div class="help-box"><?php _e('Decimal currency, e.g. 9.99.'); ?></div>
-            <?php osc_admin_form_row_close(); ?>
-
-            <?php osc_admin_form_row_open(__('Currency'), array('for' => 'pkg-currency')); ?>
-                <input type="text" maxlength="3" class="input-small" id="pkg-currency" name="currency" required
-                       value="<?php echo osc_esc_html($currency); ?>"/>
-                <div class="help-box"><?php _e('A 3-letter ISO 4217 code, e.g. USD.'); ?></div>
-            <?php osc_admin_form_row_close(); ?>
-
-            <?php osc_admin_form_row_open(__('Credits'), array('for' => 'pkg-credits')); ?>
-                <input type="number" min="1" step="1" class="input-small" id="pkg-credits" name="credits" required
-                       value="<?php echo osc_esc_html((string) $credits); ?>"/>
-            <?php osc_admin_form_row_close(); ?>
-
-            <?php osc_admin_form_row_open(__('Position'), array('for' => 'pkg-position')); ?>
-                <input type="number" min="0" step="1" class="input-small" id="pkg-position" name="position"
-                       value="<?php echo osc_esc_html((string) $position); ?>"/>
-                <div class="help-box"><?php _e('Lower numbers list first at checkout.'); ?></div>
-            <?php osc_admin_form_row_close(); ?>
-
-            <?php osc_admin_form_row_open(__('Availability')); ?>
-                <?php osc_admin_checkbox(array(
-                    'id'      => 'pkg-enabled',
-                    'name'    => 'enabled',
-                    'label'   => __('Offer this package at checkout'),
-                    'checked' => $enabled,
-                )); ?>
-            <?php osc_admin_form_row_close(); ?>
+            <?php
+            osc_admin_text(array(
+                'id'       => 'pkg-name',
+                'name'     => 'name',
+                'label'    => __('Name'),
+                'value'    => $name,
+                'required' => true,
+            ));
+            osc_admin_number(array(
+                'id'       => 'pkg-amount',
+                'name'     => 'amount',
+                'label'    => __('Price'),
+                'value'    => $amount,
+                'min'      => 0,
+                'step'     => '0.01',
+                'required' => true,
+                'help'     => __('Decimal currency, e.g. 9.99.'),
+            ));
+            osc_admin_text(array(
+                'id'       => 'pkg-currency',
+                'name'     => 'currency',
+                'label'    => __('Currency'),
+                'value'    => $currency,
+                'width'    => 'num',
+                'required' => true,
+                'attrs'    => array('maxlength' => 3),
+                'help'     => __('A 3-letter ISO 4217 code, e.g. USD.'),
+            ));
+            osc_admin_number(array(
+                'id'       => 'pkg-credits',
+                'name'     => 'credits',
+                'label'    => __('Credits'),
+                'value'    => $credits,
+                'min'      => 1,
+                'step'     => 1,
+                'required' => true,
+            ));
+            osc_admin_number(array(
+                'id'    => 'pkg-position',
+                'name'  => 'position',
+                'label' => __('Position'),
+                'value' => $position,
+                'min'   => 0,
+                'step'  => 1,
+                'help'  => __('Lower numbers list first at checkout.'),
+            ));
+            osc_admin_field(array(
+                'type'      => 'checkbox',
+                'row_label' => __('Availability'),
+                'id'        => 'pkg-enabled',
+                'name'      => 'enabled',
+                'label'     => __('Offer this package at checkout'),
+                'checked'   => $enabled,
+            )); ?>
 
             <?php osc_admin_form_actions(array(
                 array('label' => $isEdit ? __('Save package') : __('Add package'), 'type' => 'submit'),

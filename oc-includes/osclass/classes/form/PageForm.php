@@ -20,7 +20,11 @@ use mindstellar\utility\Deprecate;
 class PageForm extends Form
 {
     /**
-     * @param null $page
+     * Echo the hidden input carrying the page id, when the page exists.
+     *
+     * @param array<string,mixed>|null $page
+     *
+     * @return void
      */
     public static function primary_input_hidden($page = null)
     {
@@ -31,7 +35,11 @@ class PageForm extends Form
     }
 
     /**
-     * @param null $page
+     * Echo the internal-name field, read-only for indelible pages.
+     *
+     * @param array<string,mixed>|null $page
+     *
+     * @return void
      */
     public static function internal_name_input_text($page = null)
     {
@@ -42,18 +50,26 @@ class PageForm extends Form
         if (Session::newInstance()->_getForm('s_internal_name') != '') {
             $internal_name = Session::newInstance()->_getForm('s_internal_name');
         }
-        $attributes['id']    = 's_internal_name';
-        $attributes['class'] = 'form-control form-control-sm input-large';
-
+        $attrs = array();
         if ((isset($page['b_indelible']) && $page['b_indelible'] == 1)) {
-            $attributes['readonly'] = '';
-            $attributes['disabled'] = '';
+            $attrs['readonly'] = true;
+            $attrs['disabled'] = true;
         }
-        echo (new self())->text('s_internal_name', $internal_name, $attributes);
+        osc_admin_field(array(
+            'row'   => false,
+            'id'    => 's_internal_name',
+            'name'  => 's_internal_name',
+            'value' => $internal_name,
+            'attrs' => $attrs,
+        ));
     }
 
     /**
-     * @param null $page
+     * Echo the "show in links" checkbox for a page.
+     *
+     * @param array<string,mixed>|null $page
+     *
+     * @return void
      */
     public static function link_checkbox($page = null)
     {
@@ -65,9 +81,14 @@ class PageForm extends Form
     }
 
     /**
-     * @deprecated
-     * @param      $locales
-     * @param null $page
+     * Echo the per-locale title and body fields in the legacy tabber markup.
+     *
+     * @param array<int,array<string,mixed>> $locales
+     * @param array<string,mixed>|null       $page
+     *
+     * @return void
+     * @deprecated since 5.1.0
+     * @see printMultiLangTitleDesc
      */
     public static function multilanguage_name_description($locales, $page = null)
     {
@@ -132,23 +153,21 @@ class PageForm extends Form
     /**
      * Generate MultiLanguage Title Description Fields for Item
      *
-     * @param null $locales
-     * @param null $page
+     * @param array<string,mixed>|null $page
+     * @param bool                     $with_tab Also print the locale tab strip
+     *
+     * @return void
      */
     public static function printMultiLangTitleDesc($page = null, $with_tab = true)
     {
         if ($with_tab) {
             self::printMultiLangTab();
         }
-        echo '<div class="tab-content mb-3" id="multiLangTabsContent" >';
+        echo '<div class="mb-3" id="multiLangTabsContent">';
 
         foreach (osc_get_admin_locales() as $locale) {
-            // Add class active if $current_locale is equal to $locale['pk_c_code']
-            $active = '';
-            if ($locale['pk_c_code'] === osc_current_admin_locale()) {
-                $active = 'show active';
-            }
-            echo '<div class="tab-pane fade ' . $active . '" id="' . $locale['pk_c_code'] . '" role="tabpanel">';
+            $hidden = ($locale['pk_c_code'] === osc_current_admin_locale()) ? '' : ' hidden';
+            echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             self::printPageTitleInput($locale, $page);
             self::printPageDescriptionInput($locale, $page);
             echo '</div>';
@@ -158,21 +177,19 @@ class PageForm extends Form
 
     /**
      * Print MultiLang Tab
+     *
+     * @return void
      */
     public static function printMultiLangTab()
     {
         $locales = osc_get_admin_locales();
-        if (count(osc_get_admin_locales()) > 1) {
-            echo '<div id="language-tab" class="mt-3">';
-            echo '<ul class="nav nav-tabs" id="multiLangTabs" role="tablist">';
+        if (count($locales) > 1) {
+            echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
+            echo '<ul>';
             foreach ($locales as $locale) {
-                $active = '';
-                if ($locale['pk_c_code'] === osc_current_admin_locale()) {
-                    $active = 'show active';
-                }
-                echo '<li class="nav-item"><a class="nav-link btn-sm ' . $active . '" href="#' . $locale['pk_c_code']
-                     . '" data-bs-toggle="tab">'
-                     . $locale['s_name'] . '</a></li>';
+                $active = ($locale['pk_c_code'] === osc_current_admin_locale()) ? ' class="ui-tabs-active ui-state-active"' : '';
+                echo '<li' . $active . '><a href="#' . osc_esc_html($locale['pk_c_code']) . '">'
+                     . osc_esc_html($locale['s_name']) . '</a></li>';
             }
             echo '</ul>';
             echo '</div>';
@@ -182,8 +199,10 @@ class PageForm extends Form
     /**
      * Print Item Title Input
      *
-     * @param                                   $locale
-     * @param array                             $page
+     * @param array<string,mixed> $locale
+     * @param array<string,mixed> $page
+     *
+     * @return void
      */
     private static function printPageTitleInput($locale, array $page)
     {
@@ -216,8 +235,10 @@ class PageForm extends Form
     /**
      * Print Item Description Text Area
      *
-     * @param                                   $locale
-     * @param array                             $item
+     * @param array<string,mixed>      $locale
+     * @param array<string,mixed>|null $page
+     *
+     * @return void
      */
     private static function printPageDescriptionInput($locale, ?array $page = null)
     {

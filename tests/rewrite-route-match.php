@@ -107,6 +107,50 @@ pin('Params.post_id set', '42', Params::getParam('post_id'));
 pin('Params.page set', 'custom', Params::getParam('page'));
 pin('instance location set', 'blog', rw_prop($rw, 'location'));
 
+/* ----------------------------------------------------------------------------
+ * A route param must not overwrite what the POST body already said. A form's
+ * hidden page/action are its intent; the URL it posts to only says where it was
+ * rendered. Writing the route over the body is what stopped the checkout form
+ * working the day the buy page gained a permalink -- silently, because the POST
+ * still rendered 200 on the page it came from. The same body posted at index.php
+ * was always in full control (no rule matches there), so this only makes the two
+ * behave alike.
+ * ------------------------------------------------------------------------- */
+harness_section('applyParams — a POST body outranks the route it was posted to');
+
+$applyWith = static function (array $post, array $params, $method) {
+    global $REF;
+    $_GET                      = array();
+    $_POST                     = $post;
+    $_SERVER['REQUEST_METHOD'] = $method;
+    Params::init();
+    rw_invoke($REF->newInstanceWithoutConstructor(), 'applyParams', $params);
+};
+
+/* The real shape: the buy page's route says action=buy, the form posts checkout. */
+$applyWith(
+    array('page' => 'billing', 'action' => 'checkout', 'packageId' => '2'),
+    array('page' => 'billing', 'action' => 'buy'),
+    'POST'
+);
+pin('the posted action survives the route', 'checkout', Params::getParam('action'));
+pin('a param both agree on is unchanged', 'billing', Params::getParam('page'));
+pin('a param only the body carries is untouched', '2', Params::getParam('packageId'));
+
+/* A key the body does not carry still comes from the route. */
+$applyWith(array('action' => 'checkout'), array('page' => 'billing', 'action' => 'buy'), 'POST');
+pin('the route still fills in what the body omits', 'billing', Params::getParam('page'));
+
+/* An empty posted value is not an answer -- the route fills it in. */
+$applyWith(array('action' => ''), array('page' => 'billing', 'action' => 'buy'), 'POST');
+pin('an empty posted value does not shadow the route', 'buy', Params::getParam('action'));
+
+/* GET is untouched: there is no body to defer to, so the route is the only source. */
+$applyWith(array(), array('page' => 'billing', 'action' => 'buy'), 'GET');
+pin('on GET the route is authoritative', 'buy', Params::getParam('action'));
+
+$_SERVER['REQUEST_METHOD'] = 'GET';
+
 harness_section('resolveSitemap — core fallback (pure)');
 $s = rw_invoke($REF->newInstanceWithoutConstructor(), 'resolveSitemap', 'sitemap.xml');
 pin('sitemap.xml -> index doc', 'index', $s['sitemap_doc'] ?? null);

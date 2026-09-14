@@ -14,25 +14,25 @@ if (!defined('OC_ADMIN')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-$current_host = parse_url(Params::getServerParam('HTTP_HOST'), PHP_URL_HOST);
-if ($current_host === null) {
-    $current_host = Params::getServerParam('HTTP_HOST');
-}
+/**
+ * The chrome around the declared advanced-settings form. The form itself -- its route, its
+ * fields, their values and the submit row -- is core's, drawn from the declaration the
+ * controller saves through.
+ */
+
+$form = __get('advanced_form');
 
 //customize Head
+/**
+ * Registered on `admin_header` for the advanced-settings screen; it emits nothing.
+ *
+ * @return void
+ */
 function customHead()
 {
 }
 
 osc_add_hook('admin_header', 'customHead', 10);
-
-/**
- * @return string
- */
-function render_offset()
-{
-    return 'row-offset';
-}
 
 osc_admin_page(array(
     'section' => __('Settings'),
@@ -48,52 +48,7 @@ osc_current_admin_theme_path('parts/header.php');
     <div id="general-settings">
         <?php osc_admin_page_head(__('Advanced Settings')); ?>
         <ul id="error_list"></ul>
-        <form name="settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="advanced_post"/>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Subdomain type'); ?></div>
-                        <div class="form-controls">
-                            <select name="e_type" id="e_type">
-                                <option value="" <?php if (osc_subdomain_type()) {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('No subdomains'); ?></option>
-                                <option value="category" <?php if (osc_subdomain_type() === 'category') {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('Category based'); ?></option>
-                                <option value="country" <?php if (osc_subdomain_type() === 'country') {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('Country based'); ?></option>
-                                <option value="region" <?php if (osc_subdomain_type() === 'region') {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('Region based'); ?></option>
-                                <option value="city" <?php if (osc_subdomain_type() === 'city') {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('City based'); ?></option>
-                                <option value="user" <?php if (osc_subdomain_type() === 'user') {
-                                    ?>selected="selected"<?php
-                                } ?>><?php _e('User based'); ?></option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Host'); ?></div>
-                        <div class="form-controls"><input type="text" class="xlarge" name="s_host"
-                                                          value="<?php echo osc_esc_html(osc_subdomain_host()); ?>"/>
-                            <div class="help-box"><?php _e('Your host is required to know the subdomain.'); ?>
-                                <?php printf(
-                                    __('Your current host is "%s". Add it without "www".'),
-                                    $current_host
-                                ); ?><?php _e('Remember to enable cookies for the subdomains too.'); ?></div>
-                        </div>
-                    </div>
-                    <div class="clear"></div>
-                    <?php osc_admin_form_actions(); ?>
-                </div>
-            </fieldset>
-        </form>
+        <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>
     <!-- /settings form -->
 </div>

@@ -67,6 +67,15 @@ $logRows = static function () use ($admin, $table): array {
     return $rows;
 };
 
+/** Run $fn with warnings silenced, the way the rejected-write pin needs. */
+$quiet = static function (callable $fn) {
+    $prev = error_reporting(E_ALL & ~E_WARNING);
+    $out  = $fn();
+    error_reporting($prev);
+
+    return $out;
+};
+
 $catId    = seed_category($admin, 'Motors');
 $itemOne  = seed_item($admin, $catId, null, 'Listing one');
 $itemTwo  = seed_item($admin, $catId, null, 'Listing two');
@@ -156,24 +165,29 @@ pin('s_reason is truncated to 191 characters', str_repeat('y', 191), $row['s_rea
 pin('s_field is truncated to 20 characters', str_repeat('z', 20), $row['s_field']);
 pin('s_action is truncated to 20 characters', str_repeat('w', 20), $row['s_action']);
 
-harness_section('ItemModerationLog::add — out-of-range item id is clamped, not rejected');
+harness_section('ItemModerationLog::add — an out-of-range item id');
 
 /* fk_i_item_id is INT UNSIGNED NOT NULL, and (int) casts a negative string to
- * a genuine negative int — the obvious hypothesis is that the unsigned column
- * rejects it. It does not: DBConnectionClass::setSQLMode() strips
- * STRICT_TRANS_TABLES from every connection unless OSC_DB_STRICT_MODE is
- * defined, so MySQL silently clamps the out-of-range value to 0 and the
- * insert succeeds. There is in fact no reachable path through add()'s public
+ * a genuine negative int. What the column does with it depends on the connection:
+ * a loose connection clamps it to 0 and the insert succeeds, a strict one rejects
+ * the row. Apart from that, there is no reachable path through add()'s public
  * signature that makes DAO::insert() return false: every value it builds is
  * coerced with (int)/(string)/substr() first, checkFieldKeys() always passes
  * (the key set is fixed), and pk_i_id is auto-increment, so no duplicate-key
- * failure is reachable either. The false-return branch is therefore pinned as
- * unreachable via the public API, not exercised. */
-$ret = $model->add(-1, 'keyword', 'x');
-pin('an out-of-range item id still returns bool true', true, $ret);
-$rows = $logRows();
-$row  = $rows[count($rows) - 1];
-pin('the out-of-range item id is clamped to 0, not rejected', '0', $row['fk_i_item_id']);
+ * failure is reachable either. */
+$before = count($logRows());
+$ret    = $quiet(static function () use ($model) {
+    return $model->add(-1, 'keyword', 'x');
+});
+if (harness_strict_writes()) {
+    pin('an out-of-range item id returns bool false', false, $ret);
+    pin('and nothing was written', $before, count($logRows()));
+} else {
+    pin('an out-of-range item id still returns bool true', true, $ret);
+    $rows = $logRows();
+    $row  = $rows[count($rows) - 1];
+    pin('the out-of-range item id is clamped to 0, not rejected', '0', $row['fk_i_item_id']);
+}
 
 /* ----------------------------------------------------------------------------
  * findByItem() — the return ledger.

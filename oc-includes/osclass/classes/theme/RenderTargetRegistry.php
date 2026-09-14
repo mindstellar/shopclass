@@ -32,10 +32,18 @@ final class RenderTargetRegistry
     /** @var array<string,string> absolute path, keyed by target id */
     private array $targets = [];
 
+    /**
+     * Singleton: obtain the registry through instance().
+     */
     private function __construct()
     {
     }
 
+    /**
+     * Shared registry instance, created on first use.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -72,6 +80,10 @@ final class RenderTargetRegistry
 
     /**
      * Absolute path registered for $id, or null when nothing is registered under it.
+     *
+     * @param string $id
+     *
+     * @return string|null
      */
     public function get(string $id): ?string
     {
@@ -80,6 +92,10 @@ final class RenderTargetRegistry
 
     /**
      * Whether $id is a well-formed render target id.
+     *
+     * @param string $id
+     *
+     * @return bool
      */
     public static function isValidId(string $id): bool
     {

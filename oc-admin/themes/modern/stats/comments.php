@@ -31,6 +31,8 @@ switch ($type) {
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -44,6 +46,11 @@ osc_admin_page(array(
     'help'    => __('See how many comments the listings published on your site have received.'),
 ));
 
+/**
+ * Emit the comment-statistics chart and the Google Visualization loader it needs.
+ *
+ * @return void
+ */
 function customHead()
 {
     $comments        = __get('comments');

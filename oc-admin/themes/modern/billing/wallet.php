@@ -50,7 +50,7 @@ $reasonWords = array(
 
     <div class="billing-detail-grid">
         <div>
-            <h3 class="render-title"><?php _e('History'); ?></h3>
+            <?php osc_admin_form_section(__('History')); ?>
             <?php if (empty($entries)) {
                 osc_admin_empty(array(
                     'icon'  => 'bi-clock-history',
@@ -139,11 +139,21 @@ $reasonWords = array(
                     <input type="hidden" name="action" value="wallet_adjust"/>
                     <input type="hidden" name="userId" value="<?php echo $userId; ?>"/>
                     <input type="hidden" name="mode" value="add"/>
-                    <div class="form-row">
-                        <label for="add-amount"><?php _e('How many credits'); ?></label>
-                        <input type="number" min="1" step="1" required class="form-control" id="add-amount"
-                               name="amount" value=""/>
-                    </div>
+                    <?php osc_admin_form_row_open('', array(
+                        'layout'     => 'stacked',
+                        'for'        => 'add-amount',
+                        'label_html' => '<span class="form-sublabel">' . __('How many credits') . '</span>',
+                    )); ?>
+                        <?php osc_admin_number(array(
+                            'row'      => false,
+                            'id'       => 'add-amount',
+                            'name'     => 'amount',
+                            'value'    => '',
+                            'min'      => 1,
+                            'step'     => 1,
+                            'required' => true,
+                        )); ?>
+                    <?php osc_admin_form_row_close(); ?>
                     <button type="submit" class="btn btn-submit"><?php _e('Add credits'); ?></button>
                 </form>
             <?php osc_admin_panel_close(); ?>
@@ -158,17 +168,26 @@ $reasonWords = array(
                     <input type="hidden" name="action" value="wallet_adjust"/>
                     <input type="hidden" name="userId" value="<?php echo $userId; ?>"/>
                     <input type="hidden" name="mode" value="remove"/>
-                    <div class="form-row">
-                        <label for="remove-amount"><?php _e('How many credits'); ?></label>
-                        <input type="number" min="1" step="1" max="<?php echo max(0, $balance); ?>" required
-                               class="form-control" id="remove-amount" name="amount" value=""/>
-                        <div class="help-block">
-                            <?php printf(
-                                osc_esc_html(__('No more than the %s credits currently held.')),
+                    <?php osc_admin_form_row_open('', array(
+                        'layout'     => 'stacked',
+                        'for'        => 'remove-amount',
+                        'label_html' => '<span class="form-sublabel">' . __('How many credits') . '</span>',
+                    )); ?>
+                        <?php osc_admin_number(array(
+                            'row'      => false,
+                            'id'       => 'remove-amount',
+                            'name'     => 'amount',
+                            'value'    => '',
+                            'min'      => 1,
+                            'max'      => max(0, $balance),
+                            'step'     => 1,
+                            'required' => true,
+                            'help'     => sprintf(
+                                __('No more than the %s credits currently held.'),
                                 number_format(max(0, $balance))
-                            ); ?>
-                        </div>
-                    </div>
+                            ),
+                        )); ?>
+                    <?php osc_admin_form_row_close(); ?>
                     <button type="submit" class="btn btn-secondary"
                         <?php echo $balance < 1 ? 'disabled' : ''; ?>><?php _e('Remove credits'); ?></button>
                 </form>

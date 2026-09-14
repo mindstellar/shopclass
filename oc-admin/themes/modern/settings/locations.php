@@ -12,7 +12,11 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-$aCountries = __get('aCountries');
+
+$locations    = __get('locations');
+$locationForm = __get('locationForm');
+$locationTab  = __get('locationTab') === 'data' ? 'data' : 'browse';
+$locationData = __get('locationData');
 
 osc_admin_page(array(
     'section' => __('Listings'),
@@ -23,150 +27,103 @@ osc_admin_page(array(
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
-            'url'   => '#',
-            'title' => __('Import new'),
-            'attrs' => array('id' => 'b_import'),
+            'url'   => $locations['base'] . '&form=add',
+            'title' => __('Add country'),
+            'attrs' => array('id' => 'b_import', 'data-loc-form' => ''),
         ),
     ),
 ));
+
+osc_enqueue_script('admin-location');
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Locations')); ?>
-    <!-- settings form -->
-    <div id="settings_form" class="locations">
-        <div class="row g-1">
-            <div class="col-md-4">
-                <div class="row-wrapper">
-                    <div class="widget-box">
-                        <div class="widget-box-title">
-                            <span><?php _e('Countries'); ?></span>
-                            <a id="b_new_country" class="mx-2 btn btn-sm btn-outline-primary float-right" href="#" title="<?php _e('Add new'); ?>">
-                                <i class="bi bi-plus-circle"></i></a>
-                            <a id="b_remove_country" class="btn btn-sm btn-outline-danger float-right hide" href="#"
-                               title="<?php _e('Remove selected'); ?>">
-                                <i class="bi bi-trash"></i></a>
-                        </div>
-                        <div class="widget-box-content p-0">
-                            <div id="l_countries" class="list-group list-group-flush">
-                                <?php if (empty($aCountries)) { ?>
-                                    <div class="list-group-item text-muted">
-                                        <?php _e('No countries installed yet. Use "Add new" above to add one.'); ?>
-                                    </div>
-                                <?php } ?>
-                                <?php foreach ($aCountries as $country) { ?>
-                                    <div class="list-group-item" id="country-<?php echo osc_esc_html($country['pk_c_code']); ?>"
-                                         data-id="<?php echo osc_esc_html($country['pk_c_code']); ?>" data-s-name="<?php echo osc_esc_html($country['s_name']); ?>"
-                                         data-s-slug="<?php echo osc_esc_html($country['s_slug']); ?>">
-                                        <input class="form-check-input me-1" name="country[]" type="checkbox"
-                                               onclick="checkLocations('l_countries');"
-                                               value="<?php echo $country['pk_c_code']; ?>">
-                                        <a class="close" data-id="<?php echo $country['pk_c_code']; ?>"
-                                           title="<?php echo osc_esc_html(__('Delete')); ?>" href="#"
-                                           onclick="deleteLocations(this,'country');"
-                                        ><i class="bi bi-x-circle-fill"
-                                            title="<?php echo osc_esc_html(__('Delete')); ?>"></i></a>
-                                        <a class="edit mx-1" href="#" data-id="<?php echo $country['pk_c_code']; ?>"
-                                           onclick="editLocations(this,'country');"
-                                           title="<?php echo osc_esc_html(__('Edit')); ?>"><?php echo $country['s_name']; ?></a>
-                                        <a class="view-more float-end" href="#" data-id="<?php echo $country['pk_c_code']; ?>"
-                                           onclick="showLocations('region',this)">
-                                            <?php _e('View more'); ?>&raquo;
-                                        </a>
-                                    </div>
-                                <?php } ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="row-wrapper">
-                    <div class="widget-box">
-                        <div class="widget-box-title">
-                            <span><?php _e('Regions'); ?></span>
-                            <a class="ms-2 btn btn-sm btn-outline-primary float-right hide" id="b_new_region" href="#" title="<?php _e('Add new');
-?>">
-                                <i class="bi bi-plus-circle"></i></a>
-                            <a id="b_remove_region" class="btn btn-sm btn-outline-danger float-right hide" href="#"
-                               title="<?php _e('Remove selected'); ?>">
-                                <i class="bi bi-trash"></i></a>
-                        </div>
-                        <div class="widget-box-content p-0">
-                            <div id="i_regions" class="list-group list-group-flush"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="row-wrapper">
-                    <div class="widget-box">
-                        <div class="widget-box-title">
-                            <span><?php _e('Cities'); ?></span>
-                            <a id="b_new_city" class="mx-2 btn btn-sm btn-outline-primary float-end hide" href="#" title="<?php _e('Add new'); ?>">
-                                <i class="bi bi-plus-circle"></i></a>
-                            <a id="b_remove_city" class="btn btn-sm btn-outline-danger hide float-end"
-                               href="#" title="<?php _e('Remove selected'); ?>">
-                                <i class="bi bi-trash"></i></a>
-                        </div>
-                        <div class="widget-box-content p-0">
-                            <div id="i_cities" class="list-group list-group-flush"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <?php $inDrawer = is_array($locationForm) && in_array($locationForm['kind'], array('add', 'edit'), true)
+        && ($locationForm['kind'] === 'add' || $locationForm['record'] !== null); ?>
+    <div class="locations-app"
+         data-ajax="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=ajax'); ?>"
+         data-base="<?php echo osc_esc_html($locations['base']); ?>"
+         data-tab="<?php echo $locationTab; ?>"
+         data-csrf="<?php echo osc_esc_html(osc_csrf_token_url()); ?>"
+         data-i18n='<?php echo osc_esc_html(json_encode(array(
+             'loading'       => __('Loading…'),
+             'loadError'     => __('The list could not be loaded. Check your connection and try again.'),
+             'saveError'     => __('Something went wrong. Please try again.'),
+             'nothingPicked' => __('Select at least one location to delete.'),
+             'noAction'      => __('Choose a bulk action first.'),
+             'selected'      => __('Selected: %s'),
+             'countsError'   => __('Could not be counted'),
+             'slugTaken'     => __('%s already uses this slug. Saving makes one from the name instead.'),
+             'searchError'   => __('The search could not be run. Check your connection and try again.'),
+             'matches'       => __('Matches: %s'),
+             'cities'        => __('Cities'),
+             'regions'       => __('Regions'),
+             'countries'     => __('Countries'),
+             'edit'          => __('Edit'),
+             'editName'      => __('Edit %s'),
+             'hidden'        => __('Hidden'),
+             'nothingTitle'  => __('Nothing named “%s” anywhere'),
+             'nothingText'   => __('Names are matched from their first letters.'),
+             'clearSearch'   => __('Clear search'),
+             'hitsMore'      => sprintf(
+                 __('Only the first %s are shown. Type more of the name to narrow it.'),
+                 \mindstellar\location\LocationAdminView::HITS_PER_LEVEL
+             ),
+             'hitsLimit'     => \mindstellar\location\LocationAdminView::HITS_PER_LEVEL,
+             'dataLoading'   => __('Reading the location catalog…'),
+             'showing'       => __('Showing %1$s of %2$s countries'),
+             'noMatch'       => __('No country matches “%s”'),
+             'noFilterMatch' => __('No country matches this filter'),
+             'serverTimeout' => __('The server stopped waiting before the work finished. Try again; if it keeps happening, ask your host to allow requests of up to five minutes.'),
+             'previewBusy'   => __('Checking…'),
+             'installBusy'   => __('Installing…'),
+             'updateBusy'    => __('Updating…'),
+             'longRun'       => __('Reading %s from the catalog. A large country can take a minute or two; keep this page open.'),
+             'recalcBusy'    => __('Counting…'),
+             'recalcDone'    => __('Listing counts are up to date.'),
+             'recalcError'   => __('Counting stopped. Your connection may have dropped; continue to pick up where it stopped.'),
+             'recalcAgain'   => __('Continue counting'),
+             'recalcStalled' => __('Counting stopped because it was not moving forward. Try again in a few minutes.'),
+             'recalcStep'    => __('%1$s%% counted: %2$s of %3$s locations'),
+             'offer'         => __('The catalog has %1$s. Regions: %2$s. Cities: %3$s.'),
+             'offerPlain'    => __('The catalog has %s, with its regions and cities.'),
+             'offerButton'   => __('Import %s instead'),
+             'offerInstalled' => __('%s is already installed. Update it from the Data tab.'),
+         ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
+        <nav class="loc-tabs" aria-label="<?php echo osc_esc_html(__('Location views')); ?>">
+            <ul class="osc-tabnav">
+                <?php foreach (array('browse' => __('Browse'), 'data' => __('Data')) as $tabKey => $tabLabel) {
+                    $current = $locationTab === $tabKey; ?>
+                    <li>
+                        <a href="<?php echo osc_esc_html($locations['base'] . ($tabKey === 'data' ? '&tab=data' : '')); ?>"
+                           data-loc-tab="<?php echo $tabKey; ?>"<?php echo $current ? ' class="is-active" aria-current="page"' : ''; ?>>
+                            <?php echo osc_esc_html($tabLabel); ?>
+                        </a>
+                    </li>
+                <?php } ?>
+            </ul>
+        </nav>
+        <?php if (is_array($locationForm) && !$inDrawer) { ?>
+            <section class="loc-inline-form" aria-label="<?php echo osc_esc_html(__('Location form')); ?>">
+                <?php osc_current_admin_theme_path('settings/locations/form.php'); ?>
+            </section>
+        <?php } ?>
+        <div id="loc-list" class="loc-list-region"<?php echo $locationTab === 'data' ? ' hidden' : ''; ?>>
+            <?php osc_current_admin_theme_path('settings/locations/list.php'); ?>
         </div>
+        <div id="loc-data" class="loc-data-region"<?php echo $locationTab === 'data' ? '' : ' hidden'; ?>>
+            <?php if (is_array($locationData)) {
+                osc_current_admin_theme_path('settings/locations/data.php');
+            } ?>
+        </div>
+        <p id="loc-announce" class="visually-hidden" aria-live="polite"></p>
+        <div class="osc-drawer-backdrop<?php echo $inDrawer ? ' is-open' : ''; ?>" id="loc-drawer-backdrop"<?php echo $inDrawer ? '' : ' hidden'; ?>></div>
+        <div class="osc-drawer loc-drawer<?php echo $inDrawer ? ' is-open' : ''; ?>" id="loc-drawer" role="dialog" aria-modal="true"
+             aria-labelledby="loc-drawer-title"<?php echo $inDrawer ? '' : ' hidden'; ?>>
+            <?php if ($inDrawer) {
+                osc_current_admin_theme_path('settings/locations/form.php');
+            } ?>
+        </div>
+        <dialog id="locationModal" class="osc-dialog loc-dialog"
+                aria-label="<?php echo osc_esc_html(__('Location form')); ?>"></dialog>
     </div>
-    <dialog id="locationModal" class="osc-dialog">
-        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title"></p>
-                <div class="osc-dialog-content"></div>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button class="btn btn-submit btn-sm" type="submit"></button>
-            </div>
-        </form>
-    </dialog>
-    <!-- End form add country -->
-    <script>
-        // Location constant
-        var baseUrl = "<?php echo osc_admin_base_url(); ?>";
-        var sCountry = "<?php echo Params::getParam('country')?>";
-        var sCountryCode = "<?php echo Params::getParam('country_code')?>";
-        var sRegionId = "<?php echo Params::getParam('region')?>";
-        //common text vars
-        var stringAddCity = '<?php echo osc_esc_js(__('Add city')); ?>';
-        var stringAddCountry = '<?php echo osc_esc_js(__('Add country')); ?>';
-        var stringAddRegion = '<?php echo osc_esc_js(__('Add region')); ?>';
-        var stringCatalogUnavailable = '<?php echo osc_esc_js(__('No countries available right now')); ?>';
-        var stringCity = '<?php echo osc_esc_js(__('City')); ?>';
-        var stringCityName = "<?php echo osc_esc_js(__('City Name')); ?>";
-        var stringCountry = '<?php echo osc_esc_js(__('Country')); ?>';
-        var stringCountryCode = '<?php echo osc_esc_js(__('Country code')); ?>';
-        var stringCountryName = '<?php echo osc_esc_js(__('Country name')); ?>';
-        var stringDelete = '<?php echo osc_esc_js(__('Delete')); ?>';
-        var stringDeleteTitle = "<?php echo osc_esc_js(__('Delete selected locations')); ?>";
-        var stringDeleteWarning = "<?php echo osc_esc_js(__("This action can't be undone. Items associated to this location will be deleted. "
-                                . "Users from this location will be unlinked, but not deleted. Are you sure you want to continue?"));?>";
-        var stringEdit = '<?php echo osc_esc_js(__('Edit')); ?>';
-        var stringEnter = '<?php echo osc_esc_js(__('Enter')); ?>';
-        var stringImport = '<?php echo osc_esc_js(__('Import')); ?>';
-        var stringImportLocations = '<?php echo osc_esc_js(__('Import locations')); ?>';
-        var stringImportWarning = "<?php echo osc_esc_js(__('Import a country with its regions and cities. Countries you '
-                                . 'already have appear only when newer data is available for them.')); ?>";
-        var stringLoading = '<?php echo osc_esc_js(__('Loading countries…')); ?>';
-        var stringName = '<?php echo osc_esc_js(__("Name")); ?>';
-        var stringNotInstalled = '<?php echo osc_esc_js(__('Not installed')); ?>';
-        var stringRegion = '<?php echo osc_esc_js(__("Region")); ?>';
-        var stringRegionName = '<?php echo osc_esc_js(__("Region name")); ?>';
-        var stringSave = '<?php echo osc_esc_js(__("Save")); ?>';
-        var stringSelectOption = '<?php echo osc_esc_js(__("Select option")); ?>';
-        var stringSlug = '<?php echo osc_esc_js(__("Slug")); ?>';
-        var stringSlugError = "<?php echo osc_esc_js(__("The slug is not unique."));?>";
-        var stringSlugWarning = "<?php echo osc_esc_js(__("The slug has to be a unique string, could be left blank"));?>"
-        var stringUpdateAvailable = '<?php echo osc_esc_js(__('Update available')); ?>';
-        var stringViewMore = "<?php echo osc_esc_js(__("View more")); ?>";
-    </script>
-<?php
-osc_enqueue_script('admin-location');
-osc_current_admin_theme_path('parts/footer.php'); ?>
+<?php osc_current_admin_theme_path('parts/footer.php'); ?>

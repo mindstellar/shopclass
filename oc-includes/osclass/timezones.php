@@ -15,7 +15,12 @@ use mindstellar\utility\Deprecate;
 
 Deprecate::deprecatedFile(__FILE__, '4.0.0', null, __('Use native php function for timezones list.'));
 
-/** @deprecated  $timezone */
+/**
+ * Timezone identifiers, kept only for installs that still include this file.
+ *
+ * @deprecated since 4.0.0 use DateTimeZone::listIdentifiers() instead
+ * @var string[]
+ */
 $timezone = array(
     'Africa/Abidjan',
     'Africa/Accra',

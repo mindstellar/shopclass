@@ -26,6 +26,8 @@ class Deprecate
      * @param string      $function    Deprecated function name
      * @param string      $version     The version of Shopclass that deprecated the file.
      * @param string|null $replacement The function that should have been used.
+     *
+     * @return void
      */
     public static function deprecatedFunction(
         $function,
@@ -68,13 +70,15 @@ class Deprecate
     /**
      * Private error_trigger
      *
-     * @param array  $caller
-     * @param string $message
-     * @param int    $level [optional] <p>
-     *                      The designated error type for this error. It only works with the E_USER
-     *                      family of constants, and will default to <b>E_USER_NOTICE</b>.
+     * @param array{file?:string,line?:int} $caller frame the deprecated call was made from
+     * @param string|null                   $message
+     * @param int                           $level [optional] <p>
+     *                                      The designated error type for this error. It only works with
+     *                                      the E_USER family of constants, and will default to
+     *                                      <b>E_USER_NOTICE</b>.
      *
      * @return void
+     * @throws \InvalidArgumentException when no message is given
      */
     private static function triggerError($caller, $message = null, $level = E_USER_DEPRECATED)
     {
@@ -94,6 +98,8 @@ class Deprecate
      * @param string|null $replacement Replacement Hook name if available
      * @param string|null $message     A message regarding the change.
      * @param mixed       $args,...    hook arguments
+     *
+     * @return void
      */
     public static function deprecatedRunHook(
         $hook,
@@ -115,10 +121,12 @@ class Deprecate
      * For internal use only
      * run when a deprecated hook/filter is used.
      *
-     * @param      $hook
-     * @param      $version
-     * @param null $replacement
-     * @param null $message
+     * @param string      $hook
+     * @param string      $version
+     * @param string|null $replacement
+     * @param string|null $message
+     *
+     * @return void
      */
     private static function deprecatedHook(
         $hook,
@@ -170,6 +178,8 @@ class Deprecate
      * @param null|string $replacement Replacement Filter name if available.
      * @param null|string $message     A messaged regarding the change.
      * @param mixed       $args,...    filter arguments.
+     *
+     * @return void
      */
     public static function deprecatedApplyFilter(
         $filter,
@@ -191,10 +201,12 @@ class Deprecate
     /**
      * Deprecate File
      *
-     * @param string $file        The file that was called.
-     * @param string $replacement The file that should have been included based on ABS_PATH.
-     * @param string $version     The version of Shopclass that deprecated the file.
-     * @param string $message     A message regarding the change.
+     * @param string      $file        The file that was called.
+     * @param string      $version     The version of Shopclass that deprecated the file.
+     * @param string|null $replacement The file that should have been included based on ABS_PATH.
+     * @param string      $message     A message regarding the change.
+     *
+     * @return void
      */
     public static function deprecatedFile(
         $file,

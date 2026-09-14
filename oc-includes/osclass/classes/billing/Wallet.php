@@ -53,6 +53,10 @@ final class Wallet
     /**
      * Current balance in credits. A user who has never transacted has no wallet row
      * and a balance of zero; that is not an error and does not create a row.
+     *
+     * @param int $userId
+     *
+     * @return int
      */
     public static function balance(int $userId): int
     {
@@ -105,6 +109,13 @@ final class Wallet
      * funds. Doing this as SELECT-then-UPDATE would let both through under any
      * isolation level short of serialisable.
      *
+     * @param int         $userId
+     * @param int         $amount         Credits, always positive
+     * @param string      $reason         One of the REASON_* constants
+     * @param string|null $idempotencyKey Repeat of a key already in the ledger is a no-op
+     * @param string|null $refType        What the entry refers to, e.g. 'order'
+     * @param int|null    $refId          Id of that referent
+     *
      * @return bool false when the balance is insufficient -- a normal outcome the
      *              caller must handle, not an exception
      * @throws InvalidArgumentException on a non-positive amount
@@ -133,6 +144,14 @@ final class Wallet
      * have given away the goods. A negative balance is the honest record of that, and
      * it blocks further spending until it is settled.
      *
+     * @param int         $userId
+     * @param int         $amount         Credits, always positive
+     * @param string      $reason         One of the REASON_* constants
+     * @param string|null $idempotencyKey Repeat of a key already in the ledger is a no-op
+     * @param string|null $refType        What the entry refers to, e.g. 'order'
+     * @param int|null    $refId          Id of that referent
+     *
+     * @return bool whether the balance now reflects the reversal
      * @throws InvalidArgumentException on a non-positive amount
      */
     public static function reverse(
@@ -154,6 +173,10 @@ final class Wallet
      * Ledger rows for a user, newest first. This is what an admin reads when a user
      * disputes a balance, so it returns the raw rows rather than a summary.
      *
+     * @param int $userId
+     * @param int $limit
+     * @param int $offset
+     *
      * @return array<int,array>
      */
     public static function history(int $userId, int $limit = 50, int $offset = 0): array
@@ -166,6 +189,13 @@ final class Wallet
             ->get();
     }
 
+    /**
+     * How many ledger rows a user has, for the history pager.
+     *
+     * @param int $userId
+     *
+     * @return int
+     */
     public static function historyCount(int $userId): int
     {
         return osc_db_table(self::ledger())->where('fk_i_user_id', $userId)->count();
@@ -177,6 +207,9 @@ final class Wallet
      * Inner join, so a wallet whose user has been deleted does not appear as a nameless
      * row -- the cascade removes it anyway. Ordered by balance so the accounts holding
      * the most unspent credit, which is the site's outstanding liability, are first.
+     *
+     * @param int $limit
+     * @param int $offset
      *
      * @return array<int,array>
      */
@@ -192,6 +225,11 @@ final class Wallet
         );
     }
 
+    /**
+     * How many wallets exist, for the admin pager.
+     *
+     * @return int
+     */
     public static function balanceCount(): int
     {
         return (int) osc_db_scalar(
@@ -203,6 +241,8 @@ final class Wallet
     /**
      * Total credit outstanding across every wallet -- what the site owes its users in
      * things they have paid for and not yet spent.
+     *
+     * @return int
      */
     public static function totalOutstanding(): int
     {
@@ -212,7 +252,12 @@ final class Wallet
     /**
      * Move the balance by $delta (signed) and append the matching ledger row, atomically.
      *
+     * @param int         $userId
      * @param int  $delta         positive to credit, negative to debit
+     * @param string      $reason         One of the REASON_* constants
+     * @param string|null $idempotencyKey Repeat of a key already in the ledger is a no-op
+     * @param string|null $refType        What the entry refers to, e.g. 'order'
+     * @param int|null    $refId          Id of that referent
      * @param bool $allowNegative skip the overdraw guard (reversals only)
      *
      * @return bool whether the balance now reflects this event
@@ -344,6 +389,10 @@ final class Wallet
      * log; a failed INSERT is recorded whether or not the caller recovers from it, and
      * an error log that reports healthy behaviour is one nobody reads when it reports
      * the real thing.
+     *
+     * @param int $userId
+     *
+     * @return void
      */
     private static function ensureWallet(int $userId): void
     {
@@ -376,16 +425,33 @@ final class Wallet
         }
     }
 
+    /**
+     * Whether this idempotency key has already been recorded.
+     *
+     * @param string $idempotencyKey
+     *
+     * @return bool
+     */
     private static function keyExists(string $idempotencyKey): bool
     {
         return osc_db_table(self::ledger())->where('s_idempotency_key', $idempotencyKey)->count() > 0;
     }
 
+    /**
+     * Prefixed wallet table name.
+     *
+     * @return string
+     */
     private static function wallet(): string
     {
         return DB_TABLE_PREFIX . 't_billing_wallet';
     }
 
+    /**
+     * Prefixed ledger table name.
+     *
+     * @return string
+     */
     private static function ledger(): string
     {
         return DB_TABLE_PREFIX . 't_billing_ledger';

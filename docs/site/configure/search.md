@@ -2,7 +2,7 @@
 title: Improving search
 description: Tune ShopClass search — MySQL full-text word length, stopwords, rebuilding the index, and when to reach for a dedicated search engine.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 ShopClass searches listing titles and descriptions through a MySQL **full-text

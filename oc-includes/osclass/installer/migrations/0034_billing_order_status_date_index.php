@@ -28,6 +28,13 @@ use mindstellar\migration\MigrationInterface;
  * interrupted upgrade is safe.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add the (s_status, dt_date) index to t_billing_order, unless it is already there.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_billing_order';
@@ -39,6 +46,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether an index (unique or not) named $index already exists on $table.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function indexExists(Connection $conn, string $table, string $index): bool
     {

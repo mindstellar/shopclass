@@ -33,6 +33,11 @@ osc_admin_page(array(
     ),
 ));
 
+/**
+ * Registered on `admin_header` for the language list; it emits nothing.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>

@@ -60,18 +60,28 @@ foreach ($pbf_types as $pbf_id => $pbf_spec) {
         </p>
     <?php } else { ?>
         <div class="mb-3">
-            <label for="pbfDescription"><?php _e('Label (for your reference)'); ?></label>
-            <input type="text" class="form-control form-control-sm" id="pbfDescription" name="description" required/>
+            <label class="form-sublabel" for="pbfDescription"><?php _e('Label (for your reference)'); ?></label>
+            <?php osc_admin_text(array(
+                'row'      => false,
+                'id'       => 'pbfDescription',
+                'name'     => 'description',
+                'required' => true,
+            )); ?>
         </div>
         <div class="mb-3">
-            <label for="pbfType"><?php _e('Widget type'); ?></label>
-            <select id="pbfType" name="s_type" class="form-select form-select-sm">
-                <?php foreach ($pbf_types as $pbf_id => $pbf_spec) { ?>
-                    <option value="<?php echo osc_esc_html($pbf_id); ?>">
-                        <?php echo osc_esc_html($pbf_spec['label']); ?>
-                    </option>
-                <?php } ?>
-            </select>
+            <label class="form-sublabel" for="pbfType"><?php _e('Widget type'); ?></label>
+            <?php
+            $pbf_options = array();
+            foreach ($pbf_types as $pbf_id => $pbf_spec) {
+                $pbf_options[$pbf_id] = $pbf_spec['label'];
+            }
+            osc_admin_select(array(
+                'row'     => false,
+                'id'      => 'pbfType',
+                'name'    => 's_type',
+                'options' => $pbf_options,
+                'width'   => 'text',
+            )); ?>
             <p class="page-field-hint" id="pbfTypeDescription"></p>
         </div>
         <div id="pbfFields">

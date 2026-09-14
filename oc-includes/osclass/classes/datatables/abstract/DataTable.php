@@ -32,6 +32,9 @@ abstract class DataTable
     protected $total;
     protected $totalFiltered;
 
+    /**
+     * Initialises the column, row and raw-row buffers as empty arrays.
+     */
     public function __construct()
     {
         $this->aColumns = array();
@@ -42,7 +45,11 @@ abstract class DataTable
     /**
      * FUNCTIONS THAT SHOULD BE REDECLARED IN SUB-CLASSES
      *
-     * @param null $results
+     * Fills the table from a plain result set, deriving the columns from the first row.
+     *
+     * @param array<int,array<string,mixed>>|null $results
+     *
+     * @return void
      */
     public function setResults($results = null)
     {
@@ -76,7 +83,43 @@ abstract class DataTable
      */
 
     /**
-     * @param $aRow
+     * Resolve the ORDER BY from the request's sort and direction params.
+     *
+     * $sortable maps the column id rendered in the header to the column it orders by, so
+     * only a column the table actually offers can reach the query. An unknown or absent
+     * sort falls back to $default rather than ordering by nothing.
+     *
+     * @param array<string,mixed>  $request   Request params, as passed to table()
+     * @param array<string,string> $sortable  Header column id => order column
+     * @param string               $default   Order column used when none is requested
+     * @param string               $direction Direction used when none is requested
+     *
+     * @return array{column_name:string,type:string}
+     */
+    protected function resolveOrder($request, array $sortable, $default, $direction = 'DESC')
+    {
+        $sort = isset($request['sort']) && !is_array($request['sort'])
+            ? (string)$request['sort']
+            : '';
+        $type = isset($request['direction']) && !is_array($request['direction'])
+            ? strtoupper(trim((string)$request['direction']))
+            : '';
+        if ($type !== 'ASC' && $type !== 'DESC') {
+            $type = strtoupper($direction);
+        }
+
+        return array(
+            'column_name' => $sortable[$sort] ?? $default,
+            'type'        => $type,
+        );
+    }
+
+    /**
+     * Appends one row to the table.
+     *
+     * @param array<string,mixed> $aRow
+     *
+     * @return void
      */
     protected function addRow($aRow)
     {
@@ -86,9 +129,11 @@ abstract class DataTable
     /**
      * Add a colum
      *
-     * @param     $id
-     * @param     $text
-     * @param int $priority
+     * @param string $id
+     * @param string $text
+     * @param int    $priority Lower values sort earlier; 1 to 10
+     *
+     * @return void
      */
     public function addColumn($id, $text, $priority = 5)
     {
@@ -97,7 +142,11 @@ abstract class DataTable
     }
 
     /**
-     * @param $id
+     * Drops a column from every priority bucket.
+     *
+     * @param string $id
+     *
+     * @return void
      */
     public function removeColumn($id)
     {
@@ -107,7 +156,9 @@ abstract class DataTable
     }
 
     /**
-     * @return array
+     * Returns the table payload consumed by the admin datatable renderer.
+     *
+     * @return array{aColumns:array<string,string>,aRows:array<int,array<string,mixed>>,iDisplayLength:int|null,iTotalDisplayRecords:int|null,iTotalRecords:int|null,iPage:int|null}
      */
     public function getData()
     {
@@ -127,7 +178,9 @@ abstract class DataTable
     }
 
     /**
-     * @return array
+     * Flattens the priority buckets into a single ordered column map.
+     *
+     * @return array<string,string>
      */
     public function sortedColumns()
     {
@@ -144,7 +197,9 @@ abstract class DataTable
     }
 
     /**
-     * @return array
+     * Returns the rows reduced to the sorted column set, missing cells filled with ''.
+     *
+     * @return array<int,array<string,mixed>>
      */
     public function sortedRows()
     {
@@ -170,7 +225,9 @@ abstract class DataTable
     }
 
     /**
-     * @return array
+     * Returns the unformatted rows as fetched from the model.
+     *
+     * @return array<int,array<string,mixed>>
      */
     public function rawRows()
     {

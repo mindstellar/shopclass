@@ -19,9 +19,8 @@ use mindstellar\database\QueryBuilder;
  *
  * A package is a plain array, not a domain object: it is edited and removed by an
  * admin, not appended to like the ledger, so it carries no history requirement of its
- * own. Orders::create() takes its amount and credits straight from a row read here,
- * which is the whole reason this catalogue exists -- without it, checkout would have
- * nowhere server-owned to read a price from.
+ * own. Orders::create() takes its amount and credits straight from a row read here, so
+ * checkout never reads a price the request supplied.
  *
  * @package mindstellar\billing
  */
@@ -31,6 +30,8 @@ final class Packages
     private const TABLE = 't_billing_package';
 
     /**
+     * Packages offered at checkout.
+     *
      * @return array[] enabled packages, in checkout order
      */
     public static function enabled(): array
@@ -43,6 +44,8 @@ final class Packages
     }
 
     /**
+     * Packages for the admin price list.
+     *
      * @return array[] every package, including disabled ones, for the admin list
      */
     public static function all(): array
@@ -53,6 +56,13 @@ final class Packages
             ->get();
     }
 
+    /**
+     * One package row, or null when no package has that id.
+     *
+     * @param int $id
+     *
+     * @return array|null
+     */
     public static function find(int $id): ?array
     {
         return self::table()->where('pk_i_id', $id)->first();
@@ -74,6 +84,12 @@ final class Packages
     }
 
     /**
+     * Replace a package's fields with a validated row.
+     *
+     * @param int   $id
+     * @param array $data Same keys as create()
+     *
+     * @return bool whether the row changed
      * @throws InvalidArgumentException on an invalid row
      */
     public static function update(int $id, array $data): bool
@@ -81,6 +97,13 @@ final class Packages
         return self::table()->where('pk_i_id', $id)->update(self::validated($data)) > 0;
     }
 
+    /**
+     * Remove a package. Orders already placed against it keep their own figures.
+     *
+     * @param int $id
+     *
+     * @return bool whether a row was removed
+     */
     public static function delete(int $id): bool
     {
         return self::table()->where('pk_i_id', $id)->delete() > 0;
@@ -91,6 +114,9 @@ final class Packages
      * than one credit, or a currency that is not a real ISO 4217 code -- every one of
      * those would otherwise reach Orders::create() unquestioned.
      *
+     * @param array $data
+     *
+     * @return array the row to write
      * @throws InvalidArgumentException
      */
     private static function validated(array $data): array
@@ -125,6 +151,11 @@ final class Packages
         );
     }
 
+    /**
+     * Query builder bound to the package table.
+     *
+     * @return QueryBuilder
+     */
     private static function table(): QueryBuilder
     {
         return osc_db_table(DB_TABLE_PREFIX . self::TABLE);

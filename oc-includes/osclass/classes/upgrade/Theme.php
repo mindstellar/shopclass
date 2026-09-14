@@ -33,7 +33,9 @@ use WebThemes;
 class Theme extends UpgradePackage
 {
     /**
-     * Extra actions after upgradeProcess is done
+     * Extra actions after upgradeProcess is done; a theme needs none.
+     *
+     * @return null
      */
     public function afterProcessUpgrade()
     {
@@ -58,7 +60,10 @@ class Theme extends UpgradePackage
      *                           's_requires_php' => minimum required PHP version (optional)
      *                           ]
      *
-     * @return array
+     * @param string $theme_short_name theme directory name
+     *
+     * @return array<string,mixed>
+     * @throws \RuntimeException on an unknown theme, a bad update uri, or an unusable remote payload
      */
     public static function getPackageInfo($theme_short_name): array
     {

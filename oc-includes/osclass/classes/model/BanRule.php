@@ -24,7 +24,7 @@ class BanRule extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_ban_rule table
      */
     public function __construct()
     {
@@ -41,6 +41,8 @@ class BanRule extends DAO
     }
 
     /**
+     * Return the shared BanRule model instance, creating it on first use.
+     *
      * @return \BanRule
      */
     public static function newInstance()
@@ -55,18 +57,15 @@ class BanRule extends DAO
     /**
      * Return list of ban rules
      *
-     * @access public
-     *
      * @param int    $start
      * @param int    $end
      * @param string $order_column
      * @param string $order_direction
      * @param string $name
      *
-     * @return array
-     * @parma  string $name
+     * @return array{rows:int|string,total_results:int|string,rules:array<int,array<string,string|null>>}
+     *         The two counts stay int 0 on failure and are unprepared-query strings otherwise
      * @since  3.1
-     *
      */
     public function search($start = 0, $end = 10, $order_column = 'pk_i_id', $order_direction = 'DESC', $name = '')
     {
@@ -153,7 +152,8 @@ class BanRule extends DAO
     /**
      * Return number of ban rules
      *
-     * @return int
+     * @return string The count, cast to a string
+     * @throws \mindstellar\database\DbException on a query failure
      * @since 3.1
      */
     public function countRules()

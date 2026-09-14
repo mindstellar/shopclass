@@ -65,10 +65,12 @@ function osc_comments_pagination()
 }
 
 /**
- * @param array $extraParams
- * @param bool  $field
+ * Gets the pagination links of the user's or public profile's listings
  *
- * @return string
+ * @param array<string,mixed> $extraParams Merged over the computed Pagination parameters
+ * @param string|bool         $field       Sort field carried into the page links
+ *
+ * @return string pagination links
  */
 function osc_pagination_items($extraParams = array(), $field = false)
 {
@@ -105,7 +107,7 @@ function osc_pagination_items($extraParams = array(), $field = false)
 /**
  * Gets generic pagination links
  *
- * @array $params
+ * Keys of $params:
  *          'total' => number of total pages (default osc_search_total_pages())
  *          'selected' => number of the page selected (starting at 0) (default osc_search_page())
  *          'class_first' => css class for the first link (default 'searchPaginationFirst')
@@ -130,7 +132,7 @@ function osc_pagination_items($extraParams = array(), $field = false)
  *          http://www.example.com/index.php?page=search&amp;sCategory=2&amp; (default
  *          osc_update_search_url(array('iPage' => null))
  *
- * @param null $params
+ * @param array<string,mixed>|null $params
  *
  * @return string pagination links
  */
@@ -142,7 +144,11 @@ function osc_pagination($params = null)
 }
 
 /**
- * @param $aData
+ * Print the admin table pagination: a "go to page" form and the page links.
+ *
+ * @param array<string,mixed> $aData DataTable data: iPage, iTotalDisplayRecords, iDisplayLength
+ *
+ * @return void
  */
 function osc_show_pagination_admin($aData)
 {
@@ -190,10 +196,12 @@ function osc_show_pagination_admin($aData)
 }
 
 /**
- * @param      $from
- * @param      $to
- * @param      $filtered
- * @param null $total
+ * The "Showing x to y of z results" line under a paginated table.
+ *
+ * @param int      $from
+ * @param int      $to
+ * @param int      $filtered
+ * @param int|null $total    Unfiltered total, when it differs from $filtered
  *
  * @return string
  */

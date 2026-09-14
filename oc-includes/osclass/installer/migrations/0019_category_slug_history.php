@@ -19,6 +19,13 @@ use mindstellar\migration\MigrationInterface;
  * leaves an existing table alone.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_category_slug_history, mapping a category's former slugs to its id.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_category_slug_history';

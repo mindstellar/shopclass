@@ -39,12 +39,28 @@ use mindstellar\migration\MigrationInterface;
  * safe -- including the dedupe, which finds nothing left to merge the second time.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add t_item.dt_first_pub_date and key t_user_entitlement uniquely on
+     * (fk_i_user_id, s_feature).
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $this->addFirstPublishDate($conn);
         $this->keyEntitlementsByUserFeature($conn);
     }
 
+    /**
+     * Add dt_first_pub_date to t_item, backfill it from dt_pub_date, and index it by
+     * user so the free posting quota can be counted.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function addFirstPublishDate(Connection $conn): void
     {
         $item = DB_TABLE_PREFIX . 't_item';
@@ -64,6 +80,14 @@ return new class () implements MigrationInterface {
         }
     }
 
+    /**
+     * Add the uq_user_feature unique key to t_user_entitlement, merging duplicate
+     * rows first and dropping the index it supersedes.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function keyEntitlementsByUserFeature(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_user_entitlement';
@@ -89,6 +113,11 @@ return new class () implements MigrationInterface {
      * keeper is the lowest pk_i_id; a NULL quantity or expiration among the
      * duplicates ("unlimited"/"never") wins over any finite value, quantities
      * otherwise sum, and the earliest dt_date is kept.
+     *
+     * @param Connection $conn
+     * @param string     $table Fully prefixed t_user_entitlement table name
+     *
+     * @throws \mindstellar\database\DbException
      */
     private function dedupeEntitlements(Connection $conn, string $table): void
     {
@@ -124,6 +153,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {
@@ -140,6 +176,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether an index (unique or not) named $index already exists on $table.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function indexExists(Connection $conn, string $table, string $index): bool
     {

@@ -63,7 +63,9 @@ if (!function_exists('osc_admin_page')) {
      * Registers against the same hooks as before, so a plugin adding its own
      * `admin_page_header` or `help_box` callback still runs alongside this one.
      *
-     * @param array $opts
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_page(array $opts)
     {
@@ -105,17 +107,17 @@ if (!function_exists('osc_admin_page_header')) {
      * The page <h1> and the icon actions that belong beside it.
      *
      * Actions are emitted in one order everywhere: what the page is for first (add,
-     * upload), then where to configure it, then help last. Before this, each screen chose
-     * its own order, so the "?" moved between the left and right of the cluster depending
-     * on which page you were on.
+     * upload), then where to configure it, then help last.
      *
      * Each action: icon (bootstrap-icon name), url, title, and optionally onclick or
      * attrs (associative, escaped). The title is both the tooltip and the accessible name
      * -- an icon with neither is a button that a screen reader announces as nothing.
      * `attrs` is how a header action keeps the id its page's JavaScript binds to.
      *
-     * @param string $section
-     * @param array  $opts 'actions' => array, 'help' => bool
+     * @param string|callable     $section
+     * @param array<string,mixed> $opts    'actions' => array, 'help' => bool
+     *
+     * @return void
      */
     function osc_admin_page_header($section, array $opts = array())
     {
@@ -156,11 +158,13 @@ if (!function_exists('osc_admin_page_head')) {
      * With no actions this emits exactly the `<h2 class="render-title">` every screen
      * already uses, so adopting it changes no pixels.
      *
-     * @param string $title
-     * @param array  $actions Action specs; see osc_admin_action_button()
-     * @param array  $opts    'class' => extra classes on the <h2>; 'actions_html' =>
-     *                        callable printing a control that is not a button (a segmented
-     *                        toggle, a select), used instead of $actions
+     * @param string                         $title
+     * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
+     * @param array<string,mixed>            $opts    'class' => extra classes on the <h2>; 'actions_html' =>
+     *                                                callable printing a control that is not a button (a segmented
+     *                                                toggle, a select), used instead of $actions
+     *
+     * @return void
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
@@ -198,7 +202,9 @@ if (!function_exists('osc_admin_action_button')) {
      * Variant maps to the button vocabulary in DESIGN: one primary per region, secondary
      * for everything routine, danger reserved for genuinely destructive work.
      *
-     * @param array $action
+     * @param array<string,mixed> $action
+     *
+     * @return void
      */
     function osc_admin_action_button(array $action)
     {
@@ -241,7 +247,9 @@ if (!function_exists('osc_admin_link_group')) {
      * hand-written two-column grid. The grid is `osc_admin_page_head()`'s job; this is the
      * control that sat in it.
      *
-     * @param array $links
+     * @param array<int,array<string,mixed>> $links
+     *
+     * @return void
      */
     function osc_admin_link_group(array $links)
     {
@@ -273,8 +281,10 @@ if (!function_exists('osc_admin_panel_open')) {
      *   'subtitle' => string  One line under the title, for the thing a header cannot say.
      *   'actions'  => array   Action specs rendered in the header, inline-end.
      *
-     * @param string $title Omit for a panel that needs no header
-     * @param array  $opts
+     * @param string              $title Omit for a panel that needs no header
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_panel_open($title = '', array $opts = array())
     {
@@ -302,6 +312,11 @@ if (!function_exists('osc_admin_panel_open')) {
 }
 
 if (!function_exists('osc_admin_panel_close')) {
+    /**
+     * Close the panel opened by osc_admin_panel_open().
+     *
+     * @return void
+     */
     function osc_admin_panel_close()
     {
         echo '</div></div>';
@@ -319,6 +334,8 @@ if (!function_exists('osc_admin_status')) {
      *
      * @param string $state Lower-case state key, e.g. 'paid'
      * @param string $word  The visible word, already translated
+     *
+     * @return void
      */
     function osc_admin_status($state, $word)
     {
@@ -337,7 +354,9 @@ if (!function_exists('osc_admin_empty')) {
      *
      * Keys: icon (bootstrap-icon name), title, text, action (a single action spec).
      *
-     * @param array $opts
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_empty(array $opts)
     { ?>
@@ -365,7 +384,9 @@ if (!function_exists('osc_admin_definition')) {
      * markup through (for a status pill or a link), which is why the default escapes:
      * the unsafe path has to be asked for by name.
      *
-     * @param array $rows
+     * @param array<int,array<string,mixed>> $rows
+     *
+     * @return void
      */
     function osc_admin_definition(array $rows)
     { ?>
@@ -397,7 +418,9 @@ if (!function_exists('osc_admin_toolbar_open')) {
      * panel beside it. The listing screens are built around that behaviour, so it stays
      * where it is — but new work gets a toolbar that is simply a row.
      *
-     * @param array $opts 'align' => 'start'|'between'|'end' (default 'between')
+     * @param array<string,mixed> $opts 'align' => 'start'|'between'|'end' (default 'between')
+     *
+     * @return void
      */
     function osc_admin_toolbar_open(array $opts = array())
     {
@@ -407,6 +430,11 @@ if (!function_exists('osc_admin_toolbar_open')) {
 }
 
 if (!function_exists('osc_admin_toolbar_close')) {
+    /**
+     * Close the strip opened by osc_admin_toolbar_open().
+     *
+     * @return void
+     */
     function osc_admin_toolbar_close()
     {
         echo '</div>';
@@ -424,7 +452,9 @@ if (!function_exists('osc_admin_pager')) {
      * links, because the question an admin actually has is "how much of this is there",
      * and a row of page numbers answers a question nobody asked.
      *
-     * @param array $opts 'total', 'per_page', 'page' (1-based), 'base_url', 'params'
+     * @param array<string,mixed> $opts 'total', 'per_page', 'page' (1-based), 'base_url', 'params'
+     *
+     * @return void
      */
     function osc_admin_pager(array $opts)
     {
@@ -499,74 +529,6 @@ if (!function_exists('osc_admin_money')) {
     }
 }
 
-if (!function_exists('osc_admin_form_row_open')) {
-    /**
-     * One labelled row of a form.
-     *
-     * `form-controls` is consumed directly by bundled plugins (forty-odd times), so this
-     * emits exactly the markup they expect. It exists to stop the label markup drifting,
-     * not to replace the class.
-     *
-     * @param string $label
-     * @param array  $opts 'for' => input id, so the label is clickable
-     */
-    function osc_admin_form_row_open($label = '', array $opts = array())
-    {
-        echo '<div class="form-row">';
-
-        if ($label !== '') {
-            $for = $opts['for'] ?? '';
-            echo '<div class="form-label">';
-            echo $for !== ''
-                ? '<label for="' . osc_esc_html($for) . '">' . osc_esc_html($label) . '</label>'
-                : osc_esc_html($label);
-            echo '</div>';
-        }
-
-        echo '<div class="form-controls">';
-    }
-}
-
-if (!function_exists('osc_admin_form_row_close')) {
-    function osc_admin_form_row_close()
-    {
-        echo '</div></div>';
-    }
-}
-
-if (!function_exists('osc_admin_checkbox')) {
-    /**
-     * A checkbox with its label on one line and its hint underneath.
-     *
-     * Keys: name, label, checked, value (default '1'), help, help_html, id, attrs.
-     *
-     * @param array $opts
-     */
-    function osc_admin_checkbox(array $opts)
-    {
-        $attrs = '';
-        foreach (($opts['attrs'] ?? array()) as $name => $value) {
-            $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
-        } ?>
-        <div class="form-label-checkbox">
-            <label>
-                <input type="checkbox" name="<?php echo osc_esc_html($opts['name'] ?? ''); ?>"
-                       <?php if (!empty($opts['id'])) { ?>id="<?php echo osc_esc_html($opts['id']); ?>"<?php } ?>
-                       value="<?php echo osc_esc_html($opts['value'] ?? '1'); ?>"
-                       <?php echo !empty($opts['checked']) ? 'checked="checked"' : ''; ?><?php echo $attrs; ?> />
-                <?php echo osc_esc_html($opts['label'] ?? ''); ?>
-            </label>
-            <?php if (!empty($opts['help']) || !empty($opts['help_html'])) { ?>
-                <div class="help-box"><?php
-                    echo !empty($opts['help_html'])
-                        ? $opts['help_html']
-                        : osc_esc_html((string) $opts['help']); ?></div>
-            <?php } ?>
-        </div>
-        <?php
-    }
-}
-
 if (!function_exists('osc_admin_form_actions')) {
     /**
      * The submit row at the foot of a form.
@@ -578,7 +540,9 @@ if (!function_exists('osc_admin_form_actions')) {
      * With no arguments this is a lone "Save changes" -- the case that covers most
      * settings screens.
      *
-     * @param array $actions Action specs; the first defaults to variant 'primary'
+     * @param array<int,array<string,mixed>> $actions Action specs; the first defaults to variant 'primary'
+     *
+     * @return void
      */
     function osc_admin_form_actions(array $actions = array())
     {
@@ -604,8 +568,10 @@ if (!function_exists('osc_admin_table_empty')) {
      * an admin nothing about whether the feature was empty, filtered, or broken. Takes the
      * same keys as osc_admin_empty().
      *
-     * @param int   $colspan Must match the header, or the row will not span the table
-     * @param array $opts
+     * @param int                 $colspan Must match the header, or the row will not span the table
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_table_empty($colspan, array $opts = array())
     {
@@ -622,15 +588,16 @@ if (!function_exists('osc_admin_bulk_actions')) {
     /**
      * The select-plus-Apply group above a table of selectable rows.
      *
-     * Apply used to be `.btn-primary`, which Bootstrap compiles to a fixed light-mode
-     * fill and so kept its light colour under `data-bs-theme="dark"`. It is the theme's
-     * own primary here, which follows the theme.
+     * Apply takes the theme's own primary, not `.btn-primary`: Bootstrap compiles that
+     * to a fixed light-mode fill that stays light under `data-bs-theme="dark"`.
      *
      * Keys: name (select name), options (osc_print_bulk_actions format), id, label.
      * A screen whose options carry per-option markup can pass 'options_html' => callable
      * and print its own <select> instead, keeping the group and its button standard.
      *
-     * @param array $opts
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_bulk_actions(array $opts)
     { ?>
@@ -661,12 +628,12 @@ if (!function_exists('osc_admin_bulk_confirm_dialog')) {
      * The confirm shown before a bulk action runs.
      *
      * Its body is deliberately empty: `osc.js` copies the selected option's
-     * `data-dialog-content` into it, so the question matches the action chosen rather than
-     * being a generic "are you sure". That is why this cannot go through
-     * osc_admin_confirm_dialog(), which owns its own title and text -- and why nine list
-     * screens each carried a byte-identical copy of this markup instead.
+     * `data-dialog-content` into it, so the question matches the action chosen. It cannot
+     * go through osc_admin_confirm_dialog(), which owns its own title and text.
      *
-     * @param array $opts 'id' (default 'bulkActionsModal'), 'confirm' (button label)
+     * @param array<string,mixed> $opts 'id' (default 'bulkActionsModal'), 'confirm' (button label)
+     *
+     * @return void
      */
     function osc_admin_bulk_confirm_dialog(array $opts = array())
     { ?>
@@ -704,7 +671,9 @@ if (!function_exists('osc_admin_per_page')) {
      * controller is using its own default, and the control states a number that is not
      * the one on screen.
      *
-     * @param array $opts
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_per_page(array $opts = array())
     {
@@ -747,7 +716,9 @@ if (!function_exists('osc_admin_pagination')) {
      * because a screen that silently lost its "filtered from N total" line would be
      * reporting a smaller catalogue than it holds.
      *
-     * @param array $aData The controller's row set plus its display/total counts
+     * @param array<string,mixed> $aData The controller's row set plus its display/total counts
+     *
+     * @return void
      */
     function osc_admin_pagination(array $aData)
     {
@@ -791,11 +762,12 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      * Keys: id, title, text, confirm (label), confirm_id, method ('get'|'post'), url,
      * fields (name => value hidden inputs), body_html (extra markup inside the form).
      *
-     * `text` is escaped, exactly as osc_admin_empty()'s `text` is. The two used to differ,
-     * which meant the same key name in the same file was safe in one call and a raw sink
-     * in the next. Pass `text_html` for the rare sentence that needs a <strong>.
+     * `text` is escaped, exactly as osc_admin_empty()'s `text` is. Pass `text_html` for
+     * the rare sentence that needs a <strong>.
      *
-     * @param array $opts
+     * @param array<string,mixed> $opts
+     *
+     * @return void
      */
     function osc_admin_confirm_dialog(array $opts)
     {

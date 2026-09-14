@@ -25,6 +25,9 @@ class Dependencies
     public $unresolved = array();
     public $error = array();
 
+    /**
+     * Start with an empty registry and an empty queue.
+     */
     public function __construct()
     {
         $this->registered = array();
@@ -34,9 +37,11 @@ class Dependencies
     /**
      * Register url to be loaded
      *
-     * @param $id
-     * @param $url
-     * @param $dependencies mixed, it could be an array or a string
+     * @param string               $id
+     * @param string               $url
+     * @param string|string[]|null $dependencies One id, a list of ids, or null for none
+     *
+     * @return void
      */
     public function register($id, $url, $dependencies)
     {
@@ -52,7 +57,9 @@ class Dependencies
     /**
      * Remove url to not be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function unregister($id)
     {
@@ -61,6 +68,8 @@ class Dependencies
 
     /**
      * Try to order all script having in mind their dependencies
+     *
+     * @return void
      */
     public function order()
     {
@@ -88,7 +97,9 @@ class Dependencies
     /**
      * Algorithm to solve the dependencies of the scripts
      *
-     * @param $node
+     * @param array{key:string,url:string,dependencies:string|string[]|null} $node
+     *
+     * @return void
      */
     private function solveDeps($node)
     {

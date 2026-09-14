@@ -19,8 +19,9 @@ class Formatting
     /**
      * Escape all the values of an array.
      *
-     * @param array $array Array used to apply addslashes().
-     * @return array $array after apply addslashes().
+     * @param array<array-key,mixed> $array Array used to apply addslashes().
+     *
+     * @return array<array-key,mixed> after apply addslashes().
      */
     public function addSlashesExtended($array)
     {
@@ -36,7 +37,10 @@ class Formatting
     }
 
     /**
-     * @param $string
+     * Turn arbitrary text into a URL slug: accents folded, punctuation dropped,
+     * whitespace collapsed to single hyphens.
+     *
+     * @param string $string
      *
      * @return string
      */
@@ -67,7 +71,9 @@ class Formatting
     }
 
     /**
-     * @param $string
+     * Replace accented and other non-ASCII letters with their closest ASCII equivalents.
+     *
+     * @param string $string
      *
      * @return string
      */
@@ -463,7 +469,8 @@ class Formatting
 
     /**
      * Check if string is a UTF8 encoded
-     * @param $string
+     *
+     * @param string $string
      *
      * @return false|int
      */
@@ -484,7 +491,7 @@ class Formatting
     /**
      * Check if non ascii character exists in given string
      *
-     * @param $string
+     * @param string $string
      *
      * @return false|int
      */

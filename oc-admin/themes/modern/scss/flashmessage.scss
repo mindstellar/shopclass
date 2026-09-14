@@ -147,27 +147,17 @@ $flashmessage-states: (
 
 // Callouts — the inline hints that sit beside a setting and explain what it does.
 //
-// They used to be marked with `border-left: .35rem solid $value`: a coloured side stripe, which the
-// design system bans outright. Two things were wrong with it, and only one of them is taste.
+// No coloured side stripe. `border-left` is PHYSICAL, and the admin compiles no RTL
+// stylesheet, so in an RTL locale it stays on the trailing edge and reads as a rendering
+// fault; a stripe is also colour and nothing else, surviving neither greyscale nor
+// deuteranopia.
 //
-//   1. `border-left` is PHYSICAL. Shopclass ships RTL locales, and the admin compiles no RTL
-//      stylesheet, so in Arabic or Hebrew the stripe stayed on the left — the trailing edge —
-//      where it reads as a rendering fault rather than a marker.
-//   2. It was the ONLY signal. A stripe is colour and nothing else: it does not survive
-//      greyscale, and it does not survive deuteranopia. A warning callout and an info callout
-//      were the same object in two hues.
+// The grammar is the status badges' — a tint, a SHAPE, and the word (The Three Signal Rule),
+// with the icon doing the stripe's job in a way that survives losing the colour.
 //
-// So the stripe is replaced by the same grammar the status badges use — a tint, a SHAPE, and
-// the word (The Three Signal Rule). The icon is what actually does the stripe's job, and does
-// it in a way that survives having the colour taken away.
-//
-// The tint and the icon colour are the SAME tokens the badges use, so "success pale" is one
-// colour across the whole admin rather than the two slightly different pale greens it used to
-// be (the badge tint, and a separate build-time shift-color the callout computed for itself).
-// Sourcing them as var() is also what lets the callouts follow data-bs-theme; the old
-// shift-color() output was a hex frozen at build time. There is no border: the old rule set a
-// border-COLOUR with no width, so it never drew a pixel, and the tint carries the surface on
-// its own.
+// Tint and icon colour are the SAME tokens the badges use, as var() rather than a build-time
+// shift-color(), so "success pale" is one colour across the admin and follows data-bs-theme.
+// There is no border at all: the tint carries the surface on its own.
 //
 // Icons only for the states that carry meaning. `light`, `dark` and `secondary` are neutral
 // containers with nothing to announce, and a decorative glyph on them would be noise.
@@ -221,8 +211,8 @@ $callout-icons: (
       }
     }
 
-    // A link inside the hint looks like a link — bronze, the system link colour — rather than
-    // the near-black it used to inherit.
+    // A link inside the hint looks like a link: bronze, the system link colour, not inherited
+    // near-black.
     .callout-link {
       color: var(--osc-bronze);
     }

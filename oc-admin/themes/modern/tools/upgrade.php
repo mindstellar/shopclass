@@ -7,6 +7,11 @@ if (!defined('OC_ADMIN')) {
 }
 
 //customize Head
+/**
+ * Emit the upgrade tool's script, or the "in-app updates are disabled" notice on an immutable deployment.
+ *
+ * @return void
+ */
 function customHead()
 {
     // Immutable deployments (the Docker image) disable the in-app updater: a
@@ -181,6 +186,8 @@ function customHead()
 osc_add_hook('admin_footer', 'customHead', 10);
 
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -204,23 +211,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <form>
             <fieldset>
                 <div class="form-horizontal">
-                    <div class="form-row">
-                        <div class="tools upgrade">
-                            <p class="text">
-                                <?php
-                                printf(
-                                    __('Your Shopclass installation can be auto-upgraded. 
-                                        Please, back up your database and the folder oc-content before attempting to 
-                                        upgrade your Shopclass installation. 
+                    <div class="tools upgrade">
+                        <p class="form-intro">
+                            <?php
+                            printf(
+                                __('Your Shopclass installation can be auto-upgraded.
+                                        Please, back up your database and the folder oc-content before attempting to
+                                        upgrade your Shopclass installation.
                                         You can also upgrade Shopclass manually, more information in the %s'),
-                                    '<a href="https://docs.mindstellar.com/">Documentation</a>'
-                                );
-                                ?>
-                            </p>
-                            <div id="steps_div">
-                                <div id="steps">
+                                '<a href="https://docs.mindstellar.com/">Documentation</a>'
+                            );
+                            ?>
+                        </p>
+                        <div id="steps_div">
+                            <div id="steps">
 
-                                </div>
                             </div>
                         </div>
                     </div>

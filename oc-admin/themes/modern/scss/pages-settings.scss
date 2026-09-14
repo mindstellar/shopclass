@@ -62,15 +62,20 @@ table.table-small td {
   }
 }
 
+// Two columns of choices, each as wide as its own longest option. It was 150px a side:
+// a radio plus `August 25, 2026` overflows that, so every label wrapped beneath its own
+// control — and a locale with longer month names wrapped harder.
 .custom-date-time {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.5rem;
+  margin-block-end: .5rem;
+}
 
-  #date {
-    @extend .mb-2;
-    width: 150px;
-  }
-
-  #time {
-    @extend .mb-2;
-    width: 150px;
-  }
+// Names a group of choices inside a row whose own label is the pair of them.
+.form-sublabel {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  font-weight: 500;
+  margin-block-end: .35rem;
 }

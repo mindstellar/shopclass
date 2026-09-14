@@ -24,6 +24,9 @@ class ItemTmpUpload extends DAO
     /** @var ItemTmpUpload */
     private static $instance;
 
+    /**
+     * Set data related to t_item_upload_tmp table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -33,6 +36,8 @@ class ItemTmpUpload extends DAO
     }
 
     /**
+     * Return the shared ItemTmpUpload model instance, creating it on first use.
+     *
      * @return ItemTmpUpload
      */
     public static function newInstance()
@@ -52,6 +57,7 @@ class ItemTmpUpload extends DAO
      * @param string $file temp filename (basename, under uploads/temp/)
      *
      * @return int rows written
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function add($token, $uuid, $file)
     {
@@ -71,6 +77,7 @@ class ItemTmpUpload extends DAO
      * @param string $file
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function deleteByTokenFile($token, $file)
     {
@@ -86,6 +93,7 @@ class ItemTmpUpload extends DAO
      * @param string $token
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function deleteByToken($token)
     {
@@ -102,6 +110,7 @@ class ItemTmpUpload extends DAO
      * @param string $before 'Y-m-d H:i:s'
      *
      * @return int rows removed
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function pruneBefore($before)
     {

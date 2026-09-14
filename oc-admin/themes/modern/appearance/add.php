@@ -31,12 +31,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                       enctype="multipart/form-data">
                     <input type="hidden" name="action" value="add_post"/>
                     <input type="hidden" name="page" value="appearance"/>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Theme package (.zip)'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox"><input type="file" name="package" id="package"/></div>
-                        </div>
-                    </div>
+                    <?php osc_admin_field(array(
+                        'type'  => 'file',
+                        'id'    => 'package',
+                        'name'  => 'package',
+                        'label' => __('Theme package (.zip)'),
+                        'attrs' => array('accept' => '.zip'),
+                    )); ?>
                     <?php osc_admin_form_actions(array(
                         array('label' => __('Upload'), 'type' => 'submit'),
                     )); ?>

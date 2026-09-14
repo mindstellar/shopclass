@@ -40,6 +40,15 @@ final class CallbackResult
     /** Not ours, not actionable, or already handled. Core does nothing and returns 200. */
     public const OUTCOME_IGNORED = 'ignored';
 
+    /**
+     * @param string      $outcome     One of the OUTCOME_* constants
+     * @param int|null    $orderId     Our t_billing_order id, when the payload named one
+     * @param string|null $externalRef The provider's own id for the payment
+     * @param int|null    $amount      Micros as reported by the provider
+     * @param string|null $currency    ISO 4217 as reported by the provider
+     * @param string      $message     Human-readable detail, logged not displayed
+     * @param bool        $retryable   Whether the provider should redeliver
+     */
     private function __construct(
         private string $outcome,
         private ?int $orderId = null,
@@ -57,6 +66,8 @@ final class CallbackResult
      * @param int|null    $amount      Micros as reported by the provider; core compares
      *                                 it against the order and refuses on mismatch
      * @param string|null $currency    ISO 4217 as reported by the provider
+     *
+     * @return self
      */
     public static function paid(
         int $orderId,
@@ -67,11 +78,28 @@ final class CallbackResult
         return new self(self::OUTCOME_PAID, $orderId, $externalRef, $amount, $currency);
     }
 
+    /**
+     * The payment attempt failed; the order is closed unpaid.
+     *
+     * @param int         $orderId
+     * @param string      $message     Provider's failure detail, logged not displayed
+     * @param string|null $externalRef The provider's own id, when it sent one
+     *
+     * @return self
+     */
     public static function failed(int $orderId, string $message = '', ?string $externalRef = null): self
     {
         return new self(self::OUTCOME_FAILED, $orderId, $externalRef, null, null, $message);
     }
 
+    /**
+     * A previously paid order was reversed by the provider.
+     *
+     * @param int         $orderId
+     * @param string|null $externalRef The provider's own id for the reversal
+     *
+     * @return self
+     */
     public static function refunded(int $orderId, ?string $externalRef = null): self
     {
         return new self(self::OUTCOME_REFUNDED, $orderId, $externalRef);
@@ -87,38 +115,72 @@ final class CallbackResult
      * (a replay, a mismatched amount) -- the provider must not retry those, since
      * retrying would not change the answer. Only the caller resolving the gateway
      * knows which case it has; nothing here infers it from $message.
+     *
+     * @param string $message
+     * @param bool   $retryable
+     *
+     * @return self
      */
     public static function ignored(string $message = '', bool $retryable = false): self
     {
         return new self(self::OUTCOME_IGNORED, null, null, null, null, $message, $retryable);
     }
 
+    /**
+     * Which outcome the gateway read from the callback: one of the OUTCOME_* constants.
+     *
+     * @return string
+     */
     public function getOutcome(): string
     {
         return $this->outcome;
     }
 
+    /**
+     * Our order id, or null when the payload named no order we recognise.
+     *
+     * @return int|null
+     */
     public function getOrderId(): ?int
     {
         return $this->orderId;
     }
 
+    /**
+     * The provider's own id for the payment, stored for reconciliation.
+     *
+     * @return string|null
+     */
     public function getExternalRef(): ?string
     {
         return $this->externalRef;
     }
 
-    /** Reported amount in micros, or null when the gateway does not echo one. */
+    /**
+     * Reported amount in micros, or null when the gateway does not echo one.
+     *
+     * @return int|null
+     */
     public function getAmount(): ?int
     {
         return $this->amount;
     }
 
+    /**
+     * Reported ISO 4217 currency, or null when the gateway does not echo one.
+     *
+     * @return string|null
+     */
     public function getCurrency(): ?string
     {
         return $this->currency;
     }
 
+    /**
+     * Human-readable detail from the gateway. Logged, never shown to the payer.
+     *
+     * @return string
+     */
     public function getMessage(): string
     {
         return $this->message;
@@ -129,6 +191,8 @@ final class CallbackResult
      * ignored() result that means core never got to make a decision at all -- every
      * other outcome, including a deliberate ignore, is a decision core already acted
      * on (or deliberately did not), and retrying it changes nothing.
+     *
+     * @return bool
      */
     public function isRetryable(): bool
     {

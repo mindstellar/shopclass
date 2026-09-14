@@ -87,6 +87,15 @@ return new class () implements MigrationInterface {
     private const BACKUP_SECTION = 'osclass';
     private const BACKUP_NAME    = 'utf8mb4_fk_backup';
 
+    /**
+     * Convert every table on this install to utf8mb4/utf8mb4_general_ci, dropping the
+     * char/varchar foreign keys that block the convert and recreating them afterwards.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException on a failed statement
+     * @throws RuntimeException when the re-entrancy snapshot cannot be encoded
+     */
     public function up(Connection $conn): void
     {
         $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
@@ -219,9 +228,11 @@ return new class () implements MigrationInterface {
      * The char/varchar foreign keys on this install, each annotated with the name of
      * its supporting index so the index name can be restored after recreation.
      *
-     * @param string[] $tables
+     * @param Connection $conn
+     * @param string[]   $tables
      *
      * @return array<int, array{name:string,table:string,columns:string[],ref_table:string,ref_columns:string[],delete_rule:string,update_rule:string,index_name:?string}>
+     * @throws \mindstellar\database\DbException
      */
     private function computeCharForeignKeys(Connection $conn, array $tables): array
     {
@@ -255,6 +266,13 @@ return new class () implements MigrationInterface {
     /**
      * Run one DDL statement, throwing on failure so the runner halts and does not
      * record the migration as applied.
+     *
+     * @param Connection       $conn
+     * @param string           $sql
+     * @param string           $what   Label for the statement; not read by this method
+     * @param array<int,mixed> $params Positional values for the '?' placeholders in $sql
+     *
+     * @throws \mindstellar\database\DbException
      */
     private function run(Connection $conn, string $sql, string $what, array $params = array()): void
     {
@@ -264,7 +282,10 @@ return new class () implements MigrationInterface {
     /**
      * Load the durable re-entrancy snapshot, or null if no interrupted run left one.
      *
+     * @param Connection $conn
+     *
      * @return null|array{fks:array<int,array<string,mixed>>,texts:array<int,array<string,mixed>>}
+     * @throws \mindstellar\database\DbException
      */
     private function loadBackup(Connection $conn): ?array
     {
@@ -289,7 +310,11 @@ return new class () implements MigrationInterface {
      * Persist the re-entrancy snapshot into t_preference. REPLACE keys on the
      * (s_section, s_name) unique index, so a stale row from a prior run is overwritten.
      *
+     * @param Connection                   $conn
      * @param array{fks:array,texts:array} $backup
+     *
+     * @throws \mindstellar\database\DbException
+     * @throws RuntimeException when $backup cannot be JSON-encoded
      */
     private function saveBackup(Connection $conn, array $backup): void
     {
@@ -309,6 +334,10 @@ return new class () implements MigrationInterface {
 
     /**
      * Delete the re-entrancy snapshot after a fully successful conversion.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
      */
     private function deleteBackup(Connection $conn): void
     {
@@ -323,9 +352,11 @@ return new class () implements MigrationInterface {
      * Constraint names of the foreign keys currently present on this install,
      * keyed "<table>.<constraint>". Used to guard drop/recreate against live state.
      *
-     * @param string[] $tables
+     * @param Connection $conn
+     * @param string[]   $tables
      *
      * @return array<string,true>
+     * @throws \mindstellar\database\DbException
      */
     private function liveForeignKeyNames(Connection $conn, array $tables): array
     {
@@ -340,7 +371,10 @@ return new class () implements MigrationInterface {
     /**
      * Tables belonging to this install, matched by DB_TABLE_PREFIX.
      *
+     * @param Connection $conn
+     *
      * @return string[]
+     * @throws \mindstellar\database\DbException
      */
     private function installTables(Connection $conn): array
     {
@@ -363,6 +397,8 @@ return new class () implements MigrationInterface {
      * prefix cannot spuriously match `ocX...` tables. Backslash is escaped first so
      * the escapes added for `_`/`%` are not doubled. Each escape carries the two
      * backslashes LIKE needs plus the doubling the SQL string-literal parser strips.
+     *
+     * @return string
      */
     private function prefixLikePattern(): string
     {
@@ -376,7 +412,10 @@ return new class () implements MigrationInterface {
     /**
      * Set of "<table>.<column>" for every char/varchar column on this install.
      *
+     * @param Connection $conn
+     *
      * @return array<string,true>
+     * @throws \mindstellar\database\DbException
      */
     private function charColumns(Connection $conn): array
     {
@@ -400,9 +439,11 @@ return new class () implements MigrationInterface {
      * with their original type and nullability so they can be restored after.
      * LONGTEXT is already the widest tier and never widens, so it is skipped.
      *
-     * @param string[] $tables
+     * @param Connection $conn
+     * @param string[]   $tables
      *
      * @return array<int, array{table:string,column:string,type:string,nullable:bool}>
+     * @throws \mindstellar\database\DbException
      */
     private function textColumns(Connection $conn, array $tables): array
     {
@@ -434,9 +475,11 @@ return new class () implements MigrationInterface {
      * Foreign keys defined on this install's tables, grouped by constraint and
      * with columns ordered.
      *
-     * @param string[] $tables
+     * @param Connection $conn
+     * @param string[]   $tables
      *
      * @return array<int, array{name:string,table:string,columns:string[],ref_table:string,ref_columns:string[],delete_rule:string,update_rule:string}>
+     * @throws \mindstellar\database\DbException
      */
     private function foreignKeys(Connection $conn, array $tables): array
     {
@@ -482,7 +525,10 @@ return new class () implements MigrationInterface {
      * foreign key can re-emit any non-default rule. Keyed by "<table>.<constraint>"
      * to match the foreignKeys() grouping.
      *
+     * @param Connection $conn
+     *
      * @return array<string, array{delete_rule:string,update_rule:string}>
+     * @throws \mindstellar\database\DbException
      */
     private function referentialRules(Connection $conn): array
     {
@@ -509,6 +555,11 @@ return new class () implements MigrationInterface {
      * actions (CASCADE / SET NULL / SET DEFAULT) are emitted; RESTRICT and NO ACTION
      * are the engine defaults and omitted by SHOW CREATE, so emitting nothing for
      * them keeps the recreated SQL byte-identical to a fresh install.
+     *
+     * @param string $deleteRule DELETE_RULE as information_schema reports it
+     * @param string $updateRule UPDATE_RULE as information_schema reports it
+     *
+     * @return string
      */
     private function referentialActions(string $deleteRule, string $updateRule): string
     {
@@ -529,9 +580,11 @@ return new class () implements MigrationInterface {
      * Non-PRIMARY indexes per table as a map of column-signature => index name.
      * Used to restore FK support index names after recreation.
      *
-     * @param string[] $tables
+     * @param Connection $conn
+     * @param string[]   $tables
      *
      * @return array<string, array<string,string>>
+     * @throws \mindstellar\database\DbException
      */
     private function secondaryIndexes(Connection $conn, array $tables): array
     {
@@ -564,7 +617,12 @@ return new class () implements MigrationInterface {
     }
 
     /**
+     * Whether $name is already carried by one of this table's indexes.
+     *
      * @param array<string,string> $signatures signature => index name for one table
+     * @param string               $name
+     *
+     * @return bool
      */
     private function indexNameInUse(array $signatures, string $name): bool
     {
@@ -572,6 +630,8 @@ return new class () implements MigrationInterface {
     }
 
     /**
+     * Backtick-quoted, comma-separated column list for a FOREIGN KEY clause.
+     *
      * @param string[] $columns
      *
      * @return string backtick-quoted, comma-separated column list
@@ -586,6 +646,10 @@ return new class () implements MigrationInterface {
     /**
      * Quote a SQL identifier (table/column/constraint/index) for safe embedding in
      * DDL: wrap in backticks and double any embedded backtick.
+     *
+     * @param string $name
+     *
+     * @return string
      */
     private function quoteIdent(string $name): string
     {

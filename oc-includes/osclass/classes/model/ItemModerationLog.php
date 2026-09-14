@@ -22,6 +22,9 @@ class ItemModerationLog extends DAO
     /** @var ItemModerationLog */
     private static $instance;
 
+    /**
+     * Set data related to t_item_moderation_log table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -39,6 +42,8 @@ class ItemModerationLog extends DAO
     }
 
     /**
+     * Return the shared ItemModerationLog model instance, creating it on first use.
+     *
      * @return ItemModerationLog
      */
     public static function newInstance()
@@ -78,7 +83,7 @@ class ItemModerationLog extends DAO
      *
      * @param int $itemId
      *
-     * @return array
+     * @return array<int,array<string,string|null>> Empty when the item has no events
      */
     public function findByItem($itemId)
     {
@@ -100,7 +105,7 @@ class ItemModerationLog extends DAO
      *
      * @param int $itemId
      *
-     * @return array|null
+     * @return array<string,string|null>|null
      */
     public function latestForItem($itemId)
     {

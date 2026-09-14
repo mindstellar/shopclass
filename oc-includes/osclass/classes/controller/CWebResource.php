@@ -29,6 +29,11 @@ use mindstellar\storage\StorageManager;
  */
 class CWebResource extends BaseModel
 {
+    /**
+     * Routes the `download` action to the streamer; anything else is a 404.
+     *
+     * @return void
+     */
     public function doModel()
     {
         if (Params::getParam('action') === 'download') {
@@ -40,6 +45,12 @@ class CWebResource extends BaseModel
         $this->notFound();
     }
 
+    /**
+     * Streams the requested resource as an attachment, from local disk, a public remote
+     * adapter, or a 302 to a signed URL for a private bucket. Exits on success.
+     *
+     * @return void
+     */
     private function download()
     {
         $id      = Params::getParamInt('id');
@@ -125,6 +136,8 @@ class CWebResource extends BaseModel
      * @param string   $contentType
      * @param int|null $length
      * @param string   $filename
+     *
+     * @return void
      */
     private function sendHeaders($contentType, $length, $filename)
     {
@@ -151,7 +164,7 @@ class CWebResource extends BaseModel
      * @param int    $id
      * @param string $type
      *
-     * @return array|null
+     * @return array<string,mixed>|null
      */
     private function resolveResource($id, $type)
     {
@@ -186,6 +199,11 @@ class CWebResource extends BaseModel
         }
     }
 
+    /**
+     * Sends a plain-text 404 and terminates the request.
+     *
+     * @return never
+     */
     private function notFound()
     {
         if (!headers_sent()) {
@@ -196,6 +214,13 @@ class CWebResource extends BaseModel
         exit;
     }
 
+    /**
+     * No-op: download() streams the file and exits, so no template is ever rendered.
+     *
+     * @param string $file
+     *
+     * @return void
+     */
     public function doView($file)
     {
         // Never used: download() streams the file and exits.

@@ -18,6 +18,8 @@
 class WebSecBaseModel extends SecBaseModel
 {
     /**
+     * Whether a front-end user is logged in.
+     *
      * @return bool
      */
     public function isLogged()
@@ -26,6 +28,11 @@ class WebSecBaseModel extends SecBaseModel
     }
 
     //destroying current session
+    /**
+     * Clears the front-end user's session, ephemeral identity and remember-me cookies.
+     *
+     * @return void
+     */
     public function logout()
     {
         //destroying session
@@ -49,6 +56,11 @@ class WebSecBaseModel extends SecBaseModel
         Cookie::newInstance()->set();
     }
 
+    /**
+     * Answers an ajax request with a session-timeout error, otherwise redirects to the user login.
+     *
+     * @return void
+     */
     public function showAuthFailPage()
     {
         if (Params::getParam('page') === 'ajax') {

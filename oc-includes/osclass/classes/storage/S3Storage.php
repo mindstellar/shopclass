@@ -49,7 +49,7 @@ class S3Storage implements StorageAdapter
     private ?S3Client $client = null;
 
     /**
-     * @param array{
+     * @param array<string,mixed> $config connection settings:
      *     endpoint: string,
      *     region: string,
      *     bucket: string,
@@ -58,8 +58,7 @@ class S3Storage implements StorageAdapter
      *     path_style?: bool,
      *     public_url_base?: string,
      *     signed_urls?: bool,
-     *     signed_ttl?: int,
-     * } $config
+     *     signed_ttl?: int (clamped to 60..604800 seconds)
      */
     public function __construct(array $config)
     {
@@ -74,11 +73,25 @@ class S3Storage implements StorageAdapter
         $this->signedTtl = max(60, min(604800, (int) ($config['signed_ttl'] ?? 900)));
     }
 
+    /**
+     * Adapter id stored in t_item_resource.s_storage.
+     *
+     * @return string
+     */
     public function getId(): string
     {
         return 's3';
     }
 
+    /**
+     * Uploads the local file to $key, adding a long CacheControl when the bucket is public.
+     *
+     * @param string $localPath
+     * @param string $key
+     * @param string $contentType
+     *
+     * @return bool false when the file cannot be read or the upload failed
+     */
     public function put(string $localPath, string $key, string $contentType): bool
     {
         $handle = @fopen($localPath, 'rb');
@@ -109,6 +122,13 @@ class S3Storage implements StorageAdapter
         }
     }
 
+    /**
+     * Downloads the object body.
+     *
+     * @param string $key
+     *
+     * @return string|false false on any transport, auth or not-found error
+     */
     public function get(string $key): string|false
     {
         try {
@@ -121,6 +141,13 @@ class S3Storage implements StorageAdapter
         }
     }
 
+    /**
+     * Whether the object exists in the bucket.
+     *
+     * @param string $key
+     *
+     * @return bool false on any transport or auth error too
+     */
     public function exists(string $key): bool
     {
         try {
@@ -133,6 +160,13 @@ class S3Storage implements StorageAdapter
         }
     }
 
+    /**
+     * Deletes the object; idempotent, since S3 returns 204 for a missing key.
+     *
+     * @param string $key
+     *
+     * @return bool false only on a transport or auth error
+     */
     public function delete(string $key): bool
     {
         try {
@@ -150,6 +184,14 @@ class S3Storage implements StorageAdapter
         }
     }
 
+    /**
+     * Unsigned object URL: the configured public base if set, otherwise the endpoint in
+     * path or virtual-host style.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
     public function url(string $key): string
     {
         if ($this->publicUrlBase !== '') {
@@ -166,6 +208,13 @@ class S3Storage implements StorageAdapter
         return $scheme . '://' . $this->bucket . '.' . $host . '/' . ltrim($key, '/');
     }
 
+    /**
+     * Time-limited GET URL, valid for the configured signed TTL.
+     *
+     * @param string $key
+     *
+     * @return string '' when the URL could not be signed
+     */
     public function presignedUrl(string $key): string
     {
         try {
@@ -180,16 +229,31 @@ class S3Storage implements StorageAdapter
         }
     }
 
+    /**
+     * Always true: objects live in the bucket, not on this filesystem.
+     *
+     * @return bool
+     */
     public function isRemote(): bool
     {
         return true;
     }
 
+    /**
+     * False when the adapter is configured to hand out signed URLs.
+     *
+     * @return bool
+     */
     public function isPublic(): bool
     {
         return !$this->signedUrls;
     }
 
+    /**
+     * Lazily builds the shared S3 client from the constructor config.
+     *
+     * @return S3Client
+     */
     private function client(): S3Client
     {
         if ($this->client === null) {
@@ -205,6 +269,11 @@ class S3Storage implements StorageAdapter
         return $this->client;
     }
 
+    /**
+     * Scheme of the configured endpoint, defaulting to https when it carries none.
+     *
+     * @return string
+     */
     private function endpointScheme(): string
     {
         if (preg_match('#^(https?)://#i', $this->endpoint, $matches)) {
@@ -214,6 +283,11 @@ class S3Storage implements StorageAdapter
         return 'https';
     }
 
+    /**
+     * Configured endpoint with the scheme and any trailing slash stripped.
+     *
+     * @return string
+     */
     private function endpointHost(): string
     {
         return rtrim(preg_replace('#^https?://#i', '', $this->endpoint), '/');

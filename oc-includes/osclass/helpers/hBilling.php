@@ -31,12 +31,21 @@ function osc_register_billing_feature(string $id, array $spec): void
     FeatureRegistry::instance()->register($id, $spec);
 }
 
+/**
+ * A registered billing feature by id, or null when nothing is registered under it.
+ *
+ * @param string $id
+ *
+ * @return Feature|null
+ */
 function osc_billing_feature(string $id): ?Feature
 {
     return FeatureRegistry::instance()->get($id);
 }
 
 /**
+ * Every registered billing feature, keyed by id.
+ *
  * @return array<string,Feature>
  */
 function osc_billing_features(): array
@@ -49,6 +58,8 @@ function osc_billing_features(): array
  * yet expired -- see Entitlements::liveListings()) at once before a listing.slot
  * entitlement is needed. 0 = unlimited, which is also what an unset preference
  * reads as -- an upgraded install stays unlimited.
+ *
+ * @return int
  */
 function osc_billing_free_live_listings(): int
 {
@@ -57,13 +68,21 @@ function osc_billing_free_live_listings(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Whether buying an extra listing slot is registered as a purchasable feature at all. */
+/**
+ * Whether buying an extra listing slot is registered as a purchasable feature at all.
+ *
+ * @return bool
+ */
 function osc_billing_slot_enabled(): bool
 {
     return osc_get_bool_preference('billing_slot_enabled', 'osclass');
 }
 
-/** Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free. */
+/**
+ * Credit price of one listing.slot purchase. 0 with billing_slot_enabled on means free.
+ *
+ * @return int
+ */
 function osc_billing_slot_credits(): int
 {
     $v = osc_get_preference('billing_slot_credits', 'osclass');
@@ -71,7 +90,11 @@ function osc_billing_slot_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Slots granted per listing.slot purchase. */
+/**
+ * Slots granted per listing.slot purchase.
+ *
+ * @return int
+ */
 function osc_billing_slot_quantity(): int
 {
     $v = osc_get_preference('billing_slot_quantity', 'osclass');
@@ -79,13 +102,21 @@ function osc_billing_slot_quantity(): int
     return $v === '' || $v === null ? 1 : max(1, (int) $v);
 }
 
-/** Whether featuring a listing is registered as a purchasable feature at all. */
+/**
+ * Whether featuring a listing is registered as a purchasable feature at all.
+ *
+ * @return bool
+ */
 function osc_billing_premium_enabled(): bool
 {
     return osc_get_bool_preference('billing_premium_enabled', 'osclass');
 }
 
-/** Credit price of featuring a listing. 0 with billing_premium_enabled on means free, not off. */
+/**
+ * Credit price of featuring a listing. 0 with billing_premium_enabled on means free, not off.
+ *
+ * @return int
+ */
 function osc_billing_premium_credits(): int
 {
     $v = osc_get_preference('billing_premium_credits', 'osclass');
@@ -93,7 +124,11 @@ function osc_billing_premium_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Days a featured listing runs for. (int) '' is 0, so an unset preference defaults to 30. */
+/**
+ * Days a featured listing runs for. (int) '' is 0, so an unset preference defaults to 30.
+ *
+ * @return int
+ */
 function osc_billing_premium_days(): int
 {
     $v = osc_get_preference('billing_premium_days', 'osclass');
@@ -101,7 +136,11 @@ function osc_billing_premium_days(): int
     return $v === '' || $v === null ? 30 : max(1, (int) $v);
 }
 
-/** ISO 4217 code credits are priced in, always upper-case. */
+/**
+ * ISO 4217 code credits are priced in, always upper-case.
+ *
+ * @return string
+ */
 function osc_billing_currency(): string
 {
     $v = osc_get_preference('billing_currency', 'osclass');
@@ -109,13 +148,21 @@ function osc_billing_currency(): string
     return strtoupper($v === '' || $v === null ? 'USD' : (string) $v);
 }
 
-/** Whether the bundled bank-transfer gateway is switched on. */
+/**
+ * Whether the bundled bank-transfer gateway is switched on.
+ *
+ * @return bool
+ */
 function osc_billing_offline_enabled(): bool
 {
     return osc_get_bool_preference('billing_offline_enabled', 'osclass');
 }
 
-/** Admin-authored payment instructions shown on the offline checkout screen. */
+/**
+ * Admin-authored payment instructions shown on the offline checkout screen.
+ *
+ * @return string
+ */
 function osc_billing_offline_instructions(): string
 {
     $v = osc_get_preference('billing_offline_instructions', 'osclass');
@@ -129,13 +176,21 @@ function osc_billing_offline_instructions(): string
  * upgrade priced at 0 credits is free to every seller, not switched off.
  */
 
-/** Whether bump-to-top is registered as a purchasable upgrade at all. */
+/**
+ * Whether bump-to-top is registered as a purchasable upgrade at all.
+ *
+ * @return bool
+ */
 function osc_billing_bump_enabled(): bool
 {
     return osc_get_bool_preference('billing_bump_enabled', 'osclass');
 }
 
-/** Credit price of a bump. 0 with billing_bump_enabled on means free, not off. */
+/**
+ * Credit price of a bump. 0 with billing_bump_enabled on means free, not off.
+ *
+ * @return int
+ */
 function osc_billing_bump_credits(): int
 {
     $v = osc_get_preference('billing_bump_credits', 'osclass');
@@ -143,7 +198,11 @@ function osc_billing_bump_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. */
+/**
+ * Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown.
+ *
+ * @return int
+ */
 function osc_billing_bump_cooldown_hours(): int
 {
     $v = osc_get_preference('billing_bump_cooldown_hours', 'osclass');
@@ -151,13 +210,21 @@ function osc_billing_bump_cooldown_hours(): int
     return $v === '' || $v === null ? 24 : max(1, (int) $v);
 }
 
-/** Whether highlighting is registered as a purchasable upgrade at all. */
+/**
+ * Whether highlighting is registered as a purchasable upgrade at all.
+ *
+ * @return bool
+ */
 function osc_billing_highlight_enabled(): bool
 {
     return osc_get_bool_preference('billing_highlight_enabled', 'osclass');
 }
 
-/** Credit price of highlighting a listing. */
+/**
+ * Credit price of highlighting a listing.
+ *
+ * @return int
+ */
 function osc_billing_highlight_credits(): int
 {
     $v = osc_get_preference('billing_highlight_credits', 'osclass');
@@ -165,7 +232,11 @@ function osc_billing_highlight_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Days a highlight runs for. */
+/**
+ * Days a highlight runs for.
+ *
+ * @return int
+ */
 function osc_billing_highlight_days(): int
 {
     $v = osc_get_preference('billing_highlight_days', 'osclass');
@@ -173,13 +244,21 @@ function osc_billing_highlight_days(): int
     return $v === '' || $v === null ? 30 : max(1, (int) $v);
 }
 
-/** Whether marking a listing urgent is registered as a purchasable upgrade at all. */
+/**
+ * Whether marking a listing urgent is registered as a purchasable upgrade at all.
+ *
+ * @return bool
+ */
 function osc_billing_urgent_enabled(): bool
 {
     return osc_get_bool_preference('billing_urgent_enabled', 'osclass');
 }
 
-/** Credit price of marking a listing urgent. */
+/**
+ * Credit price of marking a listing urgent.
+ *
+ * @return int
+ */
 function osc_billing_urgent_credits(): int
 {
     $v = osc_get_preference('billing_urgent_credits', 'osclass');
@@ -187,7 +266,11 @@ function osc_billing_urgent_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Days an urgent mark runs for. */
+/**
+ * Days an urgent mark runs for.
+ *
+ * @return int
+ */
 function osc_billing_urgent_days(): int
 {
     $v = osc_get_preference('billing_urgent_days', 'osclass');
@@ -203,13 +286,21 @@ function osc_billing_urgent_days(): int
  * below for the read side third-party code should call.
  */
 
-/** Whether raising a seller's photo cap is registered as a purchasable limit at all. */
+/**
+ * Whether raising a seller's photo cap is registered as a purchasable limit at all.
+ *
+ * @return bool
+ */
 function osc_billing_photos_enabled(): bool
 {
     return osc_get_bool_preference('billing_photos_enabled', 'osclass');
 }
 
-/** Credit price of the raised photo cap. */
+/**
+ * Credit price of the raised photo cap.
+ *
+ * @return int
+ */
 function osc_billing_photos_credits(): int
 {
     $v = osc_get_preference('billing_photos_credits', 'osclass');
@@ -217,7 +308,11 @@ function osc_billing_photos_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Photo cap granted while the entitlement is held. */
+/**
+ * Photo cap granted while the entitlement is held.
+ *
+ * @return int
+ */
 function osc_billing_photos_quantity(): int
 {
     $v = osc_get_preference('billing_photos_quantity', 'osclass');
@@ -225,13 +320,21 @@ function osc_billing_photos_quantity(): int
     return $v === '' || $v === null ? 10 : max(1, (int) $v);
 }
 
-/** Whether waiving the flood wait is registered as a purchasable limit at all. */
+/**
+ * Whether waiving the flood wait is registered as a purchasable limit at all.
+ *
+ * @return bool
+ */
 function osc_billing_no_wait_enabled(): bool
 {
     return osc_get_bool_preference('billing_no_wait_enabled', 'osclass');
 }
 
-/** Credit price of waiving the flood wait. */
+/**
+ * Credit price of waiving the flood wait.
+ *
+ * @return int
+ */
 function osc_billing_no_wait_credits(): int
 {
     $v = osc_get_preference('billing_no_wait_credits', 'osclass');
@@ -239,7 +342,11 @@ function osc_billing_no_wait_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Days the waiver holds once bought. */
+/**
+ * Days the waiver holds once bought.
+ *
+ * @return int
+ */
 function osc_billing_no_wait_days(): int
 {
     $v = osc_get_preference('billing_no_wait_days', 'osclass');
@@ -247,13 +354,21 @@ function osc_billing_no_wait_days(): int
     return $v === '' || $v === null ? 30 : max(1, (int) $v);
 }
 
-/** Whether extra listing runtime is registered as a purchasable limit at all. */
+/**
+ * Whether extra listing runtime is registered as a purchasable limit at all.
+ *
+ * @return bool
+ */
 function osc_billing_runtime_enabled(): bool
 {
     return osc_get_bool_preference('billing_runtime_enabled', 'osclass');
 }
 
-/** Credit price of the extra runtime. */
+/**
+ * Credit price of the extra runtime.
+ *
+ * @return int
+ */
 function osc_billing_runtime_credits(): int
 {
     $v = osc_get_preference('billing_runtime_credits', 'osclass');
@@ -261,7 +376,11 @@ function osc_billing_runtime_credits(): int
     return $v === '' || $v === null ? 0 : (int) $v;
 }
 
-/** Extra days over the category ceiling granted while the entitlement is held. */
+/**
+ * Extra days over the category ceiling granted while the entitlement is held.
+ *
+ * @return int
+ */
 function osc_billing_runtime_days(): int
 {
     $v = osc_get_preference('billing_runtime_days', 'osclass');
@@ -284,6 +403,10 @@ function osc_billing_runtime_days(): int
  * compare it numerically. Falls back to osc_max_images_per_item() (where 0, not -1,
  * is that helper's own "unlimited") whenever billing is off, no user is known, or
  * the user holds nothing.
+ *
+ * @param int|null $userId
+ *
+ * @return int
  */
 function osc_max_images_for_user(?int $userId = null): int
 {
@@ -311,10 +434,128 @@ function osc_max_images_for_user(?int $userId = null): int
 }
 
 /**
+ * How many listings $userId may hold live at once. -1 means unlimited -- treat it that
+ * way, never compare it numerically -- which is what billing being off, an unknown user,
+ * or a site that never set a cap all read back. Defaults to osc_logged_user_id().
+ *
+ * Reads Entitlements::listingCeiling(), the same number the post-time gate is measured
+ * against, so a theme can show a seller their limit without it drifting from the one
+ * they are actually held to.
+ *
+ * @param int|null $userId
+ *
+ * @return int
+ */
+function osc_user_listing_limit(?int $userId = null): int
+{
+    if (!osc_billing_enabled()) {
+        return -1;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return -1;
+    }
+
+    return Entitlements::listingCeiling((int) $userId);
+}
+
+/**
+ * How many live listings $userId currently holds -- what osc_user_listing_limit() is
+ * spent against. Counts listings awaiting moderation and admin-disabled ones too (see
+ * Entitlements::liveListings()), so it matches the gate rather than what is publicly
+ * visible. 0 while billing is off or no user is known.
+ *
+ * @param int|null $userId
+ *
+ * @return int
+ */
+function osc_user_listings_used(?int $userId = null): int
+{
+    if (!osc_billing_enabled()) {
+        return 0;
+    }
+
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return 0;
+    }
+
+    return Entitlements::liveListings((int) $userId);
+}
+
+/**
+ * Listings $userId may still publish before hitting the ceiling. -1 means unlimited,
+ * the same sentinel osc_user_listing_limit() uses; otherwise never below 0, so a seller
+ * already over the line reads back 0 rather than a negative.
+ *
+ * @param int|null $userId
+ *
+ * @return int
+ */
+function osc_user_listings_remaining(?int $userId = null): int
+{
+    $limit = osc_user_listing_limit($userId);
+    if ($limit === -1) {
+        return -1;
+    }
+
+    return max(0, $limit - osc_user_listings_used($userId));
+}
+
+/**
+ * Whether $userId may publish another listing right now -- the same answer the post
+ * route enforces, filter included, so a theme that hides its "post a listing" button on
+ * false is hiding it exactly when the form would refuse. There is no listing yet at this
+ * point, so a plugin filtering billing_can_publish on $ctx['item'] sees none here.
+ *
+ * @param int|null $userId
+ *
+ * @return bool
+ */
+function osc_user_can_publish(?int $userId = null): bool
+{
+    $userId = $userId ?? osc_logged_user_id();
+    if (empty($userId)) {
+        return true; // guests are not metered; the post route does not check them either
+    }
+
+    return Entitlements::canPublish((int) $userId);
+}
+
+/**
+ * The message a seller is shown at their listing limit, in the one wording the post form
+ * and the submit path both use. $item carries the listing being posted where there is one
+ * (the submit path), and is empty where there is not (opening the form).
+ *
+ * Core sells no listing slot -- listing.slot is user-scoped and the only public spend
+ * route takes item-scoped features -- so the default names the only two remedies that
+ * exist. Filterable for a plugin that does sell them.
+ *
+ * @param int|null            $userId
+ * @param array<string,mixed> $item
+ *
+ * @return string
+ */
+function osc_listing_limit_message(?int $userId = null, array $item = array()): string
+{
+    return (string) osc_apply_filter(
+        'billing_listing_limit_message',
+        _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'),
+        $userId ?? osc_logged_user_id(),
+        $item
+    );
+}
+
+/**
  * Seconds $userId must wait between posts -- 0 while a listing.no_wait entitlement is
  * held, osc_items_wait_time() otherwise. Defaults to osc_logged_user_id(). Guests
  * (no user id) always read the global wait: this is an anti-flood control and
  * anonymous posting has no entitlements to check.
+ *
+ * @param int|null $userId
+ *
+ * @return int
  */
 function osc_items_wait_time_for_user(?int $userId = null): int
 {
@@ -338,6 +579,10 @@ function osc_items_wait_time_for_user(?int $userId = null): int
  * user holds nothing -- there is no old global preference this one overrides, so 0
  * is simply "no extra". -1 means unlimited extra runtime; treat it that way, never
  * compare it numerically.
+ *
+ * @param int|null $userId
+ *
+ * @return int
  */
 function osc_item_extra_runtime_days(?int $userId = null): int
 {
@@ -357,6 +602,10 @@ function osc_item_extra_runtime_days(?int $userId = null): int
  * A user's credit balance -- the logged-in buyer's own by default. Callers that pass
  * $userId explicitly must own that decision themselves; the wallet page never does,
  * so it can only ever read osc_logged_user_id()'s balance.
+ *
+ * @param int|null $userId
+ *
+ * @return int
  */
 function osc_user_credits(?int $userId = null): int
 {
@@ -373,38 +622,72 @@ function osc_billing_packages(): array
     return Packages::enabled();
 }
 
-/** Balance and ledger history. */
+/**
+ * Balance and ledger history. Rewritten like every other account route when the site
+ * has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the
+ * query-string form still resolves either way, so links already out there keep working.
+ *
+ * @return string
+ */
 function osc_billing_wallet_url(): string
 {
-    return osc_base_url() . '?page=billing';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_wallet');
+    }
+
+    return osc_base_url(true) . '?page=billing';
 }
 
-/** Buy credits: packages plus the configured payment methods. */
+/**
+ * Buy credits: packages plus the configured payment methods.
+ *
+ * @return string
+ */
 function osc_billing_buy_url(): string
 {
-    return osc_base_url() . '?page=billing&action=buy';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_buy');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=buy';
 }
 
-/** The buyer's own past orders. */
+/**
+ * The buyer's own past orders.
+ *
+ * @return string
+ */
 function osc_billing_orders_url(): string
 {
-    return osc_base_url() . '?page=billing&action=orders';
+    if (osc_rewrite_enabled()) {
+        return osc_base_url() . osc_get_preference('rewrite_billing_orders');
+    }
+
+    return osc_base_url(true) . '?page=billing&action=orders';
 }
 
 /**
  * The POST target for featuring one of the user's own listings. The item id travels in
  * the URL so a theme's "feature this listing" form needs no hidden field beyond the
  * CSRF token the shutdown injector already adds.
+ *
+ * @param int $itemId
+ *
+ * @return string
  */
 function osc_billing_upgrade_url(int $itemId): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId;
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId;
 }
 
 /**
  * Raw expiration datetime of a featured listing, or null when it is not currently
  * featured. Defaults to the item currently in view, the same convention osc_item_field()
  * uses, so it drops straight into an item loop.
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return string|null
  */
 function osc_item_premium_expiration(?array $item = null): ?string
 {
@@ -421,6 +704,10 @@ function osc_item_premium_expiration(?array $item = null): ?string
  * featuring itself switched on, and the listing not already featured. A price of 0
  * with billing_premium_enabled on means every seller can feature for free -- it does
  * not mean unavailable.
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return bool
  */
 function osc_item_can_be_featured(?array $item = null): bool
 {
@@ -478,6 +765,8 @@ function osc_prime_item_upgrades(array $items): void
 /**
  * Upgrade ids currently in force on an item.
  *
+ * @param array<string,mixed>|null $item
+ *
  * @return string[]
  */
 function osc_item_upgrades(?array $item = null): array
@@ -490,16 +779,38 @@ function osc_item_upgrades(?array $item = null): array
     return ItemUpgrades::active((int) $item['pk_i_id']);
 }
 
+/**
+ * Whether an item currently holds $upgrade. Defaults to the item in view.
+ *
+ * @param string                   $upgrade
+ * @param array<string,mixed>|null $item
+ *
+ * @return bool
+ */
 function osc_item_has_upgrade(string $upgrade, ?array $item = null): bool
 {
     return in_array($upgrade, osc_item_upgrades($item), true);
 }
 
+/**
+ * Whether an item currently holds the item.highlight upgrade. Defaults to the item in view.
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return bool
+ */
 function osc_item_is_highlighted(?array $item = null): bool
 {
     return osc_item_has_upgrade('item.highlight', $item);
 }
 
+/**
+ * Whether an item currently holds the item.urgent upgrade. Defaults to the item in view.
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return bool
+ */
 function osc_item_is_urgent(?array $item = null): bool
 {
     return osc_item_has_upgrade('item.urgent', $item);
@@ -509,6 +820,10 @@ function osc_item_is_urgent(?array $item = null): bool
  * Whether an item may be bumped right now: bump is switched on, the item belongs to
  * the logged-in user, and there is no live cooldown row. Bump has no state of its
  * own beyond that row -- the cooldown IS the row's expiry, not a second concept.
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return bool
  */
 function osc_item_can_bump(?array $item = null): bool
 {
@@ -533,16 +848,26 @@ function osc_item_can_bump(?array $item = null): bool
  * The POST target for applying $feature to $itemId. Generalises
  * osc_billing_upgrade_url() to any item-scoped feature; that one is kept, unchanged,
  * for the listing.premium links already out there.
+ *
+ * @param int    $itemId
+ * @param string $feature
+ *
+ * @return string
  */
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
-    return osc_base_url() . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
 }
 
 /**
  * Raw expiration datetime of an item's $upgrade row, or null when there is no row
  * at all -- the same "raw value regardless of active state" convention
  * osc_item_premium_expiration() follows.
+ *
+ * @param string                   $upgrade
+ * @param array<string,mixed>|null $item
+ *
+ * @return string|null
  */
 function osc_item_upgrade_expiration(string $upgrade, ?array $item = null): ?string
 {
@@ -821,8 +1146,24 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
         return $options;
     }
 
-    $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
-    $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+    // Both entries used to appear on the billing switch alone, so a site that enabled
+    // billing only to cap listings gave every seller two links to "no payment method is
+    // set up yet". Offer them only where they lead somewhere. Gateways are preference
+    // reads, so they gate the packages query rather than the other way round.
+    $canBuy = PaymentGatewayRegistry::instance()->available() !== array()
+              && osc_billing_packages() !== array();
+
+    if ($canBuy) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+        $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
+
+        return $options;
+    }
+
+    // Nothing on sale, but credits already held (or owed) still need somewhere to be read.
+    if (osc_user_credits() !== 0) {
+        $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
+    }
 
     return $options;
 });

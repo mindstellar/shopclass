@@ -144,4 +144,84 @@ function osc_send_response_cache_headers()
     header('Cache-Control: ' . osc_apply_filter('response_cache_control', $header));
 }
 
+/**
+ * The validator for a page body: what identifies "this exact content" to a client.
+ *
+ * A plain hash of what was sent, and it can be that simple because a render of a page is
+ * now deterministic. The only thing that used to differ between two renders was the CSRF
+ * token's per-second issue time; that is stamped on a bucket (Csrf::ISSUE_BUCKET), so two
+ * renders inside one bucket are byte-identical and hash the same.
+ *
+ * The token is also what keeps this honest over time. A page carrying one changes its
+ * validator every bucket whether or not the content moved, so a browser cannot revalidate
+ * against a body until the token inside it stops being accepted -- the turnover and the
+ * token's life are the same clock, rather than an interval invented here to approximate
+ * it. A page with no form has no token, so its validator changes only when it does.
+ *
+ * Nothing is masked. Anything that does vary between renders -- a plugin stamping a time,
+ * a theme printing something per request -- simply yields a different hash and no 304,
+ * which is the behaviour there was before any of this. It can never serve a stale page.
+ *
+ * @param string $body
+ *
+ * @return string quoted, ready for an ETag header
+ */
+function osc_response_etag_value($body)
+{
+    return '"' . md5((string)$body) . '"';
+}
+
+/**
+ * Answer a repeat request with "nothing changed" instead of the page again.
+ *
+ * Registered on `response_body`, so it sees the finished page.
+ *
+ * A browser is told to revalidate on every use (`max-age=0`), and until now it had no way
+ * to be told "reuse yours": with no validator on the response, every one of those checks
+ * came back as the whole page. This makes them 304s of a couple of hundred bytes, for
+ * repeat visitors and for every crawler pass. nginx answers them from its own copy once
+ * the cached response carries the header, so it costs PHP nothing after the first render.
+ *
+ * @param string $body the finished page
+ *
+ * @return string the body to send, or '' when a 304 is being sent instead
+ */
+function osc_response_etag($body)
+{
+    if (!is_string($body) || $body === '' || headers_sent()) {
+        return $body;
+    }
+    // Only for a response a client could reasonably hold: an ordinary, successful,
+    // non-redirect GET that carries no per-visitor state.
+    $method = strtoupper((string)Params::getServerParam('REQUEST_METHOD', false, false));
+    if (($method !== 'GET' && $method !== 'HEAD') || !osc_response_is_cacheable()) {
+        return $body;
+    }
+    if (function_exists('http_response_code') && http_response_code() !== 200) {
+        return $body;
+    }
+    foreach (headers_list() as $sent) {
+        if (stripos($sent, 'location:') === 0) {
+            return $body;
+        }
+    }
+
+    $etag = osc_response_etag_value($body);
+    header('ETag: ' . $etag);
+
+    if (trim((string)Params::getServerParam('HTTP_IF_NONE_MATCH', false, false)) === $etag) {
+        http_response_code(304);
+
+        return '';
+    }
+
+    return $body;
+}
+
+// Guarded so this file stays includable on its own -- the test suite loads it without a
+// plugin layer, and so does early boot.
+if (function_exists('osc_add_filter')) {
+    osc_add_filter('response_body', 'osc_response_etag');
+}
+
 /* file end: ./oc-includes/osclass/helpers/hHttpCache.php */

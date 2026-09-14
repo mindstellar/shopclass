@@ -30,7 +30,10 @@ class SigningKey
     private static $key;
 
     /**
+     * The install signing key, generating and persisting one on first use.
+     *
      * @return string
+     * @throws \Exception when no source of randomness is available to generate a key
      */
     public static function get()
     {

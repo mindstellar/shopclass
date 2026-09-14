@@ -19,6 +19,22 @@ use mindstellar\utility\Sanitize;
  */
 class ItemActions
 {
+    /**
+     * Widths of the t_item_location and t_item columns a submitted listing fills, from
+     * struct.sql. A value wider than its column is cut short on a relaxed connection and
+     * rejects the whole insert on a strict one, so each is refused by name first;
+     * tests/strict-write-guards.php reads this and pins it against the live schema.
+     */
+    public const COLUMN_WIDTHS = array(
+        's_country'       => 80,
+        's_region'        => 100,
+        's_city'          => 100,
+        's_city_area'     => 200,
+        's_address'       => 100,
+        's_zip'           => 15,
+        's_contact_phone' => 40,
+    );
+
     public $is_admin;
     public $data;
     private $manager;
@@ -39,8 +55,12 @@ class ItemActions
     /**
      * Delete resources from the hard drive
      *
-     * @param int  $itemId
-     * @param bool $is_admin
+     * @param int                                 $itemId
+     * @param bool                                $is_admin
+     * @param array<int,array<string,mixed>>|null $resources Rows the caller read before the
+     *                                                       delete; looked up when null
+     *
+     * @return void
      */
     public static function deleteResourcesFromHD($itemId, $is_admin = false, $resources = null)
     {
@@ -151,7 +171,9 @@ class ItemActions
     }
 
     /**
-     * @return boolean
+     * Insert a listing from $this->data, with its locales, location, images, meta and stats.
+     *
+     * @return int|string 1 on success, 2 when it still needs validation, else an error message
      */
     public function add()
     {
@@ -229,8 +251,7 @@ class ItemActions
         if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                $flash_error .= _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.')
-                    . PHP_EOL;
+                $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
             }
         }
 
@@ -326,7 +347,14 @@ class ItemActions
             $location = array_merge($location, $this->getItemCoordinates($location));
 
             $locationManager = ItemLocation::newInstance();
-            $locationManager->insert($location);
+            // The listing row already exists, so there is nothing useful to tell the
+            // poster here -- but a refused location write leaves a listing that no
+            // location search will ever return, and DAO::insert() reports it only in
+            // its return value. The length checks above make user input a clean
+            // rejection instead; what is left is a filtered or plugin-supplied value.
+            if (!$locationManager->insert($location)) {
+                trigger_error('Item location insert wrote no row for item ' . $itemId . '.', E_USER_WARNING);
+            }
 
             $this->uploadItemResources($aItem['photos'], $itemId);
 
@@ -387,7 +415,9 @@ class ItemActions
     }
 
     /**
-     * @param $aResources
+     * Whether every uploaded file's MIME type is in the allowed-extension list.
+     *
+     * @param array<string,array<int,mixed>> $aResources A $_FILES entry
      *
      * @return bool
      */
@@ -449,7 +479,9 @@ class ItemActions
     }
 
     /**
-     * @param $aResources
+     * Whether every uploaded file is within the configured maximum size.
+     *
+     * @param array<string,array<int,mixed>> $aResources A $_FILES entry
      *
      * @return bool
      */
@@ -477,10 +509,12 @@ class ItemActions
     }
 
     /**
-     * @param array  $title
-     * @param array  $description
-     * @param string $author
-     * @param string $email
+     * Whether Akismet judges any locale of this listing to be spam.
+     *
+     * @param array<string,string> $title       Title per locale
+     * @param array<string,string> $description Description per locale
+     * @param string               $author
+     * @param string               $email
      *
      * @return bool
      *
@@ -574,24 +608,38 @@ class ItemActions
         $flash_error .= ((!osc_validate_text($aItem['countryName'], 3, false))
             ? _m('Country too short.') . PHP_EOL
             : '');
-        $flash_error .= ((!osc_validate_max($aItem['countryName'], 50)) ? _m('Country too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_text($aItem['regionName'], 2, false))
             ? _m('Region too short.') . PHP_EOL
             : '');
-        $flash_error .= ((!osc_validate_max($aItem['regionName'], 50)) ? _m('Region too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_text($aItem['cityName'], 2, false))
             ? _m('City too short.') . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_max($aItem['cityName'], 50)) ? _m('City too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_text($aItem['cityArea'], 3, false))
             ? _m('Municipality too short.')
             . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_max($aItem['cityArea'], 50)) ? _m('Municipality too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_text($aItem['address'], 3, false))
             ? _m('Address too short.') . PHP_EOL
             : '');
-        $flash_error .= ((!osc_validate_max($aItem['address'], 100)) ? _m('Address too long.') . PHP_EOL : '');
-        if (isset($aItem['s_contact_phone']) && (!osc_validate_phone($aItem['s_contact_phone'], 4))) {
-            $flash_error .= (_m('Phone invalid.') . PHP_EOL);
+        // The input key each capped column is filled from, and what to say when it does
+        // not fit. The widths themselves are COLUMN_WIDTHS, pinned against the live schema.
+        $capped = array(
+            's_country'       => array('countryName', _m('Country too long.')),
+            's_region'        => array('regionName', _m('Region too long.')),
+            's_city'          => array('cityName', _m('City too long.')),
+            's_city_area'     => array('cityArea', _m('Municipality too long.')),
+            's_address'       => array('address', _m('Address too long.')),
+            's_zip'           => array('s_zip', _m('Zip code too long.')),
+            's_contact_phone' => array('contactPhone', _m('Phone too long.')),
+        );
+        foreach (self::COLUMN_WIDTHS as $column => $width) {
+            list($key, $message) = $capped[$column];
+            if (!osc_validate_max((string)($aItem[$key] ?? ''), $width)) {
+                $flash_error .= $message . PHP_EOL;
+            }
+        }
+        // Checked after Sanitize::phone() has reduced the input to digits and a leading
+        // plus, so this is the format of what would be stored, not of what was typed.
+        if (!osc_validate_phone((string)($aItem['contactPhone'] ?? ''), 4)) {
+            $flash_error .= _m('Phone invalid.') . PHP_EOL;
         }
 
         return $flash_error;
@@ -600,9 +648,11 @@ class ItemActions
     /**
      * Validate Item meta field and check required fields are not empty
      *
-     * @param array  $_meta
-     * @param        $meta
-     * @param string $flash_error
+     * @param array<int,array<string,mixed>> $_meta       The category's field definitions
+     * @param array<int,mixed>|mixed          $meta        Submitted values, sanitised in place
+     * @param string                          $flash_error Appended to in place
+     *
+     * @return void
      */
     private function handleMetaField(array $_meta, &$meta, string &$flash_error)
     {
@@ -629,10 +679,12 @@ class ItemActions
     }
 
     /**
-     * @param       $e_type
-     * @param       $metaValue
+     * Sanitise one submitted custom-field value according to its field type.
      *
-     * @return array
+     * @param string $e_type
+     * @param mixed  $metaValue
+     *
+     * @return mixed same shape as $metaValue
      */
     private function sanitizeMetaField($e_type, $metaValue)
     {
@@ -668,11 +720,13 @@ class ItemActions
     }
 
     /**
-     * @param array  $_meta
-     * @param array  $meta
-     * @param string $flash_error
+     * Apply the conditional and required rules to the submitted custom-field values.
      *
-     * @return array
+     * @param array<int,array<string,mixed>> $_meta       The category's field definitions
+     * @param array<int,mixed>               $meta        Submitted values
+     * @param string                         $flash_error
+     *
+     * @return array{0:array<int,mixed>,1:string} the surviving values and the error text
      */
     private function validateMetaFields($_meta, $meta, $flash_error)
     {
@@ -827,10 +881,14 @@ class ItemActions
     }
 
     /**
-     * @param $type
-     * @param $title
-     * @param $description
-     * @param $itemId
+     * Write one title/description row per locale for a listing.
+     *
+     * @param string               $type        'ADD' or 'EDIT'
+     * @param array<string,string> $title       Title per locale
+     * @param array<string,string> $description Description per locale
+     * @param int                  $itemId
+     *
+     * @return void
      */
     public function insertItemLocales($type, $title, $description, $itemId)
     {
@@ -883,10 +941,12 @@ class ItemActions
     }
 
     /**
-     * @param $aResources
-     * @param $itemId
+     * Store the uploaded images for a listing, honouring the per-item image cap.
      *
-     * @return int
+     * @param array<string,array<int,mixed>> $aResources A $_FILES entry
+     * @param int                            $itemId
+     *
+     * @return int 0 when nothing went wrong
      */
     public function uploadItemResources($aResources, $itemId)
     {
@@ -985,7 +1045,11 @@ class ItemActions
     }
 
     /**
-     * @param $aItem
+     * Fire the notification hooks a newly posted listing needs.
+     *
+     * @param array<string,mixed> $aItem The prepared listing data, with its 'item' rows
+     *
+     * @return void
      */
     public function sendEmails($aItem)
     {
@@ -1017,8 +1081,9 @@ class ItemActions
      * Private function for increment stats.
      * tables: t_user/t_category_stats/t_country_stats/t_region_stats/t_city_stats
      *
-     * @param array item
+     * @param array<string,mixed> $item
      *
+     * @return void
      */
     private function increaseStats($item)
     {
@@ -1073,8 +1138,9 @@ class ItemActions
      * Private function for decrease stats.
      * tables: t_user/t_category_stats/t_country_stats/t_region_stats/t_city_stats
      *
-     * @param array item
+     * @param array<string,mixed> $item
      *
+     * @return void
      */
     private function _decreaseStats($item)
     {
@@ -1089,7 +1155,9 @@ class ItemActions
     }
 
     /**
-     * @return bool|mixed
+     * Update a listing from $this->data, with its locales, location, images, meta and stats.
+     *
+     * @return int|string|false rows updated on success, an error message, or false
      */
     public function edit()
     {
@@ -1142,7 +1210,11 @@ class ItemActions
             $locationManager   = ItemLocation::newInstance();
             $old_item_location = $locationManager->findByPrimaryKey($aItem['idItem']);
 
-            $locationManager->update($location, array('fk_i_item_id' => $aItem['idItem']));
+            // A rejected update leaves the previous location in place and every hook
+            // below still fires, so the only trace it left was the unread return value.
+            if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
+                trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
+            }
 
             $old_item = $this->manager->findByPrimaryKey($aItem['idItem']);
 
@@ -1247,14 +1319,15 @@ class ItemActions
      * User item stats, Category item stats,
      *  country item stats, region item stats, city item stats
      *
-     * @param bool | array $result
-     * @param array        $old_item
-     * @param bool         $oldIsExpired
-     * @param array        $old_item_location
-     * @param array        $aItem
-     * @param bool         $newIsExpired
-     * @param array        $location
+     * @param bool|int            $result What the item update returned
+     * @param array<string,mixed> $old_item
+     * @param bool                $oldIsExpired
+     * @param array<string,mixed> $old_item_location
+     * @param array<string,mixed> $aItem
+     * @param bool                $newIsExpired
+     * @param array<string,mixed> $location
      *
+     * @return void
      */
     private function updateStats(
         $result,
@@ -1597,7 +1670,9 @@ class ItemActions
      * Mark an item
      *
      * @param int    $id
-     * @param string $as
+     * @param string $as 'spam' | 'badcat' | 'offensive' | 'repeated' | 'expired'
+     *
+     * @return void
      */
     public function mark($id, $as)
     {
@@ -1749,7 +1824,9 @@ class ItemActions
     }
 
     /**
-     * @return string
+     * Validate the contact form and fire the listing-inquiry email hook.
+     *
+     * @return string|null the validation errors, or null when the inquiry was sent
      */
     public function contact()
     {
@@ -1774,7 +1851,9 @@ class ItemActions
     }
 
     /**
-     * @return int
+     * Validate and store a comment on a listing.
+     *
+     * @return int a status code; 7 when comments are disabled
      */
     public function add_comment()
     {
@@ -1816,7 +1895,11 @@ class ItemActions
             return 6;
         }
 
-        if (!preg_match('|^.*?@.{2,}\..{2,3}$|', $authorEmail)) {
+        // osc_validate_email(), the same check the contact form and registration use. The
+        // pattern that stood here required a two or three character top-level domain, so it
+        // turned away every .info, .online, .store and .agency address while accepting a
+        // local part containing spaces.
+        if (!osc_validate_email($authorEmail)) {
             Session::newInstance()->_setForm('commentAuthorName', $authorName);
             Session::newInstance()->_setForm('commentTitle', $title);
             Session::newInstance()->_setForm('commentBody', $body);
@@ -1993,8 +2076,15 @@ class ItemActions
         $aItem['currency']     = Params::getParam('currency');
         $aItem['showEmail']    = Params::getParam('showEmail') ? 1 : 0;
         $aItem['title']        = Params::getParam('title');
+        // A rich editor needs its markup to survive, so Params' XSS check -- which strips
+        // every tag -- is off on that path; osc_sanitize_html() is what keeps it safe, an
+        // allow-list of exactly what the toolbars emit. Without it a description was stored
+        // as submitted, and a <script> in one ran for every visitor who opened the listing.
+        // The plain-textarea path keeps stripping everything, as it always has.
         $aItem['description']  =
-            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN)) ? Params::getParam('description', false, false) : Params::getParam('description');
+            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
+                ? osc_sanitize_html(Params::getParam('description', false, false))
+                : Params::getParam('description');
         $aItem['photos']       = Params::getFiles('photos');
         $ajax_photos           = Params::getParam('ajax_photos');
         $aItem['s_ip']         = get_ip();

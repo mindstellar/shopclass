@@ -19,12 +19,14 @@ class ManageItemsForm extends Form
 {
     // OK
     /**
-     * @param null $categories
-     * @param null $item
-     * @param null $default_item
-     * @param bool $parent_selectable
+     * Echo the category select box for the admin item manager, marking the item's category.
      *
-     * @return bool
+     * @param array<int,array<string,mixed>>|null $categories        Defaults to the view's or the site's categories
+     * @param array<string,mixed>|null            $item
+     * @param string|null                         $default_item      Placeholder option label
+     * @param bool                                $parent_selectable Allow selecting a parent category
+     *
+     * @return bool always true
      */
     public static function category_select(
         $categories = null,
@@ -79,10 +81,14 @@ class ManageItemsForm extends Form
     // OK
 
     /**
-     * @param      $categories
-     * @param      $item
-     * @param null $default_item
-     * @param int  $deep
+     * Echo the <option> rows for a subcategory tree, recursing into deeper levels.
+     *
+     * @param array<int,array<string,mixed>> $categories
+     * @param array<string,mixed>|null       $item
+     * @param string|null                    $default_item Unused
+     * @param int                            $deep
+     *
+     * @return void
      */
     public static function subcategory_select($categories, $item, $default_item = null, $deep = 0)
     {
@@ -107,7 +113,9 @@ class ManageItemsForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the country name input and its hidden country-code companion.
+     *
+     * @return bool always true
      */
     public static function country_text()
     {
@@ -132,7 +140,9 @@ class ManageItemsForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the region name input and its hidden region-id companion.
+     *
+     * @return bool always true
      */
     public static function region_text()
     {
@@ -156,7 +166,9 @@ class ManageItemsForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the city name input and its hidden city-id companion.
+     *
+     * @return bool always true
      */
     public static function city_text()
     {

@@ -102,10 +102,12 @@ class Translation
     }
 
     /**
-     * @param $file
-     * @param $domain
+     * Load one .mo catalogue into the translator, from the compiled cache when possible.
      *
-     * @return bool|\Translation
+     * @param string $file   Absolute path to the .mo file
+     * @param string $domain Gettext domain to register it under
+     *
+     * @return $this|false false when the file does not exist
      */
     public function _load($file, $domain)
     {
@@ -209,7 +211,9 @@ class Translation
     }
 
     /**
-     * @param bool $install
+     * The shared Translation instance, created on first call.
+     *
+     * @param bool $install Load only the core catalogue, for the installer
      *
      * @return \Translation
      */
@@ -223,6 +227,8 @@ class Translation
     }
 
     /**
+     * Rebuild the shared instance, reloading every catalogue for the current locale.
+     *
      * @return \Translation
      */
     public static function init()
@@ -233,6 +239,8 @@ class Translation
     }
 
     /**
+     * The underlying gettext translator.
+     *
      * @return \Gettext\Translator
      */
     public function _get()

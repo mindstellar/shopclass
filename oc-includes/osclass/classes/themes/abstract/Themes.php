@@ -30,6 +30,9 @@ abstract class Themes
     protected $resolved;
     protected $unresolved;
 
+    /**
+     * Starts with empty script, queue and style lists.
+     */
     public function __construct()
     {
         $this->scripts = array();
@@ -38,7 +41,11 @@ abstract class Themes
     }
 
     /**
-     * @param $theme
+     * Make $theme the current theme and recompute its path and URL.
+     *
+     * @param string $theme Theme directory name.
+     *
+     * @return void
      */
     public function setCurrentTheme($theme)
     {
@@ -47,28 +54,59 @@ abstract class Themes
         $this->setCurrentThemeUrl();
     }
 
+    /**
+     * Resolve the current theme's absolute filesystem path, with a fallback when
+     * the theme directory is missing.
+     *
+     * @return void
+     */
     abstract protected function setCurrentThemePath();
 
     /* PUBLIC */
 
+    /**
+     * Resolve the current theme's public URL, with a fallback when the theme
+     * directory is missing.
+     *
+     * @return void
+     */
     abstract protected function setCurrentThemeUrl();
 
+    /**
+     * Current theme directory name, or null before one has been set.
+     *
+     * @return string|null
+     */
     public function getCurrentTheme()
     {
         return $this->theme;
     }
 
+    /**
+     * Current theme's public URL with a trailing slash, or null before one has
+     * been set.
+     *
+     * @return string|null
+     */
     public function getCurrentThemeUrl()
     {
         return $this->theme_url;
     }
 
+    /**
+     * Current theme's absolute path with a trailing slash, or null before one has
+     * been set.
+     *
+     * @return string|null
+     */
     public function getCurrentThemePath()
     {
         return $this->theme_path;
     }
 
     /**
+     * URL of the current theme's css/ directory.
+     *
      * @return string
      */
     public function getCurrentThemeStyles()
@@ -77,6 +115,8 @@ abstract class Themes
     }
 
     /**
+     * URL of the current theme's js/ directory.
+     *
      * @return string
      */
     public function getCurrentThemeJs()

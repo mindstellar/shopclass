@@ -194,7 +194,7 @@ class SystemInfo
     /**
      * Return System Info as Array
      *
-     * @return array
+     * @return array<string,array<string,mixed>> keyed osclass, php, database, browser
      */
     public function getSystemInfoArr(): array
     {
@@ -210,7 +210,7 @@ class SystemInfo
     /**
      * Return Oslcass info in an array
      *
-     * @return array
+     * @return array<string,int|string>
      */
     private function getOsclassInfoArr(): array
     {
@@ -244,6 +244,11 @@ class SystemInfo
         return $osclassInfoArr;
     }
 
+    /**
+     * Collect the install's paths, URLs, version and debug flags into this object.
+     *
+     * @return self
+     */
     public function setOsclassInfo(): self
     {
         $all_preferences_serialized = serialize(Preference::newInstance()->listAll());
@@ -319,7 +324,7 @@ class SystemInfo
     /**
      * Return Important PHP info in an array
      *
-     * @return array
+     * @return array<string,bool|string>
      */
     private function getPhpInfoArr(): array
     {
@@ -344,6 +349,11 @@ class SystemInfo
         return $phpInfoArr;
     }
 
+    /**
+     * Collect the PHP runtime's version, limits and extension support into this object.
+     *
+     * @return self
+     */
     public function setPhpInfo(): self
     {
         $this->php_os                   = PHP_OS;
@@ -373,7 +383,7 @@ class SystemInfo
     /**
      * Return Shopclass Database Info in an array
      *
-     * @return array
+     * @return array<string,string>
      */
     private function getDbInfoArr(): array
     {
@@ -388,6 +398,11 @@ class SystemInfo
         return $dbInfoArr;
     }
 
+    /**
+     * Collect the database server, connection and table prefix into this object.
+     *
+     * @return self
+     */
     public function setDbInfo(): self
     {
         $this->db_serverinfo   = Connection::instance()->serverInfo();
@@ -404,7 +419,7 @@ class SystemInfo
      * It guess by analyzing user_agent string
      * Don't rely on the result.
      *
-     * @return array
+     * @return array<string,string>
      */
     private function getBrowserInfoArr(): array
     {
@@ -418,6 +433,11 @@ class SystemInfo
         return $browserInfoArr;
     }
 
+    /**
+     * Guess the requesting browser, version and platform from the user-agent string.
+     *
+     * @return self
+     */
     public function setBrowserInfo(): self
     {
         $userAgent            = $_SERVER['HTTP_USER_AGENT'];
@@ -499,7 +519,7 @@ class SystemInfo
     /**
      * get full php info as string
      *
-     * @return false|string
+     * @return string
      */
     public function getPHPInfoAllToStr()
     {

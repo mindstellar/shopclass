@@ -42,7 +42,7 @@ if (!defined('BCRYPT_COST')) {
 /**
  * Creates a random password.
  *
- * @param int password $length. Default to 8.
+ * @param int $length
  *
  * @return string
  */
@@ -87,6 +87,7 @@ function osc_csrf_token_form()
 /**
  * Check if CSRF token is valid, die in other case
  *
+ * @return void
  * @since 3.1
  */
 function osc_csrf_check()
@@ -97,8 +98,8 @@ function osc_csrf_check()
 /**
  * Check if an email and/or IP are banned
  *
- * @param string $email
- * @param string $ip
+ * @param string      $email
+ * @param string|null $ip    Defaults to the request's REMOTE_ADDR
  *
  * @return int 0: not banned, 1: email is banned, 2: IP is banned
  * @since 3.1
@@ -123,10 +124,10 @@ function osc_is_banned($email = '', $ip = null)
 /**
  * Check if IP is banned
  *
- * @param string $ip
- * @param string $rules (optional, to savetime and resources)
+ * @param string                              $ip
+ * @param array<int,array<string,mixed>>|null $rules Pass the rule list to save a query
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_ip_banned($ip, $rules = null)
@@ -166,10 +167,10 @@ function osc_is_ip_banned($ip, $rules = null)
 /**
  * Check if email is banned
  *
- * @param string $email
- * @param string $rules (optional, to savetime and resources)
+ * @param string                              $email
+ * @param array<int,array<string,mixed>>|null $rules Pass the rule list to save a query
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_email_banned($email, $rules = null)
@@ -200,7 +201,7 @@ function osc_is_email_banned($email, $rules = null)
  *
  * @param string $username
  *
- * @return boolean
+ * @return bool
  * @since 3.1
  */
 function osc_is_username_blacklisted($username)
@@ -222,11 +223,10 @@ function osc_is_username_blacklisted($username)
 /**
  * Verify an user's password
  *
- * @param $password string
- * @param $hash
+ * @param string $password
+ * @param string $hash
  *
  * @return bool
- *
  * @hash  bcrypt/sha1
  * @since 3.3
  */
@@ -286,7 +286,7 @@ function osc_login_throttle_message($seconds)
  * has been re-hashed. The aim is to remove the step change that gives an answer
  * in a single request, not to reach constant time.
  *
- * @param $password string
+ * @param string $password
  *
  * @return bool always false, so callers can use it in place of a real check
  */
@@ -312,10 +312,9 @@ function osc_dummy_password_verify($password)
 /**
  * Hash a password in available method (bcrypt/sha1)
  *
- * @param $password plain-text
+ * @param string $password plain-text
  *
  * @return string hashed password
- *
  * @since 3.3
  */
 function osc_hash_password($password)
@@ -327,9 +326,11 @@ function osc_hash_password($password)
 }
 
 /**
- * @param $alert
+ * Encrypt an alert payload into an AES-256-GCM token: nonce, tag, then ciphertext.
  *
- * @return string
+ * @param string $alert
+ *
+ * @return string Empty string when encryption fails
  */
 function osc_encrypt_alert($alert)
 {
@@ -359,9 +360,11 @@ function osc_encrypt_alert($alert)
 }
 
 /**
- * @param $string
+ * Decrypt an alert token, falling back to the legacy unauthenticated format.
  *
- * @return string
+ * @param string $string
+ *
+ * @return string Empty string when the token cannot be read
  */
 function osc_decrypt_alert($string)
 {
@@ -451,6 +454,11 @@ function osc_alert_cipher_key()
     return hash_hmac('sha256', 'shopclass-alert-token-v1', (string)osc_get_alert_private_key(), true);
 }
 
+/**
+ * Mint the install's persistent alert public key if it has none yet.
+ *
+ * @return void
+ */
 function osc_set_alert_public_key()
 {
     if (!osc_get_preference('alert_public_key')) {
@@ -475,6 +483,11 @@ function osc_get_alert_public_key()
     return osc_get_preference('alert_public_key');
 }
 
+/**
+ * Mint the install's persistent alert private key if it has none yet.
+ *
+ * @return void
+ */
 function osc_set_alert_private_key()
 {
     if (!osc_get_preference('alert_private_key')) {
@@ -499,9 +512,11 @@ function osc_get_alert_private_key()
 }
 
 /**
- * @param $length
+ * A random base64-ish string of $length characters, from the best entropy source available.
  *
- * @return bool|string
+ * @param int $length
+ *
+ * @return string
  */
 function osc_random_string($length)
 {

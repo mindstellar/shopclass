@@ -32,6 +32,7 @@
  *                        success), 'actions' ([['label','href','primary']]),
  *                        'status' (HTTP code)
  *
+ * @return never
  * @since 1.2
  */
 function osc_die($title, $message, $options = array())
@@ -71,11 +72,13 @@ function osc_die($title, $message, $options = array())
 }
 
 /**
- * @param      $param
- * @param bool $htmlencode
- * @param bool $quotes_encode
+ * Read a $_SERVER value, optionally HTML-encoded.
  *
- * @return string
+ * @param string $param
+ * @param bool   $htmlencode
+ * @param bool   $quotes_encode
+ *
+ * @return string Empty string when the key is missing
  */
 function getErrorParam($param, $htmlencode = false, $quotes_encode = true)
 {
@@ -97,9 +100,11 @@ function getErrorParam($param, $htmlencode = false, $quotes_encode = true)
 }
 
 /**
- * @param $array
+ * Recursively strip slashes from a value or an array of values.
  *
- * @return string
+ * @param array|string $array
+ *
+ * @return array|string
  */
 function strip_slashes_extended_e($array)
 {
@@ -115,6 +120,8 @@ function strip_slashes_extended_e($array)
 }
 
 /**
+ * Best-effort base URL of the install, derived from the current request.
+ *
  * @return string
  */
 function osc_get_absolute_url()

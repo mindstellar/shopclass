@@ -24,7 +24,7 @@ class Page extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_pages table
      */
     public function __construct()
     {
@@ -45,6 +45,8 @@ class Page extends DAO
     }
 
     /**
+     * Return the shared Page model instance, creating it on first use.
+     *
      * @return \Page
      */
     public static function newInstance()
@@ -59,14 +61,10 @@ class Page extends DAO
     /**
      * Find a page by order.
      *
-     * @access public
+     * @param int         $order
+     * @param string|null $locale
      *
-     * @param      $order
-     * @param null $locale
-     *
-     * @return array It returns page fields. If it has no results, it returns an empty array.
-     * @since  unknown
-     *
+     * @return array<string,mixed> It returns page fields. If it has no results, it returns an empty array.
      */
     public function findByOrder($order, $locale = null)
     {
@@ -89,13 +87,10 @@ class Page extends DAO
     /**
      * An array with data of some page, returns the title and description in every language available
      *
-     * @access public
+     * @param array<string,mixed> $aPage
+     * @param string|null         $locale
      *
-     * @param array $aPage
-     * @param null  $locale
-     *
-     * @return array Page information, title and description in every language available
-     * @since  unknown
+     * @return array<string,mixed> Page information, title and description in every language available
      */
     public function extendDescription($aPage, $locale = null)
     {
@@ -134,10 +129,10 @@ class Page extends DAO
      * description row at all is dropped, and a page whose rows are all blank is
      * kept with an empty locale block.
      *
-     * @param array  $aPages
-     * @param string $locale
+     * @param array<int,array<string,mixed>> $aPages
+     * @param string|null                    $locale
      *
-     * @return array
+     * @return array<int,array<string,mixed>> Pages with no description row at all are dropped
      */
     private function extendDescriptions($aPages, $locale = null)
     {
@@ -183,6 +178,8 @@ class Page extends DAO
     }
 
     /**
+     * Return the prefixed name of the page-description table.
+     *
      * @return string
      */
     public function getDescriptionTableName()
@@ -193,12 +190,9 @@ class Page extends DAO
     /**
      * Delete a page by internal name.
      *
-     * @access public
-     *
      * @param string $intName Page internal name which is going to be deleted
      *
-     * @return bool True on successful removal, false on failure
-     * @since  unknown
+     * @return int|false Rows removed, or false on failure
      */
     public function deleteByInternalName($intName)
     {
@@ -210,13 +204,10 @@ class Page extends DAO
     /**
      * Find a page by internal name.
      *
-     * @access public
+     * @param string      $intName Internal name of the page to find.
+     * @param string|null $locale  Locale string.
      *
-     * @param string $intName Internal name of the page to find.
-     * @param string $locale  Locale string.
-     *
-     * @return array It returns page fields. If it has no results, it returns an empty array.
-     * @since  unknown
+     * @return array<string,mixed> It returns page fields. If it has no results, it returns an empty array.
      */
     public function findByInternalName($intName, $locale = null)
     {
@@ -238,13 +229,10 @@ class Page extends DAO
     /**
      * Delete a page by id number.
      *
-     * @access public
-     *
      * @param int $id Page id which is going to be deleted
      *
-     * @return bool|int @return mixed It return the number of affected rows if the delete has been
-     *                correct or false if nothing has been modified
-     * @since  unknown
+     * @return int|false It returns the number of affected rows if the delete has been
+     *                   correct, or false when the transaction failed
      */
     public function deleteByPrimaryKey($id)
     {
@@ -283,13 +271,11 @@ class Page extends DAO
     /**
      * Find a page by page id.
      *
-     * @access public
+     * @param int         $id     Page id.
+     * @param string|null $locale By default is null but you can specify locale code.
      *
-     * @param int    $id     Page id.
-     * @param string $locale By default is null but you can specify locale code.
-     *
-     * @return array Page information. If there's no information, return an empty array.
-     * @since  unknown
+     * @return array<string,mixed> Page information. If there's no information, return an empty array.
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function findByPrimaryKey($id, $locale = null)
     {
@@ -326,13 +312,9 @@ class Page extends DAO
     /**
      * Order pages from $order
      *
-     * @access private
-     *
      * @param int $order
      *
-     * @return int|mixed
-     * @since  unknown
-     *
+     * @return int Rows renumbered
      */
     private function reOrderPages($order)
     {
@@ -358,18 +340,14 @@ class Page extends DAO
     /**
      * Get all the pages with the parameters you choose.
      *
-     * @access public
+     * @param int|bool|null $indelible true if the page is indelible
+     * @param int|null      $b_link
+     * @param string|null   $locale
+     * @param int|null      $start     offset
+     * @param int|null      $limit     row count
      *
-     * @param int   $indelible true if the page is indelible
-     * @param null   $b_link
-     * @param string $locale
-     * @param int    $start
-     * @param int    $limit
-     *
-     * @return array Return all the pages that have been found with the criteria selected. If there's no pages, the
-     *                          result is an empty array.
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>> Return all the pages that have been found with the criteria
+     *                          selected. If there's no pages, the result is an empty array.
      */
     public function listAll($indelible = null, $b_link = null, $locale = null, $start = null, $limit = null)
     {
@@ -413,11 +391,9 @@ class Page extends DAO
     /**
      * Return number of all pages, or only number of indelible pages
      *
-     * @access public
+     * @param int|null $indelible
      *
-     * @param int $indelible
-     *
-     * @return int
+     * @return int|string The count as a string, int 0 on a query failure
      * @since  3.0
      */
     public function count($indelible = null)
@@ -439,13 +415,11 @@ class Page extends DAO
     /**
      * Insert a new page. You have to pass all the parameters
      *
-     * @access public
-     *
-     * @param array $aFields            Fields to be inserted in pages table
-     * @param array $aFieldsDescription An array with the titles and descriptions in every language.
+     * @param array<string,mixed>                                    $aFields            Fields to be inserted in pages table
+     * @param array<string,array{s_title:string,s_text:string}>|null $aFieldsDescription An array with the titles and descriptions in every language.
      *
      * @return bool True if the insert has been done well and false if not.
-     * @since  unknown
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function insert($aFields, $aFieldsDescription = null)
     {
@@ -462,10 +436,8 @@ class Page extends DAO
             $aFields['b_link'] = 0;
         }
 
-        // The id and the success check used to be read off the connection after
-        // the write. The builder hands back the new id directly, and a write that
-        // does not raise has inserted its row, which is what the affected-row
-        // check was standing in for.
+        // The builder hands back the new id directly, and a write that does not raise has
+        // inserted its row -- which is what an affected-row check stands in for.
         try {
             $id = osc_db_table($this->tableName)->insert(array(
                 's_internal_name' => $aFields['s_internal_name'],
@@ -493,15 +465,12 @@ class Page extends DAO
     /**
      * Insert the content (title and description) of a page.
      *
-     * @access private
-     *
      * @param int    $id     Id of the page, it would be the foreign key
      * @param string $locale Locale code of the language
      * @param string $title  Text to be inserted in s_title
      * @param string $text   Text to be inserted in s_text
      *
      * @return bool True if the insert has been done well and false if not.
-     * @since  unknown
      */
     private function insertDescription($id, $locale, $title, $text)
     {
@@ -523,13 +492,10 @@ class Page extends DAO
     /**
      * Find previous page
      *
-     * @access public
-     *
      * @param int $order
      *
-     * @return array
+     * @return array<string,string|null> Empty when there is no earlier page
      * @since  2.4
-     *
      */
     public function findPrevPage($order)
     {
@@ -553,13 +519,10 @@ class Page extends DAO
     /**
      * Find next page
      *
-     * @access public
-     *
      * @param int $order
      *
-     * @return array
+     * @return array<string,string|null> Empty when there is no later page
      * @since  2.4
-     *
      */
     public function findNextPage($order)
     {
@@ -583,15 +546,14 @@ class Page extends DAO
     /**
      * Update the content (title and description) of a page
      *
-     * @access public
-     *
      * @param int    $id     Id of the page id is going to be modified
      * @param string $locale Locale code of the language
      * @param string $title  Text to be updated in s_title
      * @param string $text   Text to be updated in s_text
      *
-     * @return int Number of affected rows.
-     * @since  unknown
+     * @return int|bool Number of affected rows on an update, the insert's own
+     *                  boolean when the row did not exist yet, false on failure
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function updateDescription($id, $locale, $title, $text)
     {
@@ -615,12 +577,10 @@ class Page extends DAO
     /**
      * Check if depending the conditions, the row exists in de DB.
      *
-     * @access public
-     *
-     * @param array $conditions
+     * @param array<string,mixed> $conditions
      *
      * @return bool Return true if exists and false if not.
-     * @since  unknown
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function existDescription($conditions)
     {
@@ -635,13 +595,10 @@ class Page extends DAO
     /**
      * It change the internal name of a page. Here you don't check if in indelible or not the page.
      *
-     * @access public
-     *
      * @param int    $id      The id of the page to be changed.
      * @param string $intName The new internal name.
      *
-     * @return int Number of affected rows.
-     * @since  unknown
+     * @return int|false Number of affected rows, or false on failure
      */
     public function updateInternalName($id, $intName)
     {
@@ -661,13 +618,10 @@ class Page extends DAO
     /**
      * It changes the b_link of a page. Here you don't check if in indelible or not the page.
      *
-     * @access public
-     *
      * @param int    $id    The id of the page to be changed.
-     * @param string $bLink The show link status.
+     * @param int|string $bLink The show link status.
      *
-     * @return int Number of affected rows.
-     * @since  unknown
+     * @return int|false Number of affected rows, or false on failure
      */
     public function updateLink($id, $bLink)
     {
@@ -687,12 +641,10 @@ class Page extends DAO
     /**
      * It change the meta field of a page.
      *
-     * @access public
-     *
      * @param int    $id   The id of the page to be changed.
      * @param string $meta The meta field
      *
-     * @return int Number of affected rows.
+     * @return int|false Number of affected rows, or false on failure
      * @since  3.1
      */
     public function updateMeta($id, $meta)
@@ -713,12 +665,10 @@ class Page extends DAO
     /**
      * Check if a page id is indelible
      *
-     * @access public
-     *
      * @param int $id Page id
      *
-     * @return true if it's indelible, false in case not
-     * @since  unknown
+     * @return bool true if it's indelible, false in case not
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function isIndelible($id)
     {
@@ -730,13 +680,11 @@ class Page extends DAO
     /**
      * Check if Internal Name exists with another id
      *
-     * @access public
-     *
      * @param int    $id           page id
      * @param string $internalName page internal name
      *
-     * @return true if internal name exists, false if not
-     * @since  unknown
+     * @return bool true if internal name exists, false if not
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function internalNameExists($id, $internalName)
     {
@@ -748,7 +696,10 @@ class Page extends DAO
 
     /**
      * Public function to import email templates from json file
-     * @param string JSON
+     *
+     * @param string $json
+     *
+     * @return bool False when the JSON is unusable; true once every template was attempted
      */
     public function importEmailJsonTemplates($json)
     {

@@ -17,6 +17,10 @@
  */
 class CWebRegister extends BaseModel
 {
+    /**
+     * Boots the base controller, bounces the visitor home when registration is unavailable
+     * or they are already signed in, and fires the `init_register` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -37,11 +41,21 @@ class CWebRegister extends BaseModel
         osc_run_hook('init_register');
     }
 
+    /**
+     * Renders the registration form, processes a registration post, or validates an
+     * account from an emailed link.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
+            // No action is the form: ?page=register with nothing else is a URL a person
+            // can type, and without this it falls through the switch to an empty 200.
+            // Core's own links carry the action.
+            default:
             case ('register'):       //register user
-                $this->doView('user-register.php');
+                $this->doView(osc_locate_template(array('user-register.php'), 'user-register'));
                 break;
             case ('register_post'):  //register user
                 osc_csrf_check();
@@ -119,14 +133,19 @@ class CWebRegister extends BaseModel
     }
 
     /**
-     * @param $file
+     * Renders the account template, marked noindex.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
+        $this->_exportVariableToView('meta_noindex', true);
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

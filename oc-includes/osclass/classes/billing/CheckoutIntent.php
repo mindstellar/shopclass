@@ -27,13 +27,23 @@ final class CheckoutIntent
     public const KIND_REDIRECT = 'redirect';
     public const KIND_HTML     = 'html';
 
+    /**
+     * @param string $kind    One of the KIND_* constants
+     * @param string $payload The redirect URL, or the markup to render
+     */
     private function __construct(
         private string $kind,
         private string $payload
     ) {
     }
 
-    /** Send the browser to the gateway. */
+    /**
+     * Send the browser to the gateway.
+     *
+     * @param string $url
+     *
+     * @return self
+     */
     public static function redirect(string $url): self
     {
         return new self(self::KIND_REDIRECT, $url);
@@ -45,23 +55,41 @@ final class CheckoutIntent
      * The gateway is responsible for the safety of what it returns -- core prints it
      * unescaped, because escaping a payment form would break it. Markup here must
      * never interpolate unsanitised request data.
+     *
+     * @param string $html
+     *
+     * @return self
      */
     public static function html(string $html): self
     {
         return new self(self::KIND_HTML, $html);
     }
 
+    /**
+     * Which shape this intent takes: one of the KIND_* constants.
+     *
+     * @return string
+     */
     public function getKind(): string
     {
         return $this->kind;
     }
 
+    /**
+     * Whether the browser should be redirected rather than shown markup in place.
+     *
+     * @return bool
+     */
     public function isRedirect(): bool
     {
         return $this->kind === self::KIND_REDIRECT;
     }
 
-    /** The URL for a redirect intent, or the markup for an html one. */
+    /**
+     * The URL for a redirect intent, or the markup for an html one.
+     *
+     * @return string
+     */
     public function getPayload(): string
     {
         return $this->payload;

@@ -8,6 +8,7 @@
  * .market-app so this file stays static and cacheable — the categories.js
  * convention.
  */
+/* global setJsMessage */
 (function () {
     'use strict';
 
@@ -28,7 +29,7 @@
     function parseItem(el) {
         try {
             return JSON.parse(el.getAttribute('data-market-item') || '{}');
-        } catch (e) {
+        } catch {
             return {};
         }
     }
@@ -42,7 +43,7 @@
         var i18n = {};
         try {
             i18n = JSON.parse(app.getAttribute('data-i18n') || '{}');
-        } catch (e) {
+        } catch {
             i18n = {};
         }
 

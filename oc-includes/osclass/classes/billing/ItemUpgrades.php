@@ -60,6 +60,13 @@ final class ItemUpgrades
      * the same row: the loser's INSERT fails on the constraint rather than creating a
      * duplicate, so it is caught and turned into the same UPDATE the winner would have
      * needed anyway.
+     *
+     * @param int      $itemId
+     * @param string   $upgrade Upgrade id, e.g. 'premium'
+     * @param int|null $days    Days to extend by; null for no day offset
+     * @param int|null $hours   Hours to extend by; null for no hour offset
+     *
+     * @return bool whether the row was written
      */
     public static function grant(int $itemId, string $upgrade, ?int $days = null, ?int $hours = null): bool
     {
@@ -117,6 +124,8 @@ final class ItemUpgrades
      * Upgrade ids currently in force on $itemId: every row whose dt_expiration is
      * either NULL or still in the future.
      *
+     * @param int $itemId
+     *
      * @return string[]
      */
     public static function active(int $itemId): array
@@ -132,6 +141,14 @@ final class ItemUpgrades
         return $out;
     }
 
+    /**
+     * Whether $upgrade is in force on $itemId right now.
+     *
+     * @param int    $itemId
+     * @param string $upgrade
+     *
+     * @return bool
+     */
     public static function has(int $itemId, string $upgrade): bool
     {
         return in_array($upgrade, self::active($itemId), true);
@@ -141,6 +158,11 @@ final class ItemUpgrades
      * Raw dt_expiration for $itemId's $upgrade row, whether or not it is still
      * active, or null when there is no row at all -- the same "raw value" convention
      * osc_item_premium_expiration() follows.
+     *
+     * @param int    $itemId
+     * @param string $upgrade
+     *
+     * @return string|null
      */
     public static function expiresAt(int $itemId, string $upgrade): ?string
     {
@@ -205,6 +227,8 @@ final class ItemUpgrades
      * only its first read, not one query per helper called on it (grant() invalidates
      * the entry it writes, so this does not go stale after a purchase).
      *
+     * @param int $itemId
+     *
      * @return array<string,?string>
      */
     private static function rowsFor(int $itemId): array
@@ -230,6 +254,11 @@ final class ItemUpgrades
      * and any real offset extends from the later of now or the row's own expiry.
      *
      * @param array{dt_expiration:?string}|null $row null when the row is new
+     * @param int|null $days
+     * @param int|null $hours
+     * @param string   $now Reference datetime the offset extends from
+     *
+     * @return string|null null when the row is, or becomes, permanent
      */
     private static function nextExpiration(?array $row, ?int $days, ?int $hours, string $now): ?string
     {
@@ -258,11 +287,21 @@ final class ItemUpgrades
         return date('Y-m-d H:i:s', $ts);
     }
 
+    /**
+     * Prefixed upgrade table name, for the queries written by hand.
+     *
+     * @return string
+     */
     private static function tableName(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;
     }
 
+    /**
+     * Query builder bound to the upgrade table.
+     *
+     * @return QueryBuilder
+     */
     private static function table(): QueryBuilder
     {
         return osc_db_table(self::tableName());

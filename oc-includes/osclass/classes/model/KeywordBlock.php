@@ -17,6 +17,9 @@ class KeywordBlock extends DAO
     /** @var KeywordBlock */
     private static $instance;
 
+    /**
+     * Set data related to t_keyword_block table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -32,6 +35,8 @@ class KeywordBlock extends DAO
     }
 
     /**
+     * Return the shared KeywordBlock model instance, creating it on first use.
+     *
      * @return KeywordBlock
      */
     public static function newInstance()
@@ -61,7 +66,8 @@ class KeywordBlock extends DAO
      * @param string $order_direction
      * @param string $keyword optional keyword LIKE filter
      *
-     * @return array{rows:int,total_results:int,keywords:array}
+     * @return array{rows:int|string,total_results:int|string,keywords:array<int,array<string,string|null>>}
+     *         The two counts stay int 0 on failure and are unprepared-query strings otherwise
      */
     public function search($start = 0, $end = 10, $order_column = 'pk_i_id', $order_direction = 'DESC', $keyword = '')
     {
@@ -140,7 +146,9 @@ class KeywordBlock extends DAO
     }
 
     /**
-     * @return int total number of blocked keywords
+     * Count every blocked keyword.
+     *
+     * @return int 0 when the query failed
      */
     public function countKeywords()
     {

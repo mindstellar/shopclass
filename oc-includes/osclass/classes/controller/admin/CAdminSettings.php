@@ -21,12 +21,22 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminSettings
 {
+    /**
+     * Let plugins hook the settings section before anything is dispatched.
+     */
     public function __construct()
     {
         osc_run_hook('init_admin_settings');
     }
 
     //Business Layer...
+
+    /**
+     * Hand the request to the settings controller that owns the requested action,
+     * falling back to the general settings screen.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch (Params::getParam('action')) {
@@ -76,6 +86,10 @@ class CAdminSettings
                 break;
             case ('billing'):
             case ('billing_post'):
+            case ('billing_pricing_post'):
+            case ('billing_offline_post'):
+            case ('billing_upgrades_post'):
+            case ('billing_limits_post'):
                 $do = new CAdminSettingsBilling();
                 break;
             case ('mailserver'):
@@ -97,6 +111,10 @@ class CAdminSettings
             case ('storage_queue_run'):
             case ('storage_migrate_post'):
                 $do = new CAdminSettingsStorage();
+                break;
+            case ('custom'):
+            case ('custom_post'):
+                $do = new CAdminSettingsCustom();
                 break;
             case ('update'):
             case ('check_updates'):

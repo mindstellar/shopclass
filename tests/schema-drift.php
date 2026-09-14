@@ -37,7 +37,8 @@
  * is load-bearing.
  *
  * Usage:  php tests/schema-drift.php <baseline-struct.sql>
- * Env:    DRIFT_DB_HOST DRIFT_DB_USER DRIFT_DB_PASS  (DB must allow CREATE/DROP DATABASE)
+ * Env:    DRIFT_DB_HOST DRIFT_DB_PORT DRIFT_DB_USER DRIFT_DB_PASS
+ *          (DB must allow CREATE/DROP DATABASE)
  */
 
 error_reporting(E_ALL & ~E_DEPRECATED);
@@ -62,6 +63,7 @@ define('OSC_DEBUG_DB_LOG', false);
 define('DB_TABLE_PREFIX', 'oc_');
 
 $host = getenv('DRIFT_DB_HOST') ?: '127.0.0.1';
+$port = (int)(getenv('DRIFT_DB_PORT') ?: 3306);
 $user = getenv('DRIFT_DB_USER') ?: 'root';
 $pass = getenv('DRIFT_DB_PASS');
 $pass = ($pass === false) ? '' : $pass;
@@ -70,8 +72,9 @@ $freshDb   = 'osc_drift_fresh';
 $upgradeDb = 'osc_drift_upgrade';
 
 // These are only needed so the DB classes have their default-arg constants defined;
-// every connection below passes host/user/pass/db explicitly.
-define('DB_HOST', $host);
+// every connection below passes host/user/pass/db explicitly. ConnectionManager reads
+// the port off a "host:port" string; the raw mysqli calls take it as an argument.
+define('DB_HOST', $host . ':' . $port);
 define('DB_USER', $user);
 define('DB_PASSWORD', $pass);
 define('DB_NAME', $freshDb);
@@ -85,7 +88,7 @@ $currentStruct = file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/str
 $baselineStruct = file_get_contents($baselineFile);
 $migrationsDir  = ABS_PATH . 'oc-includes/osclass/installer/migrations';
 
-$admin = new mysqli($host, $user, $pass);
+$admin = new mysqli($host, $user, $pass, '', $port);
 if ($admin->connect_errno) {
     fwrite(STDERR, 'DB connect failed: ' . $admin->connect_error . "\n");
     exit(2);
@@ -138,8 +141,8 @@ if (!$migrated['ok']) {
 }
 
 // ---- COMPARE -------------------------------------------------------------
-$a = dump_schema($host, $user, $pass, $freshDb);
-$b = dump_schema($host, $user, $pass, $upgradeDb);
+$a = dump_schema($host, $user, $pass, $freshDb, $port);
+$b = dump_schema($host, $user, $pass, $upgradeDb, $port);
 
 // ---- WHAT THE RECONCILER WOULD STILL DO ----------------------------------
 // Runs after both schemas have been read, because it writes to the upgraded one.
@@ -182,9 +185,9 @@ exit(1);
  *
  * @return string
  */
-function dump_schema($host, $user, $pass, $db)
+function dump_schema($host, $user, $pass, $db, $port)
 {
-    $m = new mysqli($host, $user, $pass, $db);
+    $m = new mysqli($host, $user, $pass, $db, $port);
     $tables = array();
     $res = $m->query('SHOW TABLES');
     while ($row = $res->fetch_array(MYSQLI_NUM)) {

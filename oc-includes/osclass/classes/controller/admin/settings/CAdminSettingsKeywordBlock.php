@@ -13,6 +13,9 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\KeywordBlockSettingsForm;
+
 /**
  * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
  * ItemSpamFilter): list/add/edit/delete, a comma-list importer, and the four
@@ -26,6 +29,9 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
     /** @var string[] Valid t_keyword_block.s_scope values. */
     private static $validScopes = array('title', 'description', 'all', 'meta');
 
+    /**
+     * Boots the admin controller and fires the init_admin_settings_keyword_block hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -33,6 +39,11 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Routes the keyword blocklist actions: the list, add/edit/delete, the comma-list import and the enforcement preferences.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
@@ -86,7 +97,11 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
 
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $keywordBlocksDataTable->rawRows());
-                $this->_exportVariableToView('moderation_prefs', $this->_moderationPrefs());
+                // Exported under the name it has always had as well: a replaced admin theme's
+                // own view reads it, and View::_get() answers '' for a key nobody exported --
+                // so every switch would draw unticked and the next save would clear them.
+                $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
+                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsForm::formVars());
 
                 $bulk_options = array(
                     array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
@@ -174,38 +189,13 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
             case ('keyword_block_prefs_post'):
                 osc_csrf_check();
 
-                $threshold = Params::getParamInt('report_threshold');
-                if ($threshold < 1) {
-                    $threshold = 1;
+                // The list page around this form is a datatable with its own paging and
+                // sorting, so a rejection goes back to it rather than redrawing it. Nothing
+                // here can be rejected in practice: four switches and a number that is
+                // floored rather than refused.
+                if (CoreSettings::attempt(KeywordBlockSettingsForm::register())['errors'] === array()) {
+                    osc_add_flash_ok_message(_m('Moderation settings have been updated'), 'admin');
                 }
-
-                osc_set_preference(
-                    'keyword_spam_enabled',
-                    Params::getParam('keyword_spam_enabled') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'keyword_spam_hard_block',
-                    Params::getParam('keyword_spam_hard_block') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference(
-                    'report_autoblock',
-                    Params::getParam('report_autoblock') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-                osc_set_preference('report_threshold', $threshold, 'osclass', 'INTEGER');
-                osc_set_preference(
-                    'enabled_recaptcha_reports',
-                    Params::getParam('enabled_recaptcha_reports') != '' ? 1 : 0,
-                    'osclass',
-                    'BOOLEAN'
-                );
-
-                osc_add_flash_ok_message(_m('Moderation settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 break;
         }
@@ -269,19 +259,18 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
     }
 
     /**
-     * The moderation preferences the list page's settings form reads and writes.
-     * The first four live in the `moderation` section; enabled_recaptcha_reports is an
-     * `osclass`-section captcha toggle grouped here because it gates the report form.
+     * The four moderation switches and the report threshold, as the screen's own view has
+     * always been handed them.
      *
-     * @return array{keyword_spam_enabled:bool,keyword_spam_hard_block:bool,report_autoblock:bool,report_threshold:int,enabled_recaptcha_reports:bool}
+     * @return array
      */
-    private function _moderationPrefs()
+    private function moderationPrefs()
     {
         return array(
-            'keyword_spam_enabled'    => osc_keyword_block_enabled(),
-            'keyword_spam_hard_block' => osc_keyword_block_hard_block(),
-            'report_autoblock'        => osc_report_autoblock_enabled(),
-            'report_threshold'        => osc_report_threshold(),
+            'keyword_spam_enabled'      => osc_keyword_block_enabled(),
+            'keyword_spam_hard_block'   => osc_keyword_block_hard_block(),
+            'report_autoblock'          => osc_report_autoblock_enabled(),
+            'report_threshold'          => osc_report_threshold(),
             'enabled_recaptcha_reports' => osc_recaptcha_reports_enabled(),
         );
     }

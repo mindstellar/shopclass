@@ -3,34 +3,7 @@
 // sometimes one action. Flat at rest; the cards carry the grouping.
 
 #system-info {
-  // Tabs read as a quiet segmented control on the content tray, not Bootstrap's
-  // heavy boxed tabs.
-  .nav-tabs {
-    border-block-end: 1px solid var(--osc-rule);
-    gap: .25rem;
-
-    .nav-link {
-      background: transparent;
-      border: 0;
-      border-block-end: 2px solid transparent;
-      border-radius: 0;
-      color: var(--osc-ink-muted);
-      font-weight: 500;
-      margin-block-end: -1px;
-      padding: .5rem .9rem;
-
-      &:hover {
-        color: var(--osc-ink);
-      }
-
-      &.active {
-        background: transparent;
-        border-block-end-color: var(--osc-bronze);
-        color: var(--osc-bronze);
-      }
-    }
-  }
-
+  // The tab strip is now the theme's own .osc-tabnav (see tabs.scss).
   .card-title {
     color: var(--osc-ink);
     // Title role: 17px / 600 / 1.4 (DESIGN §3).

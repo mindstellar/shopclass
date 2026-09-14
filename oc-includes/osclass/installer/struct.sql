@@ -70,6 +70,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_region (
         INDEX fk_c_country_code (fk_c_country_code),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
+        INDEX idx_country_name (fk_c_country_code, s_name),
         -- Scoped to the country, not global: a source id identifies a row within the
         -- dataset that issued it, and this column has held ids from more than one.
         UNIQUE KEY uq_region_source (fk_c_country_code, i_source_id),
@@ -92,6 +93,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
         INDEX fk_i_region_id (fk_i_region_id),
         INDEX idx_s_name (s_name),
         INDEX idx_s_slug (s_slug),
+        INDEX idx_region_name (fk_i_region_id, s_name),
         -- See t_region: unique per country, so two countries may legitimately carry
         -- the same upstream id without one import overwriting the other's rows.
         UNIQUE KEY uq_city_source (fk_c_country_code, i_source_id),
@@ -155,7 +157,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
     s_pass_date DATETIME NULL ,
     s_pass_ip VARCHAR(50) NULL,
     fk_c_country_code CHAR(2) NULL,
-    s_country VARCHAR(40) NULL,
+    s_country VARCHAR(80) NULL,
     s_address VARCHAR(100) NULL,
     s_zip VARCHAR(15) NULL,
     fk_i_region_id INT UNSIGNED NULL,
@@ -307,7 +309,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
 CREATE TABLE /*TABLE_PREFIX*/t_item_location (
     fk_i_item_id INT UNSIGNED NOT NULL,
     fk_c_country_code CHAR(2) NULL,
-    s_country VARCHAR(40) NULL,
+    s_country VARCHAR(80) NULL,
     s_address VARCHAR(100) NULL,
     s_zip VARCHAR(15) NULL,
     fk_i_region_id INT UNSIGNED NULL,

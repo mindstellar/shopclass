@@ -55,7 +55,10 @@ final class LocationCatalog
     /**
      * The published manifest, from cache unless it is stale or $refresh is given.
      *
-     * @return array|null null when it cannot be fetched and nothing is cached
+     * @param bool $refresh bypass the cache and re-fetch
+     *
+     * @return array{version:string,license:string,countries:array<int,array<string,mixed>>}|null
+     *               null when it cannot be fetched and nothing is cached
      */
     public function manifest(bool $refresh = false): ?array
     {
@@ -131,9 +134,10 @@ final class LocationCatalog
      * keeps the stored copy a third of the published size, and it settles the old-catalog
      * field names here instead of at every point of use.
      *
-     * @param array $data a decoded manifest, either generation
+     * @param array<string,mixed> $data a decoded manifest, either generation
      *
-     * @return array the canonical shape: version, license, and a countries list
+     * @return array{version:string,license:string,countries:array<int,array<string,mixed>>}
+     *               the canonical shape: version, license, and a countries list
      */
     public static function normalizeManifest(array $data): array
     {
@@ -168,6 +172,8 @@ final class LocationCatalog
                 // it is the copy an import actually reads. It moves when the data moves.
                 'sha'  => $sha,
                 'rows' => (int) ($entry['settlements'] ?? $entry['i_cities'] ?? 0),
+                // 0 when the catalog does not say.
+                'regions' => (int) ($entry['regions'] ?? $entry['i_regions'] ?? 0),
             );
 
             // The older catalog published the two forms as separate files with independent
@@ -191,6 +197,8 @@ final class LocationCatalog
 
     /**
      * The cached manifest, or null when there is none to read.
+     *
+     * @return array<string,mixed>|null
      */
     private function readCache(): ?array
     {
@@ -207,6 +215,11 @@ final class LocationCatalog
     /**
      * Replace the cached manifest. Silent on failure: an install that cannot write here
      * fetches the catalog every time rather than losing the feature.
+     *
+     * @param array<string,mixed> $manifest
+     *
+     * @return void
+     * @throws \Exception when no source of randomness is available for the temp file name
      */
     private function writeCache(array $manifest): void
     {
@@ -230,6 +243,8 @@ final class LocationCatalog
 
     /**
      * Where the cached manifest lives, or null before the uploads path is known.
+     *
+     * @return string|null
      */
     private static function cachePath(): ?string
     {
@@ -244,6 +259,8 @@ final class LocationCatalog
 
     /**
      * Forget the cached manifest, so the next read goes to the catalog.
+     *
+     * @return void
      */
     public function clearCache(): void
     {
@@ -267,7 +284,9 @@ final class LocationCatalog
      *
      * A pointer names a path; a manifest carries a list.
      *
-     * @param array $data a decoded catalog document
+     * @param array<string,mixed> $data a decoded catalog document
+     *
+     * @return bool
      */
     public static function isPointerDocument(array $data): bool
     {
@@ -280,6 +299,8 @@ final class LocationCatalog
     /**
      * The URL country files are addressed relative to: the manifest itself, which is the
      * configured URL unless that turned out to be a pointer to one.
+     *
+     * @return string
      */
     private function manifestUrl(): string
     {
@@ -291,6 +312,8 @@ final class LocationCatalog
 
     /**
      * The data release the catalog currently offers, empty when it does not say.
+     *
+     * @return string
      */
     public function release(): string
     {
@@ -308,6 +331,11 @@ final class LocationCatalog
      *
      * Refuses to leave the origin the pointer came from: following an absolute URL out of
      * it would let whoever serves the pointer redirect an install anywhere.
+     *
+     * @param string $pointerUrl the URL the pointer document was fetched from
+     * @param string $path       the manifest path the pointer names
+     *
+     * @return string|null null when the path would leave the pointer's origin
      */
     private function resolveAgainstOrigin(string $pointerUrl, string $path): ?string
     {
@@ -344,7 +372,9 @@ final class LocationCatalog
     /**
      * Download and decode one country file.
      *
-     * @return array|null null when it cannot be fetched or is not the expected shape
+     * @param string $fileName as published in the manifest
+     *
+     * @return array<string,mixed>|null null when it cannot be fetched or is not the expected shape
      */
     public function countryFile(string $fileName): ?array
     {
@@ -367,6 +397,10 @@ final class LocationCatalog
      * so it resolves against the manifest's directory — unlike the pointer's manifest
      * path, which is relative to the host root. An older catalog names a bare file that
      * lives in a sibling directory, which is what the second branch reconstructs.
+     *
+     * @param string $fileNameOrPath manifest-relative path, or a bare file name on the old catalog
+     *
+     * @return string
      */
     private function fileUrl(string $fileNameOrPath): string
     {
@@ -418,7 +452,10 @@ final class LocationCatalog
     /**
      * One row per country the catalog offers, annotated with what this install holds.
      *
-     * @return array<int, array{code:string,name:string,file:string,installed:bool,current:bool,rows:int}>
+     * @param bool $refresh re-fetch the manifest instead of using the cache
+     *
+     * @return array<int, array{code:string,name:string,file:string,sha:string,ndjson:string,
+     *               ndjson_sha:string,installed:bool,current:bool,rows:int,regions:int}>
      */
     public function status(bool $refresh = false): array
     {
@@ -449,6 +486,7 @@ final class LocationCatalog
                 'installed'  => $isInstalled,
                 'current'    => $isInstalled && $have !== null && $sha !== '' && $have === $sha,
                 'rows'       => (int) $entry['rows'],
+                'regions'    => (int) ($entry['regions'] ?? 0),
             );
         }
 
@@ -457,6 +495,11 @@ final class LocationCatalog
 
     /**
      * Record that $code now holds the catalog's current version.
+     *
+     * @param string $code   ISO2 country code
+     * @param string $sha256 checksum of the data that was imported
+     *
+     * @return void
      */
     public function markInstalled(string $code, string $sha256): void
     {
@@ -466,6 +509,8 @@ final class LocationCatalog
     }
 
     /**
+     * What this install has recorded as imported, per country.
+     *
      * @return array<string, string> ISO2 (upper) => sha256 recorded at install time
      */
     public function installed(): array
@@ -479,7 +524,9 @@ final class LocationCatalog
     /**
      * Catalog entry for one ISO2 code, or null when the catalog does not offer it.
      *
-     * @return array|null
+     * @param string $code ISO2 country code
+     *
+     * @return array<string,mixed>|null
      */
     public function entry(string $code): ?array
     {
@@ -493,6 +540,8 @@ final class LocationCatalog
     }
 
     /**
+     * Which countries already have location rows in this install.
+     *
      * @return array<string, bool> lowercase country codes that actually have region rows
      */
     private function countriesInDatabase(): array

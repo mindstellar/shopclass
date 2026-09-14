@@ -18,6 +18,7 @@ use CountryStats;
 use DateTimeZone;
 use Item;
 use LocationsTmp;
+use mindstellar\database\DbException;
 use Params;
 use Preference;
 use Region;
@@ -40,11 +41,12 @@ class Utils
      * VERY BASIC
      * Perform a POST request, so we could launch fake-cron calls and other core-system calls without annoying the user
      *
-     * @param $target_url   string
-     * @param $query_data   array http_build_query compatible query_data
-     *                      https://www.php.net/manual/en/function.http-build-query.php
+     * @param string               $target_url
+     * @param array<string,mixed>  $query_data http_build_query compatible query_data
+     *                                         https://www.php.net/manual/en/function.http-build-query.php
      *
-     * @return bool false on error or number of bytes sent.
+     * @return bool|int false on error, or the number of bytes sent.
+     * @throws RuntimeException when allow_url_fopen is disabled
      */
     public static function doRequest($target_url, $query_data)
     {
@@ -117,9 +119,9 @@ class Utils
     /**
      * Change current osclass version to given param number
      *
-     * @param mixed version
+     * @param string|null $version
      *
-     * @return bool
+     * @return array<string,mixed>|false the refreshed preferences, or false when no version was given
      */
     public static function changeOsclassVersionTo($version = null)
     {
@@ -157,7 +159,7 @@ class Utils
     /**
      * replace double slash with single slash
      *
-     * @param $path
+     * @param string $path
      *
      * @return string
      */
@@ -169,7 +171,7 @@ class Utils
     /**
      * Prepare Price for osclass
      *
-     * @param $price
+     * @param int|float $price stored price, in millionths
      *
      * @return string
      */
@@ -234,8 +236,8 @@ class Utils
     /**
      * Return Category Stats in array
      *
-     * @param $aux
-     * @param $categoryTotal
+     * @param array<string,mixed> $aux           category row, with a nested 'categories' list
+     * @param array<int,int>      $categoryTotal accumulator, filled in place
      *
      * @return int
      */
@@ -254,10 +256,12 @@ class Utils
     }
 
     /**
-     * Recount items for a given a category id
+     * Recount items for a given a category id, then walk up to its parents.
      *
      * @param int $id
      *
+     * @return void
+     * @throws \InvalidArgumentException when $id is not numeric
      */
     public static function updateCategoryStatsById($id)
     {
@@ -321,13 +325,13 @@ class Utils
                 $total_cities = City::newInstance()->count();
                 $limit        = max(1000, ceil($total_cities / 22));
             }
-            $aLocations = $loctmp->getLocations($limit);
+            $aLocations = self::dropDeletedLocations($loctmp, $loctmp->getLocations($limit));
             $regionIds = [];
             $cityIds = [];
             foreach ($aLocations as $location) {
                 $id   = $location['id_location'];
                 $type = $location['e_type'];
-                $data = 0;
+                $data = null;
                 // update locations stats
                 switch ($type) {
                     case 'COUNTRY':
@@ -345,7 +349,9 @@ class Utils
                         break;
                 }
 
-                if ($data >= 0 && $type === 'COUNTRY') {
+                // Strict: these return bool, and a failed write must not be
+                // dequeued or it never gets retried.
+                if ($type === 'COUNTRY' && $data === true) {
                     $loctmp->delete(array(
                         'e_type'      => $location['e_type'],
                         'id_location' => $location['id_location']
@@ -354,7 +360,7 @@ class Utils
             }
             if (count($regionIds) > 0) {
                 $regionUpdate = RegionStats::newInstance()->updateAllStats($regionIds);
-                if ($regionUpdate >= 0) {
+                if ($regionUpdate === true) {
                     // batch delete $regionIds from locations_tmp
                     $loctmp->batchDelete($regionIds, 'REGION');
                 }
@@ -362,7 +368,7 @@ class Utils
 
             if (count($cityIds) > 0) {
                 $cityUpdate = CityStats::newInstance()->updateAllStats($cityIds);
-                if ($cityUpdate >= 0) {
+                if ($cityUpdate === true) {
                     // batch delete $cityIds from locations_tmp
                     $loctmp->batchDelete($cityIds, 'CITY');
                 }
@@ -381,10 +387,71 @@ class Utils
     }
 
     /**
+     * Remove queued locations whose row was deleted after they were queued.
+     *
+     * Their stats rows can no longer be written, so each batch would fail on them.
+     *
+     * @param LocationsTmp                    $loctmp
+     * @param array<int,array<string,string>> $queued Rows from LocationsTmp::getLocations()
+     *
+     * @return array<int,array<string,string>> The rows that still exist
+     */
+    private static function dropDeletedLocations(LocationsTmp $loctmp, array $queued): array
+    {
+        $tables = [
+            'COUNTRY' => [Country::newInstance()->getTableName(), 'pk_c_code'],
+            'REGION'  => [Region::newInstance()->getTableName(), 'pk_i_id'],
+            'CITY'    => [City::newInstance()->getTableName(), 'pk_i_id'],
+        ];
+
+        $byType = [];
+        foreach ($queued as $row) {
+            $byType[$row['e_type']][] = $row['id_location'];
+        }
+
+        $exists = [];
+        foreach ($byType as $type => $ids) {
+            if (!isset($tables[$type])) {
+                continue;
+            }
+            [$table, $pk] = $tables[$type];
+            foreach (array_chunk($ids, 1000) as $chunk) {
+                try {
+                    $rows = osc_db_table($table)->select($pk)->whereIn($pk, $chunk)->get();
+                } catch (DbException $e) {
+                    return $queued;
+                }
+                foreach ($rows as $row) {
+                    $exists[$type][strtoupper((string)$row[$pk])] = true;
+                }
+            }
+        }
+
+        $kept = [];
+        $gone = [];
+        foreach ($queued as $row) {
+            $type = $row['e_type'];
+            if (!isset($tables[$type]) || isset($exists[$type][strtoupper((string)$row['id_location'])])) {
+                $kept[] = $row;
+            } elseif ($type === 'COUNTRY') {
+                $loctmp->delete(['e_type' => $type, 'id_location' => $row['id_location']]);
+            } else {
+                $gone[$type][] = $row['id_location'];
+            }
+        }
+        foreach ($gone as $type => $ids) {
+            $loctmp->batchDelete($ids, $type);
+        }
+
+        return $kept;
+    }
+
+    /**
      * Translate current categories to new locale
      *
-     * @param $locale
+     * @param string $locale
      *
+     * @return void
      */
     public static function translateCategories($locale)
     {
@@ -452,7 +519,9 @@ class Utils
     /**
      * Prune null or empty array element
      *
-     * @param $input
+     * @param array<array-key,mixed> $input pruned in place
+     *
+     * @return void
      */
     public static function pruneArray(&$input)
     {
@@ -469,10 +538,12 @@ class Utils
     }
 
     /**
-     * Redirect to give url
+     * Redirect to the given url and end the request.
      *
-     * @param      $url
-     * @param null $http_response_code
+     * @param string   $url
+     * @param int|null $http_response_code
+     *
+     * @return never
      */
     public static function redirectTo($url, $http_response_code = null)
     {
@@ -556,7 +627,7 @@ class Utils
      * Used to encode a field for Amazon Auth
      * (taken from the Amazon S3 PHP example library)
      *
-     * @param $str
+     * @param string $str hex-encoded input
      *
      * @return string
      */
@@ -568,8 +639,8 @@ class Utils
     /**
      * Calculate HMAC-SHA1
      *
-     * @param $key
-     * @param $data
+     * @param string $key
+     * @param string $data
      *
      * @return string
      */
@@ -581,8 +652,8 @@ class Utils
     /**
      * Calculate base64 encoded HMAC-SHA1
      *
-     * @param $key
-     * @param $data
+     * @param string $key
+     * @param string $data
      *
      * @return string
      */
@@ -592,6 +663,8 @@ class Utils
     }
 
     /**
+     * The best available referring URL: the rewrite layer's, then the session's, then the header.
+     *
      * @return string
      */
     public static function getHttpReferer()

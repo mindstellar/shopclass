@@ -18,7 +18,7 @@ use mindstellar\storage\StorageManager;
  * @param string $ownerType owner type slug ('user', 'page', or a plugin's own)
  * @param int    $ownerId
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_resources(string $ownerType, int $ownerId): array
 {
@@ -34,8 +34,8 @@ function osc_get_resources(string $ownerType, int $ownerId): array
  * is a zero-argument public API over the current item resource; this one resolves
  * an explicit resource row of any owner type.
  *
- * @param array  $resource a resource row (from osc_get_resources)
- * @param string $variant  '' (main), 'thumbnail', 'preview' or 'original'
+ * @param array<string,mixed> $resource a resource row (from osc_get_resources)
+ * @param string              $variant  '' (main), 'thumbnail', 'preview' or 'original'
  *
  * @return string
  */
@@ -270,7 +270,7 @@ function osc_media_library_query(string $type, int $iPage, int $perPage): array
  * osc_media_library_query). Uses the storage-aware osc_get_resource_url so
  * offloaded files resolve correctly.
  *
- * @param array $row
+ * @param array<string,mixed> $row
  *
  * @return array{thumb:string,full:string}
  */

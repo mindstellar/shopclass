@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class ItemLocation extends DAO
 {
@@ -25,9 +24,7 @@ class ItemLocation extends DAO
      * It references to self object: ItemLocation.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
-     * @var ItemResource
+     * @var ItemLocation
      */
     private static $instance;
 
@@ -61,9 +58,7 @@ class ItemLocation extends DAO
      * It creates a new ItemLocation object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return ItemLocation
-     * @since  unknown
      */
     public static function newInstance()
     {

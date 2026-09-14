@@ -40,6 +40,13 @@ return new class () implements MigrationInterface {
         'billing_runtime_days'    => array('30', 'INTEGER'),
     );
 
+    /**
+     * Seed the seller-limit preferences: extra photos, waived flood wait, extra runtime.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';

@@ -31,8 +31,9 @@ class ImageProcessing
     /**
      * ImageProcessing constructor.
      *
-     * @param $imagePath
+     * @param string $imagePath
      *
+     * @throws RuntimeException when the file is missing, unreadable or empty
      */
     public function __construct($imagePath)
     {
@@ -110,16 +111,21 @@ class ImageProcessing
     }
 
     /**
-     * @param $imagePath
+     * Load an image from disk.
+     *
+     * @param string $imagePath
      *
      * @return \ImageProcessing
-     *
+     * @throws RuntimeException when the file is missing, unreadable or empty
      */
     public static function fromFile($imagePath)
     {
         return new ImageProcessing($imagePath);
     }
 
+    /**
+     * Release the underlying Imagick or GD resource.
+     */
     public function __destruct()
     {
         if ($this->use_imagick) {
@@ -130,6 +136,8 @@ class ImageProcessing
     }
 
     /**
+     * The extension the image will be written with ('png' or 'jpg').
+     *
      * @return string
      */
     public function getExt()
@@ -138,6 +146,8 @@ class ImageProcessing
     }
 
     /**
+     * The MIME type the image will be written with.
+     *
      * @return string
      */
     public function getMime()
@@ -146,6 +156,8 @@ class ImageProcessing
     }
 
     /**
+     * Current image width in pixels.
+     *
      * @return int
      */
     public function getWidth()
@@ -154,6 +166,8 @@ class ImageProcessing
     }
 
     /**
+     * Current image height in pixels.
+     *
      * @return int
      */
     public function getHeight()
@@ -162,10 +176,12 @@ class ImageProcessing
     }
 
     /**
-     * @param      $width
-     * @param      $height
-     * @param null $force_aspect
-     * @param bool $upscale
+     * Fit the image inside $width x $height, centred on a background canvas.
+     *
+     * @param int       $width
+     * @param int       $height
+     * @param bool|null $force_aspect Crop the canvas to the scaled size; null reads the site setting
+     * @param bool      $upscale      Allow enlarging an image smaller than the target
      *
      * @return $this
      */
@@ -240,9 +256,13 @@ class ImageProcessing
     }
 
     /**
-     * @param      $imagePath
-     * @param null $ext
+     * Write the image to disk, applying the configured JPEG quality / PNG compression.
      *
+     * @param string      $imagePath
+     * @param string|null $ext Output format; defaults to the loaded image's own
+     *
+     * @return void
+     * @throws RuntimeException when the target path exists and is not writable
      */
     public function saveToFile($imagePath, $ext = null)
     {
@@ -308,6 +328,8 @@ class ImageProcessing
     }
 
     /**
+     * Rotate the image upright from its EXIF/Imagick orientation.
+     *
      * @return $this
      */
     public function autoRotate()
@@ -397,6 +419,11 @@ class ImageProcessing
         return $this;
     }
 
+    /**
+     * Send the image to the browser as a download, with its content-type headers.
+     *
+     * @return void
+     */
     public function show()
     {
         header('Content-Disposition: Attachment;filename=image.' . $this->ext);
@@ -419,10 +446,10 @@ class ImageProcessing
     /**
      * Apply Text Watermark
      *
-     * @param string $watermark_text
-     * @param string $font_color
-     * @param int    $font_size
-     * @param null   $a_watermark_options
+     * @param string                   $watermark_text
+     * @param string|null              $font_color          Hex colour, '#' optional
+     * @param int|null                 $font_size
+     * @param array<string,mixed>|null $a_watermark_options See createWatermarkImageFromText()
      *
      * @return $this
      */
@@ -440,10 +467,10 @@ class ImageProcessing
     /**
      * Apply watermark on image from text watermark or image watermark
      *
-     * @param string $watermark_text
-     * @param string $font_color
-     * @param int    $font_size
-     * @param null   $aOptions
+     * @param string|null              $watermark_text Null or '' uses the uploaded watermark image
+     * @param string|null              $font_color     Hex colour, '#' optional
+     * @param int|null                 $font_size
+     * @param array<string,mixed>|null $aOptions       See createWatermarkImageFromText()
      *
      * @return $this
      * @throws \ImagickException
@@ -505,10 +532,10 @@ class ImageProcessing
     /**
      * Create and return watermark image from text
      *
-     * @param string $watermark_text
-     * @param string $font_color
-     * @param int    $font_size
-     * @param array  $aOptions See below
+     * @param string                   $watermark_text
+     * @param string|null              $font_color Hex colour, '#' optional
+     * @param int|null                 $font_size
+     * @param array<string,mixed>|null $aOptions   See below
      *                         array[]
      *                         ['watermark_width']  int value for watermark width
      *                         ['watermark_height'] int value for watermark height
@@ -635,10 +662,10 @@ class ImageProcessing
     /**
      * Allocate a hex color for an image
      *
-     * @param string   $hex_string
-     * @param resource $image
+     * @param string            $hex_string 3, 6 or 8 hex digits, '#' optional
+     * @param \GdImage|resource $image
      *
-     * @return bool|int allocate color or return false
+     * @return int|false the allocated colour index, or false for a malformed string
      */
 
     private static function imageColorAllocateHex($hex_string, $image)
@@ -671,10 +698,14 @@ class ImageProcessing
     }
 
     /**
+     * Work out where the watermark goes, per the site's watermark placement setting.
+     *
      * @param int       $watermark_width
      * @param int       $watermark_height
-     * @param int|float $dest_x
-     * @param int|float $dest_y
+     * @param int|float $dest_x Set by reference
+     * @param int|float $dest_y Set by reference
+     *
+     * @return void
      */
     private function calculateWatermarkPosition($watermark_width, $watermark_height, &$dest_x, &$dest_y)
     {
@@ -703,18 +734,20 @@ class ImageProcessing
     }
 
     /**
-     * @param      $dst_im
-     * @param      $src_im
-     * @param      $dst_x
-     * @param      $dst_y
-     * @param      $src_x
-     * @param      $src_y
-     * @param      $src_w
-     * @param      $src_h
-     * @param      $pct
-     * @param null $trans
+     * imagecopymerge() that preserves the source's alpha channel, pixel by pixel.
      *
-     * @return bool
+     * @param \GdImage|resource      $dst_im
+     * @param \GdImage|resource      $src_im
+     * @param int                    $dst_x
+     * @param int                    $dst_y
+     * @param int                    $src_x
+     * @param int                    $src_y
+     * @param int                    $src_w
+     * @param int                    $src_h
+     * @param int                    $pct   Opacity, 0-100
+     * @param array<string,int>|null $trans Source colour to treat as transparent
+     *
+     * @return bool false if a pixel could not be written
      */
     private function imageCopyMergeAlpha(
         &$dst_im,

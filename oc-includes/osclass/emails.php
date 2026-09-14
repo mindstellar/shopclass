@@ -17,9 +17,13 @@ if (!defined('ABS_PATH')) {
  */
 
 /**
- * @param $alert
- * @param $email
- * @param $secret
+ * Email the confirmation link for a newly created search alert.
+ *
+ * @param array<string,mixed> $alert  Alert row; only pk_i_id is read
+ * @param string              $email  Subscriber address the alert was created with
+ * @param string              $secret Alert secret used to build the activation link
+ *
+ * @return void
  */
 function fn_email_alert_validation($alert, $email, $secret)
 {
@@ -96,11 +100,15 @@ function fn_email_alert_validation($alert, $email, $secret)
 osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
 
 /**
- * @param $user
- * @param $ads
- * @param $s_search
- * @param $items
- * @param $totalItems
+ * Email one subscriber the hourly digest of new listings matching their saved search.
+ *
+ * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
+ * @param string              $ads        Pre-rendered HTML list of the matching listings
+ * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
+ * @param array<int,array<string,mixed>> $items New listings found since the last run
+ * @param int                 $totalItems Total number of matches, which may exceed count($items)
+ *
+ * @return void
  */
 function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
 {
@@ -194,11 +202,15 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
 osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
 
 /**
- * @param $user
- * @param $ads
- * @param $s_search
- * @param $items
- * @param $totalItems
+ * Email one subscriber the daily digest of new listings matching their saved search.
+ *
+ * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
+ * @param string              $ads        Pre-rendered HTML list of the matching listings
+ * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
+ * @param array<int,array<string,mixed>> $items New listings found since the last run
+ * @param int                 $totalItems Total number of matches, which may exceed count($items)
+ *
+ * @return void
  */
 function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 {
@@ -292,11 +304,15 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
 
 /**
- * @param $user
- * @param $ads
- * @param $s_search
- * @param $items
- * @param $totalItems
+ * Email one subscriber the weekly digest of new listings matching their saved search.
+ *
+ * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
+ * @param string              $ads        Pre-rendered HTML list of the matching listings
+ * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
+ * @param array<int,array<string,mixed>> $items New listings found since the last run
+ * @param int                 $totalItems Total number of matches, which may exceed count($items)
+ *
+ * @return void
  */
 function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
 {
@@ -390,8 +406,11 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
 osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
 
 /**
- * @param $aComment
+ * Tell a comment author their comment has been approved.
  *
+ * @param array<string,mixed> $aComment Comment row; s_author_name, s_author_email, s_title and s_body are read
+ *
+ * @return void
  */
 function fn_email_comment_validated($aComment)
 {
@@ -458,7 +477,11 @@ function fn_email_comment_validated($aComment)
 osc_add_hook('hook_email_comment_validated', 'fn_email_comment_validated');
 
 /**
- * @param $item
+ * Confirm to a guest poster that their listing was published, with its edit link.
+ *
+ * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, s_title and the contact fields are read
+ *
+ * @return void
  */
 function fn_email_new_item_non_register_user($item)
 {
@@ -535,8 +558,12 @@ function fn_email_new_item_non_register_user($item)
 osc_add_hook('hook_email_new_item_non_register_user', 'fn_email_new_item_non_register_user');
 
 /**
- * @param $user
- * @param $password_url
+ * Email a user the link that lets them set a new password.
+ *
+ * @param array<string,mixed> $user         User row; s_name and s_email are read
+ * @param string              $password_url Password-recovery URL
+ *
+ * @return void
  */
 function fn_email_user_forgot_password($user, $password_url)
 {
@@ -612,7 +639,11 @@ function fn_email_user_forgot_password($user, $password_url)
 osc_add_hook('hook_email_user_forgot_password', 'fn_email_user_forgot_password');
 
 /**
- * @param $user
+ * Send the welcome email that follows a successful registration.
+ *
+ * @param array<string,mixed> $user User row; s_name and s_email are read
+ *
+ * @return void
  */
 function fn_email_user_registration($user)
 {
@@ -673,8 +704,12 @@ function fn_email_user_registration($user)
 osc_add_hook('hook_email_user_registration', 'fn_email_user_registration');
 
 /**
- * @param $new_email
- * @param $validation_url
+ * Email the confirmation link to an address a user is changing to.
+ *
+ * @param string $new_email      Address awaiting confirmation
+ * @param string $validation_url Link that confirms the change
+ *
+ * @return void
  */
 function fn_email_new_email($new_email, $validation_url)
 {
@@ -744,8 +779,12 @@ function fn_email_new_email($new_email, $validation_url)
 osc_add_hook('hook_email_new_email', 'fn_email_new_email');
 
 /**
- * @param $user
- * @param $input
+ * Email a new account its activation link.
+ *
+ * @param array<string,mixed> $user  User row; pk_i_id, s_name and s_email are read
+ * @param array<string,mixed> $input Insert payload the account was created from; s_secret is read
+ *
+ * @return void
  */
 function fn_email_user_validation($user, $input)
 {
@@ -812,8 +851,11 @@ function fn_email_user_validation($user, $input)
 osc_add_hook('hook_email_user_validation', 'fn_email_user_validation');
 
 /**
- * @param $aItem
+ * Forward a listing to the address given in the "send to a friend" form.
  *
+ * @param array<string,mixed> $aItem Form payload: yourName, yourEmail, friendName, friendEmail, message, s_title
+ *
+ * @return void
  */
 function fn_email_send_friend($aItem)
 {
@@ -895,8 +937,11 @@ function fn_email_send_friend($aItem)
 osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
 
 /**
- * @param $aItem
+ * Deliver a listing contact-form enquiry to the seller.
  *
+ * @param array<string,mixed> $aItem Form payload: id, yourName, yourEmail, phoneNumber, message
+ *
+ * @return void
  */
 function fn_email_item_inquiry($aItem)
 {
@@ -1011,8 +1056,11 @@ function fn_email_item_inquiry($aItem)
 osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
 
 /**
- * @param $aItem
+ * Notify every administrator that a comment was posted on a listing.
  *
+ * @param array<string,mixed> $aItem Comment payload: id, title, body, authorName, authorEmail
+ *
+ * @return void
  */
 function fn_email_new_comment_admin($aItem)
 {
@@ -1100,8 +1148,11 @@ function fn_email_new_comment_admin($aItem)
 osc_add_hook('hook_email_new_comment_admin', 'fn_email_new_comment_admin');
 
 /**
- * @param $item
+ * Email a registered poster the activation link for their new listing.
  *
+ * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
+ *
+ * @return void
  */
 function fn_email_item_validation($item)
 {
@@ -1208,8 +1259,11 @@ function fn_email_item_validation($item)
 osc_add_hook('hook_email_item_validation', 'fn_email_item_validation');
 
 /**
- * @param $item
+ * Notify every administrator that a listing was posted.
  *
+ * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
+ *
+ * @return void
  */
 function fn_email_admin_new_item($item)
 {
@@ -1327,8 +1381,11 @@ function fn_email_admin_new_item($item)
 osc_add_hook('hook_email_admin_new_item', 'fn_email_admin_new_item');
 
 /**
- * @param $item
+ * Email a guest poster the activation link for their new listing.
  *
+ * @param array<string,mixed> $item Listing row; pk_i_id, s_secret, locale and the contact fields are read
+ *
+ * @return void
  */
 function fn_email_item_validation_non_register_user($item)
 {
@@ -1452,7 +1509,11 @@ function fn_email_item_validation_non_register_user($item)
 osc_add_hook('hook_email_item_validation_non_register_user', 'fn_email_item_validation_non_register_user');
 
 /**
- * @param $user
+ * Notify every administrator that a user account was created.
+ *
+ * @param array<string,mixed> $user User row; s_name and s_email are read
+ *
+ * @return void
  */
 function fn_email_admin_new_user($user)
 {
@@ -1517,11 +1578,15 @@ function fn_email_admin_new_user($user)
 osc_add_hook('hook_email_admin_new_user', 'fn_email_admin_new_user');
 
 /**
- * @param $id
- * @param $yourEmail
- * @param $yourName
- * @param $phoneNumber
- * @param $message
+ * Deliver a message sent from a user's public profile contact form.
+ *
+ * @param int|string $id          Id of the user being contacted, as supplied by the request
+ * @param string     $yourEmail   Sender address
+ * @param string     $yourName    Sender name
+ * @param string     $phoneNumber Sender phone number
+ * @param string     $message     Message body
+ *
+ * @return void
  */
 function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $message)
 {
@@ -1614,8 +1679,11 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
 osc_add_hook('hook_email_contact_user', 'fn_email_contact_user');
 
 /**
- * @param $aItem
+ * Notify a listing's owner that a comment was posted on it.
  *
+ * @param array<string,mixed> $aItem Comment payload: id, title, body, authorName, authorEmail
+ *
+ * @return void
  */
 function fn_email_new_comment_user($aItem)
 {
@@ -1704,7 +1772,11 @@ function fn_email_new_comment_user($aItem)
 osc_add_hook('hook_email_new_comment_user', 'fn_email_new_comment_user');
 
 /**
- * @param $data
+ * Email a newly created administrator their account credentials.
+ *
+ * @param array<string,mixed> $data New admin row: s_name, s_username, s_password, s_email
+ *
+ * @return void
  */
 function fn_email_new_admin($data)
 {
@@ -1766,8 +1838,11 @@ function fn_email_new_admin($data)
 osc_add_hook('hook_email_new_admin', 'fn_email_new_admin');
 
 /**
- * @param $aItem
+ * Warn a listing's contact that the listing is about to expire.
  *
+ * @param array<string,mixed> $aItem Listing row; pk_i_id, s_title, dt_expiration and the contact fields are read
+ *
+ * @return void
  */
 function fn_email_warn_expiration($aItem)
 {
@@ -1850,7 +1925,11 @@ function fn_email_warn_expiration($aItem)
 osc_add_hook('hook_email_warn_expiration', 'fn_email_warn_expiration');
 
 /**
- * @param $result
+ * Report the outcome of an automatic core upgrade to every administrator.
+ *
+ * @param array<string,mixed> $result Upgrade outcome: error code, message and version
+ *
+ * @return void
  */
 function fn_email_auto_upgrade($result)
 {
@@ -1916,6 +1995,8 @@ function fn_email_auto_upgrade($result)
 osc_add_hook('after_auto_upgrade', 'fn_email_auto_upgrade', 10);
 
 /**
+ * The address outgoing mail is sent from, falling back to the site contact address.
+ *
  * @return string
  */
 function _osc_from_email_aux()

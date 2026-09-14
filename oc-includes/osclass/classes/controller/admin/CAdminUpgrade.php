@@ -16,6 +16,9 @@
  */
 class CAdminUpgrade extends AdminSecBaseModel
 {
+    /**
+     * Let plugins hook the upgrade screen before it is drawn.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -23,6 +26,12 @@ class CAdminUpgrade extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Draw the upgrade screen.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();

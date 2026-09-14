@@ -50,6 +50,20 @@ class Csrf
      */
     private const TOKEN_VERSION = '1';
 
+    /**
+     * Granularity of the issue time stamped into a token.
+     *
+     * A token minted per second makes every render of a page different, which is the only
+     * thing that does -- pages are otherwise byte-identical -- so it defeats any validator
+     * computed from the response body and any cache that wants to compare two renders.
+     * Rounding down to a bucket makes a page stable for the length of the bucket while
+     * changing nothing about how long a token is accepted: TOKEN_LIFETIME is still measured
+     * from the stamped time, so a token issued at the end of a bucket simply has one bucket
+     * less of its life left. Issue granularity was never the protection -- these tokens
+     * are not one-time, and an anonymous one is already valid for every anonymous visitor.
+     */
+    private const ISSUE_BUCKET = 1800;
+
     private static $instance;
 
     /**
@@ -78,6 +92,8 @@ class Csrf
     }
 
     /**
+     * The shared Csrf instance, created on first call.
+     *
      * @return \mindstellar\Csrf
      */
     public static function newInstance()
@@ -91,13 +107,21 @@ class Csrf
 
     /**
      * Initalize csrf guard
+     *
+     * @return void
      */
     public static function init()
     {
         ob_start();
         $injectCsrf = static function () {
-            $data = ob_get_clean();
-            $data = self::newInstance()->replaceForms($data);
+            $data = self::newInstance()->injectTokens(ob_get_clean(), headers_list());
+            // The one moment the finished page exists as a string: after the tokens are
+            // in, before anything reaches the client. Anything that needs the whole body
+            // -- a validator to answer conditional requests with, a minifier, a late
+            // replacement -- belongs here rather than starting a second output buffer and
+            // racing this one for it. A filter that returns '' sends no body, which is
+            // what a 304 needs.
+            $data = osc_apply_filter('response_body', $data);
             echo $data;
         };
         $functions  = Plugins::applyFilter('shutdown_functions', [$injectCsrf]);
@@ -107,8 +131,44 @@ class Csrf
     }
 
     /**
+     * Add tokens to the forms of an HTML response; any other body is returned untouched.
+     *
+     * @param string|false $body    The buffered response
+     * @param string[]     $headers As returned by headers_list()
+     *
+     * @return string|false
+     */
+    public function injectTokens($body, array $headers)
+    {
+        return self::isHtmlResponse($headers) ? $this->replaceForms($body) : $body;
+    }
+
+    /**
+     * Whether a response with these headers is HTML.
+     *
+     * No Content-Type means PHP's text/html default. A JSON endpoint that sends no
+     * Content-Type is still treated as HTML; it has to declare its type.
+     *
+     * @param string[] $headers
+     *
+     * @return bool
+     */
+    private static function isHtmlResponse(array $headers): bool
+    {
+        $type = '';
+        foreach ($headers as $header) {
+            if (preg_match('/^content-type\s*:\s*([^;]*)/i', $header, $m)) {
+                $type = strtolower(trim($m[1]));
+            }
+        }
+
+        return $type === '' || $type === 'text/html' || $type === 'application/xhtml+xml';
+    }
+
+    /**
      * Replace form with csrf inputs added
-     * @param $form_data_html
+     *
+     * @param string $form_data_html Rendered page HTML
      *
      * @return string
      */
@@ -118,6 +178,13 @@ class Csrf
         if (is_array($matches)) {
             foreach ($matches as $m) {
                 if (strpos($m[1], 'nocsrf') !== false) {
+                    continue;
+                }
+                // A GET form cannot need a token: CSRF protects state changes, and a
+                // state change is never a GET. Stamping one anyway put the token in the
+                // query string -- shared in links, kept in referrers and logs, and
+                // unique per visitor, which makes every search URL its own cache entry.
+                if (preg_match('/\bmethod\s*=\s*(["\']?)get\1/i', $m[1])) {
                     continue;
                 }
                 $form_data_html = str_replace($m[0], "<form{$m[1]}>" . $this->tokenForm(), $form_data_html);
@@ -131,13 +198,15 @@ class Csrf
      * Resolve the token for this request. Signing touches no session state, so this is called
      * lazily at the point a token is actually emitted (tokenForm/tokenUrl/replaceForms) and never
      * starts a session. All forms on a page share one token — same issue time and binding.
+     *
+     * @return void
      */
     private function setToken()
     {
         if ($this->tokenName !== null) {
             return;
         }
-        $payload          = self::TOKEN_VERSION . '|' . time() . '|' . $this->bind();
+        $payload          = self::TOKEN_VERSION . '|' . self::issuedAt() . '|' . $this->bind();
         $this->tokenName  = self::b64urlEncode($payload);
         $this->tokenValue = self::sign($this->tokenName);
     }
@@ -171,6 +240,8 @@ class Csrf
 
     /**
      * Check if CSRF token is valid, die in other case
+     *
+     * @return void
      */
     public function check()
     {
@@ -248,6 +319,17 @@ class Csrf
     }
 
     /**
+     * Issue time for a token, rounded down to ISSUE_BUCKET. Always <= now, so it can never
+     * trip validate()'s clock-skew guard.
+     *
+     * @return int
+     */
+    private static function issuedAt()
+    {
+        return (int)(floor(time() / self::ISSUE_BUCKET) * self::ISSUE_BUCKET);
+    }
+
+    /**
      * Identity the token is bound to: the logged-in admin or web user, else empty for an
      * anonymous visitor. Read-only — Session::_get resumes an existing session but never starts a
      * new one, so anonymous requests stay cacheable. Binding stops a valid token issued to one
@@ -304,6 +386,8 @@ class Csrf
     }
 
     /**
+     * Decode URL/attribute-safe base64 back to its raw payload.
+     *
      * @param string $data
      *
      * @return string|false decoded payload, or false on malformed input
@@ -316,7 +400,9 @@ class Csrf
     /**
      * Flash error message
      *
-     * @param $str_error
+     * @param string $str_error
+     *
+     * @return void
      */
     private function setMessage($str_error)
     {
@@ -327,6 +413,11 @@ class Csrf
         }
     }
 
+    /**
+     * Send the visitor back where they came from, or to the site/admin home, and stop.
+     *
+     * @return void
+     */
     private function errorRedirect()
     {
         $url = Utils::getHttpReferer();
@@ -344,6 +435,8 @@ class Csrf
     }
 
     /**
+     * The CSRFName value for this request's token (the encoded payload).
+     *
      * @return string
      */
     public function getCsrfTokenName()
@@ -354,6 +447,8 @@ class Csrf
     }
 
     /**
+     * The CSRFToken value for this request's token (the signature).
+     *
      * @return string
      */
     public function getCsrfTokenValue()

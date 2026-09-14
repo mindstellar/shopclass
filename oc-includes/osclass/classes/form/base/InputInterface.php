@@ -27,81 +27,105 @@ namespace mindstellar\form\base;
 interface InputInterface
 {
     /**
-     * @param string $name
-     * @param        $value
-     * @param array  $attributes
-     * @param array  $options
+     * Generate a text input.
+     *
+     * @param string              $name
+     * @param mixed               $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function text(string $name, $value, array $attributes = [], array $options = []);
 
     /**
-     * TextArea
+     * Generate a textarea.
      *
-     * @param string $name
-     * @param        $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param mixed               $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function textarea(string $name, $value, array $attributes = [], array $options = []);
 
     /**
-     * Checkbox
+     * Generate a checkbox input.
      *
-     * @param string $name
-     * @param        $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param mixed               $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
      *
      * @return string
+     * @throws \Exception when the input name is empty
      */
     public function checkbox(string $name, $value, array $attributes = [], array $options = []): string;
 
     /**
-     * Select
+     * Generate a select box.
      *
-     * @param string       $name
-     * @param array|string $value
-     * @param array        $attributes
-     * @param array        $options
+     * @param string              $name
+     * @param string|int|null     $value The currently selected value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function select(string $name, $value, array $attributes = [], array $options = []);
 
     /**
-     * Password
+     * Generate a password input.
      *
-     * @param string $name
-     * @param string $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param string              $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function password(string $name, string $value, array $attributes = [], array $options = []);
 
     /**
-     * radio
+     * Generate a radio group.
      *
-     * @param string       $name
-     * @param array|string|int $value
-     * @param array        $attributes
-     * @param array        $options
+     * @param string              $name
+     * @param string|int|null     $value The currently checked value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function radio(string $name, $value, array $attributes = [], array $options = []);
 
     /**
-     * hidden
+     * Generate a hidden input.
      *
-     * @param string $name
-     * @param        $value
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param mixed               $value
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function hidden(string $name, $value, array $attributes = [], array $options = []);
 
     /**
-     * submit
+     * Generate a submit button.
      *
-     * @param string $name
-     * @param array  $attributes
-     * @param array  $options
+     * @param string              $name
+     * @param array<string,mixed> $attributes
+     * @param array<string,mixed> $options
+     *
+     * @return string
+     * @throws \Exception when the input name is empty
      */
     public function submit(string $name, array $attributes = [], array $options = []);
 }

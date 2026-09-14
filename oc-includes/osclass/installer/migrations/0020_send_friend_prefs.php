@@ -27,6 +27,13 @@ return new class () implements MigrationInterface {
         'reg_user_can_send_friend' => array('1', 'BOOLEAN'),
     );
 
+    /**
+     * Seed the send-to-a-friend preferences, never overwriting a value already set.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';

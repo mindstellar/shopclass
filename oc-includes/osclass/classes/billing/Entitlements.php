@@ -46,6 +46,14 @@ final class Entitlements
      * One statement, not a read then a write: uq_user_feature on (fk_i_user_id,
      * s_feature) means the merge itself is what MySQL applies atomically, so two
      * concurrent purchases can no longer lose one to the other.
+     *
+     * @param int      $userId
+     * @param string   $feature  Registered feature id
+     * @param int|null $quantity Units to add; null grants unlimited
+     * @param int|null $days     Days of validity to add; null leaves the expiry alone
+     * @param string   $source   One of the SOURCE_* constants
+     *
+     * @return bool
      */
     public static function grant(
         int $userId,
@@ -102,6 +110,11 @@ final class Entitlements
     /**
      * Whether $userId currently holds $feature: an unexpired row with a positive or
      * unlimited (NULL) quantity.
+     *
+     * @param int    $userId
+     * @param string $feature
+     *
+     * @return bool
      */
     public static function has(int $userId, string $feature): bool
     {
@@ -120,6 +133,11 @@ final class Entitlements
     /**
      * Remaining quantity for $feature, or -1 for unlimited. 0 when there is no
      * unexpired row at all.
+     *
+     * @param int    $userId
+     * @param string $feature
+     *
+     * @return int
      */
     public static function quantity(int $userId, string $feature): int
     {
@@ -145,6 +163,10 @@ final class Entitlements
      * cannot both succeed, because the second matches no row. Zero rows affected is a
      * normal "not enough" outcome the caller handles, not an exception.
      *
+     * @param int    $userId
+     * @param string $feature
+     * @param int    $n Units to spend
+     *
      * @return bool false when there is not enough quantity left
      */
     public static function consume(int $userId, string $feature, int $n = 1): bool
@@ -155,8 +177,8 @@ final class Entitlements
 
         // A capacity feature is a ceiling that is read, not spent -- refuse before
         // touching a row at all, so a mistaken call (ours or a plugin's) cannot drain
-        // one. A feature id with no registry entry cannot be checked this way and
-        // falls through to the ordinary spend below, same as before this guard.
+        // one. A feature id with no registry entry cannot be checked this way and falls
+        // through to the ordinary spend below.
         $registered = FeatureRegistry::instance()->get($feature);
         if ($registered !== null && $registered->getConsumes() === Feature::CONSUMES_CAPACITY) {
             return false;
@@ -208,6 +230,12 @@ final class Entitlements
      * -1 unconditionally (it already beats any finite $default); every caller MUST
      * treat -1 as unlimited rather than compare it numerically, or unlimited reads
      * as "less than everything."
+     *
+     * @param int    $userId
+     * @param string $feature
+     * @param int    $default Floor to fall back on when nothing is bought
+     *
+     * @return int the ceiling, or -1 for unlimited
      */
     public static function capacity(int $userId, string $feature, int $default = 0): int
     {
@@ -236,6 +264,8 @@ final class Entitlements
     /**
      * Raw entitlement rows for a user, newest first.
      *
+     * @param int $userId
+     *
      * @return array<int,array>
      */
     public static function forUser(int $userId): array
@@ -261,25 +291,52 @@ final class Entitlements
     }
 
     /**
-     * Whether $userId is still inside the free listing quota: a slot model. The
-     * ceiling is the free tier (osc_billing_free_live_listings()) plus whatever a
-     * listing.slot entitlement adds on top (capacity() -- see its own docblock for
-     * why -1 there means unlimited and is never folded into the arithmetic sum
-     * below). 0 or less, with nothing bought, is unlimited.
+     * How many listings $userId may hold live at once: the free tier
+     * (osc_billing_free_live_listings()) plus whatever a listing.slot entitlement adds
+     * on top (capacity() -- see its own docblock for why -1 there means unlimited and is
+     * never folded into the arithmetic sum below).
+     *
+     * Returns -1 for unlimited, matching capacity()'s own sentinel and the billing-side
+     * helpers built on it -- treat it that way, never compare it numerically. A free tier
+     * of 0 or less with nothing bought is unlimited, which is what an install that never
+     * set a cap reads back.
+     *
+     * The one place the ceiling is computed. withinFreeQuota() is the gate and
+     * osc_user_listing_limit() is what a theme shows; both read it here so the number a
+     * seller is told can never drift from the number they are held to.
+     *
+     * @param int $userId
+     *
+     * @return int the ceiling, or -1 for unlimited
      */
-    public static function withinFreeQuota(int $userId): bool
+    public static function listingCeiling(int $userId): int
     {
         $bought = self::capacity($userId, 'listing.slot', 0);
         if ($bought === -1) {
-            return true; // -1 is unlimited -- never added to a finite ceiling below.
+            return -1; // -1 is unlimited -- never added to a finite ceiling below.
         }
 
         $limit = osc_billing_free_live_listings() + $bought;
-        if ($limit <= 0) {
+
+        return $limit > 0 ? $limit : -1;
+    }
+
+    /**
+     * Whether $userId is still inside the free listing quota: a slot model, measured
+     * against listingCeiling().
+     *
+     * @param int $userId
+     *
+     * @return bool
+     */
+    public static function withinFreeQuota(int $userId): bool
+    {
+        $ceiling = self::listingCeiling($userId);
+        if ($ceiling === -1) {
             return true;
         }
 
-        return self::liveListings($userId) < $limit;
+        return self::liveListings($userId) < $ceiling;
     }
 
     /**
@@ -304,6 +361,10 @@ final class Entitlements
      * Rides the plain fk_i_user_id index on t_item: the WHERE clause leads with
      * an equality match on it, narrowing to one seller's rows before the OR on
      * b_premium/dt_expiration is ever evaluated.
+     *
+     * @param int $userId
+     *
+     * @return int
      */
     public static function liveListings(int $userId): int
     {
@@ -323,12 +384,16 @@ final class Entitlements
      * so an answer of false here means the seller is at that ceiling, bought slots
      * included.
      *
+     * @param int   $userId
+     * @param array $ctx Passed through to the billing_can_publish filter
      * @param bool|null $withinFreeQuota The caller's own withinFreeQuota() answer,
      *                                    when it already has one -- ItemActions::add()
      *                                    needs that same COUNT for its own flash-error
      *                                    branch, and passing it here avoids running it
      *                                    twice per post. Null (the default) computes it
      *                                    here, so every other caller is unaffected.
+     *
+     * @return bool
      */
     public static function canPublish(int $userId, array $ctx = array(), ?bool $withinFreeQuota = null): bool
     {
@@ -337,6 +402,14 @@ final class Entitlements
         return (bool) osc_apply_filter('billing_can_publish', $allowed, $userId, $ctx);
     }
 
+    /**
+     * Add $days calendar days to a datetime.
+     *
+     * @param string $datetime
+     * @param int    $days
+     *
+     * @return string
+     */
     private static function addDays(string $datetime, int $days): string
     {
         // Calendar arithmetic, not $days * 86400: a 30-day grant made just before a
@@ -345,6 +418,11 @@ final class Entitlements
         return date('Y-m-d H:i:s', strtotime('+' . $days . ' days', strtotime($datetime)));
     }
 
+    /**
+     * Prefixed entitlement table name.
+     *
+     * @return string
+     */
     private static function table(): string
     {
         return DB_TABLE_PREFIX . self::TABLE;

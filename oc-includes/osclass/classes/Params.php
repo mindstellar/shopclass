@@ -20,6 +20,11 @@ class Params
     private static $request;
     private static $server;
 
+    /**
+     * Snapshot $_GET + $_POST and $_SERVER into the static bags this class reads.
+     *
+     * @return void
+     */
     public static function init()
     {
         self::$request = array_merge($_GET, $_POST);
@@ -29,12 +34,12 @@ class Params
     /**
      * Return HTMLPurified param
      *
-     * @param      $param
-     * @param bool $html_encode
-     * @param bool $xss_check
-     * @param bool $quotes_encode
+     * @param string $param
+     * @param bool   $html_encode
+     * @param bool   $xss_check
+     * @param bool   $quotes_encode
      *
-     * @return mixed
+     * @return array|string '' when the param is absent; an array when the request sent one
      */
     public static function getParam($param, $html_encode = false, $xss_check = true, $quotes_encode = true)
     {
@@ -121,16 +126,40 @@ class Params
     }
 
     /**
+     * Run the filter getParam() applies to request data over a value that did not come
+     * from the request: every tag out, contents and all.
+     *
+     * @param mixed $value string or array
+     *
+     * @return mixed same shape as $value
+     */
+    public static function purifyText($value)
+    {
+        return self::purify($value);
+    }
+
+    /**
+     * Every tag out, contents kept -- no HTML encoding and no quote encoding.
+     *
+     * @param array|string $value
+     *
+     * @return array|string same shape as $value
+     */
+    public static function stripTags($value)
+    {
+        return self::purify($value, false, true, false);
+    }
+
+    /**
      * Function to purify given string or array
      * Should be moved to separate class
      *
-     * @param      $value
+     * @param array|string $value
+     * @param bool         $html_encode
+     * @param bool         $xss_check
+     * @param bool         $quotes_encode
      *
-     * @param bool $html_encode
-     * @param bool $xss_check
-     * @param bool $quotes_encode
-     *
-     * @return string
+     * @return array|string same shape as $value
      */
     private static function purify($value, $html_encode = false, $xss_check = true, $quotes_encode = true)
     {
@@ -169,7 +198,9 @@ class Params
     }
 
     /**
-     * @param $param
+     * Whether the request carries the given param.
+     *
+     * @param string $param
      *
      * @return bool
      */
@@ -192,7 +223,7 @@ class Params
      * @param bool $xss_check
      * @param bool $quotes_encode
      *
-     * @return string|string[]|null
+     * @return string|null the URI with the install's base path stripped; null on a preg failure
      */
     public static function getRequestURI($html_encode = false, $xss_check = true, $quotes_encode = true)
     {
@@ -207,7 +238,9 @@ class Params
     }
 
     /**
-     * @param $param
+     * Whether $_SERVER carries the given key.
+     *
+     * @param string $param
      *
      * @return bool
      */
@@ -224,10 +257,12 @@ class Params
     }
 
     /**
-     * @param      $param
-     * @param bool $html_encode
-     * @param bool $xss_check
-     * @param bool $quotes_encode
+     * One purified $_SERVER value, or '' when it is not set.
+     *
+     * @param string $param
+     * @param bool   $html_encode
+     * @param bool   $xss_check
+     * @param bool   $quotes_encode
      *
      * @return string
      */
@@ -248,9 +283,11 @@ class Params
     }
 
     /**
+     * The whole purified $_SERVER bag.
+     *
      * @param bool $xss_check
      *
-     * @return string
+     * @return array<string,mixed>
      */
     public static function getServerParamsAsArray($xss_check = true)
     {
@@ -262,9 +299,11 @@ class Params
     }
 
     /**
-     * @param $param
+     * The $_FILES entry for an upload field, or an empty array when absent.
      *
-     * @return array
+     * @param string $param
+     *
+     * @return array<string,mixed>
      */
     public static function getFiles($param)
     {
@@ -276,8 +315,12 @@ class Params
     }
 
     /**
-     * @param $key
-     * @param $value
+     * Override one request param for the rest of this request.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public static function setParam($key, $value)
     {
@@ -285,7 +328,11 @@ class Params
     }
 
     /**
-     * @param $key
+     * Drop one request param for the rest of this request.
+     *
+     * @param string $key
+     *
+     * @return void
      */
     public static function unsetParam($key)
     {
@@ -295,8 +342,8 @@ class Params
     /**
      * Will be removed do not use this
      *
-     * @deprecated 4.0
-     * return void
+     * @return void
+     * @deprecated since 4.0
      */
     public static function _view()
     {
@@ -304,10 +351,12 @@ class Params
     }
 
     /**
-     * @param string $what
+     * A purified copy of one request bag: get, post, cookie, files, request, or the merged default.
+     *
+     * @param string $what          '' | 'get' | 'post' | 'cookie' | 'files' | 'request'
      * @param bool   $xss_check
      *
-     * @return array|string
+     * @return array<string,mixed>
      */
     public static function getParamsAsArray($what = '', $xss_check = true)
     {

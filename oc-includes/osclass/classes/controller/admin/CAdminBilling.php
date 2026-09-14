@@ -39,6 +39,9 @@ class CAdminBilling extends AdminSecBaseModel
     /** Rows per page across the section. */
     private const PER_PAGE = 25;
 
+    /**
+     * Let plugins hook the billing section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -46,6 +49,13 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested billing action, after sending the request away when billing
+     * is switched off.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -97,6 +107,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * The orders list, filtered and paged.
+     *
+     * @return void
      */
     private function ordersView()
     {
@@ -126,6 +138,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * One order, its ledger entries, and whatever can still be done to it.
+     *
+     * @return void
      */
     private function orderView()
     {
@@ -158,6 +172,8 @@ class CAdminBilling extends AdminSecBaseModel
      * admin confirming it by hand is the deliberate act that makes it safe. Nothing
      * about a gateway callback ever grants that; Billing::markPaid()'s $allowFailed
      * is passed true only here.
+     *
+     * @return void
      */
     private function orderPaidPost()
     {
@@ -189,6 +205,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * Record a refund the provider has already made. Core never asks a gateway to refund.
+     *
+     * @return void
      */
     private function orderRefundPost()
     {
@@ -214,6 +232,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * Every wallet holding credit.
+     *
+     * @return void
      */
     private function creditsView()
     {
@@ -232,6 +252,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * One user's balance and the ledger behind it.
+     *
+     * @return void
      */
     private function walletView()
     {
@@ -262,6 +284,9 @@ class CAdminBilling extends AdminSecBaseModel
      * Writes through Wallet like everything else, so the change lands in the ledger with
      * a reason and is visible on the same screen that made it. There is no path here that
      * edits a balance without leaving a record.
+     *
+     * @return void
+     * @throws DbException when the ledger write fails
      */
     private function walletAdjustPost()
     {
@@ -306,6 +331,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * The package catalogue -- what a buyer can choose at checkout.
+     *
+     * @return void
      */
     private function packagesView()
     {
@@ -315,6 +342,8 @@ class CAdminBilling extends AdminSecBaseModel
 
     /**
      * Add or edit one package.
+     *
+     * @return void
      */
     private function packageView()
     {
@@ -335,6 +364,8 @@ class CAdminBilling extends AdminSecBaseModel
      * The amount arrives as decimal currency and is validated before it is converted
      * to micros -- Orders::create() trusts this row completely at checkout, so a bad
      * amount has to be caught here, never there.
+     *
+     * @return void
      */
     private function packagePost()
     {
@@ -403,6 +434,8 @@ class CAdminBilling extends AdminSecBaseModel
     /**
      * Remove a package from the catalogue. Orders already placed against it carry
      * their own copy of the amount and credits, so deleting it never touches history.
+     *
+     * @return void
      */
     private function packageDeletePost()
     {
@@ -422,7 +455,9 @@ class CAdminBilling extends AdminSecBaseModel
      * Ledger rows attached to one order — the credit it minted, and the reversal if it
      * was refunded.
      *
-     * @return array<int,array>
+     * @param int $orderId
+     *
+     * @return array<int,array<string,mixed>>
      */
     private function ledgerForOrder($orderId)
     {
@@ -438,7 +473,7 @@ class CAdminBilling extends AdminSecBaseModel
      *
      * @param Order[] $orders
      *
-     * @return array<int,array>
+     * @return array<int,array<string,mixed>>
      */
     private function usersFor(array $orders)
     {
@@ -466,7 +501,9 @@ class CAdminBilling extends AdminSecBaseModel
     /**
      * Only a status the system actually uses may reach a query.
      *
-     * @return string
+     * @param string $status
+     *
+     * @return string the status, or '' when it is not one the system uses
      */
     private function allowedStatus($status)
     {

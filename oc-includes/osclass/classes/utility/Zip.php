@@ -50,6 +50,9 @@ class Zip
      */
     private $FileSystem;
 
+    /**
+     * Builds the filesystem helper used to create and permission the destination.
+     */
     public function __construct()
     {
         $this->FileSystem = new FileSystem();
@@ -97,7 +100,7 @@ class Zip
      * Coarse sanity check on a path supplied by our own calling code (never on zip entry
      * names — those are validated per-entry against the resolved destination realpath).
      *
-     * @param $path
+     * @param string $path
      *
      * @return bool true when the path contains no traversal segment
      */
@@ -174,6 +177,10 @@ class Zip
      * against the named caps. Does not mutate $totalUncompressedSoFar; the caller adds
      * the entry's size once it has also passed the path-containment check.
      *
+     * @param int $uncompressedSize
+     * @param int $compressedSize
+     * @param int $totalUncompressedSoFar bytes already accepted from this archive
+     *
      * @return bool true when the entry is within all limits
      */
     private function entryWithinLimits(int $uncompressedSize, int $compressedSize, int $totalUncompressedSoFar): bool
@@ -200,6 +207,11 @@ class Zip
     }
 
     /**
+     * Whether an archive entry is a symlink, which must never be extracted.
+     *
+     * @param ZipArchive $zip
+     * @param int        $index entry index within the archive
+     *
      * @return bool true when the ZipArchive entry's unix mode marks it as a symlink
      */
     private function isZipArchiveEntrySymlink(ZipArchive $zip, int $index): bool
@@ -440,7 +452,7 @@ class Zip
      * @param string $archive_folder full path of the folder
      * @param string $archive_name   full path of the destination zip file
      *
-     * @return int
+     * @return bool
      */
     public function zipFolder($archive_folder, $archive_name)
     {

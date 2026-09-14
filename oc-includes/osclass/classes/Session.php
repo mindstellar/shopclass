@@ -37,6 +37,8 @@ class Session
     }
 
     /**
+     * The shared Session instance, created on first call.
+     *
      * @return \Session
      */
     public static function newInstance()
@@ -53,6 +55,8 @@ class Session
      * entry point: any caller is guaranteed a live $_SESSION afterwards. Kept eager so the
      * historical contract holds for third-party themes/plugins (and core logout/install)
      * that call it and then touch $_SESSION directly.
+     *
+     * @return void
      */
     public function session_start()
     {
@@ -64,6 +68,8 @@ class Session
      * otherwise stay deferred so anonymous read-only requests send no Set-Cookie and no
      * no-cache headers and stay cacheable. The first write (see _set) starts one on demand.
      * The bootstrap uses this so merely loading a page never forces a session.
+     *
+     * @return void
      */
     public function session_resume()
     {
@@ -73,6 +79,8 @@ class Session
 
     /**
      * Resume the session only when a session cookie is already present.
+     *
+     * @return void
      */
     private function maybeResume()
     {
@@ -83,6 +91,8 @@ class Session
 
     /**
      * Physically start (or resume) the PHP session and mark it active. Idempotent.
+     *
+     * @return void
      */
     private function ensureStarted()
     {
@@ -116,6 +126,8 @@ class Session
 
     /**
      * Apply Shopclass cookie params (domain, secure under HTTPS) plus SameSite=Lax hardening.
+     *
+     * @return void
      */
     private function configureCookieParams()
     {
@@ -139,6 +151,8 @@ class Session
     /**
      * Seed the in-memory default containers (messages/keepForm/form) without starting a
      * session or writing $_SESSION.
+     *
+     * @return void
      */
     private function seedDefaults()
     {
@@ -150,6 +164,8 @@ class Session
     }
 
     /**
+     * Start the session, refusing a malformed session id supplied by the client.
+     *
      * @return bool
      */
     public function _session_start()
@@ -171,9 +187,11 @@ class Session
     }
 
     /**
-     * @param $key
+     * One session value, falling back to the request-scoped ephemeral store.
      *
-     * @return mixed
+     * @param string $key
+     *
+     * @return mixed '' when the key is set in neither store
      */
     public function _get($key)
     {
@@ -186,7 +204,9 @@ class Session
     }
 
     /**
-     * @param $key
+     * Whether a key is set in the session or the ephemeral store.
+     *
+     * @param string $key
      *
      * @return bool
      * @since 4.0.0
@@ -198,8 +218,12 @@ class Session
         return isset($this->session[$key]) || isset($this->ephemeral[$key]);
     }
     /**
-     * @param $key
-     * @param $value
+     * Write a session value, starting a physical session if one is not running.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _set($key, $value)
     {
@@ -216,8 +240,10 @@ class Session
      * identity resolved from a signed cookie can be exposed through the historical
      * Session::_get('userId') API while the visitor stays session-free and cacheable.
      *
-     * @param $key
-     * @param $value
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _setEphemeral($key, $value)
     {
@@ -227,13 +253,20 @@ class Session
     /**
      * Drop a request-scoped ephemeral value (e.g. on logout).
      *
-     * @param $key
+     * @param string $key
+     *
+     * @return void
      */
     public function _dropEphemeral($key)
     {
         unset($this->ephemeral[$key]);
     }
 
+    /**
+     * Destroy the physical session, if one is running, and mark this instance detached.
+     *
+     * @return void
+     */
     public function session_destroy()
     {
         // Sessions are lazy now, so this can be reached with none started — e.g. the secure
@@ -246,7 +279,11 @@ class Session
     }
 
     /**
-     * @param $key
+     * Drop a session value.
+     *
+     * @param string $key
+     *
+     * @return void
      */
     public function _drop($key)
     {
@@ -254,7 +291,11 @@ class Session
     }
 
     /**
-     * @param $value
+     * Remember where the visitor came from, so a form can send them back afterwards.
+     *
+     * @param string $value
+     *
+     * @return void
      */
     public function _setReferer($value)
     {
@@ -266,6 +307,8 @@ class Session
     }
 
     /**
+     * The remembered referer, or '' when none was stored.
+     *
      * @return string
      */
     public function _getReferer()
@@ -273,15 +316,24 @@ class Session
         return $this->session['osc_http_referer'] ?? '';
     }
 
+    /**
+     * Dump the session values, for debugging.
+     *
+     * @return void
+     */
     public function _view()
     {
         print_r($this->session);
     }
 
     /**
-     * @param $key
-     * @param $value
-     * @param $type
+     * Queue a flash message under a bucket, carried to the next request by cookie.
+     *
+     * @param string $key   Bucket, e.g. 'admin' or 'pubMessages'
+     * @param string $value
+     * @param string $type  'error' | 'ok' | …
+     *
+     * @return void
      */
     public function _setMessage($key, $value, $type)
     {
@@ -292,9 +344,11 @@ class Session
     }
 
     /**
-     * @param $key
+     * The queued flash messages in a bucket.
      *
-     * @return string|array
+     * @param string $key
+     *
+     * @return array<int,array{msg:string,type:string}>|string '' when the bucket is empty
      */
     public function _getMessage($key)
     {
@@ -302,7 +356,11 @@ class Session
     }
 
     /**
-     * @param $key
+     * Discard a bucket of flash messages.
+     *
+     * @param string $key
+     *
+     * @return void
      */
     public function _dropMessage($key)
     {
@@ -423,7 +481,11 @@ class Session
     }
 
     /**
-     * @param $key
+     * Mark a stashed form value to survive _clearVariables().
+     *
+     * @param string $key
+     *
+     * @return void
      */
     public function _keepForm($key)
     {
@@ -431,7 +493,11 @@ class Session
     }
 
     /**
+     * Unmark one kept form value, or all of them when $key is ''.
+     *
      * @param string $key
+     *
+     * @return void
      */
     public function _dropKeepForm($key = '')
     {
@@ -447,8 +513,10 @@ class Session
      * a request-scoped store (never $_SESSION, so it starts no session) and carried across the
      * redirect back to the form in a signed cookie by _flushFormData().
      *
-     * @param $key
-     * @param $value
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _setForm($key, $value)
     {
@@ -456,9 +524,11 @@ class Session
     }
 
     /**
+     * One stashed form value, or the whole stash when $key is ''.
+     *
      * @param string $key
      *
-     * @return string|array
+     * @return mixed '' when the key was not stashed; the whole array when $key is ''
      */
     public function _getForm($key = '')
     {
@@ -470,28 +540,50 @@ class Session
     }
 
     /**
-     * @return string|array
+     * The keys marked to survive _clearVariables().
+     *
+     * @return array<string,int>
      */
     public function _getKeepForm()
     {
         return $this->keepForm;
     }
 
+    /**
+     * Dump the queued flash messages, for debugging.
+     *
+     * @return void
+     */
     public function _viewMessage()
     {
         print_r($this->messages);
     }
 
+    /**
+     * Dump the stashed form values, for debugging.
+     *
+     * @return void
+     */
     public function _viewForm()
     {
         print_r($this->form);
     }
 
+    /**
+     * Dump the kept-form keys, for debugging.
+     *
+     * @return void
+     */
     public function _viewKeep()
     {
         print_r($this->keepForm);
     }
 
+    /**
+     * Drop every stashed form value that is not marked kept.
+     *
+     * @return void
+     */
     public function _clearVariables()
     {
         foreach ($this->form as $key => $value) {
@@ -552,6 +644,11 @@ class Session
         $this->writeSignedStore('oc_form', $value, time() + 1800);
     }
 
+    /**
+     * Forget the remembered referer.
+     *
+     * @return void
+     */
     public function _dropReferer()
     {
         unset(

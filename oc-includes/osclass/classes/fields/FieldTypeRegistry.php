@@ -55,10 +55,18 @@ final class FieldTypeRegistry
     /** @var array<string,array> registered type specs, keyed by id */
     private array $types = array();
 
+    /**
+     * Singleton: obtain the registry through instance().
+     */
     private function __construct()
     {
     }
 
+    /**
+     * Shared registry instance, created on first use.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -145,6 +153,10 @@ final class FieldTypeRegistry
     /**
      * The spec for a registered type, or null when the id is not registered (e.g.
      * its plugin is deactivated).
+     *
+     * @param string $id
+     *
+     * @return array<string,mixed>|null
      */
     public function get(string $id): ?array
     {
@@ -164,6 +176,10 @@ final class FieldTypeRegistry
     /**
      * The storage primitive a type stores as, or the id itself when unregistered
      * but already a primitive, or 'TEXT' as a last resort.
+     *
+     * @param string $id
+     *
+     * @return string one of STORAGE_PRIMITIVES
      */
     public function storageOf(string $id): string
     {
@@ -178,6 +194,10 @@ final class FieldTypeRegistry
     /**
      * Whether $id is a well-formed field type id (built-in primitive spelling or a
      * namespaced plugin slug).
+     *
+     * @param string $id
+     *
+     * @return bool
      */
     public static function isValidId(string $id): bool
     {

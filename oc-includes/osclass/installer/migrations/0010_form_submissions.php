@@ -35,6 +35,13 @@ use mindstellar\migration\MigrationInterface;
  * idempotent; the same tables are declared in struct.sql for a fresh install.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_form_submission and t_form_submission_value.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $submission = DB_TABLE_PREFIX . 't_form_submission';

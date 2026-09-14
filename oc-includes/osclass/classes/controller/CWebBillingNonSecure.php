@@ -21,6 +21,9 @@ use mindstellar\billing\Billing;
  */
 class CWebBillingNonSecure extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the `init_billing_non_secure` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,11 @@ class CWebBillingNonSecure extends BaseModel
     }
 
     //Business Layer...
+    /**
+     * Dispatches the `callback` action to the gateway handler; every other action 404s.
+     *
+     * @return void
+     */
     public function doModel()
     {
         if ($this->action !== 'callback') {
@@ -52,6 +60,8 @@ class CWebBillingNonSecure extends BaseModel
      * as delivered and never send again. Every outcome core did decide on, including
      * a deliberate ignore, still answers 200 -- the body never changes, so the code
      * alone reveals nothing about any particular order.
+     *
+     * @return never
      */
     private function callback()
     {
@@ -84,7 +94,7 @@ class CWebBillingNonSecure extends BaseModel
      * This route never renders a theme page or redirects -- the plain-text body in
      * callback() is the entire response, on every outcome.
      *
-     * @param $file
+     * @param string $file
      *
      * @return void
      */

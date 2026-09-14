@@ -51,6 +51,14 @@ return new class () implements MigrationInterface {
         'custom_urls'         => array('', 'STRING'),
     );
 
+    /**
+     * Seed the core `sitemap` preferences, preferring any value the bundled theme
+     * already held under its own section.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table  = DB_TABLE_PREFIX . 't_preference';
@@ -71,7 +79,12 @@ return new class () implements MigrationInterface {
     /**
      * All (s_name => s_value) rows for one preference section.
      *
+     * @param Connection $conn
+     * @param string     $table   Fully prefixed t_preference table name
+     * @param string     $section
+     *
      * @return array<string, string>
+     * @throws \mindstellar\database\DbException
      */
     private function sectionValues(Connection $conn, string $table, string $section): array
     {

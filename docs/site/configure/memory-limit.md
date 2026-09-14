@@ -2,7 +2,7 @@
 title: Increase the PHP memory limit
 description: Fix "Allowed memory size exhausted" in ShopClass with OSC_MEMORY_LIMIT, php.ini, or your host's control panel.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 If a page dies with:

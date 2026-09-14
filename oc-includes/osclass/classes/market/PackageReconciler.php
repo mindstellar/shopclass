@@ -37,17 +37,24 @@ use mindstellar\utility\FileSystem;
  */
 final class PackageReconciler
 {
+    /**
+     * Not instantiable: every entry point on this class is static.
+     */
     private function __construct()
     {
     }
 
     /**
+     * Installs bundled packages missing from the live volume and refreshes the ones
+     * the image ships a strictly newer version of.
+     *
      * @param string $pristineRoot   image-baked copy of oc-content (plugins/ and
      *                                themes/ subdirectories), outside any volume mount
      * @param string $livePluginsPath PLUGINS_PATH
      * @param string $liveThemesPath  THEMES_PATH
      *
      * @return array<int, string> one human-readable line per action taken
+     * @throws \RuntimeException when a package directory cannot be synced
      */
     public static function reconcile(string $pristineRoot, string $livePluginsPath, string $liveThemesPath): array
     {
@@ -75,6 +82,10 @@ final class PackageReconciler
     }
 
     /**
+     * Slugs of the package directories the image bundles, ignoring index.php.
+     *
+     * @param string $pristinePath must end with a slash
+     *
      * @return array<int, string>
      */
     private static function bundledSlugs(string $pristinePath): array
@@ -97,6 +108,18 @@ final class PackageReconciler
         return $slugs;
     }
 
+    /**
+     * Installs or refreshes one bundled package, leaving the live copy alone when either
+     * side has no readable Version header or the live copy is not older.
+     *
+     * @param string $kind 'plugin' or 'theme'
+     * @param string $slug
+     * @param string $pristineDir
+     * @param string $liveDir
+     *
+     * @return string|null a log line, or null when nothing was done
+     * @throws \RuntimeException when the package directory cannot be synced
+     */
     private static function reconcileOne(string $kind, string $slug, string $pristineDir, string $liveDir): ?string
     {
         $fs = new FileSystem();
@@ -126,6 +149,13 @@ final class PackageReconciler
         return null;
     }
 
+    /**
+     * Reads the Version header out of a package's index.php.
+     *
+     * @param string $packageDir
+     *
+     * @return string '' when the file or the header is missing
+     */
     private static function readVersion(string $packageDir): string
     {
         $indexFile = $packageDir . '/index.php';

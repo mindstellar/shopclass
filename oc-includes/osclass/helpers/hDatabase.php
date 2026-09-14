@@ -30,6 +30,7 @@ if (!function_exists('osc_db_select')) {
      * @param array  $params
      *
      * @return array List of rows (empty when none match)
+     * @throws \mindstellar\database\DbException on a failed query
      */
     function osc_db_select(string $sql, array $params = []): array
     {
@@ -45,6 +46,7 @@ if (!function_exists('osc_db_select_one')) {
      * @param array  $params
      *
      * @return array|null
+     * @throws \mindstellar\database\DbException on a failed query
      */
     function osc_db_select_one(string $sql, array $params = []): ?array
     {
@@ -60,6 +62,7 @@ if (!function_exists('osc_db_scalar')) {
      * @param array  $params
      *
      * @return mixed Null when there are no rows
+     * @throws \mindstellar\database\DbException on a failed query
      */
     function osc_db_scalar(string $sql, array $params = [])
     {
@@ -75,6 +78,7 @@ if (!function_exists('osc_db_execute')) {
      * @param array  $params
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a failed query
      */
     function osc_db_execute(string $sql, array $params = []): int
     {
@@ -90,6 +94,7 @@ if (!function_exists('osc_db_insert_id')) {
      * @param array  $params
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a failed query
      */
     function osc_db_insert_id(string $sql, array $params = []): int
     {
@@ -108,6 +113,7 @@ if (!function_exists('osc_db_table')) {
      * @param string $table
      *
      * @return \mindstellar\database\QueryBuilder
+     * @throws \mindstellar\database\DbException when no database connection is available
      */
     function osc_db_table(string $table): \mindstellar\database\QueryBuilder
     {
@@ -123,6 +129,8 @@ if (!function_exists('osc_db_transaction')) {
      * @param callable $fn
      *
      * @return mixed The value returned by $fn
+     * @throws \RuntimeException when the transaction cannot be opened
+     * @throws \Throwable whatever $fn throws, after rolling back
      */
     function osc_db_transaction(callable $fn)
     {

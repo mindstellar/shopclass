@@ -2,7 +2,7 @@
 title: Scripts and styles
 description: Load JavaScript and CSS from a ShopClass plugin or theme with the enqueue functions, and what changed now that jQuery is gone from core.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 Plugins and themes load their own JavaScript and CSS through the **enqueue**

@@ -12,7 +12,9 @@
  */
 
 /**
- * @return array
+ * Read every translation folder and return its locale descriptor, keyed by locale code.
+ *
+ * @return array<string,array<string,mixed>>
  */
 function osc_listLocales()
 {
@@ -41,7 +43,10 @@ function osc_listLocales()
 }
 
 /**
- * @return bool
+ * Insert or refresh a database row for every locale found on disk, importing its mail
+ * templates the first time a locale is seen.
+ *
+ * @return bool False as soon as one locale row fails to insert, true otherwise
  */
 function osc_checkLocales()
 {
@@ -83,7 +88,9 @@ function osc_checkLocales()
 }
 
 /**
- * @return array
+ * List the locale codes that have a folder under the translations path.
+ *
+ * @return array<int,string>
  */
 function osc_listLanguageCodes()
 {

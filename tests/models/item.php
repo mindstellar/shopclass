@@ -541,23 +541,29 @@ check('the two pages do not overlap', $page0[0]['pk_i_id'] !== $page1[0]['pk_i_i
 harness_section('Item::findItemByTypes — the itemType filters (the orWhere-precedence structure)');
 
 $resetDao();
-// These exercise addWhereByType()/addWhereByOptions(), including the NOTEXPIRED
-// case whose orWhere('i.b_premium', 1) makes the WHERE a mix of AND and OR. The
-// exact counts are pinned by observation so the conversion must reproduce the
-// same clause structure, not a "tidied" one.
-pin('active-type count', '8', $model->findItemByTypes(null, 'active', true));
+// These exercise addWhereByType()/addWhereByOptions(). NOTEXPIRED used to push its
+// premium test with an OR connector, which broke out of the AND chain: the clause read
+// `(active AND enabled) OR (premium AND unexpired)`, so with no premium row in this
+// fixture the expiry and spam tests were not reached at all and E (expired) and C (spam)
+// counted as live. Grouping the alternation is what drops them.
+pin('active-type count (E is expired, so 7: A + C + 5 batch)', '7', $model->findItemByTypes(null, 'active', true));
 pin('blocked-type count (disabled items)', '1', $model->findItemByTypes(null, 'blocked', true));
 pin('expired-type count', '1', $model->findItemByTypes(null, 'expired', true));
 pin('premium-type count', '0', $model->findItemByTypes(null, 'premium', true));
 pin('pending-type count (inactive)', '1', $model->findItemByTypes(null, 'pending', true));
-pin('default-type (unspecified) count', '8', $model->findItemByTypes(null, false, true));
+// 'nospam' asked addWhereByOptions() for 'NOSPAM', which matched no case and fell through
+// its default -- so the one filter the type exists for was never applied and C (spam) was
+// counted. Note this type tests active and not-expired but NOT enabled, so B (disabled)
+// legitimately counts: A + B + 5 batch, with C dropped.
+pin('nospam-type count drops C (spam), so 7: A + B + 5 batch', '7', $model->findItemByTypes(null, 'nospam', true));
+pin('default-type also drops C (spam), so 6: A + 5 batch', '6', $model->findItemByTypes(null, false, true));
 
 harness_section('Item::findByUserID / findByUserIDEnabled / findItemTypesByUserID');
 
 $resetDao();
 pin('findByUserID lists all the user\'s items', 10, count($model->findByUserID($user)));
 pin('findByUserID for an unknown user is empty', array(), $model->findByUserID(999999));
-pin('countByUserIDEnabled (enabled itemType)', '8', $model->countByUserIDEnabled($user));
+pin('countByUserIDEnabled (enabled itemType, same options as the default)', '6', $model->countByUserIDEnabled($user));
 
 /* ----------------------------------------------------------------------------
  * The count family. Counts come back as strings; the null/error branches as int 0.
@@ -919,6 +925,45 @@ pin(
  * ------------------------------------------------------------------------- */
 $resetDao();
 $flush();
+
+/* ----------------------------------------------------------------------------
+ * The bug the primary fixture could not see: with no premium row anywhere, NOTEXPIRED's
+ * stray OR matched nothing and the broken clause looked correct. One premium listing
+ * owned by SOMEONE ELSE is what exposes it -- ungrouped, it reads
+ * `(mine AND live) OR (any premium listing)` and a seller's own listing page fills up
+ * with the whole site's premium rows, count and pager included.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::findItemTypesByUserID — a stranger\'s premium listing stays out');
+
+$resetDao();
+$stranger     = seed_user($admin, 'stranger', 'stranger@example.test');
+$strangerItem = seed_item($admin, $cat, $stranger, 'Stranger premium');
+$setItem($strangerItem, 'b_premium = 1');
+
+$ownRows = $model->findItemTypesByUserID($user, 0, 100, false);
+$ownIds  = array_map(static function ($row) {
+    return (int) $row['pk_i_id'];
+}, $ownRows);
+$owners  = array_unique(array_map(static function ($row) {
+    return (int) $row['fk_i_user_id'];
+}, $ownRows));
+
+check(
+    'the stranger\'s premium listing is absent from this user\'s rows',
+    !in_array((int) $strangerItem, $ownIds, true)
+);
+pin('...and every row returned belongs to exactly one owner', 1, count($owners));
+pin('...who is the user asked about', (int) $user, (int) reset($owners));
+pin(
+    'the count agrees with the rows, so the pager is not inflated either',
+    (string) count($ownRows),
+    $model->countItemTypesByUserID($user, false)
+);
+
+/* The premium row is still reachable where it should be -- this is a grouping fix,
+   not a filter that drops premium listings. */
+pin('the stranger sees their own premium listing', 1, count($model->findItemTypesByUserID($stranger, 0, 100, false)));
+pin('...and it still counts as premium site-wide', '1', $model->findItemByTypes(null, 'premium', true));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

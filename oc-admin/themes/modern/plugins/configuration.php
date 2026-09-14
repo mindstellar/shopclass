@@ -23,25 +23,15 @@ osc_admin_page(array(
 ));
 
 //customize Head
+/**
+ * Emit the plugin screen's script: the plugin tree renders collapsed.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
     <script type="text/javascript">
-        // check all the categories in a subtree
-        function checkAll(id, check) {
-            var root = document.getElementById(id);
-            if (root) {
-                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
-            }
-        }
-
-        function checkCat(id, check) {
-            var root = document.getElementById('cat' + id);
-            if (root) {
-                root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof oscTreeview === 'function') {
                 oscTreeview(document.getElementById('plugin_tree'), {
@@ -66,23 +56,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <fieldset>
                 <?php osc_admin_page_head($plugin_data['plugin_name']); ?>
                 <p class="text"><?php echo $plugin_data['description']; ?></p>
-                <div class="form-row">
-                    <div><?php _e('Select the categories where you want to apply these attribute:'); ?></div>
-                    <div class="separate-top">
-                        <div class="form-label">
-                            <a href="javascript:void(0);"
-                               onclick="checkAll('plugin_tree', true); return false;"><?php _e('Check all'); ?></a>
-                            &middot;
-                            <a href="javascript:void(0);"
-                               onclick="checkAll('plugin_tree', false); return false;"><?php _e('Uncheck all'); ?></a>
-                        </div>
-                        <div class="form-controls">
-                            <ul id="plugin_tree">
-                                <?php CategoryForm::categories_tree($categories, $selected); ?>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+                <?php osc_admin_tree_picker(array(
+                    'id'         => 'plugin_tree',
+                    'intro'      => __('Select the categories where you want to apply these attribute:'),
+                    'categories' => $categories,
+                    'selected'   => $selected,
+                )); ?>
                 <?php osc_admin_form_actions(array(
                     array('label' => __('Update'), 'type' => 'submit', 'attrs' => array('id' => 'plugin-configuration-submit')),
                 )); ?>

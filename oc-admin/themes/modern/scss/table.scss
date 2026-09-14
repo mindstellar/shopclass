@@ -101,13 +101,10 @@
     }
   }
 
-  // Row actions sit in-flow beneath the listing title and are ALWAYS visible — they are quick
-  // actions, so they are one click away, not hidden behind a hover the keyboard and touch cannot
-  // perform. (The old rule revealed them on mouseover only, which fails WCAG 2.1.1 outright, and
-  // forced every row to reserve 2.5rem of dead space so the reveal would not reflow the table.
-  // Both are gone: the strip below is what replaces that empty band, so rows are shorter, not
-  // taller.) Muted by default — the chrome recedes so the listing is what you read. Colour goes
-  // through --osc-* tokens, not the frozen Sass $link-color it used to, so it follows dark mode.
+  // Row actions sit in-flow beneath the listing title and are ALWAYS visible: revealing them
+  // on hover fails WCAG 2.1.1 for keyboard and touch, and costs every row a reserve of dead
+  // space. Muted by default so the listing is what you read. Colour goes through --osc-*
+  // tokens, never a Sass variable, so it follows dark mode.
   .actions {
     font-size: .8125rem;  // Label, 13px — metadata weight, matching the column headers.
     margin-top: .3rem;
@@ -256,14 +253,13 @@
 // -----------------------------------------------------------------------------
 // Status badges
 // -----------------------------------------------------------------------------
-// The signature component of the admin: "is this listing live?" is the single most common
-// question the whole product answers, and it used to be answered with colour alone — which
-// fails colourblind users outright and vanishes entirely in greyscale.
+// The signature component of the admin: "is this listing live?" is the most common question
+// the product answers, and colour alone cannot answer it — that fails colourblind users and
+// vanishes in greyscale.
 //
-// Now every badge carries three signals: a tint, a shape, and the word (The Three Signal
-// Rule). Run the test on any listings screen — screenshot it, desaturate it, and you can
-// still tell an active listing from a blocked one, because the disc, the ring and the
-// triangle are all still there.
+// Every badge carries three signals: a tint, a shape, and the word (The Three Signal Rule).
+// Desaturate a listings screenshot and an active listing is still tellable from a blocked
+// one, because the disc, the ring and the triangle are all still there.
 //
 // Deliberately NOT scoped to .table: the `.status-*` class sits on the <tr>, but a badge is
 // a badge, and a plugin rendering one outside a table should get the same component.
@@ -356,7 +352,8 @@
 //
 // The 1px border is paid for out of the padding (2px 10px -> 1px 9px) so the outline badge
 // occupies exactly the same box as a filled one and the column does not jitter row to row.
-.status-uninstalled .osc-status {
+.status-uninstalled .osc-status,
+.osc-status.status-uninstalled {
   background-color: transparent;
   border: 1px solid var(--osc-rule-strong);
   color: var(--osc-ink-muted);
@@ -373,9 +370,8 @@
   }
 }
 
-// The row actions are now always visible and in-flow (see .actions above), so there is nothing
-// to reveal on hover and nothing to reserve space for — the row is exactly as tall as its
-// content. The 2.5rem-per-cell reserve this rule used to carry is deleted with that mechanism.
+// The row actions are always visible and in-flow (see .actions above), so there is nothing to
+// reveal on hover and no space to reserve: the row is exactly as tall as its content.
 .table-contains-actions {
   clear: both;
   position: relative;

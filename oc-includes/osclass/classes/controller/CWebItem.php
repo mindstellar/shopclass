@@ -23,6 +23,10 @@ class CWebItem extends BaseModel
     private $user;
     private $userId;
 
+    /**
+     * Boots the base controller, opens the Item model, loads the signed-in user (if any)
+     * and fires the `init_item` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -42,7 +46,11 @@ class CWebItem extends BaseModel
     //Business Layer...
 
     /**
-     * @return bool|void
+     * Dispatches every listing action -- publish, edit, activate, delete, contact, send to a
+     * friend, comments, the view beacon -- and renders the listing page by default.
+     *
+     * @return false|null false only when a captcha check failed and the request was
+     *                    redirected back to the form
      */
     public function doModel()
     {
@@ -69,22 +77,34 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
-                $countries = Country::newInstance()->listAll();
-                $regions   = array();
-                if (isset($this->user['fk_c_country_code'])
-                    && $this->user['fk_c_country_code'] != ''
+                // Turn them back at the door rather than after they have written the whole
+                // listing: the submit path refuses on the same answer, so reaching the form
+                // at all would only waste the writing. Admins are never metered, and guests
+                // have no quota to be outside of.
+                if (!osc_is_admin_user_logged_in()
+                    && osc_is_web_user_logged_in()
+                    && !osc_user_can_publish()
                 ) {
-                    $regions =
-                        Region::newInstance()->findByCountry($this->user['fk_c_country_code']);
-                } elseif (count($countries) > 0) {
-                    $regions = Region::newInstance()->findByCountry($countries[0]['pk_c_code']);
+                    osc_add_flash_error_message(osc_listing_limit_message());
+                    $this->redirectTo(osc_user_list_items_url());
                 }
-                $cities = array();
-                if (isset($this->user['fk_i_region_id']) && $this->user['fk_i_region_id'] != '') {
-                    $cities = City::newInstance()->findByRegion($this->user['fk_i_region_id']);
-                } elseif (count($regions) > 0) {
-                    $cities = City::newInstance()->findByRegion($regions[0]['pk_i_id']);
-                }
+
+                $countries = Country::newInstance()->listAll();
+
+                // Regions and cities follow a country and a region the seller
+                // actually chose. Falling back to the first country listed filled
+                // both selects with somewhere else's places while the country
+                // select still read "Select a country", so a visitor with no
+                // JavaScript could file a listing against a city in another country.
+                $countryId = $this->user['fk_c_country_code'] ?? '';
+                $regionId  = $this->user['fk_i_region_id'] ?? '';
+
+                $regions = $countryId != ''
+                    ? Region::newInstance()->findByCountry($countryId)
+                    : array();
+                $cities = $regionId != ''
+                    ? City::newInstance()->findByRegion($regionId)
+                    : array();
 
                 $this->_exportVariableToView('countries', $countries);
                 $this->_exportVariableToView('regions', $regions);
@@ -117,7 +137,7 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('post_item');
 
-                $this->doView('item-post.php');
+                $this->doView(osc_locate_template(array('item-post.php'), 'item-post'));
                 break;
             case 'item_add_post':
                 // SAVE form data before CSRF CHECK
@@ -235,7 +255,14 @@ class CWebItem extends BaseModel
                     $this->_exportVariableToView('item', $item);
 
                     osc_run_hook('before_item_edit', $item);
-                    $this->doView('item-edit.php');
+                    // Editing is the publishing form with the values filled in, and
+                    // ItemForm hands both the same fields. A theme that ships only
+                    // item-post.php gets it here too rather than having to keep a
+                    // second copy, or a one-line file that includes the first.
+                    $this->doView(osc_locate_template(
+                        array('item-edit.php', 'item-post.php'),
+                        'item-edit'
+                    ));
                 } else {
                     // add a flash message [ITEM NO EXISTE]
                     osc_add_flash_error_message(_m("Sorry, we don't have any listings with that ID"));
@@ -509,7 +536,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
-                $this->doView('item-send-friend.php');
+                $this->doView(osc_locate_template(array('item-send-friend.php'), 'item-send-friend'));
                 break;
             case 'send_friend_post':
                 osc_csrf_check();
@@ -588,7 +615,7 @@ class CWebItem extends BaseModel
                     if ((osc_reg_user_can_contact() && osc_is_web_user_logged_in())
                         || !osc_reg_user_can_contact()
                     ) {
-                        $this->doView('item-contact.php');
+                        $this->doView(osc_locate_template(array('item-contact.php'), 'item-contact'));
                     } else {
                         osc_add_flash_warning_message(_m("You can't contact the seller, only registered users can")
                             . '. <br />' . sprintf(
@@ -906,7 +933,17 @@ class CWebItem extends BaseModel
                 // counter client-side (the `count_view_on_render` filter), which stays accurate
                 // behind a full-page cache.
                 osc_mark_response_cacheable();
-                $this->doView('item.php');
+
+                // A theme may specialise the listing page per category. The id is
+                // already on the row, so offering the candidate costs nothing.
+                $viewCandidates = array();
+                $viewCategory   = osc_item_category_id();
+                if ($viewCategory > 0) {
+                    $viewCandidates[] = 'item-' . $viewCategory . '.php';
+                }
+                $viewCandidates[] = 'item.php';
+
+                $this->doView(osc_locate_template($viewCandidates, 'item'));
                 break;
         }
     }
@@ -945,14 +982,18 @@ class CWebItem extends BaseModel
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the listing template, letting core's page view claim it first.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_page_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

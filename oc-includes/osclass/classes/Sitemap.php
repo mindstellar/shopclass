@@ -62,12 +62,17 @@ class Sitemap extends DAO
     /** @var int|null Memoised live-listing count. */
     private $total_results_table;
 
+    /**
+     * Set up the DAO this sitemap queries through.
+     */
     public function __construct()
     {
         parent::__construct();
     }
 
     /**
+     * The shared Sitemap instance, created on first call.
+     *
      * @return Sitemap
      */
     public static function newInstance()
@@ -266,7 +271,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The category sitemap: one URL per category holding listings.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -287,7 +294,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The page sitemap: home, search, the static pages and any custom URLs.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -324,7 +333,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The cities sitemap: one URL per listed city.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -342,7 +353,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The regions sitemap: one URL per listed region.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -360,7 +373,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The countries sitemap: one URL per listed country.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -378,7 +393,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The category x region sitemap: one URL per pair that has listings.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -389,13 +406,12 @@ class Sitemap extends DAO
             $rows = $this->locationPairs('b.fk_i_region_id');
 
             foreach ($rows as $row) {
-                $url = osc_update_search_url(array(
-                    'action_specific' => '',
-                    'CSRFName'        => '',
-                    'CSRFToken'       => '',
-                    'route'           => '',
-                    'sCategory'       => $row['fk_i_category_id'],
-                    'sRegion'         => $row['fk_i_region_id'],
+                // Not osc_update_search_url(): it merges the current request's params, so
+                // the sitemap route's own sitemap_doc leaks in and defeats the pretty-URL
+                // branch of osc_search_url().
+                $url = osc_search_url(array(
+                    'sCategory' => $row['fk_i_category_id'],
+                    'sRegion'   => $row['fk_i_region_id'],
                 ));
                 $this->addUrl($url, date('Y-m-d'), 'weekly', 'cat_region');
             }
@@ -405,7 +421,9 @@ class Sitemap extends DAO
     }
 
     /**
-     * @param bool $output
+     * The category x city sitemap: one URL per pair that has listings.
+     *
+     * @param bool $output Echo the document with its headers instead of only returning it
      *
      * @return string
      */
@@ -416,13 +434,12 @@ class Sitemap extends DAO
             $rows = $this->locationPairs('b.fk_i_city_id');
 
             foreach ($rows as $row) {
-                $url = osc_update_search_url(array(
-                    'action_specific' => '',
-                    'CSRFName'        => '',
-                    'CSRFToken'       => '',
-                    'route'           => '',
-                    'sCategory'       => $row['fk_i_category_id'],
-                    'sCity'           => $row['fk_i_city_id'],
+                // Not osc_update_search_url(): it merges the current request's params, so
+                // the sitemap route's own sitemap_doc leaks in and defeats the pretty-URL
+                // branch of osc_search_url().
+                $url = osc_search_url(array(
+                    'sCategory' => $row['fk_i_category_id'],
+                    'sCity'     => $row['fk_i_city_id'],
                 ));
                 $this->addUrl($url, date('Y-m-d'), 'weekly', 'cat_city');
             }
@@ -971,6 +988,8 @@ class Sitemap extends DAO
     }
 
     /**
+     * Send a bare 404 and stop.
+     *
      * @return void
      */
     private function notFound()

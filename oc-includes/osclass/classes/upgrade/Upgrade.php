@@ -65,6 +65,13 @@ class Upgrade
         $this->FileSystem = new FileSystem();
     }
 
+    /**
+     * Flag the package info as usable, and reject a checksum-carrying package from a host
+     * that is not on the allowlist.
+     *
+     * @return void
+     * @throws \RuntimeException when a verified download points outside the allowed hosts
+     */
     private function validatePackageInfo()
     {
         $this->packageInfoValid = false;
@@ -91,6 +98,8 @@ class Upgrade
     /**
      * Do an actual upgrade
      *
+     * @return void
+     * @throws \RuntimeException when the package info is invalid, incompatible or not upgradable
      * @throws \Exception
      */
     public function doUpgrade()
@@ -108,6 +117,8 @@ class Upgrade
     /**
      * process package upgrade
      *
+     * @return void
+     * @throws \RuntimeException on a zip whose layout has no index.php at the expected root
      * @throws \Exception
      */
     private function processUpgrade()

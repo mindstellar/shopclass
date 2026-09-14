@@ -33,10 +33,18 @@ final class WidgetRegistry
     /** @var array<string,array> registered type specs, keyed by type id */
     private array $types = [];
 
+    /**
+     * Singleton: obtain the registry through instance().
+     */
     private function __construct()
     {
     }
 
+    /**
+     * Shared registry instance, created on first use.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -127,6 +135,10 @@ final class WidgetRegistry
     /**
      * The spec for a registered type, or null when the id is not registered
      * (e.g. its plugin is deactivated).
+     *
+     * @param string $id
+     *
+     * @return array<string,mixed>|null
      */
     public function get(string $id): ?array
     {
@@ -145,6 +157,10 @@ final class WidgetRegistry
 
     /**
      * Whether $id is a well-formed widget type id.
+     *
+     * @param string $id
+     *
+     * @return bool
      */
     public static function isValidId(string $id): bool
     {

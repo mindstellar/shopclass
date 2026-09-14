@@ -86,9 +86,15 @@ traffic instead:
 
 **Admin → Settings → General** → check **Auto-cron**.
 
-Due tasks are then triggered by ordinary page views. It works, with two real
-costs: nothing runs while the site has no visitors, and one unlucky visitor pays
-the cost of the job in their page load.
+Due tasks are then triggered by ordinary page views, at most once every five
+minutes. Nobody waits for them: on PHP-FPM the page is sent first and the work
+runs afterwards in the same process. On other setups ShopClass falls back to
+asking itself for `?page=cron` over HTTP, which **an origin behind a proxy cannot
+do** — it resolves its own public address to the proxy and never reaches itself,
+so nothing runs and nothing says so. If that is your setup, use a real crontab.
+
+The real cost that remains either way: nothing runs while the site has no
+visitors.
 
 Use it to get started, then move to a real crontab.
 
@@ -124,3 +130,18 @@ php /path/to/site/oc-cli.php cron --type=hourly
 
 Plugins add their own work to these tiers through the `cron_hourly`,
 `cron_daily` and `cron_weekly` hooks.
+
+## Remote storage needs its own entry
+
+If listings are offloaded to remote storage, the queue that moves uploaded images
+is drained from the hourly tier — which on a busy site is not often enough, and the
+hourly tier does too much else to be run every few minutes. Give it a second entry
+of its own:
+
+```cron
+* * * * * php /path/to/site/oc-cli.php storage:work --max-seconds=50 >/dev/null 2>&1
+```
+
+This runs the queue worker and nothing else, so a tight schedule is safe. On a site
+with no remote storage it does nothing and exits cleanly, so it is harmless to add
+before you need it. See the [CLI reference](/docs/cli/).

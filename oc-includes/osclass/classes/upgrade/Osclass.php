@@ -28,6 +28,8 @@ use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
 use Preference;
+use Rewrite;
+use Throwable;
 
 /**
  * Class Osclass
@@ -162,6 +164,24 @@ class Osclass extends UpgradePackage
                 ]);
             }
 
+            // Recompile the permalink table now that this release's migrations have seeded
+            // whatever preferences they add. The cache rebuilds itself when its stamped
+            // version no longer matches the code's -- which is true from the first request
+            // after new files land, i.e. potentially before the migrations run. A request
+            // that wins that race compiles the rules without the new preferences and stamps
+            // the new version anyway, and since the versions then agree it never rebuilds:
+            // the routes stay missing for good. Rebuilding here is the point at which the
+            // preferences are known to be present.
+            try {
+                // Migrations seed preferences with raw SQL, so the in-memory snapshot this
+                // request loaded still predates them; rebuilding off it would compile the
+                // same missing routes all over again.
+                osc_reset_preferences();
+                Rewrite::newInstance()->rebuildAndPersistRules();
+            } catch (Throwable $e) {
+                // A rules rebuild is a repair, not the upgrade; never fail the upgrade on it.
+            }
+
             Utils::changeOsclassVersionTo(self::newVersionOnDisk());
 
             return json_encode([
@@ -191,6 +211,8 @@ class Osclass extends UpgradePackage
      * the schema against the struct.sql and migrations already on disk, so the
      * version it records must come from disk too. Falls back to the constant when
      * the file can't be read (e.g. a plain in-process db:upgrade, where they match).
+     *
+     * @return string
      */
     private static function newVersionOnDisk(): string
     {
@@ -221,6 +243,12 @@ class Osclass extends UpgradePackage
      *                           's_compatible' => csv of compatible osclass version (optional)
      *                           's_prerelease' => true or false (Optional)
      *                           ]
+     *
+     * @param bool      $force   fetch from GitHub even when the once-a-day check clock has not elapsed
+     * @param bool|null $isFresh set to true when the payload came from a live fetch, false when it is
+     *                           the cached last-known-good
+     *
+     * @return array<string,mixed>|null
      */
     public static function getPackageInfo($force = true, &$isFresh = null)
     {
@@ -307,9 +335,9 @@ class Osclass extends UpgradePackage
     /**
      * Pick the Shopclass package asset from a GitHub release's assets list. Prefers the
      * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
-     * selection (the old code blindly took assets[0]).
+     * selection. Never take assets[0].
      *
-     * @param array $assets GitHub release "assets" array
+     * @param array<int,array<string,mixed>> $assets GitHub release "assets" array
      *
      * @return string|null browser_download_url, or null if none suitable
      */

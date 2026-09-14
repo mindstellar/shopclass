@@ -27,6 +27,13 @@ use mindstellar\migration\MigrationInterface;
  * written before any offload existed keep pointing at the filesystem.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_storage_queue and add s_storage to t_item_resource.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(
@@ -58,6 +65,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {

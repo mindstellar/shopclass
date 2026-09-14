@@ -26,6 +26,13 @@ use mindstellar\migration\MigrationInterface;
  * migration brings an existing install up to the same state.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add s_type and s_config to t_widget, each only when absent.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_widget';
@@ -43,6 +50,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {

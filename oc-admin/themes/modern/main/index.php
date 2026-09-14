@@ -21,6 +21,8 @@ $numReportedItems    = (int) __get('numReportedItems');
 $aFeatured           = __get('aFeatured');
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -31,9 +33,11 @@ function render_offset()
 osc_add_filter('admin_body_class', 'addBodyClass');
 if (!function_exists('addBodyClass')) {
     /**
-     * @param $array
+     * Filter callback for `admin_body_class`: mark the dashboard on <body>.
      *
-     * @return array
+     * @param array<int,string> $array
+     *
+     * @return array<int,string>
      */
     function addBodyClass($array)
     {
@@ -48,6 +52,11 @@ osc_admin_page(array(
     'title'   => __('Dashboard'),
 ));
 
+/**
+ * Emit the dashboard's listings/users chart and the Google Charts loader it needs.
+ *
+ * @return void
+ */
 function chartJs()
 {
     $items = __get('item_stats');

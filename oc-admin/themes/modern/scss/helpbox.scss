@@ -1,6 +1,6 @@
-// The page help panel, toggled by the "?" beside a page title. It is explanatory,
-// not a caution, so it reads as a quiet info note (info tint + info icon), never the
-// amber warning alert it used to borrow. Icon | body | close, on one info surface.
+// The page help panel, toggled by the "?" beside a page title. It is explanatory, not a
+// caution, so it reads as a quiet info note (info tint + info icon), never an amber warning.
+// Icon | body | close, on one info surface.
 .help-callout {
   align-items: flex-start;
   background-color: var(--osc-info-tint);
@@ -76,10 +76,8 @@
   }
 }
 
-// Inline field hint. It explains the field it sits under, so it recedes to quiet
-// muted helper text — not the boxed blue notice it used to be, which competed with
-// the field for attention on every settings screen. (Calm, unfussy: the field is
-// the content; the hint is a whisper.)
+// Inline field hint. It explains the field it sits under, so it recedes to quiet muted
+// helper text rather than a boxed notice competing with the field for attention.
 .help-box {
   color: var(--osc-ink-muted);
   display: inline-block;

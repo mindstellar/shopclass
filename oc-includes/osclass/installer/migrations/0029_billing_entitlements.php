@@ -37,6 +37,13 @@ return new class () implements MigrationInterface {
         'billing_offline_instructions'  => array('', 'STRING'),
     );
 
+    /**
+     * Create t_user_entitlement and t_billing_package, then seed the billing preferences.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(

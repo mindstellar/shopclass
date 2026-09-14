@@ -18,7 +18,9 @@ osc_admin_page(array(
 ));
 
 /**
- * @param $string
+ * Filter callback for `admin_title`: the upgrade screen replaces the title outright.
+ *
+ * @param string $string Ignored
  *
  * @return string
  */
@@ -30,6 +32,11 @@ function customPageTitle($string)
 osc_add_filter('admin_title', 'customPageTitle');
 
 //customize Head
+/**
+ * Emit the upgrade screen's script, together with the translated strings it reports progress with.
+ *
+ * @return void
+ */
 function customHead()
 {
     // The screen reports back in the owner's terms, not the database's. Two things

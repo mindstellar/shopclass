@@ -25,16 +25,31 @@ use mindstellar\billing\PaymentGateway;
  */
 final class OfflineGateway implements PaymentGateway
 {
+    /**
+     * Stable identifier stored on every order this gateway handles.
+     *
+     * @return string
+     */
     public function getId(): string
     {
         return 'offline';
     }
 
+    /**
+     * Display name for the admin gateway list and the user's checkout.
+     *
+     * @return string
+     */
     public function getName(): string
     {
         return _m('Bank transfer');
     }
 
+    /**
+     * Only the site's own billing currency: an offline transfer has no conversion.
+     *
+     * @return string[]
+     */
     public function getSupportedCurrencies(): array
     {
         return array(osc_billing_currency());
@@ -44,6 +59,8 @@ final class OfflineGateway implements PaymentGateway
      * Instructions are what makes this payable -- without them a buyer would have
      * nowhere to send the money, so an admin who has not written any must not have
      * this offered at checkout.
+     *
+     * @return bool
      */
     public function isConfigured(): bool
     {
@@ -53,6 +70,10 @@ final class OfflineGateway implements PaymentGateway
     /**
      * No redirect, no external call: the checkout page shows the admin's own
      * instructions plus the reference the buyer needs to quote when they pay.
+     *
+     * @param Order $order
+     *
+     * @return CheckoutIntent
      */
     public function createCheckout(Order $order): CheckoutIntent
     {
@@ -68,6 +89,10 @@ final class OfflineGateway implements PaymentGateway
      * There is no webhook for a bank transfer -- an admin settles the order by hand
      * with the existing "Mark paid" action, which exercises the exact same
      * Billing::markPaid() path a real gateway's callback would.
+     *
+     * @param array $request
+     *
+     * @return CallbackResult
      */
     public function handleCallback(array $request): CallbackResult
     {

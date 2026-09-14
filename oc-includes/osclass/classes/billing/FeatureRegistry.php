@@ -30,10 +30,16 @@ final class FeatureRegistry
     /** @var array<string,array> raw specs, keyed by feature id */
     private array $specs = array();
 
+    /** Private: the registry is a singleton, reached through instance(). */
     private function __construct()
     {
     }
 
+    /**
+     * The shared registry.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -60,6 +66,10 @@ final class FeatureRegistry
      *                                        other feature stays unreachable that way.
      *   'apply'       => callable(int $userId, array $ctx): bool  Required.
      *
+     * @param string $id   Lower-case slug, see isValidId()
+     * @param array  $spec  Keys as documented above
+     *
+     * @return void
      * @throws InvalidArgumentException on an invalid id or an incomplete spec
      */
     public function register(string $id, array $spec): void
@@ -96,12 +106,21 @@ final class FeatureRegistry
         $this->specs[$id] = $spec;
     }
 
+    /**
+     * One registered feature, or null when nothing registered that id.
+     *
+     * @param string $id
+     *
+     * @return Feature|null
+     */
     public function get(string $id): ?Feature
     {
         return isset($this->specs[$id]) ? Feature::fromSpec($id, $this->specs[$id]) : null;
     }
 
     /**
+     * Every registered feature, keyed by id.
+     *
      * @return array<string,Feature>
      */
     public function all(): array
@@ -114,7 +133,13 @@ final class FeatureRegistry
         return $out;
     }
 
-    /** Lower-case slug, matching the spelling used for widget and field type ids. */
+    /**
+     * Lower-case slug, matching the spelling used for widget and field type ids.
+     *
+     * @param string $id
+     *
+     * @return bool
+     */
     public static function isValidId(string $id): bool
     {
         return (bool) preg_match('/^[a-z0-9_.-]{1,64}$/', $id);

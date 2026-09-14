@@ -2,7 +2,7 @@
 title: Coding style
 description: The PHP coding standard for ShopClass core — PSR-12, the pinned php-cs-fixer, the PHP 8.0 floor, and the legacy naming conventions you will meet in older files.
 sidebar:
-  order: 13
+  order: 14
 ---
 
 ShopClass core follows **PSR-12**, enforced by a pinned `php-cs-fixer` that CI

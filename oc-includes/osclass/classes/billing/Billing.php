@@ -48,11 +48,15 @@ final class Billing
      *
      * apply() runs while spend() still holds the wallet row's write lock (see
      * Wallet::debit(), called just before it in the same transaction), and a hook is
-     * arbitrary plugin code with no business running while that lock is held. The
-     * built-in features that used to fire item_premium_on/item_bumped from inside
-     * their own apply() call this instead. A caller invoking a feature's apply()
-     * directly, outside spend(), sees no difference -- nothing is deferring, so the
-     * hook fires exactly where it always did.
+     * arbitrary plugin code with no business running while that lock is held, so
+     * item_premium_on and item_bumped go through here rather than firing from inside
+     * their own apply(). A caller invoking a feature's apply() directly, outside
+     * spend(), sees no difference: nothing is deferring, so the hook fires in place.
+     *
+     * @param string $hook Hook name
+     * @param array  $args Arguments spread into osc_run_hook()
+     *
+     * @return void
      */
     public static function deferHook(string $hook, array $args = array()): void
     {
@@ -68,6 +72,8 @@ final class Billing
 
     /**
      * Ask the order's gateway what the browser should do next.
+     *
+     * @param Order $order
      *
      * @return CheckoutIntent|null null when the gateway is unregistered or not
      *                             configured -- the caller shows "payment unavailable"
@@ -144,6 +150,8 @@ final class Billing
      * marked paid without its credits landing, and the credit is keyed on the order id
      * so a retried callback cannot mint twice.
      *
+     * @param Order       $order
+     * @param string|null $externalRef The gateway's own reference for the payment
      * @param bool $allowFailed Also settle an order currently `failed`, not only
      *                          `pending` -- the admin "mark paid" escape hatch only,
      *                          for a provider retrying payment after an earlier
@@ -191,6 +199,10 @@ final class Billing
      * The credits come back out even if that leaves the balance negative -- see
      * Wallet::reverse(). Core never asks the provider for a refund; it records the one
      * the provider reports.
+     *
+     * @param Order $order
+     *
+     * @return bool whether this call reversed the order
      */
     public static function refund(Order $order): bool
     {
@@ -310,6 +322,11 @@ final class Billing
 
     /**
      * Verify a paid callback against the stored order, then fulfil it.
+     *
+     * @param string         $gatewayId
+     * @param CallbackResult $result
+     *
+     * @return CallbackResult the original result, or an ignored() one on mismatch
      */
     private static function settlePaid(string $gatewayId, CallbackResult $result): CallbackResult
     {
@@ -347,6 +364,11 @@ final class Billing
      *
      * The gateway check is what stops one installed gateway from settling another's
      * orders, whether by a bug or by a forged payload aimed at the weaker of the two.
+     *
+     * @param string         $gatewayId
+     * @param CallbackResult $result
+     *
+     * @return Order|null null when nothing matches, or the match is another gateway's
      */
     private static function resolve(string $gatewayId, CallbackResult $result): ?Order
     {
@@ -365,6 +387,15 @@ final class Billing
         return $order;
     }
 
+    /**
+     * Record a billing action in the admin log.
+     *
+     * @param string      $action
+     * @param Order       $order
+     * @param string|null $externalRef
+     *
+     * @return void
+     */
     private static function log(string $action, Order $order, ?string $externalRef): void
     {
         Log::newInstance()->insertLog(

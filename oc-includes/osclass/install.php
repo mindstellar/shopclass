@@ -136,7 +136,7 @@ if ($already_installed) {
 switch ($step) {
     case 1:
         $requirements = get_requirements();
-        $error        = check_requirements($requirements);
+        $error        = !requirements_met($requirements);
         if (
             $error === false && $install_locale && !array_key_exists($install_locale, $locales)
             && array_key_exists($install_locale, $jsonLocales)
@@ -196,9 +196,6 @@ switch ($step) {
         }
         break;
     case 4:
-        if (Params::getParam('result') != '') {
-            $error = Params::getParam('result');
-        }
         $password = Params::getParam('password', false, false);
         break;
     default:

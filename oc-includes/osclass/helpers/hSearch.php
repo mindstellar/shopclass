@@ -22,7 +22,7 @@
 /**
  * Gets search object
  *
- * @return mixed
+ * @return Search
  */
 function osc_search()
 {
@@ -39,7 +39,7 @@ function osc_search()
 /**
  * Gets available search orders
  *
- * @return array
+ * @return array<string,array{sOrder:string,iOrderType:string}>
  */
 function osc_list_orders()
 {
@@ -61,7 +61,7 @@ function osc_list_orders()
 /**
  * Gets current search page
  *
- * @return int
+ * @return bool
  */
 function osc_search_alert_subscribed()
 {
@@ -175,7 +175,7 @@ function osc_search_city()
 /**
  * Gets current search users
  *
- * @return array
+ * @return array<int,string>
  */
 function osc_search_user()
 {
@@ -249,7 +249,7 @@ function osc_search_end()
 /**
  * Gets current search category
  *
- * @return array
+ * @return array<int|string,mixed>
  */
 function osc_search_category()
 {
@@ -270,7 +270,7 @@ function osc_search_category()
 /**
  * Gets current search category id
  *
- * @return array
+ * @return int[]
  */
 function osc_search_category_id()
 {
@@ -296,6 +296,40 @@ function osc_search_category_id()
     return $category;
 }
 
+/**
+ * Name of the category the current search is filtered to. Takes the first of a
+ * multi-category search, so it always agrees with
+ * {@see osc_search_category_description()}.
+ *
+ * @param string $locale
+ *
+ * @return string
+ */
+function osc_search_category_name($locale = '')
+{
+    $a_search_category_id = osc_search_category_id();
+    $text                 = '';
+    if (!empty($a_search_category_id)) {
+        list($search_category_id) = $a_search_category_id;
+        if (is_numeric($search_category_id)) {
+            $tmp = Category::newInstance()->findByPrimaryKey($search_category_id, $locale);
+            if (isset($tmp['s_name'])) {
+                $text = $tmp['s_name'];
+            }
+        }
+    }
+
+    return $text;
+}
+
+/**
+ * Description of the category the current search is filtered to. Takes the first of a
+ * multi-category search, so it always agrees with {@see osc_search_category_name()}.
+ *
+ * @param string $locale
+ *
+ * @return string
+ */
 function osc_search_category_description($locale = '')
 {
     $a_search_category_id = osc_search_category_id();
@@ -360,7 +394,16 @@ function osc_update_search_url($params = array(), $forced = false)
  */
 function osc_alert_form()
 {
-    osc_current_web_theme_path('alert-form.php');
+    // One field on a core-owned contract. A theme that ships the view still owns
+    // it; one that does not gets core's rather than nothing, which is what the
+    // walk used to leave behind.
+    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'alert-form.php')) {
+        osc_current_web_theme_path('alert-form.php');
+
+        return;
+    }
+
+    require ABS_PATH . 'oc-includes/osclass/gui/alert-form-content.php';
 }
 
 /**
@@ -390,8 +433,7 @@ function osc_search_show_all_url($params = array())
 /**
  * Gets search url given params
  *
- * @params array $params
- * @param null $params
+ * @param array<string,mixed>|null $params
  *
  * @return string
  */
@@ -733,9 +775,11 @@ function osc_search_url($params = null)
 }
 
 /**
- * @param $var
+ * Replace every slash in a value, or in each value of an array, with a space.
  *
- * @return array|mixed
+ * @param array|string $var
+ *
+ * @return array|string
  */
 function osc_remove_slash($var)
 {
@@ -753,7 +797,7 @@ function osc_remove_slash($var)
 /**
  * Gets list of countries with items
  *
- * @return array
+ * @return array<string,mixed>|null Null when no country list has been loaded
  */
 function osc_list_country()
 {
@@ -767,7 +811,7 @@ function osc_list_country()
 /**
  * Gets list of regions with items
  *
- * @return array
+ * @return array<string,mixed>|null Null when no region list has been loaded
  */
 function osc_list_region()
 {
@@ -781,7 +825,7 @@ function osc_list_region()
 /**
  * Gets list of cities with items
  *
- * @return array
+ * @return array<string,mixed>|null Null when no city list has been loaded
  */
 function osc_list_city()
 {
@@ -795,7 +839,7 @@ function osc_list_city()
 /**
  * Gets the next country in the list_countries list
  *
- * @return array
+ * @return bool False once the list is exhausted
  */
 function osc_has_list_countries()
 {
@@ -816,7 +860,7 @@ function osc_has_list_countries()
  *
  * @param string $country
  *
- * @return array
+ * @return bool False once the list is exhausted
  */
 function osc_has_list_regions($country = '%%%%')
 {
@@ -839,7 +883,7 @@ function osc_has_list_regions($country = '%%%%')
  *
  * @param string $region
  *
- * @return array
+ * @return bool False once the list is exhausted
  */
 function osc_has_list_cities($region = '%%%%')
 {
@@ -920,7 +964,7 @@ function osc_list_country_name()
 /**
  * Gets the number of items of current "list country"
  *
- * @return int
+ * @return string
  */
 function osc_list_country_code()
 {
@@ -930,7 +974,7 @@ function osc_list_country_code()
 /**
  * Gets the number of items of current "list country"
  *
- * @return int
+ * @return int|string
  */
 function osc_list_country_items()
 {
@@ -959,13 +1003,13 @@ function osc_list_region_name()
 }
 
 /**
- * Gets the name of current "list region" by slug
+ * Gets the slug of current "list region"
  *
  * @return string
  */
 function osc_list_region_slug()
 {
-    return osc_field(osc_list_region(), 'region_name', '');
+    return osc_field(osc_list_region(), 'region_slug', '');
 }
 
 /**
@@ -981,7 +1025,7 @@ function osc_list_region_id()
 /**
  * Gets the number of items of current "list region"
  *
- * @return int
+ * @return int|string
  */
 function osc_list_region_items()
 {
@@ -1032,7 +1076,7 @@ function osc_list_city_id()
 /**
  * Gets the number of items of current "list city"
  *
- * @return int
+ * @return int|string
  */
 function osc_list_city_items()
 {
@@ -1057,7 +1101,7 @@ function osc_list_city_url()
  *
  * @param int $limit
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_latest_searches($limit = 20)
 {
@@ -1091,7 +1135,7 @@ function osc_count_latest_searches()
 /**
  * Gets the next latest search
  *
- * @return array
+ * @return bool False once the list is exhausted
  */
 function osc_has_latest_searches()
 {
@@ -1108,7 +1152,7 @@ function osc_has_latest_searches()
 /**
  * Gets the current latest search
  *
- * @return array
+ * @return array<string,mixed>|null Null when no latest searches have been loaded
  */
 function osc_latest_search()
 {
@@ -1150,7 +1194,9 @@ function osc_latest_search_total()
 }
 
 /**
- * @return array|mixed|string
+ * The canonical URL exported for the current page.
+ *
+ * @return string Empty string when none was set
  */
 function osc_get_canonical()
 {
@@ -1162,9 +1208,12 @@ function osc_get_canonical()
 }
 
 /**
- * @param $conditions
+ * Strip a search condition set down to the filters a visitor actually chose, with
+ * category ids resolved to names.
  *
- * @return mixed
+ * @param array<string,mixed> $conditions
+ *
+ * @return array<string,mixed>
  */
 function osc_get_raw_search($conditions)
 {
@@ -1215,9 +1264,11 @@ function osc_get_raw_search($conditions)
 }
 
 /**
- * @param $paramCat
+ * Slug of the category a search is filtered to.
  *
- * @return string
+ * @param array<int,int|string>|int|string $paramCat
+ *
+ * @return string Empty string for a multi-category search or an unknown category
  */
 function _aux_search_category_slug($paramCat)
 {

@@ -21,6 +21,9 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminMain extends AdminSecBaseModel
 {
+    /**
+     * Let plugins hook the dashboard before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,12 @@ class CAdminMain extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Log the administrator out, otherwise draw the dashboard with its counters.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {

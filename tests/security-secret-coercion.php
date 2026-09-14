@@ -57,7 +57,7 @@ $match = $user->findByIdSecret($userId, 'aB3xK9qLmZ');
 check('the real secret still authenticates', is_array($match) && ($match['pk_i_id'] ?? null) == $userId);
 
 pin('the secret "0" matches nothing', array(), $user->findByIdSecret($userId, '0'));
-pin('an int 0 matches nothing either', array(), $user->findByIdSecret($userId, 0));
+pin('an int 0 matches no id-secret either', array(), $user->findByIdSecret($userId, 0));
 pin('a wrong secret still matches nothing', array(), $user->findByIdSecret($userId, 'totally-wrong'));
 
 /* A secret that genuinely starts with a digit must not be reachable by its
@@ -80,7 +80,7 @@ $reset = $user->findByIdPasswordSecret($userId, 'rQ8vNmT1');
 check('the real reset code still works', is_array($reset) && ($reset['pk_i_id'] ?? null) == $userId);
 
 pin('a reset code of "0" matches nothing', array(), $user->findByIdPasswordSecret($userId, '0'));
-pin('an int 0 matches nothing either', array(), $user->findByIdPasswordSecret($userId, 0));
+pin('an int 0 matches no id-password either', array(), $user->findByIdPasswordSecret($userId, 0));
 pin('a wrong code matches nothing', array(), $user->findByIdPasswordSecret($userId, 'wrong'));
 
 /* The 24-hour window still applies. */

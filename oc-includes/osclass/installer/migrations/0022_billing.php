@@ -33,6 +33,14 @@ use mindstellar\migration\MigrationInterface;
  * the same state.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add t_item.dt_premium_expiration and create the billing wallet, ledger and
+     * order tables.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $item = DB_TABLE_PREFIX . 't_item';
@@ -103,6 +111,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {

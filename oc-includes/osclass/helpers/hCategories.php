@@ -22,7 +22,7 @@
 /**
  * Gets current category
  *
- * @return array
+ * @return array<string,mixed>|null
  */
 function osc_category()
 {
@@ -47,7 +47,7 @@ function osc_category()
  * ?>
  * </code>
  *
- * @return mixed|string <array>
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_categories()
 {
@@ -61,10 +61,10 @@ function osc_get_categories()
 /**
  * Low level function: Gets the value of the category attribute
  *
- * @param        $field
- * @param string $locale
+ * @param string $field
+ * @param string $locale Unused; the current category is read without a locale
  *
- * @return string <array>
+ * @return mixed Empty string when the field is not set
  */
 function osc_category_field($field, $locale = '')
 {
@@ -108,7 +108,7 @@ function osc_count_categories()
 /**
  * Let you know if there are more categories in the list. If categories are not loaded, this function will load them.
  *
- * @return boolean
+ * @return bool
  */
 function osc_has_categories()
 {
@@ -123,7 +123,7 @@ function osc_has_categories()
  * Gets the total of subcategories for the current category. If subcategories are not loaded, this function will load
  * them and it will prepare the the pointer to the first element
  *
- * @return int
+ * @return int -1 when there is no current category
  */
 function osc_count_subcategories()
 {
@@ -151,7 +151,7 @@ function osc_count_subcategories()
  * Let you know if there are more subcategories for the current category in the list. If subcategories are not loaded,
  * this function will load them and it will prepare the pointer to the first element
  *
- * @return boolean
+ * @return bool|int -1 when there is no current category
  */
 function osc_has_subcategories()
 {
@@ -243,7 +243,7 @@ function osc_category_slug($locale = '')
 /**
  * Returns if the category has the prices enabled or not
  *
- * @return boolean
+ * @return bool
  */
 function osc_category_price_enabled()
 {
@@ -253,7 +253,7 @@ function osc_category_price_enabled()
 /**
  * Returns category's parent id
  *
- * @return int
+ * @return string Empty string for a top-level category
  */
 function osc_category_parent_id()
 {
@@ -263,7 +263,7 @@ function osc_category_parent_id()
 /**
  * Gets the total items related with the current category
  *
- * @return int
+ * @return string
  */
 function osc_category_total_items()
 {
@@ -285,7 +285,7 @@ function osc_goto_first_category()
 /**
  * Gets list of non-empty categories
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_non_empty_categories()
 {
@@ -298,9 +298,9 @@ function osc_get_non_empty_categories()
 /**
  * Prints category select
  *
- * @param string $name
- * @param null   $category
- * @param null   $default_str
+ * @param string          $name
+ * @param int|string|null $category    Pre-selected category id
+ * @param string|null     $default_str
  *
  * @return void
  */
@@ -315,12 +315,11 @@ function osc_categories_select($name = 'sCategory', $category = null, $default_s
 /**
  * Get th category by id or slug
  *
- * @param $by   //two possibilities: slug or id
- * @param $what //the id or slug category we're looking for
+ * @param string     $by   'slug' or 'id'
+ * @param int|string $what
  *
- * @return array|bool
+ * @return array<string,mixed>|false
  * @since 3.0
- *
  */
 function osc_get_category($by, $what)
 {
@@ -339,7 +338,9 @@ function osc_get_category($by, $what)
 }
 
 /**
- * @return bool|int|void
+ * Descend the category pointer into the current category's children.
+ *
+ * @return int|false|null -1 with no current category, false when it has no children
  */
 function osc_category_move_to_children()
 {
@@ -363,7 +364,9 @@ function osc_category_move_to_children()
 }
 
 /**
- * @return bool|int
+ * Move the category pointer back up to the current category's parent.
+ *
+ * @return int|false|null -1 with no current category, false when it has no parent
  */
 function osc_category_move_to_parent()
 {
@@ -402,7 +405,7 @@ function osc_category_move_to_parent()
  * Gets the total of subcategories for the current category. If subcategories are not loaded, this function will load
  * them and it will prepare the the pointer to the first element
  *
- * @return int
+ * @return int -1 when there is no current category
  */
 function osc_count_subcategories2()
 {
@@ -421,8 +424,11 @@ function osc_count_subcategories2()
 }
 
 /**
- * @param null $categories
+ * Export a category tree to the view, loading the full tree when none is given.
  *
+ * @param array<int,array<string,mixed>>|null $categories
+ *
+ * @return void
  */
 function osc_export_categories($categories = null)
 {

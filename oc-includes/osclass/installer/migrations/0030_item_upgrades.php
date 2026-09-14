@@ -41,6 +41,13 @@ return new class () implements MigrationInterface {
         'billing_urgent_days'         => array('7', 'INTEGER'),
     );
 
+    /**
+     * Create t_item_upgrade and seed the bump, highlight and urgent preferences.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(

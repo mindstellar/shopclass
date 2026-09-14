@@ -20,37 +20,40 @@ abstract class Logger
     /**
      * Log a message with the INFO level.
      *
-     * @param string $message
+     * @param string      $message
+     * @param string|null $caller
      *
-     * @param null   $caller
-     *
+     * @return void
      */
     abstract public function info($message = '', $caller = null);
 
     /**
      * Log a message with the WARN level.
      *
-     * @param string $message
+     * @param string      $message
+     * @param string|null $caller
      *
-     * @param null   $caller
-     *
+     * @return void
      */
     abstract public function warn($message = '', $caller = null);
 
     /**
      * Log a message with the ERROR level.
      *
-     * @param string $message
+     * @param string      $message
+     * @param string|null $caller
      *
-     * @param null   $caller
+     * @return void
      */
     abstract public function error($message = '', $caller = null);
 
     /**
      * Log a message with the DEBUG level.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     abstract public function debug($message = '', $caller = null);
 }

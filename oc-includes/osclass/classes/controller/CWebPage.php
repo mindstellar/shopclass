@@ -21,6 +21,9 @@ class CWebPage extends BaseModel
 {
     public $pageManager;
 
+    /**
+     * Boots the base controller, opens the Page model and fires the `init_page` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -29,6 +32,12 @@ class CWebPage extends BaseModel
         osc_run_hook('init_page');
     }
 
+    /**
+     * Loads the static page by id or slug, expands its {WEB_*} placeholders, and renders it
+     * through the theme convention, a registered page template, or the default page view.
+     *
+     * @return void
+     */
     public function doModel()
     {
         $id   = Params::getParam('id');
@@ -68,9 +77,16 @@ class CWebPage extends BaseModel
 
         // export $page content to View
         $this->_exportVariableToView('page', $page);
+        $lang = '';
         if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
-            osc_set_current_user_locale(Params::getParam('lang'));
+            $lang = Params::getParam('lang');
+            osc_set_current_user_locale($lang);
         }
+
+        // A static page is reachable by id and by slug, and per-locale under a
+        // language prefix. Point each at itself in the language it was asked for,
+        // never across languages.
+        $this->_exportVariableToView('canonical', osc_static_page_url($lang));
 
         // Public static page: cacheable for anonymous visitors.
         osc_mark_response_cacheable();
@@ -84,7 +100,7 @@ class CWebPage extends BaseModel
             . '.php')
         ) {
             // Theme convention override wins over any picked template.
-            $this->doView('page-' . $page['s_internal_name'] . '.php');
+            $this->doView(osc_locate_template(array('page-' . $page['s_internal_name'] . '.php'), 'page'));
         } elseif ($registered !== null) {
             $this->renderRegisteredTemplate($registered, $page);
         } elseif (isset($meta['template'])
@@ -99,7 +115,7 @@ class CWebPage extends BaseModel
             Session::newInstance()->_clearVariables();
             osc_run_hook('after_html');
         } else {
-            $this->doView('page.php');
+            $this->doView(osc_locate_template(array('page.php'), 'page'));
         }
     }
 
@@ -110,8 +126,8 @@ class CWebPage extends BaseModel
      * page scope, mirroring the legacy plugin-template branch). An unresolvable
      * file path degrades to the default page view rather than fataling.
      *
-     * @param array $spec A registered template spec (render, capability, …).
-     * @param array $page The current page row.
+     * @param array<string,mixed> $spec A registered template spec (render, capability, …).
+     * @param array<string,mixed> $page The current page row.
      *
      * @return void
      */
@@ -143,11 +159,13 @@ class CWebPage extends BaseModel
             return;
         }
 
-        $this->doView('page.php');
+        $this->doView(osc_locate_template(array('page.php'), 'page'));
     }
 
     /**
-     * @param $file
+     * Renders the given theme template between the `before_html` and `after_html` hooks.
+     *
+     * @param string $file Theme-relative or located template path
      *
      * @return void
      */

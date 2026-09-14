@@ -36,10 +36,16 @@ interface PaymentGateway
      * Stable identifier, stored on every order this gateway handles. Lower-case slug,
      * e.g. 'stripe'. Changing it after orders exist orphans them, so treat it as
      * permanent.
+     *
+     * @return string
      */
     public function getId(): string;
 
-    /** Display name for the admin gateway list and the user's checkout. */
+    /**
+     * Display name for the admin gateway list and the user's checkout.
+     *
+     * @return string
+     */
     public function getName(): string;
 
     /**
@@ -53,6 +59,8 @@ interface PaymentGateway
      * Whether the gateway has everything it needs to take a payment right now --
      * credentials present, and in whatever mode the admin selected. A gateway that
      * returns false is listed in the admin but never offered at checkout.
+     *
+     * @return bool
      */
     public function isConfigured(): bool;
 
@@ -62,6 +70,10 @@ interface PaymentGateway
      *
      * The order is already persisted and pending when this is called, so its id is a
      * safe correlation handle to hand the provider and read back in handleCallback().
+     *
+     * @param Order $order
+     *
+     * @return CheckoutIntent
      */
     public function createCheckout(Order $order): CheckoutIntent;
 
@@ -78,6 +90,8 @@ interface PaymentGateway
      * the ones expected.
      *
      * @param array $request The request payload (typically $_POST or a decoded body)
+     *
+     * @return CallbackResult
      */
     public function handleCallback(array $request): CallbackResult;
 }

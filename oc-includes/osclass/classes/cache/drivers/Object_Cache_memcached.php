@@ -243,6 +243,8 @@ class Object_Cache_memcached implements iObject_Cache
 
     /**
      * Echoes the stats of the caching.
+     *
+     * @return void
      */
     public function stats()
     {
@@ -260,11 +262,6 @@ padding: 1em;'><h2>Memcached stats</h2>";
     }
 
     /**
-     * is_supported()
-     *
-     * Check to see if the memcached extension is available on this system.
-     */
-    /**
      * Normalised cache statistics for the admin's cache screen.
      *
      * Deliberately NOT part of iObject_Cache: third-party drivers implement that
@@ -272,7 +269,7 @@ padding: 1em;'><h2>Memcached stats</h2>";
      * method_exists() instead. The legacy stats() is left alone — it echoes debug
      * markup and anything already calling it keeps working.
      *
-     * @return array|null Null when the driver has nothing to report.
+     * @return array<string,int|string|null>|null Null when the driver has nothing to report.
      */
     public function statsData()
     {
@@ -328,6 +325,11 @@ padding: 1em;'><h2>Memcached stats</h2>";
         return $this->site_prefix . $key;
     }
 
+    /**
+     * Whether the memcached extension is loaded.
+     *
+     * @return bool
+     */
     public static function is_supported()
     {
         if (!class_exists('Memcached')) {
@@ -340,13 +342,17 @@ padding: 1em;'><h2>Memcached stats</h2>";
     }
 
     /**
+     * Nothing to release: the Memcached client closes with the request.
      *
+     * @return void
      */
     public function __destruct()
     {
     }
 
     /**
+     * The driver's identifier, as accepted by OSC_CACHE.
+     *
      * @return string
      */
     public function _get_cache()
@@ -357,7 +363,7 @@ padding: 1em;'><h2>Memcached stats</h2>";
     /**
      * Utility function to determine whether a key exists in the cache.
      *
-     * @param $key
+     * @param int|string $key
      *
      * @return bool
      */

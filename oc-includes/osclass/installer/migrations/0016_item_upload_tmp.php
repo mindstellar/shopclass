@@ -26,6 +26,13 @@ use mindstellar\migration\MigrationInterface;
  * leaves an existing table alone.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_item_upload_tmp, the ledger of photos uploaded before a listing is saved.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_upload_tmp';

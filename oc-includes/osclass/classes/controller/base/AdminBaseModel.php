@@ -17,6 +17,9 @@
  */
 class AdminBaseModel extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the init_admin_insecure hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -24,12 +27,21 @@ class AdminBaseModel extends BaseModel
         osc_run_hook('init_admin_insecure');
     }
 
+    /**
+     * No-op: admin pages that need model work override this.
+     *
+     * @return void
+     */
     public function doModel()
     {
     }
 
     /**
-     * @param $file
+     * No-op: admin pages that render a template override this.
+     *
+     * @param string $file
+     *
+     * @return void
      */
     public function doView($file)
     {

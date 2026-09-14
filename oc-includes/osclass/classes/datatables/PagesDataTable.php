@@ -26,9 +26,11 @@ class PagesDataTable extends DataTable
     private $total_filtered;
 
     /**
-     * @param $params
+     * Builds the static-pages listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -50,6 +52,11 @@ class PagesDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the page columns and lets plugins extend them via admin_pages_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -63,8 +70,11 @@ class PagesDataTable extends DataTable
     }
 
     /**
-     * @param $pages
+     * Formats each page into table cells, preferring the current user's locale for the title.
      *
+     * @param array<int,array<string,mixed>> $pages
+     *
+     * @return void
      */
     private function processData($pages)
     {

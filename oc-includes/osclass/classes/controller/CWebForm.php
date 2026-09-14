@@ -25,11 +25,19 @@ use mindstellar\model\FormSubmission;
  */
 class CWebForm extends BaseModel
 {
+    /**
+     * Boots the base controller.
+     */
     public function __construct()
     {
         parent::__construct();
     }
 
+    /**
+     * Handles the `submit` action; every other action redirects to the home page.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
@@ -41,6 +49,12 @@ class CWebForm extends BaseModel
         }
     }
 
+    /**
+     * Validates and stores one off-item form submission, then redirects back to the
+     * referring page with a flash message. Honeypot hits and banned IPs store nothing.
+     *
+     * @return void
+     */
     private function submit()
     {
         osc_csrf_check();
@@ -133,7 +147,7 @@ class CWebForm extends BaseModel
      *
      * @param mixed $raw
      *
-     * @return array [string $type, int $id]
+     * @return array{0:string,1:int}
      */
     private function parseContext($raw)
     {
@@ -172,7 +186,9 @@ class CWebForm extends BaseModel
     }
 
     /**
-     * @param $file
+     * Renders the given theme template.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */

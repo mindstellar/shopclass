@@ -54,6 +54,14 @@ return new class () implements MigrationInterface {
         'billing_quota_mode',
     );
 
+    /**
+     * Seed the listing-slot preferences, delete the retired rolling-window ones, and
+     * swap t_item's idx_user_first_pub for idx_user_expiration.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $this->seedPreferences($conn);
@@ -61,6 +69,13 @@ return new class () implements MigrationInterface {
         $this->reindexItemByExpiration($conn);
     }
 
+    /**
+     * Seed the listing-slot preferences, never overwriting a value already set.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function seedPreferences(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';
@@ -73,6 +88,13 @@ return new class () implements MigrationInterface {
         }
     }
 
+    /**
+     * Delete the retired rolling-window quota preferences.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function removeRetiredPreferences(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';
@@ -84,6 +106,13 @@ return new class () implements MigrationInterface {
         }
     }
 
+    /**
+     * Replace t_item's idx_user_first_pub with idx_user_expiration.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     private function reindexItemByExpiration(Connection $conn): void
     {
         $item = DB_TABLE_PREFIX . 't_item';
@@ -101,6 +130,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether an index (unique or not) named $index already exists on $table.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function indexExists(Connection $conn, string $table, string $index): bool
     {

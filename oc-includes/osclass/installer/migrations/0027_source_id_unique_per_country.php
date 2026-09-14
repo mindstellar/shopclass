@@ -42,6 +42,14 @@ return new class () implements MigrationInterface {
         't_city'   => 'uq_city_source',
     );
 
+    /**
+     * Rebuild the region/city source-id unique keys as (fk_c_country_code,
+     * i_source_id) and drop t_city's now-redundant country index.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         foreach (self::KEYS as $suffix => $keyName) {
@@ -83,6 +91,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $index exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function indexExists(Connection $conn, string $table, string $index): bool
     {
@@ -97,6 +112,13 @@ return new class () implements MigrationInterface {
 
     /**
      * How many columns $index covers. One means it is still the global form.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return int
+     * @throws \mindstellar\database\DbException
      */
     private function indexColumnCount(Connection $conn, string $table, string $index): int
     {

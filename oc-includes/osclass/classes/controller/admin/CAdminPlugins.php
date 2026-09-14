@@ -23,6 +23,9 @@ use mindstellar\security\PluginAjaxFile;
  */
 class CAdminPlugins extends AdminSecBaseModel
 {
+    /**
+     * Let plugins hook the plugins section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -31,6 +34,13 @@ class CAdminPlugins extends AdminSecBaseModel
     }
 
     // Business layer...
+
+    /**
+     * Dispatch the requested plugins action: upload, install, uninstall, enable, disable,
+     * delete, a plugin's own admin and configure screens, and the market browser.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -417,9 +427,8 @@ class CAdminPlugins extends AdminSecBaseModel
                     } else {
                         $sAuthor = __('By') . ' ' . $pInfo['author'];
                     }
-                    // The state of a plugin used to reach the page as a row colour and nothing
-                    // else. It now travels as a word as well, rendered in the Status column as
-                    // a badge; the class on the <tr> only picks the badge's tint and glyph.
+                    // The state travels as a word, rendered in the Status column as a badge;
+                    // the class on the <tr> only picks the badge's tint and glyph.
                     $plugin_status = 'uninstalled';
                     $sStatusWord   = __('Not installed');
                     if ($installed) {

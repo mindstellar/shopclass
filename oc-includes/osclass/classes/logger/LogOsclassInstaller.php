@@ -21,12 +21,17 @@ class LogOsclassInstaller extends Logger
     private $os;
     private $component = 'INSTALLER';
 
+    /**
+     * Records the host operating system reported with each message.
+     */
     public function __construct()
     {
         $this->os = PHP_OS;
     }
 
     /**
+     * The shared installer logger.
+     *
      * @return \LogOsclassInstaller
      */
     public static function newInstance()
@@ -41,8 +46,10 @@ class LogOsclassInstaller extends Logger
     /**
      * Log a message with the INFO level.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     public function info($message = '', $caller = null)
     {
@@ -50,9 +57,11 @@ class LogOsclassInstaller extends Logger
     }
 
     /**
-     * @param $type
-     * @param $message
-     * @param $caller
+     * Ship one message to the remote installer log. Currently a no-op stub.
+     *
+     * @param string      $type    level name, e.g. 'INFO'
+     * @param string      $message
+     * @param string|null $caller
      *
      * @return bool
      * @todo Creating another target to receive logs.
@@ -78,8 +87,10 @@ class LogOsclassInstaller extends Logger
     /**
      * Log a message with the WARN level.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     public function warn($message = '', $caller = null)
     {
@@ -89,8 +100,10 @@ class LogOsclassInstaller extends Logger
     /**
      * Log a message with the ERROR level.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     public function error($message = '', $caller = null)
     {
@@ -100,8 +113,10 @@ class LogOsclassInstaller extends Logger
     /**
      * Log a message with the DEBUG level.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     public function debug($message = '', $caller = null)
     {
@@ -111,8 +126,10 @@ class LogOsclassInstaller extends Logger
     /**
      * Log a message object with the FATAL level including the caller.
      *
-     * @param string $message
-     * @param null   $caller
+     * @param string      $message
+     * @param string|null $caller
+     *
+     * @return void
      */
     public function fatal($message = '', $caller = null)
     {

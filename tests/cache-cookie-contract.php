@@ -41,8 +41,8 @@ $sessionNames = array('osclass', 'PHPSESSID', session_name());
 
 harness_section('every allowlisted name is a real wire cookie, not a container key');
 foreach ($cookies as $name) {
+    // PHP emits these itself, so there is no setcookie() call to find.
     if (in_array($name, $sessionNames, true)) {
-        check("$name — PHP session cookie (exempt)", true);
         continue;
     }
     $found = array();

@@ -35,14 +35,21 @@ final class Compatibility
     /** `requires` is above the running core, or `requires_php` is above the running PHP. */
     public const INCOMPATIBLE = 'incompatible';
 
+    /**
+     * Not instantiable: every entry point on this class is static.
+     */
     private function __construct()
     {
     }
 
     /**
-     * @param array $info a Plugins::getInfo() / WebThemes::loadThemeInfo() array,
-     *                     or a catalog entry carrying the same 'requires' /
-     *                     'tested_up_to' / 'requires_php' keys
+     * Verdict on whether a package may be installed or kept running here.
+     *
+     * @param array<string,mixed> $info        a Plugins::getInfo() / WebThemes::loadThemeInfo() array,
+     *                                         or a catalog entry carrying the same 'requires' /
+     *                                         'tested_up_to' / 'requires_php' keys
+     * @param string|null         $coreVersion defaults to OSCLASS_VERSION
+     * @param string|null         $phpVersion  defaults to PHP_VERSION
      *
      * @return array{status:string, blocked:bool, reason:string} `reason` is a
      *               translated, human-readable sentence ('' when status is OK)
@@ -103,10 +110,12 @@ final class Compatibility
     /**
      * Highest entry whose `requires` <= core and `requires_php` <= PHP.
      *
-     * @param array $versions list of arrays each having at least 'version' and
-     *                        optionally 'requires' / 'requires_php'
+     * @param array<int,array<string,mixed>> $versions    list of arrays each having at least 'version' and
+     *                                                     optionally 'requires' / 'requires_php'
+     * @param string|null                     $coreVersion defaults to OSCLASS_VERSION
+     * @param string|null                     $phpVersion  defaults to PHP_VERSION
      *
-     * @return array|null the winning entry, or null when none qualifies
+     * @return array<string,mixed>|null the winning entry, or null when none qualifies
      */
     public static function pickBestVersion(
         array $versions,
@@ -140,7 +149,14 @@ final class Compatibility
         return $best;
     }
 
-    /** Short badge label for the admin UI, e.g. "Compatible with 6.0.x" / "Not tested with 6.0 yet" / "Requires 6.2+". */
+    /**
+     * Short badge label for the admin UI, e.g. "Compatible with 6.0.x" / "Not tested with 6.0 yet" / "Requires 6.2+".
+     *
+     * @param array<string,mixed> $info        the package header / catalog entry
+     * @param string|null         $coreVersion defaults to OSCLASS_VERSION
+     *
+     * @return string
+     */
     public static function badgeLabel(array $info, ?string $coreVersion = null): string
     {
         $coreVersion = $coreVersion ?? OSCLASS_VERSION;
@@ -173,6 +189,11 @@ final class Compatibility
      * exactly the same string on every site regardless of what core version reads it. It
      * says what the package supports; `evaluate()` is still what decides whether *this*
      * install may act on it.
+     *
+     * @param string|null $requiresMin the package's published `requires_min`
+     * @param string|null $testedMax   the package's published `tested_max`
+     *
+     * @return string
      */
     public static function rangeLabel(?string $requiresMin, ?string $testedMax): string
     {
@@ -202,6 +223,10 @@ final class Compatibility
      * The release a prerelease core belongs to: "6.1.0.beta2" -> "6.1.0". A site running the
      * 6.1 beta already has 6.1's code, so a package declaring `Requires Shopclass: 6.1.0` must
      * install there rather than being refused for the whole prerelease series.
+     *
+     * @param string $version
+     *
+     * @return string
      */
     private static function releaseVersion(string $version): string
     {
@@ -211,6 +236,10 @@ final class Compatibility
     /**
      * Treats blank strings, a leading "v", and non-version junk (e.g. "n/a") as
      * "not declared" so callers never compare garbage as a version.
+     *
+     * @param string $value
+     *
+     * @return string|null null when nothing usable was declared
      */
     private static function normalize(string $value): ?string
     {
@@ -228,7 +257,13 @@ final class Compatibility
         return $value;
     }
 
-    /** First two dot-separated segments of a version string, e.g. "6.0.3.beta1" -> "6.0". */
+    /**
+     * First two dot-separated segments of a version string, e.g. "6.0.3.beta1" -> "6.0".
+     *
+     * @param string $version
+     *
+     * @return string
+     */
     private static function minor(string $version): string
     {
         $parts = explode('.', $version);

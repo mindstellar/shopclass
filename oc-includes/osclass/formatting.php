@@ -31,9 +31,12 @@ function add_slashes_extended($array)
 }
 
 /**
- * @param $string
+ * Turn a string into a URL-safe slug: tags, accents, entities and punctuation removed,
+ * whitespace collapsed to single hyphens.
  *
- * @return mixed|null|string|string[]
+ * @param string $string
+ *
+ * @return string
  */
 function osc_sanitizeString($string)
 {
@@ -66,9 +69,12 @@ function osc_sanitizeString($string)
 }
 
 /**
- * @param $string
+ * Replace accented characters with their unaccented ASCII equivalents.
+ * Handles both UTF-8 and ISO-8859-1 input; pure ASCII is returned untouched.
  *
- * @return mixed|null|string|string[]
+ * @param string $string
+ *
+ * @return string
  */
 
 function remove_accents($string)
@@ -461,9 +467,11 @@ function remove_accents($string)
 }
 
 /**
- * @param $string
+ * Tell whether a string is valid UTF-8.
  *
- * @return false|int
+ * @param string $string
+ *
+ * @return int|false 1 when valid, 0 when not, false if the match itself fails
  */
 function is_utf8($string)
 {

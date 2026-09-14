@@ -39,6 +39,8 @@ switch ($type) {
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -52,6 +54,11 @@ osc_admin_page(array(
     'help'    => __('Quickly find out how many new listings have been published on your site and how many visits each of the listings gets.'),
 ));
 
+/**
+ * Emit the listing-statistics charts and the Google Visualization loader they need.
+ *
+ * @return void
+ */
 function customHead()
 {
     $items        = __get('items');

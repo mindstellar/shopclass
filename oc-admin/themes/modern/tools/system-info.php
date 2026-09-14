@@ -106,12 +106,14 @@ if (!function_exists('oscsi_row')) {
      * One ledger row: a verdict word, the fact, a note (may hold <code>/<strong>), a value,
      * and at most one action.
      *
-     * @param string $state  ok | warn | danger | off
-     * @param string $word   the verdict, spelled out
-     * @param string $name
-     * @param string $note   developer-authored copy; callers escape any interpolated values
-     * @param string $value
-     * @param array  $action array{label:string, url:string} or empty
+     * @param string                                 $state  ok | warn | danger | off
+     * @param string                                 $word   the verdict, spelled out
+     * @param string                                 $name
+     * @param string                                 $note   developer-authored copy; callers escape any interpolated values
+     * @param string                                 $value
+     * @param array{label:string,url:string}|array{} $action
+     *
+     * @return void
      */
     function oscsi_row($state, $word, $name, $note = '', $value = '', $action = array())
     {
@@ -153,12 +155,12 @@ $mediaUrl     = osc_admin_base_url(true) . '?page=settings&action=media';
 ?>
     <?php osc_admin_page_head(__('System info')); ?>
     <div id="system-info">
-        <ul class="nav nav-tabs mb-3">
-            <li class="nav-item">
-                <a class="nav-link<?php echo $infoType === 'php-info' ? '' : ' active'; ?>" href="<?php echo osc_esc_html($overviewUrl); ?>"><?php _e('Overview'); ?></a>
+        <ul class="osc-tabnav mb-3">
+            <li>
+                <a<?php echo $infoType === 'php-info' ? '' : ' class="is-active"'; ?> href="<?php echo osc_esc_html($overviewUrl); ?>"><?php _e('Overview'); ?></a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link<?php echo $infoType === 'php-info' ? ' active' : ''; ?>" href="<?php echo osc_esc_html($phpInfoUrl); ?>"><?php _e('PHP settings &amp; help'); ?></a>
+            <li>
+                <a<?php echo $infoType === 'php-info' ? ' class="is-active"' : ''; ?> href="<?php echo osc_esc_html($phpInfoUrl); ?>"><?php _e('PHP settings &amp; help'); ?></a>
             </li>
         </ul>
         <?php

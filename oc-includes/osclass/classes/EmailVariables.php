@@ -25,6 +25,9 @@ class EmailVariables
     private static $instance;
     private $variables;
 
+    /**
+     * Populate the variable list with the built-in placeholders.
+     */
     public function __construct()
     {
         $this->variables = array();
@@ -33,6 +36,8 @@ class EmailVariables
 
     /**
      *  Initialize menu representation.
+     *
+     * @return void
      */
     public function init()
     {
@@ -84,6 +89,8 @@ class EmailVariables
     }
 
     /**
+     * The shared EmailVariables instance, created on first call.
+     *
      * @return \EmailVariables
      */
     public static function newInstance()
@@ -98,8 +105,10 @@ class EmailVariables
     /**
      * Add new email variable and description
      *
-     * @param $key
-     * @param $description
+     * @param string $key         Placeholder, braces included
+     * @param string $description
+     *
+     * @return void
      */
     public function add($key, $description)
     {
@@ -109,7 +118,9 @@ class EmailVariables
     /**
      * Remove email variable from the array
      *
-     * @param $key
+     * @param string $key
+     *
+     * @return void
      */
     public function remove($key)
     {
@@ -117,10 +128,11 @@ class EmailVariables
     }
 
     /**
+     * The placeholders an email template may use, keyed by placeholder and described.
      *
-     * @param $email
+     * @param array<string,mixed> $email Email template row; only s_internal_name is read
      *
-     * @return bool|mixed
+     * @return array<string,string>
      */
     public function getVariables($email)
     {
@@ -329,8 +341,10 @@ class EmailVariables
         return osc_apply_filter('email_legend_words', $array, @$email['s_internal_name']);
     }
 
-    /*
+    /**
      * Empty the variables array
+     *
+     * @return void
      */
     public function clear_menu()
     {

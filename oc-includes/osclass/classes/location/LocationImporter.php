@@ -63,6 +63,9 @@ final class LocationImporter
     /** @var array<string, mixed> */
     private $report;
 
+    /**
+     * @param bool $dryRun run every statement and roll the whole import back
+     */
     public function __construct(bool $dryRun = false)
     {
         $this->dryRun = $dryRun;
@@ -71,7 +74,7 @@ final class LocationImporter
     /**
      * Import one decoded country file.
      *
-     * @param array $data as published: s_country_code, s_country_name, s_country_slug, regions[]
+     * @param array<string,mixed> $data as published: s_country_code, s_country_name, s_country_slug, regions[]
      *
      * @return array<string, mixed> the report, see resetReport()
      */
@@ -117,9 +120,9 @@ final class LocationImporter
      * both paths stay live.
      *
      * @param LocationCatalog $catalog
-     * @param array           $entry   a row from LocationCatalog::status()
+     * @param array<string,mixed> $entry a row from LocationCatalog::status()
      *
-     * @return array the report, carrying 'error' when the country could not be fetched
+     * @return array<string,mixed> the report, carrying 'error' when the country could not be fetched
      */
     public function importCountry(LocationCatalog $catalog, array $entry): array
     {
@@ -168,7 +171,7 @@ final class LocationImporter
      *
      * @param string $path a local file, as written by LocationCatalog::countryNdjsonFile()
      *
-     * @return array the same report import() returns
+     * @return array<string,mixed> the same report import() returns
      */
     public function importNdjson(string $path): array
     {
@@ -252,7 +255,9 @@ final class LocationImporter
     /**
      * The region rows of an ndjson country file, without reading its settlements.
      *
-     * @return array<int, array> normalised region rows
+     * @param string $path a local ndjson country file
+     *
+     * @return array<int, array<string,mixed>> normalised region rows
      */
     private function scanRegions(string $path): array
     {
@@ -284,7 +289,9 @@ final class LocationImporter
     /**
      * Record which region ids this import brings and which region names it repeats.
      *
-     * @param array<int, array> $regions normalised region rows
+     * @param array<int, array<string,mixed>> $regions normalised region rows
+     *
+     * @return void
      */
     private function noteIncomingRegions(array $regions): void
     {
@@ -310,6 +317,9 @@ final class LocationImporter
      * Deduplicated, because a row's slug is usually its own name with the spaces replaced
      * and both reduce to the same key. Counting that as the name being used twice makes
      * every row ambiguous with itself, and nothing matches anything.
+     *
+     * @param string $name
+     * @param string $slug
      *
      * @return array<int, string>
      */
@@ -339,10 +349,10 @@ final class LocationImporter
      * is what made ids from two datasets overwrite each other's rows. Carried here so
      * that a second source can be told apart without revisiting every call site.
      *
-     * @param array  $row
-     * @param string $kind 'region' or 'city'
+     * @param array<string,mixed> $row
+     * @param string                $kind 'region' or 'city'
      *
-     * @return array
+     * @return array<string,mixed>
      */
     private function normalizeRow(array $row, string $kind): array
     {
@@ -363,10 +373,12 @@ final class LocationImporter
     /**
      * The body both entry points share: one country, then regions with their cities.
      *
-     * @param array    $country the country row, in either format's field names
-     * @param iterable $regions yields [regionRow, citiesRows]
+     * @param array<string,mixed>                                        $country the country row,
+     *                                                                              in either format's field names
+     * @param iterable<array{0:array<string,mixed>,1:array<int,array<string,mixed>>}> $regions
+     *                                                                              yields [regionRow, citiesRows]
      *
-     * @return array
+     * @return array<string,mixed> the report
      */
     private function runImport(array $country, iterable $regions): array
     {
@@ -436,6 +448,13 @@ final class LocationImporter
      * Country
      * ------------------------------------------------------------------ */
 
+    /**
+     * Insert or rename the country row itself.
+     *
+     * @param array<string,mixed> $data
+     *
+     * @return void
+     */
     private function importCountryRow(array $data): void
     {
         $table = DB_TABLE_PREFIX . 't_country';
@@ -494,6 +513,14 @@ final class LocationImporter
     /** @var array<string, true> region names or slugs this import uses more than once */
     private $regionAmbiguous = array();
 
+    /**
+     * Match one incoming region to a stored row and update it, or insert a new one.
+     *
+     * @param string              $countryCode
+     * @param array<string,mixed> $incoming normalised region row
+     *
+     * @return int|null the region's pk_i_id, or null when the insert produced no id
+     */
     private function importRegion(string $countryCode, array $incoming): ?int
     {
         $this->loadRegions($countryCode);
@@ -538,6 +565,13 @@ final class LocationImporter
         return (int) $row['pk_i_id'];
     }
 
+    /**
+     * Load and index this country's stored regions, once per run.
+     *
+     * @param string $countryCode
+     *
+     * @return void
+     */
     private function loadRegions(string $countryCode): void
     {
         if ($this->regionBySource !== null) {
@@ -559,6 +593,17 @@ final class LocationImporter
         }
     }
 
+    /**
+     * Insert one region and return its new id.
+     *
+     * @param string              $countryCode
+     * @param int|null            $sourceId
+     * @param string              $name
+     * @param string              $slug
+     * @param array<string,mixed> $incoming carries the coordinates
+     *
+     * @return int|null
+     */
     private function insertRegion(string $countryCode, ?int $sourceId, string $name, string $slug, array $incoming): ?int
     {
         $this->report['regions']['inserted']++;
@@ -578,6 +623,13 @@ final class LocationImporter
         );
     }
 
+    /**
+     * Deactivate stored regions no incoming row claimed, unless they hold listings.
+     *
+     * @param string $countryCode
+     *
+     * @return void
+     */
     private function deactivateVanishedRegions(string $countryCode): void
     {
         $this->loadRegions($countryCode);
@@ -610,7 +662,13 @@ final class LocationImporter
      * ------------------------------------------------------------------ */
 
     /**
-     * @param array<int, array> $incomingCities
+     * Match, update, insert and retire one region's cities.
+     *
+     * @param int                             $regionId
+     * @param array<int, array<string,mixed>> $incomingCities
+     * @param string                          $countryCode
+     *
+     * @return void
      */
     private function importCities(int $regionId, array $incomingCities, string $countryCode): void
     {
@@ -747,9 +805,10 @@ final class LocationImporter
      * only cross-country moves, which upstream does not do and which should not happen
      * silently if it ever did.
      *
-     * @param array<int, array> $incomingCities
+     * @param array<int, array<string,mixed>> $incomingCities
+     * @param string                          $countryCode
      *
-     * @return array<int, array> i_source_id => row
+     * @return array<int, array<string,mixed>> i_source_id => row
      */
     private function citiesBySourceId(array $incomingCities, string $countryCode): array
     {
@@ -783,7 +842,11 @@ final class LocationImporter
     }
 
     /**
-     * @param array<int, array<int, mixed>> $pending
+     * Write the queued new cities, in chunked multi-row INSERTs.
+     *
+     * @param array<int, array<int, mixed>> $pending one positional value list per row
+     *
+     * @return void
      */
     private function insertCities(array $pending): void
     {
@@ -812,8 +875,12 @@ final class LocationImporter
     }
 
     /**
-     * @param array<int, array> $indexed
-     * @param array<int, bool>  $claimed
+     * Deactivate stored cities no incoming row claimed, unless they hold listings.
+     *
+     * @param array<int, array<string,mixed>> $indexed pk_i_id => stored row
+     * @param array<int, bool>                $claimed pk_i_id of rows an incoming row took
+     *
+     * @return void
      */
     private function deactivateVanishedCities(array $indexed, array $claimed): void
     {
@@ -850,7 +917,18 @@ final class LocationImporter
      * source id yet — the one-time adoption pass on an install that predates them. Once a
      * row has an id, a name collision must never be allowed to steal it.
      *
-     * @return array{0: array, 1: string}|null the matched row and how it matched
+     * @param int|null                        $sourceId
+     * @param string                          $slug
+     * @param string                          $name
+     * @param array<int, array<string,mixed>> $bySource    source id => stored row
+     * @param array<string, int|false>        $bySlug      normalised slug => id, false when shared
+     * @param array<string, int|false>        $byName      normalised name => id, false when shared
+     * @param array<int, array<string,mixed>> $rows        pk_i_id => stored row
+     * @param array<int, bool>                $claimed     ids already taken this run
+     * @param array<int, true>                $incomingIds source ids this import brings
+     * @param array<string, true>             $ambiguous   keys the incoming data uses twice
+     *
+     * @return array{0: array<string,mixed>, 1: string}|null the matched row and how it matched
      */
     private function matchRow(
         ?int $sourceId,
@@ -906,6 +984,19 @@ final class LocationImporter
 
     /**
      * Update one row in place, recording a slug change so old URLs keep resolving.
+     *
+     * @param string              $type        'REGION' or 'CITY'
+     * @param string              $table
+     * @param string              $pk          primary key column name
+     * @param array<string,mixed> $row         the stored row
+     * @param int|null            $sourceId
+     * @param string              $name
+     * @param string              $slug
+     * @param array<string,mixed> $incoming    normalised incoming row
+     * @param int|null            $newParentId region id, for a city that may have moved
+     * @param string              $how         which MATCH_* rule found the row
+     *
+     * @return void
      */
     private function updateRow(
         string $type,
@@ -981,6 +1072,11 @@ final class LocationImporter
     /**
      * Coordinates arrive as strings and are stored as DECIMAL(10,6); comparing them as
      * strings would rewrite every row on every import over "20.18" versus "20.180000".
+     *
+     * @param string|float|null $stored
+     * @param string|float|null $incoming
+     *
+     * @return bool
      */
     private function coordDiffers($stored, $incoming): bool
     {
@@ -991,6 +1087,16 @@ final class LocationImporter
         return abs((float) $stored - (float) $incoming) > 0.0000005;
     }
 
+    /**
+     * File the old slug in the redirect history, so links to it keep resolving.
+     *
+     * @param string $type 'REGION' or 'CITY'
+     * @param int    $id
+     * @param string $oldSlug
+     * @param string $newSlug
+     *
+     * @return void
+     */
     private function recordSlugChange(string $type, int $id, string $oldSlug, string $newSlug): void
     {
         if ($oldSlug === '' || $oldSlug === $newSlug) {
@@ -1010,6 +1116,7 @@ final class LocationImporter
     /**
      * Which of $ids are referenced by at least one listing.
      *
+     * @param string          $column 'fk_i_region_id' or 'fk_i_city_id'
      * @param array<int, int> $ids
      *
      * @return array<int, bool>
@@ -1036,10 +1143,15 @@ final class LocationImporter
      * ------------------------------------------------------------------ */
 
     /**
-     * @param array<int, array>  $rows
-     * @param array<int, array>  $bySource
-     * @param array<string, int> $bySlug
-     * @param array<string, int> $byName
+     * Index one stored row by id, source id, slug and name, poisoning shared keys.
+     *
+     * @param array<string,mixed>             $row
+     * @param array<int, array<string,mixed>> $rows     pk_i_id => row
+     * @param array<int, array<string,mixed>> $bySource source id => row
+     * @param array<string, int|false>        $bySlug   false once a slug is shared
+     * @param array<string, int|false>        $byName   false once a name is shared
+     *
+     * @return void
      */
     private function indexRow(array $row, array &$rows, array &$bySource, array &$bySlug, array &$byName): void
     {
@@ -1069,6 +1181,10 @@ final class LocationImporter
      *
      * Measured in characters rather than bytes, so a name is judged by its length as read
      * and not by how many bytes its accents happen to occupy.
+     *
+     * @param string $name
+     *
+     * @return bool
      */
     private static function nameTooLong(string $name): bool
     {
@@ -1083,6 +1199,10 @@ final class LocationImporter
      * spacing and punctuation that move between snapshots: "Villeneuve-d'Ascq" and
      * "Villeneuve d Ascq" are one place written twice, and a comparison that says
      * otherwise imports it twice.
+     *
+     * @param string $value
+     *
+     * @return string
      */
     private static function normalizeKey(string $value): string
     {
@@ -1112,6 +1232,14 @@ final class LocationImporter
         return trim((string) $value);
     }
 
+    /**
+     * Count a match that was not made on the source id, i.e. an adoption.
+     *
+     * @param string $bucket 'regions' or 'cities'
+     * @param string $how    which MATCH_* rule found the row
+     *
+     * @return void
+     */
     private function countMatch(string $bucket, string $how): void
     {
         if ($how !== self::MATCH_SOURCE) {
@@ -1119,6 +1247,14 @@ final class LocationImporter
         }
     }
 
+    /**
+     * Record one example in the report, up to SAMPLE_LIMIT of them.
+     *
+     * @param string              $key   report bucket, e.g. 'renames'
+     * @param array<string,mixed> $entry
+     *
+     * @return void
+     */
     private function sample(string $key, array $entry): void
     {
         if (count($this->report[$key]) < self::SAMPLE_LIMIT) {
@@ -1126,6 +1262,13 @@ final class LocationImporter
         }
     }
 
+    /**
+     * Start a fresh report and drop the per-country lookups from any previous run.
+     *
+     * @param string $countryCode
+     *
+     * @return void
+     */
     private function resetReport(string $countryCode): void
     {
         $counters = array(

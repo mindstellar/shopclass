@@ -22,6 +22,13 @@ if (!defined('ABS_PATH')) {
 class CAdminAppearance extends AdminSecBaseModel
 {
     //Business Layer...
+
+    /**
+     * Dispatch the requested appearance action: theme install/delete/activate, the market
+     * browser, and the whole widget CRUD and reorder surface.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -265,14 +272,13 @@ class CAdminAppearance extends AdminSecBaseModel
                 $ids      = Params::getParamArray('ids');
                 $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
-                // The section must be one the active theme actually declares, so a
+                // The section must be one the active theme actually offers, so a
                 // forged post cannot invent a location.
-                $info       = WebThemes::newInstance()->loadThemeInfo(osc_theme());
-                $locations  = isset($info['locations']) && is_array($info['locations']) ? $info['locations'] : array();
-                $widgetRow  = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
-                $ok         = false;
+                $locations = osc_widget_locations();
+                $widgetRow = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
+                $ok        = false;
 
-                if ($widgetRow !== null && in_array($location, $locations, true)) {
+                if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
                     osc_db_table(DB_TABLE_PREFIX . 't_widget')
                         ->where('pk_i_id', $moved)
                         ->update(array('s_location' => $location));
@@ -513,9 +519,9 @@ class CAdminAppearance extends AdminSecBaseModel
      * (redirectTo exits) so a typed save can never silently degrade to a
      * mislabelled legacy row or bypass the capability gate.
      *
-     * @param string $sType Posted s_type value.
+     * @param string|null $sType Posted s_type value.
      *
-     * @return array|null The registered type spec, or null for the legacy path.
+     * @return array<string,mixed>|null The registered type spec, or null for the legacy path.
      */
     private function resolveWidgetType($sType)
     {
@@ -542,9 +548,9 @@ class CAdminAppearance extends AdminSecBaseModel
      * keeping only the keys the type declares in 'fields' and sanitising each
      * value per its declared field type. Unknown posted keys are dropped.
      *
-     * @param array $type A registered widget-type spec.
+     * @param array<string,mixed> $type A registered widget-type spec.
      *
-     * @return array Sanitised config keyed by field name.
+     * @return array<string,mixed> Sanitised config keyed by field name.
      */
     private function buildWidgetConfig($type)
     {
@@ -636,7 +642,7 @@ class CAdminAppearance extends AdminSecBaseModel
      * values), a flat list of scalar values, or a list of
      * ['value'=>..,'label'=>..] entries.
      *
-     * @param array $options Declared field options.
+     * @param array|callable $options Declared field options, or a callable resolving to them.
      *
      * @return string[] Allowed values as strings.
      */

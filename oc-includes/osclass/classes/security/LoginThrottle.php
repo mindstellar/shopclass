@@ -262,6 +262,8 @@ class LoginThrottle
     }
 
     /**
+     * Length of the rolling window, from the configured minutes.
+     *
      * @return int seconds
      */
     private static function windowSeconds()
@@ -270,6 +272,8 @@ class LoginThrottle
     }
 
     /**
+     * The timestamp the window opens at, for the counting queries.
+     *
      * @param int $window seconds
      *
      * @return string 'Y-m-d H:i:s'

@@ -35,10 +35,18 @@ final class FormContextRegistry
     /** @var array<string,array> registered context specs, keyed by type */
     private array $contexts = array();
 
+    /**
+     * FormContextRegistry constructor.
+     */
     private function __construct()
     {
     }
 
+    /**
+     * The shared registry instance.
+     *
+     * @return self
+     */
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -58,9 +66,10 @@ final class FormContextRegistry
      *                         specific context instance for the admin. When absent,
      *                         a generic "<label> #<id>" is shown.
      *
-     * @param string $type Slug, [a-z0-9_-]{1,20} (matches the stored s_context_type).
-     * @param array  $spec
+     * @param string              $type Slug, [a-z0-9_-]{1,20} (matches the stored s_context_type).
+     * @param array<string,mixed> $spec
      *
+     * @return void
      * @throws InvalidArgumentException on an invalid type or spec.
      */
     public function register(string $type, array $spec): void
@@ -82,13 +91,22 @@ final class FormContextRegistry
         );
     }
 
+    /**
+     * The registered spec for a context type, or null when it is unknown.
+     *
+     * @param string $type
+     *
+     * @return array{type:string,label:string,resolve:callable|null}|null
+     */
     public function get(string $type): ?array
     {
         return $this->contexts[$type] ?? null;
     }
 
     /**
-     * @return array<string,array>
+     * Every registered context spec, keyed by type.
+     *
+     * @return array<string,array{type:string,label:string,resolve:callable|null}>
      */
     public function all(): array
     {
@@ -129,6 +147,13 @@ final class FormContextRegistry
         );
     }
 
+    /**
+     * Whether a slug is usable as a context type.
+     *
+     * @param string $type
+     *
+     * @return bool
+     */
     public static function isValidType(string $type): bool
     {
         // Namespaced slug (dots allowed, like widget/field-type ids); bounded to 20

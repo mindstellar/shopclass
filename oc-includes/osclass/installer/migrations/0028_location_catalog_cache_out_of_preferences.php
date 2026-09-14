@@ -24,6 +24,13 @@ use mindstellar\migration\MigrationInterface;
  * file repopulates the first time an admin opens the locations screen.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Delete the cached location manifest from t_preference and reset its freshness stamp.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(

@@ -22,7 +22,9 @@ class SendFriendForm extends Form
     }*/
 
     /**
-     * @return bool
+     * Echo the sender name input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_name()
     {
@@ -38,7 +40,9 @@ class SendFriendForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the sender email input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_email()
     {
@@ -54,7 +58,9 @@ class SendFriendForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the recipient name input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function friend_name()
     {
@@ -69,7 +75,9 @@ class SendFriendForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the recipient email input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function friend_email()
     {
@@ -84,7 +92,9 @@ class SendFriendForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the message textarea, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_message()
     {
@@ -98,6 +108,13 @@ class SendFriendForm extends Form
         return true;
     }
 
+    /**
+     * Echo (or enqueue) the client-side validation script for the send-to-friend form.
+     *
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
+     */
     public static function js_validation($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no

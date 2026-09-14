@@ -30,7 +30,7 @@ class Preference extends DAO
     private $pref;
 
     /**
-     *
+     * Set data related to t_preference table and load the cached preference map.
      */
     public function __construct()
     {
@@ -42,10 +42,9 @@ class Preference extends DAO
     }
 
     /**
-     * Modify the structure of table.
+     * Load every preference row into the in-memory section => name => value map.
      *
-     * @access public
-     * @since  unknown
+     * @return bool False when the table is empty or the query failed
      */
     public function toArray()
     {
@@ -70,6 +69,8 @@ class Preference extends DAO
     }
 
     /**
+     * Return the shared Preference model instance, creating it on first use.
+     *
      * @return \Preference
      */
     public static function newInstance()
@@ -84,13 +85,9 @@ class Preference extends DAO
     /**
      * Find a value by its name
      *
-     * @access public
+     * @param string $name
      *
-     * @param $name
-     *
-     * @return bool
-     * @since  unknown
-     *
+     * @return string|false False when the name is unknown or the query failed
      */
     public function findValueByName($name)
     {
@@ -113,13 +110,10 @@ class Preference extends DAO
     /**
      * Find array preference for a given section
      *
-     * @access public
-     *
      * @param string $name
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<int,array<string,string|null>>|false False when the section has no rows,
+     *         an empty array when the query failed
      */
     public function findBySection($name)
     {
@@ -149,13 +143,10 @@ class Preference extends DAO
     /**
      * Get value, given a preference name and a section name.
      *
-     * @access public
-     *
      * @param string $key
      * @param string $section
      *
      * @return string
-     * @since  unknown
      */
     public function get($key, $section = 'osclass')
     {
@@ -165,12 +156,9 @@ class Preference extends DAO
     /**
      * Get value, given a preference name and a section name.
      *
-     * @access public
-     *
      * @param string $section
      *
-     * @return array
-     * @since  unknown
+     * @return array<string,string> Empty when the section is not loaded
      */
     public function getSection($section = 'osclass')
     {
@@ -184,13 +172,11 @@ class Preference extends DAO
     /**
      * Set preference value, given a preference name and a section name.
      *
-     * @access public
-     *
      * @param string $key
      * @param string $value
      * @param string $section
      *
-     * @since  unknown
+     * @return void
      */
     public function set($key, $value, $section = 'osclass')
     {
@@ -200,15 +186,12 @@ class Preference extends DAO
     /**
      * Replace preference value, given preference name, preference section and value.
      *
-     * @access public
-     *
      * @param string $key
      * @param string $value
      * @param string $section
      * @param string $type
      *
      * @return boolean
-     * @since  unknown
      */
     public function replace($key, $value, $section = 'osclass', $type = 'STRING')
     {

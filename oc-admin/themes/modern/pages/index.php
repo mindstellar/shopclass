@@ -28,6 +28,11 @@ osc_admin_page(array(
 ));
 
 //customize Head
+/**
+ * Emit the page list's script: the reorder arrows post to the AJAX order endpoint and reload.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>

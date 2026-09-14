@@ -109,7 +109,8 @@ class Resource
      * @param string $ownerType
      * @param int    $ownerId
      *
-     * @return array of resources
+     * @return array<int,array<string,mixed>> Empty when the owner type is rejected
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function findByOwner(string $ownerType, int $ownerId): array
     {
@@ -146,7 +147,7 @@ class Resource
      *
      * @param int $id
      *
-     * @return array|null the row, or null when absent
+     * @return array<string,mixed>|null the row, or null when absent
      */
     public function findByPrimaryKey(int $id): ?array
     {
@@ -169,7 +170,8 @@ class Resource
      * @param string   $ownerType
      * @param int|null $ownerId
      *
-     * @return int
+     * @return int 0 when the owner type is rejected
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function countByOwner(string $ownerType, ?int $ownerId = null): int
     {
@@ -190,9 +192,9 @@ class Resource
      * columns (s_name, s_extension, s_content_type, s_path, s_storage); the owner
      * pair and dt_created are set here and any pk/owner keys in $data are ignored.
      *
-     * @param string $ownerType
-     * @param int    $ownerId
-     * @param array  $data
+     * @param string              $ownerType
+     * @param int                 $ownerId
+     * @param array<string,mixed> $data
      *
      * @return int|false the new row id, or false on failure
      */
@@ -224,10 +226,10 @@ class Resource
      * Update a resource row by id. $data may carry any resource column except the
      * primary key; dt_updated is stamped automatically.
      *
-     * @param int   $id
-     * @param array $data
+     * @param int                 $id
+     * @param array<string,mixed> $data
      *
-     * @return bool
+     * @return bool False when $data holds no writable column, or the write failed
      */
     public function updateResource(int $id, array $data): bool
     {
@@ -288,7 +290,7 @@ class Resource
     /**
      * Delete all resources whose id is in $ids.
      *
-     * @param array $ids
+     * @param array<int,int|string> $ids
      *
      * @return int|false affected rows, or false on failure
      */
@@ -315,6 +317,7 @@ class Resource
      * @param int $limit
      *
      * @return int[]
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function getResourceIdsBatch(int $offset, int $limit): array
     {
@@ -337,7 +340,8 @@ class Resource
      * @param int    $offset
      * @param int    $limit
      *
-     * @return array
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function getResourcesBatchByStorage(string $storage, int $offset, int $limit): array
     {
@@ -359,6 +363,7 @@ class Resource
      * @param int[]  $ownerIds
      *
      * @return void
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function primeOwnerCache(string $ownerType, array $ownerIds): void
     {
@@ -420,9 +425,9 @@ class Resource
      * Keep only keys that map to real resource columns, dropping the primary key
      * and the owner pair (set explicitly by the caller).
      *
-     * @param array $data
+     * @param array<string,mixed> $data
      *
-     * @return array
+     * @return array<string,mixed>
      */
     private function filterColumns(array $data): array
     {

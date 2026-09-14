@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class Item extends DAO
 {
@@ -25,8 +24,6 @@ class Item extends DAO
      * It references to self object: Item.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var Item
      */
     private static $instance;
@@ -69,9 +66,7 @@ class Item extends DAO
      * It creates a new Item object class if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return Item
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -85,12 +80,9 @@ class Item extends DAO
     /**
      * List items ordered by views
      *
-     * @access public
-     *
      * @param int $limit
      *
-     * @return array of items
-     * @since  unknown
+     * @return array<int,array<string,mixed>> Empty when the query failed
      */
     public function mostViewed($limit = 10)
     {
@@ -125,12 +117,10 @@ class Item extends DAO
     /**
      * Extends the given array $items with description in available locales
      *
-     * @access public
+     * @param array<int,array<string,mixed>> $items array set of items
+     * @param string|null                    $prefLocale Defaults to the current locale
      *
-     * @param array $items array set of items
-     *
-     * @return array with description extended with all available locales
-     *
+     * @return array<int,array<string,mixed>> with description extended with all available locales
      */
     public function extendData($items, $prefLocale = null)
     {
@@ -145,9 +135,8 @@ class Item extends DAO
             // the query builder's identifier allowlist, so this is hand-written
             // SQL. The only values are the item ids, bound as an IN (?, ...) list.
             //
-            // This used to aggregate the seven counters over every dated row each
-            // listing had ever accumulated, on every list render. The stats row is
-            // now the total, so the counters come back as plain columns.
+            // The stats row holds the total, so the seven counters come back as plain
+            // columns rather than an aggregate over every dated row.
             if (!empty($itemIds)) {
                 $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
                 $sql = 'SELECT s.i_num_views,'
@@ -197,9 +186,7 @@ class Item extends DAO
     /**
      * List Items with category name
      *
-     * @access public
-     * @return array of items
-     * @since  unknown
+     * @return array<int,array<string,mixed>> Each row carries an extra s_category_name
      */
     public function listAllWithCategories()
     {
@@ -222,12 +209,9 @@ class Item extends DAO
     /**
      * Find item resources belong to an item given its id
      *
-     * @access public
-     *
      * @param int $id Item id
      *
-     * @return array of resources
-     * @since  unknown
+     * @return array<int,array<string,string|null>> resource rows
      */
     public function findResourcesByID($id)
     {
@@ -237,12 +221,9 @@ class Item extends DAO
     /**
      * Find the item location given a item id
      *
-     * @access public
-     *
      * @param int $id Item id
      *
-     * @return array of location
-     * @since  unknown
+     * @return array<string,string|null>|false False when the item has no location row
      */
     public function findLocationByID($id)
     {
@@ -252,12 +233,9 @@ class Item extends DAO
     /**
      * Find items belong to a category given its id
      *
-     * @access public
-     *
      * @param int $catId
      *
-     * @return array of items
-     * @since  unknown
+     * @return array<int,array<string,mixed>>
      */
     public function findByCategoryID($catId)
     {
@@ -267,8 +245,10 @@ class Item extends DAO
     /**
      * Comodin function to serve multiple queries
      *
-     * @access public
-     * @return array of items
+     * @param mixed ...$args A raw WHERE fragment the caller owns, or a printf-style
+     *                       format followed by the values bound to its %d/%s conversions
+     *
+     * @return array<int,array<string,mixed>> Empty when there is no argument, no match or a query failure
      * @since  3.x.x
      */
     public function listWhere(...$args)
@@ -325,13 +305,9 @@ class Item extends DAO
     /**
      * Find items belong to a phone number
      *
-     * @access public
+     * @param string $phone
      *
-     * @param $phone
-     *
-     * @return array
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>>
      */
     public function findByPhone($phone)
     {
@@ -341,13 +317,9 @@ class Item extends DAO
     /**
      * Find items belong to an email
      *
-     * @access public
+     * @param string $email
      *
-     * @param $email
-     *
-     * @return array
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>>
      */
     public function findByEmail($email)
     {
@@ -358,13 +330,10 @@ class Item extends DAO
      * Count all items, or all items belong to a category id, can be filtered
      * by $options  ['ACTIVE|INACTIVE|ENABLED|DISABLED|SPAM|NOTSPAM|EXPIRED|NOTEXPIRED|PREMIUM|TODAY']
      *
-     * @access public
+     * @param int|null                       $categoryId
+     * @param string|array<int,string>|null  $options could be a string with | separator or an array with the options
      *
-     * @param int   $categoryId
-     * @param mixed $options could be a string with | separator or an array with the options
-     *
-     * @return int total items
-     * @since  unknown
+     * @return int|string total items as a string, int 0 on a query failure
      */
     public function totalItems($categoryId = null, $options = null)
     {
@@ -420,15 +389,14 @@ class Item extends DAO
      *
      * Appends bound WHERE fragments to $conditions/$params. The date comparisons
      * keep PHP's date() as the clock source (never SQL NOW()); the value is bound.
-     * NOTEXPIRED keeps its OR connector so the mixed AND/OR structure the legacy
-     * orWhere() produced is preserved verbatim.
+     * Every option contributes an AND-connected fragment; NOTEXPIRED groups its own
+     * premium/expiry alternation rather than leaking an OR into the caller's chain.
      *
-     * @access  private
+     * @param string|array<int,string>|null $options could be a string with | separator or an array with the options
+     * @param string[]                      $conditions
+     * @param array<int,mixed>              $params
      *
-     * @param string|array $options could be a string with | separator or an array with the options
-     * @param string[]     $conditions
-     * @param array        $params
-     *
+     * @return void
      * @since   4.0.0
      */
     private function addWhereByOptions($options, array &$conditions, array &$params)
@@ -461,8 +429,20 @@ class Item extends DAO
                     $this->pushWhere($conditions, $params, '( i.dt_expiration < ? )', 'AND', array(date('Y-m-d H:i:s')));
                     break;
                 case 'NOTEXPIRED':
-                    $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'OR', array(1));
-                    $this->pushWhere($conditions, $params, '( i.dt_expiration >= ? )', 'AND', array(date('Y-m-d H:i:s')));
+                    // One self-contained fragment, ANDed like every other option. Pushed as
+                    // two -- the first with an OR connector -- it broke out of the AND chain
+                    // and swallowed the caller's own conditions: findItemByTypes() joins
+                    // fragments unparenthesised, so `owner = 24 AND live OR premium` reads as
+                    // `(mine AND live) OR (any premium listing)` and every seller's listing
+                    // page showed the whole site's premium rows. Same predicate as
+                    // liveConditions(), which had it right all along.
+                    $this->pushWhere(
+                        $conditions,
+                        $params,
+                        '( i.b_premium = ? OR i.dt_expiration >= ? )',
+                        'AND',
+                        array(1, date('Y-m-d H:i:s'))
+                    );
                     break;
                 case 'PREMIUM':
                     $this->pushWhere($conditions, $params, 'i.b_premium = ?', 'AND', array(1));
@@ -475,16 +455,6 @@ class Item extends DAO
         }
     }
 
-    /**
-     * LEAVE THIS FOR COMPATIBILITIES ISSUES (ONLY SITEMAP GENERATOR)
-     * BUT REMEMBER TO DELETE IN ANYTHING > 2.1.x THANKS
-     *
-     * @param      $category
-     * @param bool $enabled
-     * @param bool $active
-     *
-     * @return int
-     */
     /**
      * SQL predicate for "this listing is publicly live": enabled, active, not flagged spam, and
      * either premium or not yet expired. Single source of truth for the visibility rule that
@@ -509,6 +479,18 @@ class Item extends DAO
         );
     }
 
+    /**
+     * Count the live items in a category.
+     *
+     * LEAVE THIS FOR COMPATIBILITIES ISSUES (ONLY SITEMAP GENERATOR)
+     * BUT REMEMBER TO DELETE IN ANYTHING > 2.1.x THANKS
+     *
+     * @param array{pk_i_id:int|string} $category
+     * @param bool                      $enabled
+     * @param bool                      $active
+     *
+     * @return int|string The count as a string, int 0 on a query failure
+     */
     public function numItems($category, $enabled = true, $active = true)
     {
         $conditions = array();
@@ -534,9 +516,11 @@ class Item extends DAO
     }
 
     /**
+     * List the most recently published live items.
+     *
      * @param int $limit
      *
-     * @return array
+     * @return array<int,array<string,mixed>>
      */
     public function listLatest($limit = 10)
     {
@@ -546,15 +530,12 @@ class Item extends DAO
     /**
      * Insert title and description for a given locale and item id.
      *
-     * @access public
-     *
-     * @param string $id Item id
+     * @param int    $id Item id
      * @param string $locale
      * @param string $title
      * @param string $description
      *
-     * @return boolean
-     * @since  unknown
+     * @return bool False when the write failed
      */
     public function insertLocale($id, $locale, $title, $description)
     {
@@ -577,14 +558,11 @@ class Item extends DAO
     /**
      * Find items belong to an user given its id
      *
-     * @access public
+     * @param int      $userId User id
+     * @param int      $start  begining
+     * @param int|null $end    ending
      *
-     * @param int $userId User id
-     * @param int $start  begining
-     * @param int $end    ending
-     *
-     * @return array of items
-     * @since  unknown
+     * @return array<int,array<string,mixed>>
      */
     public function findByUserID($userId, $start = 0, $end = null)
     {
@@ -596,17 +574,15 @@ class Item extends DAO
     /**
      * Find enabled items or count of items by types with given where condition
      *
-     * @access public
+     * @param string|array<int,string|array{0:string,1:array<int,mixed>}>|null $conditions
+     *                                Where condition on t_item table i.e "pk_i_id = 3"
+     * @param string|false $itemType  item(active, expired, pending, pending validate, premium, all, enabled,
+     *                                blocked)
+     * @param bool         $count     return the count instead of the rows
+     * @param int          $limit     beginning from $limit
+     * @param int|null     $offset    ending
      *
-     * @param string | array $conditions Where condition on t_item table i.e "pk_i_id = 3"
-     * @param int            $limit      beginning from $start
-     * @param int            $offset     ending
-     * @param bool           $itemType   item(active, expired, pending, pending validate, premium, all, enabled,
-     *                                   blocked)
-     *
-     * @return array | int array of items or count of item
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>>|int|string array of items, or the count as a string
      */
     public function findItemByTypes($conditions = null, $itemType = false, $count = false, $limit = 0, $offset = null)
     {
@@ -677,7 +653,11 @@ class Item extends DAO
     /**
      * add conditions by type
      *
-     * @param $itemType
+     * @param string|false     $itemType
+     * @param string[]         $conditions
+     * @param array<int,mixed> $params
+     *
+     * @return void
      */
     private function addWhereByType($itemType, array &$conditions, array &$params)
     {
@@ -691,7 +671,9 @@ class Item extends DAO
 
                 return;
             case 'nospam':
-                $this->addWhereByOptions(['ACTIVE', 'NOSPAM', 'NOTEXPIRED'], $conditions, $params);
+                // 'NOSPAM' matched no case in addWhereByOptions() and fell through its
+                // default, so the one filter this type exists for was never applied.
+                $this->addWhereByOptions(['ACTIVE', 'NOTSPAM', 'NOTEXPIRED'], $conditions, $params);
 
                 return;
             case 'expired':
@@ -717,12 +699,9 @@ class Item extends DAO
     /**
      * Count items belong to an user given its id
      *
-     * @access public
-     *
      * @param int $userId User id
      *
-     * @return int number of items
-     * @since  unknown
+     * @return int|string number of items, as a string
      */
     public function countByUserID($userId)
     {
@@ -732,14 +711,11 @@ class Item extends DAO
     /**
      * Count items by User Id according the
      *
-     * @access public
+     * @param int          $userId   User id
+     * @param string|false $itemType (active, expired, pending validate, premium, all, enabled, blocked)
+     * @param string       $cond     Raw WHERE fragment the caller owns
      *
-     * @param int    $userId   User id
-     * @param bool   $itemType (active, expired, pending validate, premium, all, enabled, blocked)
-     * @param string $cond
-     *
-     * @return int number of items
-     * @since  unknown
+     * @return int|string number of items, as a string
      */
     public function countItemTypesByUserID($userId, $itemType = false, $cond = '')
     {
@@ -754,14 +730,11 @@ class Item extends DAO
     /**
      * Find enabled items belong to an user given its id
      *
-     * @access public
+     * @param int      $userId User id
+     * @param int      $start  beginning from $start
+     * @param int|null $end    ending
      *
-     * @param int $userId User id
-     * @param int $start  beginning from $start
-     * @param int $end    ending
-     *
-     * @return array of items
-     * @since  unknown
+     * @return array<int,array<string,mixed>>
      */
     public function findByUserIDEnabled($userId, $start = 0, $end = null)
     {
@@ -773,11 +746,9 @@ class Item extends DAO
     /**
      * Find enabled items which are going to expired
      *
-     * @access public
-     *
      * @param int $hours
      *
-     * @return array of items
+     * @return array<int,array<string,mixed>>
      * @since  3.2
      */
     public function findByHourExpiration($hours = 24)
@@ -790,11 +761,9 @@ class Item extends DAO
     /**
      * Find enabled items which are going to expired
      *
-     * @access public
-     *
      * @param int $days
      *
-     * @return array of items
+     * @return array<int,array<string,mixed>>
      * @since  3.2
      */
     public function findByDayExpiration($days = 1)
@@ -807,12 +776,9 @@ class Item extends DAO
     /**
      * Count enabled items belong to an user given its id
      *
-     * @access public
-     *
      * @param int $userId User id
      *
-     * @return int number of items
-     * @since  unknown
+     * @return int|string number of items, as a string
      */
     public function countByUserIDEnabled($userId)
     {
@@ -822,16 +788,12 @@ class Item extends DAO
     /**
      * Find enable items according the
      *
-     * @access public
+     * @param int          $userId   User id
+     * @param int          $start    beginning from $start
+     * @param int|null     $end      ending
+     * @param string|false $itemType item(active, expired, pending, premium, all, enabled, blocked)
      *
-     * @param int  $userId   User id
-     * @param int  $start    beginning from $start
-     * @param int  $end      ending
-     * @param bool $itemType item(active, expired, pending, premium, all, enabled, blocked)
-     *
-     * @return array of items
-     * @since  unknown
-     *
+     * @return array<int,array<string,mixed>>
      */
     public function findItemTypesByUserID($userId, $start = 0, $end = null, $itemType = false)
     {
@@ -842,14 +804,11 @@ class Item extends DAO
      * Count items by Email according the
      * Useful for counting item that posted by unregistered user
      *
-     * @access public
+     * @param string       $email    Email
+     * @param string|false $itemType (active, expired, pending validate, premium, all, enabled, blocked)
+     * @param string       $cond     Raw WHERE fragment the caller owns
      *
-     * @param int    $email    Email
-     * @param bool   $itemType (active, expired, pending validate, premium, all, enabled, blocked)
-     * @param string $cond
-     *
-     * @return int number of items
-     * @since  unknown
+     * @return int|string number of items, as a string
      */
     public function countItemTypesByEmail($email, $itemType = false, $cond = '')
     {
@@ -868,13 +827,10 @@ class Item extends DAO
      * Clear item stat given item id and stat to clear
      * $stat array('spam', 'duplicated', 'bad', 'offensive', 'expired', 'all')
      *
-     * @access public
-     *
      * @param int    $id
      * @param string $stat
      *
-     * @return mixed int if updated correctly or false when error occurs
-     * @since  unknown
+     * @return int|false int if updated correctly or false when error occurs
      */
     public function clearStat($id, $stat)
     {
@@ -920,15 +876,12 @@ class Item extends DAO
     /**
      * Update title and description given a item id and locale.
      *
-     * @access public
-     *
      * @param int    $id
      * @param string $locale
      * @param string $title
      * @param string $text
      *
      * @return bool
-     * @since  unknown
      */
     public function updateLocaleForce($id, $locale, $title, $text)
     {
@@ -953,11 +906,11 @@ class Item extends DAO
     /**
      * Update dt_expiration field, using $expiration_time
      *
-     * @param       $id
-     * @param mixed $expiration_time could be interget (number of days) or directly a date
-     * @param bool  $do_stats
+     * @param int        $id
+     * @param int|string $expiration_time could be interget (number of days) or directly a date
+     * @param bool       $do_stats
      *
-     * @return string new date expiration, false if error occurs
+     * @return string|false new date expiration, false if error occurs
      *
      */
     public function updateExpirationDate($id, $expiration_time, $do_stats = true)
@@ -1065,10 +1018,10 @@ class Item extends DAO
     /**
      * Enable all items by given category ids
      *
-     * @param int 0|1 $enable
-     * @param array $aIds
+     * @param int                             $enable 0 or 1
+     * @param array<int,int|string>|int|string $aIds   Category ids
      *
-     * @return \DBRecordsetClass
+     * @return bool False for an empty id list or a failed write
      */
     public function enableByCategory($enable, $aIds)
     {
@@ -1105,7 +1058,7 @@ class Item extends DAO
      *
      * @param string $type spam, repeated, bad_classified, offensive, expired
      *
-     * @return int
+     * @return int|string The count as a string, int 0 for a null type or a query failure
      */
     public function countByMarkas($type)
     {
@@ -1157,12 +1110,9 @@ class Item extends DAO
     /**
      * Return meta fields for a given item
      *
-     * @access public
-     *
      * @param int $id Item id
      *
-     * @return array meta fields array
-     * @since  unknown
+     * @return array<int|string,array<string,mixed>> meta fields keyed by field id
      */
     public function metaFields($id)
     {
@@ -1192,14 +1142,12 @@ class Item extends DAO
     /**
      * Delete by city area
      *
-     * @access public
-     *
      * @param int $cityAreaId city area id
      *
-     * @return bool
+     * @return int number of affected rows
+     * @throws \mindstellar\database\DbException on a query failure
      *
      * @since  3.1
-     *
      */
     public function deleteByCityArea($cityAreaId)
     {
@@ -1218,13 +1166,9 @@ class Item extends DAO
     /**
      * Delete by primary key, delete dependencies too
      *
-     * @access public
-     *
      * @param int $id Item id
      *
-     * @return bool
-     *
-     * @since  unknown
+     * @return int|false Rows removed from t_item, or false when the transaction failed
      */
     public function deleteByPrimaryKey($id)
     {
@@ -1311,9 +1255,7 @@ class Item extends DAO
      * emit the same signals a direct item delete does, so listeners that keep
      * external indexes or caches in sync do not need to special-case them.
      *
-     * @access private
-     *
-     * @param array $items rows containing an fk_i_item_id column
+     * @param array<int,array{fk_i_item_id:int|string}> $items rows containing an fk_i_item_id column
      *
      * @return int number of affected rows
      */
@@ -1338,13 +1280,9 @@ class Item extends DAO
      * Get the result match of the primary key passed by parameter, extended with
      * location information and number of views.
      *
-     * @access public
-     *
      * @param int $id Item id
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,mixed>|false Empty array when the id is unknown, false on a query failure
      */
     public function findByPrimaryKey($id)
     {
@@ -1368,14 +1306,9 @@ class Item extends DAO
     /**
      * Extends the given array $item with description in available locales
      *
-     * @access public
+     * @param array<string,mixed> $item
      *
-     * @param array $item
-     *
-     * @return array item array with description in available locales
-     *
-     * @since  unknown
-     *
+     * @return array<string,mixed> item array with description in available locales
      */
     public function extendDataSingle($item)
     {
@@ -1385,13 +1318,10 @@ class Item extends DAO
     /**
      * Delete by city
      *
-     * @access public
-     *
      * @param int $cityId city id
      *
-     * @return bool
-     *
-     * @since  unknown
+     * @return int number of affected rows
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function deleteByCity($cityId)
     {
@@ -1408,13 +1338,10 @@ class Item extends DAO
     /**
      * Delete by region
      *
-     * @access public
-     *
      * @param int $regionId region id
      *
-     * @return bool
-     *
-     * @since  unknown
+     * @return int number of affected rows
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function deleteByRegion($regionId)
     {
@@ -1431,13 +1358,10 @@ class Item extends DAO
     /**
      * Delete by country
      *
-     * @access public
+     * @param string $countryId country code
      *
-     * @param int $countryId country id
-     *
-     * @return bool
-     *
-     * @since  unknown
+     * @return int number of affected rows
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function deleteByCountry($countryId)
     {
@@ -1454,12 +1378,10 @@ class Item extends DAO
     /**
      * Extends the given array $items with category name , and description in available locales
      *
-     * @access public
+     * @param array<int,array<string,mixed>> $items array with items
+     * @param string|null                    $prefLocale Defaults to the current locale
      *
-     * @param array $items array with items
-     *
-     * @return array with category name
-     * @since  unknown
+     * @return array<int,array<string,mixed>> with category name
      */
     public function extendCategoryName($items, $prefLocale = null)
     {
@@ -1531,12 +1453,10 @@ class Item extends DAO
     /**
      * Extends the given array $items with description in available locales
      *
-     * @access public
+     * @param array<int,array<string,mixed>> $items array with items
+     * @param string|null                    $prefLocale Defaults to the current locale
      *
-     * @param array $items array with items
-     *
-     * @return array $items with description
-     * @since  unknown
+     * @return array<int,array<string,mixed>> $items with description
      */
     private function extendItemDescription($items, $prefLocale = null)
     {

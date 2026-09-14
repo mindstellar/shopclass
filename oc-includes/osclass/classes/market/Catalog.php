@@ -46,16 +46,29 @@ final class Catalog
 
     private string $type;
 
+    /**
+     * @param string $type self::TYPE_PLUGINS or self::TYPE_THEMES
+     */
     private function __construct(string $type)
     {
         $this->type = $type;
     }
 
+    /**
+     * Catalog reader for the plugin registry.
+     *
+     * @return self
+     */
     public static function forPlugins(): self
     {
         return new self(self::TYPE_PLUGINS);
     }
 
+    /**
+     * Catalog reader for the theme registry.
+     *
+     * @return self
+     */
     public static function forThemes(): self
     {
         return new self(self::TYPE_THEMES);
@@ -73,7 +86,8 @@ final class Catalog
      *
      * @return array<string, array<int, array{version:string, requires:string,
      *              requires_php:string, tested:string, url:string, sha256:string,
-     *              size:int, downloads:int}>>
+     *              size:int, published_at:string, downloads:int}>> keyed by slug,
+     *              each list newest-first
      */
     public function updates(bool $force = false): array
     {
@@ -103,7 +117,9 @@ final class Catalog
      * Always attempts a conditional GET (this is only ever called for an explicit detail
      * view, never polled), falling back to the last-known-good cached copy on failure.
      *
-     * @return array|null null when the slug has never been fetched successfully
+     * @param string $slug
+     *
+     * @return array<string,mixed>|null null when the slug has never been fetched successfully
      */
     public function detail(string $slug): ?array
     {
@@ -161,7 +177,11 @@ final class Catalog
         return $dataAll[$slug] ?? null;
     }
 
-    /** Unix timestamp of the last updates.json check attempt (success or failure), 0 if never. */
+    /**
+     * Unix timestamp of the last updates.json check attempt (success or failure), 0 if never.
+     *
+     * @return int
+     */
     public function lastChecked(): int
     {
         $value = osc_get_preference($this->key(self::RESOURCE_UPDATES . '_checked_at'));
@@ -169,7 +189,11 @@ final class Catalog
         return $value === '' ? 0 : (int) $value;
     }
 
-    /** Message from the most recent failed updates.json check, or null when the last check was clean. */
+    /**
+     * Message from the most recent failed updates.json check, or null when the last check was clean.
+     *
+     * @return string|null
+     */
     public function lastError(): ?string
     {
         $value = osc_get_preference($this->key(self::RESOURCE_UPDATES . '_error'));
@@ -180,6 +204,13 @@ final class Catalog
     // ---- internals ----------------------------------------------------
 
     /**
+     * Returns the sanitized payload for one catalog resource, doing a conditional GET only
+     * when forced or on this install's very first check, and falling back to the cache.
+     *
+     * @param string $resource self::RESOURCE_UPDATES or self::RESOURCE_INDEX
+     * @param string $file     file name under the catalog's v1/ directory
+     * @param bool   $force    see updates()
+     *
      * @return array<string, mixed>
      */
     private function fetch(string $resource, string $file, bool $force): array
@@ -252,6 +283,11 @@ final class Catalog
      * schedules a retry about an hour out — the same back-dating trick
      * `CAdminAjax::scheduleUpdateCheckRetry()` uses, so a full 24h clock never hides a
      * release published during an outage.
+     *
+     * @param string $resource self::RESOURCE_UPDATES or self::RESOURCE_INDEX
+     * @param string $message
+     *
+     * @return void
      */
     private function fail(string $resource, string $message): void
     {
@@ -266,6 +302,10 @@ final class Catalog
      * Tries the primary GitHub Pages host, then the raw.githubusercontent.com mirror.
      * Conditional headers are only sent to the source that produced them last time —
      * an ETag from Pages means nothing to the mirror's own cache.
+     *
+     * @param string   $relativePath   path under the catalog's v1/ directory
+     * @param string   $storedSource   'primary' or 'mirror' — whichever produced the stored validators
+     * @param string[] $requestHeaders conditional-GET headers
      *
      * @return array{ok:bool, status:int, body:string|false, headers:array<string,string>,
      *               source:?string, error:?string}
@@ -321,6 +361,11 @@ final class Catalog
         ];
     }
 
+    /**
+     * GitHub Pages base URL for this catalog, filterable via market_catalog_primary_base.
+     *
+     * @return string
+     */
     private function primaryBase(): string
     {
         $default = $this->type === self::TYPE_PLUGINS
@@ -330,6 +375,11 @@ final class Catalog
         return (string) osc_apply_filter('market_catalog_primary_base', $default, $this->type);
     }
 
+    /**
+     * raw.githubusercontent.com fallback base URL, filterable via market_catalog_mirror_base.
+     *
+     * @return string
+     */
     private function mirrorBase(): string
     {
         $default = $this->type === self::TYPE_PLUGINS
@@ -339,12 +389,25 @@ final class Catalog
         return (string) osc_apply_filter('market_catalog_mirror_base', $default, $this->type);
     }
 
+    /**
+     * Preference key for this catalog type, e.g. "market_plugins_updates_json".
+     *
+     * @param string $suffix
+     *
+     * @return string
+     */
     private function key(string $suffix): string
     {
         return 'market_' . $this->type . '_' . $suffix;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Decodes a stored JSON preference, returning [] for anything that is not a JSON array.
+     *
+     * @param string $raw
+     *
+     * @return array<string, mixed>
+     */
     private function decodeMap(string $raw): array
     {
         if ($raw === '') {
@@ -360,9 +423,11 @@ final class Catalog
      * whose `url` is not on the package-host allowlist is dropped rather than passed
      * through — a poisoned catalog must not be able to point an install anywhere.
      *
+     * @param mixed $raw the decoded updates.json payload
+     *
      * @return array<string, array<int, array{version:string, requires:string,
      *              requires_php:string, tested:string, url:string, sha256:string, size:int,
-     *              downloads:int}>>
+     *              published_at:string, downloads:int}>> keyed by slug, each list newest-first
      */
     private function sanitizeUpdates($raw): array
     {
@@ -404,11 +469,15 @@ final class Catalog
 
     /**
      * A raw catalog version entry carries `requires` / `requires_php` / `tested` — the
-     * facts `Compatibility::evaluate()` runs locally. A catalog built before this class
-     * stopped publishing a baked verdict also carries a `compat` key here; this whitelists
-     * only the fields below, so that key (and anything else unrecognised) is silently
-     * dropped rather than trusted — the same catalog reads cleanly whichever build produced
-     * it, and a stale precomputed verdict never reaches a caller.
+     * facts `Compatibility::evaluate()` runs locally. Only the fields below are read, so an
+     * older catalog's baked `compat` verdict is dropped rather than trusted.
+     *
+     * @param array<string,mixed> $entry
+     * @param string              $slug  only used in the dropped-entry warning
+     *
+     * @return array{version:string, requires:string, requires_php:string, tested:string,
+     *               url:string, sha256:string, size:int, published_at:string,
+     *               downloads:int}|null null when the version or its download url is unusable
      */
     private function sanitizeVersionEntry(array $entry, string $slug): ?array
     {
@@ -439,9 +508,8 @@ final class Catalog
         $size = $entry['size'] ?? 0;
         $size = is_int($size) || is_float($size) ? max(0, (int) $size) : 0;
 
-        // GitHub's cumulative release-asset download count for this version. Absent on any
-        // catalog published before this field existed, so it defaults to 0 rather than
-        // dropping the version or warning — see the class docblock on catalog tolerance.
+        // GitHub's cumulative release-asset download count for this version. Absent on an
+        // older catalog, so it defaults to 0 rather than dropping the version.
         $downloads = $entry['downloads'] ?? 0;
         $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
 
@@ -461,6 +529,8 @@ final class Catalog
     /**
      * `index.json` is published as a JSON list (each row carries its own `slug`); this
      * re-keys it by slug and drops/blanks any field that fails validation.
+     *
+     * @param mixed $raw the decoded index.json payload
      *
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
@@ -499,9 +569,8 @@ final class Catalog
                 $iconValue = null;
             }
 
-            // Package total (sum across every published version). Absent on a catalog
-            // published before this field existed — defaults to 0, same tolerance as every
-            // other field here.
+            // Package total (sum across every published version), 0 when the catalog
+            // does not carry it.
             $downloads = $row['downloads'] ?? 0;
             $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
 
@@ -521,11 +590,9 @@ final class Catalog
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
                 'downloads'         => $downloads,
                 // Package-level supported range (docs/MARKET.md §5) — the lowest `requires`
-                // and highest `tested` across every version the catalog build resolved, so
-                // Browse can render "works with X – Y" from this slim row alone. Absent on a
-                // catalog published before this field existed, same tolerant default (null,
-                // not a dropped row) as everything else here; `Compatibility::rangeLabel()`
-                // already renders null/null as "not declared".
+                // and highest `tested` across every version, so Browse can render
+                // "works with X – Y" from this row alone. Null when the catalog omits it,
+                // which `Compatibility::rangeLabel()` renders as "not declared".
                 'requires_min'      => $this->sanitizeVersionLike($row['requires_min'] ?? null),
                 'tested_max'        => $this->sanitizeVersionLike($row['tested_max'] ?? null),
             ];
@@ -534,7 +601,13 @@ final class Catalog
         return $result;
     }
 
-    /** A version-shaped string ("6.0", "6.1.0") or null — never garbage passed through as one. */
+    /**
+     * A version-shaped string ("6.0", "6.1.0") or null — never garbage passed through as one.
+     *
+     * @param mixed $value
+     *
+     * @return string|null
+     */
     private function sanitizeVersionLike($value): ?string
     {
         return is_string($value) && preg_match('/^\d+(\.\d+)*/', $value) ? $value : null;
@@ -544,6 +617,16 @@ final class Catalog
      * `v1/packages/<slug>.json` detail payload — same untrusted-input discipline as the
      * other two resources: image URLs go through the host allowlist, links are limited
      * to http(s), everything else is type-checked with a safe default.
+     *
+     * @param array<string,mixed> $raw  the decoded packages/<slug>.json payload
+     * @param string              $slug
+     *
+     * @return array{slug:string, name:string, author:string, short_description:string,
+     *               description_html:string, icon:?string,
+     *               screenshots:array<int,array{src:string,caption:string}>,
+     *               categories:array<int,string>, tags:array<int,string>,
+     *               links:array<string,string>, versions:array<int,array<string,mixed>>,
+     *               updated_at:string, downloads:int, requires_min:?string, tested_max:?string}
      */
     private function sanitizeDetail(array $raw, string $slug): array
     {
@@ -606,8 +689,8 @@ final class Catalog
             $links['repo'] = 'https://github.com/' . $raw['source']['repo'];
         }
 
-        // Package total (sum across every published version) — same tolerant default as
-        // index()/updates() so a catalog published before this field existed still reads.
+        // Package total (sum across every published version), 0 when the catalog
+        // does not carry it.
         $downloads = $raw['downloads'] ?? 0;
         $downloads = is_int($downloads) || is_float($downloads) ? max(0, (int) $downloads) : 0;
 

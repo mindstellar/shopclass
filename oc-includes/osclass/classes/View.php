@@ -21,12 +21,17 @@ class View
     private $aExported;
     private $aCurrent;
 
+    /**
+     * Start with an empty set of exported variables.
+     */
     public function __construct()
     {
         $this->aExported = array();
     }
 
     /**
+     * The shared View instance, created on first call.
+     *
      * @return \View
      */
     public static function newInstance()
@@ -41,8 +46,10 @@ class View
     /**
      * to export variables at the business layer
      *
-     * @param $key
-     * @param $value
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _exportVariableToView($key, $value)
     {
@@ -52,9 +59,9 @@ class View
     /**
      * to get the exported variables for the view
      *
-     * @param $key
+     * @param string $key
      *
-     * @return mixed|string|array
+     * @return mixed the exported value, or '' when nothing was exported under $key
      */
     public function _get($key)
     {
@@ -68,7 +75,9 @@ class View
     //only for debug
 
     /**
-     * @param $key
+     * Whether anything has been exported under this key.
+     *
+     * @param string $key
      *
      * @return bool
      */
@@ -78,7 +87,11 @@ class View
     }
 
     /**
-     * @param null $key
+     * Dump one exported variable, or all of them, for debugging.
+     *
+     * @param string|null $key
+     *
+     * @return void
      */
     public function _view($key = null)
     {
@@ -90,9 +103,11 @@ class View
     }
 
     /**
-     * @param $key
+     * The element the internal pointer of an exported array sits on.
      *
-     * @return string|array
+     * @param string $key
+     *
+     * @return mixed '' when the exported value is not an array
      */
     public function _current($key)
     {
@@ -108,9 +123,11 @@ class View
     }
 
     /**
-     * @param $key
+     * The zero-based index of the element _current() would return.
      *
-     * @return bool|int|null|string
+     * @param string $key
+     *
+     * @return int|false false when the exported value is not an array
      */
     public function _key($key)
     {
@@ -127,10 +144,12 @@ class View
     }
 
     /**
-     * @param $key
-     * @param $position
+     * Move the internal pointer of an exported array to a zero-based position.
      *
-     * @return bool
+     * @param string $key
+     * @param int    $position
+     *
+     * @return bool false when the key is not an array or the position is out of range
      */
     public function _seek($key, $position)
     {
@@ -150,9 +169,11 @@ class View
     }
 
     /**
-     * @param $key
+     * Rewind an exported array's internal pointer and return its first element.
      *
-     * @return array|mixed
+     * @param string $key
+     *
+     * @return mixed array() when the key is missing or not an array; false when it is empty
      */
     public function _reset($key)
     {
@@ -167,9 +188,11 @@ class View
     }
 
     /**
-     * @param $key
+     * Advance an exported array's internal pointer by one.
      *
-     * @return bool
+     * @param string $key
+     *
+     * @return bool false at the end of the array, or when the key is not an array
      */
     public function _next($key)
     {
@@ -186,7 +209,9 @@ class View
     }
 
     /**
-     * @param $key
+     * How many elements an exported array holds, or -1 when it is not an array.
+     *
+     * @param string $key
      *
      * @return int
      */
@@ -200,7 +225,11 @@ class View
     }
 
     /**
-     * @param $key
+     * Drop an exported variable and its pointer state.
+     *
+     * @param string $key
+     *
+     * @return void
      */
     public function _erase($key)
     {

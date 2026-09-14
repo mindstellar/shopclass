@@ -31,6 +31,13 @@ class FileSystem
     private static $lastError;
 
     /**
+     * Error handler installed around native filesystem calls, so their warning text can be
+     * quoted in the exception this class throws instead.
+     *
+     * @param int    $type
+     * @param string $msg
+     *
+     * @return void
      * @internal
      */
     private static function handleError($type, $msg)
@@ -41,9 +48,10 @@ class FileSystem
     /**
      * Sets access and modification time of file.
      *
-     * @param string|iterable $files A filename, an array of files, or a \Traversable instance to create
+     * @param string|iterable<string> $files A filename, an array of files, or a \Traversable instance to create
      *
-     * @throws Exception When touch fails
+     * @return void
+     * @throws RuntimeException When touch fails
      */
     public function touch($files)
     {
@@ -57,9 +65,10 @@ class FileSystem
 
     /**
      * Return an array if isn't.
-     * @param $files
      *
-     * @return array|\Traversable
+     * @param string|iterable<string> $files
+     *
+     * @return iterable<string>
      */
     private function toIterable($files)
     {
@@ -74,7 +83,8 @@ class FileSystem
      * @param int             $umask     The mode mask (octal)
      * @param bool            $recursive Whether change the mod recursively or not
      *
-     * @throws Exception When the change fails
+     * @return void
+     * @throws RuntimeException When the change fails
      */
     public function chmod($files, $mode, $umask = 0000, $recursive = false)
     {
@@ -95,7 +105,8 @@ class FileSystem
      * @param string|int      $user      A user name or number
      * @param bool            $recursive Whether change the owner recursively or not
      *
-     * @throws Exception When the change fails
+     * @return void
+     * @throws RuntimeException When the change fails
      */
     public function chown($files, $user, $recursive = false)
     {
@@ -120,7 +131,8 @@ class FileSystem
      * @param string|int      $group     A group name or number
      * @param bool            $recursive Whether change the group recursively or not
      *
-     * @throws Exception When the change fails
+     * @return void
+     * @throws RuntimeException When the change fails
      */
     public function chgrp($files, $group, $recursive = false)
     {
@@ -141,10 +153,11 @@ class FileSystem
     /**
      * Creates a symbolic link or copy a directory.
      *
-     * @param      $originDir
-     * @param      $targetDir
-     * @param bool $copyOnWindows
+     * @param string $originDir
+     * @param string $targetDir
+     * @param bool   $copyOnWindows copy the tree instead of linking it, on Windows
      *
+     * @return void
      * @throws \Exception
      */
     public function symlink($originDir, $targetDir, $copyOnWindows = false)
@@ -184,9 +197,9 @@ class FileSystem
      *  - files in the target directory that do not exist in the source directory will not be deleted
      * (see the `delete` option)
      *
-     * @param                   $originDir
-     * @param                   $targetDir
-     * @param array             $options        An array of boolean options
+     * @param string            $originDir
+     * @param string            $targetDir
+     * @param array<string,bool> $options       An array of boolean options
      *                                          Valid options are:
      *                                          - $options['override'] If true, target files newer than origin files
      *                                          are
@@ -195,8 +208,9 @@ class FileSystem
      *                                          Windows (see symlink(), defaults to false)
      *                                          - $options['delete'] Whether to delete files that are not in the source
      *                                          directory (defaults to false)
-     * @param array             $filter         Files/Directory name in array get filtered
+     * @param array<int,string> $filter         Files/Directory name in array get filtered
      *
+     * @return void
      * @throws \Exception
      */
     public function sync($originDir, $targetDir, $options = [], $filter = [])
@@ -308,8 +322,9 @@ class FileSystem
     /**
      * Removes files or directories.
      *
-     * @param string|iterable $files A filename, an array of files, or a \Traversable instance to remove
+     * @param string|iterable<string> $files A filename, an array of files, or a \Traversable instance to remove
      *
+     * @return void
      * @throws \Exception
      */
     public function remove($files)
@@ -346,9 +361,12 @@ class FileSystem
     }
 
     /**
+     * Run a native filesystem function with our error handler installed, so the warning text
+     * it emits is captured in self::$lastError. Extra arguments are forwarded to $func.
+     *
      * @param callable $func
      *
-     * @return mixed
+     * @return mixed whatever $func returns
      *
      * @throws \Exception
      */
@@ -372,10 +390,10 @@ class FileSystem
     /**
      * Creates a directory recursively.
      *
-     * @param string|iterable $dirs The directory path
+     * @param string|iterable<string> $dirs The directory path
+     * @param int                      $mode
      *
-     * @param int             $mode
-     *
+     * @return void
      * @throws \Exception
      */
     public function mkdir($dirs, $mode = 0755)
@@ -402,6 +420,11 @@ class FileSystem
      * If the target file is newer, it is overwritten only when the
      * $overwriteNewerFiles option is set to true.
      *
+     * @param string $originFile
+     * @param string $targetFile
+     * @param bool   $overwriteNewerFiles
+     *
+     * @return void
      * @throws \Exception
      */
     public function copy($originFile, $targetFile, $overwriteNewerFiles = false)
@@ -466,7 +489,14 @@ class FileSystem
     }
 
     /**
+     * Always throws: reports why a link from $origin to $target could not be created.
+     *
+     * @param string $origin
+     * @param string $target
      * @param string $linkType Name of the link type, typically 'symbolic' or 'hard'
+     *
+     * @return never
+     * @throws RuntimeException always
      */
     private function linkException($origin, $target, $linkType)
     {
@@ -492,7 +522,7 @@ class FileSystem
     /**
      * Remove directory
      *
-     * @param $path
+     * @param string $path
      *
      * @return bool
      */
@@ -517,6 +547,8 @@ class FileSystem
     }
 
     /**
+     * A unique id for temporary file and directory names.
+     *
      * @param string $prefix
      * @param bool   $more_entropy
      *
@@ -530,10 +562,11 @@ class FileSystem
     /**
      * Renames a file or a directory.
      *
-     * @param      $origin
-     * @param      $target
-     * @param bool $overwrite
+     * @param string $origin
+     * @param string $target
+     * @param bool   $overwrite
      *
+     * @return void
      * @throws \Exception
      */
     public function rename($origin, $target, $overwrite = false)
@@ -558,7 +591,10 @@ class FileSystem
     /**
      * Tells whether a file exists and is readable.
      *
-     * @throws Exception When windows path is longer than 258 characters
+     * @param string $filename
+     *
+     * @return bool
+     * @throws LengthException When the path is longer than PHP_MAXPATHLEN - 2
      */
     private function isReadable($filename)
     {
@@ -577,7 +613,7 @@ class FileSystem
     /**
      * Appends/Write content to an existing file.
      *
-     * @param                 $filename
+     * @param string          $filename
      * @param string|resource $content The content to append
      * @param bool            $append
      *
@@ -613,22 +649,22 @@ class FileSystem
     /**
      * Get content implementation
      *
-     * @param             $url
-     * @param null         $post_data
+     * @param string       $url
+     * @param array<string,mixed>|string|null $post_data
      * @param bool         $verify_ssl
      * @param int          $timeout       Total transfer timeout in seconds. 0 (default) leaves
      *                                    no overall limit, matching the historic behaviour, so
      *                                    callers such as large-file downloads are unaffected.
-     * @param array        $headers       Extra request header lines (e.g. `'If-None-Match: "abc"'`),
+     * @param array<int,string> $headers  Extra request header lines (e.g. `'If-None-Match: "abc"'`),
      *                                    added on top of the defaults this method already sets.
-     * @param array|null   $responseInfo  Out parameter. When a variable is passed, it is filled with
+     * @param array<string,mixed>|null $responseInfo Out parameter. When a variable is passed, it is filled with
      *                                    `['status' => int, 'headers' => array<lowercase-name, value>]`
      *                                    describing the final response (post-redirects) — callers doing
      *                                    conditional GET (ETag / Last-Modified) need the status code to
      *                                    tell a 304 from a 200, and the response headers to read the new
      *                                    validators back.
      *
-     * @return bool|string $data
+     * @return bool|string the response body, or false on failure
      */
     public function getContents(
         $url,
@@ -742,7 +778,7 @@ class FileSystem
      * @param string|null $pattern preg_match supported regex pattern
      * @param bool        $follow_symlinks
      *
-     * @return array
+     * @return array<int,string> absolute paths; directories carry a trailing slash
      */
     public function rSearch(string $root_dir, ?string $pattern = null, bool $follow_symlinks = false)
     {
@@ -835,7 +871,7 @@ class FileSystem
      *
      * @param string      $sourceURL
      * @param string      $filename
-     * @param null        $post_data
+     * @param array<string,mixed>|string|null $post_data
      * @param bool        $verify_ssl
      * @param string|null $expectedSha256 When given, the downloaded file is hashed and
      *                                    compared; a mismatch deletes the file and returns false.

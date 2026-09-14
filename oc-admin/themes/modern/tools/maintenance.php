@@ -16,6 +16,8 @@
 $maintenance = file_exists(osc_base_path() . '.maintenance');
 
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -32,33 +34,23 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-setting">
-    <!-- settings form -->
     <div id="backup-settings">
         <?php osc_admin_page_head(__('Maintenance')); ?>
-        <form>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="form-row">
-                        <?php _e("While in maintenance mode, users can't access your website. Useful if you need to "
-                                 . "make changes on your website. Use the following button to toggle maintenance mode ON/OFF."); ?>
-                        <div class="<?php echo $maintenance ? 'callout-danger' : 'callout-success'; ?>">
-                            <?php printf(__('Maintenance mode is: <strong>%s</strong>'),
-                                ($maintenance ? __('ON') : __('OFF'))); ?>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <input type="button"
-                               value="<?php echo($maintenance ? osc_esc_html(__('Disable maintenance mode'))
-                                   : osc_esc_html(__('Enable maintenance mode'))); ?>"
-                               onclick="window.location.href='<?php echo osc_admin_base_url(true);
-                                ?>?page=tools&amp;action=maintenance&amp;mode=<?php
-                               echo ($maintenance ? 'off' : 'on') . '&amp;' . osc_csrf_token_url();
-?>';" class="btn btn-submit"/>
-                    </div>
-                </div>
-            </fieldset>
-        </form>
+        <?php osc_admin_action_section(array(
+    'intro'     => __("While in maintenance mode, users can't access your website. Useful if you need to "
+                      . "make changes on your website. Use the following button to toggle maintenance mode ON/OFF."),
+    'body_html' => '<div class="' . ($maintenance ? 'callout-danger' : 'callout-success') . '">'
+        . sprintf(__('Maintenance mode is: <strong>%s</strong>'), ($maintenance ? __('ON') : __('OFF')))
+        . '</div>',
+    'actions'   => array(
+        array(
+            'label'   => $maintenance ? __('Disable maintenance mode') : __('Enable maintenance mode'),
+            'variant' => 'primary',
+            'url'     => osc_admin_base_url(true) . '?page=tools&action=maintenance&mode='
+                . ($maintenance ? 'off' : 'on') . '&' . osc_csrf_token_url(),
+        ),
+    ),
+)); ?>
     </div>
-    <!-- /settings form -->
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

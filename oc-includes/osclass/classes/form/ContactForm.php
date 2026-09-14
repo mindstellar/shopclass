@@ -18,7 +18,9 @@
 class ContactForm extends Form
 {
     /**
-     * @return bool
+     * Echo the hidden input carrying the item id being contacted about.
+     *
+     * @return bool always true
      */
     public static function primary_input_hidden()
     {
@@ -28,7 +30,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the hidden input pinning the contact form to the item page.
+     *
+     * @return bool always true
      */
     public static function page_hidden()
     {
@@ -38,7 +42,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the hidden input carrying the contact_post action.
+     *
+     * @return bool always true
      */
     public static function action_hidden()
     {
@@ -48,7 +54,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the sender name input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_name()
     {
@@ -63,7 +71,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the sender email input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_email()
     {
@@ -78,7 +88,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the sender phone input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_phone_number()
     {
@@ -93,7 +105,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the subject input, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function the_subject()
     {
@@ -108,7 +122,9 @@ class ContactForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the message textarea, preferring the failed-submit session value.
+     *
+     * @return bool always true
      */
     public static function your_message()
     {
@@ -122,11 +138,23 @@ class ContactForm extends Form
         return true;
     }
 
+    /**
+     * Echo the attachment file input.
+     *
+     * @return void
+     */
     public static function your_attachment()
     {
         echo '<input type="file" name="attachment" />';
     }
 
+    /**
+     * Echo (or enqueue) the client-side validation script for the contact form.
+     *
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
+     */
     public static function js_validation($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery / jquery-validate); depends on no

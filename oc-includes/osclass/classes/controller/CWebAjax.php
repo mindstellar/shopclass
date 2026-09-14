@@ -19,6 +19,9 @@ define('IS_AJAX', true);
  */
 class CWebAjax extends BaseModel
 {
+    /**
+     * Boots the base controller, flags the request as AJAX and fires the `init_ajax` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,11 @@ class CWebAjax extends BaseModel
 
     /**
      * Business Layer...
+     *
+     * Dispatches the AJAX action and echoes its JSON response; an unknown action answers
+     * with a JSON error.
+     *
+     * @return void
      */
     public function doModel()
     {
@@ -419,7 +427,9 @@ class CWebAjax extends BaseModel
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the given theme template between the `before_html` and `after_html` hooks.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */

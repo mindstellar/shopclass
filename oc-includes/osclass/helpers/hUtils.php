@@ -49,11 +49,11 @@ function osc_get_param($key)
  * Generic function for view layer, return the $field of $item
  * with specific $locale
  *
- * @param array  $item
- * @param string $field
- * @param string $locale
+ * @param array<string,mixed>|null $item
+ * @param string                   $field
+ * @param string                   $locale Empty for the item's own value
  *
- * @return string
+ * @return mixed Empty string when the field is not set
  */
 function osc_field($item, $field, $locale)
 {
@@ -118,13 +118,9 @@ function osc_show_widgets_by_description($description)
  * Every form gets the same widget. `$section` is only a per-form label kept for the
  * documented signature, so a theme passing one still works.
  *
- * It used to select a 'recover_password' branch that rendered a captcha only when a reset
- * had been requested in the last 20 minutes, recording in the session when it had not so
- * the reset action would skip validating one. Both values were session-scoped, so a client
- * discarding cookies was always on its first attempt and never saw a captcha at all — and
- * because LoginThrottle drops its per-account limit whenever a provider is configured, the
- * reset form ended up with neither. The window bought nothing a cookie jar could not
- * sidestep, so it is gone.
+ * There is deliberately no per-form exemption window. LoginThrottle drops its per-account
+ * limit whenever a provider is configured, so a form skipping the captcha would have
+ * neither guard, and any session-scoped window is sidestepped by discarding cookies.
  *
  * @param string $section per-form label; does not change what is rendered
  *
@@ -138,8 +134,12 @@ function osc_show_recaptcha($section = '')
 }
 
 /**
- * @param $siteKey
- * @param $lang
+ * Print the reCAPTCHA widget and its loader script.
+ *
+ * @param string $siteKey
+ * @param string $lang    Two-letter language code
+ *
+ * @return void
  */
 function _osc_recaptcha_get_html($siteKey, $lang)
 {
@@ -293,8 +293,8 @@ function osc_captcha_script_url()
 /**
  * Formats the date using the appropiate format.
  *
- * @param string $date
- * @param null   $dateformat
+ * @param string      $date
+ * @param string|null $dateformat Defaults to the site's date format
  *
  * @return string
  */
@@ -377,7 +377,7 @@ function osc_escape_string($string)
 /**
  * Prints the user's account menu
  *
- * @param array $options array with options of the form array('name' => 'display name', 'url' => 'url of link')
+ * @param array<int,array<string,string>>|null $options array('name' => 'display name', 'url' => 'url of link')
  *
  * @return void
  */
@@ -399,6 +399,27 @@ function osc_private_user_menu($options = null)
     }
 
     $options = osc_apply_filter('user_menu_filter', $options);
+
+    // Keep log out last. The filter is how a plugin adds an account entry and appending is
+    // the natural way to do it, which landed every one of them BELOW the log-out row --
+    // and displaced log out into the middle of the list, since the render below gives the
+    // final entry its own slot after the user_menu hook. Moving it here rather than holding
+    // it out of the filter leaves it visible to a plugin that wants to relabel it. A theme
+    // passing its own options without an opt_logout entry (bender has none) is untouched.
+    foreach ($options as $var_k => $var_option) {
+        if (isset($var_option['class']) && $var_option['class'] === 'opt_logout') {
+            unset($options[$var_k]);
+            $options[] = $var_option;
+            break;
+        }
+    }
+    $options = array_values($options);
+
+    // A filter is free to return nothing; the final-entry render below would then reach for
+    // a key that does not exist.
+    if ($options === array()) {
+        return;
+    }
 
     echo '<script type="text/javascript">';
     // Vanilla, and DOMContentLoaded-wrapped so it runs after the list below exists (the
@@ -438,7 +459,9 @@ function osc_private_user_menu($options = null)
  */
 function osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')
 {
-    $txt = strip_tags($txt);
+    // A tag is a word boundary: stripping it outright glues the text either side
+    // of it together ("</p><p>" turned "…platform. Instead" into "…platform.Instead").
+    $txt = strip_tags(preg_replace('/<[^>]*>/', ' ', $txt));
     $txt = str_replace(array("\n\r", "\r\n", "\n", "\r", "\t"), ' ', $txt);
     $txt = trim($txt);
     $txt = preg_replace('/\s+/', ' ', $txt);
@@ -653,7 +676,9 @@ function osc_request_counts_as_view()
 }
 
 /**
+ * Where the visitor came from: the rewrite's referer, the stored one, then a validated Referer header.
  *
+ * @return string Empty string when none is known
  */
 function osc_get_http_referer()
 {
@@ -723,13 +748,11 @@ function osc_upload_token()
 /**
  * Remember where a visitor came from across the login POST without a session.
  *
- * The login form used to stash the referer in $_SESSION so it could send the user back
- * after signing in — but that started a physical session on a mere GET of the login page,
- * leaving even a visitor who never logs in carrying an osclass cookie that defeats
- * reverse-proxy caching. Instead, carry the destination in a short-lived, HMAC-signed
- * cookie: set here on the login page, consumed and cleared by osc_pop_login_redirect() on
- * the login POST. Only a same-site URL (and never the login page itself) is stored, so
- * there is no open-redirect surface; the signature is defence in depth.
+ * Stashing the referer in $_SESSION would start a physical session on a GET of the login
+ * page, leaving a visitor who never logs in carrying a cookie that defeats reverse-proxy
+ * caching. The destination rides a short-lived HMAC-signed cookie instead: set here,
+ * consumed and cleared by osc_pop_login_redirect() on the login POST. Only a same-site URL
+ * (never the login page itself) is stored, so there is no open-redirect surface.
  *
  * @param string $url
  * @param bool   $keepExisting keep an already-stored destination instead of overwriting it,
@@ -894,14 +917,18 @@ function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
 }
 
 /**
- * @param        $id
- * @param        $regexp
- * @param        $url
- * @param        $file
- * @param bool   $user_menu
+ * Register a file-backed custom route.
+ *
+ * @param string $id
+ * @param string $regexp    Pattern the request URI is matched against
+ * @param string $url       URL template, with {placeholders}
+ * @param string $file      File rendered for the route
+ * @param bool   $user_menu List it in the account menu
  * @param string $location
  * @param string $section
  * @param string $title
+ *
+ * @return void
  */
 function osc_add_route(
     $id,
@@ -926,6 +953,8 @@ function osc_add_route(
  * @param string $id
  * @param string $regexp
  * @param string $url
+ *
+ * @return void
  */
 function osc_add_route_hook($id, $regexp, $url)
 {
@@ -933,7 +962,9 @@ function osc_add_route_hook($id, $regexp, $url)
 }
 
 /**
+ * The search parameters the current subdomain pins, as osc_search_url() takes them.
  *
+ * @return array<string,string> Empty off a subdomain
  */
 function osc_get_subdomain_params()
 {
@@ -999,6 +1030,8 @@ function osc_openstreet_api_key()
 /**
  * Get Google Maps geocode URL.
  *
+ * @param string $address
+ *
  * @return string
  */
 function osc_google_maps_geocode_url($address)
@@ -1009,6 +1042,8 @@ function osc_google_maps_geocode_url($address)
 
 /**
  * Get OpenStreetMaps geocode URL.
+ *
+ * @param string $address
  *
  * @return string
  */
@@ -1036,9 +1071,8 @@ function osc_get_locations_json_url()
     // so a corrected place name reaches installs without a core release. Pinning a
     // release here would tie the data to the version of Shopclass that shipped it.
     //
-    // The dataset behind it is built from Wikidata and published CC0, replacing the
-    // ODbL-licensed one this used to point at — no attribution or share-alike condition
-    // travels with the data a site imports.
+    // The dataset behind it is built from Wikidata and published CC0, so no attribution
+    // or share-alike condition travels with the data a site imports.
     return osc_apply_filter(
         'locations_json_url',
         'https://geo.mindstellar.com/releases/latest.json'
@@ -1060,7 +1094,8 @@ function osc_get_locations_json_url()
  * @param string $location
  *
  * @return string
- * @deprecated since 6.2.0; use osc_get_locations_json_url()
+ * @deprecated since 6.2.0
+ * @see osc_get_locations_json_url()
  */
 function osc_get_locations_sql_url($location)
 {
@@ -1071,6 +1106,9 @@ function osc_get_locations_sql_url($location)
 
 /**
  * Get i18n repository URL.
+ *
+ * @param string $path Repository-relative path; defaults to locale_list.json
+ *
  * @return string
  */
 function osc_get_i18n_repository_url($path = '')
@@ -1103,4 +1141,137 @@ function osc_get_i18n_repository_url($path = '')
     $path = implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
 
     return $repoUrl . $path;
+}
+
+/**
+ * The TinyMCE config every editor in the product starts from, as the JSON object literal
+ * tinymce.init() takes.
+ *
+ * The base was copied into five call sites, which is how the front-end listing editor was
+ * left without license_key when TinyMCE 7 made it mandatory: four were updated, one was
+ * missed, and nothing could catch it. Everything shared now lives here once.
+ *
+ * $preset picks the plugin/toolbar pair:
+ *   'basic' — inline formatting, lists, link, source view (front-end listings, emails)
+ *   'full'  — blocks, image/media, tables and Word-paste cleaning (pages, widgets)
+ * The admin listing editor uses neither: it wants tables and forecolor but no embedded
+ * media, so it passes its own plugins/toolbar in $overrides rather than earning a preset
+ * of its own for one caller.
+ *
+ * Values that are JavaScript rather than data -- the dark-mode skin bridge, upload
+ * callbacks -- cannot survive json_encode, so callers assign those onto the object
+ * afterwards, which is the shape three of them already used.
+ *
+ * @param string $preset    'basic' or 'full'
+ * @param array  $overrides merged over the result; selector is always one of these
+ *
+ * @return string JSON, ready to embed
+ */
+function osc_tinymce_config($preset = 'basic', array $overrides = array())
+{
+    $config = array(
+        // TinyMCE disables the editor outright from 7 onwards unless a licence is
+        // declared; 'gpl' is the self-hosted option the bundled build is used under.
+        'license_key'        => 'gpl',
+        'promotion'          => false,
+        'branding'           => false,
+        'menubar'            => false,
+        'entity_encoding'    => 'raw',
+        'relative_urls'      => false,
+        'remove_script_host' => false,
+        'convert_urls'       => false,
+    );
+
+    if ($preset === 'full') {
+        $config['plugins'] = 'advlist anchor autolink charmap code fullscreen image'
+                             . ' insertdatetime link lists media preview searchreplace'
+                             . ' table visualblocks';
+        $config['toolbar'] = 'undo redo | blocks | bold italic underline | bullist numlist'
+                             . ' | link image media table | alignleft aligncenter alignright'
+                             . ' | removeformat | visualblocks code fullscreen preview';
+        // Paste handling — clean what comes in from Word / Google Docs.
+        $config['smart_paste']                   = true;
+        $config['paste_as_text']                 = false;
+        $config['paste_merge_formats']           = true;
+        $config['paste_data_images']             = false;
+        $config['paste_remove_styles_if_webkit'] = true;
+        $config['paste_webkit_styles']           = 'none';
+        // Only the light oxide skin ships, so the editor is a consistent "sheet of
+        // paper" in both themes rather than a half-dark panel.
+        $config['content_style'] = 'body{font-family:system-ui,-apple-system,"Segoe UI",'
+                                   . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
+                                   . 'line-height:1.55;color:#14181f}';
+    } else {
+        // Lean set: basic inline formatting, lists and links. No source view -- this is the
+        // preset the public listing form uses, and handing a poster a raw-HTML pane invites
+        // exactly what osc_sanitize_html() then has to take back out. An admin-only editor
+        // that wants one asks for it in $overrides.
+        // bold/italic/underline/removeformat are core and need no plugin.
+        $config['plugins'] = 'autolink lists link';
+        $config['toolbar'] = 'undo redo | bold italic underline | bullist numlist | link'
+                             . ' | removeformat';
+    }
+
+    $config = array_merge($config, $overrides);
+
+    // The one seam a plugin has on these editors; nothing else exposes them.
+    $config = osc_apply_filter('tinymce_config', $config, $preset);
+
+    return json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
+if (!function_exists('osc_server_software')) {
+    /**
+     * The web server's reported identity, lowercased, e.g. "nginx/1.27.0".
+     *
+     * @return string Empty when the SAPI does not report one (CLI, some FastCGI setups).
+     */
+    function osc_server_software()
+    {
+        return strtolower((string)Params::getServerParam('SERVER_SOFTWARE'));
+    }
+}
+
+if (!function_exists('osc_server_is_nginx')) {
+    /**
+     * Whether the site is served by nginx, which ignores .htaccess entirely: rewriting is
+     * configured in the server block instead, so anything written to that file is inert.
+     *
+     * @return bool
+     */
+    function osc_server_is_nginx()
+    {
+        return strpos(osc_server_software(), 'nginx') !== false;
+    }
+}
+
+if (!function_exists('osc_server_rewrite_rules')) {
+    /**
+     * The rewrite rules this server needs to route every request through index.php --
+     * an nginx location block, or the .htaccess body Apache reads.
+     *
+     * @return string
+     */
+    function osc_server_rewrite_rules()
+    {
+        $base = REL_WEB_URL;
+
+        if (osc_server_is_nginx()) {
+            return "location {$base} {\n"
+                   . "    try_files \$uri \$uri/ {$base}index.php?\$args;\n"
+                   . '}';
+        }
+
+        return "<IfModule mod_rewrite.c>\n"
+               . "RewriteEngine On\n"
+               . "RewriteBase {$base}\n"
+               . "RewriteRule ^index\\.php$ - [L]\n"
+               . "RewriteCond %{REQUEST_FILENAME} !-f\n"
+               . "RewriteCond %{REQUEST_FILENAME} !-d\n"
+               . "RewriteRule . {$base}index.php [L]\n"
+               . "</IfModule>\n"
+               . "<IfModule mod_mime.c>\n"
+               . "AddType text/xsl .xsl\n"
+               . '</IfModule>';
+    }
 }

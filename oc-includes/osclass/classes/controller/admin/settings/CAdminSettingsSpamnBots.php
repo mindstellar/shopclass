@@ -16,11 +16,17 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\SpamSettingsForm;
+
 /**
  * Class CAdminSettingsSpamnBots
  */
 class CAdminSettingsSpamnBots extends AdminSecBaseModel
 {
+    /**
+     * Boots the admin controller and fires the init_admin_settings_spam hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,35 +34,29 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Draws the spam and bots screen, or saves one of its forms (Akismet, captcha, alerts, login throttle).
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
             case ('spamNbots'):
                 // calling the spam and bots view
-                $akismet_key    = osc_akismet_key();
-                $akismet_status = 3;
-                if ($akismet_key != '') {
-                    require_once(osc_lib_path() . 'Akismet.class.php');
-                    $akismet_obj    = new Akismet(osc_base_url(), $akismet_key);
-                    $akismet_status = 2;
-                    if ($akismet_obj->isKeyValid()) {
-                        $akismet_status = 1;
-                    }
-                }
-
-                View::newInstance()->_exportVariableToView('akismet_status', $akismet_status);
-                $this->doView('settings/spamNbots.php');
+                $this->drawForms();
                 break;
             case ('akismet_post'):
-                // updating spam and bots option
+                // updating the Akismet key
                 osc_csrf_check();
-                $updated    = 0;
-                $akismetKey = Params::getParam('akismetKey');
-                $akismetKey = trim($akismetKey);
 
-                $updated = osc_set_preference('akismetKey', $akismetKey);
+                $result = CoreSettings::attempt(SpamSettingsForm::registerAkismet());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_AKISMET, $result['values']);
+                    break;
+                }
 
-                if ($akismetKey == '') {
+                if ($result['values']['akismetKey'] === '') {
                     osc_add_flash_info_message(_m('Your Akismet key has been cleared'), 'admin');
                 } else {
                     osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
@@ -64,31 +64,16 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
             case ('recaptcha_post'):
-                // updating spam and bots option
+                // updating the captcha provider and its keys
                 osc_csrf_check();
-                $iUpdated         = 0;
-                $recaptchaPrivKey = Params::getParam('recaptchaPrivKey');
-                $recaptchaPrivKey = trim($recaptchaPrivKey);
-                $recaptchaPubKey  = Params::getParam('recaptchaPubKey');
-                $recaptchaPubKey  = trim($recaptchaPubKey);
-                $recaptchaVersion = Params::getParam('recaptchaVersion');
-                $recaptchaVersion = trim($recaptchaVersion);
 
-                $captchaProvider = trim(Params::getParam('captchaProvider'));
-                if (!in_array($captchaProvider, array('auto', 'recaptcha', 'turnstile', 'none'), true)) {
-                    $captchaProvider = 'auto';
+                $result = CoreSettings::attempt(SpamSettingsForm::registerCaptcha());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_CAPTCHA, $result['values']);
+                    break;
                 }
-                $turnstileSiteKey   = trim(Params::getParam('turnstileSiteKey'));
-                $turnstileSecretKey = trim(Params::getParam('turnstileSecretKey'));
 
-                $iUpdated += osc_set_preference('recaptchaPrivKey', $recaptchaPrivKey);
-                $iUpdated += osc_set_preference('recaptchaPubKey', $recaptchaPubKey);
-                $iUpdated += osc_set_preference('recaptcha_version', $recaptchaVersion);
-                $iUpdated += osc_set_preference('captchaProvider', $captchaProvider);
-                $iUpdated += osc_set_preference('turnstileSiteKey', $turnstileSiteKey);
-                $iUpdated += osc_set_preference('turnstileSecretKey', $turnstileSecretKey);
-
-                if ($recaptchaPubKey == '') {
+                if ($result['values']['recaptchaPubKey'] === '') {
                     osc_add_flash_info_message(_m('Your reCAPTCHA key has been cleared'), 'admin');
                 } else {
                     osc_add_flash_ok_message(_m('Your reCAPTCHA key has been updated'), 'admin');
@@ -98,8 +83,13 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
             case ('alerts_post'):
                 // updating search-alert subscription option
                 osc_csrf_check();
-                $alertsRequireLogin = Params::getParam('alerts_require_login') != '' ? 1 : 0;
-                osc_set_preference('alerts_require_login', $alertsRequireLogin, 'osclass', 'BOOLEAN');
+
+                $result = CoreSettings::attempt(SpamSettingsForm::registerAlerts());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_ALERTS, $result['values']);
+                    break;
+                }
+
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
@@ -107,20 +97,11 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating the sign-in rate limit
                 osc_csrf_check();
 
-                // Every limit is floored at 1: a zero would read as "no attempt
-                // allowed" and shut the form for everyone, including whoever
-                // typed it. Turning the limiter off is the checkbox, not a zero.
-                $enabled    = Params::getParam('login_throttle_enabled') != '' ? 1 : 0;
-                $window     = max(1, Params::getParamInt('login_throttle_window'));
-                $maxIp      = max(1, Params::getParamInt('login_throttle_max_ip'));
-                $maxAccount = max(1, Params::getParamInt('login_throttle_max_account'));
-                $retention  = max(0, Params::getParamInt('login_attempt_retention_days'));
-
-                osc_set_preference('login_throttle_enabled', $enabled, 'security', 'BOOLEAN');
-                osc_set_preference('login_throttle_window', $window, 'security', 'INTEGER');
-                osc_set_preference('login_throttle_max_ip', $maxIp, 'security', 'INTEGER');
-                osc_set_preference('login_throttle_max_account', $maxAccount, 'security', 'INTEGER');
-                osc_set_preference('login_attempt_retention_days', $retention, 'security', 'INTEGER');
+                $result = CoreSettings::attempt(SpamSettingsForm::registerLoginThrottle());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_LOGIN_THROTTLE, $result['values']);
+                    break;
+                }
 
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
@@ -134,6 +115,35 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
         }
+    }
+
+    /**
+     * Draw the screen: four independent forms, at most one of which is being handed back
+     * what was typed into it.
+     *
+     * @param string     $rejected the page id of the form that was refused, if any
+     * @param array|null $values   that form's submitted values
+     *
+     * @return void
+     */
+    private function drawForms(string $rejected = '', ?array $values = null)
+    {
+        // Whether the stored key is one Akismet recognises. A request to their service, so
+        // it is made only for the screen that shows the answer.
+        $akismetKey    = osc_akismet_key();
+        $akismetStatus = 3;
+        if ($akismetKey != '') {
+            require_once(osc_lib_path() . 'Akismet.class.php');
+            $akismet       = new Akismet(osc_base_url(), $akismetKey);
+            $akismetStatus = $akismet->isKeyValid() ? 1 : 2;
+        }
+
+        // Exported under the name it has always had as well: a replaced admin theme's own
+        // view reads it, and View::_get() answers '' for a key nobody exported -- which
+        // reads as "no key configured" rather than as anything being wrong.
+        $this->_exportVariableToView('akismet_status', $akismetStatus);
+        $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
+        $this->doView('settings/spamNbots.php');
     }
 }
 

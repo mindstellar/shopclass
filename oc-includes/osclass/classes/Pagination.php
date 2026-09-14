@@ -39,8 +39,8 @@ class Pagination
     /**
      * Pagination constructor.
      *
-     * @param null $params
-     *
+     * @param array<string,mixed>|null $params Overrides; anything absent falls back to the
+     *                                        current search state and the default markup
      */
     public function __construct($params = null)
     {
@@ -70,6 +70,8 @@ class Pagination
     }
 
     /**
+     * The whole pagination block as a `<ul>`, or '' when there is only one page.
+     *
      * @return string
      */
     public function doPagination()
@@ -91,7 +93,9 @@ class Pagination
     }
 
     /**
-     * @return array
+     * The pagination items as rendered `<li>` strings, in display order.
+     *
+     * @return string[]
      */
     public function get_links()
     {
@@ -171,7 +175,9 @@ class Pagination
     }
 
     /**
-     * @return array
+     * The page window for the current state, with the boundary markers trimmed.
+     *
+     * @return array{first?:int, prev?:int, pages:int[], next?:int, last?:int}
      */
     public function get_pages()
     {
@@ -180,9 +186,11 @@ class Pagination
     }
 
     /**
-     * @param null $params
+     * The untrimmed page window for the current state.
      *
-     * @return array
+     * @param array<string,mixed>|null $params Unused
+     *
+     * @return array{first:int, prev:int|string, pages:int[], next:int|string, last:int}
      */
     public function get_raw_pages($params = null)
     {
@@ -238,7 +246,7 @@ class Pagination
      * @param int  $sides
      * @param bool $forceLimits keep first/last even at the window edges
      *
-     * @return array
+     * @return array{first?:int, prev?:int, pages:int[], next?:int, last?:int}
      */
     public static function computePages($pageCount, $selected, $sides = 2, $forceLimits = false)
     {
@@ -263,8 +271,10 @@ class Pagination
     }
 
     /**
-     * @param $text
-     * @param $attrs
+     * Render one `<li><a>` pagination item.
+     *
+     * @param string              $text
+     * @param array<string,mixed> $attrs attribute name => value (values are escaped)
      *
      * @return string
      */
@@ -274,8 +284,10 @@ class Pagination
     }
 
     /**
-     * @param $text
-     * @param $attrs
+     * Render one `<li><span>` pagination item, used for the current page.
+     *
+     * @param string              $text
+     * @param array<string,mixed> $attrs attribute name => value (values are escaped)
      *
      * @return string
      */
@@ -287,9 +299,9 @@ class Pagination
     /**
      * Render one `<li>`-wrapped element with escaped attribute values.
      *
-     * @param string $tag   'a' | 'span'
-     * @param string $text  inner text (page number or an arrow glyph)
-     * @param array  $attrs attribute name => value (values are escaped)
+     * @param string              $tag   'a' | 'span'
+     * @param string              $text  inner text (page number or an arrow glyph)
+     * @param array<string,mixed> $attrs attribute name => value (values are escaped)
      *
      * @return string
      */

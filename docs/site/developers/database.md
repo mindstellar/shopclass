@@ -2,7 +2,7 @@
 title: Database model
 description: Explore the ShopClass schema — table prefix, the core tables, and generating an entity-relationship diagram from struct.sql.
 sidebar:
-  order: 10
+  order: 11
 ---
 
 ShopClass stores everything in MySQL/MariaDB. Table names carry the prefix

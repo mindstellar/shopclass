@@ -38,6 +38,8 @@ namespace mindstellar\security;
 class PluginAjaxFile
 {
     /**
+     * Resolve a requested ajax file to an absolute path, or refuse it.
+     *
      * @param string $file  path relative to the plugins directory
      * @param string $root  absolute plugins directory, i.e. osc_plugins_path()
      *

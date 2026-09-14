@@ -2,7 +2,7 @@
 title: Debug PHP errors
 description: Turn on error reporting and logging in ShopClass with OSC_DEBUG and OSC_DEBUG_LOG — including how to debug a white screen.
 sidebar:
-  order: 11
+  order: 12
 ---
 
 By default ShopClass keeps PHP quiet: notices and strict warnings are suppressed

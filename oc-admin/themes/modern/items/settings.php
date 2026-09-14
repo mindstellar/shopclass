@@ -20,6 +20,11 @@ osc_admin_page(array(
 ));
 
 //customize Head
+/**
+ * Emit the listing-settings script: the moderation toggle shows and resets the moderated-listing count.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -52,250 +57,181 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-/**
- * @return string
- */
-function render_offset()
-{
-    return 'row-offset';
-}
-
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="item-settings">
         <?php osc_admin_page_head(__('Listing Settings')); ?>
-        <form action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="items"/>
-            <input type="hidden" name="action" value="settings_post"/>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Settings'); ?></div>
-                        <div class="form-controls">
-                            <?php osc_admin_checkbox(array(
-                                'name'    => 'reg_user_post',
-                                'label'   => __('Only logged in users can post listings'),
-                                'checked' => osc_reg_user_post(),
-                            )); ?>
-                            <div>
-                                <?php printf(
-                                    __('An user has to wait %s seconds between each listing added'),
-                                    '<input type="text" class="input-small" name="items_wait_time" value="'
-                                     . osc_items_wait_time() . '" />'
-                                ); ?>
-                                <div class="help-box">
-                                    <?php _e('If the value is set to zero, there is no wait period'); ?>
-                                </div>
-                            </div>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" name="moderate_admin_post" value="1" <?php if (osc_moderate_admin_post()) {
-                                        echo 'checked';
-                                    } ?> />
-                                    <?php _e('Hold new listings for admin moderation'); ?>
-                                </label>
-                            </div>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" name="moderate_admin_edit" value="1" <?php if (osc_moderate_admin_edit()) {
-                                        echo 'checked';
-                                    } ?>/>
-                                    <?php _e('Hold edited listings for admin moderation'); ?>
-                                </label>
-                            </div>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo((osc_moderate_items() == -1) ? ''
-                                        : 'checked="checked"'); ?> name="moderate_items" value="1"/>
-                                    <?php _e('Users have to validate their listings'); ?>
-                                </label>
-                            </div>
-                            <div class="num-moderated-items">
-                                <div>
-                                    <?php printf(
-                                        __("After %s validated listings the user doesn't need to validate the listings any more"),
-                                        '<input type="text" class="input-small" name="num_moderate_items" value="'
-                                             . ((osc_moderate_items() == -1) ? '' : osc_moderate_items()) . '" />'
-                                    ); ?>
-                                    <div class="help-box">
-                                        <?php _e('If the value is zero, it means that each listing must be validated'); ?>
-                                    </div>
-                                </div>
-                                <div class="separate-top-medium">
-                                    <label>
-                                        <input type="checkbox" <?php echo(osc_logged_user_item_validation()
-                                        ? 'checked="checked"' : ''); ?> name="logged_user_item_validation"
-                                               value="1"/>
-                                        <?php _e("Logged in users don't need to validate their listings"); ?>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo((osc_recaptcha_items_enabled() == '0') ? ''
-                                    : 'checked="checked"'); ?> name="enabled_recaptcha_items" value="1"/>
-                                    <?php _e('Show reCAPTCHA in add/edit listing form'); ?>
-                                </label>
-                                <div class="help-box"><?php _e('<strong>Remember</strong> that you must configure reCAPTCHA first'); ?></div>
-                            </div>
-                        </div>
+        <?php osc_admin_form_open(array(
+    'page'   => 'items',
+    'action' => 'settings_post',
+)); ?>
+            <?php osc_admin_form_row_open(__('Settings')); ?>
+                    <?php
+                    osc_admin_checkbox(array(
+                        'name'    => 'reg_user_post',
+                        'label'   => __('Only logged in users can post listings'),
+                        'checked' => osc_reg_user_post(),
+                    ));
+                    osc_admin_number(array(
+                        'row'    => false,
+                        'name'   => 'items_wait_time',
+                        'value'  => osc_items_wait_time(),
+                        'min'    => 0,
+                        'prefix' => __('An user has to wait'),
+                        'suffix' => __('seconds between each listing added'),
+                        'help'   => __('If the value is set to zero, there is no wait period'),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'moderate_admin_post',
+                        'label'   => __('Hold new listings for admin moderation'),
+                        'checked' => osc_moderate_admin_post(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'moderate_admin_edit',
+                        'label'   => __('Hold edited listings for admin moderation'),
+                        'checked' => osc_moderate_admin_edit(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'moderate_items',
+                        'label'   => __('Users have to validate their listings'),
+                        'checked' => osc_moderate_items() != -1,
+                    )); ?>
+                    <div class="num-moderated-items">
+                        <?php
+                        osc_admin_number(array(
+                            'row'    => false,
+                            'name'   => 'num_moderate_items',
+                            'value'  => osc_moderate_items() == -1 ? '' : osc_moderate_items(),
+                            'min'    => 0,
+                            'prefix' => __('After'),
+                            'suffix' => __("validated listings the user doesn't need to validate the listings any more"),
+                            'help'   => __('If the value is zero, it means that each listing must be validated'),
+                        ));
+                        osc_admin_checkbox(array(
+                            'name'    => 'logged_user_item_validation',
+                            'label'   => __("Logged in users don't need to validate their listings"),
+                            'checked' => osc_logged_user_item_validation(),
+                        )); ?>
                     </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Contact publisher'); ?></div>
-                        <div class="form-controls">
-                            <?php osc_admin_checkbox(array(
-                                'name'    => 'reg_user_can_contact',
-                                'label'   => __('Only allow registered users to contact publisher'),
-                                'checked' => osc_reg_user_can_contact(),
-                            )); ?>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_item_attachment() ? 'checked="checked"'
-                                    : ''); ?> name="item_attachment" value="1"/>
-                                    <?php _e('Allow attached files in contact publisher form'); ?>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Share listing'); ?></div>
-                        <div class="form-controls">
-                            <?php osc_admin_checkbox(array(
-                                'name'    => 'enable_send_friend',
-                                'label'   => __('Enable the "send to a friend" form'),
-                                'checked' => osc_enable_send_friend(),
-                                'help'    => __('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.'),
-                            )); ?>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_reg_user_can_send_friend()
-                                    ? 'checked="checked"' : ''); ?> name="reg_user_can_send_friend" value="1"/>
-                                    <?php _e('Only allow registered users to share listings'); ?>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Notifications'); ?></div>
-                        <div class="form-controls">
-                            <?php osc_admin_checkbox(array(
-                                'name'    => 'notify_new_item',
-                                'label'   => __('Notify admin when a new listing is added'),
-                                'checked' => osc_notify_new_item(),
-                            )); ?>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_notify_contact_item() ? 'checked="checked"'
-                                    : ''); ?> name="notify_contact_item" value="1"/>
-                                    <?php _e('Send admin a copy of the "contact publisher" email'); ?>
-                                </label>
-                            </div>
-                            <div class="separate-top-medium">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_notify_contact_friends() ? 'checked="checked"'
-                                    : ''); ?> name="notify_contact_friends" value="1"/>
-                                    <?php _e('Send admin a copy to "share listing" email'); ?>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Warn about expiration'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-small" name="warn_expiration"
-                                   value="<?php echo osc_esc_html(osc_warn_expiration()); ?>"/>
-                            <?php _e('days'); ?>
-                            <div class="help-box"><?php _e('This option will send an email X days before an ad expires to the author. 0 for no email.'); ?></div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Title length'); ?></div>
-                        <div class="form-controls">
-                            <div class="separate-top-medium">
-                                <?php printf(
-                                    __('%s characters '),
-                                    '<input type="text" class="input-small" name="max_chars_per_title" value="'
-                                     . osc_max_characters_per_title() . '" />'
-                                ); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Description length'); ?></div>
-                        <div class="separate-top-medium">
-                            <div class="form-controls">
-                                <?php printf(
-                                    __('%s characters '),
-                                    '<input type="text" class="input-small" name="max_chars_per_description" value="'
-                                             . osc_max_characters_per_description() . '" />'
-                                ); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Rich Edit'); ?></div>
-                        <div class="form-controls">
-                            <?php osc_admin_checkbox(array(
-                                'name'    => 'tinymce',
-                                'label'   => __('Enable TinyMCE on frontend'),
-                                'checked' => osc_tinymce_frontend(),
-                            )); ?>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Optional fields'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <label>
-                                    <input type="checkbox" <?php echo(osc_price_enabled_at_items() ? 'checked="checked"'
-                                        : ''); ?> name="enableField#f_price@items" value="1"/>
-                                    <?php _e('Price'); ?>
-                                </label>
-                                <div class="separate-top-medium">
-                                    <label>
-                                        <input type="checkbox" <?php echo(osc_images_enabled_at_items()
-                                            ? 'checked="checked"' : ''); ?> name="enableField#images@items" value="1"/>
-                                        <?php _e('Attach images'); ?>
-                                    </label>
-                                </div>
-                                <div class="separate-top-medium">
-                                    <?php printf(
-                                        __('Attach %s images per listing'),
-                                        '<input type="text" class="input-small" name="numImages@items" value="'
-                                         . osc_max_images_per_item() . '" />'
-                                    ); ?>
-                                    <div class="help-box"><?php _e('If the value is zero, it means an unlimited number of images is allowed'); ?></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"> <?php _e('Maps'); ?></div>
-                        <div class="separate-top-medium">
-                            <div class="form-controls">
-                                <?php $map_type = osc_item_map_type(); ?>
-                                <select class="input-small" name="map_type">
-                                    <option value="0" <?php if (!$map_type) {
-                                        echo 'selected';
-                                    } ?>><?php _e('None'); ?></option>
-                                    <option value="google" <?php if ($map_type === 'google') {
-                                        echo 'selected';
-                                    } ?>><?php _e('Google Maps'); ?></option>
-                                    <option value="openstreet" <?php if ($map_type === 'openstreet') {
-                                        echo 'selected';
-                                    } ?>><?php _e('OpenStreetMaps'); ?></option>
-                                </select>
-                                <div class="help-box"><?php _e('Set the API key in Settings -> General.'); ?></div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php osc_admin_form_actions(array(
+                    <?php osc_admin_checkbox(array(
+                        'name'      => 'enabled_recaptcha_items',
+                        'label'     => __('Show reCAPTCHA in add/edit listing form'),
+                        'checked'   => osc_recaptcha_items_enabled() != '0',
+                        'help_html' => __('<strong>Remember</strong> that you must configure reCAPTCHA first'),
+                    )); ?>
+            <?php osc_admin_form_row_close(); ?>
+            <?php osc_admin_form_row_open(__('Contact publisher')); ?>
+                    <?php
+                    osc_admin_checkbox(array(
+                        'name'    => 'reg_user_can_contact',
+                        'label'   => __('Only allow registered users to contact publisher'),
+                        'checked' => osc_reg_user_can_contact(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'item_attachment',
+                        'label'   => __('Allow attached files in contact publisher form'),
+                        'checked' => osc_item_attachment(),
+                    )); ?>
+            <?php osc_admin_form_row_close(); ?>
+            <?php osc_admin_form_row_open(__('Share listing')); ?>
+                    <?php
+                    osc_admin_checkbox(array(
+                        'name'    => 'enable_send_friend',
+                        'label'   => __('Enable the "send to a friend" form'),
+                        'checked' => osc_enable_send_friend(),
+                        'help'    => __('This form emails a listing to a recipient the visitor types in. Off by default because it can be abused to relay mail; enable it only if you need it.'),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'reg_user_can_send_friend',
+                        'label'   => __('Only allow registered users to share listings'),
+                        'checked' => osc_reg_user_can_send_friend(),
+                    )); ?>
+            <?php osc_admin_form_row_close(); ?>
+            <?php osc_admin_form_row_open(__('Notifications')); ?>
+                    <?php
+                    osc_admin_checkbox(array(
+                        'name'    => 'notify_new_item',
+                        'label'   => __('Notify admin when a new listing is added'),
+                        'checked' => osc_notify_new_item(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'notify_contact_item',
+                        'label'   => __('Send admin a copy of the "contact publisher" email'),
+                        'checked' => osc_notify_contact_item(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'notify_contact_friends',
+                        'label'   => __('Send admin a copy to "share listing" email'),
+                        'checked' => osc_notify_contact_friends(),
+                    )); ?>
+            <?php osc_admin_form_row_close(); ?>
+            <?php
+            osc_admin_number(array(
+                'name'   => 'warn_expiration',
+                'label'  => __('Warn about expiration'),
+                'value'  => osc_warn_expiration(),
+                'min'    => 0,
+                'suffix' => __('days'),
+                'help'   => __('This option will send an email X days before an ad expires to the author. 0 for no email.'),
+            ));
+            osc_admin_number(array(
+                'name'   => 'max_chars_per_title',
+                'label'  => __('Title length'),
+                'value'  => osc_max_characters_per_title(),
+                'min'    => 0,
+                'suffix' => __('characters'),
+            ));
+            osc_admin_number(array(
+                'name'   => 'max_chars_per_description',
+                'label'  => __('Description length'),
+                'value'  => osc_max_characters_per_description(),
+                'min'    => 0,
+                'suffix' => __('characters'),
+            ));
+            osc_admin_field(array(
+                'type'      => 'checkbox',
+                'row_label' => __('Rich Edit'),
+                'name'      => 'tinymce',
+                'label'     => __('Enable TinyMCE on frontend'),
+                'checked'   => osc_tinymce_frontend(),
+            )); ?>
+            <?php osc_admin_form_row_open(__('Optional fields')); ?>
+                    <?php
+                    osc_admin_checkbox(array(
+                        'name'    => 'enableField#f_price@items',
+                        'label'   => __('Price'),
+                        'checked' => osc_price_enabled_at_items(),
+                    ));
+                    osc_admin_checkbox(array(
+                        'name'    => 'enableField#images@items',
+                        'label'   => __('Attach images'),
+                        'checked' => osc_images_enabled_at_items(),
+                    ));
+                    osc_admin_number(array(
+                        'row'    => false,
+                        'name'   => 'numImages@items',
+                        'value'  => osc_max_images_per_item(),
+                        'min'    => 0,
+                        'prefix' => __('Attach'),
+                        'suffix' => __('images per listing'),
+                        'help'   => __('If the value is zero, it means an unlimited number of images is allowed'),
+                    )); ?>
+            <?php osc_admin_form_row_close(); ?>
+            <?php osc_admin_select(array(
+                'name'     => 'map_type',
+                'label'    => __('Maps'),
+                'selected' => (string)osc_item_map_type(),
+                'options'  => array(
+                    '0'          => __('None'),
+                    'google'     => __('Google Maps'),
+                    'openstreet' => __('OpenStreetMaps'),
+                ),
+                'help'     => __('Set the API key in Settings -> General.'),
+            )); ?>
+                    <?php osc_admin_form_close(array(
                         array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'save_changes')),
                     )); ?>
-                </div>
-            </fieldset>
-        </form>
     </div>
     <!-- /settings form -->
 </div>

@@ -35,6 +35,8 @@ class Widget extends DAO
     }
 
     /**
+     * Return the shared Widget model instance, creating it on first use.
+     *
      * @return \Widget
      */
     public static function newInstance()
@@ -47,13 +49,11 @@ class Widget extends DAO
     }
 
     /**
-     *
-     * @access public
+     * Widgets registered for one location, ordered by i_order then id.
      *
      * @param string $location
      *
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,string|null>> Empty when the location holds none
      */
     public function findByLocation($location)
     {
@@ -81,6 +81,7 @@ class Widget extends DAO
      * with nowhere to render.
      *
      * @return string[]
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function distinctLocations()
     {
@@ -137,6 +138,7 @@ class Widget extends DAO
      * @param string $location
      *
      * @return int
+     * @throws \mindstellar\database\DbException on a query failure
      */
     public function getNextOrder($location)
     {
@@ -149,12 +151,11 @@ class Widget extends DAO
     }
 
     /**
-     *
-     * @access public
+     * Widgets whose description matches exactly.
      *
      * @param string $description
      *
-     * @return array
+     * @return array<int,array<string,string|null>> Empty when nothing matches
      * @since  3.3.3+
      */
     public function findByDescription($description)

@@ -62,9 +62,11 @@ class SchemaReconciler
      * independent statements, and the failures are returned so the caller can
      * decide whether to go on.
      *
-     * @param array|string $queries struct.sql, or its statements already split
+     * @param array<int,string>|string $queries struct.sql, or its statements already split
      *
-     * @return array{0:bool,1:array,2:array} success, the statements it ran, and those that failed
+     * @return array{0:bool,1:array<int|string,string>,2:array<int,string>} success, the statements it
+     *                                                                     ran, and those that failed
+     * @throws DbException when the introspection queries themselves fail
      */
     public function reconcile($queries = '')
     {
@@ -137,9 +139,11 @@ class SchemaReconciler
     /**
      * Prepare and separe the queries, and save into data or struct queries
      *
-     * @param array $queries
-     * @param array $data_queries
-     * @param array $struct_queries
+     * @param array<int,string>        $queries
+     * @param array<int,string>        $data_queries   INSERT/UPDATE statements, by reference
+     * @param array<int|string,string> $struct_queries CREATE statements keyed by lowercase table, by reference
+     *
+     * @return void
      */
     private function prepareAndSepareQueries($queries, &$data_queries, &$struct_queries)
     {
@@ -159,8 +163,8 @@ class SchemaReconciler
     /**
      * Check if $table exist into array $struct_queries
      *
-     * @param string $table
-     * @param array  $struct_queries
+     * @param string                   $table
+     * @param array<int|string,string> $struct_queries
      *
      * @return bool
      */
@@ -172,10 +176,11 @@ class SchemaReconciler
     /**
      * Get fields from struct_queries (struct.sql)
      *
-     * @param string $table
-     * @param array  $struct_queries
+     * @param string                   $table
+     * @param array<int|string,string> $struct_queries
      *
-     * @return array|bool
+     * @return string[]|false One trimmed declaration line per field, false when the
+     *                        CREATE TABLE could not be parsed
      */
     private function getTableFieldsFromStruct($table, &$struct_queries)
     {
@@ -200,11 +205,13 @@ class SchemaReconciler
     /**
      * Classify fields, inside arrays $normal_fields, $indexes, $constrains (foreign key's)
      *
-     * @param $fields
-     * @param $normal_fields
-     * @param $indexes
-     * @param $constrains
-     * @param $lastTable
+     * @param string[]              $fields
+     * @param array<string,string>  $normal_fields column declarations keyed by lowercase name, by reference
+     * @param array<int,string>     $indexes       index declaration lines, by reference
+     * @param array<string,string>  $constrains    reference clause keyed by column list, by reference
+     * @param string|null           $lastTable     column list of the FOREIGN KEY being read, by reference
+     *
+     * @return void
      */
     private function classifyFieldsSql($fields, &$normal_fields, &$indexes, &$constrains, &$lastTable)
     {
@@ -255,10 +262,13 @@ class SchemaReconciler
     /**
      * Build alter sql, ADD COLUMN, CHANGE COLUMN, ALTER COLUMN
      *
-     * @param array  $tbl_fields , contain all fields inside database
-     * @param string $table
-     * @param        $normal_fields
-     * @param        $struct_queries
+     * @param array<int,array<string,mixed>> $tbl_fields     DESCRIBE rows for the live table
+     * @param string                         $table
+     * @param array<string,string>           $normal_fields  wanted declarations keyed by lowercase
+     *                                                       name; matched entries are removed, by reference
+     * @param array<int|string,string>       $struct_queries statements to run, appended to by reference
+     *
+     * @return void
      */
     private function createAlterTable($tbl_fields, $table, &$normal_fields, &$struct_queries)
     {
@@ -355,10 +365,13 @@ class SchemaReconciler
      * With all the indexes from struct.sql, remove indexes which actually
      * exist into database
      *
-     * @param      $tbl_indexes
-     * @param      $indexes
-     * @param      $table
-     * @param      $struct_queries
+     * @param array<int,array<string,mixed>> $tbl_indexes    SHOW INDEX rows for the live table
+     * @param array<int,string>              $indexes        wanted index lines; matched ones are
+     *                                                       removed, by reference
+     * @param string                         $table
+     * @param array<int|string,string>       $struct_queries statements to run, appended to by reference
+     *
+     * @return void
      */
     private function createNewIndex($tbl_indexes, &$indexes, $table, &$struct_queries)
     {
@@ -485,10 +498,12 @@ class SchemaReconciler
     /**
      * Create alter table if foreign key don't exist into database structure
      *
-     * @param array  $tbl_constraint
-     * @param string $table
-     * @param array  $struct_queries
-     * @param array  $constrains
+     * @param array<string,string>|null $tbl_constraint SHOW CREATE TABLE row for the live table
+     * @param string                    $table
+     * @param array<int|string,string>  $struct_queries statements to run, appended to by reference
+     * @param array<string,string>      $constrains     reference clause keyed by column list
+     *
+     * @return void
      */
     private function createForeignKey($tbl_constraint, $table, &$struct_queries, $constrains)
     {
@@ -545,7 +560,7 @@ class SchemaReconciler
      *
      * @param string $createTable
      *
-     * @return array
+     * @return array<int,array{name:string,columns:string,reference:string,actions:string}>
      */
     private function parseForeignKeys($createTable)
     {

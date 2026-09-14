@@ -1,0 +1,150 @@
+// Field primitives — the widths, suffixes and choice lists the core helpers in
+// hAdminUi.php emit. Every class here is new; nothing existing changes meaning, so a
+// screen still writing its own markup is untouched.
+//
+// The widths carry !important on purpose. `.form-controls input:not([type="checkbox"])…`
+// in forms.scss is (0,4,1) and stretches every input it contains to 100% up to 24rem —
+// which is why a number field inside a sentence renders as a full-width block and orphans
+// the words after it. The whole point of these classes is that width follows the field's
+// meaning, so they have to win, and no reasonable selector gets there without it. The
+// max-widths need it for the same reason: that rule's 24rem cap would otherwise clamp the
+// one field deliberately wider than prose, the 30rem key.
+
+// Input plus the words that belong to it. The suffix is a slot, so nothing can separate
+// it from its control and no translated sentence has to be split around a %s.
+.field-inline {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+
+  .input-text {
+    display: inline-block;
+    margin: 0;
+    width: auto;
+  }
+}
+
+// A field's hint owns its line. `.help-box` is inline-block globally — plugins place it
+// mid-sentence and that has to keep working — but inside a settings row it follows a
+// control, and after an inline one (a button, a reveal toggle) it ran on into the same line.
+.form-controls > .help-box {
+  display: block;
+}
+
+// The words either side of a field. Labels, not spans: they name the control they sit
+// against, and the row's own label column is often a category rather than a name.
+.field-prefix,
+.field-suffix {
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+// Three widths, tied to meaning: a number, prose, a long opaque token.
+.field-num {
+  width: 7rem !important;
+}
+
+// Right-align digits, not everything narrow: a "240x200" dimension wears the same width
+// and reads wrong flushed right.
+input[type="number"].field-num {
+  text-align: end;
+}
+
+.field-text {
+  max-width: 100% !important;
+  width: 24rem !important;
+}
+
+.field-key {
+  font-family: var(--bs-font-monospace);
+  font-size: .9em;
+  max-width: 100% !important;
+  width: 30rem !important;
+}
+
+.field-mono {
+  font-family: var(--bs-font-monospace);
+}
+
+// A colour well is its swatch: sized to the control, not stretched across the row.
+.field-color {
+  block-size: 2.25rem;
+  border: 1px solid var(--osc-chrome-edge);
+  border-radius: .25rem;
+  cursor: pointer;
+  inline-size: 3.5rem !important;
+  padding: .2rem;
+}
+
+// A select the primitive renders may sit anywhere — a dialog, a widget editor, a table
+// cell — not just inside `.form-controls`, which is where the theme's only select styling
+// was scoped. Extending here is the one place the appearance is attached, which is also the
+// single seam to cut when the theme stops standing on Bootstrap: replace this rule, not
+// every call site.
+select.field-select {
+  @extend .form-select-sm, .form-select;
+
+  max-width: 100%;
+  width: 14rem;
+}
+
+// A choice list sizes to its content. The label wraps its own radio, so the whole line is
+// a hit target and the label can never wrap off its control the way a fixed width made it.
+.field-choices {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.field-choice {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: .55rem;
+  padding-block: .15rem;
+
+  input[type="radio"] {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  > span {
+    line-height: 1.3;
+  }
+}
+
+// The free-text half of a "Custom: [____]" choice, sized to sit on the option's own line.
+.field-inline-text {
+  display: inline-block !important;
+  margin: 0 !important;
+  width: 9rem !important;
+}
+
+// A group of settings reads as a group. A bare heading over one checkbox reads as
+// something abandoned.
+.settings-panel {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-chrome);
+  border-radius: .5rem;
+  overflow: hidden;
+
+  .form-horizontal {
+    padding: .9rem;
+  }
+}
+
+.settings-panel-head {
+  background: var(--osc-bench-warm);
+  border-bottom: 1px solid var(--osc-chrome);
+  font-size: .92rem;
+  font-weight: 650;
+  padding: .6rem .9rem;
+}
+
+// One control per locale, under the shared .osc-tab strip. Hiding is left to [hidden],
+// which Reboot already takes off the page; the strip only needs its own spacing.
+.field-translate .osc-tab {
+  margin-block-end: .5rem;
+}

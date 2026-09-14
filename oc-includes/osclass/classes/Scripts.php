@@ -34,6 +34,9 @@ class Scripts extends Dependencies
      */
     private $inlineLoaded = array();
 
+    /**
+     * Start with an empty registry, queue and loaded-script list.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -52,6 +55,8 @@ class Scripts extends Dependencies
      * @param array|null  $dependencies registered script ids this code needs enqueued alongside it
      * @param bool        $admin        target the admin document instead of the front
      * @param string|null $id           optional id; a repeated id is enqueued only once
+     *
+     * @return void
      */
     public static function enqueueScriptCode($code, $dependencies = null, $admin = false, $id = null)
     {
@@ -80,7 +85,9 @@ class Scripts extends Dependencies
     /**
      * Enqueue script to be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function enqueueScript($id)
     {
@@ -88,6 +95,8 @@ class Scripts extends Dependencies
     }
 
     /**
+     * The shared Scripts instance, created on first call.
+     *
      * @return \Scripts
      */
     public static function newInstance()
@@ -101,6 +110,8 @@ class Scripts extends Dependencies
 
     /**
      * Initialize Scripts
+     *
+     * @return void
      */
     public static function init()
     {
@@ -113,6 +124,8 @@ class Scripts extends Dependencies
 
     /**
      *  Print the HTML tags to load the scripts
+     *
+     * @return void
      */
     public function printScripts()
     {
@@ -134,6 +147,8 @@ class Scripts extends Dependencies
 
     /**
      *  Get the scripts urls
+     *
+     * @return string[]
      */
     public function getScripts()
     {
@@ -151,7 +166,12 @@ class Scripts extends Dependencies
     /**
      * Init Scripts enqueue hooks
      *
-     * @param false $admin
+     * Also fires the deprecated header_scripts_loaded / footer_scripts_loaded hooks;
+     * both were deprecated in 5.1.0 in favour of scripts_loaded.
+     *
+     * @param bool $admin Register the admin_* hooks instead of the front ones
+     *
+     * @return void
      */
     private static function initPrintScripts(bool $admin = false)
     {
@@ -177,9 +197,11 @@ class Scripts extends Dependencies
     /**
      * Add script to be loaded
      *
-     * @param $id
-     * @param $url
-     * @param $dependencies mixed, it could be an array or a string
+     * @param string               $id
+     * @param string               $url
+     * @param string|string[]|null $dependencies One id, a list of ids, or null for none
+     *
+     * @return void
      */
     public function registerScript($id, $url, $dependencies = null)
     {
@@ -189,7 +211,9 @@ class Scripts extends Dependencies
     /**
      * Remove script to not be loaded
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function unregisterScript($id)
     {
@@ -199,9 +223,11 @@ class Scripts extends Dependencies
     /**
      * Enqueu script to be loaded
      *
-     * @param $id
+     * @param string $id
      *
+     * @return void
      * @deprecated since 4.0.0
+     * @see Scripts::enqueueScript()
      */
     public function enqueuScript($id)
     {
@@ -210,9 +236,11 @@ class Scripts extends Dependencies
     }
 
     /**
-     * Remove script to not be loaded
+     * Remove script from the queue.
      *
-     * @param $id
+     * @param string $id
+     *
+     * @return void
      */
     public function removeScript($id)
     {

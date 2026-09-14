@@ -37,32 +37,64 @@ final class Feature
     /** @var array raw spec passed to FeatureRegistry::register() */
     private array $spec;
 
+    /**
+     * @param string $id   Feature id it was registered under
+     * @param array  $spec Raw spec passed to FeatureRegistry::register()
+     */
     private function __construct(string $id, array $spec)
     {
         $this->id   = $id;
         $this->spec = $spec;
     }
 
+    /**
+     * Wrap a registered spec.
+     *
+     * @param string $id
+     * @param array  $spec
+     *
+     * @return self
+     */
     public static function fromSpec(string $id, array $spec): self
     {
         return new self($id, $spec);
     }
 
+    /**
+     * The id this feature was registered under.
+     *
+     * @return string
+     */
     public function getId(): string
     {
         return $this->id;
     }
 
+    /**
+     * Display name for the admin and checkout.
+     *
+     * @return string
+     */
     public function getLabel(): string
     {
         return (string) ($this->spec['label'] ?? '');
     }
 
+    /**
+     * Longer explanation, or an empty string when the spec omits one.
+     *
+     * @return string
+     */
     public function getDescription(): string
     {
         return (string) ($this->spec['description'] ?? '');
     }
 
+    /**
+     * What a spend consumes: one of the CONSUMES_* constants.
+     *
+     * @return string
+     */
     public function getConsumes(): string
     {
         return (string) ($this->spec['consumes'] ?? self::CONSUMES_QUANTITY);
@@ -72,6 +104,8 @@ final class Feature
      * Who a spend on this feature is scoped to. Defaults to SCOPE_USER, so a
      * feature that never declares one is not reachable through a route that spends
      * on an item id taken from the request -- item-scoped is opt-in, not assumed.
+     *
+     * @return string
      */
     public function getScope(): string
     {
@@ -84,6 +118,10 @@ final class Feature
      * $userId is who the price is for -- an admin granting on someone's behalf or a
      * cron acting for a user is not that user, so the filter must be told explicitly
      * rather than reaching for osc_logged_user_id() itself.
+     *
+     * @param int|null $userId
+     *
+     * @return int
      */
     public function price(?int $userId = null): int
     {
@@ -97,6 +135,10 @@ final class Feature
      * Days granted for a duration feature; 0 for a quantity one. Same $userId
      * treatment as price() and for the same reason: a plan that grants 60 days
      * where the default is 30 needs to know who it is granting to.
+     *
+     * @param int|null $userId
+     *
+     * @return int
      */
     public function duration(?int $userId = null): int
     {
@@ -108,6 +150,11 @@ final class Feature
 
     /**
      * Run the spec's apply callable and coerce its answer to bool.
+     *
+     * @param int   $userId
+     * @param array $ctx
+     *
+     * @return bool
      */
     public function apply(int $userId, array $ctx): bool
     {
@@ -118,6 +165,10 @@ final class Feature
 
     /**
      * A spec value is either a literal int or a callable(): int -- resolve either form.
+     *
+     * @param mixed $value
+     *
+     * @return int
      */
     private function resolve($value): int
     {
