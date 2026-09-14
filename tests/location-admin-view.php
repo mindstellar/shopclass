@@ -272,9 +272,9 @@ function osc_admin_base_url($withIndex = false)
 {
     return 'index.php';
 }
-function osc_format_date($date)
+function osc_admin_date($date, $dateOnly = false)
 {
-    return 'on ' . $date;
+    return '<time datetime="' . $date . '">' . $date . '</time>';
 }
 function osc_csrf_token_form()
 {
@@ -380,7 +380,7 @@ pin('data: a missing country offers install, posting its code', 'AL', $x->query(
 pin('data: row buttons post through two shared forms', 2, $x->query('//form[contains(@class,"loc-catalog-form")]')->length);
 pin('data: no empty row while something shows', 1, $x->query('//tr[@data-loc-catalog-empty][@hidden]')->length);
 pin('data: progress hidden with nothing queued', 1, $x->query('//*[@data-loc-recalc-progress][@hidden]')->length);
-pin('data: the release date is shown', 1, $x->query('//*[contains(@class,"loc-release")][contains(., "on 2026-08-22")]')->length);
+pin('data: the release date is shown', 1, $x->query('//*[contains(@class,"loc-release")]//time[@datetime="2026-08-22"]')->length);
 
 $x = $render('data', array('locationData' => $dataModel(array('find' => 'zzz', 'show' => 'all'))));
 pin('data: the empty row shows when nothing matches', 0, $x->query('//tr[@data-loc-catalog-empty][@hidden]')->length);
