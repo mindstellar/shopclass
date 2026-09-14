@@ -11,6 +11,8 @@ their own, and a theme can add a view without a patch to core. A theme that decl
 behaves exactly as it did. Core now also renders every account and sign-in page itself when the
 theme ships none, using a documented class vocabulary a theme restyles in CSS alone. In the
 admin, Listings → Locations is rebuilt to page, search and install countries on sites of any size.
+A bundled Test Payments gateway lets you try billing without moving money, and maintenance mode
+can show a banner instead of closing the site.
 
 ### Security
 
