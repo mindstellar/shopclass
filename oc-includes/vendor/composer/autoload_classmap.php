@@ -303,6 +303,7 @@ return array(
     'CWebPage' => $baseDir . '/oc-includes/osclass/classes/controller/CWebPage.php',
     'CWebRegister' => $baseDir . '/oc-includes/osclass/classes/controller/CWebRegister.php',
     'CWebResource' => $baseDir . '/oc-includes/osclass/classes/controller/CWebResource.php',
+    'CWebRoute' => $baseDir . '/oc-includes/osclass/classes/controller/CWebRoute.php',
     'CWebSearch' => $baseDir . '/oc-includes/osclass/classes/controller/CWebSearch.php',
     'CWebUser' => $baseDir . '/oc-includes/osclass/classes/controller/CWebUser.php',
     'CWebUserNonSecure' => $baseDir . '/oc-includes/osclass/classes/controller/CWebUserNonSecure.php',

@@ -126,6 +126,9 @@ jobs:
         run: php tests/rewrite-route-match.php
       - name: Rewrite resolve rewrite
         run: php tests/rewrite-resolve-rewrite.php
+      # page=route takes the hook name from the request. Unchecked, anyone can fire cron_hourly.
+      - name: Route hook dispatch
+        run: php tests/route-hook-dispatch.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
       - name: Pagination

@@ -171,10 +171,9 @@ switch (Params::getParam('page')) {
         $do = new CWebCustom();
         $do->doModel();
         break;
-    case ('route'):
-        if (Params::getParam('route')) {
-            osc_run_hook(Params::getParam('route'));
-        }
+    case ('route'):     // hook routes (osc_add_route_hook)
+        $do = new CWebRoute();
+        $do->doModel();
         break;
     case ('sitemap'):   // core XML sitemap (index + child sitemaps)
         Sitemap::newInstance()->serve();

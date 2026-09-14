@@ -14,6 +14,8 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
 
 ### Security
 
+- `?page=route` ran any hook named in the request, so anyone could fire `cron_hourly`. It now
+  runs only registered route hooks, after `init`.
 - **Deleting an account was a GET with the account id and secret in the URL.**
   `?page=user&action=delete&id=…&secret=…` removed the signed-in account as soon as
   the page was requested — a mail scanner, a prefetch, or a leaked referrer was
