@@ -210,9 +210,12 @@ function osc_is_username_blacklisted($username)
     if (preg_replace('|(\d+)|', '', $username) == '') {
         return true;
     }
-    $blacklist = explode(',', osc_username_blacklist());
-    foreach ($blacklist as $bl) {
-        if (stripos($username, $bl) !== false) {
+    // Dots and underscores are ignored on both sides, so "ad.min" matches "admin".
+    $name = str_replace(['.', '_'], '', (string) $username);
+    foreach (explode(',', (string) osc_username_blacklist()) as $bl) {
+        $bl = str_replace(['.', '_'], '', trim($bl));
+        // An empty entry would match every name.
+        if ($bl !== '' && stripos($name, $bl) !== false) {
             return true;
         }
     }

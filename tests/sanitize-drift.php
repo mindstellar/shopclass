@@ -15,6 +15,8 @@
  *   front-end username controllers must call Sanitize::username(), the same
  *   as UserActions, or a dotted username registered on the front end can
  *   never pass its own availability check or username change.
+ * - osc_is_username_blacklisted() ignores dots and underscores, and an empty
+ *   blacklist entry must not block every name.
  * - Escape::js() must match osc_esc_js() line for line; the two-array
  *   str_replace() it used to call breaks under PHP 8.
  *
@@ -44,6 +46,30 @@ foreach (array(
     check($relPath . ' calls Sanitize username()', (bool) preg_match('/Sanitize\(\)\)->username\(/', $src));
     check($relPath . ' no longer calls osc_sanitize_username(', strpos($src, 'osc_sanitize_username(') === false);
 }
+
+harness_section('osc_is_username_blacklisted()');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
+
+$GLOBALS['blacklist'] = 'admin,user';
+function osc_username_blacklist()
+{
+    return $GLOBALS['blacklist'];
+}
+
+check('exact entry is blocked', osc_is_username_blacklisted('admin'));
+check('entry inside a name is blocked', osc_is_username_blacklisted('superadmin2'));
+check('dotted look-alike is blocked', osc_is_username_blacklisted('ad.min'));
+check('underscored look-alike is blocked', osc_is_username_blacklisted('us_er'));
+check('digits-only name is blocked', osc_is_username_blacklisted('12345'));
+check('an unrelated name passes', !osc_is_username_blacklisted('john.doe'));
+
+$GLOBALS['blacklist'] = 'admin, user,';
+check('a trailing comma does not block every name', !osc_is_username_blacklisted('john.doe'));
+check('a spaced entry still blocks', osc_is_username_blacklisted('user1'));
+
+$GLOBALS['blacklist'] = '';
+check('an empty blacklist blocks nothing', !osc_is_username_blacklisted('john.doe'));
 
 harness_section('Escape::js() matches osc_esc_js()');
 
