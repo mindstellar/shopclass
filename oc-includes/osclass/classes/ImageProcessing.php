@@ -199,6 +199,8 @@ class ImageProcessing
             }
             $newH = ceil($this->height * ($newW / $this->width));
             if ($force_aspect) {
+                // Without upscaling the scaled width can be below the target, so size both sides.
+                $width  = $newW;
                 $height = $newH;
             }
         } else {
@@ -209,7 +211,8 @@ class ImageProcessing
             }
             $newW = ceil($this->width * ($newH / $this->height));
             if ($force_aspect) {
-                $width = $newW;
+                $width  = $newW;
+                $height = $newH;
             }
         }
 
