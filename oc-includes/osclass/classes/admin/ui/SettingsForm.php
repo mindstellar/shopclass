@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\ui;
 
+use mindstellar\settings\SettingsImage;
+
 /**
  * The form of a declared page: the <form>, its route, every declared field, and the
  * submit row. Body of osc_admin_settings_form().
@@ -40,7 +42,8 @@ final class SettingsForm
      *                                    'name'    => the form's name attribute;
      *                                    'url'     => the form's action attribute;
      *                                    'upload'  => true to post multipart/form-data,
-     *                                                 for a page drawing a file control
+     *                                                 for a page drawing a file control; a
+     *                                                 page with an image field always does
      *
      * @return void
      */
@@ -59,7 +62,7 @@ final class SettingsForm
         osc_admin_form_open(array(
             'url'    => $opts['url'] ?? null,
             'name'   => $opts['name'] ?? null,
-            'upload' => !empty($opts['upload']),
+            'upload' => !empty($opts['upload']) || self::hasImage($page),
             'page'   => $route['page'] ?? null,
             'action' => $route['action'] ?? null,
             'fields' => array_diff_key($route, array('page' => true, 'action' => true)),
@@ -89,6 +92,26 @@ final class SettingsForm
     }
 
     /**
+     * Whether any field on the page takes a file.
+     *
+     * @param array<string,mixed> $page normalised page spec
+     *
+     * @return bool
+     */
+    private static function hasImage(array $page)
+    {
+        foreach ($page['groups'] as $group) {
+            foreach ($group['fields'] as $field) {
+                if (($field['type'] ?? '') === 'image') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * One declared field, carrying the value it should show.
      *
      * @param array<string,mixed> $field
@@ -105,6 +128,10 @@ final class SettingsForm
             // gets the same values every declared control is drawn from -- including the
             // submission a rejected save is handing back.
             $field['values'] = $values;
+        } elseif ($field['type'] === 'image') {
+            $field['value']       = $values[$name] ?? '';
+            $field['preview_url'] = SettingsImage::url($field['value'], 'thumbnail');
+            $field['remove_name'] = SettingsImage::removeName($name);
         } elseif ($field['type'] === 'checkbox') {
             $field['row_label'] = $field['row_label'] ?? '';
             $field['checked']   = !empty($values[$name]);

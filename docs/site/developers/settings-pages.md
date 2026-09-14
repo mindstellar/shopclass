@@ -31,9 +31,8 @@ osc_register_settings_page('acme.delivery', array(
 ));
 ```
 
-Register it while your plugin loads. Core builds the menu entry on
-`admin_menu_init`, which runs after plugins have loaded, so anything declared
-during load is in place by then.
+Register it while your plugin loads. A theme registers from `functions.php` on
+the `init` hook, once translations are ready; its menu entry is added then.
 
 That is the whole page. It appears under **Plugins**, renders with the admin's
 own field markup, refuses a POST without a valid CSRF token, hides and
@@ -50,6 +49,10 @@ if (osc_settings_value('acme.delivery', 'enabled')) {
     $radius = (int) osc_settings_value('acme.delivery', 'radius_km');
 }
 ```
+
+`osc_settings_value()` needs the page registered in that request, since defaults
+come from the declaration. A page registered only in the admin reads its values
+on the front end with `osc_get_preference($name, $pageId)` instead.
 
 ## The builder
 
@@ -80,8 +83,8 @@ gives you its URL.
 ## Field types
 
 `text`, `email`, `url`, `tel`, `number`, `color`, `secret`, `textarea`,
-`select`, `radio`, `checkbox`, `hidden`, and `custom` for markup core does not
-own.
+`select`, `radio`, `checkbox`, `hidden`, `image` (see [Images](#images)), and
+`custom` for markup core does not own.
 
 Keys every field takes:
 
@@ -123,6 +126,47 @@ value through `osc_esc_html()` or `osc_esc_js()` as you always would.
 A `secret` must say whether it is one the admin can read back (an API key) or
 one they must never see again (a password). The type does not say which, so
 `write_only` is required on it and registration fails without it.
+
+## Images
+
+An `image` field uploads a picture, such as a logo:
+
+```php
+(new FormSpec('folio'))
+    ->title(__('Folio', 'folio'))
+    ->menu('appearance')
+    ->image('logo', __('Logo', 'folio'))
+    ->register();
+```
+
+Read its URL back anywhere, front end included:
+
+```php
+$logo = osc_settings_image_url('folio', 'logo');              // '' when none is stored
+$thumb = osc_settings_image_url('folio', 'logo', 'thumbnail'); // or 'preview'
+```
+
+The page shows the current image, a file picker and a **Remove image** box, and
+posts multipart on its own. The file goes through the same image pipeline as
+listing photos: it must be a real image, it is scaled down to fit (never padded
+or enlarged), and it is offloaded when remote storage is on. What is stored is the image's resource id.
+
+- A new upload replaces the stored image, and the old one is deleted once the
+  new id is saved. Saving without a file keeps the stored image.
+- A file that is not an image, or is too large, refuses the save with a field
+  error, and the stored image stays. The limit is the site's maximum upload size,
+  or `max_kb` on the field: `->image('logo', $label)->set('max_kb', 512)`.
+- `required` is met by an image already stored.
+- While a `depends` master is off, the posted file and the remove box are
+  ignored and the stored image is kept.
+- Uploads and deletes run only for a signed-in admin allowed on the page.
+- An image field cannot take `default`, `sanitize`, `validate`, `persist` or
+  `write_only`, cannot be another field's `depends` master, and needs a
+  preference page, not a table store.
+
+`osc_settings_image_url()` works even when the page is not registered in the
+current request. It then reads the preference `logo` in the section `folio`, so
+a page that sets its own `section` or `column` must be registered to be read.
 
 ## Storing in a table instead
 

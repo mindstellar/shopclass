@@ -11,6 +11,7 @@
 use mindstellar\admin\form\store\StoreException;
 use mindstellar\admin\form\store\StoreFactory;
 use mindstellar\database\DbException;
+use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
 
 /**
@@ -46,6 +47,10 @@ if (!function_exists('osc_register_settings_page')) {
     function osc_register_settings_page($id, $spec)
     {
         SettingsPageRegistry::instance()->register($id, $spec);
+        // A theme declares its pages after admin_menu_init has run, so add the entry now.
+        if (SettingsPageRegistry::instance()->menuReady() && function_exists('osc_settings_menu_init')) {
+            osc_settings_menu_init();
+        }
     }
 }
 
@@ -191,6 +196,9 @@ if (!function_exists('osc_settings_cast')) {
         }
         if ($type === 'number') {
             return strpos((string)$value, '.') === false ? (int)$value : (float)$value;
+        }
+        if ($type === 'image') {
+            return ctype_digit((string)$value) && (int)$value > 0 ? (int)$value : '';
         }
 
         return $value;
@@ -610,6 +618,9 @@ if (!function_exists('osc_settings_save')) {
         $values  = array();
         $errors  = array();
 
+        // An image field's value is the id already stored; a posted file or remove box
+        // changes it only once every field has passed.
+        $stored = array();
         foreach ($fields as $name => $field) {
             if ($field['type'] === 'custom') {
                 // Core does not know what a custom field submitted, so it does not pretend
@@ -617,6 +628,11 @@ if (!function_exists('osc_settings_save')) {
                 continue;
             }
             $locales[$name] = osc_settings_field_locales($field);
+            if ($field['type'] === 'image') {
+                $stored[$name] = StoreFactory::forPage($page)->value($name, $field, $id);
+                $values[$name] = $stored[$name];
+                continue;
+            }
             if ($locales[$name] === array()) {
                 $values[$name] = osc_settings_sanitize($field);
                 continue;
@@ -645,8 +661,35 @@ if (!function_exists('osc_settings_save')) {
             unset($values[$name]);
         }
 
+        $uploads  = array();
+        $badFiles = array();
+        foreach ($stored as $name => $storedId) {
+            // Discarded with its master off, or posted from outside the admin: the stored
+            // image stays exactly as it is.
+            if (!array_key_exists($name, $values) || !SettingsImage::allowed($page)) {
+                continue;
+            }
+            $posted = SettingsImage::posted($fields[$name]);
+            if ($posted['error'] !== null) {
+                $errors[]        = $posted['error'];
+                $badFiles[$name] = true;
+            } elseif ($posted['file'] !== null) {
+                $uploads[$name] = $posted['file'];
+            } elseif (Params::getParamString(SettingsImage::removeName($name), false, false) !== '') {
+                $values[$name] = '';
+            }
+        }
+
         foreach ($fields as $name => $field) {
             if (!array_key_exists($name, $values)) {
+                continue;
+            }
+            if ($field['type'] === 'image') {
+                if (!empty($field['required']) && $values[$name] === ''
+                    && !isset($uploads[$name]) && !isset($badFiles[$name])
+                ) {
+                    $errors[] = sprintf(__('%s cannot be left empty'), $field['label'] ?? $name);
+                }
                 continue;
             }
             if ($locales[$name] !== array()) {
@@ -684,7 +727,25 @@ if (!function_exists('osc_settings_save')) {
             }
         }
 
+        // Uploaded only now that nothing else can refuse the submission, so a rejected save
+        // never leaves a file behind.
+        $fresh = array();
+        if ($errors === array()) {
+            foreach ($uploads as $name => $tmp) {
+                $newId = SettingsImage::upload($page, $tmp);
+                if ($newId === null) {
+                    $errors[] = sprintf(__('%s is not a valid image'), $fields[$name]['label'] ?? $name);
+                    continue;
+                }
+                $fresh[$name]  = $newId;
+                $values[$name] = $newId;
+            }
+        }
+
         if ($errors !== array()) {
+            if ($stored !== array()) {
+                $values = SettingsImage::rollback($page, $fresh, $stored, $values);
+            }
             osc_run_hook('admin_form_save_failed', $pageId, $errors, osc_settings_hook_values($fields, $values));
 
             // Nothing was written, so there is no row to name: a rejected save is not half
@@ -734,12 +795,27 @@ if (!function_exists('osc_settings_save')) {
             // A refused write is a rejected save: no effects, no key, and the values back
             // on screen, exactly as a failed validation leaves them.
             $errors = array($refused);
+            if ($stored !== array()) {
+                $values = SettingsImage::rollback($page, $fresh, $stored, $values);
+            }
             osc_run_hook('admin_form_save_failed', $pageId, $errors, osc_settings_hook_values($fields, $values));
 
             return array('errors' => $errors, 'updated' => 0, 'values' => $values, 'id' => null);
         }
 
         $savedId = $written['id'];
+
+        // Whichever image the preference no longer names goes: the old one after a replace
+        // or a remove, or a new one a before_save listener or a failed write left unstored.
+        foreach ($stored as $name => $storedId) {
+            $now = StoreFactory::forPage($page)->value($name, $fields[$name], $id);
+            if ($storedId !== '' && (string)$now !== (string)$storedId) {
+                SettingsImage::delete($page, $storedId);
+            }
+            if (isset($fresh[$name]) && (string)$now !== (string)$fresh[$name]) {
+                SettingsImage::delete($page, $fresh[$name]);
+            }
+        }
 
         // The key of the row that was written: the new one on an insert, the existing one
         // on an update, and null on a preference page, which has rows for nothing.
@@ -765,6 +841,38 @@ if (!function_exists('osc_settings_save')) {
     }
 }
 
+if (!function_exists('osc_settings_image_url')) {
+    /**
+     * The URL of the image stored in a declared page's image field, or '' when none is.
+     *
+     * Works whether or not the page is registered in this request. Unregistered, the id is
+     * read from the preference named $name in the section named $pageId, which is where a
+     * page that sets no 'section' or 'column' of its own stores it.
+     *
+     * @param string $pageId
+     * @param string $name
+     * @param string $variant '' for the main image, 'preview' or 'thumbnail'
+     *
+     * @return string
+     */
+    function osc_settings_image_url(string $pageId, string $name, string $variant = ''): string
+    {
+        $fields = SettingsPageRegistry::instance()->fields($pageId);
+        if (isset($fields[$name])) {
+            if ($fields[$name]['type'] !== 'image') {
+                return '';
+            }
+            $id = osc_settings_value($pageId, $name);
+        } elseif (osc_settings_page($pageId) === null) {
+            $id = Preference::newInstance()->get($name, $pageId);
+        } else {
+            return '';
+        }
+
+        return SettingsImage::url($id, $variant);
+    }
+}
+
 if (!function_exists('osc_settings_menu_init')) {
     /**
      * Put every declared page that asked for one into its menu section. Registered on
@@ -787,6 +895,7 @@ if (!function_exists('osc_settings_menu_init')) {
                 $page['capability']
             );
         }
+        SettingsPageRegistry::instance()->menuReady(true);
     }
 }
 

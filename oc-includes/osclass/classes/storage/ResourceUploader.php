@@ -46,11 +46,12 @@ final class ResourceUploader
      *                            configured item dimensions.
      *   - 'keep_original' bool   also store the untouched source as {id}_original.
      *   - 'watermark'     bool   apply the configured watermark to the base image.
+     *   - 'fit'           bool   scale down to fit each size, never pad or upscale.
      *
      * @param string $ownerType
      * @param int    $ownerId
      * @param string $tmpFile   absolute path to the uploaded temp file
-     * @param array{variants?:array<string,string>,keep_original?:bool,watermark?:bool} $options
+     * @param array{variants?:array<string,string>,keep_original?:bool,watermark?:bool,fit?:bool} $options
      *
      * @return array<string,mixed>|false the inserted resource row, or false on any failure
      */
@@ -76,6 +77,7 @@ final class ResourceUploader
         );
         $keepOriginal = (bool) ($options['keep_original'] ?? false);
         $watermark    = (bool) ($options['watermark'] ?? false);
+        $fit          = (bool) ($options['fit'] ?? false);
 
         $normalTmp = $tmpFile . '_normal';
         $secondary = array(); // suffix ('_preview', ...) => temp path
@@ -83,7 +85,7 @@ final class ResourceUploader
         try {
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
             $size     = explode('x', $baseDims);
-            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0));
+            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0), $fit ? true : null, !$fit);
             if ($watermark) {
                 if (osc_is_watermark_text()) {
                     $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
@@ -101,7 +103,7 @@ final class ResourceUploader
                 $vtmp   = $tmpFile . $suffix;
                 $s      = explode('x', (string) $dims);
                 ImageProcessing::fromFile($normalTmp)
-                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0))
+                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0), $fit ? true : null, !$fit)
                     ->saveToFile($vtmp, $extension);
                 $secondary[$suffix] = $vtmp;
             }

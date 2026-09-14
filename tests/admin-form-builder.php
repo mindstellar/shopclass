@@ -128,11 +128,11 @@ harness_section('every field type has a builder method');
 foreach (SettingsPageRegistry::FIELD_TYPES as $type) {
     check('the builder can declare a ' . $type, method_exists(FormSpec::class, $type));
 }
-pin('and no type is missing from the registry list', 13, count(SettingsPageRegistry::FIELD_TYPES));
+pin('and no type is missing from the registry list', 14, count(SettingsPageRegistry::FIELD_TYPES));
 
 harness_section('one field of each type is the array a hand writes');
 
-$simple = array('text', 'email', 'url', 'tel', 'number', 'color', 'secret', 'textarea');
+$simple = array('text', 'email', 'url', 'tel', 'number', 'color', 'secret', 'textarea', 'image');
 foreach ($simple as $type) {
     pin(
         $type . ' with a label and a hint',
@@ -642,6 +642,7 @@ $handSpec = array(
                 array('type' => 'tel', 'name' => 'phone', 'label' => 'Phone', 'disabled' => true),
                 array('type' => 'color', 'name' => 'accent', 'label' => 'Accent'),
                 array('type' => 'hidden', 'name' => 'computed', 'label' => 'Computed'),
+                array('type' => 'image', 'name' => 'logo', 'label' => 'Logo', 'required' => true),
             ),
         ),
     ),
@@ -670,7 +671,8 @@ $built = osc_admin_form('myplugin-built')
     ->text('tag', 'Tag')->prefix('Tagged')->attrs(array('maxlength' => '20'))
     ->tel('phone', 'Phone')->disabled()
     ->color('accent', 'Accent')
-    ->hidden('computed', 'Computed');
+    ->hidden('computed', 'Computed')
+    ->image('logo', 'Logo')->required();
 
 pin('a whole page is the array a hand writes', $handSpec, $built->toArray());
 
@@ -683,7 +685,7 @@ check('the hand-written page registered', SettingsPageRegistry::instance()->get(
 check('the built page registered', SettingsPageRegistry::instance()->get('myplugin-built') !== null);
 pin('both declare the same field names', array_keys($handFields), array_keys($builtFields));
 pin('and the same normalised field specs', $handFields, $builtFields);
-pin('nothing is lost on the way through the groups', 13, count($builtFields));
+pin('nothing is lost on the way through the groups', 14, count($builtFields));
 $builtTypes = array_values(array_unique(array_column($builtFields, 'type')));
 sort($builtTypes);
 $allTypes = SettingsPageRegistry::FIELD_TYPES;

@@ -181,6 +181,11 @@ jobs:
       # value stored past its declared options is one nothing downstream expects.
       - name: Settings page registry
         run: php tests/settings-page-registry.php
+      # An image field replaces, removes and refuses uploads; a front-end call must never upload or delete.
+      - name: Settings image field
+        run: php tests/settings-image-field.php
+      - name: Image resize fit
+        run: php tests/image-resize-fit.php
       # The lifecycle hooks are what let a side effect (rewriting .htaccess, writing
       # robots.txt) attach to a declared save: a hook or an inline after_save firing on a
       # rejected submission, firing twice, or seeing the raw request instead of the

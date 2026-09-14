@@ -932,5 +932,10 @@ check('a page that asked for none does not', !in_array('settings-page-hidden', $
 // The default belongs under Plugins: that is where a plugin's own settings live.
 $entry = array_values(array_filter($GLOBALS['menu'], static fn ($m) => $m[3] === 'settings-page-cust'));
 pin('a page that named no section lands under Plugins', 'plugins', $entry[0][0] ?? '');
+// A theme's functions.php loads after admin_menu_init has run, so a late page gets its entry at once.
+$GLOBALS['menu'] = array();
+osc_register_settings_page('late', array('title' => 'Late', 'menu' => 'appearance', 'fields' => array(array('name' => 'a'))));
+$ids = array_column($GLOBALS['menu'], 3);
+check('a page declared after the menu was built still gets its entry', in_array('settings-page-late', $ids, true), implode(',', $ids));
 
 exit(harness_result());

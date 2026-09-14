@@ -115,6 +115,27 @@ select.field-select {
   }
 }
 
+// An image field: the stored image, the picker, and the box that clears it.
+.field-image {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+
+  .field-choice input {
+    margin: 0;
+  }
+}
+
+.field-image-preview {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-chrome-edge);
+  border-radius: .25rem;
+  max-block-size: 6rem;
+  max-inline-size: 100%;
+  padding: .25rem;
+}
+
 // The free-text half of a "Custom: [____]" choice, sized to sit on the option's own line.
 .field-inline-text {
   display: inline-block !important;

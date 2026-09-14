@@ -457,6 +457,21 @@ final class FormSpec
     }
 
     /**
+     * Add an image upload. The stored value is the uploaded image's resource id; read its URL
+     * with osc_settings_image_url().
+     *
+     * @param string $name
+     * @param string $label
+     * @param string $help
+     *
+     * @return self
+     */
+    public function image(string $name, string $label = '', string $help = ''): self
+    {
+        return $this->field($this->base('image', $name, $label, $help));
+    }
+
+    /**
      * A field core has no type for. The callable emits the control into the normal row.
      *
      * @param string $name

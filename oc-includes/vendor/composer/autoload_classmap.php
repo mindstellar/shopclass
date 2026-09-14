@@ -896,6 +896,7 @@ return array(
     'mindstellar\\security\\PluginAjaxFile' => $baseDir . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
     'mindstellar\\security\\RememberMe' => $baseDir . '/oc-includes/osclass/classes/security/RememberMe.php',
     'mindstellar\\security\\SigningKey' => $baseDir . '/oc-includes/osclass/classes/security/SigningKey.php',
+    'mindstellar\\settings\\SettingsImage' => $baseDir . '/oc-includes/osclass/classes/settings/SettingsImage.php',
     'mindstellar\\settings\\SettingsPageRegistry' => $baseDir . '/oc-includes/osclass/classes/settings/SettingsPageRegistry.php',
     'mindstellar\\storage\\AvatarUpload' => $baseDir . '/oc-includes/osclass/classes/storage/AvatarUpload.php',
     'mindstellar\\storage\\LocalStorage' => $baseDir . '/oc-includes/osclass/classes/storage/LocalStorage.php',

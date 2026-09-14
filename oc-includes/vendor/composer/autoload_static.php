@@ -1023,6 +1023,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\PluginAjaxFile' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
         'mindstellar\\security\\RememberMe' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RememberMe.php',
         'mindstellar\\security\\SigningKey' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SigningKey.php',
+        'mindstellar\\settings\\SettingsImage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/settings/SettingsImage.php',
         'mindstellar\\settings\\SettingsPageRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/settings/SettingsPageRegistry.php',
         'mindstellar\\storage\\AvatarUpload' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/AvatarUpload.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',

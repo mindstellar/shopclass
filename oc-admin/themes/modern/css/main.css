@@ -15133,6 +15133,25 @@ select.field-select {
   line-height: 1.3;
 }
 
+.field-image {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.field-image .field-choice input {
+  margin: 0;
+}
+
+.field-image-preview {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-chrome-edge);
+  border-radius: 0.25rem;
+  max-block-size: 6rem;
+  max-inline-size: 100%;
+  padding: 0.25rem;
+}
+
 .field-inline-text {
   display: inline-block !important;
   margin: 0 !important;

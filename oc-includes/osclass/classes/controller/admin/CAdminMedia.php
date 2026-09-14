@@ -133,7 +133,7 @@ class CAdminMedia extends AdminSecBaseModel
             array('type' => 'all', 'label' => __('All')),
             array('type' => 'item', 'label' => __('Listings')),
         );
-        $labels = array('user' => __('Users'), 'page' => __('Pages'));
+        $labels = array('user' => __('Users'), 'page' => __('Pages'), 'setting' => __('Settings'));
         foreach (osc_media_owner_types() as $ownerType) {
             $filters[] = array(
                 'type'  => $ownerType,

@@ -187,7 +187,9 @@ class Field
         // dependent field drawing no row of its own is hidden by whatever page put it
         // there, and nothing would give the flag back.
         $lifted = empty($spec['depends']) || ($spec['row'] ?? true);
-        if (!empty($spec['required']) && $type !== 'hidden' && $lifted) {
+        // An image already stored satisfies 'required', so the picker may be left empty.
+        $kept = $type === 'image' && (string)$value !== '';
+        if (!empty($spec['required']) && $type !== 'hidden' && $lifted && !$kept) {
             $attrs .= ' required';
         }
         if (!empty($spec['disabled'])) {
@@ -259,6 +261,25 @@ class Field
                 // No value: a file input's value cannot be set, and a browser would refuse it.
                 echo '<input type="file"' . $common . ' class="' . self::cssClass($type, $spec) . '"'
                     . $attrs . ' />';
+                break;
+
+            case 'image':
+                echo '<div class="field-image">';
+                if (!empty($spec['preview_url'])) {
+                    echo '<img class="field-image-preview" src="' . osc_esc_html($spec['preview_url']) . '"'
+                        . ' alt="' . osc_esc_html($spec['label'] ?? '') . '" />';
+                }
+                echo '<input type="file"' . $common . ' class="' . self::cssClass('file', $spec) . '"'
+                    . ' accept="image/*"' . $attrs . ' />';
+                if ($kept) {
+                    $removeName = (string)($spec['remove_name'] ?? $name . '_remove');
+                    echo '<label class="field-choice"><input type="checkbox"'
+                        . ' id="' . osc_esc_html($id . '-remove') . '"'
+                        . ' name="' . osc_esc_html($removeName) . '" value="1"'
+                        . (!empty($spec['disabled']) ? ' disabled' : '') . ' />'
+                        . '<span>' . osc_esc_html(__('Remove image')) . '</span></label>';
+                }
+                echo '</div>';
                 break;
 
             case 'number':

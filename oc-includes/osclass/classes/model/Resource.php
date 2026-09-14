@@ -47,6 +47,12 @@ class Resource
      */
     public const OWNER_LIBRARY = 'library';
 
+    /**
+     * Owner type: an image field on a declared settings page (i_owner_id is 0). The
+     * preference holding its id is the owner, so the orphan sweep leaves these alone.
+     */
+    public const OWNER_SETTING = 'setting';
+
     /** Unprefixed table name. */
     private const TABLE = 't_resource';
 

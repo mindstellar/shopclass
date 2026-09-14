@@ -73,6 +73,7 @@ can show a banner instead of closing the site.
 - Settings pages are documented for plugin authors, with a worked example of both the array
   form and the builder — see `docs/site/developers/settings-pages.md`.
 - A declared settings field can follow one value of a select or radio: `depends_value`, or `dependsOn($master, $value)`.
+- A declared settings page can take an image upload: `->image('logo', $label)`, read back with `osc_settings_image_url()`.
 - `osc_admin_field()` and its per-type sugar (`osc_admin_text()`, `osc_admin_number()`,
   `osc_admin_select()`, `osc_admin_textarea()`, `osc_admin_radio_group()`, `osc_admin_secret()`)
   render an admin form field from core, so a plugin no longer hand-writes markup against the

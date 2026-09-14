@@ -49,6 +49,7 @@ final class SettingsPageRegistry
         'radio',
         'checkbox',
         'hidden',
+        'image',
         'custom',
     );
 
@@ -64,6 +65,9 @@ final class SettingsPageRegistry
         'color',
         'hidden',
     );
+
+    /** Appended to an image field's name to name its "Remove image" box. */
+    public const IMAGE_REMOVE_SUFFIX = '_remove';
 
     /** Anything used as a table, column or key name. Matches what QueryBuilder will accept. */
     private const IDENTIFIER = '/^[A-Za-z0-9_]+$/';
@@ -95,6 +99,9 @@ final class SettingsPageRegistry
     /** @var array<string,int> ids a second registration tried to claim */
     private array $conflicts = array();
 
+    /** Whether admin_menu_init has already placed the declared pages in the menu. */
+    private bool $menuReady = false;
+
     /**
      * Singleton: obtain the registry through instance().
      */
@@ -114,6 +121,22 @@ final class SettingsPageRegistry
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Record that the admin menu has been built, or ask whether it has.
+     *
+     * @param bool|null $ready true to record it; null to read it
+     *
+     * @return bool
+     */
+    public function menuReady(?bool $ready = null): bool
+    {
+        if ($ready !== null) {
+            $this->menuReady = $ready;
+        }
+
+        return $this->menuReady;
     }
 
     /**
@@ -198,6 +221,12 @@ final class SettingsPageRegistry
      *                           nothing, so "blank means unchanged" is declared rather
      *                           than special-cased. It says nothing about what the control
      *                           shows; that is 'write_only'.
+     *   'image'    fields store the t_resource id of an uploaded image. They take 'required',
+     *              'depends', 'depends_value', 'help', 'column' and 'max_kb', live on a
+     *              preference page only, cannot be a 'depends' master, and refuse 'default',
+     *              'sanitize', 'validate', 'persist' and 'write_only'.
+     *   'max_kb'   => int       image only: the largest file accepted, in KB. Defaults to the
+     *                           site's upload limit (osc_max_size_kb()).
      *   'write_only' => bool    Whether the control shows what is stored. false (the
      *                           default) reads the stored value back into the control;
      *                           true never reads it and draws the declared default, for a
@@ -454,6 +483,35 @@ final class SettingsPageRegistry
     }
 
     /**
+     * Hold an image field to the keys that mean something for a stored upload.
+     *
+     * A default, a sanitize or validate callable and a persist rule all describe a value
+     * the admin types; an image is a file core stores and replaces, so each is refused
+     * rather than silently ignored.
+     *
+     * @param string               $id
+     * @param array<string,mixed>  $field
+     * @param array<string,string> $store Output of normaliseStore().
+     *
+     * @throws InvalidArgumentException on a key an image field cannot honour.
+     */
+    private function checkImageField(string $id, array $field, array $store): void
+    {
+        $prefix = 'SettingsPageRegistry: page "' . $id . '" field "' . $field['name'] . '" ';
+        if ($store['type'] !== 'preference') {
+            throw new InvalidArgumentException($prefix . 'is an image, which only a preference page stores');
+        }
+        foreach (array('default', 'sanitize', 'validate', 'persist', 'write_only') as $key) {
+            if (array_key_exists($key, $field)) {
+                throw new InvalidArgumentException($prefix . 'is an image and cannot set ' . $key);
+            }
+        }
+        if (array_key_exists('max_kb', $field) && (!is_int($field['max_kb']) || $field['max_kb'] < 1)) {
+            throw new InvalidArgumentException($prefix . 'max_kb must be a positive integer');
+        }
+    }
+
+    /**
      * Hold a field's depends_value to its shape: set beside a 'depends', and a non-empty
      * string or a non-empty list of them.
      *
@@ -591,6 +649,14 @@ final class SettingsPageRegistry
                         . '" is a secret and must declare write_only'
                     );
                 }
+                if ($type === 'image') {
+                    $this->checkImageField($id, $field, $store);
+                } elseif (array_key_exists('max_kb', $field)) {
+                    throw new InvalidArgumentException(
+                        'SettingsPageRegistry: page "' . $id . '" field "' . $field['name']
+                        . '" cannot set max_kb: only an image field takes a file'
+                    );
+                }
                 $this->checkFieldStorage($id, $field, $type, $store);
                 if (isset($field['depends'])) {
                     if (!is_string($field['depends']) || $field['depends'] === '') {
@@ -642,6 +708,11 @@ final class SettingsPageRegistry
                     $prefix . 'custom field "' . $master . '", whose value core never reads'
                 );
             }
+            if ($seen[$master]['type'] === 'image') {
+                throw new InvalidArgumentException(
+                    $prefix . 'image field "' . $master . '", which is not a switch'
+                );
+            }
             if ($seen[$master]['translate']) {
                 throw new InvalidArgumentException(
                     $prefix . 'translated field "' . $master . '", which has one value per locale'
@@ -666,6 +737,21 @@ final class SettingsPageRegistry
                         . '", which is not one of its options'
                     );
                 }
+            }
+        }
+
+        // An image field posts its "Remove image" box under a second name, which no other
+        // field may take.
+        foreach ($seen as $name => $info) {
+            if ($info['type'] !== 'image') {
+                continue;
+            }
+            $remove = $name . self::IMAGE_REMOVE_SUFFIX;
+            if (isset($seen[$remove])) {
+                throw new InvalidArgumentException(
+                    'SettingsPageRegistry: page "' . $id . '" field "' . $remove
+                    . '" clashes with the remove box of image field "' . $name . '"'
+                );
             }
         }
 
