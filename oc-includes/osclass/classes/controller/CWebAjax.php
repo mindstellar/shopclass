@@ -372,6 +372,7 @@ class CWebAjax extends BaseModel
                 // Include the uploader class
                 $uploader = new AjaxUploader();
                 $original = pathinfo($uploader->getOriginalName());
+                $original['extension'] = $original['extension'] ?? '';
                 $filename = uniqid('qqfile_', true) . '.' . $original['extension'];
                 try {
                     $result =

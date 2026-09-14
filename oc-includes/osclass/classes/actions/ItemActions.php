@@ -447,14 +447,13 @@ class ItemActions
             foreach ($aResources['error'] as $key => $error) {
                 $bool_img = false;
                 if ($error == UPLOAD_ERR_OK) {
-                    // check mime file
-                    $fileMime = $aResources['type'][$key];
-                    if (function_exists('getimagesize') && (stripos($fileMime, 'image/') !== false)) {
+                    // Read the type from the file itself; browsers send a wrong or generic type for some real images.
+                    if (function_exists('getimagesize')) {
                         // check if it is a file
                         $filePath = $aResources['tmp_name'][$key];
                         $fileMime = '';
                         if (file_exists($filePath)) {
-                            $imageInfo = getimagesize($filePath);
+                            $imageInfo = @getimagesize($filePath);
                             if (isset($imageInfo['mime'])) {
                                 $fileMime = $imageInfo['mime'];
                                 // check if it's in the allowed mimes
