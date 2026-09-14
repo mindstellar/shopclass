@@ -45,6 +45,7 @@ Worth knowing before you port something:
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
+| Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |

@@ -40,6 +40,9 @@ own field markup, refuses a POST without a valid CSRF token, hides and
 un-requires *Radius* while *Offer delivery* is off, saves to `t_preference`
 under the section `acme.delivery`, and redirects with a flash message.
 
+For a complete plugin built this way, see the bundled Test Payments plugin in
+[Payment gateways](/docs/developers/payment-gateways/#declaring-its-settings-page).
+
 Read the values back anywhere:
 
 ```php
@@ -177,10 +180,14 @@ page as you scroll, so Save stays reachable on a long screen.
 A save that changes nothing reports exactly that rather than claiming success —
 the store writes only the values that actually differ.
 
-## The hand-rolled path
+## The hand-rolled path (deprecated)
 
-Writing your own view, controller action and save block still works and is not
-going away — the `osc_*` helpers it uses are a public API.
+:::caution[Deprecated since 6.3.0]
+Hand-writing a settings screen — your own `<form>`, controller action, CSRF check
+and save block — is deprecated. Declare the page instead. The old way keeps
+working and will not be removed: the `osc_*` helpers and admin class names it
+uses stay a public API.
+:::
 
 One example already in core: Listings → Locations is hand-rolled, and offers
 two hooks so a plugin can extend it without owning the page:
@@ -190,8 +197,7 @@ two hooks so a plugin can extend it without owning the page:
 | `admin_locations_row_actions` | filter | Building a row's actions cell. Receives `$actions` (array keyed by name, starting with `edit`), `$level` (`country`, `region` or `city`) and `$row` (that row's data). Return the array with your entry added; each value is raw, already-escaped HTML |
 | `admin_locations_drawer_fields` | action | Rendering the add/edit drawer, after the built-in fields. Receives `$level` and `$record` (`null` when adding, the row's data when editing) |
 
-It is no longer the recommended way to build a settings screen. Everything it
-gets you, a declaration gets you with the CSRF check, the capability check, the
-escaping, the `depends` handling and the redirect written once in core instead
-of once per plugin. New screens should be declared; existing ones are worth
-moving when you next touch them.
+A declaration gives you the CSRF check, the capability check, the escaping, the
+`depends` handling and the redirect, written once in core. Move an existing
+screen when you next touch it; the Test Payments plugin in
+[Payment gateways](/docs/developers/payment-gateways/) shows the result.

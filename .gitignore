@@ -29,6 +29,7 @@ oc-content/plugins/*
 !oc-content/plugins/google_maps/
 !oc-content/plugins/sample-widgets/
 !oc-content/plugins/sample-forms/
+!oc-content/plugins/test-gateway/
 
 # languages
 oc-content/languages/*

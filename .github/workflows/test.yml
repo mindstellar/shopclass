@@ -384,6 +384,10 @@ jobs:
         run: php tests/dao-contract.php
       - name: Model contracts
         run: php tests/run-models.php
+      # The bundled test gateway hands out credits for nothing. A signature, age or
+      # amount check that stops running is free credit on any site that leaves it on.
+      - name: Test gateway
+        run: php tests/test-gateway.php
       - name: Delete cascades
         run: php tests/delete-cascade.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is

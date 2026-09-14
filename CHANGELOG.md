@@ -29,6 +29,8 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
 
 ### New
 
+- A bundled Test Payments plugin: a gateway that moves no money, for testing credits, upgrades
+  and refunds. It is also the documented example of a declared settings page.
 - Themes declare their page chrome with `osc_add_theme_support('chrome', …)`. Core falls back to
   probing `header.php`/`footer.php` and `common/header.php`/`common/footer.php`, so existing
   themes need no change.
@@ -85,6 +87,7 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
 
 ### Changed
 
+- Hand-written admin settings screens are deprecated in the docs; declare a settings page instead.
 - Admin list tables show dates as `2026-09-14 06:14`, with the long date on hover. The
   `admin_date_format` filter changes the format.
 - **New installs keep the database server's strict SQL modes; upgrades opt in.** Every

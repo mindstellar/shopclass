@@ -96,3 +96,9 @@ osc_add_hook('admin_menu_init', 'myplugin_admin_menu');
 
 Use a **unique** `$menu_id` — prefix it with your plugin folder. Two plugins
 claiming the same id will overwrite each other's menus.
+
+:::caution[Settings screens]
+Pointing a menu at a hand-written `admin/settings.php` is deprecated for settings.
+[Declare a settings page](/docs/developers/settings-pages/) instead — core adds its
+menu entry for you.
+:::
