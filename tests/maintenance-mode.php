@@ -57,6 +57,28 @@ check(
     osc_maintenance_should_lockout_request(false, true, false, false) === false
 );
 
+check(
+    'upgrade 503s even with lockout off',
+    osc_maintenance_should_lockout_request(true, false, false, false, true) === true
+);
+check(
+    'upgrade 503s CLI too',
+    osc_maintenance_should_lockout_request(true, false, false, true, true) === true
+);
+check(
+    'admins pass during upgrade',
+    osc_maintenance_should_lockout_request(true, true, true, false, true) === false
+);
+
+harness_section('upgrade marker');
+$markerFile = tempnam(sys_get_temp_dir(), 'osc-maint');
+file_put_contents($markerFile, '');
+check('empty file is not an upgrade', osc_maintenance_is_upgrading($markerFile) === false);
+file_put_contents($markerFile, OSC_MAINTENANCE_UPGRADE_MARKER);
+check('marker file is an upgrade', osc_maintenance_is_upgrading($markerFile) === true);
+unlink($markerFile);
+check('missing file is not an upgrade', osc_maintenance_is_upgrading($markerFile) === false);
+
 harness_section('message sanitizer');
 pin('plain text kept', 'Back soon', osc_sanitize_maintenance_message('  Back soon  '));
 pin('tags stripped', 'Back soon', osc_sanitize_maintenance_message('<b>Back soon</b>'));

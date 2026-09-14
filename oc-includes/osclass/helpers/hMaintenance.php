@@ -32,6 +32,9 @@ const OSC_MAINTENANCE_PREF_LOCKOUT = 'maintenance_lockout';
 /** STRING preference: plain-text banner / 503 copy. */
 const OSC_MAINTENANCE_PREF_MESSAGE = 'maintenance_message';
 
+/** Written into `.maintenance` by the package upgrader; always locks visitors out. */
+const OSC_MAINTENANCE_UPGRADE_MARKER = 'upgrade';
+
 /** Stored message is trimmed, tags stripped, then cut to this length. */
 const OSC_MAINTENANCE_MESSAGE_MAX = 500;
 
@@ -94,22 +97,44 @@ function osc_sanitize_maintenance_message($raw)
  *
  * False when there is no `.maintenance` file, the visitor is a signed-in
  * admin, the SAPI is CLI (so `php index.php -p cron` still runs), or lockout
- * has been turned off. Pure: no database.
+ * has been turned off. An upgrade in progress locks out everyone but admins,
+ * CLI included. Pure: no database.
  *
  * @param bool $fileExists      `.maintenance` is present at the install root.
  * @param bool $lockoutEnabled  osc_maintenance_lockout_from_pref() answer.
  * @param bool $isAdmin         Signed-in oc-admin user.
  * @param bool $isCli           PHP_SAPI === 'cli' / the CLI constant.
+ * @param bool $upgrading       `.maintenance` holds OSC_MAINTENANCE_UPGRADE_MARKER.
  *
  * @return bool
  */
-function osc_maintenance_should_lockout_request($fileExists, $lockoutEnabled, $isAdmin, $isCli)
+function osc_maintenance_should_lockout_request($fileExists, $lockoutEnabled, $isAdmin, $isCli, $upgrading = false)
 {
-    if (!$fileExists || $isCli || $isAdmin) {
+    if (!$fileExists || $isAdmin) {
+        return false;
+    }
+    if ($upgrading) {
+        return true;
+    }
+    if ($isCli) {
         return false;
     }
 
     return (bool)$lockoutEnabled;
+}
+
+/**
+ * Whether `.maintenance` was written by the package upgrader.
+ *
+ * @param string $path Path to the `.maintenance` file.
+ *
+ * @return bool
+ */
+function osc_maintenance_is_upgrading($path)
+{
+    $contents = @file_get_contents($path, false, null, 0, 32);
+
+    return is_string($contents) && trim($contents) === OSC_MAINTENANCE_UPGRADE_MARKER;
 }
 
 /**
