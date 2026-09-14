@@ -363,13 +363,13 @@ class CAdminTools extends AdminSecBaseModel
                     osc_csrf_check();
                     osc_set_preference(
                         OSC_MAINTENANCE_PREF_LOCKOUT,
-                        Params::getParam('maintenance_lockout') ? '1' : '0',
+                        Params::getParamString('maintenance_lockout') === '1' ? '1' : '0',
                         OSC_MAINTENANCE_PREF_SECTION,
                         'BOOLEAN'
                     );
                     osc_set_preference(
                         OSC_MAINTENANCE_PREF_MESSAGE,
-                        osc_sanitize_maintenance_message(Params::getParam('maintenance_message')),
+                        osc_sanitize_maintenance_message(Params::getParamString('maintenance_message')),
                         OSC_MAINTENANCE_PREF_SECTION,
                         'STRING'
                     );
