@@ -129,8 +129,9 @@ class Upgrade
         }
 
         try {
-            // Enable maintenance mode
-            $this->FileSystem->touch(ABS_PATH . '.maintenance');
+            // Enable maintenance mode. The marker locks visitors out even when the admin
+            // has chosen banner-only maintenance, since files are being replaced.
+            $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
 
             if (file_exists($extracted_package_path . '/index.php')) {
                 //make this the origin directory

@@ -94,6 +94,30 @@ foreach ($proxyFiles as $rel) {
     pin("$rel lists exactly the app's cookies", implode(',', $expected), implode(',', $got));
 }
 
+harness_section('maintenance banner pages are never shared-cached');
+if (!function_exists('osc_is_web_user_logged_in')) {
+    function osc_is_web_user_logged_in()
+    {
+        return false;
+    }
+}
+if (!function_exists('osc_is_admin_user_logged_in')) {
+    function osc_is_admin_user_logged_in()
+    {
+        return false;
+    }
+}
+$GLOBALS['osc_response_cacheable'] = true;
+$_SERVER['REQUEST_METHOD']         = 'GET';
+$_COOKIE                           = array();
+check('anonymous public GET is cacheable', osc_response_is_cacheable() === true);
+define('__OSC_MAINTENANCE__', true);
+check(
+    'not cacheable while the maintenance banner shows',
+    osc_response_is_cacheable() === false,
+    'a stored page would keep showing the banner after the admin changes or removes it'
+);
+
 $fail = $GLOBALS['failCount'];
 echo "\n" . ($fail === 0
         ? "ALL PASS ({$GLOBALS['okCount']})\n"

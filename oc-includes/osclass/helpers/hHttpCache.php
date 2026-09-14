@@ -87,6 +87,10 @@ function osc_response_is_cacheable()
     if ($method !== 'GET' && $method !== 'HEAD') {
         return false;
     }
+    // The maintenance banner must disappear as soon as the admin changes or removes it.
+    if (defined('__OSC_MAINTENANCE__')) {
+        return false;
+    }
     if (osc_is_web_user_logged_in() || osc_is_admin_user_logged_in()) {
         return false;
     }

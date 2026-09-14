@@ -84,6 +84,7 @@ admin, Listings → Locations is rebuilt to page, search and install countries o
   `docs/site/developers/account-pages.md`, so a theme restyles them in CSS with no PHP.
 - `osc_gui_account_view()` resolves one account view: the theme's file, then a parent theme's,
   then core's page inside the theme's chrome, then core's own shell.
+- Maintenance mode can keep the public site up and show an editable banner instead of a 503.
 
 ### Changed
 

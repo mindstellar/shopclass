@@ -1094,34 +1094,66 @@ osc_add_hook('cron_hourly', 'osc_expire_premium_items');
  */
 function osc_show_maintenance()
 {
-    if (defined('__OSC_MAINTENANCE__')) { ?>
-        <div id="osc-maintenance-bar" role="status">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
-            </svg>
-            <?php _e('Maintenance mode is on — only signed-in admins can see the site right now.'); ?>
-        </div>
-        <style>
-            #osc-maintenance-bar {
-                width: 100%;
-                text-align: center;
-                padding: 10px 16px;
-                background-color: #fdf4d2;
-                color: #7a6716;
-                border-bottom: 1px solid #ecdca0;
-                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                font-size: 13px;
-                font-weight: 500;
-            }
-            #osc-maintenance-bar svg {
-                vertical-align: -3px;
-                margin-inline-end: 8px;
-            }
-        </style>
-    <?php }
+    if (!defined('__OSC_MAINTENANCE__')) {
+        return;
     }
+    // Lockout on: only admins reach this bar, so tell them the public site
+    // is down. Lockout off: everyone sees the (escaped) visitor message.
+    if (osc_maintenance_lockout_enabled()) {
+        $maintenanceBarText = __('Maintenance mode is on — only signed-in admins can see the site right now.');
+    } else {
+        $maintenanceBarText = osc_maintenance_visitor_message();
+    }
+    ?>
+    <div id="osc-maintenance-bar" role="status">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+        </svg>
+        <?php echo nl2br(osc_esc_html($maintenanceBarText), false); ?>
+    </div>
+    <style>
+        #osc-maintenance-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+            padding: 10px 16px;
+            background-color: #fdf4d2;
+            color: #7a6716;
+            border-bottom: 1px solid #ecdca0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        /* After the footer script prepends the bar, drop fixed so it sits in flow. */
+        body > #osc-maintenance-bar {
+            position: relative;
+            z-index: auto;
+        }
+        #osc-maintenance-bar svg {
+            vertical-align: -3px;
+            margin-inline-end: 8px;
+        }
+    </style>
+    <script>
+        (function () {
+            var bar = document.getElementById('osc-maintenance-bar');
+            if (bar && document.body) {
+                document.body.insertBefore(bar, document.body.firstChild);
+            }
+        })();
+    </script>
+    <?php
+}
 
-osc_add_hook('header', 'osc_show_maintenance');
+// Themes run `header` inside <head> (PACKAGE-SPEC). This bar is markup, so it
+// belongs on `footer`, the required hook at the end of <body>. The script
+// above then prepends it as body's first child so it sits in flow at the top.
+osc_add_hook('footer', 'osc_show_maintenance');
 
 /**
  * Print the generator meta tag.
