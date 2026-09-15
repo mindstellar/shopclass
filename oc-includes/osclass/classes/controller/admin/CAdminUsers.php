@@ -334,6 +334,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 break;
             case ('delete_alerts'):
+                osc_csrf_check();
                 $iDeleted = 0;
                 $alertId  = Params::getParam('alert_id');
                 if (!is_array($alertId)) {

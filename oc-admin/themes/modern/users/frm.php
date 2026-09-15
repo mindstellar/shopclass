@@ -390,7 +390,7 @@ $aux = customFrmText();
                     </div>
 
                     <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
-                        <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+                        <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
                             <input type="hidden" name="page" value="users"/>
                             <input type="hidden" name="action" value="delete_alerts"/>
                             <input type="hidden" id="alert_id" name="alert_id[]" value=""/>

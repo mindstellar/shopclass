@@ -411,11 +411,13 @@ class Plugins
             include_once PLUGINS_PATH . $path;
 
             self::runHook('install_' . $path);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('error_code' => 'custom_error', 'msg' => $e->getMessage());
         }
 
-        if (!self::activate($path)) {
+        // A crash in an earlier install can leave the plugin active but not installed; finish that install.
+        $active = unserialize(osc_active_plugins(), array('allowed_classes' => false));
+        if (!(is_array($active) && in_array($path, $active, true)) && !self::activate($path)) {
             return array('error_code' => '');
         }
 

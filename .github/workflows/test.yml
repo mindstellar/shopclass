@@ -385,6 +385,9 @@ jobs:
       # remote file execution that still returns a perfectly normal-looking response.
       - name: Plugin ajax file allowlist
         run: php tests/plugin-ajax-file.php
+      # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
+      - name: Plugin install repair and admin GET forms
+        run: php tests/plugin-install-repair.php
       # A field dropped from the export map does not error -- the download simply omits a
       # category of personal data, which is only noticed by whoever asked for their copy.
       - name: Personal data map

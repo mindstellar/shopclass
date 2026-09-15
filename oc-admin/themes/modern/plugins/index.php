@@ -158,7 +158,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
     <?php osc_market_render_detail_dialog('plugin'); ?>
 </div>
 <dialog id="pluginModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+    <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
         <input type="hidden" name="page" value="plugins"/>
         <input type="hidden" name="action" value=""/>
         <input type="hidden" name="plugin" value=""/>

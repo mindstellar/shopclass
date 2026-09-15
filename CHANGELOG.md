@@ -17,6 +17,7 @@ such as a theme logo.
 
 ### Security
 
+- Deleting a user's alert in the admin had no CSRF check. It is a POST with a token now.
 - `?page=route` ran any hook named in the request, so anyone could fire `cron_hourly`. It now
   runs only registered route hooks, after `init`.
 - **Deleting an account was a GET with the account id and secret in the URL.**
@@ -147,6 +148,8 @@ such as a theme logo.
 
 ### Fixed
 
+- Uninstalling or deleting a plugin failed with "Probable invalid request".
+- A plugin left active but not installed after a failed install can be installed again.
 - The username check and change-username form no longer strip dots that registration keeps.
 - The username blacklist catches dotted and underscored look-alikes such as `ad.min`.
 - An empty username blacklist, or one with a trailing comma, no longer refuses every username.
