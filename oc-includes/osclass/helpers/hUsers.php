@@ -886,3 +886,23 @@ function osc_prepare_user_info()
 
     return View::newInstance()->_next('users');
 }
+
+/**
+ * Rewinds the user loop, so osc_prepare_user_info() can be read again.
+ *
+ * That loop is one-shot: the second call returns false and every osc_user_*
+ * helper then reads an empty row. Fine for the one caller that owns a page, and
+ * a trap for everyone after it -- a theme that reads the seller in its listing
+ * view leaves nothing for a plugin listening on item_detail, and neither side
+ * can tell that is what happened. Reset after reading and the next caller gets
+ * the row it expected.
+ *
+ * The counterpart to osc_reset_items() and osc_reset_resources(), which the
+ * other loops have had all along.
+ *
+ * @return mixed The first user row, or an empty array when the loop is not set
+ */
+function osc_reset_users()
+{
+    return View::newInstance()->_reset('users');
+}
