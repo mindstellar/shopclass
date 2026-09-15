@@ -33,7 +33,7 @@ comments, search and filtering, multi-language support, and an admin panel to ru
 it all. It ships as a zip you install on ordinary shared or VPS hosting; there is
 no build step or bundler to run on the server.
 
-Shopclass is the modernised, community-maintained successor to **Osclass**. It
+Shopclass is the modernised, maintained successor to **Osclass**. It
 keeps Osclass's plugin and theme APIs (the `osc_*` helpers, hook names, and asset
 paths) so existing extensions keep working, while replacing the legacy frontend:
 a Bootstrap 5 admin theme, jQuery removed from the core, PHP 8 throughout, and a
