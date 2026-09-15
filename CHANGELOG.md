@@ -12,7 +12,8 @@ behaves exactly as it did. Core now also renders every account and sign-in page 
 theme ships none, using a documented class vocabulary a theme restyles in CSS alone. In the
 admin, Listings → Locations is rebuilt to page, search and install countries on sites of any size.
 A bundled Test Payments gateway lets you try billing without moving money, and maintenance mode
-can show a banner instead of closing the site.
+can show a banner instead of closing the site. Declared settings pages can now take an image,
+such as a theme logo.
 
 ### Security
 
@@ -74,6 +75,7 @@ can show a banner instead of closing the site.
   form and the builder — see `docs/site/developers/settings-pages.md`.
 - A declared settings field can follow one value of a select or radio: `depends_value`, or `dependsOn($master, $value)`.
 - A declared settings page can take an image upload: `->image('logo', $label)`, read back with `osc_settings_image_url()`.
+- `osc_reset_users()` rewinds the user loop, like `osc_reset_items()`.
 - `osc_admin_field()` and its per-type sugar (`osc_admin_text()`, `osc_admin_number()`,
   `osc_admin_select()`, `osc_admin_textarea()`, `osc_admin_radio_group()`, `osc_admin_secret()`)
   render an admin form field from core, so a plugin no longer hand-writes markup against the
