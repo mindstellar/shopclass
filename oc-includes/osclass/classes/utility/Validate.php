@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 01/07/20
  * Time: 3:07 PM

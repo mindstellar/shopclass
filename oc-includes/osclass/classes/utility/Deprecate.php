@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 18/05/20
  * Time: 4:40 PM

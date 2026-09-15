@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -9,7 +9,7 @@
  */
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 17-07-2021
  * Time: 15:31

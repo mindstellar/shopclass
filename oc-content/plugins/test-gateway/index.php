@@ -4,7 +4,7 @@ Plugin Name: Test Payments
 Plugin URI: https://github.com/mindstellar/shopclass
 Description: A payment gateway that moves no money. Buyers pick Pay, Decline, Leave pending or Fail on a test checkout page, and each drives the real billing callback. For testing only.
 Version: 1.0.0
-Author: Mindstellar Community
+Author: Navjot Tomer (Mindstellar)
 Author URI: https://mindstellar.com
 Short Name: test-gateway
 Requires Shopclass: 6.3.0
@@ -14,7 +14,7 @@ Requires PHP: 8.0
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
