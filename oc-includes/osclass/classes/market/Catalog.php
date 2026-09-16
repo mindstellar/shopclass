@@ -527,6 +527,30 @@ final class Catalog
     }
 
     /**
+     * A catalog icon or screenshot as a usable URL, or null when it is not one we serve.
+     * Paths in the published catalog are relative to its own root, which is how every
+     * package hosted in the registry itself carries its artwork.
+     *
+     * @param mixed $art
+     *
+     * @return string|null
+     */
+    private function artUrl($art): ?string
+    {
+        if (!is_string($art) || $art === '') {
+            return null;
+        }
+        if (!preg_match('~^[a-z][a-z0-9+.-]*:~i', $art)) {
+            if ($art[0] === '/' || strpos($art, '..') !== false) {
+                return null;
+            }
+            $art = $this->primaryBase() . $art;
+        }
+
+        return FileSystem::isAllowedPackageHost($art) ? $art : null;
+    }
+
+    /**
      * `index.json` is published as a JSON list (each row carries its own `slug`); this
      * re-keys it by slug and drops/blanks any field that fails validation.
      *
@@ -556,17 +580,13 @@ final class Catalog
                 continue;
             }
 
-            $icon = $row['icon'] ?? null;
-            if (is_string($icon) && $icon !== '' && FileSystem::isAllowedPackageHost($icon)) {
-                $iconValue = $icon;
-            } else {
-                if (is_string($icon) && $icon !== '') {
-                    trigger_error(
-                        sprintf('Catalog: dropped icon for "%s" — host not on the allowed list.', $slug),
-                        E_USER_WARNING
-                    );
-                }
-                $iconValue = null;
+            $icon      = $row['icon'] ?? null;
+            $iconValue = $this->artUrl($icon);
+            if ($iconValue === null && is_string($icon) && $icon !== '') {
+                trigger_error(
+                    sprintf('Catalog: dropped icon for "%s" — host not on the allowed list.', $slug),
+                    E_USER_WARNING
+                );
             }
 
             // Package total (sum across every published version), 0 when the catalog
@@ -630,8 +650,7 @@ final class Catalog
      */
     private function sanitizeDetail(array $raw, string $slug): array
     {
-        $icon = $raw['icon'] ?? null;
-        $icon = (is_string($icon) && $icon !== '' && FileSystem::isAllowedPackageHost($icon)) ? $icon : null;
+        $icon = $this->artUrl($raw['icon'] ?? null);
 
         $screenshots = [];
         if (isset($raw['screenshots']) && is_array($raw['screenshots'])) {
@@ -639,7 +658,8 @@ final class Catalog
                 if (!is_array($shot) || !is_string($shot['src'] ?? null)) {
                     continue;
                 }
-                if (!FileSystem::isAllowedPackageHost($shot['src'])) {
+                $shotSrc = $this->artUrl($shot['src']);
+                if ($shotSrc === null) {
                     trigger_error(
                         sprintf('Catalog: dropped a screenshot for "%s" — host not on the allowed list.', $slug),
                         E_USER_WARNING
@@ -647,7 +667,7 @@ final class Catalog
                     continue;
                 }
                 $screenshots[] = [
-                    'src'     => $shot['src'],
+                    'src'     => $shotSrc,
                     'caption' => is_string($shot['caption'] ?? null) ? $shot['caption'] : '',
                 ];
             }

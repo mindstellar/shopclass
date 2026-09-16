@@ -108,7 +108,19 @@ class CAdminLanguages extends AdminSecBaseModel
                     }
 
                     $url  = osc_get_i18n_repository_url();
-                    $json = json_decode(osc_file_get_contents($url), true);
+                    $json = json_decode((string) osc_file_get_contents($url), true);
+                    // Without this the button looked broken wherever the server cannot reach
+                    // the translation repository: the page just came back unchanged.
+                    if (!is_array($json)) {
+                        osc_add_flash_error_message(
+                            sprintf(
+                                _m('Could not read the list of translations at %s. This server has to be able to reach it.'),
+                                $url
+                            ),
+                            'admin'
+                        );
+                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                    }
 
                     /* example json
                         [ {
@@ -158,12 +170,15 @@ class CAdminLanguages extends AdminSecBaseModel
                             'core.mo',
                             'messages.mo'
                         );
+                        $failed = 0;
                         foreach ($poFiles as $poFile) {
                             $poFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $poFile);
                             $poFileTo   = $uploadDir . $poFile;
                             $poFile     = osc_file_get_contents($poFileFrom);
                             if ($poFile) {
                                 file_put_contents($poFileTo, $poFile);
+                            } else {
+                                $failed++;
                             }
                         }
                         foreach ($moFiles as $moFile) {
@@ -172,6 +187,8 @@ class CAdminLanguages extends AdminSecBaseModel
                             $moFile     = osc_file_get_contents($moFileFrom);
                             if ($moFile) {
                                 file_put_contents($moFileTo, $moFile);
+                            } else {
+                                $failed++;
                             }
                         }
                         // Clear this code from the pending-update list so the row's
@@ -184,11 +201,23 @@ class CAdminLanguages extends AdminSecBaseModel
                             osc_reset_preferences();
                         }
                         osc_invalidate_locale_cache();
-                        osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                        if ($failed > 0) {
+                            osc_add_flash_warning_message(
+                                sprintf(_m('Language imported, but %d file(s) could not be downloaded.'), $failed),
+                                'admin'
+                            );
+                        } else {
+                            osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                        }
                         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
 
                         return true;
                     }
+
+                    osc_add_flash_error_message(
+                        sprintf(_m('No published translation was found for %s.'), $languageToImport),
+                        'admin'
+                    );
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;

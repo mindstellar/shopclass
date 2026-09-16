@@ -150,6 +150,8 @@ such as a theme logo.
 
 - Uninstalling or deleting a plugin failed with "Probable invalid request".
 - The admin "update available" badge stayed after a plugin, theme or core update.
+- Plugins and themes hosted in the registry showed a placeholder instead of their icon.
+- The language "Update" button did nothing when the server could not reach the translation repository; it says so now.
 - A plugin left active but not installed after a failed install can be installed again.
 - The username check and change-username form no longer strip dots that registration keeps.
 - The username blacklist catches dotted and underscored look-alikes such as `ad.min`.

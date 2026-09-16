@@ -388,6 +388,10 @@ jobs:
       # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
       - name: Plugin install repair and admin GET forms
         run: php tests/plugin-install-repair.php
+      # Registry-hosted packages carry a catalog-relative icon path; dropping it silently
+      # left every one of them showing the placeholder tile.
+      - name: Market catalog artwork
+        run: php tests/market-catalog-art.php
       # A field dropped from the export map does not error -- the download simply omits a
       # category of personal data, which is only noticed by whoever asked for their copy.
       - name: Personal data map
