@@ -15281,6 +15281,12 @@ table.table-small td {
   overflow: hidden;
   position: relative;
 }
+.osc-thumb img {
+  block-size: 100%;
+  display: block;
+  inline-size: 100%;
+  object-fit: contain;
+}
 
 .osc-thumb--fallback {
   background-color: hsl(var(--osc-thumb-hue, 200), 45%, 92%);
@@ -19688,17 +19694,20 @@ form h3, form .h3 {
 .market-card {
   block-size: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 0.25rem;
 }
 
 .market-card-thumb-btn {
+  align-items: flex-start;
   background: none;
   border: 0;
   cursor: pointer;
-  display: block;
-  padding: 0;
+  display: flex;
+  flex: 0 0 auto;
+  inline-size: 8.5rem;
+  padding: 0.75rem 0.25rem 0.75rem 0.75rem;
   text-align: start;
-  width: 100%;
 }
 .market-card-thumb-btn:focus-visible {
   outline: 2px solid var(--osc-bronze);
@@ -19707,8 +19716,16 @@ form h3, form .h3 {
 
 .market-card-thumb {
   aspect-ratio: 4/3;
+  background-color: var(--osc-bench-sunk);
+  border-radius: 4px;
+  inline-size: 100%;
 }
 
+@media (max-width: 575.98px) {
+  .market-card-thumb-btn {
+    inline-size: 6rem;
+  }
+}
 .market-card-body {
   display: flex;
   flex: 1 1 auto;
@@ -19986,6 +20003,18 @@ form h3, form .h3 {
 .market-detail-screens-strip:focus-visible {
   outline: 2px solid var(--osc-bronze);
   outline-offset: 2px;
+}
+
+.market-detail-screens-view--art {
+  aspect-ratio: auto;
+  block-size: 11rem;
+  display: flex;
+  justify-content: center;
+}
+.market-detail-screens-view--art .osc-thumb {
+  aspect-ratio: 1;
+  block-size: 100%;
+  inline-size: auto;
 }
 
 .market-detail-screens-view {

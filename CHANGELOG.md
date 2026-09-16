@@ -94,6 +94,7 @@ such as a theme logo.
 
 ### Changed
 
+- Plugin and theme cards in Browse put the artwork beside the text and no longer crop or stretch it.
 - Hand-written admin settings screens are deprecated in the docs; declare a settings page instead.
 - Admin list tables show dates as `2026-09-14 06:14`, with the long date on hover. The
   `admin_date_format` filter changes the format.

@@ -484,6 +484,9 @@
                 return;
             }
             var item = items[screenState.index];
+            // An icon standing in for missing screenshots is small art; blown up to the
+            // 16/9 stage it read as a poster, so that slide gets its own smaller box.
+            dScreensView.classList.toggle('market-detail-screens-view--art', !!item.node);
             if (item.node) {
                 dScreensView.appendChild(item.node.cloneNode(true));
             } else {

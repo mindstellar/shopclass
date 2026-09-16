@@ -82,20 +82,25 @@
   margin-bottom: 1rem;
 }
 
+// Media on the start edge, everything else beside it: a plugin icon and a theme
+// screenshot have different shapes, and a full-width banner had to crop one of them.
 .market-card {
   block-size: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: .25rem;
 }
 
 .market-card-thumb-btn {
+  align-items: flex-start;
   background: none;
   border: 0;
   cursor: pointer;
-  display: block;
-  padding: 0;
+  display: flex;
+  flex: 0 0 auto;
+  inline-size: 8.5rem;
+  padding: .75rem .25rem .75rem .75rem;
   text-align: start;
-  width: 100%;
 
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
@@ -105,6 +110,15 @@
 
 .market-card-thumb {
   aspect-ratio: 4 / 3;
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius;
+  inline-size: 100%;
+}
+
+@include media-breakpoint-down(sm) {
+  .market-card-thumb-btn {
+    inline-size: 6rem;
+  }
 }
 
 .market-card-body {
@@ -410,6 +424,21 @@
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
     outline-offset: 2px;
+  }
+}
+
+// Stands in for real screenshots: the icon keeps its own size instead of being scaled
+// up to a 16/9 stage.
+.market-detail-screens-view--art {
+  aspect-ratio: auto;
+  block-size: 11rem;
+  display: flex;
+  justify-content: center;
+
+  .osc-thumb {
+    aspect-ratio: 1;
+    block-size: 100%;
+    inline-size: auto;
   }
 }
 

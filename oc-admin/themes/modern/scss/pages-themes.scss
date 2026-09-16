@@ -44,6 +44,15 @@
 .osc-thumb {
   overflow: hidden;
   position: relative;
+
+  // The art is a square plugin icon or a wide theme screenshot, so it is fitted inside
+  // the box rather than filling it: neither shape is cropped and neither is stretched.
+  img {
+    block-size: 100%;
+    display: block;
+    inline-size: 100%;
+    object-fit: contain;
+  }
 }
 
 .osc-thumb--fallback {
