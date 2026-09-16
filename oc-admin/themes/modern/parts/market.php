@@ -548,6 +548,10 @@ function osc_market_render_updates($rows, $meta, $type)
                     </div>
                     <div class="market-update-actions">
                         <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to %s'), $row['new_version'])); ?>
+                        <button type="button" class="btn btn-sm btn-secondary market-card-details"
+                                data-market-open-detail>
+                            <?php _e('Details'); ?>
+                        </button>
                     </div>
                 </li>
             <?php endforeach; ?>

@@ -20086,8 +20086,12 @@ form h3, form .h3 {
 }
 
 .market-update-actions {
+  align-items: center;
+  display: flex;
   flex: 0 0 auto;
-  text-align: end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .market-detail-dialog {

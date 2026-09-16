@@ -1364,6 +1364,14 @@ msgstr ""
 msgid "Back to orders"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/add.php
+msgid "Back to plugins"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/add.php
+msgid "Back to themes"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
 "Backfill existing images between local disk and remote storage. Each action "

@@ -70,6 +70,12 @@ function oscInitTabs(root) {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
                     select(link, false);
+                    // The tab goes in the address bar, so a link can point at one and Back
+                    // returns to the previous tab instead of leaving the screen.
+                    var href = link.getAttribute('href');
+                    if (href && window.history && window.history.pushState) {
+                        window.history.pushState(null, '', href);
+                    }
                 });
                 link.addEventListener('keydown', function (e) {
                     var next = null;
@@ -81,7 +87,26 @@ function oscInitTabs(root) {
                 });
             });
 
-            select(serverActive || linkArr[0], false);
+            function linkForHash() {
+                var hash = window.location.hash;
+                if (!hash || hash.length < 2) {
+                    return null;
+                }
+                for (var h = 0; h < linkArr.length; h++) {
+                    if (linkArr[h].getAttribute('href') === hash) {
+                        return linkArr[h];
+                    }
+                }
+
+                return null;
+            }
+
+            select(linkForHash() || serverActive || linkArr[0], false);
+
+            // No hash means the entry before the first tab click, so the default tab returns.
+            window.addEventListener('popstate', function () {
+                select(linkForHash() || serverActive || linkArr[0], false);
+            });
         })(containers[c]);
     }
 }
