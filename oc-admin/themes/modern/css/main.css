@@ -19632,6 +19632,173 @@ form h3, form .h3 {
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+.osc-pkg-list {
+  border-block-start: 1px solid var(--osc-rule);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.osc-pkg {
+  align-items: flex-start;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0.25rem;
+}
+.osc-pkg:hover {
+  background-color: var(--osc-bench-warm);
+}
+
+.osc-pkg-art {
+  flex: 0 0 auto;
+  inline-size: 4.5rem;
+}
+.osc-pkg-art .osc-thumb {
+  aspect-ratio: 4/3;
+  background-color: var(--osc-bench-sunk);
+  border-radius: 4px;
+}
+
+.osc-pkg-art--wide {
+  inline-size: 16rem;
+  max-inline-size: 40%;
+}
+
+.osc-pkg-main {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.osc-pkg-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.osc-pkg-name {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.osc-pkg-state {
+  display: inline-flex;
+}
+
+.osc-pkg-meta {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+  margin: 0.2rem 0 0;
+}
+.osc-pkg-meta a {
+  color: inherit;
+}
+
+.osc-pkg-sep {
+  padding: 0 0.1rem;
+}
+
+.osc-pkg-desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  margin: 0.35rem 0 0;
+  max-inline-size: 75ch;
+  overflow: hidden;
+}
+
+.osc-pkg-note {
+  font-size: 0.8125rem;
+  margin: 0.35rem 0 0;
+}
+.osc-pkg-note.osc-pkg-note--info {
+  color: var(--osc-ink-muted);
+}
+.osc-pkg-note.osc-pkg-note--update {
+  color: var(--osc-bronze);
+  font-weight: 500;
+}
+
+.osc-pkg-actions {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: end;
+}
+
+.osc-pkg-links,
+.osc-pkg-danger {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 0.15rem 0.75rem;
+  justify-content: flex-end;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.osc-pkg-links a,
+.osc-pkg-danger a {
+  color: var(--osc-ink-muted);
+  text-decoration-line: none;
+  white-space: nowrap;
+}
+.osc-pkg-links a:hover, .osc-pkg-links a:focus-visible,
+.osc-pkg-danger a:hover,
+.osc-pkg-danger a:focus-visible {
+  color: var(--osc-bronze);
+  text-decoration-line: underline;
+}
+
+.osc-pkg-danger {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 0.15rem;
+  padding-block-start: 0.4rem;
+}
+.osc-pkg-danger a:hover, .osc-pkg-danger a:focus-visible {
+  color: var(--osc-danger);
+}
+
+@media (max-width: 767.98px) {
+  .osc-pkg {
+    flex-wrap: wrap;
+  }
+  .osc-pkg-art--wide {
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+  .osc-pkg-main {
+    flex-basis: 60%;
+  }
+  .osc-pkg-actions {
+    align-items: flex-start;
+    flex-basis: 100%;
+    text-align: start;
+  }
+  .osc-pkg-links,
+  .osc-pkg-danger {
+    justify-content: flex-start;
+  }
+  .osc-pkg-danger {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--osc-rule);
+    margin-block-start: 0;
+    padding-block-start: 0;
+    padding-inline-start: 0.75rem;
+  }
+}
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 .market-toolbar {
   align-items: center;
   display: flex;

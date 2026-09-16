@@ -1,0 +1,194 @@
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+// The package row shared by the Plugins and Appearance screens (parts/package-ui.php).
+// A list, not a card grid: these screens are read down a column, and the admin's other
+// lists already read that way. Art, identity, state and actions each own one band of the
+// row, so a plugin and a theme scan identically.
+
+.osc-pkg-list {
+  border-block-start: 1px solid var(--osc-rule);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.osc-pkg {
+  align-items: flex-start;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: 1rem;
+  padding: 1rem .25rem;
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+  }
+}
+
+.osc-pkg-art {
+  flex: 0 0 auto;
+  inline-size: 4.5rem;
+
+  .osc-thumb {
+    aspect-ratio: 4 / 3;
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+  }
+}
+
+// The live theme leads its list, so its screenshot is read as art rather than as an icon.
+.osc-pkg-art--wide {
+  inline-size: 16rem;
+  max-inline-size: 40%;
+}
+
+.osc-pkg-main {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.osc-pkg-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.osc-pkg-name {
+  font-size: 1.0625rem; // Title
+  font-weight: 600;
+  margin: 0;
+}
+
+.osc-pkg-state {
+  display: inline-flex;
+}
+
+.osc-pkg-meta {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem; // Label
+  margin: .2rem 0 0;
+
+  a {
+    color: inherit;
+  }
+}
+
+.osc-pkg-sep {
+  padding: 0 .1rem;
+}
+
+// Two lines is what a list needs: the whole description is one click away in the detail
+// sheet, and a row that runs to five lines stops being scannable.
+.osc-pkg-desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  margin: .35rem 0 0;
+  max-inline-size: 75ch;
+  overflow: hidden;
+}
+
+.osc-pkg-note {
+  font-size: .8125rem;
+  margin: .35rem 0 0;
+
+  &.osc-pkg-note--info {
+    color: var(--osc-ink-muted);
+  }
+
+  // An update waiting is the one note that should pull the eye, so it takes the brand ink
+  // rather than a second tinted block inside a row that already carries a badge.
+  &.osc-pkg-note--update {
+    color: var(--osc-bronze);
+    font-weight: 500;
+  }
+}
+
+.osc-pkg-actions {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: .4rem;
+  text-align: end;
+}
+
+.osc-pkg-links,
+.osc-pkg-danger {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: .8125rem;
+  gap: .15rem .75rem;
+  justify-content: flex-end;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  a {
+    color: var(--osc-ink-muted);
+    text-decoration-line: none;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-bronze);
+      text-decoration-line: underline;
+    }
+  }
+}
+
+// Removing a plugin or a theme is not one of the routine actions beside it: a rule and a
+// gap hold it apart, and it is the only thing in the row that goes red.
+.osc-pkg-danger {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: .15rem;
+  padding-block-start: .4rem;
+
+  a {
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-danger);
+    }
+  }
+}
+
+@include media-breakpoint-down(md) {
+  .osc-pkg {
+    flex-wrap: wrap;
+  }
+
+  .osc-pkg-art--wide {
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+
+  .osc-pkg-main {
+    flex-basis: 60%;
+  }
+
+  .osc-pkg-actions {
+    align-items: flex-start;
+    flex-basis: 100%;
+    text-align: start;
+  }
+
+  .osc-pkg-links,
+  .osc-pkg-danger {
+    justify-content: flex-start;
+  }
+
+  .osc-pkg-danger {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--osc-rule);
+    margin-block-start: 0;
+    padding-block-start: 0;
+    padding-inline-start: .75rem;
+  }
+}

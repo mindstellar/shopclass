@@ -441,6 +441,24 @@ class CAdminPlugins extends AdminSecBaseModel
                         }
                     }
                     $row['plugin_status'] = $plugin_status;
+                    // The list renders from this; the cells below stay for anything still
+                    // reading the row as the datatable shape it has always had.
+                    $row['pkg'] = array(
+                        'slug'        => $pSlug,
+                        'file'        => $pInfo['filename'],
+                        'name'        => $pInfo['plugin_name'],
+                        'version'     => $pInfo['version'],
+                        'author'      => $pInfo['author'],
+                        'author_uri'  => $pInfo['author_uri'],
+                        'plugin_uri'  => $pInfo['plugin_uri'],
+                        'support_uri' => $pInfo['support_uri'],
+                        'description' => $pInfo['description'],
+                        'state'       => $plugin_status,
+                        'installed'   => (bool) $installed,
+                        'enabled'     => (bool) $enabled,
+                        'update'      => $sUpdate !== '',
+                        'configurable' => isset($active_plugins[$plugin . '_configure']),
+                    );
                     $row[]   =
                         '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
                         . $pInfo['plugin_name'] . $sHelp . '<div>' . $sUpdate . '</div>';
