@@ -151,9 +151,14 @@ function osc_market_render_thumb($art, $slug, $name)
 function osc_market_render_compat_badge($compat)
 {
     $class = osc_market_compat_class($compat['status'] ?? 'undeclared');
+    $title = ($compat['status'] ?? '') === 'untested'
+        ? __('Not tested with your Shopclass version yet. Installing and updating still work as normal.')
+        : (string) ($compat['reason'] ?? '');
     ?>
     <div class="market-card-status status-<?php echo osc_esc_html($class); ?>">
-        <span class="osc-status"><?php echo osc_esc_html($compat['badge'] ?? ''); ?></span>
+        <span class="osc-status"<?php echo $title !== '' ? ' title="' . osc_esc_html($title) . '"' : ''; ?>>
+            <?php echo osc_esc_html($compat['badge'] ?? ''); ?>
+        </span>
     </div>
     <?php
 }
@@ -174,8 +179,10 @@ function osc_market_render_untested_note($compat)
     if (($compat['status'] ?? '') !== 'untested') {
         return;
     }
+    // Hidden here on purpose: the badge already says "Works with 6.1 - 6.2" and carries this
+    // as its tooltip. The detail sheet reads the sentence from this element.
     ?>
-    <p class="market-card-note">
+    <p class="market-card-note" hidden>
         <?php echo osc_esc_html(__("Not tested with your Shopclass version yet. Installing and updating still work as normal.")); ?>
     </p>
     <?php
@@ -595,6 +602,10 @@ function osc_market_render_detail_dialog($type)
                         <dt><?php _e('Version'); ?></dt>
                         <dd class="market-detail-version"></dd>
                     </div>
+                    <div class="market-detail-requires-row" hidden>
+                        <dt><?php _e('Requires'); ?></dt>
+                        <dd class="market-detail-requires"></dd>
+                    </div>
                     <div class="market-detail-downloads-row" hidden>
                         <dt><?php _e('Downloads'); ?></dt>
                         <dd class="market-detail-downloads"
@@ -673,6 +684,9 @@ function osc_market_i18n($type)
         'checking'         => __('Checking…'),
         'noResults'        => __('No packages match your search.'),
         'byAuthor'         => __('by %s'),
+        'requiresCore'     => __('Shopclass %s or newer'),
+        'requiresPhp'      => __('PHP %s or newer'),
+        'testedTo'         => __('tested to %s'),
         'linkHomepage'     => __('Homepage'),
         'linkRepo'         => __('Repository'),
         'linkIssues'       => __('Issue tracker'),

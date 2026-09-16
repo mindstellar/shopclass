@@ -6728,6 +6728,10 @@ msgstr ""
 msgid "Overview"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/market.php
+msgid "PHP %s or newer"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "PHP rejects the whole request before it looks at the file, so the %1$s you "
@@ -8180,6 +8184,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/version.php
 msgid "Shopclass %s &raquo; %s"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Shopclass %s or newer"
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
@@ -10978,6 +10986,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
 msgid "seconds between each listing added"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "tested to %s"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php

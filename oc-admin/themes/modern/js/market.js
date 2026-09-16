@@ -407,6 +407,8 @@
         var dNote = dialog.querySelector('.market-detail-note');
         var dReason = dialog.querySelector('.market-detail-reason');
         var dVersion = dialog.querySelector('.market-detail-version');
+        var dRequiresRow = dialog.querySelector('.market-detail-requires-row');
+        var dRequires = dialog.querySelector('.market-detail-requires');
         var dDownloadsRow = dialog.querySelector('.market-detail-downloads-row');
         var dDownloads = dialog.querySelector('.market-detail-downloads');
         var dTags = dialog.querySelector('.market-detail-tags');
@@ -626,6 +628,23 @@
         }
 
         function applyDetail(detail, placeholderNode) {
+            // What the newest published version asks of this install, said once in words
+            // rather than read out of the version table below.
+            if (dRequiresRow && dRequires) {
+                var newest = (detail.versions || [])[0] || {};
+                var needs = [];
+                if (newest.requires) {
+                    needs.push((i18n.requiresCore || 'Shopclass %s or newer').replace('%s', newest.requires));
+                }
+                if (newest.requires_php) {
+                    needs.push((i18n.requiresPhp || 'PHP %s or newer').replace('%s', newest.requires_php));
+                }
+                if (newest.tested) {
+                    needs.push((i18n.testedTo || 'tested to %s').replace('%s', newest.tested));
+                }
+                dRequires.textContent = needs.join(' \u00b7 ');
+                dRequiresRow.hidden = needs.length === 0;
+            }
             dReadme.innerHTML = detail.description_html || '';
             setScreenshots(detail.screenshots, placeholderNode);
             renderVersions(detail.versions);
