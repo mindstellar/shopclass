@@ -461,6 +461,10 @@ function osc_market_render_browse($rows, $meta, $type)
                             <?php osc_market_render_untested_note($row['compat']); ?>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
+                                <button type="button" class="btn btn-sm btn-secondary market-card-details"
+                                        data-market-open-detail>
+                                    <?php _e('Details'); ?>
+                                </button>
                             </div>
                         </div>
                     </div>

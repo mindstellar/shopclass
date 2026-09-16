@@ -202,7 +202,11 @@
 }
 
 .market-card-actions {
+  align-items: center;
   border-block-start: 1px solid var(--osc-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
   grid-column: 1 / -1;
   padding-block-start: .75rem;
 }
