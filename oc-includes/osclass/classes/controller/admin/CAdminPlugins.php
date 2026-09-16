@@ -551,13 +551,14 @@ class CAdminPlugins extends AdminSecBaseModel
                     'status'  => $row['compatibility']['status'],
                     'blocked' => $row['compatibility']['blocked'],
                     'reason'  => $row['compatibility']['reason'],
-                    // The package's published supported range, not a verdict against this
-                    // install — 'status' above (from PackageIndex's locally-evaluated
-                    // compatibility) still drives the badge tint and the disabled-button
-                    // reason; only the label text changed (docs/MARKET.md §5).
-                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
-                        is_string($row['requires_min'] ?? null) ? $row['requires_min'] : null,
-                        is_string($row['tested_max'] ?? null) ? $row['tested_max'] : null
+                    // One fact about this install, from the status already decided above:
+                    // what it needs, how far it was tested, or the version it works with.
+                    'badge'   => \mindstellar\market\Compatibility::verdictLabel(
+                        $row['compatibility']['status'],
+                        array(
+                            'requires'     => is_string($row['requires_min'] ?? null) ? $row['requires_min'] : '',
+                            'tested_up_to' => is_string($row['tested_max'] ?? null) ? $row['tested_max'] : '',
+                        )
                     ),
                 ),
             );
@@ -585,10 +586,10 @@ class CAdminPlugins extends AdminSecBaseModel
                     'status'  => $verdict['status'],
                     'blocked' => $verdict['blocked'],
                     'reason'  => $verdict['reason'],
-                    // The range this specific update version declares for itself.
-                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
-                        $compatInfo['requires'] !== '' ? $compatInfo['requires'] : null,
-                        $compatInfo['tested_up_to'] !== '' ? $compatInfo['tested_up_to'] : null
+                    // What this specific update asks of this install.
+                    'badge'   => \mindstellar\market\Compatibility::verdictLabel(
+                        $verdict['status'],
+                        $compatInfo
                     ),
                 ),
             );

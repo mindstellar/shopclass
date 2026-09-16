@@ -392,6 +392,10 @@ jobs:
       # left every one of them showing the placeholder tile.
       - name: Market catalog artwork
         run: php tests/market-catalog-art.php
+      # The badge is the only answer to "can I install this here?"; its tint must never be
+      # the only channel that carries it.
+      - name: Market compatibility badge
+        run: php tests/market-compat-badge.php
       # A field dropped from the export map does not error -- the download simply omits a
       # category of personal data, which is only noticed by whoever asked for their copy.
       - name: Personal data map

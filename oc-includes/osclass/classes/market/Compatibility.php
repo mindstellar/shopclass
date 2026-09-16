@@ -160,24 +160,49 @@ final class Compatibility
     public static function badgeLabel(array $info, ?string $coreVersion = null): string
     {
         $coreVersion = $coreVersion ?? OSCLASS_VERSION;
-        $verdict     = self::evaluate($info, $coreVersion);
 
-        switch ($verdict['status']) {
+        return self::verdictLabel(self::evaluate($info, $coreVersion)['status'], $info, $coreVersion);
+    }
+
+    /**
+     * The same label for a verdict already decided elsewhere, so a screen that carries a
+     * status does not re-evaluate it and risk disagreeing with itself.
+     *
+     * One fact per state, each about *this* install: what it needs when it cannot run here,
+     * how far it was tested when that is behind us, and the version it works with otherwise.
+     *
+     * @param string              $status      self::OK / UNTESTED / INCOMPATIBLE / UNDECLARED
+     * @param array<string,mixed> $info        the package header / catalog entry
+     * @param string|null         $coreVersion defaults to OSCLASS_VERSION
+     *
+     * @return string
+     */
+    public static function verdictLabel(string $status, array $info, ?string $coreVersion = null): string
+    {
+        $coreVersion = $coreVersion ?? OSCLASS_VERSION;
+
+        switch ($status) {
             case self::INCOMPATIBLE:
                 $requires = self::normalize((string) ($info['requires'] ?? ''));
                 if ($requires !== null && version_compare($requires, self::releaseVersion($coreVersion), '>')) {
-                    return sprintf(__('Requires %s+'), $requires);
+                    return sprintf(__('Needs %s or newer'), self::minor($requires));
                 }
 
                 $requiresPhp = self::normalize((string) ($info['requires_php'] ?? ''));
 
-                return sprintf(__('Requires PHP %s'), $requiresPhp ?? '');
+                return $requiresPhp !== null
+                    ? sprintf(__('Needs PHP %s'), self::minor($requiresPhp))
+                    : __('Not compatible');
             case self::UNTESTED:
-                return sprintf(__('Not tested with %s yet'), self::minor($coreVersion));
+                $tested = self::normalize((string) ($info['tested_up_to'] ?? ''));
+
+                return $tested !== null
+                    ? sprintf(__('Tested up to %s'), self::minor($tested))
+                    : sprintf(__('Not tested with %s'), self::minor($coreVersion));
             case self::UNDECLARED:
-                return __('Compatibility not declared');
+                return __('No version declared');
             default:
-                return sprintf(__('Compatible with %s.x'), self::minor($coreVersion));
+                return sprintf(__('Works with %s'), self::minor($coreVersion));
         }
     }
 
