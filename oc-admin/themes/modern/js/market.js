@@ -224,6 +224,19 @@
             return window.CSS && CSS.escape ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&');
         }
 
+        // The Installed tab is rendered by PHP, so a package installed here is not in it
+        // until the page is fetched again. Reload on the way into that tab rather than
+        // under the flash message the owner is still reading.
+        var installedStale = false;
+        var installedTab = document.querySelector('.osc-tab a[href="#market-tab-installed"]');
+        if (installedTab) {
+            installedTab.addEventListener('click', function () {
+                if (installedStale) {
+                    window.location.reload();
+                }
+            });
+        }
+
         function performAction(btn) {
             var action = btn.getAttribute('data-market-action');
             var slug = btn.getAttribute('data-market-slug');
@@ -246,6 +259,7 @@
             }).then(function (res) {
                 if (res && res.ok) {
                     markInstalled(slug, action);
+                    installedStale = true;
                     flash('ok', res.message);
                     if (action === 'update') {
                         removeUpdateItem(slug);

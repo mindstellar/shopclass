@@ -390,7 +390,7 @@
 
   dt {
     color: var(--osc-ink-muted);
-    font-size: .75rem;
+    font-size: .8125rem; // Label — the system's smallest step
     font-weight: 500;
     text-transform: uppercase;
   }
@@ -416,7 +416,7 @@
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius-pill;
     color: var(--osc-ink-muted);
-    font-size: .75rem;
+    font-size: .8125rem; // Label — the system's smallest step
     padding: .1rem .55rem;
   }
 }

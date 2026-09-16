@@ -20143,7 +20143,7 @@ form h3, form .h3 {
 }
 .market-detail-meta dt {
   color: var(--osc-ink-muted);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   text-transform: uppercase;
 }
@@ -20166,7 +20166,7 @@ form h3, form .h3 {
   background-color: var(--osc-bench-sunk);
   border-radius: 999px;
   color: var(--osc-ink-muted);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   padding: 0.1rem 0.55rem;
 }
 
