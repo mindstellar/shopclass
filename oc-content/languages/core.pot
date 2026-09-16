@@ -571,6 +571,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/index.php
@@ -1054,6 +1055,10 @@ msgstr ""
 msgid ""
 "An order records one attempt to pay. Shopclass stores what was bought and "
 "what "
+msgstr ""
+
+#: oc-admin/themes/modern/plugins/index.php
+msgid "An update is ready for this plugin. Open the Updates tab to apply it."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -2915,6 +2920,10 @@ msgstr ""
 msgid "Delete file"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Delete files"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Delete form"
 msgstr ""
@@ -3019,7 +3028,6 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/PageForm.php
@@ -3069,6 +3077,7 @@ msgid "Direction"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Disable"
@@ -3096,6 +3105,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/parts/package-ui.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/utility/SystemInfo.php
 msgid "Disabled"
@@ -3411,6 +3421,7 @@ msgid "Emails templates"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Enable"
@@ -4493,6 +4504,7 @@ msgid "Input validation across the core."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Install"
@@ -5222,6 +5234,10 @@ msgstr ""
 msgid "Listings, pages &amp; categories"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/package-ui.php
+msgid "Live"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Loaded PHP extensions"
 msgstr ""
@@ -5818,7 +5834,6 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -6314,12 +6329,17 @@ msgstr ""
 msgid "Not cascading"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/package-ui.php
+msgid "Not compatible"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "Not enabled. PHP recompiles every file on every request. It is the cheapest "
 "performance win available, and it is one ini line."
 msgstr ""
 
+#: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/tools/cache.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -8078,6 +8098,7 @@ msgstr ""
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/header.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/advanced.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/comments.php
@@ -8458,7 +8479,6 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/fields/submissions.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -8551,6 +8571,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Sunday"
+msgstr ""
+
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Support"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -9707,6 +9731,10 @@ msgstr ""
 msgid "Update my profile"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/package-ui.php
+msgid "Update ready"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
 msgid "Update rule"
 msgstr ""
@@ -10115,6 +10143,10 @@ msgstr ""
 msgid "Version"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Version %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Version:"
 msgstr ""
@@ -10255,6 +10287,7 @@ msgstr ""
 msgid "Web title"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Website"
 msgstr ""
@@ -10628,6 +10661,7 @@ msgid "becomes"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
+#: oc-admin/themes/modern/plugins/index.php
 msgid "by %s"
 msgstr ""
 
