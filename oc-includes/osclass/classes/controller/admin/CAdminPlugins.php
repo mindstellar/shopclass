@@ -322,10 +322,6 @@ class CAdminPlugins extends AdminSecBaseModel
                 $limit = Params::getParam('iDisplayLength');
                 $count = count($aPlugin);
 
-                $displayRecords = $limit;
-                if (($start + $limit) > $count) {
-                    $displayRecords = ($start + $limit) - $count;
-                }
                 // --------------------------------------------------------
 
                 $aData = array();
@@ -480,8 +476,11 @@ class CAdminPlugins extends AdminSecBaseModel
                     }
                 }
 
-                $array['iTotalRecords']        = $displayRecords;
-                $array['iTotalDisplayRecords'] = count($aPlugin);
+                // Nothing filters this list, so both counts are the number of plugins on disk.
+                // iTotalRecords used to carry a page-arithmetic leftover, which the footer read
+                // as "filtered from 20 total" on an install that has five.
+                $array['iTotalRecords']        = $count;
+                $array['iTotalDisplayRecords'] = $count;
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
                 $array['aaInfo']               = $aInfo;
