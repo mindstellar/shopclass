@@ -127,12 +127,12 @@ function osc_market_render_thumb($art, $slug, $name)
 {
     ?>
     <div class="osc-thumb market-card-thumb<?php echo $art['has'] ? '' : ' osc-thumb--fallback'; ?>"
-         <?php if (!$art['has']) : ?>style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>"<?php endif; ?>>
-        <img src="<?php echo osc_esc_html($art['src']); ?>"
-             alt="" width="400" height="300" loading="lazy"/>
-        <?php if (!$art['has']) : ?>
-            <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
+         style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>">
+        <?php if ($art['has']) : ?>
+            <img src="<?php echo osc_esc_html($art['src']); ?>" alt="" width="400" height="300" loading="lazy"
+                 onerror="oscThumbFailed(this)"/>
         <?php endif; ?>
+        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
     </div>
     <?php
 }
@@ -439,12 +439,14 @@ function osc_market_render_browse($rows, $meta, $type)
                             <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
                         </button>
                         <div class="card-body market-card-body">
-                            <?php osc_market_render_compat_badge($row['compat']); ?>
-                            <h3 class="market-card-title">
-                                <button type="button" class="market-card-title-btn" data-market-open-detail>
-                                    <?php echo osc_esc_html($row['name']); ?>
-                                </button>
-                            </h3>
+                            <div class="market-card-head">
+                                <h3 class="market-card-title">
+                                    <button type="button" class="market-card-title-btn" data-market-open-detail>
+                                        <?php echo osc_esc_html($row['name']); ?>
+                                    </button>
+                                </h3>
+                                <?php osc_market_render_compat_badge($row['compat']); ?>
+                            </div>
                             <p class="market-card-author">
                                 <?php echo osc_esc_html(sprintf(__('by %s'), $row['author'])); ?>
                                 <?php $downloads = osc_market_format_downloads($row['downloads'] ?? 0); ?>

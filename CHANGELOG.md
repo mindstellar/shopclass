@@ -94,7 +94,9 @@ such as a theme logo.
 
 ### Changed
 
-- Plugin and theme cards in Browse put the artwork beside the text and no longer crop or stretch it.
+- Plugins and Appearance share one look: installed packages are tiles with the artwork beside
+  the name, a state badge, one primary action, and removal held apart from the routine ones.
+- A package with no artwork of its own borrows the catalogue's icon before falling back to its initial.
 - Hand-written admin settings screens are deprecated in the docs; declare a settings page instead.
 - Admin list tables show dates as `2026-09-14 06:14`, with the long date on hover. The
   `admin_date_format` filter changes the format.

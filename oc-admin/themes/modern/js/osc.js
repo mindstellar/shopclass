@@ -240,3 +240,31 @@ document.addEventListener('change', function (event) {
         }
     });
 });
+
+// A package icon or screenshot that cannot load (a blocked CDN, an offline install) hands
+// its box back to the tinted initial underneath instead of leaving an empty frame.
+function oscThumbFailed(img) {
+    var box = img.closest ? img.closest('.osc-thumb') : null;
+    if (box) {
+        box.classList.add('osc-thumb--fallback');
+    }
+    img.remove();
+}
+
+// Art hosted somewhere the site cannot reach does not error, it hangs. Give each one a
+// deadline and take the box back when it passes.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.osc-thumb img').forEach(function (img) {
+        if (img.complete && img.naturalWidth > 0) {
+            return;
+        }
+        var deadline = window.setTimeout(function () {
+            if (!img.complete || img.naturalWidth === 0) {
+                oscThumbFailed(img);
+            }
+        }, 8000);
+        img.addEventListener('load', function () {
+            window.clearTimeout(deadline);
+        });
+    });
+});

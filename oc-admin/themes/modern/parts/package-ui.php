@@ -67,13 +67,13 @@ if (!function_exists('osc_package_art')) {
         ?>
         <div class="osc-pkg-art osc-pkg-art--<?php echo osc_esc_html($size); ?>">
             <div class="osc-thumb<?php echo $has ? '' : ' osc-thumb--fallback'; ?>"
-                <?php if (!$has) : ?>style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>"<?php endif; ?>>
+                 style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>">
                 <?php if ($has) : ?>
-                    <img src="<?php echo osc_esc_html($art['src']); ?>" alt="" loading="lazy"/>
-                <?php else : ?>
-                    <span class="osc-thumb-letter" aria-hidden="true"><?php
-                        echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
+                    <img src="<?php echo osc_esc_html($art['src']); ?>" alt="" loading="lazy"
+                         onerror="oscThumbFailed(this)"/>
                 <?php endif; ?>
+                <span class="osc-thumb-letter" aria-hidden="true"><?php
+                    echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
             </div>
         </div>
         <?php

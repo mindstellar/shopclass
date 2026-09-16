@@ -82,13 +82,16 @@
   margin-bottom: 1rem;
 }
 
-// Media on the start edge, everything else beside it: a plugin icon and a theme
-// screenshot have different shapes, and a full-width banner had to crop one of them.
+// Same shape as an installed tile (packages.scss): art on the start edge, identity beside
+// it, actions along the bottom. A package reads the same whether it is installed or not.
 .market-card {
   block-size: 100%;
-  display: flex;
-  flex-direction: row;
-  gap: .25rem;
+  column-gap: 1rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  padding: 1rem;
+  row-gap: .75rem;
 }
 
 .market-card-thumb-btn {
@@ -98,8 +101,10 @@
   cursor: pointer;
   display: flex;
   flex: 0 0 auto;
-  inline-size: 8.5rem;
-  padding: .75rem .25rem .75rem .75rem;
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 4rem;
+  padding: 0;
   text-align: start;
 
   &:focus-visible {
@@ -115,17 +120,26 @@
   inline-size: 100%;
 }
 
-@include media-breakpoint-down(sm) {
-  .market-card-thumb-btn {
-    inline-size: 6rem;
+// Name first, verdict beside it — the reading order every list on these screens uses.
+.market-card-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  .market-card-status {
+    order: 0;
   }
 }
 
 .market-card-body {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   gap: .35rem;
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
+  padding: 0;
 }
 
 .market-card-status {
@@ -188,7 +202,9 @@
 }
 
 .market-card-actions {
-  margin-top: .5rem;
+  border-block-start: 1px solid var(--osc-rule);
+  grid-column: 1 / -1;
+  padding-block-start: .75rem;
 }
 
 .market-card-action {

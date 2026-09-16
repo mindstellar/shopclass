@@ -67,6 +67,12 @@
   background-color: hsl(var(--osc-thumb-hue, 200) 28% 22%);
 }
 
+// The letter is always in the markup so a package whose art fails to load (a blocked CDN,
+// an offline install) still shows something; it only paints once the box is in fallback.
+.osc-thumb:not(.osc-thumb--fallback) .osc-thumb-letter {
+  display: none;
+}
+
 .osc-thumb-letter {
   align-items: center;
   color: var(--osc-ink);
