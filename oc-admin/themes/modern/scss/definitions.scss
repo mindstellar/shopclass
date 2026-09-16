@@ -59,6 +59,12 @@ $status-badge: (
         // it is built as an outline variant in table.scss.
         "disabled": (tint: var(--osc-bench-sunk),   ink: var(--osc-ink-emphasis), icon: "\f2e6"), // ⊖ barred ring
 
+        // The Appearance screen. "live" is the theme the site is actually serving — the one
+        // state on that screen an owner must never misread — so it takes the brand accent and
+        // a silhouette nothing else on the screen uses. A waiting update reuses the "update"
+        // entry further down, shared with the Updates tab.
+        "live":     (tint: var(--osc-bronze-tint),  ink: var(--osc-bronze),       icon: "\f1d6"), // broadcast
+
         // The Browse/Updates package cards (docs/MARKET.md §8.2): a compatibility verdict is
         // its own severity axis, not a repaint of the states above, so it gets two entries of
         // its own. "blocked" above already covers Compatibility::INCOMPATIBLE — same tint, same

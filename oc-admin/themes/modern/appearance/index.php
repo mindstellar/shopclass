@@ -46,6 +46,7 @@ function appearanceThumbHue($slug)
 }
 
 osc_current_admin_theme_path('parts/market.php');
+osc_current_admin_theme_path('parts/package-ui.php');
 
 $aMarketBrowse  = __get('aMarketBrowse');
 $aMarketUpdates = __get('aMarketUpdates');
@@ -91,108 +92,98 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <div id="market-tab-installed">
     <!-- themes list -->
     <div class="appearance">
-        <div id="tabs">
-            <div id="available-themes">
-                <?php osc_admin_page_head(__('Current theme')); ?>
-                <div class="current-theme">
-                    <div class="card mb-3 col-sm-12 col-md-8 col-lg-6">
-                        <div class="row no-gutters">
-                            <div class="col">
-                                <?php $currentHasScreenshot = osc_theme_has_screenshot(); ?>
-                                <div class="osc-thumb<?php echo $currentHasScreenshot ? '' : ' osc-thumb--fallback'; ?>"
-                                     <?php if (!$currentHasScreenshot) : ?>style="--osc-thumb-hue: <?php echo appearanceThumbHue(osc_theme()); ?>"<?php endif; ?>>
-                                    <img src="<?php echo osc_esc_html(osc_theme_screenshot_url()); ?>"
-                                         class="card-img" alt="<?php echo osc_esc_html(sprintf(__('Screenshot of the %s theme'), $info['name'])); ?>"
-                                         width="400" height="300" loading="lazy">
-                                    <?php if (!$currentHasScreenshot) : ?>
-                                        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($info['name'], 0, 1))); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="card-body">
-                                    <h5 class="card-title"><?php echo $info['name']; ?></h5>
-                                    <p><?php _e('Description') ?> : <?php echo $info['description']; ?></p>
-                                    <p><?php _e('Version') ?> : <?php echo $info['version']; ?></p>
-                                    <p><?php _e('Author') ?> : <a href="<?php echo $info['author_url']; ?>"
-                                                                  target="_blank"><?php echo $info['author_name']; ?></a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <?php osc_admin_page_head(__('Available themes'), array(), array('class' => 'separate-top')); ?>
-                <div class="available-theme row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4">
-                    <?php
-                    $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
-$bThemesToUpdate = is_array($aThemesToUpdate);
-$csrf_token      = osc_csrf_token_url();
-$hasOtherThemes  = false;
-foreach ($themes as $theme) {
-    if ($theme === osc_theme()) {
-        continue;
-    }
-    $hasOtherThemes = true;
-    $info = WebThemes::newInstance()->loadThemeInfo($theme);
-    ?>
-                        <div class="col">
-                            <div class="card">
-                                <?php $hasScreenshot = osc_theme_has_screenshot($theme); ?>
-                                <div class="osc-thumb<?php echo $hasScreenshot ? '' : ' osc-thumb--fallback'; ?>"
-                                     <?php if (!$hasScreenshot) : ?>style="--osc-thumb-hue: <?php echo appearanceThumbHue($theme); ?>"<?php endif; ?>>
-                                    <img class="card-img-top"
-                                         src="<?php echo osc_esc_html(osc_theme_screenshot_url($theme)); ?>"
-                                         title="<?php echo osc_esc_html($info['name']); ?>"
-                                         alt="<?php echo osc_esc_html(sprintf(__('Screenshot of the %s theme'), $info['name'])); ?>"
-                                         width="400" height="300" loading="lazy"/>
-                                    <?php if (!$hasScreenshot) : ?>
-                                        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($info['name'], 0, 1))); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="card-body">
-                                    <div class="theme-stage">
-                                        <div class="">
-                                            <a href="<?php echo osc_admin_base_url(true);
-    ?>?page=appearance&amp;action=activate&amp;theme=<?php
-    echo $theme; ?>&amp;<?php echo $csrf_token;
-    ?>" class="btn btn-mini btn-primary"><?php _e('Activate'); ?></a>
-                                            <a target="_blank"
-                                               href="<?php echo osc_base_url(true); ?>?theme=<?php echo $theme; ?>"
-                                               class="btn btn-mini btn-dim"><?php _e('Preview'); ?></a>
-                                            <a onclick="return delete_dialog('<?php echo $theme; ?>');"
-                                               href="<?php echo osc_admin_base_url(true);
-    ?>?page=appearance&amp;action=delete&amp;webtheme=<?php
-                                               echo $theme; ?>&amp;<?php echo $csrf_token; ?>"
-                                               class="btn btn-sm btn-dim delete"><?php _e('Delete'); ?></a>
-                                            <?php
-                                            if ($bThemesToUpdate && in_array($theme, $aThemesToUpdate)) { ?>
-                                                <a href='#<?php echo htmlentities(@$info['theme_update_uri']); ?>'
-                                                   class="btn btn-mini btn-primary market-popup"><?php _e('Update'); ?></a>
-                                            <?php } ?>
-                                        </div>
-                                        <h4>
-                                            <?php echo ucfirst($info['name']); ?>
-                                        </h4>
-                                        <div class="theme-info">
-                                            <div><?php echo __('Version') ?>: <?php echo $info['version']; ?></div>
-                                            <div><?php echo __('Author') ?>: <a target="_blank"
-                                                                                href="<?php echo $info['author_url']; ?>"><?php echo $info['author_name']; ?></a>
-                                            </div>
-                                            <div><?php echo __('Description') ?>: <?php echo $info['description']; ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php } ?>
-                    <?php if (!$hasOtherThemes) { ?>
-                        <div class="col-12">
-                            <p class="text-muted mb-0"><?php _e('No other themes are installed. Upload a theme to change your site\'s look.'); ?></p>
-                        </div>
-                    <?php } ?>
-                </div>
-            </div>
-        </div>
+        <?php
+        $csrf_token      = osc_csrf_token_url();
+        $aThemesToUpdate = json_decode(osc_get_preference('themes_to_update'), true);
+        $bThemesToUpdate = is_array($aThemesToUpdate);
+        $themeMeta       = static function ($info) {
+            $meta = array(sprintf(__('Version %s'), osc_esc_html($info['version'])));
+            $meta[] = !empty($info['author_url'])
+                ? sprintf(__('by %s'), '<a target="_blank" rel="noopener" href="'
+                    . osc_esc_html(osc_sanitize_url($info['author_url'])) . '">'
+                    . osc_esc_html($info['author_name']) . '</a>')
+                : sprintf(__('by %s'), osc_esc_html($info['author_name']));
+
+            return $meta;
+        };
+        ?>
+        <?php osc_admin_page_head(__('Current theme')); ?>
+        <?php osc_package_list_open('osc-pkg-list--themes'); ?>
+        <?php osc_package_row(array(
+            'art'         => array('src' => osc_theme_screenshot_url(), 'has' => osc_theme_has_screenshot()),
+            'slug'        => osc_theme(),
+            'name'        => ucfirst($info['name']),
+            'state'       => 'live',
+            'size'        => 'wide',
+            'class'       => 'current-theme',
+            'meta'        => $themeMeta($info),
+            'description' => $info['description'],
+            'actions'     => array(
+                'links' => array(
+                    '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true)) . '">'
+                        . osc_esc_html(__('View site')) . '</a>',
+                ),
+            ),
+        )); ?>
+        <?php osc_package_list_close(); ?>
+
+        <?php osc_admin_page_head(__('Other themes'), array(), array('class' => 'separate-top')); ?>
+        <?php
+        $otherThemes = array_filter($themes, static function ($theme) {
+            return $theme !== osc_theme();
+        });
+        ?>
+        <?php if ($otherThemes) : ?>
+            <?php osc_package_list_open('osc-pkg-list--themes'); ?>
+            <?php foreach ($otherThemes as $theme) :
+                $tInfo  = WebThemes::newInstance()->loadThemeInfo($theme);
+                $tName  = ucfirst($tInfo['name']);
+                $update = $bThemesToUpdate && in_array($theme, $aThemesToUpdate, true);
+                osc_package_row(array(
+                    'art'         => array(
+                        'src' => osc_theme_screenshot_url($theme),
+                        'has' => osc_theme_has_screenshot($theme),
+                    ),
+                    'slug'        => $theme,
+                    'name'        => $tName,
+                    'state'       => 'disabled',
+                    'state_word'  => __('Installed'),
+                    'meta'        => $themeMeta($tInfo),
+                    'description' => $tInfo['description'],
+                    'note'        => $update
+                        ? osc_esc_html(__('An update is ready for this theme. Open the Updates tab to apply it.'))
+                        : '',
+                    'note_variant' => 'update',
+                    'actions'     => array(
+                        'primary' => array(
+                            'label' => __('Activate'),
+                            'url'   => osc_admin_base_url(true) . '?page=appearance&amp;action=activate&amp;theme='
+                                . urlencode($theme) . '&amp;' . $csrf_token,
+                        ),
+                        'links'   => array(
+                            '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true))
+                                . '?theme=' . urlencode($theme) . '">' . osc_esc_html(__('Preview')) . '</a>',
+                        ),
+                        'danger'  => array(
+                            '<a href="#" onclick="return delete_dialog(\'' . osc_esc_js($theme) . '\');">'
+                                . osc_esc_html(__('Delete')) . '</a>',
+                        ),
+                    ),
+                ));
+            endforeach; ?>
+            <?php osc_package_list_close(); ?>
+        <?php else : ?>
+            <?php osc_admin_empty(array(
+                'icon'  => 'bi-palette',
+                'title' => __('No other themes installed'),
+                'text'  => __('Find one in Browse, or upload a theme package.'),
+                'action' => array(
+                    'label'   => __('Add theme'),
+                    'url'     => osc_admin_base_url(true) . '?page=appearance&amp;action=add',
+                    'variant' => 'primary',
+                ),
+            )); ?>
+        <?php endif; ?>
     </div>
     <!-- /themes list -->
         </div>
@@ -210,7 +201,7 @@ foreach ($themes as $theme) {
 </div>
 <?php osc_admin_confirm_dialog(array(
     'id'         => 'deleteModal',
-    'method'     => 'get',
+    'method'     => 'post',
     'fields'     => array('page' => 'appearance', 'action' => 'delete', 'webtheme' => ''),
     'title'      => __('Delete theme'),
     'text'       => __("This permanently deletes the theme's files from the server, along with any customizations made to it."),

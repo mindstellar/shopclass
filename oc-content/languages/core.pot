@@ -1061,6 +1061,10 @@ msgstr ""
 msgid "An update is ready for this plugin. Open the Updates tab to apply it."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
+msgid "An update is ready for this theme. Open the Updates tab to apply it."
+msgstr ""
+
 #: oc-admin/themes/modern/items/settings.php
 msgid "An user has to wait"
 msgstr ""
@@ -1284,7 +1288,6 @@ msgstr ""
 msgid "August"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/stats/comments.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
@@ -1329,10 +1332,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/group_iframe.php
 msgid "Available as a block (place this form on pages and layouts)"
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/index.php
-msgid "Available themes"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -3025,7 +3024,6 @@ msgid ""
 "the form and its category assignment. Continue?"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
@@ -3812,6 +3810,10 @@ msgstr ""
 msgid "Find"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
+msgid "Find one in Browse, or upload a theme package."
+msgstr ""
+
 #: oc-includes/osclass/classes/Pagination.php
 msgid "First page"
 msgstr ""
@@ -4556,6 +4558,7 @@ msgstr ""
 msgid "Installation progress"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -6188,7 +6191,7 @@ msgid "No orders yet"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
-msgid "No other themes are installed. Upload a theme to change your site's look."
+msgid "No other themes installed"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -6688,6 +6691,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
 msgid "Other comment settings"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "Other themes"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -7718,10 +7725,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Scheduled tasks (cron)"
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/index.php
-msgid "Screenshot of the %s theme"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -9681,7 +9684,6 @@ msgstr ""
 msgid "Up to date"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/plugins/configuration.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -10138,11 +10140,11 @@ msgstr ""
 msgid "Vehicles"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/parts/market.php
 msgid "Version"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "Version %s"
 msgstr ""
@@ -10201,6 +10203,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "View page on site"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "View site"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php
@@ -10660,6 +10666,7 @@ msgstr ""
 msgid "becomes"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "by %s"

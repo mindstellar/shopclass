@@ -14432,6 +14432,19 @@ div.widget-box-content-no-wrapp li a {
   font-weight: 500;
 }
 
+.status-live .osc-status, .status-live.osc-status {
+  background-color: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+}
+.status-live .osc-status::before, .status-live.osc-status::before {
+  content: "\f1d6";
+}
+.status-live > .col-status:not(:has(.osc-status)) {
+  --bs-table-bg-state: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+  font-weight: 500;
+}
+
 .status-untested .osc-status, .status-untested.osc-status {
   background-color: var(--osc-warning-tint);
   color: var(--osc-warning-deep);
