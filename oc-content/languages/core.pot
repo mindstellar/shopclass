@@ -1891,6 +1891,14 @@ msgstr ""
 msgid "Check now"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/market.php
+msgid "Check now to fetch the list of plugins you can install."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Check now to fetch the list of themes you can install."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "Check release notes"
 msgstr ""
@@ -3598,15 +3606,23 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
-msgid "Every installed plugin is up to date."
+msgid "Every installed plugin is up to date"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
-msgid "Every installed theme is up to date."
+msgid "Every installed theme is up to date"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 msgid "Every payment taken on this site, whichever payment plugin handled it. "
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Every published plugin is already installed"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Every published theme is already installed"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -5979,6 +5995,12 @@ msgstr ""
 msgid "New listings/users"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/market.php
+msgid ""
+"New packages show up here as they are published. You can also upload one "
+"yourself."
+msgstr ""
+
 #: oc-admin/gui/forgot_password.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
@@ -6217,10 +6239,6 @@ msgid ""
 "speed-up on a busy site."
 msgstr ""
 
-#: oc-admin/themes/modern/parts/market.php
-msgid "No plugins are available right now."
-msgstr ""
-
 #: oc-admin/themes/modern/plugins/index.php
 msgid "No plugins installed"
 msgstr ""
@@ -6256,10 +6274,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "No submissions in this view yet"
-msgstr ""
-
-#: oc-admin/themes/modern/parts/market.php
-msgid "No themes are available right now."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -6400,6 +6414,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "Nothing needed changing."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Nothing to browse yet"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -8181,6 +8199,10 @@ msgstr ""
 msgid ""
 "Shopclass cannot write to %s, so no photo or file upload can be saved. Fix "
 "the folder permissions so the web server user can write to it."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Shopclass checks once a day. Check now if you are expecting something."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php

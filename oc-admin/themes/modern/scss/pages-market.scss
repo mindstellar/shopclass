@@ -310,6 +310,15 @@
 // ---- Detail dialog -----------------------------------------------------------
 .market-detail-dialog {
   padding: 0;
+
+  // The action the owner opened this for is at the end of a long read — the description,
+  // the screenshots, the version table. It rides with them instead.
+  .osc-dialog-actions {
+    background-color: var(--osc-bench);
+    border-block-start: 1px solid var(--osc-rule);
+    inset-block-end: 0;
+    position: sticky;
+  }
 }
 
 .market-detail-body {
@@ -514,6 +523,7 @@
   border-block-start: 1px solid var(--osc-rule);
   color: var(--osc-ink);
   line-height: 1.6;
+  max-inline-size: 78ch;  // prose measure; the table and screenshots below keep the full width
   padding: 1rem 1.35rem;
 
   &:empty {

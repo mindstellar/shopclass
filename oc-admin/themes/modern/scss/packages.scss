@@ -7,33 +7,41 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-// The package row shared by the Plugins and Appearance screens (parts/package-ui.php).
-// A list, not a card grid: these screens are read down a column, and the admin's other
-// lists already read that way. Art, identity, state and actions each own one band of the
-// row, so a plugin and a theme scan identically.
+// The package tile shared by the Plugins and Appearance screens (parts/package-ui.php).
+// A grid, not full-width rows: a row leaves its action button an arm's length from the
+// name it belongs to.
 
 .osc-pkg-list {
-  border-block-start: 1px solid var(--osc-rule);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
   list-style: none;
-  margin: 0;
+  margin: 0 0 1rem;
   padding: 0;
 }
 
 .osc-pkg {
-  align-items: flex-start;
-  border-block-end: 1px solid var(--osc-rule);
-  display: flex;
-  gap: 1rem;
-  padding: 1rem .25rem;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  column-gap: 1rem;
+  display: grid;
+  // Content row stretches so the action strip lands on the same line in every tile.
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  padding: 1rem;
+  row-gap: .75rem;
 
   &:hover {
-    background-color: var(--osc-bench-warm);
+    border-color: var(--osc-rule-strong);
   }
 }
 
 .osc-pkg-art {
   flex: 0 0 auto;
-  inline-size: 4.5rem;
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 4rem;
 
   .osc-thumb {
     aspect-ratio: 4 / 3;
@@ -42,15 +50,21 @@
   }
 }
 
-// The live theme leads its list, so its screenshot is read as art rather than as an icon.
-.osc-pkg-art--wide {
-  inline-size: 16rem;
-  max-inline-size: 40%;
+.osc-pkg-main {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
 }
 
-.osc-pkg-main {
-  flex: 1 1 auto;
-  min-inline-size: 0;
+// The live theme leads its screen: it spans the grid and shows its screenshot at a size
+// worth looking at, instead of being one tile among equals.
+.osc-pkg--wide {
+  grid-column: 1 / -1;
+
+  .osc-pkg-art {
+    inline-size: 18rem;
+    max-inline-size: 45%;
+  }
 }
 
 .osc-pkg-head {
@@ -84,8 +98,8 @@
   padding: 0 .1rem;
 }
 
-// Two lines is what a list needs: the whole description is one click away in the detail
-// sheet, and a row that runs to five lines stops being scannable.
+// Two lines is what a tile needs: the whole description is one click away in the detail
+// sheet, and a tile that runs to five lines stops being scannable.
 .osc-pkg-desc {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -104,7 +118,7 @@
   }
 
   // An update waiting is the one note that should pull the eye, so it takes the brand ink
-  // rather than a second tinted block inside a row that already carries a badge.
+  // rather than a second tinted block inside a tile that already carries a badge.
   &.osc-pkg-note--update {
     color: var(--osc-bronze);
     font-weight: 500;
@@ -112,12 +126,14 @@
 }
 
 .osc-pkg-actions {
-  align-items: flex-end;
+  align-items: center;
+  border-block-start: 1px solid var(--osc-rule);
+  column-gap: 1rem;
   display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: .4rem;
-  text-align: end;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  padding-block-start: .75rem;
+  row-gap: .5rem;
 }
 
 .osc-pkg-links,
@@ -126,7 +142,6 @@
   flex-wrap: wrap;
   font-size: .8125rem;
   gap: .15rem .75rem;
-  justify-content: flex-end;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -144,12 +159,10 @@
   }
 }
 
-// Removing a plugin or a theme is not one of the routine actions beside it: a rule and a
-// gap hold it apart, and it is the only thing in the row that goes red.
+// Removing a plugin or a theme is not one of the routine actions beside it: it sits at the
+// far end of the strip, and it is the only thing in the tile that goes red.
 .osc-pkg-danger {
-  border-block-start: 1px solid var(--osc-rule);
-  margin-block-start: .15rem;
-  padding-block-start: .4rem;
+  margin-inline-start: auto;
 
   a {
     &:hover,
@@ -159,36 +172,20 @@
   }
 }
 
-@include media-breakpoint-down(md) {
-  .osc-pkg {
-    flex-wrap: wrap;
+@include media-breakpoint-down(sm) {
+  .osc-pkg-list {
+    grid-template-columns: 1fr;
   }
 
-  .osc-pkg-art--wide {
+  .osc-pkg--wide .osc-pkg-art {
     inline-size: 100%;
     max-inline-size: none;
   }
 
-  .osc-pkg-main {
-    flex-basis: 60%;
-  }
-
-  .osc-pkg-actions {
-    align-items: flex-start;
+  // On a phone the strip stacks, and a destructive link pushed to the end of a wrapped
+  // row would land under the primary button; it keeps its own line instead.
+  .osc-pkg-danger {
     flex-basis: 100%;
-    text-align: start;
-  }
-
-  .osc-pkg-links,
-  .osc-pkg-danger {
-    justify-content: flex-start;
-  }
-
-  .osc-pkg-danger {
-    border-block-start: 0;
-    border-inline-start: 1px solid var(--osc-rule);
-    margin-block-start: 0;
-    padding-block-start: 0;
-    padding-inline-start: .75rem;
+    margin-inline-start: 0;
   }
 }

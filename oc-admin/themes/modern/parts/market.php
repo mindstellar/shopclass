@@ -93,6 +93,23 @@ function osc_market_installed_art($type, $slug)
     $has = $type === 'theme' ? osc_theme_has_screenshot($slug) : osc_plugin_has_icon($slug);
     $src = $type === 'theme' ? osc_theme_screenshot_url($slug) : osc_plugin_icon_url($slug);
 
+    // A package that ships no art on disk may still have some in the catalog it came
+    // from; the tinted initial is the last resort, not the second choice. Cache only,
+    // so a list render never reaches the network.
+    if (!$has) {
+        try {
+            $catalog = $type === 'theme'
+                ? \mindstellar\market\Catalog::forThemes()
+                : \mindstellar\market\Catalog::forPlugins();
+            $row = $catalog->index()[$slug] ?? null;
+            if (is_array($row) && !empty($row['icon'])) {
+                return array('src' => $row['icon'], 'has' => true);
+            }
+        } catch (\Throwable $e) {
+            // No catalog, no art: the initial still stands in.
+        }
+    }
+
     return array('src' => $src, 'has' => $has);
 }
 
@@ -394,11 +411,23 @@ function osc_market_render_browse($rows, $meta, $type)
         </button>
     </div>
     <?php if (empty($rows)) : ?>
-        <p class="market-empty">
-            <?php echo osc_esc_html(!empty($meta['catalog_available'])
-                ? ($type === 'theme' ? __('No themes are available right now.') : __('No plugins are available right now.'))
-                : ''); ?>
-        </p>
+        <?php if (!empty($meta['catalog_available'])) : ?>
+            <?php osc_admin_empty(array(
+                'icon'  => $type === 'theme' ? 'bi-palette' : 'bi-plug',
+                'title' => $type === 'theme'
+                    ? __('Every published theme is already installed')
+                    : __('Every published plugin is already installed'),
+                'text'  => __('New packages show up here as they are published. You can also upload one yourself.'),
+            )); ?>
+        <?php else : ?>
+            <?php osc_admin_empty(array(
+                'icon'  => 'bi-cloud-arrow-down',
+                'title' => __('Nothing to browse yet'),
+                'text'  => $type === 'theme'
+                    ? __('Check now to fetch the list of themes you can install.')
+                    : __('Check now to fetch the list of plugins you can install.'),
+            )); ?>
+        <?php endif; ?>
     <?php else : ?>
         <div class="market-grid row row-cols-1 row-cols-lg-2 row-cols-xxl-3">
             <?php foreach ($rows as $row) :
@@ -472,9 +501,13 @@ function osc_market_render_updates($rows, $meta, $type)
         </button>
     </div>
     <?php if (empty($rows)) : ?>
-        <p class="market-empty">
-            <?php echo osc_esc_html($type === 'theme' ? __('Every installed theme is up to date.') : __('Every installed plugin is up to date.')); ?>
-        </p>
+        <?php osc_admin_empty(array(
+            'icon'  => 'bi-check-circle',
+            'title' => $type === 'theme'
+                ? __('Every installed theme is up to date')
+                : __('Every installed plugin is up to date'),
+            'text'  => __('Shopclass checks once a day. Check now if you are expecting something.'),
+        )); ?>
     <?php else : ?>
         <ul class="market-updates-list">
             <?php foreach ($rows as $row) :
