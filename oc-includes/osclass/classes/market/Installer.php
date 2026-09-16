@@ -40,11 +40,14 @@ final class Installer
 
     private string $backupsPath;
 
+    private bool $isTheme;
+
     /**
      * @param bool $isTheme install into THEMES_PATH rather than PLUGINS_PATH
      */
     private function __construct(bool $isTheme)
     {
+        $this->isTheme       = $isTheme;
         $this->basePath      = $isTheme ? THEMES_PATH : PLUGINS_PATH;
         $this->downloadsPath = CONTENT_PATH . 'downloads/';
         $this->backupsPath   = $this->downloadsPath . 'backups/';
@@ -122,6 +125,7 @@ final class Installer
         }
 
         $header = $this->parseHeader($targetDir . '/index.php');
+        $this->refreshUpdateCount();
 
         return $this->result(
             true,
@@ -379,6 +383,8 @@ final class Installer
                 throw new RuntimeException(__('The package swap did not produce a valid package directory.'));
             }
 
+            $this->refreshUpdateCount();
+
             return $this->result(true, __('Package installed.'), $slug, $newVersion, false);
         } catch (Throwable $e) {
             $rolledBack = false;
@@ -533,6 +539,26 @@ final class Installer
         }
 
         return $info;
+    }
+
+    /**
+     * Re-count pending updates after the package tree changed. The admin toolbar badge reads
+     * that cached count, so without this it keeps announcing an update already applied.
+     *
+     * @return void
+     */
+    private function refreshUpdateCount(): void
+    {
+        $recount = $this->isTheme ? '_osc_check_themes_update' : '_osc_check_plugins_update';
+        if (function_exists($recount)) {
+            try {
+                // The header cache still holds the version this request read before the swap.
+                \Plugins::$plugins_infos = [];
+                $recount();
+            } catch (Throwable $e) {
+                // A stale badge must never fail an install that already succeeded.
+            }
+        }
     }
 
     /**

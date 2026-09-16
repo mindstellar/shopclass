@@ -149,6 +149,7 @@ such as a theme logo.
 ### Fixed
 
 - Uninstalling or deleting a plugin failed with "Probable invalid request".
+- The admin "update available" badge stayed after a plugin, theme or core update.
 - A plugin left active but not installed after a failed install can be installed again.
 - The username check and change-username form no longer strip dots that registration keeps.
 - The username blacklist catches dotted and underscored look-alikes such as `ad.min`.

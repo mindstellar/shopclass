@@ -129,6 +129,26 @@ foreach ($views as $file) {
     }
 }
 
+harness_section('a finished update stops being announced');
+
+// Source pins: both paths need a booted admin, so what is checked here is that the calls
+// that clear the badge are still in place.
+$installer = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/market/Installer.php');
+pin('the installer re-counts after every success', 3, substr_count($installer, 'refreshUpdateCount()'));
+check(
+    'the re-count drops the plugin header cache first',
+    (bool) preg_match('/Plugins::\$plugins_infos = \[\];\s*\$recount\(\)/', $installer)
+);
+
+$functions = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php');
+check(
+    'the core badge is dropped once the running version caught up',
+    (bool) preg_match(
+        "/version_compare\(\\\$update_json->s_new_version, OSCLASS_VERSION, 'le'\)/",
+        $functions
+    )
+);
+
 array_map('unlink', glob($base . '*/index.php'));
 array_map('rmdir', glob($base . '*'));
 @rmdir($base);

@@ -686,6 +686,17 @@ function osc_admin_toolbar_update_core($force = false)
         }
         if (getPreference('update_core_available')) {
             $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
+            // The core can also be replaced outside the admin (a new container image, a manual
+            // deploy), which leaves this announcing a version already running.
+            if (!isset($update_json->s_new_version)
+                || version_compare($update_json->s_new_version, OSCLASS_VERSION, 'le')
+            ) {
+                osc_set_preference('update_core_available');
+                osc_set_preference('update_core_json');
+                osc_reset_preferences();
+
+                return;
+            }
             $label       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
             $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>';
