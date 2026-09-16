@@ -486,12 +486,14 @@ function osc_market_render_updates($rows, $meta, $type)
                         <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
                     </button>
                     <div class="market-update-body">
-                        <?php osc_market_render_compat_badge($row['compat']); ?>
-                        <h3 class="market-update-title">
-                            <button type="button" class="market-card-title-btn" data-market-open-detail>
-                                <?php echo osc_esc_html($row['name']); ?>
-                            </button>
-                        </h3>
+                        <div class="market-update-head">
+                            <h3 class="market-update-title">
+                                <button type="button" class="market-card-title-btn" data-market-open-detail>
+                                    <?php echo osc_esc_html($row['name']); ?>
+                                </button>
+                            </h3>
+                            <?php osc_market_render_compat_badge($row['compat']); ?>
+                        </div>
                         <p class="market-update-versions">
                             <?php echo osc_esc_html(sprintf(
                                 __('%1$s → %2$s'),

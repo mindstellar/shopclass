@@ -20009,21 +20009,26 @@ form h3, form .h3 {
 }
 
 .market-update-item {
-  align-items: center;
+  align-items: flex-start;
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
   gap: 1rem;
-  padding: 0.85rem 0;
+  padding: 1rem 0.25rem;
 }
-.market-update-item:last-child {
-  border-block-end: 0;
+.market-update-item:hover {
+  background-color: var(--osc-bench-warm);
 }
 .market-update-item .market-update-item-thumb,
 .market-update-item .osc-thumb {
-  block-size: 3.5rem;
+  aspect-ratio: 4/3;
+  background-color: var(--osc-bench-sunk);
   border-radius: 4px;
   flex: 0 0 auto;
-  inline-size: 3.5rem;
+  inline-size: 4.5rem;
+}
+
+.market-updates-list {
+  border-block-start: 1px solid var(--osc-rule);
 }
 
 .market-update-thumb-btn {
@@ -20036,8 +20041,18 @@ form h3, form .h3 {
   min-inline-size: 0;
 }
 
+.market-update-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.market-update-head .market-card-status {
+  order: 0;
+}
+
 .market-update-title {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   margin: 0;
 }
 

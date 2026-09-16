@@ -233,24 +233,31 @@
   padding: 0;
 }
 
+// Same geometry as the installed row (packages.scss): a pending update is the same object
+// in a different state, so it is read the same way.
 .market-update-item {
-  align-items: center;
+  align-items: flex-start;
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
   gap: 1rem;
-  padding: .85rem 0;
+  padding: 1rem .25rem;
 
-  &:last-child {
-    border-block-end: 0;
+  &:hover {
+    background-color: var(--osc-bench-warm);
   }
 
   .market-update-item-thumb,
   .osc-thumb {
-    block-size: 3.5rem;
-    border-radius: $border-radius-sm;
+    aspect-ratio: 4 / 3;
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
     flex: 0 0 auto;
-    inline-size: 3.5rem;
+    inline-size: 4.5rem;
   }
+}
+
+.market-updates-list {
+  border-block-start: 1px solid var(--osc-rule);
 }
 
 // .market-card-thumb-btn is written for the Browse grid, where it fills a card's full
@@ -266,8 +273,22 @@
   min-inline-size: 0;
 }
 
+// Name first, verdict beside it — the same reading order as the installed row.
+.market-update-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+
+  // .market-card-status carries order:-1 for the browse card, where the verdict leads;
+  // in a row the name leads, so the badge takes its place in source order.
+  .market-card-status {
+    order: 0;
+  }
+}
+
 .market-update-title {
-  font-size: 1rem;
+  font-size: 1.0625rem; // Title, as the installed row
   margin: 0;
 }
 
