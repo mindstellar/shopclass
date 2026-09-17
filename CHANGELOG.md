@@ -160,6 +160,8 @@ version rather than leaving you to compare numbers.
 
 - The "Delete my account" button showed a theme's ordinary button styling instead of a
   destructive one, because core's stylesheet sits in a cascade layer.
+- The "Add category" button pointed at nothing: the header was registered before the URL it uses
+  was built. Reported by @tonybyng (#534).
 - Every admin confirm dialog failed with "Probable invalid request": deleting a listing, a user,
   an alert, a ban rule, an admin, a language, a comment, a page, a widget, a blocked keyword, a
   currency, a media file, a plugin or a theme. They post now.

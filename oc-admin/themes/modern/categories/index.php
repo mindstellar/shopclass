@@ -19,8 +19,11 @@ osc_enqueue_script('admin-categories');
 
 $categories = __get('categories');
 
-// Same URL the empty state offers; built here because the header registration runs
-// before the page body.
+// Same URL the empty state offers, and built before the registration below rather than
+// beside the body it is also used in: the header renders first, and an undefined variable
+// left its button pointing at "#".
+$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
+
 osc_admin_page(array(
     'section' => __('Listings'),
     'title'   => __('Categories'),
@@ -135,8 +138,6 @@ function drawCategory($category)
     </li>
     <?php
 } //End drawCategory
-
-$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Categories')); ?>
