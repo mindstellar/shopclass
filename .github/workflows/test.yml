@@ -396,6 +396,9 @@ jobs:
       # the only channel that carries it.
       - name: Market compatibility badge
         run: php tests/market-compat-badge.php
+      # A search that forgets what was typed into half its boxes looks like a broken filter.
+      - name: Custom field range values
+        run: php tests/custom-field-range-values.php
       # A field dropped from the export map does not error -- the download simply omits a
       # category of personal data, which is only noticed by whoever asked for their copy.
       - name: Personal data map

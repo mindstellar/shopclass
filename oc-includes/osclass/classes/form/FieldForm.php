@@ -269,6 +269,33 @@ class FieldForm extends Form
     }
 
     /**
+     * The from/to pair a range field was searched with, read back off the request.
+     *
+     * Empty stays empty rather than becoming 0: a zero bound searches from the epoch and
+     * then rides along in every later search URL.
+     *
+     * @param int|string $fieldId The field's primary key
+     *
+     * @return array{from:string,to:string}
+     */
+    public static function rangeFromRequest($fieldId): array
+    {
+        $meta = Params::getParam('meta');
+        $pair = is_array($meta) && isset($meta[$fieldId]) && is_array($meta[$fieldId])
+            ? $meta[$fieldId]
+            : array();
+
+        $range = array('from' => '', 'to' => '');
+        foreach (array('from', 'to') as $end) {
+            if (isset($pair[$end]) && is_scalar($pair[$end])) {
+                $range[$end] = trim((string) $pair[$end]);
+            }
+        }
+
+        return $range;
+    }
+
+    /**
      * Echo one custom field's input, resolving its value from the session, the request or the row.
      *
      * @param array<string,mixed>|null $field
@@ -280,31 +307,29 @@ class FieldForm extends Form
     {
 
         if ($field !== null) {
-            if ($field['e_type'] === 'DATEINTERVAL' || ($field['e_type'] === 'NUMBER' && $search)) {
-                $field['s_value']         = array();
-                $field['s_value']['from'] = '';
-                $field['s_value']['to']   = '';
+            // A date interval, and a number on the search form, render two inputs and carry
+            // their value as a from/to pair. Both are resolved here: the generic fallback
+            // below cannot do it, because the blank pair it would have to replace is a
+            // non-empty array and reads as "already has a value".
+            $isRange = $field['e_type'] === 'DATEINTERVAL' || ($field['e_type'] === 'NUMBER' && $search);
+            if ($isRange) {
+                $field['s_value'] = array('from' => '', 'to' => '');
             }
 
-            // date interval
-            if ($field['e_type'] === 'DATEINTERVAL') {
-                if (!$search) {
-                    $aInterval = Field::newInstance()
-                                      ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
+            if ($field['e_type'] === 'DATEINTERVAL' && !$search) {
+                $aInterval = Field::newInstance()
+                                  ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
 
-                    if (is_array($aInterval) && !empty($aInterval)) {
-                        $temp['from']     = @$aInterval['from'];
-                        $temp['to']       = @$aInterval['to'];
-                        $field['s_value'] = $temp;
-                    }
-                } else {
-                    $_meta            = Params::getParam('meta');
-                    $temp['from']     = @(int)$_meta[$field['pk_i_id']]['from'];
-                    $temp['to']       = @(int)$_meta[$field['pk_i_id']]['to'];
-                    $field['s_value'] = $temp;
+                if (is_array($aInterval) && $aInterval !== array()) {
+                    $field['s_value'] = array(
+                        'from' => isset($aInterval['from']) ? (string) $aInterval['from'] : '',
+                        'to'   => isset($aInterval['to']) ? (string) $aInterval['to'] : '',
+                    );
                 }
+            } elseif ($isRange) {
+                $field['s_value'] = self::rangeFromRequest($field['pk_i_id']);
             }
-            // end date interval
+
             if (Session::newInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
                 $field['s_value'] = Session::newInstance()->_getForm('meta_' . $field['pk_i_id']);
             } elseif (!isset($field['s_value']) || !$field['s_value']) {

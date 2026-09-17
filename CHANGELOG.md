@@ -160,6 +160,8 @@ version rather than leaving you to compare numbers.
 
 - The "Delete my account" button showed a theme's ordinary button styling instead of a
   destructive one, because core's stylesheet sits in a cascade layer.
+- A numeric custom field lost what was typed into it on the search results page, while every
+  other field kept it. Reported by @tonybyng (#535).
 - The "Add category" button pointed at nothing: the header was registered before the URL it uses
   was built. Reported by @tonybyng (#534).
 - Every admin confirm dialog failed with "Probable invalid request": deleting a listing, a user,
