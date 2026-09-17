@@ -154,6 +154,8 @@ such as a theme logo.
 
 ### Fixed
 
+- The "Delete my account" button showed a theme's ordinary button styling instead of a
+  destructive one, because core's stylesheet sits in a cascade layer.
 - Every admin confirm dialog failed with "Probable invalid request": deleting a listing, a user,
   an alert, a ban rule, an admin, a language, a comment, a page, a widget, a blocked keyword, a
   currency, a media file, a plugin or a theme. They post now.

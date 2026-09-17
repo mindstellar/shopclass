@@ -53,7 +53,7 @@ if (!defined('ABS_PATH')) {
     --oe-bench-warm:#f7f9fb; --oe-bench:#fff; --oe-bench-sunk:#eef1f5;
     --oe-rule:#dde3ea; --oe-ink:#14181f; --oe-ink-muted:#5f6b7a;
     --oe-teal:#0b7269; --oe-teal-deep:#09625c;
-    --oe-danger:#c22826; --oe-warning:#7a6716; --oe-success:#1d7d3e;
+    --oe-danger:#c22826; --oe-danger-deep:#9b201e; --oe-warning:#7a6716; --oe-success:#1d7d3e;
     --oe-accent:<?php echo $accent; ?>; --oe-band:<?php echo $band; ?>;
   }
   /* Typography only on the standalone shell, where .oe-page is the <body> and
@@ -116,11 +116,17 @@ if (!defined('ABS_PATH')) {
     display:inline-block;text-decoration:none;border:1px solid var(--oe-teal);border-radius:4px;
     padding:9px 18px;font:inherit;font-size:.9375rem;font-weight:500;cursor:pointer;
     background:var(--oe-teal);color:#fff;
+    /* A theme that paints its own buttons with a gradient would otherwise show it through
+       this fill -- including on the delete-account button, which must read as destructive. */
+    background-image:none;text-shadow:none;box-shadow:none;
   }
   .oe-btn:hover,.oe-bill-btn:hover,.oe-lead a.button:hover,.oe-actions a.oe-primary:hover{
     background:var(--oe-teal-deep);
   }
-  .oe-btn-danger{background:var(--oe-danger);border-color:var(--oe-danger);}
+  .oe-btn-danger,.oe-btn.oe-btn-danger{
+    background:var(--oe-danger);background-image:none;border-color:var(--oe-danger);color:#fff;
+  }
+  .oe-btn-danger:hover,.oe-btn.oe-btn-danger:hover{background:var(--oe-danger-deep,#9b201e);}
   .oe-actions,.oe-bill-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
   .oe-actions a.oe-secondary,.oe-btn.oe-secondary{
     background:var(--oe-bench);color:var(--oe-ink);border-color:var(--oe-rule);
@@ -304,5 +310,18 @@ if (!defined('ABS_PATH')) {
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     font-size:.8125rem;line-height:1.5;color:var(--oe-ink-muted);
   }
+}
+
+/* Outside the layer on purpose. A theme's own `button` rules are un-layered, so they beat
+   anything in @layer whatever the specificity — which left the delete-account button
+   wearing the theme's ordinary grey. Colour is this button's warning, and bender's
+   `button{color:#5f5f5f !important}` is why the label needs the same weapon back. */
+.oe-btn-danger,.oe-btn.oe-btn-danger{
+  background:var(--oe-danger,#c22826);background-image:none;border:1px solid var(--oe-danger,#c22826);
+  border-radius:4px;padding:9px 18px;font:inherit;font-size:.9375rem;font-weight:500;
+  color:#fff!important;text-shadow:none;box-shadow:none;cursor:pointer;
+}
+.oe-btn-danger:hover,.oe-btn.oe-btn-danger:hover{
+  background:var(--oe-danger-deep,#9b201e);border-color:var(--oe-danger-deep,#9b201e);color:#fff;
 }
 </style>
