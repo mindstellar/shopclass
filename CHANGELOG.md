@@ -13,7 +13,9 @@ theme ships none, using a documented class vocabulary a theme restyles in CSS al
 admin, Listings → Locations is rebuilt to page, search and install countries on sites of any size.
 A bundled Test Payments gateway lets you try billing without moving money, and maintenance mode
 can show a banner instead of closing the site. Declared settings pages can now take an image,
-such as a theme logo.
+such as a theme logo. Plugins and Appearance now read as one screen: the same package tile,
+the same state badges, and a compatibility badge that says whether a package runs on your
+version rather than leaving you to compare numbers.
 
 ### Security
 
