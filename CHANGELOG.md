@@ -95,6 +95,8 @@ such as a theme logo.
 
 ### Changed
 
+- Every `UNIQUE KEY` in the schema is named. Databases upgraded from older versions carry up to
+  eight copies of the same unique index on `t_admin` and `t_user`; the upgrade drops them.
 - Plugins and Appearance share one look: installed packages are tiles with the artwork beside
   the name, a state badge, one primary action, and removal held apart from the routine ones.
 - A package with no artwork of its own borrows the catalogue's icon before falling back to its initial.

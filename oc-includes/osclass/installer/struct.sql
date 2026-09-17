@@ -33,7 +33,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_locale (
     b_enabled_bo TINYINT(1) NOT NULL DEFAULT 1,
 
         PRIMARY KEY (pk_c_code),
-        UNIQUE KEY (s_short_name)
+        UNIQUE KEY uk_locale_short_name (s_short_name)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_country (
@@ -53,7 +53,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_currency (
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
 
         PRIMARY KEY (pk_c_code),
-        UNIQUE KEY (s_name)
+        UNIQUE KEY uk_currency_name (s_name)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_region (
@@ -135,8 +135,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
     b_moderator TINYINT(1) NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
-        UNIQUE KEY (s_username),
-        UNIQUE KEY (s_email)
+        UNIQUE KEY uk_admin_username (s_username),
+        UNIQUE KEY uk_admin_email (s_email)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_user (
@@ -175,7 +175,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
     s_access_ip VARCHAR(50) NOT NULL DEFAULT '',
 
         PRIMARY KEY (pk_i_id),
-        UNIQUE KEY (s_email),
+        UNIQUE KEY uk_user_email (s_email),
         INDEX idx_s_name (s_name(6)),
         INDEX idx_s_username (s_username),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
@@ -433,7 +433,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_preference (
     s_value LONGTEXT NOT NULL,
     e_type ENUM('STRING', 'INTEGER', 'BOOLEAN') NOT NULL,
 
-        UNIQUE KEY (s_section, s_name)
+        UNIQUE KEY uk_preference_section_name (s_section, s_name)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_pages (
@@ -654,7 +654,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_migration (
     dt_applied DATETIME NOT NULL,
 
         PRIMARY KEY (pk_i_id),
-        UNIQUE KEY (s_migration)
+        UNIQUE KEY uk_migration_name (s_migration)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_keyword_block (
