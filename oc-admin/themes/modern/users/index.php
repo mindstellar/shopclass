@@ -250,7 +250,7 @@ osc_admin_pagination($aData);
     </dialog>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'users', 'action' => 'delete', 'id[]' => ''),
         'title'      => __('Delete user'),
         'text'       => __('This permanently deletes the account and every listing the user published.'),

@@ -208,7 +208,7 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
 </div>
 <?php osc_admin_confirm_dialog(array(
     'id'         => 'deleteModal',
-    'method'     => 'get',
+    'method'     => 'post',
     'fields'     => array('page' => 'appearance', 'action' => 'delete_widget', 'id' => ''),
     'title'      => __('Delete widget'),
     'text'       => __('This removes the widget from its section immediately and cannot be undone.'),

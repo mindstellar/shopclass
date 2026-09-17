@@ -380,7 +380,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 </div>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'media-delete-dialog',
-    'method'  => 'get',
+    'method'  => 'post',
     'fields'  => array('page' => 'media', 'action' => 'delete', 'src' => '', 'id' => '', 'type' => $mediaType),
     'title'   => __('Delete this file?'),
     'text'    => __('This file will be removed from the server. The listing, user or page it '

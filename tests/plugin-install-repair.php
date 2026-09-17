@@ -129,6 +129,30 @@ foreach ($views as $file) {
     }
 }
 
+harness_section('no admin confirm dialog submits with GET');
+
+// The same trap one level up: these dialogs are built by a helper, so the GET form scan
+// above never sees their markup. Every one of them carries an action that changes state.
+$dialogs = 0;
+foreach ($views as $file) {
+    if ($file->getExtension() !== 'php' || strpos($file->getPathname(), '/scss/') !== false) {
+        continue;
+    }
+    $src = (string) file_get_contents($file->getPathname());
+    preg_match_all('/osc_admin_confirm_dialog\(/', $src, $calls, PREG_OFFSET_CAPTURE);
+    foreach ($calls[0] as $call) {
+        $tail = substr($src, $call[1], 2000);
+        $end  = strpos($tail, '));');
+        $args = $end === false ? $tail : substr($tail, 0, $end);
+        $dialogs++;
+        check(
+            substr($file->getPathname(), strlen(ABS_PATH)) . ' dialog posts',
+            !preg_match("/'method'\s*=>\s*'get'/", $args)
+        );
+    }
+}
+check('the scan actually found dialogs to check', $dialogs > 5);
+
 harness_section('a finished update stops being announced');
 
 // Source pins: both paths need a booted admin, so what is checked here is that the calls

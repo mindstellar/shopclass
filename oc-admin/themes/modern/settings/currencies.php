@@ -106,7 +106,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'settings', 'action' => 'currencies', 'type' => 'delete', 'code' => ''),
         'title'      => __('Delete currency'),
         'text'       => __('Listings priced in this currency keep their stored amount but lose a way to display it consistently.'),

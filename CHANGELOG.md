@@ -18,6 +18,7 @@ such as a theme logo.
 ### Security
 
 - Deleting a user's alert in the admin had no CSRF check. It is a POST with a token now.
+- Importing a language from the translation repository had no CSRF check either.
 - `?page=route` ran any hook named in the request, so anyone could fire `cron_hourly`. It now
   runs only registered route hooks, after `init`.
 - **Deleting an account was a GET with the account id and secret in the URL.**
@@ -153,7 +154,9 @@ such as a theme logo.
 
 ### Fixed
 
-- Uninstalling or deleting a plugin failed with "Probable invalid request".
+- Every admin confirm dialog failed with "Probable invalid request": deleting a listing, a user,
+  an alert, a ban rule, an admin, a language, a comment, a page, a widget, a blocked keyword, a
+  currency, a media file, a plugin or a theme. They post now.
 - The admin "update available" badge stayed after a plugin, theme or core update.
 - Plugins and themes hosted in the registry showed a placeholder instead of their icon.
 - The language "Update" button did nothing when the server could not reach the translation repository; it says so now.

@@ -150,7 +150,7 @@ osc_admin_pagination($aData);
 ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'dialog-keyword-delete',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'settings', 'action' => 'keyword_block_delete', 'id[]' => ''),
         'title'      => __('Delete keyword'),
         'text'       => __('Listings already flagged by this keyword stay as they are; only future matching stops.'),

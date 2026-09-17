@@ -119,7 +119,7 @@ osc_admin_pagination($aData);
 ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'pages', 'action' => 'delete', 'id' => ''),
         'title'      => __('Delete page'),
         'text'       => __('This permanently removes the page and any link to it in the footer.'),

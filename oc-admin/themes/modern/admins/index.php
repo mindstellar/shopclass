@@ -90,7 +90,7 @@ osc_admin_pagination($aData);
 
 osc_admin_confirm_dialog(array(
     'id'      => 'deleteModal',
-    'method'  => 'get',
+    'method'  => 'post',
     'fields'  => array('page' => 'admins', 'action' => 'delete', 'id[]' => ''),
     'title'   => __('Delete admin'),
     'text'    => __('This removes the account from the admin panel. Their listings and the site itself are untouched.'),

@@ -116,7 +116,7 @@ osc_admin_pagination($aData);
 ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'dialog-ban-delete',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'users', 'action' => 'delete_ban_rule', 'id[]' => ''),
         'title'      => __('Delete rule'),
         'text'       => __('Users, listings and comments matching this rule will no longer be blocked.'),

@@ -101,7 +101,7 @@ osc_admin_pagination($aData);
 ?>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'deleteModal',
-    'method'  => 'get',
+    'method'  => 'post',
     'fields'  => array('page' => 'comments', 'action' => 'delete', 'id' => ''),
     'title'   => __('Delete comment'),
     'text'    => __('This permanently deletes the comment from the listing. This cannot be undone.'),

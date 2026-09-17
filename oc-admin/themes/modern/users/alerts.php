@@ -120,7 +120,7 @@ osc_admin_pagination($aData);
 ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'users', 'action' => 'delete_alerts', 'alert_id[]' => '', 'alert_user_id' => ''),
         'title'      => __('Delete alert'),
         'text'       => __('This removes the saved alert; the user will no longer be notified when a new listing matches it.'),

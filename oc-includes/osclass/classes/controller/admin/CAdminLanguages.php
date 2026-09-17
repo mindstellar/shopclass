@@ -100,6 +100,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;
             case ('import_locations'):
+                osc_csrf_check();
                 $languageToImport = Params::getParam('language');
                 if ($languageToImport != '') {
                     if (defined('DEMO')) {
@@ -545,6 +546,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {
                         $options[] = '<a class="strong" href="' . osc_admin_base_url(true)
                                      . '?page=languages&amp;action=import_locations&amp;language=' . $l['pk_c_code']
+                                     . '&amp;' . osc_csrf_token_url()
                                      . '">' . __('Update') . '</a>';
                     }
                     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='

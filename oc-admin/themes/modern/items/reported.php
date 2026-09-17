@@ -118,7 +118,7 @@ osc_admin_pagination($aData);
 ?>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'deleteModal',
-    'method'  => 'get',
+    'method'  => 'post',
     'fields'  => array('page' => 'items', 'action' => 'delete', 'id[]' => ''),
     'title'   => __('Delete listing'),
     'text'    => __('This permanently deletes the listing and its photos. This cannot be undone.'),
