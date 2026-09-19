@@ -55,43 +55,50 @@ function hooks_scan(): array
 {
     $found = array();
 
+    // Sorted, because a hook fired from more than one file reports the first one seen and
+    // the iterator's own order differs between filesystems.
+    $files = array();
     foreach (ROOTS as $dir) {
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ROOT . $dir));
         foreach ($it as $file) {
-            if ($file->getExtension() !== 'php') {
+            if ($file->getExtension() === 'php') {
+                $files[] = realpath($file->getPathname());
+            }
+        }
+    }
+    sort($files);
+
+    foreach ($files as $full) {
+        $path = str_replace(realpath(ROOT) . '/', '', $full);
+        $src  = file_get_contents($full);
+
+        // The trailing check rejects a name built by concatenation: only the literal
+        // prefix would be captured, and the real name cannot be documented anyway.
+        $re = '/(osc_run_hook|Plugins::runHook|osc_apply_filter|Plugins::applyFilter)'
+            . '\s*\(\s*([\'"])([a-zA-Z0-9_]+)\2\s*(?![.\s]*\.)/';
+        if (!preg_match_all($re, $src, $m, PREG_OFFSET_CAPTURE)) {
+            continue;
+        }
+
+        foreach ($m[3] as $i => $hit) {
+            $name = $hit[0];
+            if (isset($found[$name])) {
                 continue;
             }
-            $path = str_replace(realpath(ROOT) . '/', '', realpath($file->getPathname()));
-            $src  = file_get_contents($file->getPathname());
+            $fn    = $m[1][$i][0];
+            $start = $m[0][$i][1];
+            $open  = strpos($src, '(', $start);
+            $args  = hooks_call_args($src, $open);
 
-            // The trailing check rejects a name built by concatenation: only the literal
-            // prefix would be captured, and the real name cannot be documented anyway.
-            $re = '/(osc_run_hook|Plugins::runHook|osc_apply_filter|Plugins::applyFilter)'
-                . '\s*\(\s*([\'"])([a-zA-Z0-9_]+)\2\s*(?![.\s]*\.)/';
-            if (!preg_match_all($re, $src, $m, PREG_OFFSET_CAPTURE)) {
-                continue;
-            }
+            // Drop the hook name itself; what is left is what a callback receives.
+            $args = preg_replace('/^\s*([\'"])' . preg_quote($name, '/') . '\1\s*,?\s*/', '', $args);
+            $args = trim(preg_replace('/\s+/', ' ', $args));
 
-            foreach ($m[3] as $i => $hit) {
-                $name = $hit[0];
-                if (isset($found[$name])) {
-                    continue;
-                }
-                $fn    = $m[1][$i][0];
-                $start = $m[0][$i][1];
-                $open  = strpos($src, '(', $start);
-                $args  = hooks_call_args($src, $open);
-
-                // Drop the hook name itself; what is left is what a callback receives.
-                $args = preg_replace('/^\s*([\'"])' . preg_quote($name, '/') . '\1\s*,?\s*/', '', $args);
-                $args = trim(preg_replace('/\s+/', ' ', $args));
-
-                $found[$name] = array(
-                    'kind'  => (stripos($fn, 'filter') !== false) ? 'filter' : 'action',
-                    'args'  => $args,
-                    'where' => $path . ':' . (substr_count(substr($src, 0, $start), "\n") + 1),
-                );
-            }
+            $found[$name] = array(
+                'kind'  => (stripos($fn, 'filter') !== false) ? 'filter' : 'action',
+                'args'  => $args,
+                'where' => $path . ':' . (substr_count(substr($src, 0, $start), "\n") + 1),
+            );
         }
     }
 

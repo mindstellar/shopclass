@@ -173,7 +173,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `admin_title` | filter | `osc_page_title() . ' - Shopclass'` | `oc-admin/themes/modern/parts/header.php:23` |
 | `admin_user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php:141` |
 | `admin_users_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/UsersDataTable.php:106` |
-| `init_admin` | action | — | `oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php:47` |
+| `init_admin` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php:262` |
 | `init_admin_admins` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php:48` |
 | `init_admin_billing` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminBilling.php:48` |
 | `init_admin_categories` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminCategories.php:36` |
@@ -260,7 +260,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `email_comment_validated_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment) ), $words), $aComment` | `oc-includes/osclass/emails.php:456` |
 | `email_comment_validated_title` | filter | `$content['s_title'], $aComment` | `oc-includes/osclass/emails.php:452` |
 | `email_comment_validated_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment) ), $words), $aComment` | `oc-includes/osclass/emails.php:448` |
-| `email_description` | filter | `osc_apply_filter( 'email_alert_validation_description', $page_description[$prefLocale]['s_text'], $alert, $email, $secret )` | `oc-includes/osclass/emails.php:47` |
+| `email_description` | filter | `$v['s_title']` | `oc-includes/osclass/classes/controller/CWebPage.php:72` |
 | `email_item_inquiry_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php:1003` |
 | `email_item_inquiry_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php:998` |
 | `email_item_inquiry_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php:996` |
@@ -361,10 +361,10 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `item_content_updated` | action | `(int)$id, $locale` | `oc-includes/osclass/classes/model/Item.php:901` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php:1153` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php:887` |
-| `item_edit` | action | `$catId, $itemId` | `oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:239` |
+| `item_edit` | action | `$catId, $itemId` | `oc-includes/osclass/classes/controller/CWebAjax.php:308` |
 | `item_edit_prepare_data` | filter | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php:1164` |
 | `item_expiration_updated` | action | `(int)$id, $_item['dt_expiration']` | `oc-includes/osclass/classes/model/Item.php:984` |
-| `item_form` | action | `Params::getParam('catId')` | `oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php:234` |
+| `item_form` | action | `Params::getParam('catId')` | `oc-includes/osclass/classes/controller/CWebAjax.php:303` |
 | `item_form_new_validation_messages` | action | — | `oc-includes/osclass/classes/form/ItemForm.php:1118` |
 | `item_form_new_validation_rules` | action | — | `oc-includes/osclass/classes/form/ItemForm.php:1096` |
 | `item_form_validation_messages` | action | — | `oc-includes/osclass/classes/form/ItemForm.php:1350` |
@@ -422,8 +422,8 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php:151` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php:144` |
 | `actions_manage_rules` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php:161` |
-| `add_admin_toolbar_menus` | action | — | `oc-includes/osclass/functions.php:605` |
-| `after_admin_html` | action | — | `oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php:179` |
+| `add_admin_toolbar_menus` | action | — | `oc-includes/osclass/classes/AdminToolbar.php:78` |
+| `after_admin_html` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php:294` |
 | `after_delete_city` | action | `$pk` | `oc-includes/osclass/classes/model/City.php:226` |
 | `after_delete_city_area` | action | `$pk` | `oc-includes/osclass/classes/model/CityArea.php:131` |
 | `after_delete_country` | action | `$pk` | `oc-includes/osclass/classes/model/Country.php:143` |
@@ -433,7 +433,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `after_delete_page` | action | `$id` | `oc-includes/osclass/classes/model/Page.php:265` |
 | `after_delete_region` | action | `$pk` | `oc-includes/osclass/classes/model/Region.php:209` |
 | `after_delete_widget` | action | `$widgetId` | `oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:135` |
-| `after_html` | action | — | `oc-includes/osclass/classes/controller/CWebCustom.php:114` |
+| `after_html` | action | — | `oc-includes/osclass/classes/controller/CWebAjax.php:441` |
 | `after_login` | action | `$user, $url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php:193` |
 | `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php:464` |
 | `after_show_pagination_admin` | action | — | `oc-includes/osclass/helpers/hPagination.php:192` |
@@ -452,7 +452,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php:192` |
 | `ban_rule_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php:579` |
 | `base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php:38` |
-| `before_admin_html` | action | — | `oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php:176` |
+| `before_admin_html` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php:292` |
 | `before_delete_city` | action | `$pk` | `oc-includes/osclass/classes/model/City.php:195` |
 | `before_delete_city_area` | action | `$pk` | `oc-includes/osclass/classes/model/CityArea.php:120` |
 | `before_delete_country` | action | `$pk` | `oc-includes/osclass/classes/model/Country.php:122` |
@@ -462,7 +462,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `before_delete_page` | action | `$id` | `oc-includes/osclass/classes/model/Page.php:241` |
 | `before_delete_region` | action | `$pk` | `oc-includes/osclass/classes/model/Region.php:176` |
 | `before_delete_widget` | action | `$widgetId` | `oc-includes/osclass/classes/controller/admin/CAdminAppearance.php:131` |
-| `before_html` | action | — | `oc-includes/osclass/classes/controller/CWebCustom.php:109` |
+| `before_html` | action | — | `oc-includes/osclass/classes/controller/CWebAjax.php:439` |
 | `before_login` | action | — | `oc-includes/osclass/classes/controller/CWebLogin.php:133` |
 | `before_login_admin` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php:46` |
 | `before_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php:146` |
@@ -571,7 +571,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `resource_download_filename` | filter | `$name, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php:1094` |
 | `resource_download_url` | filter | `$url, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php:1124` |
 | `resource_original_url` | filter | `osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php:1163` |
-| `resource_path` | filter | `osc_base_url() . $_r['s_path'], $_r` | `oc-includes/osclass/classes/form/ItemForm.php:1479` |
+| `resource_path` | filter | `osc_base_url() . $aRow['s_path'], $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php:174` |
 | `resource_preview_url` | filter | `osc_resource_path() . osc_resource_id() . '_preview.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php:1149` |
 | `resource_thumbnail_url` | filter | `osc_resource_path() . osc_resource_id() . '_thumbnail.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php:1134` |
 | `resource_url` | filter | `osc_resource_path() . osc_resource_id() . '.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php:977` |
@@ -587,7 +587,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php:86` |
 | `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php:830` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/Csrf.php:127` |
-| `slug` | filter | `$fieldsDescription['s_name']` | `oc-includes/osclass/classes/utility/Utils.php:475` |
+| `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php:597` |
 | `static_page_text` | filter | `osc_static_page_field('s_text', $locale), $locale` | `oc-includes/osclass/helpers/hPage.php:91` |
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php:83` |
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php:177` |
@@ -643,7 +643,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `theme` | filter | `osc_theme()` | `oc-includes/osclass/classes/Translation.php:50` |
 | `theme_activate` | action | `$theme` | `oc-includes/osclass/classes/cli/Cli.php:837` |
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php:1076` |
-| `theme_url` | filter | `osc_base_url() . str_replace(osc_base_path(), '', $this->theme_path)` | `oc-includes/osclass/classes/themes/WebThemes.php:235` |
+| `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php:142` |
 
 ### User (36)
 
@@ -674,15 +674,15 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `user_dashboard` | action | — | `oc-includes/osclass/gui/account/user-dashboard-content.php:49` |
 | `user_edit_completed` | action | `$userId` | `oc-includes/osclass/classes/actions/UserActions.php:467` |
 | `user_edit_flash_error` | filter | `$flash_error, $userId` | `oc-includes/osclass/classes/actions/UserActions.php:405` |
-| `user_form` | action | — | `oc-includes/osclass/gui/account/user-login-content.php:46` |
+| `user_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php:311` |
 | `user_info` | filter | `$info, $userId, $locale` | `oc-includes/osclass/helpers/hUsers.php:487` |
 | `user_menu` | action | — | `oc-includes/osclass/gui/account/nav.php:110` |
 | `user_menu_filter` | filter | `$navItems` | `oc-includes/osclass/gui/account/nav.php:41` |
-| `user_profile_form` | action | `$profileUser` | `oc-includes/osclass/gui/account/user-profile-content.php:120` |
+| `user_profile_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php:310` |
 | `user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/CWebUser.php:74` |
 | `user_register_completed` | action | `$userId` | `oc-includes/osclass/classes/actions/UserActions.php:228` |
 | `user_register_failed` | action | `$error` | `oc-includes/osclass/classes/actions/UserActions.php:147` |
-| `user_register_form` | action | — | `oc-includes/osclass/gui/account/user-register-content.php:51` |
+| `user_register_form` | action | — | `oc-admin/themes/modern/users/frm.php:308` |
 | `users_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php:295` |
 | `validate_user` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php:124` |
 
