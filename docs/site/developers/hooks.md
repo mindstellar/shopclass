@@ -125,7 +125,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 509 names. Generated from the source; do not edit by hand.
+Core fires 510 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -415,7 +415,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (181)
+### Other (182)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -568,6 +568,7 @@ Core fires 509 names. Generated from the source; do not edit by hand.
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `register_storage_adapters` | action | `StorageManager::instance()` | `oc-includes/osclass/helpers/hStorage.php` |
 | `render_admintoolbar` | action | — | `oc-includes/osclass/classes/AdminToolbar.php` |
+| `resource_alt` | filter | `$title, osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_filename` | filter | `$name, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_url` | filter | `$url, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_original_url` | filter | `osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |

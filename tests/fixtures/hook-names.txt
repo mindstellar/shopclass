@@ -460,6 +460,7 @@ filter pre_send_mail
 filter pre_show_item
 filter pre_show_items
 filter public_cache_max_age
+filter resource_alt
 filter resource_download_filename
 filter resource_download_url
 filter resource_original_url
