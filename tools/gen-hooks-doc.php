@@ -94,10 +94,12 @@ function hooks_scan(): array
             $args = preg_replace('/^\s*([\'"])' . preg_quote($name, '/') . '\1\s*,?\s*/', '', $args);
             $args = trim(preg_replace('/\s+/', ' ', $args));
 
+            // File only, no line number: a line moves whenever anything above it is
+            // edited, and the drift check would then fail on edits that touch no hook.
             $found[$name] = array(
                 'kind'  => (stripos($fn, 'filter') !== false) ? 'filter' : 'action',
                 'args'  => $args,
-                'where' => $path . ':' . (substr_count(substr($src, 0, $start), "\n") + 1),
+                'where' => $path,
             );
         }
     }

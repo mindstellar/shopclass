@@ -4338,10 +4338,6 @@ msgstr ""
 msgid "Image"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Image may occupy more space than usual."
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Image processing"
 msgstr ""
@@ -4783,10 +4779,6 @@ msgstr ""
 msgid "Keep local copies"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Keep original image, unaltered after uploading."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "Keep records for"
 msgstr ""
@@ -4795,6 +4787,10 @@ msgstr ""
 msgid ""
 "Keep spammers from publishing on your site by configuring reCAPTCHA and "
 "Akismet. "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Keep the photo at its full size."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -8570,6 +8566,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsForm.php
 msgid "Store 1000 queries"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid ""
+"Stored alongside the resized copies, so uploads take more space. It is "
+"re-saved rather than kept byte for byte, which drops camera metadata."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
