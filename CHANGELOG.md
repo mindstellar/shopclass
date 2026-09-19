@@ -19,6 +19,11 @@ In development.
 - "Keep the photo at its full size" stored the upload byte for byte, so anything appended after
   the image survived on disk under a `.jpg` or `.png` name. The full-size copy is re-encoded now.
 
+### Performance
+
+- Dropped `idx_s_content_type` on listing photos. It led on the row's own id, so no query could
+  ever use it, while costing a write on every photo added or changed.
+
 ### Changed
 
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.

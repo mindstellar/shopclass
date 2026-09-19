@@ -370,7 +370,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),
-        INDEX idx_s_content_type (pk_i_id,s_content_type(10)),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
