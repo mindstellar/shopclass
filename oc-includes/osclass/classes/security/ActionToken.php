@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later.
  * See LICENSE (GPL-3.0).
@@ -33,6 +33,8 @@ class ActionToken
     private const LENGTH = 40;
 
     /**
+     * Fingerprint a plaintext action code for storage.
+     *
      * @param string $code plaintext code from the emailed link
      *
      * @return string storable fingerprint (40 hex chars)

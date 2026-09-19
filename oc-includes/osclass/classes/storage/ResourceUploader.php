@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -46,13 +46,14 @@ final class ResourceUploader
      *                            configured item dimensions.
      *   - 'keep_original' bool   also store the untouched source as {id}_original.
      *   - 'watermark'     bool   apply the configured watermark to the base image.
+     *   - 'fit'           bool   scale down to fit each size, never pad or upscale.
      *
      * @param string $ownerType
      * @param int    $ownerId
      * @param string $tmpFile   absolute path to the uploaded temp file
-     * @param array  $options
+     * @param array{variants?:array<string,string>,keep_original?:bool,watermark?:bool,fit?:bool} $options
      *
-     * @return array|false the inserted resource row, or false on any failure
+     * @return array<string,mixed>|false the inserted resource row, or false on any failure
      */
     public function upload(string $ownerType, int $ownerId, string $tmpFile, array $options = array()): array|false
     {
@@ -76,6 +77,7 @@ final class ResourceUploader
         );
         $keepOriginal = (bool) ($options['keep_original'] ?? false);
         $watermark    = (bool) ($options['watermark'] ?? false);
+        $fit          = (bool) ($options['fit'] ?? false);
 
         $normalTmp = $tmpFile . '_normal';
         $secondary = array(); // suffix ('_preview', ...) => temp path
@@ -83,7 +85,7 @@ final class ResourceUploader
         try {
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
             $size     = explode('x', $baseDims);
-            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0));
+            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0), $fit ? true : null, !$fit);
             if ($watermark) {
                 if (osc_is_watermark_text()) {
                     $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
@@ -101,7 +103,7 @@ final class ResourceUploader
                 $vtmp   = $tmpFile . $suffix;
                 $s      = explode('x', (string) $dims);
                 ImageProcessing::fromFile($normalTmp)
-                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0))
+                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0), $fit ? true : null, !$fit)
                     ->saveToFile($vtmp, $extension);
                 $secondary[$suffix] = $vtmp;
             }
@@ -172,7 +174,7 @@ final class ResourceUploader
      * delete path (osc_deleteResource): remove local files when nothing has been
      * offloaded, otherwise queue a remote delete job.
      *
-     * @param array $resourceRow
+     * @param array<string,mixed> $resourceRow a t_resource row
      *
      * @return void
      */
@@ -223,7 +225,7 @@ final class ResourceUploader
      * Remove a resource's files, or queue their removal when the row lives on (or
      * an install has configured) a remote adapter. Never touches the database.
      *
-     * @param array $row
+     * @param array<string,mixed> $row a t_resource row
      *
      * @return void
      */
@@ -252,9 +254,9 @@ final class ResourceUploader
     /**
      * Best-effort removal of the working temp files produced during an upload.
      *
-     * @param string $tmpFile
-     * @param string $normalTmp
-     * @param array  $secondary
+     * @param string                $tmpFile
+     * @param string                $normalTmp
+     * @param array<string,string>  $secondary variant suffix => temp path
      *
      * @return void
      */

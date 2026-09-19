@@ -4,14 +4,14 @@ Plugin Name: Sample Widgets
 Plugin URI: https://github.com/mindstellar/Osclass
 Description: Reference plugin showing how to register functional widgets through the widget-type registry: a static notice, a live "recent listings" list, a category-filtered list, and a super-admin-gated raw embed.
 Version: 1.0.0
-Author: Mindstellar Community
+Author: Navjot Tomer (Mindstellar)
 Author URI: https://mindstellar.com
 Short Name: sample-widgets
 */
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *

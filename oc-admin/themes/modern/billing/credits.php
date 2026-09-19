@@ -3,7 +3,7 @@
 }
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -72,7 +72,7 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
                         <td class="col-numeric<?php echo $balance < 0 ? ' balance-negative' : ''; ?>">
                             <?php echo number_format($balance); ?>
                         </td>
-                        <td><?php echo osc_esc_html(osc_format_date($wallet['dt_mod_date'])); ?></td>
+                        <td><?php echo osc_admin_date($wallet['dt_mod_date'], true); ?></td>
                         <td class="text-end">
                             <a class="btn btn-secondary btn-sm"
                                href="<?php echo osc_esc_html($walletUrl); ?>"><?php _e('Open'); ?></a>

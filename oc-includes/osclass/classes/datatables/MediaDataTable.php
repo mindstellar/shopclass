@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -31,9 +31,11 @@ class MediaDataTable extends DataTable
     private $sEcho;
 
     /**
-     * @param $params
+     * Builds the media (item resources) listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength, sort, direction, resourceId)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -62,6 +64,11 @@ class MediaDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the media columns, building the sort links, and runs admin_media_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -100,7 +107,11 @@ class MediaDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Derives start, limit, the item filter and the sort column/direction from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -120,7 +131,9 @@ class MediaDataTable extends DataTable
             }
         }
 
-        $direction              = $_get['direction'];
+        $direction              = isset($_get['direction']) && !is_array($_get['direction'])
+            ? (string)$_get['direction']
+            : '';
         $this->order_by['type'] = $direction;
         $arrayDirection         = array('desc', 'asc');
         if (!in_array($direction, $arrayDirection)) {
@@ -129,7 +142,7 @@ class MediaDataTable extends DataTable
         }
 
         // column sort
-        $sort             = $_get['sort'];
+        $sort             = isset($_get['sort']) && !is_array($_get['sort']) ? (string)$_get['sort'] : '';
         $arraySortColumns = array('date' => 'r.pk_i_id', 'attached_to' => 'r.fk_i_item_id');
         if (!array_key_exists($sort, $arraySortColumns)) {
             $this->order_by['column_name'] = 'r.pk_i_id';
@@ -145,7 +158,11 @@ class MediaDataTable extends DataTable
     }
 
     /**
-     * @param $media
+     * Formats each resource into table cells and keeps the raw row.
+     *
+     * @param array<int,array<string,mixed>> $media
+     *
+     * @return void
      */
     private function processData($media)
     {
@@ -165,7 +182,7 @@ class MediaDataTable extends DataTable
                     '<a href="#" onclick="return delete_dialog(\'' . $aRow['pk_i_id'] . '\');" >' . __('Delete') . '</a>';
                 $row['attached_to'] = '<a target="_blank" href="' . osc_item_url_ns($aRow['fk_i_item_id']) . '">item #'
                     . $aRow['fk_i_item_id'] . '</a>';
-                $row['date']        = osc_format_date($aRow['dt_pub_date']);
+                $row['date']        = osc_admin_date($aRow['dt_pub_date'], true);
 
                 $row = osc_apply_filter('media_processing_row', $row, $aRow);
 

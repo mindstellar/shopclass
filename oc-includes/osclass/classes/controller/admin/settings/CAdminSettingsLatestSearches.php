@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -16,11 +16,17 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\LatestSearchSettingsForm;
+
 /**
  * Class CAdminSettingsLatestSearches
  */
 class CAdminSettingsLatestSearches extends AdminSecBaseModel
 {
+    /**
+     * Boots the admin controller and fires the init_admin_settings_latest hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,33 +34,46 @@ class CAdminSettingsLatestSearches extends AdminSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Draws the latest-searches settings form, or saves a posted one and redirects back to it.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
             case ('latestsearches'):
-                //calling the comments settings view
-                $this->doView('settings/searches.php');
+                //calling the latest searches settings view
+                $this->drawForm();
                 break;
             case ('latestsearches_post'):
-                // updating comment
                 osc_csrf_check();
-                if (Params::getParam('save_latest_searches') === 'on') {
-                    osc_set_preference('save_latest_searches', 1);
-                } else {
-                    osc_set_preference('save_latest_searches', 0);
+
+                $result = CoreSettings::attempt(LatestSearchSettingsForm::register());
+                if ($result['errors'] !== array()) {
+                    // Nothing was written, not even the switch: a rejected save is not half
+                    // a save. Redrawn with what was typed rather than thrown away.
+                    $this->drawForm($result['values']);
+                    break;
                 }
 
-                if (Params::getParam('customPurge') == '') {
-                    osc_add_flash_error_message(_m('Custom number could not be left empty'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=latestsearches');
-                } else {
-                    osc_set_preference('purge_latest_searches', Params::getParam('customPurge'));
-
-                    osc_add_flash_ok_message(_m('Last search settings have been updated'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=latestsearches');
-                }
+                osc_add_flash_ok_message(_m('Last search settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=latestsearches');
                 break;
         }
+    }
+
+    /**
+     * Exports the latest-searches settings form and renders its view.
+     *
+     * @param array|null $values values a rejected save is handing back
+     *
+     * @return void
+     */
+    private function drawForm(?array $values = null)
+    {
+        $this->_exportVariableToView('searches_form', LatestSearchSettingsForm::formVars($values));
+        $this->doView('settings/searches.php');
     }
 }
 

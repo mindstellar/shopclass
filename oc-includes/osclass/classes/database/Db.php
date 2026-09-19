@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -277,6 +277,7 @@ class Db
      * @param callable $fn
      *
      * @return mixed The value returned by $fn
+     * @throws RuntimeException when the transaction cannot be opened
      * @throws Throwable Re-throws whatever $fn throws, after rolling back
      */
     public static function transaction(callable $fn)

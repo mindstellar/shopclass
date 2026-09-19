@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -13,7 +13,10 @@
  */
 
 /**
+ * Model database for the t_user_email_tmp table (pending email changes).
  *
+ * @package    Shopclass
+ * @subpackage Model
  */
 class UserEmailTmp extends DAO
 {
@@ -24,7 +27,7 @@ class UserEmailTmp extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_user_email_tmp table
      */
     public function __construct()
     {
@@ -35,6 +38,8 @@ class UserEmailTmp extends DAO
     }
 
     /**
+     * Return the shared UserEmailTmp model instance, creating it on first use.
+     *
      * @return \UserEmailTmp
      */
     public static function newInstance()
@@ -47,14 +52,12 @@ class UserEmailTmp extends DAO
     }
 
     /**
+     * Record a pending email change for a user, replacing any previous one.
      *
-     * @access public
+     * @param array{fk_i_user_id:int|string,s_new_email:string} $userEmailTmp
      *
-     * @param $userEmailTmp
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return int|false False when a new row was written, otherwise 1 for an
+     *                   overwritten row and 0 when nothing changed or the user id is unknown
      */
     public function insertOrUpdate($userEmailTmp)
     {

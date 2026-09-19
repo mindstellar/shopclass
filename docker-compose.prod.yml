@@ -35,6 +35,12 @@ services:
       # purge them when a listing changes; the image already carries the module and
       # writes the purge location this switch turns on.
       OSC_MICROCACHE: "1"
+      # Keep the database server's strict SQL modes, so a value too long for its
+      # column is refused rather than silently cut short. A config.php install gets
+      # this written in for it; there is no config.php here, so it is off unless you
+      # set it. Uncomment on a new deployment — on an existing one, try it on a copy
+      # first if third-party plugins write to the database.
+      # OSC_DB_STRICT_MODE: "1"
     volumes:
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads

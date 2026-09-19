@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class CategoryStats extends DAO
 {
@@ -25,8 +24,6 @@ class CategoryStats extends DAO
      * It references to self object: CategotyStats.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var CategoryStats
      */
     private static $instance;
@@ -46,9 +43,7 @@ class CategoryStats extends DAO
      * It creates a new CategoryStats object class if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return CategoryStats
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -62,14 +57,10 @@ class CategoryStats extends DAO
     /**
      * Increase number of category items, given a category id
      *
-     * @access public
-     *
      * @param int $categoryId Category id
      *
-     * @return int number of affected rows, id error occurred return false
-     *
-     * @since  unknown
-     *
+     * @return bool|int True once written, false on a non-numeric id or a failed
+     *                   write; an int once the parent chain has been walked
      */
     public function increaseNumItems($categoryId)
     {
@@ -113,16 +104,12 @@ class CategoryStats extends DAO
     }
 
     /**
-     * Increase number of category items, given a category id
+     * Decrease number of category items, given a category id
      *
-     * @access public
+     * @param int|null $categoryId Category id
      *
-     * @param int $categoryId Category id
-     *
-     * @return int number of affected rows, id error occurred return false
-     *
-     * @since  unknown
-     *
+     * @return int|false Affected rows across the category and its ancestors,
+     *                   false on a null id or a failed query
      */
     public function decreaseNumItems($categoryId)
     {
@@ -189,10 +176,12 @@ class CategoryStats extends DAO
     }
 
     /**
-     * @param $categoryID
-     * @param $numItems
+     * Set i_num_items outright for a category, inserting the row if needed.
      *
-     * @return bool|\DBRecordsetClass
+     * @param int $categoryID
+     * @param int $numItems
+     *
+     * @return bool False when the write failed
      */
     public function setNumItems($categoryID, $numItems)
     {
@@ -214,12 +203,9 @@ class CategoryStats extends DAO
     /**
      * Find stats by category id
      *
-     * @access public
-     *
      * @param int $categoryId Category id
      *
-     * @return array CategoryStats
-     * @since  unknown
+     * @return array<string,string|null>|false False when the category has no stats row
      */
     public function findByCategoryId($categoryId)
     {
@@ -229,12 +215,9 @@ class CategoryStats extends DAO
     /**
      * Count items,  given a category id
      *
-     * @access public
+     * @param int $categoryId Category id
      *
-     * @param $categoryId Category id
-     *
-     * @return int number of items into category
-     * @since  unknown
+     * @return int|string number of items into category, int 0 when there is no row
      */
     public function countItemsFromCategory($categoryId)
     {
@@ -259,15 +242,11 @@ class CategoryStats extends DAO
     /**
      * Get number of items
      *
-     * @access    public
+     * @param array{pk_i_id:int|string} $cat category array
      *
-     * @param array $cat category array
+     * @return int|string The stored count, or int 0 when the category has none
      *
-     * @return int
-     *
-     * @since     unknown
      * @staticvar string $numItemsMap
-     *
      */
     public function getNumItems($cat)
     {
@@ -292,10 +271,10 @@ class CategoryStats extends DAO
     }
 
     /**
+     * Build the per-category item-count map, split into 'parent' (root categories)
+     * and 'subcategories' (children keyed by their root id).
      *
-     * @access public
-     * @return array
-     * @since  unknown
+     * @return array<string,array<int|string,mixed>> Empty when no stats rows exist
      */
     public function toNumItemsMap()
     {

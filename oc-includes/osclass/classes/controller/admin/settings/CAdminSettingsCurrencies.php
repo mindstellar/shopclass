@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -21,6 +21,9 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminSettingsCurrencies extends AdminSecBaseModel
 {
+    /**
+     * Boots the admin controller and fires the init_admin_settings_currencies hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,11 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Routes the currency actions (add, edit, delete) and their views, keyed off the type param.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch (Params::getParam('type')) {

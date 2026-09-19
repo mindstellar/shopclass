@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -23,13 +23,9 @@
 
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 
-// Defined before the helper loads, so there is no redeclaration.
-function osc_apply_filter($hook, $content, ...$args)
-{
-    return $content;
-}
-
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php';
+// After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
+require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $GLOBALS['okCount']    = 0;

@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -22,8 +22,17 @@
  */
 class FieldGroup extends DAO
 {
+    /**
+     * It references to self object: FieldGroup.
+     * It is used as a singleton
+     *
+     * @var FieldGroup
+     */
     private static $instance;
 
+    /**
+     * Set data related to t_meta_group table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -33,6 +42,8 @@ class FieldGroup extends DAO
     }
 
     /**
+     * Return the shared FieldGroup model instance, creating it on first use.
+     *
      * @return FieldGroup
      */
     public static function newInstance()
@@ -45,9 +56,11 @@ class FieldGroup extends DAO
     }
 
     /**
+     * One group row by its primary key.
+     *
      * @param int $id
      *
-     * @return array
+     * @return array<string,string|null> Empty when the id is unknown
      */
     public function findByPrimaryKey($id)
     {
@@ -64,9 +77,11 @@ class FieldGroup extends DAO
     }
 
     /**
+     * One group row by its slug.
+     *
      * @param string $slug
      *
-     * @return array
+     * @return array<string,string|null> Empty when the slug is unknown
      */
     public function findBySlug($slug)
     {
@@ -85,7 +100,7 @@ class FieldGroup extends DAO
     /**
      * All groups, ordered by position.
      *
-     * @return array
+     * @return array<int,array<string,string|null>>
      */
     public function listAll()
     {
@@ -154,7 +169,7 @@ class FieldGroup extends DAO
      *
      * @param int $id
      *
-     * @return bool
+     * @return int|false Rows deleted from t_meta_group, or false on a null id or a failure
      */
     public function deleteByPrimaryKey($id)
     {
@@ -206,7 +221,7 @@ class FieldGroup extends DAO
      * @param string $key
      * @param mixed  $value
      *
-     * @return bool
+     * @return int|false Rows updated, or false when the write failed
      */
     public function setMeta($id, $key, $value)
     {
@@ -307,10 +322,10 @@ class FieldGroup extends DAO
     /**
      * Save the categories a group applies to.
      *
-     * @param int   $id
-     * @param array $categories
+     * @param int                        $id
+     * @param array<int,int|string>|null $categories
      *
-     * @return bool
+     * @return bool False when $categories is not an array or any row was rejected
      */
     public function insertCategories($id, $categories = null)
     {
@@ -339,7 +354,7 @@ class FieldGroup extends DAO
      *
      * @param int $id
      *
-     * @return bool
+     * @return int|false Rows deleted, or false on a null id or a query failure
      */
     public function cleanCategoriesFromGroup($id)
     {
@@ -365,7 +380,7 @@ class FieldGroup extends DAO
      *
      * @param int $categoryId
      *
-     * @return array
+     * @return array<int,array<string,mixed>> Group rows, each with an extra 'fields' list
      */
     public function findByCategory($categoryId)
     {
@@ -381,11 +396,13 @@ class FieldGroup extends DAO
         // bound placeholder each.
         $prefix       = DB_TABLE_PREFIX;
         $placeholders = implode(', ', array_fill(0, count($path), '?'));
+        // The membership rows are matched in a subquery rather than joined and then
+        // collapsed with GROUP BY: a group assigned to several ancestor categories
+        // still yields one row, and selecting g.* beside GROUP BY g.pk_i_id is
+        // rejected under ONLY_FULL_GROUP_BY on servers that do not infer the key.
         $sql          = 'SELECT g.* FROM ' . $prefix . 't_meta_group g'
-            . ' CROSS JOIN ' . $prefix . 't_meta_group_categories gc'
-            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
-            . ' AND g.pk_i_id = gc.fk_i_group_id'
-            . ' GROUP BY g.pk_i_id'
+            . ' WHERE g.pk_i_id IN (SELECT gc.fk_i_group_id FROM ' . $prefix . 't_meta_group_categories gc'
+            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . '))'
             . ' ORDER BY g.i_position ASC';
 
         try {

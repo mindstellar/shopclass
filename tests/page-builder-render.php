@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -51,10 +51,7 @@ function osc_static_page_title()
 {
     return 'Example page';
 }
-function osc_esc_html($s)
-{
-    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
-}
+require_once __DIR__ . '/lib/stubs.php';
 // Re-pointable, so one run can cover a theme with a canvas and one without.
 $GLOBALS['themesPath'] = sys_get_temp_dir() . '/';
 $GLOBALS['themeName']  = 'nonexistent-theme-' . getmypid();

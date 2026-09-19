@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -94,7 +94,7 @@ function osc_sanitize_username($value)
  *
  * @param string $value value to sanitize
  *
- * @return string sanitized
+ * @return int|string sanitized
  */
 function osc_sanitize_int($value)
 {
@@ -145,17 +145,28 @@ function osc_sanitize_phone($value)
 }
 
 /**
- * Escape html
+ * Reduce a value to plain text, taking every tag out along with what it contained.
  *
- * Formats text so that it can be safely placed in a form field in the event it has HTML tags.
+ * The filter is the one Params::getParam() runs over request data, applied to a value read
+ * from somewhere else. Like that one it escapes what it keeps, so the result is stored
+ * pre-escaped and stays inert wherever it is printed.
  *
- * @access  public
+ * @param array|string $value value to sanitize
  *
- * @param string
- *
- * @return  string
- * @version 2.4
+ * @return array|string same shape as $value
  */
+function osc_sanitize_text($value)
+{
+    if (is_array($value)) {
+        return array_map('osc_sanitize_text', $value);
+    }
+    if (!is_string($value)) {
+        return $value;
+    }
+
+    return Params::purifyText($value);
+}
+
 /**
  * Sanitise rich text to the markup a Shopclass editor can legitimately produce.
  *
@@ -219,6 +230,17 @@ function osc_sanitize_html($value)
     return $purifier->purify($value);
 }
 
+/**
+ * Escape html
+ *
+ * Formats text so that it can be safely placed in a form field in the event it has HTML tags.
+ * Existing entities are left intact.
+ *
+ * @param string $str
+ *
+ * @return string
+ * @version 2.4
+ */
 function osc_esc_html($str = '')
 {
     if ($str === '') {
@@ -246,8 +268,6 @@ function osc_esc_html($str = '')
 
 /**
  * Escape single quotes, double quotes, <, >, & and line endings
- *
- * @access  public
  *
  * @param string $str
  *

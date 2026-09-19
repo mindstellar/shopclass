@@ -97,14 +97,44 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors
         run: php tests/params-typed-accessors.php
+      # Storefront -- the default theme -- keeps its chrome in common/, so a probe
+      # for a root header.php/footer.php missed on a default install and every
+      # core-rendered page dropped to the standalone shell.
+      - name: Theme chrome resolution
+        run: php tests/theme-chrome.php
+      # The reserved view names guard static-page slugs, and both directions are
+      # silent: a name added forbids a slug live sites already use, and one dropped
+      # lets a page shadow the route of the same name and quietly stop resolving.
+      - name: Theme view names
+        run: php tests/theme-views.php
+      # Controllers now name a list of views rather than one, and the two orderings
+      # have to resolve theme-first: if candidate order won outright, a fallback
+      # theme's specific view would beat the active theme's generic one and the
+      # visitor would silently get a page from a theme the site is not running.
+      - name: Template hierarchy
+        run: php tests/template-hierarchy.php
+      # osc_head() ends by running the `header` hook, which carries every enqueued
+      # asset and the robots meta. Running it twice ships every asset twice and
+      # dropping it ships an unstyled page — the page renders through either way.
+      - name: Head and body ownership
+        run: php tests/theme-head.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
+      # PHPMailer's default wait is 300s; a dead SMTP host then pins a php-fpm worker
+      # for five minutes per send. The cap is a filter with a 1–60 clamp.
+      - name: PHPMailer SMTP timeout
+        run: php tests/phpmailer-smtp-timeout.php
+      - name: Maintenance mode helpers
+        run: php tests/maintenance-mode.php
       - name: Rewrite param decode
         run: php tests/rewrite-param-decode.php
       - name: Rewrite route match
         run: php tests/rewrite-route-match.php
       - name: Rewrite resolve rewrite
         run: php tests/rewrite-resolve-rewrite.php
+      # page=route takes the hook name from the request. Unchecked, anyone can fire cron_hourly.
+      - name: Route hook dispatch
+        run: php tests/route-hook-dispatch.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
       - name: Pagination
@@ -114,6 +144,20 @@ jobs:
       # page into a second, self-canonicalising URL that Google indexes separately.
       - name: Sitemap search URLs
         run: php tests/sitemap-search-url.php
+      # A token in a GET form lands in the query string: shared in links, kept in
+      # referrers, and unique per visitor, so every search URL becomes its own cache
+      # entry. Skipping a POST form is worse -- its action rejects every submission.
+      - name: CSRF form injection
+        run: php tests/csrf-form-injection.php
+      # Comments are on by default, so a renamed field or a dropped hook here breaks
+      # posting on every theme that uses core's block, with nothing to see on the page.
+      - name: Item comments view
+        run: php tests/item-comments-view.php
+      # The edit form posts title[<locale>]. Report the wrong one and saving copies the
+      # text it was showing into a second locale, leaving the original untranslated --
+      # once per edit, with nothing to see on the page.
+      - name: Item content locale
+        run: php tests/item-content-locale.php
       # A description that leads with the category blurb reads fine on one page and is a
       # duplicate across every city in that category -- the part that differs sits past
       # where a search engine stops reading.
@@ -132,10 +176,167 @@ jobs:
       # part of the view contract -- the page shipped as a fragment with no <head> at all.
       - name: Page builder render
         run: php tests/page-builder-render.php
+      # A declared settings page is the one place a plugin's admin form is not its own
+      # code: a spec error accepted here is a field silently missing from the page, and a
+      # value stored past its declared options is one nothing downstream expects.
+      - name: Settings page registry
+        run: php tests/settings-page-registry.php
+      # An image field replaces, removes and refuses uploads; a front-end call must never upload or delete.
+      - name: Settings image field
+        run: php tests/settings-image-field.php
+      - name: Image resize fit
+        run: php tests/image-resize-fit.php
+      # The lifecycle hooks are what let a side effect (rewriting .htaccess, writing
+      # robots.txt) attach to a declared save: a hook or an inline after_save firing on a
+      # rejected submission, firing twice, or seeing the raw request instead of the
+      # validated values would all be silent until a page actually used one. The two
+      # filters are pinned as filters -- run as hooks they hand the listener a copy and
+      # its derived value or edited field spec is dropped without a word. The write set is
+      # pinned to the declared field names for the same reason: before_save hands a listener
+      # the whole value array, so a write loop walking that array instead of the declaration
+      # would let any listener store an arbitrary preference under any page's section.
+      - name: Admin form lifecycle hooks
+        run: php tests/admin-form-lifecycle-hooks.php
+      # osc_admin_form() is sugar over the spec array osc_register_settings_page() already
+      # takes, so the two front doors have to keep emitting the same thing. Every way they
+      # can drift is silent: a modifier writing the wrong key is a field that renders
+      # without its hint or is never rejected as empty, and a builder that stopped handing
+      # the array to the registry would accept a spec the array form still refuses.
+      - name: Admin form builder
+        run: php tests/admin-form-builder.php
+      # 'depends' and 'translate' are schema features, so both halves have to agree. The
+      # dependent half is the security one: the client script only hides a row, and a field
+      # whose master is off must have its posted value discarded and must not be required,
+      # or a row the browser never showed becomes a value anyone can set by hand. The
+      # translated half fails just as quietly -- a control reading or writing a key the
+      # store does not use drops what was typed with nothing on screen to show for it.
+      # The dependent half is driven in the runner's Chrome against the committed ui-osc.js
+      # and main.css, because a source grep cannot tell a script that runs from one that is
+      # merely present; the browser half is skipped where there is no Chrome to run it.
+      # The browser is a dependency of that suite, so it is named here rather than assumed
+      # of the runner image: with CI set the suite fails instead of skipping, and this step
+      # says which build ran.
+      - name: Browser for the driven assertions
+        run: |
+          for b in "$CHROME" google-chrome google-chrome-stable chromium chromium-browser; do
+            [ -n "$b" ] && command -v "$b" >/dev/null 2>&1 && exec "$b" --version
+          done
+          echo "no chrome/chromium on PATH; the driven assertions would skip" >&2
+          exit 1
+      - name: Admin form depends and translate
+        run: php tests/admin-form-depends-translate.php
+      # The enabled-locale list is memoised for the request, so a locale added, enabled,
+      # disabled or deleted leaves every translated field on the page working from the list
+      # as it was -- and the languages screen redirects to itself, so the stale row is the
+      # first thing shown. The source scan derives the writing actions from the controller,
+      # so a new one is held to the same rule rather than being exempt for being new.
+      - name: Locale cache invalidation
+        run: php tests/locale-cache-invalidation.php
+      # The table store is the last step of a declared save, and every way it can be wrong
+      # is quiet: deciding insert-vs-update wrongly fills the table with copies of the row
+      # being edited, an update naming columns the page never declared erases the half of
+      # the entity that screen does not edit, and reading an unchanged update's zero
+      # affected rows as failure tells the admin their save did not work when it did --
+      # the bug CAdminSettingsKeywordBlock still carries a comment about. It also pins the
+      # two rules that keep a bound table from being everyone's: the row written is the one
+      # the caller named and never one the request carried, and a key is parsed rather than
+      # coerced, because (int) reads ' 12 ' and '12abc' as a real row number. And against a
+      # real table it pins the rule that a rejected submission writes no row and runs no
+      # after_save, which is what stops Permalinks rewriting .htaccess for a form that
+      # failed validation. It drives the generic controller rather than reading it, because
+      # a guard that is in the source and never taken is the same install as no guard, and
+      # it reads the shared view's rendered form rather than its source, because the key a
+      # hidden input would carry is interpolated and so never appears in the file.
+      - name: Admin form table store
+        run: php tests/admin-form-store.php
+      # The ban-rule screen is the first core screen saved by a declaration instead of a
+      # hand-written Params::getParam/validate/write block, and every way that can go wrong
+      # is quiet. The row a save writes has to be the one the controller derived and
+      # checked, not one the submission names; a key that is not a row has to write nothing
+      # rather than fall through and insert, which turns an edit screen into one that
+      # silently creates rules; the rule spanning two fields ("both cannot be empty") has no
+      # field to live on, so losing it fills the table with rules matching nobody; and an
+      # unchanged update affects no rows and is still a save. It drives the controller and
+      # reads the row back with raw SQL, because a guard in the source that no branch
+      # reaches is the same install as no guard.
+      - name: Admin ban rule form
+        run: php tests/admin-ban-rule-form.php
+      # The administrator account screen is a privilege boundary, and every way it can go
+      # wrong is quiet. The current-password box is the re-authentication standing between
+      # an unattended session and a second administrator, and it is a control that is never
+      # stored -- so losing the check in a migration looks identical on screen. The account
+      # type is not the edited admin's to set on their own row, or a moderator promotes
+      # themselves. A blank new-password box means "leave it alone"; written through, it
+      # stores the hash of an empty string and every rename changes a password. And the
+      # column has to take the hash while the plaintext survives as far as the welcome
+      # email. It drives the controller and reads the row back with raw SQL, because a
+      # guard in the source that no branch reaches is the same install as no guard.
+      - name: Admin account form
+        run: php tests/admin-account-form.php
+      # The row-declaration migration dropped the e-mail row's own field and put the
+      # mobile field under its label instead, deleting the cell phone row -- so Users ->
+      # Add always failed with an invalid-email error.
+      - name: Admin user form
+        run: php tests/admin-user-form.php
+      # The twelve settings screens that save through their declarations. Four of their
+      # controls keep the name their page's script knows while the value lives under a
+      # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,
+      # contact_attachment, purge_latest_searches -- so a key spelled wrong saves happily
+      # into something nothing reads and the setting silently reverts. Two controls write
+      # one preference (comment moderation is -1 or a count, search retention is a preset
+      # or a typed number), a blank mail-server password means
+      # "leave it alone" rather than "clear it and stop sending mail", and the clamped
+      # numbers are clamped rather than refused because a zero sign-in window shuts the form
+      # for everyone. Permalinks adds the two save-time effects: the rewrite rules go to disk
+      # and the rule cache is rebuilt once on a save and never on a refusal, or a rejected
+      # form leaves a .htaccess describing a structure nothing stored. Sitemap writes
+      # robots.txt byte for byte (the trim every declared box gets would drop its final
+      # newline) and an unwritable file comes back with what was typed instead of being
+      # lost to a redirect. Media refuses a watermark that is not a PNG before anything is
+      # written, and its form posts multipart, or the upload never reaches the save. Storage
+      # blanks any public URL that is not http(s), because it is built into every image a
+      # visitor loads, and a blank secret key keeps the stored one or remote storage stops
+      # authenticating. It drives the controllers and reads t_preference back with raw SQL.
+      - name: Settings screen forms
+        run: php tests/settings-screen-forms.php
+      # A declared text field is read with the XSS check off, so without the default here
+      # every migrated screen stores markup the hand-written controller it replaced had
+      # always stripped -- and nothing shows it, because core escapes on the way out
+      # either way. What is taken out is measured against Params::getParam()'s live output
+      # rather than a transcribed constant. The stored value is escaped, which is what keeps
+      # it inert for a plugin that prints it raw, and what makes the length rule count the
+      # stored value and not the typed one: a single "&" costs the column five characters,
+      # so a purified control is handed no maxlength to promise otherwise.
+      - name: Admin form text purification
+        run: php tests/admin-form-text-purify.php
+      # The admin field primitives are what a plugin builds a settings page from, so their
+      # markup is a contract both ways: an unescaped value is stored XSS on an admin-only
+      # page, and a dropped field-* class puts a number back to full width, breaking the
+      # sentence it sits in.
+      - name: Admin field primitives
+        run: php tests/admin-field-primitives.php
+      # Keeps the row/checkbox/tab primitives unified: no theme copy shadowing core, no
+      # hand-written form row creeping back, no return to Bootstrap tabs.
+      - name: Admin form primitives guard
+        run: php tests/admin-form-primitives-guard.php
       # user_menu_filter is the only way a plugin reaches the account menu, and a wrong
       # order there is silent -- the entry renders, just under the log-out row.
       - name: Account menu order
         run: php tests/user-menu-order.php
+      # Core's fallback pages for the account section render only when the theme ships
+      # no view of its own, so every break here is invisible on the themes we run: a
+      # renamed partial is a blank page again, and a renamed .oe-* class strands every
+      # theme styling the published name.
+      - name: Account fallback views
+        run: php tests/account-views.php
+      # GET ?page=user&action=delete&id=&secret= used to remove the account as soon
+      # as the page was requested. The confirm view must not call deleteUser.
+      - name: Account delete is POST
+        run: php tests/user-delete-get.php
+      - name: Avatar upload
+        run: php tests/avatar-upload.php
+      - name: Upload checks
+        run: php tests/upload-checks.php
       # An unrouted settings action does not error -- it renders a different settings page
       # and discards the post, so the only symptom is preferences that never save.
       - name: Admin settings routes
@@ -148,6 +349,11 @@ jobs:
       # the only thing between a poster and script running for every visitor.
       - name: Rich-text sanitiser
         run: php tests/sanitize-html.php
+      # Admin list tables show a compact date with the long, site-formatted value kept on
+      # hover and for screen readers -- the format, the filter a plugin overrides it with,
+      # and the <time> markup all go through one helper.
+      - name: Admin date format
+        run: php tests/admin-date-format.php
       # Auto-cron's three decisions -- run in-process on FPM, after the response, under a
       # bounded time limit -- are one small block that is easy to undo while tidying.
       - name: Auto-cron dispatch
@@ -164,10 +370,43 @@ jobs:
       # .info and .online address for years while accepting a local part with a space in it.
       - name: Email validation
         run: php tests/validate-email.php
+      # The username availability check stripped dots that registration keeps.
+      - name: Sanitize drift
+        run: php tests/sanitize-drift.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
         run: php tests/security-secret-coercion.php
+      # An unauthenticated alert token is the whole bug: the fix these pin is invisible from
+      # the outside, so a regression reads as a working unsubscribe link that anyone can forge.
+      - name: Alert token crypto
+        run: php tests/alert-token-crypto.php
+      # The custom ajax action once ran any file under oc-content/plugins. A regression is a
+      # remote file execution that still returns a perfectly normal-looking response.
+      - name: Plugin ajax file allowlist
+        run: php tests/plugin-ajax-file.php
+      # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
+      - name: Plugin install repair and admin GET forms
+        run: php tests/plugin-install-repair.php
+      # Registry-hosted packages carry a catalog-relative icon path; dropping it silently
+      # left every one of them showing the placeholder tile.
+      - name: Market catalog artwork
+        run: php tests/market-catalog-art.php
+      # The badge is the only answer to "can I install this here?"; its tint must never be
+      # the only channel that carries it.
+      - name: Market compatibility badge
+        run: php tests/market-compat-badge.php
+      # A search that forgets what was typed into half its boxes looks like a broken filter.
+      - name: Custom field range values
+        run: php tests/custom-field-range-values.php
+      # A field dropped from the export map does not error -- the download simply omits a
+      # category of personal data, which is only noticed by whoever asked for their copy.
+      - name: Personal data map
+        run: php tests/personal-data-map.php
+      # A stale or mis-keyed catalogue cache serves the wrong language rather than failing,
+      # so nothing surfaces until a visitor reports the site in someone else's locale.
+      - name: Translation cache
+        run: php tests/translation-cache.php
       # Both directions of a wrong cookie allowlist are silent: a name no setcookie()
       # writes never matches at the proxy, and a missing one lets a personalized page be
       # stored under a URL whose cache key has no such component.
@@ -177,8 +416,26 @@ jobs:
         run: php tests/dao-contract.php
       - name: Model contracts
         run: php tests/run-models.php
+      # The bundled test gateway hands out credits for nothing. A signature, age or
+      # amount check that stops running is free credit on any site that leaves it on.
+      - name: Test gateway
+        run: php tests/test-gateway.php
       - name: Delete cascades
         run: php tests/delete-cascade.php
+      # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
+      # wrapped in a catch that returns an empty array — so a site that turns the strict
+      # modes on loses its alert emails, its custom fields and its statistics charts with
+      # nothing in any log. The modes are SET by hand here because MariaDB's defaults omit
+      # ONLY_FULL_GROUP_BY entirely and the file would otherwise pass without testing it.
+      - name: Strict SQL mode
+        run: php tests/db-strict-mode.php
+      # DAO::insertGetId() answers 0 on a rejected write and DAO::update() answers
+      # false, so an unchecked return turned a refused registration into "check your
+      # inbox" for an account that was never created. Nothing throws, nothing logs,
+      # and the failure only appears when someone types a postcode one character too
+      # long — which is also why the column widths are pinned against the live schema.
+      - name: Strict write guards
+        run: php tests/strict-write-guards.php
       # The upgrade screen and upgradeDB() are replaced at different moments — an
       # opcode cache can serve the previous class behind the new template — so the
       # screen has to stay truthful when the answer predates it.
@@ -195,3 +452,16 @@ jobs:
       # shared by 117 villages matching one of them retires the other 116.
       - name: Location matching
         run: php tests/location-matching.php
+      # A total counting the wrong rows is a pager that stops early, an unescaped '%' or '_'
+      # matches places nobody typed, and an impact number missing a cascade branch tells the
+      # admin a delete is safe when it removes listings.
+      - name: Location admin query
+        run: php tests/location-admin-query.php
+      # A place deleted during a recount must leave the queue, not fail each batch and
+      # take the counts of the live places in that batch with it.
+      - name: Location stats queue
+        run: php tests/location-stats-queue.php
+      # A delete that removes listings must ask for a typed confirm, and a confirm pattern a
+      # name with brackets makes invalid is one browsers silently skip.
+      - name: Location admin view
+        run: php tests/location-admin-view.php

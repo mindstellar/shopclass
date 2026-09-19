@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -13,7 +13,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/**
+ * The chrome around the declared comment-settings form. The form itself -- its route, its
+ * fields, their values and the submit row -- is core's, drawn from the declaration the
+ * controller saves through.
+ */
+
+$form = __get('comment_form');
+
 //customize Head
+/**
+ * Emit the comment-settings form's client-side validation rules.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -58,14 +71,6 @@ function customHead()
 
 osc_add_hook('admin_header', 'customHead', 10);
 
-/**
- * @return string
- */
-function render_offset()
-{
-    return 'row-offset';
-}
-
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => __('Comment Settings'),
@@ -75,85 +80,6 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
     <ul id="error_list"></ul>
-    <form name="comments_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-        <input type="hidden" name="page" value="settings"/>
-        <input type="hidden" name="action" value="comments_post"/>
-        <fieldset>
-            <div class="form-horizontal">
-                <?php osc_admin_page_head(__('Comment Settings')); ?>
-
-                <div class="form-row">
-                    <div class="form-label"><?php _e('Default comment settings'); ?></div>
-                    <div class="form-controls">
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'enabled_comments',
-                            'label'   => __('Allow people to post comments on listings'),
-                            'checked' => osc_comments_enabled(),
-                        )); ?>
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'reg_user_post_comments',
-                            'label'   => __('Users must be registered and logged in to comment'),
-                            'checked' => osc_reg_user_post_comments(),
-                        )); ?>
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'enabled_recaptcha_comments',
-                            'label'   => __('Require a CAPTCHA to post a comment'),
-                            'checked' => osc_recaptcha_comments_enabled(),
-                            'help'    => __('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; otherwise no challenge is shown.'),
-                        )); ?>
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'moderate_comments',
-                            'label'   => __('A comment is being held for moderation'),
-                            'checked' => osc_moderate_comments() != -1,
-                        )); ?>
-                        <div class="form-label-checkbox-offset">
-                            <?php printf(
-                                __('Before a comment appears, comment author must have at least %s previously approved comments'),
-                                '<input type="text" class="input-small" name="num_moderate_comments" value="'
-                                 . ((osc_moderate_comments() == -1) ? '0' : osc_esc_html(osc_moderate_comments()))
-                                 . '" />'
-                            ); ?>
-                            <div class="help-box"><?php _e('If the value is zero, an administrator must always approve comments'); ?></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-label"><?php _e('Other comment settings'); ?></div>
-                    <div class="form-controls">
-                        <?php printf(
-                            __('Break comments into pages with %s comments per page'),
-                            '<input type="text" class="input-small" name="comments_per_page" value="'
-                                     . osc_esc_html(osc_comments_per_page()) . '" />'
-                        ); ?>
-                        <div class="help-box"><?php _e('If the value is zero all comments are shown'); ?></div>
-                    </div>
-                </div>
-
-                <?php osc_admin_page_head(__('Notifications')); ?>
-
-                <div class="form-row">
-                    <div class="form-label"><?php _e('E-mail admin whenever') ?></div>
-                    <div class="form-controls">
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'notify_new_comment',
-                            'label'   => __('A new comment is posted'),
-                            'checked' => osc_notify_new_comment(),
-                        )); ?>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-label"><?php _e('E-mail user whenever') ?></div>
-                    <div class="form-controls">
-                        <?php osc_admin_checkbox(array(
-                            'name'    => 'notify_new_comment_user',
-                            'label'   => __("There's a new comment on his listing"),
-                            'checked' => osc_notify_new_comment_user(),
-                        )); ?>
-                    </div>
-                </div>
-                <?php osc_admin_form_actions(); ?>
-            </div>
-        </fieldset>
-    </form>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

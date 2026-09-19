@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -37,6 +37,14 @@ use mindstellar\migration\MigrationInterface;
  * baselines rather than replays.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create the t_meta_group_fields link table and back-fill one row per field that
+     * currently carries a fk_i_group_id.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $link = DB_TABLE_PREFIX . 't_meta_group_fields';

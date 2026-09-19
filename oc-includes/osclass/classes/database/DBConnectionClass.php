@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -37,6 +37,7 @@ class DBConnectionClass extends \mindstellar\database\ConnectionManager
      * @deprecated 5.3 Use mindstellar\database\ConnectionManager::getHandle() for the
      *             raw handle, or the mindstellar\database\Connection / Db wrappers for
      *             queries and transactions. Retained for existing plugins and themes.
+     * @see \mindstellar\database\ConnectionManager::getHandle()
      *
      * @return mysqli|false
      */

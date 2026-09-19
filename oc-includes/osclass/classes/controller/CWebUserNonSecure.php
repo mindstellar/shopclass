@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,6 +17,10 @@
  */
 class CWebUserNonSecure extends BaseModel
 {
+    /**
+     * Boots the base controller, bounces the visitor home when accounts are disabled
+     * (except for the alert actions), and fires the `init_user_non_secure` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -33,7 +37,11 @@ class CWebUserNonSecure extends BaseModel
     //Business Layer...
 
     /**
-     * @return bool|void
+     * Dispatches the account actions that need no session: email-change confirmation,
+     * alert activation/unsubscribe, the public profile and its contact form.
+     *
+     * @return false|null false only when the captcha check failed and the request was
+     *                    redirected back to the profile
      */
     public function doModel()
     {
@@ -210,7 +218,7 @@ class CWebUserNonSecure extends BaseModel
                 // Public seller profile (a user's public listings): cacheable for anonymous
                 // visitors. Sibling `/user` routes (dashboard, account) stay private by default.
                 osc_mark_response_cacheable();
-                $this->doView('user-public-profile.php');
+                $this->doView(osc_locate_template(array('user-public-profile.php'), 'user-public-profile'));
                 break;
             case 'contact_post':
                 $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));
@@ -257,14 +265,18 @@ class CWebUserNonSecure extends BaseModel
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the account template, falling back to core's view when the theme has none.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
     public function doView($file)
     {
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_account_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

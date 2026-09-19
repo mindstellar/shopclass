@@ -2,7 +2,7 @@
 title: Caching contract
 description: How ShopClass drives a reverse proxy or CDN — the cookie allowlist, the Cache-Control it emits, and why the proxy config stays small.
 sidebar:
-  order: 9
+  order: 10
 ---
 
 ShopClass is designed to sit behind a reverse proxy or CDN. This page is the

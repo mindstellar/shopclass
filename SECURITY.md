@@ -4,9 +4,9 @@
 
 | Version | Status                |
 | ------- | --------------------- |
-| 6.1.x   | Full support          |
-| 6.0.x   | Security fixes only   |
-| < 6.0   | Unsupported           |
+| 6.2.x   | Full support          |
+| 6.1.x   | Security fixes only   |
+| < 6.1   | Unsupported           |
 
 The current release gets full support. The minor before it gets security fixes only — including
 across a major boundary: when 7.0.0 ships, the last 6.x release keeps receiving security fixes.

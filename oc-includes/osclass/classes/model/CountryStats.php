@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -25,7 +25,6 @@ class CountryStats extends DAO
      * It references to self object: CountryStats.
      * It is used as a singleton
      *
-     * @access private
      * @since  2.4
      * @var CountryStats
      */
@@ -34,7 +33,6 @@ class CountryStats extends DAO
     /**
      * Set data related to t_country_stats table
      *
-     * @access public
      * @since  2.4
      */
     public function __construct()
@@ -49,7 +47,6 @@ class CountryStats extends DAO
      * It creates a new CountryStats object class if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return CountryStats
      * @since  2.4
      */
@@ -65,9 +62,7 @@ class CountryStats extends DAO
     /**
      * Increase number of country items, given a country id
      *
-     * @access public
-     *
-     * @param int $countryCode Country code
+     * @param string $countryCode Country code
      *
      * @return bool True once the counter is written, false when the code is
      *              rejected or the write fails
@@ -98,16 +93,13 @@ class CountryStats extends DAO
     }
 
     /**
-     * Increase number of country items, given a Country code
+     * Decrease number of country items, given a Country code
      *
-     * @access public
+     * @param string $countryCode
      *
-     * @param $countryCode
-     *
-     * @return bool|int Number of affected rows, or false when there is no
-     *                  counter row for that country
+     * @return int|false Number of affected rows, or false when there is no
+     *                   counter row for that country
      * @since  2.4
-     *
      */
     public function decreaseNumItems($countryCode)
     {
@@ -145,14 +137,11 @@ class CountryStats extends DAO
     /**
      * Set i_num_items, given a country code
      *
-     * @access public
-     *
      * @param string $countryCode
      * @param int    $numItems
      *
      * @return bool True once the counter is written, false when the write fails
      * @since  2.4
-     *
      */
     public function setNumItems($countryCode, $numItems)
     {
@@ -176,11 +165,9 @@ class CountryStats extends DAO
     /**
      * Find stats by country code
      *
-     * @access public
+     * @param string $countryCode
      *
-     * @param int $countryCode country id
-     *
-     * @return array
+     * @return array<string,string|null>|false False when the country has no stats row
      * @since  2.4
      */
     public function findByCountryCode($countryCode)
@@ -194,12 +181,10 @@ class CountryStats extends DAO
      * and ordered by country_name or items counter.
      * $order = 'country_name ASC' OR $oder = 'items DESC'
      *
-     * @access public
+     * @param string $zero  Comparison operator applied to i_num_items
+     * @param string $order  '<column> ASC|DESC'
      *
-     * @param string $zero
-     * @param string $order
-     *
-     * @return array
+     * @return array<int,array{country_code:string,items:string,country_name:string,country_slug:string}>
      * @since  2.4
      */
     public function listCountries($zero = '>', $order = 'country_name ASC')
@@ -237,13 +222,10 @@ class CountryStats extends DAO
     /**
      * Calculate the total items that belong to countryCode
      *
-     * @access public
-     *
      * @param string $countryCode
      *
      * @return int|string Item count as a string, or int 0 when the query fails
      * @since  2.4
-     *
      */
     public function calculateNumItems($countryCode)
     {

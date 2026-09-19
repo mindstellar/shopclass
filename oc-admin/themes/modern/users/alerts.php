@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -120,7 +120,7 @@ osc_admin_pagination($aData);
 ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'users', 'action' => 'delete_alerts', 'alert_id[]' => '', 'alert_user_id' => ''),
         'title'      => __('Delete alert'),
         'text'       => __('This removes the saved alert; the user will no longer be notified when a new listing matches it.'),

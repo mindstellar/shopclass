@@ -2,6 +2,301 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.3.0
+
+This release is mostly about making themes easier to build and the admin easier to live in.
+
+A theme can now tell core about itself — where its header and footer live, which views and
+widget zones it owns, and whether core may write the document head. Core's own pages, like
+account deletion and the credits screens, then render inside your theme instead of on a page of
+their own, and you can add a view without patching core. If your theme says nothing, nothing
+changes for it.
+
+Core will also draw all 13 account and sign-in pages for you when your theme does not ship them,
+using a documented set of CSS classes. That means you can restyle them without writing any PHP.
+
+In the admin, Listings → Locations has been rebuilt, so it now handles a country with 90,000
+towns as comfortably as one with 50. Plugins and Appearance share one look, and each package
+tells you plainly whether it runs on your version instead of leaving you to compare numbers.
+There is also a bundled Test Payments gateway for trying out credits without moving real money,
+maintenance mode can show a banner instead of closing the site, and a settings page can now take
+an image, such as a theme logo.
+
+### Security
+
+- Deleting a user's alert in the admin had no CSRF check. It is a POST with a token now.
+- Importing a language from the translation repository had no CSRF check either.
+- `?page=route` ran any hook named in the request, so anyone could fire `cron_hourly`. It now
+  runs only registered route hooks, after `init`.
+- **Deleting an account happened on a plain link.** `?page=user&action=delete&id=…&secret=…`
+  removed the account as soon as the page was requested, so a mail scanner, a browser prefetch
+  or a leaked referrer was enough to destroy it. That link now shows a confirm form, and the
+  deletion needs a POST with a token and the current password. Old theme links land on the
+  confirm page and delete nothing. Themes may ship `user-delete_account.php`; core falls back
+  to its own view.
+- A member's "About you" text was not escaped on the public profile page core falls back to, so
+  anyone who could register could store a script that ran for every visitor to that profile. It
+  is escaped now, as the bundled themes already did.
+
+### New
+
+- A bundled Test Payments plugin: a gateway that moves no money, for testing credits, upgrades
+  and refunds. It is also the documented example of a declared settings page.
+- A theme names its header and footer files with `osc_add_theme_support('chrome', …)`. Core
+  still looks for `header.php`/`footer.php` and `common/header.php`/`common/footer.php` on its
+  own, so existing themes need no change.
+- Themes declare extra view names with `osc_add_theme_support('views', …)`, so core's list of
+  names a static page may not take is no longer hardcoded.
+- Every front-end page now looks for its view in a fixed order: `osc_locate_template()`, the
+  `template_candidates` filter, then per-category `item-{id}.php` and `search-{category}.php`.
+  A theme adds a view without a core patch.
+- Themes name and describe their widget zones with
+  `osc_add_theme_support('widget_locations', …)`; the admin screen shows the label and
+  description instead of the raw slug. Themes that only carry a `Widgets:` line are unchanged.
+- `osc_head()`, `osc_body_class()` and `osc_language_attributes()` let a theme hand the
+  document head and the body classes to core, so a page core renders is described like any
+  other. Each part of the head is opt-out.
+- Email address, username and password are one **Sign-in details** page instead of three
+  pages holding one field each. All three routes still resolve, and the one asked for focuses
+  its own field. Deleting an account stays separate.
+- Core also renders the plugin page mount, both contact forms, the share-a-listing form and the
+  save-this-search field when the theme ships none. Every theme carried the same markup for
+  these. The contact forms fire `contact_form` and `admin_contact_form`, so a plugin's extra
+  field reaches all of them.
+- A theme need only ship `item-post.php`: editing a listing falls back to it, since the two
+  forms carry the same fields. A theme that ships `item-edit.php` still wins for that route.
+- `ItemForm` now supplies what differs between publishing and editing —
+  `route_hidden()`, `location_record()`, `selected_country()`, `selected_region()` and
+  `plugin_item_fields()` — so a theme stops deriving the action, the hidden fields and the
+  location defaults for itself. Both bundled themes had written the same branch.
+- Core loads the photo uploader and the location combobox itself on the publish and edit
+  routes, so a theme no longer enqueues them by hand above its form.
+
+- Core wires the search bar's town/city field: an input carrying `data-ac="location_cities"`
+  gets suggestions and resolves the chosen row's id, and `osc-ui-common` now loads on the
+  home and search pages. Both bundled themes had written this binder themselves.
+- `osc_show_item_comments()` renders a listing's comment thread and post form, so a theme
+  gets the feature — on by default — without laying out a form whose field names are core's.
+  It fires `item_comments_before`, `comment_form` and `item_comments_after`, and ships
+  zero-specificity defaults a theme overrides with a single class.
+- Settings pages are documented for plugin authors, with a worked example of both the array
+  form and the builder — see `docs/site/developers/settings-pages.md`.
+- `osc_register_settings_page()` declares a whole settings page — title, menu entry, fields —
+  and core renders and saves it. The plugin writes no markup and no save handler.
+  `osc_settings_value()` reads a field back.
+- `osc_admin_form_open()`, `osc_admin_form_close()`, `osc_admin_form_section()` and
+  `osc_admin_field_row()` let an admin screen declare its form instead of writing the markup.
+- A declared settings field can follow one value of a select or radio: `depends_value`, or `dependsOn($master, $value)`.
+- A declared settings page can take an image upload: `->image('logo', $label)`, read back with `osc_settings_image_url()`.
+- `osc_reset_users()` rewinds the user loop, like `osc_reset_items()`.
+- `osc_admin_field()` and its per-type shorthands (`osc_admin_text()`, `osc_admin_number()`,
+  `osc_admin_select()`, `osc_admin_textarea()`, `osc_admin_radio_group()`, `osc_admin_secret()`)
+  render an admin form field from core, so a plugin no longer writes markup against the admin
+  theme's class names. Width follows the field type and every value is escaped. An admin theme's
+  own copy still wins where it defines one.
+- Core renders all 13 account and sign-in views — dashboard, listings, alerts, profile, the
+  three settings pages, sign in, register, the two password-reset steps, the public profile and
+  the plugin account slot — when the theme ships none. A theme that ships one still wins.
+- A published set of `.oe-*` CSS classes for those pages, documented at
+  `docs/site/developers/account-pages.md`, so a theme restyles them in CSS with no PHP.
+- `osc_gui_account_view()` picks one account view, in this order: the theme's file, a parent
+  theme's, core's page inside the theme's header and footer, then core's own bare page.
+- Maintenance mode can keep the public site up and show an editable banner instead of a 503.
+
+### Changed
+
+- Every `UNIQUE KEY` in the schema is named. Databases upgraded from older versions carry up to
+  eight copies of the same unique index on `t_admin` and `t_user`; the upgrade drops them.
+- Plugins and Appearance share one look: installed packages are tiles with the artwork beside
+  the name, a state badge, one primary action, and removal held apart from the routine ones.
+- A package with no artwork of its own borrows the catalogue's icon before falling back to its initial.
+- The compatibility badge now answers one question about your install: "Works with 6.3",
+  "Tested up to 6.2", "Needs 6.4 or newer" or "No version declared".
+- Hand-written admin settings screens are deprecated in the docs; declare a settings page instead.
+- Every admin form screen is now drawn from the same core field parts, so widths, hints and
+  spacing match across the panel. No class is renamed, so a plugin's styling still applies.
+- Admin list tables show dates as `2026-09-14 06:14`, with the long date on hover. The
+  `admin_date_format` filter changes the format.
+- **New installs keep the database server's strict SQL modes; upgrades opt in.** Core used to
+  switch those modes off, so a value too long for its column was quietly cut short instead of
+  refused. A fresh install now writes `define('OSC_DB_STRICT_MODE', true);` into `config.php`
+  and keeps them on.
+
+  Upgrades keep the old behaviour, because a third-party plugin that has been truncating a
+  value for years would start failing mid-request. To opt an existing site in, add that same
+  line to `config.php`, or set `OSC_DB_STRICT_MODE=1` in the environment when there is no
+  `config.php` (a container). Remove it to go back. Try it on a copy first if the site runs
+  third-party plugins that write to the database.
+- Registration and the profile form now name the field that is too long instead of cutting the
+  value short. The limits match the database: 100 characters for a name, username, e-mail,
+  website, region, city or address, 45 for a phone number, 80 for a country, 15 for a postcode.
+  Publishing gained the postcode and phone checks it was missing.
+- The admin account screen reports every error at once and redraws what was typed, instead of
+  discarding the form on the first failure. An unchanged save now confirms, and a refused write
+  reports rather than staying silent.
+- `admin_edit_completed` receives the admin id as an int, where it received the raw request
+  string. A listener comparing it with `===` or `is_string()` sees a different value.
+- Eight settings screens — General, Billing, Comments, Mail server, Spam and bots, Keyword
+  blocklist, Latest searches and Advanced — now save through a declaration. Each reports every
+  error at once and keeps what you typed. A refused save now writes nothing; some of them used
+  to store the first few fields before giving up.
+- Preference rows written by those screens record `e_type` from the field type rather than
+  always `STRING`; a checkbox that is off stores `0` where a few of them stored an empty
+  string. Nothing in core reads either.
+- Permalinks saves through a declaration too; writing `.htaccess` and rebuilding the rewrite
+  cache run only after a successful save.
+- Sitemap saves through a declaration too; a robots.txt that cannot be written comes back
+  with what was typed instead of being discarded.
+- Media saves through a declaration too; a watermark that is not a PNG now refuses the whole
+  save instead of saving everything else beside an error.
+- Storage saves through a declaration too; a secret key containing `&` or `<` is now stored as
+  typed instead of being mangled.
+- The friendly-URL structure boxes hide and show through the shared conditional-field
+  attribute instead of a script of their own.
+- A declared settings page's action row follows the page as you scroll and counts what has
+  changed since it loaded, staying quiet until something has.
+- A preference-backed page writes only the values that actually differ, so a save that
+  changes nothing says so instead of reporting success.
+- Locations shows one level at a time, 50 rows a page, with a path, listing counts and status; its page-level global JS functions are removed.
+- Locations adds search (this level or everywhere) with an A–Z strip, edits in a side drawer, and asks for the name (or, for a bulk delete, the listing count) before a delete that removes listings.
+- Locations gains a Data tab to install, preview and update catalog countries and recalculate listing counts; the add form offers to import a catalog country instead.
+
+### Fixed
+
+- The "Delete my account" button looked like an ordinary button instead of a dangerous one,
+  because the theme's own styling overrode core's.
+- A numeric custom field lost what was typed into it on the search results page, while every
+  other field kept it. Reported by @tonybyng (#535).
+- The "Add category" button pointed at nothing: the header was registered before the URL it uses
+  was built. Reported by @tonybyng (#534).
+- Every admin confirm dialog failed with "Probable invalid request": deleting a listing, a user,
+  an alert, a ban rule, an admin, a language, a comment, a page, a widget, a blocked keyword, a
+  currency, a media file, a plugin or a theme. They post now.
+- The admin "update available" badge stayed after a plugin, theme or core update.
+- Plugins and themes hosted in the registry showed a placeholder instead of their icon.
+- The language "Update" button did nothing when the server could not reach the translation repository; it says so now.
+- A plugin left active but not installed after a failed install can be installed again.
+- The username check and change-username form no longer strip dots that registration keeps.
+- The username blacklist catches dotted and underscored look-alikes such as `ad.min`.
+- An empty username blacklist, or one with a trailing comma, no longer refuses every username.
+- Photo uploads match the file extension exactly; `photo.pn` or a name with no extension is refused.
+- A real photo is no longer refused when the browser sends a generic file type for it.
+- CSRF tokens are no longer injected into JSON replies that do not declare a content type.
+- Users → Add failed with an invalid-email error: the form had lost its E-mail field.
+- Order lists show the payment gateway's name instead of its id.
+- The admin account form's e-mail box refuses an invalid address instead of silently rewriting
+  it — `john doe@example.test` was stored as `johndoe@example.test` and reported as saved.
+- Admin and mail-server passwords are stored exactly as typed; one with a leading or trailing
+  space was trimmed on save while the sign-in form reads it raw.
+- The Mail settings screen no longer dies on a server that is not mod_php: it called
+  `apache_mod_loaded()` to check for `mod_ssl` without asking whether the function exists.
+- A blank "custom" retention on Latest searches no longer saves the switch beside it before
+  refusing the form.
+- The `.htaccess` body Permalinks shows for copy-paste was missing the `mod_mime` block the
+  same screen writes and compares against, so pasting it produced a warning that could not be
+  cleared.
+- `osc_admin_text()` honours an explicitly passed `email`, `url` or `tel` type instead of
+  forcing every box to `text`.
+- Municipality was capped at 50 characters against a column holding 200.
+- The contact phone on a published listing is format-checked again; the check read a key the
+  save path never set, so any number of digits was accepted.
+- `t_user.s_country` and `t_item_location.s_country` are widened from `VARCHAR(40)` to
+  `VARCHAR(80)`, the width of the `t_country.s_name` they copy — a country name longer than 40
+  characters was stored cut in half. Upgrading runs an `ALTER TABLE` on both.
+- Publishing refused any region or city name over 50 characters, though the columns hold 100
+  and the location catalog offers names up to 60. The caps are the columns' widths now.
+- Registration could report success while creating no account: a value the column could not
+  hold left the visitor told to check their inbox for an account that does not exist. The
+  failed write is now noticed, on the profile save and the listing's location write too.
+- Several of core's queries failed silently on a database with `ONLY_FULL_GROUP_BY` on, and
+  each one returned nothing instead of reporting it: saved-search alerts stopped being sent,
+  a category's custom fields vanished from the listing form and from search, the latest-searches
+  list emptied, the statistics charts drew blank and a theme's search footer links disappeared.
+  They run under the strict modes now, on MariaDB as well as MySQL.
+- The daily statistics counted by day-of-month, so over a range longer than a month the 5th of
+  January and the 5th of February landed on one point. No core screen changes, since every core
+  screen asks for eleven days. A theme or plugin calling `new_users_count()`, `new_items_count()`,
+  `new_comments_count()` or `new_alerts_count()` over a longer range now gets one point per day.
+- "Save the latest user searches" could not be switched on: the controller compared the
+  submitted value against `on`, the value a browser invents for a checkbox that declares none.
+- Mail settings offered Encryption as a free-text box whose help said "blank, ssl or tls";
+  it is those three options now.
+- A number field inside a sentence — "Break comments into pages with __ comments per page" —
+  filled the whole width and pushed the rest of the sentence onto its own line, on Comments and
+  Listing settings. The words either side are now slots the field sits between, which also
+  lets a translator move the field within the sentence.
+- The date and time format columns were 150px wide, so every option's label wrapped beneath
+  its own radio; a locale with longer month names wrapped harder. They size to their content
+  now, and picking a format no longer runs through inline `onclick` handlers.
+- Typing a custom date or time format without first selecting its radio silently discarded the
+  value on save.
+- The moderation-count field on Comments settings never hid itself when moderation was off —
+  the class its script looks for was not in the markup.
+- CSRF tokens were added to GET forms, so a search carried the token in its URL. The token is
+  unique per visitor, so every search got its own canonical URL and its own cache entry, and the
+  token leaked into shared links and referrer logs. GET forms are skipped now, and `nocsrf` is
+  no longer needed on them.
+- Form labels pointed at a field's name instead of its id. Clicking the label did nothing, and
+  a screen reader read the field as unnamed. It affected every custom field on the listing form
+  and on search.
+- A radio custom field built each option's id by appending to the previous one, giving
+  `colour1`, `colour12`, `colour123`. Its group label now names the list through
+  `aria-labelledby`, and radio and checkbox inputs no longer emit `type` twice.
+- `ItemForm::title_input()` and `description_textarea()` defaulted to the `en_US` locale;
+  they now default to the visitor's. `ItemForm::locale_field_id()` returns the id these
+  fields actually carry, so a theme can label them.
+- Editing a listing written in another language saved the text under the language you were
+  browsing in and left the original alone, so every edit added another copy. The form now saves
+  under the language the text came from; `osc_item_content_locale()` reports which that is.
+- The publish form filled the region and city selects from the first country in the list
+  while the country select still read "Select a country", offering another country's
+  places. Both now stay empty until a country is chosen.
+- A theme that shipped no view for an account page rendered a blank document.
+- The profile page never showed the picture you had already set — only a file field and,
+  once one existed, a checkbox to remove the thing you could not see.
+- Deleting an account was a nav entry alongside Alerts and Credits. It sits at the foot of
+  the profile page now, past everything routine.
+- The listings page printed a pager reading "1" when everything fitted on one page.
+- The credits, buy and orders pages were titled "Site name - Site name", and the
+  account-delete page carried only the site name. Any route without a title case of its own
+  had the site name doubled.
+- `?page=register` with no action answered 200 with an empty body.
+- A long word in a heading — a search term, a listing title — pushed the page wider than a
+  phone screen instead of wrapping.
+- The credits pages ignored a theme's own button and panel styling, because their markup
+  carried only the older `oe-bill-*` class names. Each element now also carries the published
+  name, so restyling the documented classes reaches them.
+- The credits and orders ledgers scrolled the whole page sideways on a phone instead of
+  scrolling the table.
+- Account deletion and the three credits pages rendered without the account sidebar, so moving
+  between them and the settings pages gained and lost a nav. They use the account layout now,
+  and the nav marks which one you are on.
+- A static page whose slug matched a name core newly reserved could not be edited at all —
+  not its title, not its body — because the reserved set was checked even when the name was
+  not changing.
+- A theme in a directory with a hyphen in its name, which is how most are distributed, did
+  not appear in the appearance screen or the CLI at all.
+- Flash messages carry `role="status"`, or `role="alert"` on an error, so a screen reader is
+  told they appeared. The dismiss control is keyboard-operable without a theme script, and two
+  queued messages no longer share one `id`.
+- The profile form's "About you" field is labelled with the id it actually renders, and its
+  region and city lists follow the country without a page reload.
+- Pages core renders lost the theme's header and footer on the default theme, which keeps them
+  in `common/` rather than the theme root.
+- The credits, buy and orders pages each carried their own copy of the same stylesheet, which had
+  drifted: an unstyled `History` heading, links in the browser's default blue, unbranded radios.
+- `npm run lint` now runs; added the missing ESLint flat config.
+- `setJsMessage()` now shows errors and warnings in their own tint instead of the info one.
+- The categories edit drawer no longer puts an invalid ARIA role on an `<aside>`.
+- Untranslated strings under RTL no longer flip trailing punctuation to the front of the line.
+- CSRF tokens are no longer added to forms inside JSON responses.
+- A page with several identical form tags stamped each of them with a CSRF token per form, so a settings screen shipped five copies in every form.
+- On a site with an object cache, a change to a user's account was ignored for up to a minute:
+  a member who had just activated could not sign in, and a banned one kept working. Only a
+  password change cleared the cached row; every write to that user does now.
+- The location recount no longer fails on places deleted while it runs.
+- The location recount keeps a batch queued when its write fails, and stops instead of polling forever.
+
 ## Shopclass 6.2.0
 
 Back up your database before upgrading: this release rebuilds foreign keys across twenty-four
@@ -65,6 +360,9 @@ with too: every listing index now has its own description and a single canonical
 
 ### Fixed
 
+- A dead SMTP host no longer holds a php-fpm worker for five minutes; `osc_sendMail()` caps
+  connect and command timeouts at 15 seconds, and Mail Settings' **Send a test email**
+  button is restored.
 - A search carrying a category id rather than a slug returned 404, though the category
   existed. Both spellings now resolve.
 - A static page built from blocks rendered with no `<head>` — no title, description or

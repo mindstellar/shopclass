@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 01/07/20
  * Time: 2:40 PM
@@ -19,8 +19,6 @@ class Escape
     /**
      * Escape single quotes, double quotes, <, >, & and line endings
      *
-     * @access  public
-     *
      * @param string $str
      *
      * @return string
@@ -33,7 +31,8 @@ class Escape
         $str = strip_tags($str, $sNewLines);
         $str = str_replace("\r", '', $str);
         $str = addslashes($str);
-        $str = str_replace(array("\n", $aNewLines), '\n', $str);
+        $str = str_replace("\n", '\n', $str);
+        $str = str_replace($aNewLines, '\n', $str);
 
         return $str;
     }
@@ -54,6 +53,10 @@ class Escape
 
     /**
      * Escape unicode characters
+     *
+     * @param string $str
+     *
+     * @return string
      */
     public static function unicode($str)
     {
@@ -79,6 +82,10 @@ class Escape
 
     /**
      * Escape html entities
+     *
+     * @param string $str
+     *
+     * @return string
      */
     public static function entities($str)
     {

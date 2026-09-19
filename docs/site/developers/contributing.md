@@ -2,7 +2,7 @@
 title: Contributing
 description: How to contribute to ShopClass — the pull request workflow, coding standards, documentation, translations, testing and reporting bugs.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 ShopClass is maintained by its users. Contributions are welcome — bug fixes,

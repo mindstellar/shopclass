@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -22,6 +22,9 @@ if (!defined('ABS_PATH')) {
 class CAdminStats extends AdminSecBaseModel
 {
     //specific for this class
+    /**
+     * Let plugins hook the stats section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -31,6 +34,12 @@ class CAdminStats extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Draw the requested stats report: listing reports, comments, items or users.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();

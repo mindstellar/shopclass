@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -19,6 +19,9 @@ define('IS_AJAX', true);
  */
 class CWebAjax extends BaseModel
 {
+    /**
+     * Boots the base controller, flags the request as AJAX and fires the `init_ajax` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,11 @@ class CWebAjax extends BaseModel
 
     /**
      * Business Layer...
+     *
+     * Dispatches the AJAX action and echoes its JSON response; an unknown action answers
+     * with a JSON error.
+     *
+     * @return void
      */
     public function doModel()
     {
@@ -348,7 +356,7 @@ class CWebAjax extends BaseModel
                 require_once $resolved;
                 break;
             case 'check_username_availability':
-                $username = osc_sanitize_username(Params::getParam('s_username'));
+                $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
                 if (osc_is_username_blacklisted($username)) {
                     echo json_encode(array('exists' => 1, 's_username' => $username));
                 } else {
@@ -364,6 +372,7 @@ class CWebAjax extends BaseModel
                 // Include the uploader class
                 $uploader = new AjaxUploader();
                 $original = pathinfo($uploader->getOriginalName());
+                $original['extension'] = $original['extension'] ?? '';
                 $filename = uniqid('qqfile_', true) . '.' . $original['extension'];
                 try {
                     $result =
@@ -419,7 +428,9 @@ class CWebAjax extends BaseModel
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the given theme template between the `before_html` and `after_html` hooks.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */

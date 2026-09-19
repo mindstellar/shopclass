@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -31,6 +31,8 @@ switch ($type) {
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -44,6 +46,11 @@ osc_admin_page(array(
     'help'    => __('See how many comments the listings published on your site have received.'),
 ));
 
+/**
+ * Emit the comment-statistics chart and the Google Visualization loader it needs.
+ *
+ * @return void
+ */
 function customHead()
 {
     $comments        = __get('comments');

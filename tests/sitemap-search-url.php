@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -35,10 +35,7 @@ function osc_get_preference($key, $section = 'osclass')
 {
     return '';
 }
-function osc_apply_filter($hook, $content, ...$args)
-{
-    return $content;
-}
+require_once __DIR__ . '/lib/stubs.php';
 function osc_subdomain_type()
 {
     return '';

@@ -3,7 +3,7 @@
 }
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -138,7 +138,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                                 <span class="text-muted"><?php _e('Deleted user'); ?></span>
                             <?php } ?>
                         </td>
-                        <td><?php echo osc_esc_html($order->getGateway()); ?></td>
+                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
                         <td class="col-numeric">
                             <?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?>
                         </td>
@@ -149,7 +149,7 @@ $isFiltered = ($filters['status'] ?? '') !== ''
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()
                             ); ?>
                         </td>
-                        <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
+                        <td><?php echo osc_admin_date($order->getDate(), true); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>

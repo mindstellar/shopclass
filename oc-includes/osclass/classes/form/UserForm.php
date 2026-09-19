@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -18,7 +18,11 @@
 class UserForm extends Form
 {
     /**
-     * @param $user
+     * Echo the hidden input carrying the user id.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function primary_input_hidden($user)
     {
@@ -26,7 +30,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the user name input, preferring the failed-submit session value.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function name_text($user = null)
     {
@@ -42,7 +50,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the username input, preferring the failed-submit session value.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function username_text($user = null)
     {
@@ -58,7 +70,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the email input of the login form.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function email_login_text($user = null)
     {
@@ -71,7 +87,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the password input of the login form.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function password_login_text($user = null)
     {
@@ -79,7 +99,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the "remember me" checkbox of the login form.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function rememberme_login_checkbox($user = null)
     {
@@ -87,7 +111,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the current-password input of the change-password form.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function old_password_text($user = null)
     {
@@ -95,7 +123,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the new-password input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function password_text($user = null)
     {
@@ -103,7 +135,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the password confirmation input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function check_password_text($user = null)
     {
@@ -111,7 +147,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the user email input, preferring the failed-submit session value.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function email_text($user = null)
     {
@@ -127,7 +167,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the user website input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function website_text($user = null)
     {
@@ -140,7 +184,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the mobile phone input, preferring the failed-submit session value.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function mobile_text($user = null)
     {
@@ -156,7 +204,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the landline phone input, preferring the failed-submit session value.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function phone_land_text($user = null)
     {
@@ -172,35 +224,29 @@ class UserForm extends Form
     }
 
     /**
-     * @param      $locales
-     * @param null $user
+     * Echo the tabbed per-locale user description textareas.
+     *
+     * @param array<int,array<string,mixed>> $locales
+     * @param array<string,mixed>|null       $user
+     *
+     * @return void
      */
     public static function multilanguage_info($locales, $user = null)
     {
 
-        $num_locales = $locales;
-        if (count($num_locales) > 1) {
-            echo '<div id="language-tab" class="mt-3">';
-            echo '<ul class="nav nav-tabs" id="multiLangTabs" role="tablist">';
-            foreach ($num_locales as $locale) {
-                $active = '';
-                if ($locale['pk_c_code'] === osc_current_admin_locale()) {
-                    $active = 'show active';
-                }
-                echo '<li class="nav-item"><a class="nav-link btn-sm ' . $active . '" href="#' . $locale['pk_c_code']
-                     . '" data-bs-toggle="tab">'
-                     . $locale['s_name'] . '</a></li>';
+        echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
+        if (count($locales) > 1) {
+            echo '<ul>';
+            foreach ($locales as $locale) {
+                $active = ($locale['pk_c_code'] === osc_current_admin_locale()) ? ' class="ui-tabs-active ui-state-active"' : '';
+                echo '<li' . $active . '><a href="#' . osc_esc_html($locale['pk_c_code']) . '">'
+                     . osc_esc_html($locale['s_name']) . '</a></li>';
             }
             echo '</ul>';
-            echo '</div>';
         }
-        echo '<div class="tab-content mb-3" id="multiLangTabsContentUser">';
         foreach ($locales as $locale) {
-            $active = '';
-            if ($locale['pk_c_code'] === osc_current_admin_locale()) {
-                $active = 'show active';
-            }
-            echo '<div class="tab-pane fade ' . $active . '" id="' . $locale['pk_c_code'] . '" role="tabpanel">';
+            $hidden = ($locale['pk_c_code'] === osc_current_admin_locale()) ? '' : ' hidden';
+            echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             $name         = 's_info' . '[' . $locale['pk_c_code'] . ']';
             $attributes   = [
                 'id'          => $name,
@@ -226,9 +272,13 @@ class UserForm extends Form
     }
 
     /**
-     * @param        $name
+     * Echo one locale's user description textarea.
+     *
+     * @param string $name   Base input name; the locale code is appended as an array key
      * @param string $locale
      * @param string $value
+     *
+     * @return void
      */
     public static function info_textarea($name, $locale = 'en_US', $value = '')
     {
@@ -236,8 +286,12 @@ class UserForm extends Form
     }
 
     /**
-     * @param      $countries
-     * @param null $user
+     * Echo a country select, or a free-text country input when only one country exists.
+     *
+     * @param array<int,array<string,mixed>> $countries
+     * @param array<string,mixed>|null       $user
+     *
+     * @return void
      */
     public static function country_select($countries, $user = null)
     {
@@ -260,7 +314,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the free-text country input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function country_text($user = null)
     {
@@ -271,8 +329,12 @@ class UserForm extends Form
     }
 
     /**
-     * @param      $regions
-     * @param null $user
+     * Echo a region select, or a free-text region input when the country has no regions.
+     *
+     * @param array<int,array<string,mixed>> $regions
+     * @param array<string,mixed>|null       $user
+     *
+     * @return void
      */
     public static function region_select($regions, $user = null)
     {
@@ -294,7 +356,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the free-text region input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function region_text($user = null)
     {
@@ -302,8 +368,12 @@ class UserForm extends Form
     }
 
     /**
-     * @param      $cities
-     * @param null $user
+     * Echo a city select, or a free-text city input when the region has no cities.
+     *
+     * @param array<int,array<string,mixed>> $cities
+     * @param array<string,mixed>|null       $user
+     *
+     * @return void
      */
     public static function city_select($cities, $user = null)
     {
@@ -322,7 +392,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the free-text city input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function city_text($user = null)
     {
@@ -330,7 +404,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the city area input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function city_area_text($user = null)
     {
@@ -341,7 +419,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the street address input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function address_text($user = null)
     {
@@ -352,7 +434,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
+     * Echo the postcode input.
+     *
+     * @param array<string,mixed>|null $user
+     *
+     * @return void
      */
     public static function zip_text($user = null)
     {
@@ -360,9 +446,13 @@ class UserForm extends Form
     }
 
     /**
-     * @param null $user
-     * @param null $user_label
-     * @param null $company_label
+     * Echo the user/company account-type select.
+     *
+     * @param array<string,mixed>|null $user
+     * @param string|null              $user_label    Label for the "user" option
+     * @param string|null              $company_label Label for the "company" option
+     *
+     * @return void
      */
     public static function is_company_select(
         $user = null,
@@ -385,13 +475,24 @@ class UserForm extends Form
     }
 
     /**
-     * @param $users
+     * Echo a select of users, with an "All" placeholder.
+     *
+     * @param array<int,array<string,mixed>> $users
+     *
+     * @return void
      */
     public static function user_select($users)
     {
         Form::generic_select('userId', $users, 'pk_i_id', 's_name', __('All'), null);
     }
 
+    /**
+     * Echo (or enqueue) the client-side validation script for the registration form.
+     *
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
+     */
     public static function js_validation($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery). Renders on the public register
@@ -445,6 +546,14 @@ class UserForm extends Form
         }
     }
 
+    /**
+     * Echo (or enqueue) the client-side validation script for the profile edit form,
+     * where the password fields are optional.
+     *
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
+     */
     public static function js_validation_edit($enqueue = false)
     {
         // Self-contained vanilla validation (no jQuery). Editing a user: the password
@@ -497,7 +606,11 @@ class UserForm extends Form
     }
 
     /**
-     * @param string $path
+     * Echo the country/region/city cascade script.
+     *
+     * @param string $path 'admin' to target the admin base url, anything else the public one
+     *
+     * @return void
      */
     public static function location_javascript($path = 'front')
     {

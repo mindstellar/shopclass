@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -510,12 +510,10 @@ harness_section('Billing: listing.premium enabled/credits split');
 $premiumUserId = seed_user($admin, 'premium', 'premium@example.test');
 $premiumItemId = seed_item($admin, $categoryId, $premiumUserId, 'Premium target');
 
-// item_premium_on used to fire from inside ItemActions::premium(), called while
-// spend()'s transaction still held the wallet row's lock. It now goes through
-// Billing::deferHook() and fires only once that transaction has committed -- this
-// witness pins both that it still fires exactly once, with the item id, AND that
-// no transaction is open at the moment it runs (osc_db_in_transaction() would be
-// true if the old, immediate-from-inside-apply() call had come back).
+// item_premium_on goes through Billing::deferHook() and fires only once spend()'s
+// transaction has committed. This witness pins that it fires exactly once with the
+// item id, AND that no transaction is open when it runs -- firing from inside
+// apply() would leave osc_db_in_transaction() true and hold the wallet row's lock.
 $premiumHookFired = array();
 $premiumHookInTxn = array();
 osc_add_hook('item_premium_on', static function ($itemId) use (&$premiumHookFired, &$premiumHookInTxn) {
@@ -1353,12 +1351,10 @@ $pubDateOf = static function (int $itemId) use ($admin): string {
 $balanceBeforeBump = Wallet::balance($bumpUserId);
 $pubDateBeforeBump = $pubDateOf($bumpItemId);
 
-// item_bumped used to fire from inside item.bump's apply(), called while spend()'s
-// transaction still held the wallet row's lock. It now goes through
-// Billing::deferHook() and fires only once that transaction has committed -- this
-// witness pins both that it still fires, once per successful spend, with the item
-// id, AND that no transaction is open when it runs (see the item_premium_on
-// witness above for why that is the property that actually matters here).
+// item_bumped goes through Billing::deferHook() and fires only once spend()'s
+// transaction has committed. This witness pins that it fires once per successful
+// spend with the item id, AND that no transaction is open when it runs (see the
+// item_premium_on witness above for why that is the property that matters).
 $bumpHookFired = array();
 $bumpHookInTxn = array();
 osc_add_hook('item_bumped', static function ($itemId) use (&$bumpHookFired, &$bumpHookInTxn) {
@@ -1397,12 +1393,10 @@ check(
     === $cWebBillingRefl->getConstant('DECISION_REFUSE_HELD')
 );
 
-// A separate item, read via has() for the first time only after its cooldown
-// row is fast-forwarded into the past. $bumpItemId above was already read (and
-// is now memoized) before this rewrite, and a raw SQL edit of dt_expiration --
-// there is no real-world equivalent; wall-clock time simply passes over the
-// row untouched -- does not retroactively invalidate an already-cached read.
-// A never-read item's first read still has to see the row as it stands.
+// A separate item, read via has() for the first time only after its cooldown row is
+// fast-forwarded into the past. $bumpItemId above is already memoized, and a raw SQL
+// edit of dt_expiration does not retroactively invalidate a cached read; a never-read
+// item's first read still has to see the row as it stands.
 $lapsedBumpItemId = seed_item($admin, $categoryId, $bumpUserId, 'Bump target, lapses');
 $admin->query(
     'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY)'
@@ -1785,10 +1779,9 @@ Entitlements::grant($limitUserId, 'listing.no_wait', null, 30);
 pin('a listing.no_wait entitlement waives the wait entirely', 0, osc_items_wait_time_for_user($limitUserId));
 
 /* ----------------------------------------------------------------------------
- * The account-menu gate. Both entries used to appear on the billing switch alone,
- * so a site that enabled billing only to cap listings handed every seller two links
- * to an empty state. A configured gateway is registered by this point (see the
- * registry section above), so the packages side is what these move.
+ * The account-menu gate. Showing both entries on the billing switch alone hands every
+ * seller of a cap-only site two links to an empty state. A configured gateway is
+ * registered by this point (see the registry section above), so the packages side moves.
  * ------------------------------------------------------------------------- */
 harness_section('hBilling: wallet/buy links appear only where they lead somewhere');
 

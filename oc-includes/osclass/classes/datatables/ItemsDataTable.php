@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -30,6 +30,9 @@ class ItemsDataTable extends DataTable
     private $mSearch;
     private $withFilters = false;
 
+    /**
+     * Registers the row_class() filter so each listing row gets its status class.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -37,9 +40,12 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $params
+     * Builds the listing table, after letting plugins amend the search through
+     * manage_item_search_conditions.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params plus the item search filters
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -56,6 +62,11 @@ class ItemsDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the listing columns, building the sort links, and runs admin_items_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -99,8 +110,11 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Translates the request params into Search conditions, paging and ordering.
      *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -201,7 +215,9 @@ class ItemsDataTable extends DataTable
         $this->limit = (int)$_get['iDisplayLength'];
         $this->mSearch->limit($this->start, $this->limit);
 
-        $direction      = $_get['direction'];
+        $direction      = isset($_get['direction']) && !is_array($_get['direction'])
+            ? (string)$_get['direction']
+            : '';
         $arrayDirection = array('desc', 'asc');
         if (!in_array($direction, $arrayDirection)) {
             Params::setParam('direction', 'desc');
@@ -209,7 +225,7 @@ class ItemsDataTable extends DataTable
         }
 
         // column sort
-        $sort             = $_get['sort'];
+        $sort             = isset($_get['sort']) && !is_array($_get['sort']) ? (string)$_get['sort'] : '';
         $arraySortColumns = array('date' => 'dt_pub_date', 'expiration' => 'dt_expiration');
         if (!array_key_exists($sort, $arraySortColumns)) {
             $sort = 'dt_pub_date';
@@ -221,7 +237,11 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $items
+     * Formats each listing into table cells and keeps the raw row.
+     *
+     * @param array<int,array<string,mixed>> $items
+     *
+     * @return void
      */
     private function processData($items)
     {
@@ -372,12 +392,11 @@ class ItemsDataTable extends DataTable
                 }
                 $row['category']   = osc_esc_html($aRow['s_category_name']);
                 $row['location']   = $this->get_row_location();
-                $row['date']       = osc_format_date($aRow['dt_pub_date'], osc_date_format() . ' ' . osc_time_format());
+                $row['date']       = osc_admin_date($aRow['dt_pub_date']);
                 $row['expiration'] =
-                    ($aRow['dt_expiration'] !== '9999-12-31 23:59:59') ? osc_format_date(
-                        $aRow['dt_expiration'],
-                        osc_date_format() . ' ' . osc_time_format()
-                    ) : __('Never expires');
+                    ($aRow['dt_expiration'] !== '9999-12-31 23:59:59')
+                        ? osc_admin_date($aRow['dt_expiration'])
+                        : __('Never expires');
 
                 $row = osc_apply_filter('items_processing_row', $row, $aRow);
 
@@ -427,7 +446,7 @@ class ItemsDataTable extends DataTable
      *     - active
      *     - expired
      *
-     * @return array Array with the class and text of the status of the listing in this row. Example:
+     * @return array{class:string,text:string} Array with the class and text of the status of the listing in this row. Example:
      *     array(
      *         'class' => '',
      *         'text'  => ''
@@ -502,9 +521,12 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $params
+     * Builds the reported-listings table, joining t_item_stats and narrowing to the
+     * report type the current sort column names.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params plus the item search filters
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function tableReported($params)
     {
@@ -546,11 +568,9 @@ class ItemsDataTable extends DataTable
 
         $this->mSearch->order($sort, $direction);
 
-        // One stats row per listing now, so the counters are plain columns: no
-        // aggregate to build them, no GROUP BY to collapse a listing's dated rows,
-        // and therefore no HAVING — the filter is an ordinary WHERE. The
-        // IN (SELECT ...) that used to stand in for an index_merge over seven
-        // single-column indexes goes with them.
+        // One stats row per listing, so the counters are plain columns: no aggregate to
+        // build them, no GROUP BY, and therefore no HAVING -- the filter is an ordinary
+        // WHERE over indexed columns.
         $this->mSearch->addTable(sprintf('%st_item_stats s', DB_TABLE_PREFIX));
         $this->mSearch->addField('s.`i_num_spam` as i_num_spam');
         $this->mSearch->addField('s.`i_num_bad_classified` as i_num_bad_classified');
@@ -568,6 +588,12 @@ class ItemsDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the reported-listing columns, building the sort links, and runs
+     * admin_items_reported_table.
+     *
+     * @return void
+     */
     private function addTableHeaderReported()
     {
 
@@ -667,8 +693,11 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $items
+     * Formats each reported listing into table cells and keeps the raw row.
      *
+     * @param array<int,array<string,mixed>> $items
+     *
+     * @return void
      */
     private function processDataReported($items)
     {
@@ -743,13 +772,11 @@ class ItemsDataTable extends DataTable
                 $row['rep']         = $aRow['i_num_repeated'];
                 $row['exp']         = $aRow['i_num_expired'];
                 $row['off']         = $aRow['i_num_offensive'];
-                $row['date']        =
-                    osc_format_date($aRow['dt_pub_date'], osc_date_format() . ' ' . osc_time_format());
+                $row['date']        = osc_admin_date($aRow['dt_pub_date']);
                 $row['expiration']  =
-                    ($aRow['dt_expiration'] !== '9999-12-31 23:59:59') ? osc_format_date(
-                        $aRow['dt_expiration'],
-                        osc_date_format() . ' ' . osc_time_format()
-                    ) : __('Never expires');
+                    ($aRow['dt_expiration'] !== '9999-12-31 23:59:59')
+                        ? osc_admin_date($aRow['dt_expiration'])
+                        : __('Never expires');
 
                 $row = osc_apply_filter('items_processing_reported_row', $row, $aRow);
 
@@ -810,7 +837,7 @@ class ItemsDataTable extends DataTable
      * `keyword: "viagra"` for a keyword hit, `reports: 5` for a report-threshold
      * auto-block. The caller is responsible for escaping; this returns raw text.
      *
-     * @param array $modLog a t_item_moderation_log row
+     * @param array<string,mixed> $modLog a t_item_moderation_log row
      *
      * @return string
      */
@@ -828,6 +855,8 @@ class ItemsDataTable extends DataTable
     }
 
     /**
+     * Whether any search filter was applied, after the manage_item_search_with_filters filter.
+     *
      * @return bool
      */
     public function withFilters()
@@ -836,11 +865,13 @@ class ItemsDataTable extends DataTable
     }
 
     /**
-     * @param $class
-     * @param $rawRow
-     * @param $row
+     * datatable_listing_class filter: appends the status class for a listing row.
      *
-     * @return array
+     * @param string[]            $class
+     * @param array<string,mixed> $rawRow The raw item row
+     * @param array<string,mixed> $row    The formatted row
+     *
+     * @return string[]
      */
     public function row_class($class, $rawRow, $row)
     {

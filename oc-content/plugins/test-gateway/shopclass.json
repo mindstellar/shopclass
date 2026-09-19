@@ -1,0 +1,13 @@
+{
+  "$schema": "../../schema/package.schema.json",
+  "slug": "test-gateway",
+  "type": "plugin",
+  "categories": ["payments"],
+  "tags": ["billing", "payments", "testing", "reference", "developer"],
+  "short_description": "A payment gateway that moves no money, for testing credits, upgrades and refunds end to end.",
+  "license": "GPL-3.0-or-later",
+  "support": {
+    "issues": "https://github.com/mindstellar/osclass/issues",
+    "docs": "https://github.com/mindstellar/osclass/blob/develop/docs/site/developers/payment-gateways.md"
+  }
+}

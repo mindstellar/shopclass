@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -31,6 +31,13 @@ use mindstellar\migration\MigrationInterface;
  * already-utf8mb4 table is a no-op.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Convert t_item_report_log to utf8mb4, when the table exists.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_report_log';
@@ -44,6 +51,12 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $table exists in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function tableExists(Connection $conn, string $table): bool
     {

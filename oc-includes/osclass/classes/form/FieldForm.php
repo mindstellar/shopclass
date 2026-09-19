@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -42,6 +42,10 @@ class FieldForm extends Form
      */
     private $activeUserLocale;
 
+    /**
+     * @param \mindstellar\utility\Escape|null   $escape   Defaults to a new Escape instance
+     * @param \mindstellar\utility\Sanitize|null $sanitize Defaults to a new Sanitize instance
+     */
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         $this->adminLocales = osc_get_admin_locales();
@@ -57,14 +61,19 @@ class FieldForm extends Form
      * <input type="date"> (see initDatePicker), so no jQuery-UI datepicker
      * locale bootstrap is needed and this is a no-op.
      *
-     * @deprecated 5.3.0 native date input needs no locale bootstrap
+     * @return void
+     * @deprecated since 5.3.0 native date input needs no locale bootstrap
      */
     public static function i18n_datePicker()
     {
     }
 
     /**
-     * @param null $field
+     * Echo the hidden input carrying the custom field id, when the field exists.
+     *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function primary_input_hidden($field = null)
     {
@@ -89,8 +98,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the custom field name input.
      *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function name_input_text($field = null)
     {
@@ -102,8 +114,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the comma-separated options input for choice-type fields.
      *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function options_input_text($field = null)
     {
@@ -114,7 +129,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the "required" checkbox for a custom field.
+     *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function required_checkbox($field = null)
     {
@@ -127,7 +146,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the "searchable" checkbox for a custom field.
+     *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function searchable_checkbox($field = null)
     {
@@ -140,7 +163,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the "open in a new tab" checkbox, read from the field's s_meta JSON.
+     *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function newtab_checkbox($field = null)
     {
@@ -162,8 +189,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
+     * Echo the field-type select, built from the field-type registry.
      *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function type_select($field = null)
     {
@@ -195,9 +225,11 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $catId
+     * Echo the searchable custom fields of the given categories as a search fieldset.
      *
-     * @return bool|false|void
+     * @param int[]|null $catId Category ids
+     *
+     * @return false|void false when no categories were given
      */
     public static function meta_fields_search($catId = null)
     {
@@ -237,38 +269,67 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $field
-     * @param bool $search
+     * The from/to pair a range field was searched with, read back off the request.
+     *
+     * Empty stays empty rather than becoming 0: a zero bound searches from the epoch and
+     * then rides along in every later search URL.
+     *
+     * @param int|string $fieldId The field's primary key
+     *
+     * @return array{from:string,to:string}
+     */
+    public static function rangeFromRequest($fieldId): array
+    {
+        $meta = Params::getParam('meta');
+        $pair = is_array($meta) && isset($meta[$fieldId]) && is_array($meta[$fieldId])
+            ? $meta[$fieldId]
+            : array();
+
+        $range = array('from' => '', 'to' => '');
+        foreach (array('from', 'to') as $end) {
+            if (isset($pair[$end]) && is_scalar($pair[$end])) {
+                $range[$end] = trim((string) $pair[$end]);
+            }
+        }
+
+        return $range;
+    }
+
+    /**
+     * Echo one custom field's input, resolving its value from the session, the request or the row.
+     *
+     * @param array<string,mixed>|null $field
+     * @param bool                     $search Render the search variant of the field
+     *
+     * @return void
      */
     public static function meta($field = null, bool $search = false)
     {
 
         if ($field !== null) {
-            if ($field['e_type'] === 'DATEINTERVAL' || ($field['e_type'] === 'NUMBER' && $search)) {
-                $field['s_value']         = array();
-                $field['s_value']['from'] = '';
-                $field['s_value']['to']   = '';
+            // A date interval, and a number on the search form, render two inputs and carry
+            // their value as a from/to pair. Both are resolved here: the generic fallback
+            // below cannot do it, because the blank pair it would have to replace is a
+            // non-empty array and reads as "already has a value".
+            $isRange = $field['e_type'] === 'DATEINTERVAL' || ($field['e_type'] === 'NUMBER' && $search);
+            if ($isRange) {
+                $field['s_value'] = array('from' => '', 'to' => '');
             }
 
-            // date interval
-            if ($field['e_type'] === 'DATEINTERVAL') {
-                if (!$search) {
-                    $aInterval = Field::newInstance()
-                                      ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
+            if ($field['e_type'] === 'DATEINTERVAL' && !$search) {
+                $aInterval = Field::newInstance()
+                                  ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
 
-                    if (is_array($aInterval) && !empty($aInterval)) {
-                        $temp['from']     = @$aInterval['from'];
-                        $temp['to']       = @$aInterval['to'];
-                        $field['s_value'] = $temp;
-                    }
-                } else {
-                    $_meta            = Params::getParam('meta');
-                    $temp['from']     = @(int)$_meta[$field['pk_i_id']]['from'];
-                    $temp['to']       = @(int)$_meta[$field['pk_i_id']]['to'];
-                    $field['s_value'] = $temp;
+                if (is_array($aInterval) && $aInterval !== array()) {
+                    $field['s_value'] = array(
+                        'from' => isset($aInterval['from']) ? (string) $aInterval['from'] : '',
+                        'to'   => isset($aInterval['to']) ? (string) $aInterval['to'] : '',
+                    );
                 }
+            } elseif ($isRange) {
+                $field['s_value'] = self::rangeFromRequest($field['pk_i_id']);
             }
-            // end date interval
+
             if (Session::newInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
                 $field['s_value'] = Session::newInstance()->_getForm('meta_' . $field['pk_i_id']);
             } elseif (!isset($field['s_value']) || !$field['s_value']) {
@@ -539,11 +600,13 @@ class FieldForm extends Form
      * backend carries a unix timestamp (seconds) — the stored contract is
      * unchanged. Vanilla JS, no jQuery/jQuery-UI.
      *
-     * @param        $id_field
-     * @param        $dateFormat  kept for signature compatibility; unused now
-     *                            (the native input renders in the browser locale)
-     * @param        $value       stored unix timestamp, or 0
-     * @param string $type        'from' | 'to' | 'none'
+     * @param string          $id_field   Id of the hidden timestamp input
+     * @param string|null     $dateFormat kept for signature compatibility; unused now
+     *                                    (the native input renders in the browser locale)
+     * @param int|string|null $value      stored unix timestamp, or 0
+     * @param string          $type       'from' | 'to' | 'none'
+     *
+     * @return void
      */
     public static function initDatePicker($id_field, $dateFormat, $value, $type = 'none')
     {
@@ -592,8 +655,12 @@ class FieldForm extends Form
     }
 
     /**
-     * @param null $catId
-     * @param null $itemId
+     * Echo the custom-field inputs resolved for a category and item.
+     *
+     * @param int|null $catId
+     * @param int|null $itemId
+     *
+     * @return void
      */
     public static function meta_fields_input($catId = null, $itemId = null)
     {
@@ -609,9 +676,10 @@ class FieldForm extends Form
      * A field row carrying a non-empty cf_group_name renders under that section
      * heading; rows without one render flat. Emits the conditional-logic engine once.
      *
-     * @param array  $fields       resolved + extended field rows (each may carry
-     *                             cf_group_name / s_value)
-     * @param string $wrapperClass class for the outer container
+     * @param array<int,array<string,mixed>> $fields       resolved + extended field rows (each may carry
+     *                                                     cf_group_name / s_value)
+     * @param string                         $wrapperClass class for the outer container
+     * @param bool                           $enqueueJs    Enqueue the conditional-logic script instead of echoing it
      *
      * @return void
      */
@@ -657,6 +725,10 @@ class FieldForm extends Form
      * hides (show_when) or toggles required (required_when) the field as the value
      * of a sibling field changes. Vanilla JS, no jQuery. The server re-evaluates the
      * same rules on save, so this is UX only and never gates data integrity.
+     *
+     * @param bool $enqueue Buffer the script and hand it to Scripts::enqueueScriptCode
+     *
+     * @return void
      */
     public static function conditionalLogicScript($enqueue = false)
     {
@@ -796,57 +868,39 @@ class FieldForm extends Form
     /**
      * Generate MultiLanguage Title Description Fields for Item
      *
-     * @param null $field
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     public static function multiLangTitle($field)
     {
-        $locales  = osc_get_admin_locales();
+        $locales       = osc_get_admin_locales();
         $currentLocale = osc_current_admin_locale();
-        self::getInstance()->printMultiLangTab($locales, $currentLocale);
 
-        $locales  = osc_get_admin_locales();
-        $currentLocale = osc_current_admin_locale();
-        echo '<div class="tab-content mb-3" id="multiLangTabsContent" >';
-
+        echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
+        echo '<ul>';
         foreach ($locales as $locale) {
-            // Add class active if $current_locale is equal to $locale['pk_c_code']
-            $active = '';
-            if ($locale['pk_c_code'] === $currentLocale) {
-                $active = 'show active';
-            }
-            echo '<div class="tab-pane fade ' . $active . '" id="meta_' . $locale['pk_c_code'] . '" role="tabpanel">';
+            $active = ($locale['pk_c_code'] === $currentLocale) ? ' class="ui-tabs-active ui-state-active"' : '';
+            echo '<li' . $active . '><a href="#meta_' . osc_esc_html($locale['pk_c_code']) . '">'
+                . osc_esc_html($locale['s_name']) . '</a></li>';
+        }
+        echo '</ul>';
+        foreach ($locales as $locale) {
+            $hidden = ($locale['pk_c_code'] === $currentLocale) ? '' : ' hidden';
+            echo '<div id="meta_' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             self::getInstance()->printFieldTitle($locale, $field);
             echo '</div>';
         }
         echo '</div>';
     }
-    /**
-    * Print MultiLang Tab
-    */
-    private function printMultiLangTab($locales, $activeLocaleCode)
-    {
-        if ($locales > 1) {
-            echo '<div id="language-tab" class="mt-3">';
-            echo '<ul class="nav nav-tabs nav-tabs-sm" id="multiLangTabs" role="tablist">';
-            foreach ($locales as $locale) {
-                $active = '';
-                if ($locale['pk_c_code'] === $activeLocaleCode) {
-                    $active = 'show active';
-                }
-                echo '<li class="nav-item"><a class="nav-link ' . $active . '" href="#meta_' . $locale['pk_c_code']
-                    . '" data-bs-toggle="tab">'
-                    . $locale['s_name'] . '</a></li>';
-            }
-            echo '</ul>';
-            echo '</div>';
-        }
-    }
 
     /**
      * Print Multi language Field Name Input
      *
-     * @param                                   $locale
-     * @param array                             $field
+     * @param array<string,mixed>      $locale
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
      */
     private function printFieldTitle($locale, ?array $field = null)
     {

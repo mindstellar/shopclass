@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -23,6 +23,9 @@ use mindstellar\security\PluginAjaxFile;
  */
 class CAdminPlugins extends AdminSecBaseModel
 {
+    /**
+     * Let plugins hook the plugins section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -31,6 +34,13 @@ class CAdminPlugins extends AdminSecBaseModel
     }
 
     // Business layer...
+
+    /**
+     * Dispatch the requested plugins action: upload, install, uninstall, enable, disable,
+     * delete, a plugin's own admin and configure screens, and the market browser.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -312,10 +322,6 @@ class CAdminPlugins extends AdminSecBaseModel
                 $limit = Params::getParam('iDisplayLength');
                 $count = count($aPlugin);
 
-                $displayRecords = $limit;
-                if (($start + $limit) > $count) {
-                    $displayRecords = ($start + $limit) - $count;
-                }
                 // --------------------------------------------------------
 
                 $aData = array();
@@ -417,9 +423,8 @@ class CAdminPlugins extends AdminSecBaseModel
                     } else {
                         $sAuthor = __('By') . ' ' . $pInfo['author'];
                     }
-                    // The state of a plugin used to reach the page as a row colour and nothing
-                    // else. It now travels as a word as well, rendered in the Status column as
-                    // a badge; the class on the <tr> only picks the badge's tint and glyph.
+                    // The state travels as a word, rendered in the Status column as a badge;
+                    // the class on the <tr> only picks the badge's tint and glyph.
                     $plugin_status = 'uninstalled';
                     $sStatusWord   = __('Not installed');
                     if ($installed) {
@@ -432,6 +437,24 @@ class CAdminPlugins extends AdminSecBaseModel
                         }
                     }
                     $row['plugin_status'] = $plugin_status;
+                    // The list renders from this; the cells below stay for anything still
+                    // reading the row as the datatable shape it has always had.
+                    $row['pkg'] = array(
+                        'slug'        => $pSlug,
+                        'file'        => $pInfo['filename'],
+                        'name'        => $pInfo['plugin_name'],
+                        'version'     => $pInfo['version'],
+                        'author'      => $pInfo['author'],
+                        'author_uri'  => $pInfo['author_uri'],
+                        'plugin_uri'  => $pInfo['plugin_uri'],
+                        'support_uri' => $pInfo['support_uri'],
+                        'description' => $pInfo['description'],
+                        'state'       => $plugin_status,
+                        'installed'   => (bool) $installed,
+                        'enabled'     => (bool) $enabled,
+                        'update'      => $sUpdate !== '',
+                        'configurable' => isset($active_plugins[$plugin . '_configure']),
+                    );
                     $row[]   =
                         '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
                         . $pInfo['plugin_name'] . $sHelp . '<div>' . $sUpdate . '</div>';
@@ -453,8 +476,11 @@ class CAdminPlugins extends AdminSecBaseModel
                     }
                 }
 
-                $array['iTotalRecords']        = $displayRecords;
-                $array['iTotalDisplayRecords'] = count($aPlugin);
+                // Nothing filters this list, so both counts are the number of plugins on disk.
+                // iTotalRecords used to carry a page-arithmetic leftover, which the footer read
+                // as "filtered from 20 total" on an install that has five.
+                $array['iTotalRecords']        = $count;
+                $array['iTotalDisplayRecords'] = $count;
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
                 $array['aaInfo']               = $aInfo;
@@ -525,13 +551,14 @@ class CAdminPlugins extends AdminSecBaseModel
                     'status'  => $row['compatibility']['status'],
                     'blocked' => $row['compatibility']['blocked'],
                     'reason'  => $row['compatibility']['reason'],
-                    // The package's published supported range, not a verdict against this
-                    // install — 'status' above (from PackageIndex's locally-evaluated
-                    // compatibility) still drives the badge tint and the disabled-button
-                    // reason; only the label text changed (docs/MARKET.md §5).
-                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
-                        is_string($row['requires_min'] ?? null) ? $row['requires_min'] : null,
-                        is_string($row['tested_max'] ?? null) ? $row['tested_max'] : null
+                    // One fact about this install, from the status already decided above:
+                    // what it needs, how far it was tested, or the version it works with.
+                    'badge'   => \mindstellar\market\Compatibility::verdictLabel(
+                        $row['compatibility']['status'],
+                        array(
+                            'requires'     => is_string($row['requires_min'] ?? null) ? $row['requires_min'] : '',
+                            'tested_up_to' => is_string($row['tested_max'] ?? null) ? $row['tested_max'] : '',
+                        )
                     ),
                 ),
             );
@@ -559,10 +586,10 @@ class CAdminPlugins extends AdminSecBaseModel
                     'status'  => $verdict['status'],
                     'blocked' => $verdict['blocked'],
                     'reason'  => $verdict['reason'],
-                    // The range this specific update version declares for itself.
-                    'badge'   => \mindstellar\market\Compatibility::rangeLabel(
-                        $compatInfo['requires'] !== '' ? $compatInfo['requires'] : null,
-                        $compatInfo['tested_up_to'] !== '' ? $compatInfo['tested_up_to'] : null
+                    // What this specific update asks of this install.
+                    'badge'   => \mindstellar\market\Compatibility::verdictLabel(
+                        $verdict['status'],
+                        $compatInfo
                     ),
                 ),
             );

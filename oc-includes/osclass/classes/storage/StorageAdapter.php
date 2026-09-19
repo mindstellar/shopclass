@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -50,6 +50,8 @@ interface StorageAdapter
     public function get(string $key): string|false;
 
     /**
+     * Whether anything is stored under $key.
+     *
      * @param string $key
      *
      * @return bool
@@ -57,6 +59,8 @@ interface StorageAdapter
     public function exists(string $key): bool;
 
     /**
+     * Remove whatever is stored under $key.
+     *
      * @param string $key
      *
      * @return bool

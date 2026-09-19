@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -38,6 +38,8 @@ namespace mindstellar\security;
 class PluginAjaxFile
 {
     /**
+     * Resolve a requested ajax file to an absolute path, or refuse it.
+     *
      * @param string $file  path relative to the plugins directory
      * @param string $root  absolute plugins directory, i.e. osc_plugins_path()
      *

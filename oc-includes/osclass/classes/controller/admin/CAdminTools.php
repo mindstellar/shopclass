@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -21,6 +21,9 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminTools extends AdminSecBaseModel
 {
+    /**
+     * Let plugins hook the tools section before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,6 +31,13 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Dispatch the requested tools action: SQL import, category and location
+     * maintenance, the cache, and the SQL/zip backups.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -77,14 +87,67 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/locations.php');
                 break;
             case ('locations_post'):
+                // Also posted from the Locations Data tab, which asks to come back there.
+                $fromLocations = Params::getParamString('return') === 'locations';
+                $isXhr         = strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+                $back          = $fromLocations
+                    ? osc_admin_base_url(true) . '?page=settings&action=locations&tab=data'
+                    : osc_admin_base_url(true) . '?page=tools&action=locations';
+                if ($isXhr && !defined('IS_AJAX')) {
+                    define('IS_AJAX', true);
+                }
+                osc_csrf_check();
                 if (defined('DEMO')) {
+                    if ($isXhr) {
+                        header('Content-Type: application/json');
+                        echo json_encode(array('error' => _m('This action cannot be done because it is a demo site')));
+                        exit;
+                    }
                     osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=locations');
+                    $this->redirectTo($back);
                 }
 
-                osc_update_location_stats(true);
+                $started = (float) (Params::getServerParam('REQUEST_TIME_FLOAT') ?: microtime(true));
+                $queued  = (int) LocationsTmp::newInstance()->count();
+                $pending = (int) osc_update_location_stats(true);
+                $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
 
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=locations');
+                if ($isXhr) {
+                    header('Content-Type: application/json');
+                    header('Cache-Control: no-store');
+                    echo json_encode(array(
+                        'status'  => $pending > 0 ? 'more' : 'done',
+                        'pending' => $pending,
+                        'total'   => $total,
+                    ));
+                    exit;
+                }
+
+                if ($fromLocations) {
+                    // Without the script, keep counting while this request has time left.
+                    $until = microtime(true) + \mindstellar\location\LocationAdminView::recountBudget(
+                        (int) ini_get('max_execution_time'),
+                        microtime(true) - $started
+                    );
+                    while ($pending > 0 && microtime(true) < $until) {
+                        $next = (int) osc_update_location_stats();
+                        if ($next >= $pending) {
+                            // A batch's writes are all failing; stop spinning until the next run.
+                            break;
+                        }
+                        $pending = $next;
+                    }
+                    if ($pending > 0) {
+                        osc_add_flash_info_message(sprintf(
+                            _m('%s locations are still to be counted. Continue counting to finish.'),
+                            number_format($pending)
+                        ), 'admin');
+                    } else {
+                        osc_add_flash_ok_message(_m('Listing counts are recalculated'), 'admin');
+                    }
+                }
+
+                $this->redirectTo($back);
                 break;
             case ('upgrade'):
                 if (defined('DEMO')) {
@@ -275,6 +338,7 @@ class CAdminTools extends AdminSecBaseModel
                     $maintenance_file = osc_base_path() . '.maintenance';
                     $fileHandler      = @fopen($maintenance_file, 'wb');
                     if ($fileHandler) {
+                        fclose($fileHandler);
                         osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -282,7 +346,6 @@ class CAdminTools extends AdminSecBaseModel
                             'admin'
                         );
                     }
-                    fclose($fileHandler);
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 } elseif ($mode === 'off') {
                     osc_csrf_check();
@@ -295,6 +358,23 @@ class CAdminTools extends AdminSecBaseModel
                             'admin'
                         );
                     }
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
+                } elseif ($mode === 'save') {
+                    osc_csrf_check();
+                    osc_set_preference(
+                        OSC_MAINTENANCE_PREF_LOCKOUT,
+                        Params::getParamString('maintenance_lockout') === '1' ? '1' : '0',
+                        OSC_MAINTENANCE_PREF_SECTION,
+                        'BOOLEAN'
+                    );
+                    osc_set_preference(
+                        OSC_MAINTENANCE_PREF_MESSAGE,
+                        osc_sanitize_maintenance_message(Params::getParamString('maintenance_message')),
+                        OSC_MAINTENANCE_PREF_SECTION,
+                        'STRING'
+                    );
+                    osc_reset_preferences();
+                    osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 }
                 $this->doView('tools/maintenance.php');

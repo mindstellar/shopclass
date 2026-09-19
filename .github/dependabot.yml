@@ -3,6 +3,8 @@
 # Security alerts arrive with or without this file; what it adds is routine version
 # updates, and which manifests they are opened against.
 #
+# Every ecosystem targets develop; master only ever receives a release merge.
+#
 # The thing to know before merging one: two of these ecosystems have their installed
 # output COMMITTED, so Dependabot's PR is only half the change.
 #
@@ -29,6 +31,7 @@ updates:
   # Workflow actions. Nothing vendored, nothing to rebuild.
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -44,6 +47,7 @@ updates:
   # installs it — so these merge as they come.
   - package-ecosystem: composer
     directory: /tools/lint
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -61,6 +65,7 @@ updates:
   # completion, and a batch of ten is how they get merged without one.
   - package-ecosystem: composer
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
@@ -86,6 +91,7 @@ updates:
   # the repository honest for git installs.
   - package-ecosystem: npm
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
@@ -115,6 +121,7 @@ updates:
   # The production image's base.
   - package-ecosystem: docker
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
     open-pull-requests-limit: 2

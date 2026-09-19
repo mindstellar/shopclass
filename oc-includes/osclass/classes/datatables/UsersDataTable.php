@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,11 +24,26 @@ class UsersDataTable extends DataTable
 {
     private $withUserId;
     private $search;
-    private $column_names;
+    /**
+     * Header column id => the t_user column it sorts by.
+     *
+     * @var array<string,string>
+     */
+    private $sortable = array(
+        'email'       => 's_email',
+        'username'    => 's_username',
+        'name'        => 's_name',
+        'date'        => 'dt_reg_date',
+        'items'       => 'i_items',
+        'update_date' => 'dt_mod_date',
+    );
     public $order_by;
     public $conditions;
     public $withFilters = false;
 
+    /**
+     * Registers the row_class() filter so blocked/inactive users get a status class.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -36,9 +51,12 @@ class UsersDataTable extends DataTable
     }
 
     /**
-     * @param $params
+     * Builds the user listing for the admin datatable, after letting plugins amend the
+     * search conditions through manage_user_search_conditions.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params plus the user search filters
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -66,6 +84,11 @@ class UsersDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the user columns and lets plugins extend them via admin_users_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -84,7 +107,11 @@ class UsersDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Derives page, start, limit, ordering and the search conditions from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -100,18 +127,8 @@ class UsersDataTable extends DataTable
         } else {
             $this->iPage = Params::getParam('iPage');
         }
-        # sorting column
-        if (!isset($_get['iSortCol_0']) || $_get['iSortCol_0'] == '') {
-            $this->order_by['column_name'] = 'pk_i_id';
-        } else {
-            $this->order_by['column_name'] = $this->column_names[$_get['iSortCol_0']];
-        }
-        # Sorting order
-        if (!isset($_get['sSortDir_0']) || $_get['sSortDir_0'] == '') {
-            $this->order_by['type'] = 'DESC';
-        } else {
-            $this->order_by['type'] = $_get['sSortDir_0'];
-        }
+        # Sorting column and order
+        $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
 
         $this->conditions = array();
         # condition for userId
@@ -191,7 +208,11 @@ class UsersDataTable extends DataTable
     }
 
     /**
-     * @param $users
+     * Formats each user into table cells and keeps the raw row.
+     *
+     * @param array<int,array<string,mixed>> $users
+     *
+     * @return void
      */
     private function processData($users)
     {
@@ -267,13 +288,9 @@ class UsersDataTable extends DataTable
                     . rawurlencode($aRow['s_name']) . '">' . osc_esc_html($aRow['s_email']) . '</a>' . $actions;
                 $row['username']      = osc_esc_html($aRow['s_username']);
                 $row['name']          = osc_esc_html($aRow['s_name']);
-                $row['date']          =
-                    osc_format_date($aRow['dt_reg_date'], osc_date_format() . ' ' . osc_time_format());
+                $row['date']          = osc_admin_date($aRow['dt_reg_date']);
                 $row['items']         = $aRow['i_items'];
-                $row['update_date']   = ($aRow['dt_mod_date'] != null) ? osc_format_date(
-                    $aRow['dt_mod_date'],
-                    osc_date_format() . ' ' . osc_time_format()
-                ) : '';
+                $row['update_date']   = osc_admin_date($aRow['dt_mod_date']);
 
                 $row = osc_apply_filter('users_processing_row', $row, $aRow);
 
@@ -289,9 +306,9 @@ class UsersDataTable extends DataTable
      *     - inactive
      *     - active
      *
-     * @param $user
+     * @param array<string,mixed> $user The raw user row
      *
-     * @return array Array with the class and text of the status of the listing in this row. Example:
+     * @return array{class:string,text:string} Array with the class and text of the status of the listing in this row. Example:
      *     array(
      *         'class' => '',
      *         'text'  => ''
@@ -323,6 +340,8 @@ class UsersDataTable extends DataTable
     }
 
     /**
+     * Whether any search filter was applied, after the manage_user_search_with_filters filter.
+     *
      * @return bool
      */
     public function withFilters()
@@ -331,11 +350,13 @@ class UsersDataTable extends DataTable
     }
 
     /**
-     * @param $class
-     * @param $rawRow
-     * @param $row
+     * datatable_user_class filter: appends the status class for a user row.
      *
-     * @return array
+     * @param string[]            $class
+     * @param array<string,mixed> $rawRow The raw user row
+     * @param array<string,mixed> $row    The formatted row
+     *
+     * @return string[]
      */
     public function row_class($class, $rawRow, $row)
     {

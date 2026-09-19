@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -54,6 +54,14 @@ return new class () implements MigrationInterface {
         'log'   => array('admin_log_enabled', 'admin_log_retention_days'),
     );
 
+    /**
+     * Move the listed core preference keys out of their per-feature sections into
+     * `osclass`, dropping any row the move could not claim.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_preference';

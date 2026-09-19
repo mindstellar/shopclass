@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -316,7 +316,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                     $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not attached');
                     $typeLabel  = strtoupper((string) $row['s_extension']);
                     $imageSize  = mediaImageSize($row);
-                    $uploaded   = !empty($row['dt']) ? date('Y-m-d', strtotime((string) $row['dt'])) : '—';
+                    $uploaded   = !empty($row['dt']) ? osc_admin_date((string) $row['dt'], true) : '—';
                     $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
                         . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
                     ?>
@@ -349,7 +349,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($typeLabel); ?></td>
                         <td data-col-name="<?php echo osc_esc_html(__('Size')); ?>"><?php echo $imageSize !== '' ? osc_esc_html($imageSize) : '—'; ?></td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Uploaded')); ?>"><?php echo osc_esc_html($uploaded); ?></td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Uploaded')); ?>"><?php echo $uploaded === '—' ? '—' : $uploaded; ?></td>
                         <td class="text-end media-row-actions" data-col-name="<?php echo osc_esc_html(__('Actions')); ?>">
                             <a class="media-action-view" href="<?php echo osc_esc_html($full); ?>" target="_blank"
                                rel="noopener" title="<?php echo osc_esc_html(__('View full image')); ?>"
@@ -380,7 +380,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 </div>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'media-delete-dialog',
-    'method'  => 'get',
+    'method'  => 'post',
     'fields'  => array('page' => 'media', 'action' => 'delete', 'src' => '', 'id' => '', 'type' => $mediaType),
     'title'   => __('Delete this file?'),
     'text'    => __('This file will be removed from the server. The listing, user or page it '

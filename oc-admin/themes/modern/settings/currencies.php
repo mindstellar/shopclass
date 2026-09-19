@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -53,10 +53,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="relative">
         <div id="currencies-toolbar" class="table-toolbar">
         </div>
-        <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="currencies"/>
-            <input type="hidden" name="type" value="delete"/>
+        <?php osc_admin_form_open(array(
+            'id'         => 'datatablesForm',
+            'page'   => 'settings',
+            'action'     => 'currencies',
+            'fields'     => array('type' => 'delete'),
+            'horizontal' => false,
+        )); ?>
             <?php osc_admin_bulk_actions(array('options_html' => static function () { ?>
                 <select id="bulk_actions" name="bulk_actions" class="select-box-extra form-select">
                     <option value=""><?php _e('Bulk actions'); ?></option>
@@ -74,7 +77,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <th class="col-bulkactions"><input id="check_all" type="checkbox"/></th>
                     <th><?php _e('Code'); ?></th>
                     <th><?php _e('Name'); ?></th>
-                    <th><?php _e('Description'); ?></th>
+                    <th><?php _e('Currency symbol'); ?></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -84,11 +87,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <td <?php if ($key == 0) {
                                 echo 'class="col-bulkactions"';
                             } elseif ($key === 1) {
-                                echo 'data-col-name ='. __('Code');
+                                echo 'data-col-name="'. osc_esc_html(__('Code')) .'"';
                             } elseif ($key === 2) {
-                                echo 'data-col-name ='. __('Name');
+                                echo 'data-col-name="'. osc_esc_html(__('Name')) .'"';
                             } elseif ($key === 3) {
-                                echo 'data-col-name ='. __('Description');
+                                echo 'data-col-name="'. osc_esc_html(__('Currency symbol')) .'"';
                             } else {
                                 echo 'data-col-name="'.ucfirst($key).'"';
                             } ?>>
@@ -99,11 +102,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <?php } ?>
                 </tbody>
             </table>
-        </form>
+        <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
     </div>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
-        'method'     => 'get',
+        'method'     => 'post',
         'fields'     => array('page' => 'settings', 'action' => 'currencies', 'type' => 'delete', 'code' => ''),
         'title'      => __('Delete currency'),
         'text'       => __('Listings priced in this currency keep their stored amount but lose a way to display it consistently.'),

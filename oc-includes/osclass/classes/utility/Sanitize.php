@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 30/06/20
  * Time: 9:21 PM
@@ -21,11 +21,11 @@ class Sanitize
     /**
      * Sanitised String
      *
-     * @param       $value
+     * @param mixed $value
      * @param array $options
      *
-     * @return bool|string
-     * @deprecated use Sanitize::string() instead will be removed in the next 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::string() instead, to be removed in 7.0.0
      */
     public function filterString($value, ...$options)
     {
@@ -38,7 +38,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string
+     * @return string|false
      */
     public function string($value, ...$options)
     {
@@ -62,7 +62,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string
+     * @return mixed Rounded to two decimals, or the value unchanged when it is falsy.
      */
     public function price($value, ...$options)
     {
@@ -92,6 +92,8 @@ class Sanitize
      * Sanitize a html safe string
      *
      * @param string $value
+     *
+     * @return string
      */
     public function html($value)
     {
@@ -143,11 +145,11 @@ class Sanitize
     /**
      * Sanitised Int
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed $value
+     * @param array $options unused; kept for signature compatibility
      *
-     * @return bool|int
-     * @deprecated use Sanitize::int() instead will be removed in the next 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::int() instead, to be removed in 7.0.0
      */
     public function filterInt($value, ...$options)
     {
@@ -158,6 +160,8 @@ class Sanitize
      * Sanitised Int
      *
      * @param mixed $value
+     *
+     * @return string|false
      */
     public function int($value)
     {
@@ -168,6 +172,8 @@ class Sanitize
      * Sanitised website URL
      *
      * @param mixed $value
+     *
+     * @return mixed Sanitised URL with a scheme prefixed, or the value unchanged when it is falsy.
      */
     public function websiteUrl($value)
     {
@@ -191,7 +197,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string
+     * @return string|false
      */
     public function url($value, ...$options)
     {
@@ -208,11 +214,11 @@ class Sanitize
     /**
      * Sanitised float
      *
-     * @param       $value
+     * @param mixed $value
      * @param array $options
      *
-     * @return float
-     * @deprecated use Sanitize::float() instead will be removed in the next major 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::float() instead, to be removed in 7.0.0
      */
     public function filterFloat($value, ...$options)
     {
@@ -225,7 +231,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return float;
+     * @return string|false
      */
     public function float($value, ...$options)
     {
@@ -247,11 +253,11 @@ class Sanitize
     /**
      * Sanitised encoded
      *
-     * @param       $value
+     * @param mixed $value
      * @param array $options
      *
-     * @return string
-     * @deprecated use Sanitize::encoded() instead will be removed in the next major 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::encoded() instead, to be removed in 7.0.0
      */
     public function filterEncoded($value, ...$options)
     {
@@ -264,7 +270,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string
+     * @return string|false
      */
     public function encoded($value, ...$options)
     {
@@ -281,11 +287,11 @@ class Sanitize
     /**
      * Sanitised Email
      *
-     * @param       $value
+     * @param mixed $value
      * @param array $options
      *
-     * @return string
-     * @deprecated use Sanitize::email() instead will be removed in the next major 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::email() instead, to be removed in 7.0.0
      */
     public function filterEmail($value, ...$options)
     {
@@ -298,7 +304,7 @@ class Sanitize
      * @param mixed $value
      * @param array $options
      *
-     * @return string
+     * @return string|false
      */
     public function email($value, ...$options)
     {
@@ -315,11 +321,11 @@ class Sanitize
     /**
      * Sanitised Quotes
      *
-     * @param       $value
-     * @param array $options
+     * @param mixed $value
+     * @param array $options unused; kept for signature compatibility
      *
-     * @return bool|string
-     * @deprecated use Sanitize::quotes() instead will be removed in the next major 6.x release
+     * @return string
+     * @deprecated since 5.1.0 use Sanitize::quotes() instead, to be removed in 7.0.0
      */
     public function filterQuotes($value, ...$options)
     {
@@ -330,7 +336,6 @@ class Sanitize
      * Add Slashes
      *
      * @param mixed $value
-     * @param array $options
      *
      * @return string
      */
@@ -342,11 +347,11 @@ class Sanitize
     /**
      * Sanitised URL
      *
-     * @param       $value
+     * @param mixed $value
      * @param array $options
      *
-     * @return bool|string
-     * @deprecated use Sanitize::url() instead will be removed in the next major 6.x release
+     * @return string|false
+     * @deprecated since 5.1.0 use Sanitize::url() instead, to be removed in 7.0.0
      */
     public function filterURL($value, ...$options)
     {

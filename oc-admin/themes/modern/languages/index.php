@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -33,6 +33,11 @@ osc_admin_page(array(
     ),
 ));
 
+/**
+ * Registered on `admin_header` for the language list; it emits nothing.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -106,7 +111,7 @@ osc_current_admin_theme_path('parts/header.php');
 
 <?php osc_admin_pagination($aData); ?>
 <dialog id="languageModal" class="osc-dialog">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+    <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
         <input type="hidden" name="page" value="languages" />
         <input type="hidden" name="action" value="import_locations" />
         <div class="osc-dialog-body">
@@ -128,7 +133,7 @@ osc_current_admin_theme_path('parts/header.php');
 </dialog>
 <?php osc_admin_confirm_dialog(array(
     'id'         => 'deleteModal',
-    'method'     => 'get',
+    'method'     => 'post',
     'fields'     => array('page' => 'languages', 'action' => 'delete', 'id[]' => ''),
     'title'      => __('Delete language'),
     'text'       => __('The site falls back to the default language for any content that relied on this one.'),

@@ -4,7 +4,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -13,7 +13,12 @@
 
 use mindstellar\storage\ProviderPresets;
 
-$prefs         = __get('prefs');
+/**
+ * The chrome around the declared storage form. The form is core's; the provider-preset script,
+ * the connection test, the queue and the migrations stay here.
+ */
+
+$form          = __get('storage_form');
 $providers     = __get('provider_presets');
 $queueStats    = __get('queue_stats');
 $betterS3Active = __get('better_s3_active');
@@ -93,224 +98,88 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </div>
         <?php } ?>
 
-        <form name="storage_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="storage_post"/>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Active storage'); ?></div>
-                        <div class="form-controls">
-                            <select class="form-select form-select-sm" name="storage_active">
-                                <option value="local" <?php echo ($prefs['storage_active'] !== 's3')
-                                    ? 'selected="true"' : ''; ?>><?php _e('Local disk'); ?></option>
-                                <option value="s3" <?php echo ($prefs['storage_active'] === 's3')
-                                    ? 'selected="true"' : ''; ?>><?php _e('Amazon S3-compatible'); ?></option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Provider'); ?></div>
-                        <div class="form-controls">
-                            <select class="form-select form-select-sm" id="storage_provider" name="storage_s3_provider">
-                                <?php foreach ($providers as $id => $preset) { ?>
-                                    <option value="<?php echo osc_esc_html($id); ?>"
-                                        <?php echo ($prefs['storage_s3_provider'] === $id) ? 'selected="selected"' : ''; ?>>
-                                        <?php echo osc_esc_html($preset['label']); ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
-                            <div class="help-box">
-                                <?php _e('Prefills the connection fields below with a starting point for the selected provider. '
-                                         . 'Review every field before saving.'); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Bucket'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-large" name="storage_s3_bucket"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_bucket']); ?>"/>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Region'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-medium" name="storage_s3_region"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_region']); ?>"/>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Endpoint'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-large" name="storage_s3_endpoint"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_endpoint']); ?>"/>
-                            <div class="help-box">
-                                <?php _e('Leave the provider-specific placeholders (e.g. {region}, {account_id}) filled in '
-                                         . 'with your own values.'); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Access key'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-large" name="storage_s3_access_key"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_access_key']); ?>"/>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Secret key'); ?></div>
-                        <div class="form-controls">
-                            <input type="password" class="input-large" name="storage_s3_secret_key" value=""
-                                   placeholder="<?php echo osc_esc_html(__('Leave blank to keep the currently saved secret key')); ?>"
-                                   autocomplete="new-password"/>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Path-style URLs'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <input type="checkbox" id="storage_s3_path_style" name="storage_s3_path_style"
-                                       value="1" <?php echo($prefs['storage_s3_path_style'] ? 'checked="checked"' : ''); ?> />
-                                <label for="storage_s3_path_style"><?php _e('Use path-style bucket URLs.'); ?></label>
-                                <span class="help-box"><?php _e('Required by MinIO and most self-hosted setups; leave off for AWS.'); ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Public URL'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="input-large" name="storage_s3_public_url"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_public_url']); ?>"/>
-                            <div class="help-box" id="storage_public_url_hint">
-                                <?php _e('Optional. Overrides the URL used to serve files, e.g. a CDN domain in front of the bucket.'); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Signed URLs'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <input type="checkbox" id="storage_s3_signed_urls" name="storage_s3_signed_urls"
-                                       value="1" <?php echo($prefs['storage_s3_signed_urls'] ? 'checked="checked"' : ''); ?> />
-                                <label for="storage_s3_signed_urls"><?php _e('Serve files through time-limited signed URLs.'); ?></label>
-                                <span class="help-box"><?php _e('Use this for a private bucket. Leave off for a public bucket or CDN.'); ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Signed URL TTL'); ?></div>
-                        <div class="form-controls">
-                            <input type="number" class="input-medium" name="storage_s3_signed_ttl" min="60" max="604800"
-                                   value="<?php echo osc_esc_html($prefs['storage_s3_signed_ttl']); ?>"/>
-                            <span class="help-box"><?php _e('Seconds a signed URL stays valid (60-604800).'); ?></span>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Local copies'); ?></div>
-                        <div class="form-controls">
-                            <select class="form-select form-select-sm" name="storage_keep_local">
-                                <option value="all" <?php echo ($prefs['storage_keep_local'] !== 'none')
-                                    ? 'selected="true"' : ''; ?>><?php _e('Keep local copies'); ?></option>
-                                <option value="none" <?php echo ($prefs['storage_keep_local'] === 'none')
-                                    ? 'selected="true"' : ''; ?>><?php _e('Delete after upload'); ?></option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="clear"></div>
-                    <?php osc_admin_form_actions(); ?>
-                </div>
-            </fieldset>
-        </form>
+        <?php osc_admin_settings_form($form['id'], $form); ?>
 
-        <div class="form-horizontal">
-            <?php osc_admin_page_head(__('Connection test')); ?>
-            <div class="form-row">
-                <div class="form-controls">
-                    <p><?php _e('Runs a small write/read/delete probe against the saved connection settings above.'); ?></p>
-                    <form name="storage_test_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                        <input type="hidden" name="page" value="settings"/>
-                        <input type="hidden" name="action" value="storage_test_post"/>
-                        <input type="submit" value="<?php echo osc_esc_html(__('Test connection')); ?>" class="btn btn-dim"/>
-                    </form>
-                </div>
-            </div>
+        <?php
+        osc_admin_action_section(array(
+            'title'   => __('Connection test'),
+            'intro'   => __('Runs a small write/read/delete probe against the saved connection settings above.'),
+            'actions' => array(
+                array(
+                    'label'   => __('Test connection'),
+                    'page'    => 'settings',
+                    'action'  => 'storage_test_post',
+                    'name'    => 'storage_test_form',
+                    'variant' => 'dim',
+                ),
+            ),
+        ));
 
-            <?php osc_admin_page_head(__('Storage queue')); ?>
-            <div class="form-row">
-                <div class="form-controls">
-                    <p>
-                        <?php echo sprintf(
-                            osc_esc_html(__('Pending jobs: %d &middot; Failed jobs: %d')),
-                            (int) $queueStats['pending'],
-                            (int) $queueStats['error']
-                        ); ?>
-                    </p>
-                    <form name="storage_queue_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                        <input type="hidden" name="page" value="settings"/>
-                        <input type="hidden" name="action" value="storage_queue_run"/>
-                        <input type="submit" value="<?php echo osc_esc_html(__('Process queue now')); ?>" class="btn btn-dim"/>
-                    </form>
-                    <?php if (!empty($queueStats['dead_letters'])) { ?>
-                        <div class="help-box">
-                            <p><?php _e('Dead-lettered jobs (past the retry ceiling):'); ?></p>
-                            <ul>
-                                <?php foreach ($queueStats['dead_letters'] as $job) { ?>
-                                    <li>
-                                        #<?php echo osc_esc_html($job['pk_i_id']); ?>
-                                        &mdash; <?php echo osc_esc_html($job['s_type']); ?>
-                                        (<?php echo osc_esc_html($job['s_last_error']); ?>)
-                                    </li>
-                                <?php } ?>
-                            </ul>
-                        </div>
-                    <?php } ?>
-                </div>
-            </div>
+        $queueBody = '<p>' . sprintf(
+            osc_esc_html(__('Pending jobs: %d &middot; Failed jobs: %d')),
+            (int) $queueStats['pending'],
+            (int) $queueStats['error']
+        ) . '</p>';
 
-            <?php osc_admin_page_head(__('Migration')); ?>
-            <div class="form-row">
-                <div class="form-controls">
-                    <p><?php _e('Backfill existing images between local disk and remote storage. Each action queues '
-                                 . 'jobs processed by the storage queue above (or by cron) rather than running immediately.'); ?></p>
+        $queueFooter = '';
+        if (!empty($queueStats['dead_letters'])) {
+            $queueFooter .= '<div class="help-box"><p>'
+                . osc_esc_html(__('Dead-lettered jobs (past the retry ceiling):')) . '</p><ul>';
+            foreach ($queueStats['dead_letters'] as $job) {
+                $queueFooter .= '<li>#' . osc_esc_html($job['pk_i_id']) . ' &mdash; '
+                    . osc_esc_html($job['s_type']) . ' (' . osc_esc_html($job['s_last_error']) . ')</li>';
+            }
+            $queueFooter .= '</ul></div>';
+        }
 
-                    <form name="storage_offload_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                        <input type="hidden" name="page" value="settings"/>
-                        <input type="hidden" name="action" value="storage_migrate_post"/>
-                        <input type="hidden" name="op" value="offload_all"/>
-                        <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-offload-dialog"><?php echo osc_esc_html(__('Offload all local images to remote storage')); ?></button>
-                    </form>
-                    <div class="help-box">
-                        <?php _e('Backfills every image still on local disk to the active remote storage backend. '
-                                 . 'Existing images are queued for upload; new uploads are already handled automatically.'); ?>
-                    </div>
+        osc_admin_action_section(array(
+            'title'       => __('Storage queue'),
+            'body_html'   => $queueBody,
+            'actions'     => array(
+                array(
+                    'label'   => __('Process queue now'),
+                    'page'    => 'settings',
+                    'action'  => 'storage_queue_run',
+                    'name'    => 'storage_queue_form',
+                    'variant' => 'dim',
+                ),
+            ),
+            'footer_html' => $queueFooter,
+        ));
 
-                    <form name="storage_restore_all_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                        <input type="hidden" name="page" value="settings"/>
-                        <input type="hidden" name="action" value="storage_migrate_post"/>
-                        <input type="hidden" name="op" value="restore_all"/>
-                        <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-restore-dialog"><?php echo osc_esc_html(__('Download all remote images back to local (offline copy)')); ?></button>
-                    </form>
-                    <div class="help-box">
-                        <?php _e('Brings every remote image back to local disk and switches it back to local storage. '
-                                 . 'Use this to keep a local copy, or before disabling remote storage.'); ?>
-                    </div>
+        $migrationActions = array(
+            array(
+                'label'   => __('Offload all local images to remote storage'),
+                'variant' => 'dim',
+                'confirm' => '#storage-offload-dialog',
+                'help'    => __('Backfills every image still on local disk to the active remote storage backend. '
+                                . 'Existing images are queued for upload; new uploads are already handled automatically.'),
+            ),
+            array(
+                'label'   => __('Download all remote images back to local (offline copy)'),
+                'variant' => 'dim',
+                'confirm' => '#storage-restore-dialog',
+                'help'    => __('Brings every remote image back to local disk and switches it back to local storage. '
+                                . 'Use this to keep a local copy, or before disabling remote storage.'),
+            ),
+        );
+        if ($betterS3Configured) {
+            $migrationActions[] = array(
+                'label'   => __('Adopt existing Better S3 images'),
+                'variant' => 'dim',
+                'confirm' => '#storage-adopt-dialog',
+                'help'    => __('Imports your Better S3 connection settings and marks images already uploaded to that '
+                                . 'bucket as remote, without re-uploading them.'),
+            );
+        }
 
-                    <?php if ($betterS3Configured) { ?>
-                        <form name="storage_adopt_better_s3_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                            <input type="hidden" name="page" value="settings"/>
-                            <input type="hidden" name="action" value="storage_migrate_post"/>
-                            <input type="hidden" name="op" value="adopt_better_s3"/>
-                            <button type="button" class="btn btn-dim" data-osc-dialog-open="#storage-adopt-dialog"><?php echo osc_esc_html(__('Adopt existing Better S3 images')); ?></button>
-                        </form>
-                        <div class="help-box">
-                            <?php _e('Imports your Better S3 connection settings and marks images already uploaded to that '
-                         . 'bucket as remote, without re-uploading them.'); ?>
-                        </div>
-                    <?php } ?>
-                </div>
-            </div>
-        </div>
+        osc_admin_action_section(array(
+            'title'   => __('Migration'),
+            'intro'   => __('Backfill existing images between local disk and remote storage. Each action queues '
+                            . 'jobs processed by the storage queue above (or by cron) rather than running immediately.'),
+            'actions' => $migrationActions,
+        ));
+        ?>
     </div>
 
 <?php

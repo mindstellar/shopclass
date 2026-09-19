@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -25,7 +25,6 @@ class AlertsStats extends DAO
      * It references to self object: AlertsStats.
      * It is used as a singleton
      *
-     * @access private
      * @since  3.1
      * @var AlertsStats
      */
@@ -46,7 +45,6 @@ class AlertsStats extends DAO
      * It creates a new AlertsStats object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return AlertsStats
      * @since  3.1
      */
@@ -60,13 +58,11 @@ class AlertsStats extends DAO
     }
 
     /**
-     * Increase the stat column given column name and item id
+     * Increase the alerts-sent counter for one day, creating the row if needed.
      *
-     * @access public
+     * @param string $date 'Y-m-d'
      *
-     * @param string $date
-     *
-     * @return bool
+     * @return bool False when the date is malformed or the write failed
      * @since  3.1
      */
     public function increase($date)

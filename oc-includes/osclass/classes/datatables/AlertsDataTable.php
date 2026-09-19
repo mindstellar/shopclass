@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,12 +24,25 @@ class AlertsDataTable extends DataTable
 {
     private $search;
     private $order_by;
+
+    /**
+     * Header column id => the t_alerts column it sorts by. The alert column renders a
+     * stored search rather than a plain value, so it is not offered.
+     *
+     * @var array<string,string>
+     */
+    private $sortable = array(
+        'email' => 's_email',
+        'date'  => 'dt_date',
+    );
     private $total_filtered;
 
     /**
-     * @param $params
+     * Builds the saved-searches (alerts) listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength, sSearch, sort, direction)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -53,6 +66,11 @@ class AlertsDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the alert columns and lets plugins extend them via admin_alerts_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -66,20 +84,14 @@ class AlertsDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Derives page, start, limit, search term and ordering from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
-
-        $column_names = array(
-            0 => 'dt_date',
-            1 => 's_email',
-            2 => 's_search',
-            3 => 'dt_date'
-        );
-
-        $this->order_by['column_name'] = 'c.dt_pub_date';
-        $this->order_by['type']        = 'desc';
 
         if (!isset($_get['iDisplayStart'])) {
             $_get['iDisplayStart'] = 0;
@@ -92,19 +104,10 @@ class AlertsDataTable extends DataTable
             $this->iPage = Params::getParam('iPage');
         }
 
-        $this->order_by['column_name'] = 'dt_date';
-        $this->order_by['type']        = 'DESC';
+        $this->order_by = $this->resolveOrder($_get, $this->sortable, 'dt_date');
         foreach ($_get as $k => $v) {
             if ($k === 'sSearch') {
                 $this->search = $v;
-            }
-
-            /* for sorting */
-            if ($k === 'iSortCol_0') {
-                $this->order_by['column_name'] = $column_names[$v];
-            }
-            if ($k === 'sSortDir_0') {
-                $this->order_by['type'] = $v;
             }
         }
         // set start and limit using iPage param
@@ -115,7 +118,11 @@ class AlertsDataTable extends DataTable
     }
 
     /**
-     * @param $alerts
+     * Formats each alert into table cells and keeps the raw row.
+     *
+     * @param array{alerts?:array<int,array<string,mixed>>,rows?:int,total_results?:int} $alerts Result set from Alerts::search()
+     *
+     * @return void
      */
     private function processData($alerts)
     {
@@ -180,7 +187,7 @@ class AlertsDataTable extends DataTable
 
                 $row['alert'] = implode(', ', $pieces);
                 // fourth row
-                $row['date'] = osc_format_date($aRow['dt_date']);
+                $row['date'] = osc_admin_date($aRow['dt_date'], true);
 
                 $row = osc_apply_filter('alerts_processing_row', $row, $aRow);
 

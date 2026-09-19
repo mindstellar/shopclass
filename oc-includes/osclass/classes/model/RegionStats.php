@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -25,7 +25,6 @@ class RegionStats extends DAO
      * It references to self object: RegionStats.
      * It is used as a singleton
      *
-     * @access private
      * @since  2.4
      * @var RegionStats
      */
@@ -34,7 +33,6 @@ class RegionStats extends DAO
     /**
      * Set data related to t_region_stats table
      *
-     * @access public
      * @since  2.4
      */
     public function __construct()
@@ -49,7 +47,6 @@ class RegionStats extends DAO
      * It creates a new RegionStats object class if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return RegionStats
      * @since  2.4
      */
@@ -64,8 +61,6 @@ class RegionStats extends DAO
 
     /**
      * Increase number of region items, given a region id
-     *
-     * @access public
      *
      * @param int $regionId Region id
      *
@@ -107,12 +102,10 @@ class RegionStats extends DAO
     /**
      * Decrease number of region items, given a region id
      *
-     * @access public
-     *
      * @param int $regionId Region id
      *
-     * @return bool|int Number of affected rows, or false when there is no
-     *                  counter row for that region
+     * @return int|false Number of affected rows, or false when there is no
+     *                   counter row for that region
      * @since  2.4
      */
     public function decreaseNumItems($regionId)
@@ -150,14 +143,11 @@ class RegionStats extends DAO
     /**
      * Set i_num_items, given a region id
      *
-     * @access public
-     *
      * @param int $regionID
      * @param int $numItems
      *
      * @return bool True once the counter is written, false when the write fails
      * @since  2.4
-     *
      */
     public function setNumItems($regionID, $numItems)
     {
@@ -182,11 +172,9 @@ class RegionStats extends DAO
     /**
      * Find stats by region id
      *
-     * @access public
-     *
      * @param int $regionId region id
      *
-     * @return array
+     * @return array<string,string|null>|false False when the region has no stats row
      * @since  2.4
      */
 
@@ -201,15 +189,12 @@ class RegionStats extends DAO
      * and ordered by region_name or items counter.
      * $order = 'region_name ASC' OR $oder = 'items DESC'
      *
-     * @access public
+     * @param string $country Country code; the '%%%%' sentinel means every country
+     * @param string $zero    Comparison operator applied to i_num_items
+     * @param string $order   '<column> ASC|DESC'
      *
-     * @param string $country
-     * @param string $zero
-     * @param string $order
-     *
-     * @return array
+     * @return array<int,array<string,string|null>> Columns depend on the sort column
      * @since  2.4
-     *
      */
     public function listRegions($country = '%%%%', $zero = '>', $order = 'region_name ASC')
     {
@@ -279,7 +264,7 @@ class RegionStats extends DAO
     /**
      * Calculate the total items that belong to region
      *
-     * @param $regionId
+     * @param int $regionId
      *
      * @return int|string Item count as a string, or int 0 when the query fails
      */
@@ -319,9 +304,9 @@ class RegionStats extends DAO
     /**
      * Batch calculate the total items that belong to region id
      *
-     * @param array $regions array of region ids
+     * @param array<int,int|string> $regions array of region ids
      *
-     * @return array
+     * @return array<int|string,int|string> Region id => item count, 0 for a region with none
      */
     private function calculateAllStats(array $regions): array
     {
@@ -378,7 +363,7 @@ class RegionStats extends DAO
     /**
      * Update the number of items for given regions ids
      *
-     * @param array $regions array of region ids
+     * @param array<int,int|string> $regions array of region ids
      *
      * @return bool True once every counter is written, false when there is
      *              nothing to write or the upsert fails

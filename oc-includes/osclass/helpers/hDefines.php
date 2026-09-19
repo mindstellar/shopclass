@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -39,7 +39,9 @@ function osc_base_url($with_index = false)
 }
 
 /**
- * @param array $params
+ * Base URL of the subdomain matching the search parameter the install keys subdomains on.
+ *
+ * @param array<string,mixed> $params Search parameters, as osc_search_url() takes them
  *
  * @return string
  */
@@ -305,8 +307,8 @@ function osc_current_web_theme_js_url($file = '')
 /**
  * Gets the complete path of a given common asset
  *
- * @param string $file
- * @param string $assets_base_url
+ * @param string      $file
+ * @param string|null $assets_base_url
  *
  * @return string
  * @since 3.0
@@ -511,8 +513,8 @@ function osc_user_resend_activation_link($id, $email)
 /**
  * Create automatically the url of the item's comments page
  *
- * @param mixed  $page
- * @param string $locale
+ * @param int|string $page
+ * @param string     $locale
  *
  * @return string
  */
@@ -617,8 +619,8 @@ function osc_premium_url($locale = '')
 /**
  * Create the no friendly url of the item using the id of the item
  *
- * @param int $id the primary key of the item
- * @param     $locale
+ * @param int|string $id     the primary key of the item
+ * @param string     $locale
  *
  * @return string
  */
@@ -661,10 +663,9 @@ function osc_user_alerts_url()
 /**
  * Link that downloads the signed-in person a copy of their own data.
  *
- * Carries the account id and its secret, the same two the delete link carries and the
- * same two the action re-checks against the session. Returns '' when nobody is signed
- * in, so a theme can print it unconditionally and get nothing rather than a link that
- * cannot work.
+ * Carries the account id and its secret, and the action re-checks both against
+ * the session. Returns '' when nobody is signed in, so a theme can print it
+ * unconditionally and get nothing rather than a link that cannot work.
  *
  * @return string
  */
@@ -681,6 +682,24 @@ function osc_user_export_url()
 
     return osc_base_url(true) . '?page=user&action=export&id=' . (int)$user['pk_i_id']
         . '&secret=' . rawurlencode($user['s_secret']);
+}
+
+/**
+ * Confirm page for deleting the signed-in account.
+ *
+ * GET only: it must not carry an id or secret, and it must not delete anything.
+ * The POST that actually deletes is `delete_post` and is not built here.
+ * Returns '' when nobody is signed in.
+ *
+ * @return string
+ */
+function osc_user_delete_url()
+{
+    if (!osc_is_web_user_logged_in()) {
+        return '';
+    }
+
+    return osc_base_url(true) . '?page=user&action=delete';
 }
 
 /**
@@ -711,9 +730,9 @@ function osc_user_unsubscribe_alert_url($id = '', $email = '', $secret = '')
 /**
  * Gets user alert activate url
  *
- * @param        $id
- * @param string $secret
- * @param string $email
+ * @param int|string $id
+ * @param string     $secret
+ * @param string     $email
  *
  * @return string
  */
@@ -897,8 +916,8 @@ function osc_change_language_url($locale)
 /**
  * Gets url for editing an item
  *
- * @param string $secret
- * @param string $id
+ * @param string     $secret
+ * @param int|string $id
  *
  * @return string
  */
@@ -918,8 +937,8 @@ function osc_item_edit_url($secret = '', $id = '')
 /**
  * Gets url for delete an item
  *
- * @param string $secret
- * @param string $id
+ * @param string     $secret
+ * @param int|string $id
  *
  * @return string
  */
@@ -939,8 +958,8 @@ function osc_item_delete_url($secret = '', $id = '')
 /**
  * Gets url for activate an item
  *
- * @param string $secret
- * @param string $id
+ * @param string     $secret
+ * @param int|string $id
  *
  * @return string
  */
@@ -993,10 +1012,12 @@ function osc_item_send_friend_url()
 }
 
 /**
- * @param $id
- * @param $args
+ * URL of a registered route, with rewriting on or off.
  *
- * @return string
+ * @param string              $id   Route id
+ * @param array<string,mixed> $args Values for the route's {placeholders}; anything left over becomes a query parameter
+ *
+ * @return string Empty string when no route is registered under $id
  * @since 3.2
  */
 function osc_route_url($id, $args = array())
@@ -1033,10 +1054,12 @@ function osc_route_url($id, $args = array())
 }
 
 /**
- * @param $id
- * @param $args
+ * Admin URL of a registered route, rendered through the plugin controller.
  *
- * @return string
+ * @param string              $id   Route id
+ * @param array<string,mixed> $args Query parameters
+ *
+ * @return string Empty string when no route is registered under $id
  * @since 3.2
  */
 function osc_route_admin_url($id, $args = array())
@@ -1054,10 +1077,12 @@ function osc_route_admin_url($id, $args = array())
 }
 
 /**
- * @param $id
- * @param $args
+ * Public ajax URL of a registered route.
  *
- * @return string
+ * @param string              $id   Route id
+ * @param array<string,mixed> $args Query parameters
+ *
+ * @return string Empty string when no route is registered under $id
  * @since 3.2
  */
 function osc_route_ajax_url($id, $args = array())
@@ -1075,10 +1100,12 @@ function osc_route_ajax_url($id, $args = array())
 }
 
 /**
- * @param $id
- * @param $args
+ * Admin ajax URL of a registered route.
  *
- * @return string
+ * @param string              $id   Route id
+ * @param array<string,mixed> $args Query parameters
+ *
+ * @return string Empty string when no route is registered under $id
  * @since 3.2
  */
 function osc_route_admin_ajax_url($id, $args = array())
@@ -1102,7 +1129,7 @@ function osc_route_admin_ajax_url($id, $args = array())
 /**
  * Gets list of countries
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_countries()
 {
@@ -1116,9 +1143,9 @@ function osc_get_countries()
 /**
  * Gets list of regions (from a country)
  *
- * @param string $country
+ * @param string $country Country code; empty for every region
  *
- * @return array|string
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_regions($country = '')
 {
@@ -1136,9 +1163,9 @@ function osc_get_regions($country = '')
 /**
  * Gets list of cities (from a region)
  *
- * @param string $region
+ * @param string $region Region id; empty for every city
  *
- * @return array|string
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_cities($region = '')
 {
@@ -1156,7 +1183,7 @@ function osc_get_cities($region = '')
 /**
  * Gets list of currencies
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_currencies()
 {
@@ -1170,7 +1197,7 @@ function osc_get_currencies()
 /**
  * Prints the additional options to the menu
  *
- * @param array $option with options of the form array('name' => 'display name', 'url' => 'url of link')
+ * @param array<string,string>|null $option array('name' => 'display name', 'url' => 'url of link')
  *
  * @return void
  */
@@ -1292,7 +1319,8 @@ function osc_is_item_contact_page()
  * Get if user is on login form
  *
  * @return boolean
- * @deprecated since version 3.5.7 use osc_is_login_page()
+ * @deprecated since 3.5.7
+ * @see osc_is_login_page()
  */
 function osc_is_login_form()
 {
@@ -1342,9 +1370,9 @@ function osc_is_forgot_page()
 /**
  * Get if the user is on custom page
  *
- * @param null $value
+ * @param string|null $value File or route the page must match
  *
- * @return boolean
+ * @return bool
  */
 function osc_is_custom_page($value = null)
 {
@@ -1493,7 +1521,9 @@ function osc_is_moderator()
 }
 
 /**
- * @return mixed
+ * Host part of the install's base URL.
+ *
+ * @return string
  */
 function osc_get_domain()
 {
@@ -1503,9 +1533,11 @@ function osc_get_domain()
 }
 
 /**
- * @param string $separator
- * @param bool   $echo
- * @param array  $lang
+ * Render the breadcrumb trail for the current page.
+ *
+ * @param string               $separator
+ * @param bool                 $echo      False to return the markup instead of printing it
+ * @param array<string,string> $lang      Custom labels, as Breadcrumb takes them
  *
  * @return string|void
  */
@@ -1523,7 +1555,9 @@ function osc_breadcrumb($separator = '&raquo;', $echo = true, $lang = array())
 }
 
 /**
- * @return mixed|string
+ * Display name of the subdomain being served.
+ *
+ * @return string Empty string off a subdomain
  */
 function osc_subdomain_name()
 {
@@ -1531,7 +1565,9 @@ function osc_subdomain_name()
 }
 
 /**
- * @return mixed|string
+ * Slug of the subdomain being served.
+ *
+ * @return string Empty string off a subdomain
  */
 function osc_subdomain_slug()
 {
@@ -1539,6 +1575,8 @@ function osc_subdomain_slug()
 }
 
 /**
+ * Whether the request is being served from a subdomain.
+ *
  * @return bool
  */
 function osc_is_subdomain()

@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,6 +24,9 @@ class CAdminLanguages extends AdminSecBaseModel
     //specific for this class
     private OSCLocale $localeManager;
 
+    /**
+     * Take the locale manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -36,7 +39,10 @@ class CAdminLanguages extends AdminSecBaseModel
     /**
      * Business Layer...
      *
-     * @return bool
+     * Dispatch the requested languages action: add, import from the translation
+     * repository, edit, enable/disable, delete, otherwise the list.
+     *
+     * @return true|null true once an import has finished
      */
     public function doModel()
     {
@@ -90,9 +96,11 @@ class CAdminLanguages extends AdminSecBaseModel
                         break;
                 }
 
+                osc_invalidate_locale_cache();
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;
             case ('import_locations'):
+                osc_csrf_check();
                 $languageToImport = Params::getParam('language');
                 if ($languageToImport != '') {
                     if (defined('DEMO')) {
@@ -101,7 +109,19 @@ class CAdminLanguages extends AdminSecBaseModel
                     }
 
                     $url  = osc_get_i18n_repository_url();
-                    $json = json_decode(osc_file_get_contents($url), true);
+                    $json = json_decode((string) osc_file_get_contents($url), true);
+                    // Without this the button looked broken wherever the server cannot reach
+                    // the translation repository: the page just came back unchanged.
+                    if (!is_array($json)) {
+                        osc_add_flash_error_message(
+                            sprintf(
+                                _m('Could not read the list of translations at %s. This server has to be able to reach it.'),
+                                $url
+                            ),
+                            'admin'
+                        );
+                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                    }
 
                     /* example json
                         [ {
@@ -151,12 +171,15 @@ class CAdminLanguages extends AdminSecBaseModel
                             'core.mo',
                             'messages.mo'
                         );
+                        $failed = 0;
                         foreach ($poFiles as $poFile) {
                             $poFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $poFile);
                             $poFileTo   = $uploadDir . $poFile;
                             $poFile     = osc_file_get_contents($poFileFrom);
                             if ($poFile) {
                                 file_put_contents($poFileTo, $poFile);
+                            } else {
+                                $failed++;
                             }
                         }
                         foreach ($moFiles as $moFile) {
@@ -165,13 +188,37 @@ class CAdminLanguages extends AdminSecBaseModel
                             $moFile     = osc_file_get_contents($moFileFrom);
                             if ($moFile) {
                                 file_put_contents($moFileTo, $moFile);
+                            } else {
+                                $failed++;
                             }
                         }
-                        osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                        // Clear this code from the pending-update list so the row's
+                        // "Update" action disappears until the next version check.
+                        $pending = json_decode(osc_get_preference('languages_to_update'), true);
+                        if (is_array($pending) && ($k = array_search($languageToImport, $pending, true)) !== false) {
+                            unset($pending[$k]);
+                            osc_set_preference('languages_to_update', json_encode(array_values($pending)));
+                            osc_set_preference('languages_update_count', count($pending));
+                            osc_reset_preferences();
+                        }
+                        osc_invalidate_locale_cache();
+                        if ($failed > 0) {
+                            osc_add_flash_warning_message(
+                                sprintf(_m('Language imported, but %d file(s) could not be downloaded.'), $failed),
+                                'admin'
+                            );
+                        } else {
+                            osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                        }
                         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
 
                         return true;
                     }
+
+                    osc_add_flash_error_message(
+                        sprintf(_m('No published translation was found for %s.'), $languageToImport),
+                        'admin'
+                    );
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;
@@ -272,6 +319,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 );
 
                 $iUpdated = $this->localeManager->update($array, array('pk_c_code' => $languageCode));
+                osc_invalidate_locale_cache();
                 if ($iUpdated > 0) {
                     osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
                 }
@@ -294,6 +342,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     osc_translate_categories($i);
                     $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
+                osc_invalidate_locale_cache();
 
                 if ($iUpdated > 0) {
                     osc_add_flash_ok_message($msg, 'admin');
@@ -323,6 +372,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     }
                     $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
+                osc_invalidate_locale_cache();
 
                 if ($msg_warning != '') {
                     if ($iUpdated > 0) {
@@ -353,6 +403,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     osc_translate_categories($i);
                     $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
+                osc_invalidate_locale_cache();
 
                 if ($iUpdated > 0) {
                     osc_add_flash_ok_message($msg, 'admin');
@@ -382,6 +433,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     }
                     $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
+                osc_invalidate_locale_cache();
 
                 if ($msg_warning != '') {
                     if ($iUpdated > 0) {
@@ -440,6 +492,7 @@ class CAdminLanguages extends AdminSecBaseModel
                         }
                     }
                 }
+                osc_invalidate_locale_cache();
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                 break;
             default:
@@ -490,6 +543,12 @@ class CAdminLanguages extends AdminSecBaseModel
                     $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
 
                     $options   = array();
+                    if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {
+                        $options[] = '<a class="strong" href="' . osc_admin_base_url(true)
+                                     . '?page=languages&amp;action=import_locations&amp;language=' . $l['pk_c_code']
+                                     . '&amp;' . osc_csrf_token_url()
+                                     . '">' . __('Update') . '</a>';
+                    }
                     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='
                                  . $l['pk_c_code']
                                  . '">' . __('Edit') . '</a>';
@@ -518,17 +577,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     }
                     $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-                    $sUpdate = '';
-                    // get languages to update from t_preference
-                    if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {
-                        $sUpdate =
-                            '<a class="btn-market-update btn-market-popup" href="#' . htmlentities($l['pk_c_code'])
-                            . '">' . __(
-                                'Update here'
-                            ) . '</a>';
-                    }
-
-                    $row[] = $l['s_name'] . $sUpdate . $actions;
+                    $row[] = $l['s_name'] . $actions;
                     $row[] = $l['s_short_name'];
                     $row[] = $l['s_description'];
                     $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));
@@ -614,7 +663,12 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
-     * @param $mailJSON
+     * Load the email templates that came with a downloaded language, flashing an error
+     * when they cannot be read.
+     *
+     * @param string|false $mailJSON Raw mail.json, or false when the download failed
+     *
+     * @return void
      */
     private function importEmailJson($mailJSON)
     {

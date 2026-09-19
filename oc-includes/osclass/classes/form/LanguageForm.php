@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -18,162 +18,11 @@
 class LanguageForm extends Form
 {
     /**
-     * @param $locale
-     */
-    public static function primary_input_hidden($locale)
-    {
-        parent::generic_input_hidden('pk_c_code', $locale['pk_c_code']);
-    }
-
-    /**
-     * @param null $locale
+     * Echo the client-side validation script for the language form.
      *
-     * @return bool
-     */
-    public static function name_input_text($locale = null)
-    {
-        parent::generic_input_text('s_name', isset($locale) ? $locale['s_name'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
+     * @param bool $admin Unused
      *
-     * @return bool
-     */
-    public static function short_name_input_text($locale = null)
-    {
-        parent::generic_input_text('s_short_name', isset($locale) ? $locale['s_short_name'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function description_input_text($locale = null)
-    {
-        parent::generic_input_text('s_description', isset($locale) ? $locale['s_description'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function currency_format_input_text($locale = null)
-    {
-        parent::generic_input_text(
-            's_currency_format',
-            isset($locale) ? $locale['s_currency_format'] : ''
-        );
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function dec_point_input_text($locale = null)
-    {
-        parent::generic_input_text('s_dec_point', isset($locale) ? $locale['s_dec_point'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function num_dec_input_text($locale = null)
-    {
-        parent::generic_input_text('i_num_dec', isset($locale) ? $locale['i_num_dec'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function thousands_sep_input_text($locale = null)
-    {
-        parent::generic_input_text(
-            's_thousands_sep',
-            isset($locale) ? $locale['s_thousands_sep'] : ''
-        );
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function date_format_input_text($locale = null)
-    {
-        parent::generic_input_text('s_date_format', isset($locale) ? $locale['s_date_format'] : '');
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function description_textarea($locale = null)
-    {
-        parent::generic_textarea('s_stop_words', $locale['s_stop_words']);
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function enabled_input_checkbox($locale = null)
-    {
-        parent::generic_input_checkbox('b_enabled', '1', $locale['b_enabled'] == 1);
-
-        return true;
-    }
-
-    /**
-     * @param null $locale
-     *
-     * @return bool
-     */
-    public static function enabled_bo_input_checkbox($locale = null)
-    {
-        parent::generic_input_checkbox('b_enabled_bo', '1', $locale['b_enabled_bo'] == 1);
-
-        return true;
-    }
-
-    public static function text_direction_select($aLocale = null)
-    {
-        $options['selectOptions'] = 'ltr,rtl';
-        $attributes['id'] = 's_direction';
-        $value = $aLocale['s_direction'];
-
-        echo (new Form())->select('s_direction', $value, $attributes, $options);
-    }
-
-    /**
-     * @param bool $admin
+     * @return void
      */
     public static function js_validation($admin = false)
     {

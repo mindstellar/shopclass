@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later.
  * See LICENSE (GPL-3.0).
@@ -30,7 +30,10 @@ class SigningKey
     private static $key;
 
     /**
+     * The install signing key, generating and persisting one on first use.
+     *
      * @return string
+     * @throws \Exception when no source of randomness is available to generate a key
      */
     public static function get()
     {

@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -22,7 +22,7 @@ use ReCaptcha\ReCaptcha;
 /**
  * check if the item is expired
  *
- * @param $dt_expiration
+ * @param string $dt_expiration Datetime the listing expires
  *
  * @return bool
  */
@@ -38,10 +38,11 @@ function osc_isExpired($dt_expiration)
 /**
  * Remove resources from disk
  *
- * @param int|array $id
- * @param boolean   $admin
+ * @param int|array<int,int>       $id       Resource id; an array uses its first element
+ * @param bool                     $admin    Whether the deletion is being logged as an admin action
+ * @param array<string,mixed>|null $resource Resource row the caller already read; looked up when omitted
  *
- * @return bool|void
+ * @return false|void False on a demo install, where nothing is deleted
  */
 function osc_deleteResource($id, $admin, $resource = null)
 {
@@ -116,9 +117,9 @@ function osc_deleteResource($id, $admin, $resource = null)
 /**
  * Tries to delete the directory recursively.
  *
- * @param $path
+ * @param string $path
  *
- * @return true on success.
+ * @return bool False on a path containing .., a path that is not a directory, or a failed removal
  */
 function osc_deleteDir($path)
 {
@@ -128,9 +129,9 @@ function osc_deleteDir($path)
 /**
  * Serialize the data (usefull at plugins activation)
  *
- * @param $data
+ * @param mixed $data
  *
- * @return string the data serialized
+ * @return mixed The serialized string, or the value unchanged when it is neither array nor object
  */
 function osc_serialize($data)
 {
@@ -146,9 +147,9 @@ function osc_serialize($data)
 /**
  * Unserialize the data (usefull at plugins activation)
  *
- * @param $data
+ * @param mixed $data
  *
- * @return mixed data unserialized
+ * @return mixed The unserialized value, false on a malformed payload, or the value unchanged
  */
 function osc_unserialize($data)
 {
@@ -162,7 +163,7 @@ function osc_unserialize($data)
 /**
  * Checks is $data is serialized or not
  *
- * @param $data
+ * @param mixed $data
  *
  * @return bool False if not serialized and true if it was.
  */
@@ -203,10 +204,10 @@ function is_serialized($data)
  * VERY BASIC
  * Perform a POST request, so we could launch fake-cron calls and other core-system calls without annoying the user
  *
- * @param $url   string
- * @param $_data array
+ * @param string             $url
+ * @param array<string,mixed> $_data
  *
- * @return bool false on error or number of bytes sent.
+ * @return bool|int False on error, or the number of bytes sent.
  */
 function osc_doRequest($url, $_data)
 {
@@ -214,9 +215,63 @@ function osc_doRequest($url, $_data)
 }
 
 /**
- * @param $params
+ * Seconds PHPMailer may wait on one SMTP connect or command.
  *
- * @return bool
+ * PHPMailer's default is 300. A dead or firewalled host then holds a php-fpm
+ * worker for five minutes per send (or per "Send a test email" click). Fifteen
+ * seconds is long enough for a slow provider and short enough that a bad host
+ * fails the page instead of pinning the pool. Plugins may change it with the
+ * `phpmailer_smtp_timeout` filter; the value is clamped to 1–60.
+ *
+ * Pure aside from that filter. Safe to call from characterization tests.
+ *
+ * @return int
+ */
+function osc_phpmailer_smtp_timeout_seconds()
+{
+    $seconds = (int)osc_apply_filter('phpmailer_smtp_timeout', 15);
+    if ($seconds < 1) {
+        return 1;
+    }
+    if ($seconds > 60) {
+        return 60;
+    }
+
+    return $seconds;
+}
+
+/**
+ * Apply {@see osc_phpmailer_smtp_timeout_seconds()} to a PHPMailer instance
+ * and to the SMTP object it will use on send().
+ *
+ * @param PHPMailer $mail
+ *
+ * @return void
+ */
+function osc_phpmailer_limit_smtp_wait($mail)
+{
+    if (!is_object($mail)) {
+        return;
+    }
+    $seconds        = osc_phpmailer_smtp_timeout_seconds();
+    $mail->Timeout  = $seconds;
+    if (method_exists($mail, 'getSMTPInstance')) {
+        $smtpInst = $mail->getSMTPInstance();
+        if (is_object($smtpInst)) {
+            $smtpInst->Timeout = $seconds;
+            if (property_exists($smtpInst, 'Timelimit')) {
+                $smtpInst->Timelimit = $seconds;
+            }
+        }
+    }
+}
+
+/**
+ * Send one email through PHPMailer, using the site's configured mail transport.
+ *
+ * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys
+ *
+ * @return bool False on a demo install or when the send fails
  */
 function osc_sendMail($params)
 {
@@ -260,7 +315,7 @@ function osc_sendMail($params)
             $pop3_password = $params['password'];
         }
 
-        $pop->authorise($pop3_host, $pop3_port, 30, $pop3_username, $pop3_password);
+        $pop->authorise($pop3_host, $pop3_port, osc_phpmailer_smtp_timeout_seconds(), $pop3_username, $pop3_password);
     }
 
     if (osc_mailserver_auth()) {
@@ -393,6 +448,7 @@ function osc_sendMail($params)
         $mail->isHTML();
 
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
+        osc_phpmailer_limit_smtp_wait($mail);
 
         // send email!
         $mail->send();
@@ -406,8 +462,11 @@ function osc_sendMail($params)
 }
 
 /**
- * @param $text
- * @param $params
+ * Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then
+ * the site-wide ones.
+ *
+ * @param string                             $text
+ * @param array{0:array<int,string>,1:array<int,string>} $params Search list and its replacement list
  *
  * @return string
  */
@@ -436,9 +495,11 @@ function osc_mailBeauty($text, $params)
 }
 
 /**
- * @param      $dir
- * @param int  $mode
- * @param bool $recursive
+ * Create a directory, warning instead of throwing when it cannot be created.
+ *
+ * @param string $dir
+ * @param int    $mode
+ * @param bool   $recursive Accepted for backwards compatibility; the filesystem helper always recurses
  *
  * @return bool
  */
@@ -457,8 +518,10 @@ function osc_mkdir($dir, $mode = 0755, $recursive = true)
 }
 
 /**
- * @param       $source
- * @param       $dest
+ * Copy a file, warning instead of throwing on failure.
+ *
+ * @param string $source
+ * @param string $dest
  *
  * @return bool
  */
@@ -476,10 +539,12 @@ function osc_copy($source, $dest)
 }
 
 /**
- * @param $file1
- * @param $file2
+ * Copy a file by reading it whole and writing it out again.
  *
- * @return bool
+ * @param string $file1 Source path
+ * @param string $file2 Destination path
+ *
+ * @return bool False when the source could not be read
  * @deprecated since 4.0.0
  */
 function osc_copyemz($file1, $file2)
@@ -500,10 +565,10 @@ function osc_copyemz($file1, $file2)
 /**
  * Dump osclass database into path file
  *
- * @param string $path
- * @param string $file
+ * @param string $path Directory to write into, with a trailing separator
+ * @param string $file Filename to write
  *
- * @return int
+ * @return int 1 on success; -1 empty path, -2 no dump handle, -3 no tables, -4 path not writable
  */
 function osc_dbdump($path, $file)
 {
@@ -620,7 +685,7 @@ function testCurl()
  * Returns true if there is fsockopen on system environment
  *
  * @return bool
- * @deprecated  since 4.0.0
+ * @deprecated since 4.0.0
  */
 function testFsockopen()
 {
@@ -697,7 +762,7 @@ function is_hex($hex)
  *
  * @param string $content
  *
- * @return array
+ * @return array{headers?:string,body?:string} Empty when the response has no header block
  * @since 3.0
  */
 function processResponse($content)
@@ -718,7 +783,7 @@ function processResponse($content)
  *
  * @param string $headers
  *
- * @return array
+ * @return array<string,string> Lower-cased header name => value
  * @deprecated since 4.0.0
  */
 function processHeaders($headers)
@@ -741,9 +806,9 @@ function processHeaders($headers)
 /**
  * Download file using fsockopen
  *
- * @param string $sourceFile
- * @param mixed  $fileout
- * @param null   $post_data
+ * @param string                   $sourceFile
+ * @param string|null              $fileout   Destination path; null returns the body instead
+ * @param array<string,mixed>|null $post_data POST body; null issues a GET
  *
  * @return bool|string
  * @since      3.0
@@ -833,12 +898,13 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
 }
 
 /**
+ * Download a URL to a local path, warning instead of throwing on failure.
  *
- * @param      $sourceFile
- * @param      $downloadedFile
- * @param null $post_data
+ * @param string                   $sourceFile     URL to fetch
+ * @param string                   $downloadedFile Destination path
+ * @param array<string,mixed>|null $post_data      POST body; null issues a GET
  *
- * @return bool
+ * @return bool False on a 404, a truncated transfer or a checksum mismatch
  */
 function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
 {
@@ -856,8 +922,8 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
 /**
  * Shopclass file_get_contents implementation
  *
- * @param      $url
- * @param null $post_data
+ * @param string                   $url
+ * @param array<string,mixed>|null $post_data POST body; null issues a GET
  * @param bool $verify_ssl verify the peer's TLS certificate. Defaults to true so
  *                         every caller authenticates the peer; pass false only at
  *                         a call site that genuinely must talk to a bad cert.
@@ -892,7 +958,9 @@ function apache_mod_loaded($mod)
 /**
  * Change version to param number
  *
- * @param mixed version
+ * @param string|null $version
+ *
+ * @return void
  */
 function osc_changeVersionTo($version = null)
 {
@@ -938,9 +1006,11 @@ function osc_package_installs_disabled()
 }
 
 /**
- * @param $array
+ * Strip backslashes from a string, or from every value of an array, recursively.
  *
- * @return string
+ * @param string|array<mixed> $array
+ *
+ * @return string|array<mixed> Same shape as the input
  */
 function strip_slashes_extended($array)
 {
@@ -984,7 +1054,9 @@ function osc_zip_folder($archive_folder, $archive_name)
 }
 
 /**
- * @return bool
+ * Verify the reCAPTCHA token on the current POST request.
+ *
+ * @return bool False on a non-POST request, a missing token, or a failed verification
  */
 function osc_check_recaptcha()
 {
@@ -1056,7 +1128,7 @@ function osc_check_captcha()
 /**
  * replace double slash with single slash
  *
- * @param $path
+ * @param string $path
  *
  * @return string
  */
@@ -1066,9 +1138,11 @@ function osc_replace_double_slash($path)
 }
 
 /**
- * @param mixed|string $dir
+ * Walk a directory and report whether the files under it are writable.
  *
- * @return bool
+ * @param string $dir
+ *
+ * @return bool False on a path containing .., or on the first unwritable file
  * @deprecated since 4.0.0
  */
 function osc_check_dir_writable($dir = ABS_PATH)
@@ -1125,9 +1199,11 @@ function osc_check_dir_writable($dir = ABS_PATH)
 }
 
 /**
- * @param mixed|string $dir
+ * Walk a directory and chmod anything under it that is not writable to 0755.
  *
- * @return bool
+ * @param string $dir
+ *
+ * @return bool False on a path containing .., or when a chmod fails
  * @deprecated since 4.0.0
  */
 function osc_change_permissions($dir = ABS_PATH)
@@ -1194,9 +1270,11 @@ function osc_change_permissions($dir = ABS_PATH)
 }
 
 /**
- * @param mixed|string $dir
+ * Record the current permission bits of a directory and everything under it.
  *
- * @return array|bool
+ * @param string $dir
+ *
+ * @return array<string,int>|false Path => permission bits, or false on a path containing ..
  * @deprecated since 4.0.0
  */
 function osc_save_permissions($dir = ABS_PATH)
@@ -1229,7 +1307,9 @@ function osc_save_permissions($dir = ABS_PATH)
 }
 
 /**
- * @param $price
+ * Format a stored integer price for display.
+ *
+ * @param int|string $price Price in the currency's smallest stored unit
  *
  * @return string
  */
@@ -1245,7 +1325,7 @@ function osc_prepare_price($price)
  * @param int    $flags
  * @param string $path
  *
- * @return array of files
+ * @return array<int,string> of files
  */
 function rglob($pattern, $flags = 0, $path = '')
 {
@@ -1268,13 +1348,14 @@ function rglob($pattern, $flags = 0, $path = '')
 }
 
 /**
- * Market util functions
+ * Whether a plugin's update URI advertises a version newer than the installed one.
  *
- * @param      $update_uri
- * @param null $version
+ * @param string      $update_uri
+ * @param string|null $version Version currently installed
  *
  * @return bool
- * @deprecated since 4.0.0
+ * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forPlugins()->pendingUpdates() instead
+ * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_plugin_update($update_uri, $version = null)
 {
@@ -1287,11 +1368,14 @@ function osc_check_plugin_update($update_uri, $version = null)
 }
 
 /**
- * @param string $update_uri
- * @param null   $version
+ * Whether a theme's update URI advertises a version newer than the installed one.
+ *
+ * @param string      $update_uri
+ * @param string|null $version Version currently installed
  *
  * @return bool
- * @deprecated since 4.0.0
+ * @deprecated since 4.0.0 use mindstellar\market\PackageIndex::forThemes()->pendingUpdates() instead
+ * @see \mindstellar\market\PackageIndex::pendingUpdates()
  */
 function osc_check_theme_update($update_uri, $version = null)
 {
@@ -1349,12 +1433,13 @@ function osc_check_language_update($update_uri, $version = null, $disable = fals
 }
 
 /**
- * @param      $type
- * @param      $update_uri
+ * Resolve a package's update URI to a market URL.
  *
- * @param bool $disable
+ * @param string      $type       One of plugins, themes or languages
+ * @param string|null $update_uri
+ * @param bool        $disable    True short-circuits to false; that is the default
  *
- * @return bool|string
+ * @return string|false False unless $update_uri is already an absolute http(s) URL
  * @deprecated since 4.0.0
  */
 function _get_market_url($type, $update_uri, $disable = true)
@@ -1383,10 +1468,11 @@ function _get_market_url($type, $update_uri, $disable = true)
 }
 
 /**
- * @param      $uri
- * @param      $version
+ * Whether the JSON descriptor at a URI advertises a version newer than the installed one.
  *
- * @param bool $disable
+ * @param string      $uri
+ * @param string|null $version Version currently installed
+ * @param bool        $disable True short-circuits to false; that is the default
  *
  * @return bool
  * @deprecated since 4.0.0
@@ -1422,6 +1508,7 @@ function _need_update($uri, $version, $disable = true)
  *
  * @return int
  * @deprecated since 4.0.0
+ * @see Utils::versionCompare()
  */
 function version_compare2($a, $b)
 {
@@ -1461,6 +1548,8 @@ function osc_update_cat_stats()
  * Recount items for a given a category id
  *
  * @param int $id
+ *
+ * @return void
  */
 function osc_update_cat_stats_id($id)
 {
@@ -1484,7 +1573,9 @@ function osc_update_location_stats($force = false, $limit = 1000)
 /**
  * Translate current categories to new locale
  *
- * @param $locale
+ * @param string $locale
+ *
+ * @return void
  */
 function osc_translate_categories($locale)
 {
@@ -1492,6 +1583,8 @@ function osc_translate_categories($locale)
 }
 
 /**
+ * The client's IP address for the current request.
+ *
  * @return string
  */
 function get_ip()
@@ -1500,8 +1593,12 @@ function get_ip()
 }
 
 /**
- * @param      $url
- * @param null $code
+ * Flush pending flash messages, send a Location header and end the request.
+ *
+ * @param string   $url
+ * @param int|null $code HTTP status to send with the redirect
+ *
+ * @return never
  */
 function osc_redirect_to($url, $code = null)
 {
@@ -1509,9 +1606,11 @@ function osc_redirect_to($url, $code = null)
 }
 
 /**
- * @param $type
+ * Fill in the missing slugs for one location table, returning how many rows were updated.
  *
- * @return bool|int|mixed
+ * @param string $type One of country, region or city
+ *
+ * @return int|false False when $type is not a known location type
  */
 function osc_calculate_location_slug($type)
 {
@@ -1519,7 +1618,11 @@ function osc_calculate_location_slug($type)
 }
 
 /**
- * @param $input
+ * Drop null and empty elements from an array in place, recursively.
+ *
+ * @param array<mixed> $input Modified by reference
+ *
+ * @return void
  */
 function osc_prune_array(&$input)
 {
@@ -1527,9 +1630,11 @@ function osc_prune_array(&$input)
 }
 
 /**
- * @param        $section
- * @param        $element
- * @param string $osclass_version
+ * Whether a package's published descriptor lists the running core version as compatible.
+ *
+ * @param string $section         Market section, e.g. plugins or themes
+ * @param string $element         URL of the package's JSON descriptor
+ * @param string $osclass_version Core version to test against
  *
  * @return bool
  */
@@ -1568,6 +1673,8 @@ function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS
 }
 
 /**
+ * Whether the current request arrived over HTTPS.
+ *
  * @return bool
  */
 function osc_is_ssl()
@@ -1581,10 +1688,11 @@ if (!function_exists('hex2b64')) {
      * Used to encode a field for Amazon Auth
      * (taken from the Amazon S3 PHP example library)
      *
-     * @param $str
+     * @param string $str Hex string to re-encode
      *
      * @return string
      * @deprecated since 4.0.0
+     * @see Utils::hex2b64()
      */
     function hex2b64($str)
     {
@@ -1599,11 +1707,12 @@ if (!function_exists('hmacsha1')) {
      * Calculate HMAC-SHA1 according to RFC2104
      * See http://www.faqs.org/rfcs/rfc2104.html
      *
-     * @param $key
-     * @param $data
+     * @param string $key
+     * @param string $data
      *
      * @return string
      * @deprecated since 4.0.0
+     * @see Utils::hmacsha1()
      */
     function hmacsha1($key, $data)
     {

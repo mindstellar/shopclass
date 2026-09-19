@@ -1,7 +1,9 @@
-// The sidebar is the "second surface": bench-warm chrome beside the white content bench.
-// It used to be near-black (.bg-black-light + .text-white), which read as a separate, cold
-// application bolted onto the admin. It is now a quiet warm neutral that recedes, with the
-// bronze reserved for one job — telling you where you are.
+// The sidebar is the "second surface": a quiet chrome neutral beside the white content
+// bench, with the accent reserved for one job — telling you where you are. The whole rail
+// is driven by one token layer (--osc-sidebar-*, defined in _brand.scss) that defaults to
+// this chrome look but can be repointed to retheme the rail (e.g. a committed dark/navy
+// surface) without touching the rules here. The detached collapsed-rail flyout re-points
+// those tokens back to the light popover palette, since it is a popover over the content.
 //
 // The markup comes from AdminMenu::renderMenu() and cannot change without breaking plugins
 // that register menu pages, so this styles the DOM as it actually is:
@@ -31,8 +33,8 @@ $sidebar-gutter: 2.35rem;
 
   @extend .px-sm-2, .px-0, .min-vh-100;
 
-  background-color: var(--osc-chrome);
-  border-inline-end: 1px solid var(--osc-chrome-edge);
+  background-color: var(--osc-sidebar-surface);
+  border-inline-end: 1px solid var(--osc-sidebar-edge);
 
   &.offcanvas {
     overflow-y: auto;
@@ -46,7 +48,7 @@ $sidebar-gutter: 2.35rem;
   .nav-link {
     align-items: center;
     border-radius: $border-radius;
-    color: var(--osc-nav-label);
+    color: var(--osc-sidebar-label);
     // Flex, deliberately. The chevron is marked up as `<i class="float-end">`, and
     // Bootstrap's float utilities are PHYSICAL (`float: right`), not logical — Shopclass
     // compiles no RTL stylesheet, so in an RTL locale that float never flips and the
@@ -98,7 +100,7 @@ $sidebar-gutter: 2.35rem;
       // Keyboard users must be able to see where they are. Never remove this.
       &:focus-visible {
         border-radius: $border-radius;
-        outline: 2px solid var(--osc-bronze);
+        outline: 2px solid var(--osc-sidebar-accent);
         outline-offset: 2px;
       }
     }
@@ -127,30 +129,30 @@ $sidebar-gutter: 2.35rem;
       }
 
       &:focus-visible {
-        outline: 2px solid var(--osc-bronze);
+        outline: 2px solid var(--osc-sidebar-accent);
         outline-offset: 2px;
       }
     }
 
     &:hover {
-      background-color: var(--osc-chrome-hover);
-      color: var(--osc-ink);
+      background-color: var(--osc-sidebar-hover-bg);
+      color: var(--osc-sidebar-strong);
 
       // The delight moment (see `> i` above): brand teal + a small lift on the icon.
       a > i {
-        color: var(--osc-accent-brand);
+        color: var(--osc-sidebar-accent-hover);
         transform: scale(1.08);
       }
     }
 
     &.active {
-      background-color: var(--osc-bronze-tint);
-      color: var(--osc-bronze);
+      background-color: var(--osc-sidebar-active-bg);
+      color: var(--osc-sidebar-accent);
 
       // Weight and colour both shift, so "where I am" survives greyscale and
       // colour-blindness — the tint is not carrying the meaning alone.
       a {
-        color: var(--osc-bronze);
+        color: var(--osc-sidebar-accent);
         font-weight: 600;
       }
     }
@@ -163,7 +165,7 @@ $sidebar-gutter: 2.35rem;
   // grouping buys back, and the gap already says "different kind of thing". Logical
   // properties throughout, so the rule sits above the row in RTL too.
   #dashboard-menu > .nav-item-band {
-    border-block-start: 1px solid var(--osc-chrome-edge);
+    border-block-start: 1px solid var(--osc-sidebar-divider);
     margin-block-start: .5rem;
     padding-block-start: .5rem;
   }
@@ -189,7 +191,7 @@ $sidebar-gutter: 2.35rem;
 
   a {
     border-radius: $border-radius;
-    color: var(--osc-nav-label);
+    color: var(--osc-sidebar-label);
     font-size: $font-size-sm;
     // These anchors also carry `.nav-link`, so they were picking up the top-level row's
     // `min-height: 2.5rem` and standing exactly as tall as the sections above them — the
@@ -210,7 +212,7 @@ $sidebar-gutter: 2.35rem;
     // NOT by the link's text colour — so a row hover lights the text on its own pill
     // while the dot does its own glow, and the two never share a state.
     &::before {
-      background-color: var(--osc-rule-strong);
+      background-color: var(--osc-sidebar-icon);
       block-size: .34rem;
       border-radius: 50%;
       content: "";
@@ -227,8 +229,8 @@ $sidebar-gutter: 2.35rem;
     }
 
     &:hover {
-      background-color: var(--osc-chrome-hover);
-      color: var(--osc-ink);
+      background-color: var(--osc-sidebar-hover-bg);
+      color: var(--osc-sidebar-strong);
     }
 
     // The dot glows on hover — bronze fill, a tight bronze ring, and a soft halo —
@@ -236,7 +238,7 @@ $sidebar-gutter: 2.35rem;
     // light mode (where bronze is dark and a bare blur would read as a shadow);
     // --osc-bronze-rgb is re-pointed in dark mode, so it all tracks the theme.
     &:hover::before {
-      background-color: var(--osc-bronze);
+      background-color: var(--osc-sidebar-accent);
       transform: translateY(-50%) scale(1.15);
     }
 
@@ -245,19 +247,19 @@ $sidebar-gutter: 2.35rem;
     // of two. (The old treatment was a full white box with a side marker, which read
     // louder than the parent's own active state.)
     &.sub-active {
-      background-color: var(--osc-bronze-tint);
-      color: var(--osc-bronze);
+      background-color: var(--osc-sidebar-active-bg);
+      color: var(--osc-sidebar-accent);
       font-weight: 600;
 
       // Solid bronze dot to match the active ink; no halo (this row is already the
       // loud one — the glow is a hover affordance, not a resting state).
       &::before {
-        background-color: var(--osc-bronze);
+        background-color: var(--osc-sidebar-accent);
       }
     }
 
     &:focus-visible {
-      outline: 2px solid var(--osc-bronze);
+      outline: 2px solid var(--osc-sidebar-accent);
       outline-offset: 2px;
     }
   }
@@ -274,8 +276,8 @@ $sidebar-gutter: 2.35rem;
     // rule token is tuned for the white content bench — on chrome it all but vanishes.
     // It is also exactly the hairline the top-level bands use, which is the point: a
     // group boundary looks like one thing in this menu, at both levels.
-    border-block-start: 1px solid var(--osc-chrome-edge);
-    color: var(--osc-ink-emphasis);
+    border-block-start: 1px solid var(--osc-sidebar-divider);
+    color: var(--osc-sidebar-subhead);
     font-size: .8125rem;
     font-weight: 600;
     margin-block-start: .4rem;
@@ -297,7 +299,7 @@ $sidebar-gutter: 2.35rem;
   // A group boundary with nothing to name, closing core's last group ahead of the entries
   // a plugin or theme appended. Same hairline and inset as a subhead, minus the label.
   .submenu-break {
-    border-block-start: 1px solid var(--osc-chrome-edge);
+    border-block-start: 1px solid var(--osc-sidebar-divider);
     margin-block-start: .4rem;
     margin-inline-start: 1.05rem;
   }
@@ -339,12 +341,13 @@ $sidebar-gutter: 2.35rem;
 // ---- Brand masthead ---------------------------------------------------------
 .sidebar-brand {
   align-items: center;
-  // A white cap on the chrome sidebar: it stands out from the menu below and lines up
-  // with the white topbar to its right — same height, same bottom hairline — so the two
-  // read as one continuous header band across the top of the app.
-  background-color: var(--osc-bench);
-  border-block-end: 1px solid var(--osc-rule);
-  color: var(--osc-ink);
+  // A cap on the sidebar that lines up with the topbar to its right — same height, same
+  // bottom hairline — so the two read as one continuous header band across the top. Its own
+  // brand tokens (defaulting to the white bench) so it can be rethemed with the rest of the
+  // rail.
+  background-color: var(--osc-sidebar-brand-bg);
+  border-block-end: 1px solid var(--osc-sidebar-brand-edge);
+  color: var(--osc-sidebar-brand-ink);
   display: flex;
   font-weight: 600;
   gap: .5rem;
@@ -361,7 +364,7 @@ $sidebar-gutter: 2.35rem;
   }
 
   > i {
-    color: var(--osc-bronze);
+    color: var(--osc-sidebar-brand-accent);
     flex: 0 0 auto;
     font-size: 1.15rem;
   }
@@ -376,15 +379,15 @@ $sidebar-gutter: 2.35rem;
   }
 
   &:focus-visible {
-    outline: 2px solid var(--osc-bronze);
+    outline: 2px solid var(--osc-sidebar-brand-accent);
     outline-offset: -2px;
   }
 }
 
 // ---- Footer utility zone: collapse control ----------------------------------
 .sidebar-footer {
-  background-color: var(--osc-chrome);
-  border-block-start: 1px solid var(--osc-chrome-edge);
+  background-color: var(--osc-sidebar-surface);
+  border-block-start: 1px solid var(--osc-sidebar-divider);
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -397,7 +400,7 @@ $sidebar-gutter: 2.35rem;
   background-color: transparent;
   border: 0;
   border-radius: $border-radius;
-  color: var(--osc-nav-label);
+  color: var(--osc-sidebar-label);
   cursor: pointer;
   display: flex;
   font-size: $font-size-sm;
@@ -416,12 +419,12 @@ $sidebar-gutter: 2.35rem;
   }
 
   &:hover {
-    background-color: var(--osc-bench);
-    color: var(--osc-ink);
+    background-color: var(--osc-sidebar-hover-bg);
+    color: var(--osc-sidebar-strong);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--osc-bronze);
+    outline: 2px solid var(--osc-sidebar-accent);
     outline-offset: -2px;
   }
 }
@@ -450,19 +453,45 @@ $sidebar-gutter: 2.35rem;
     gap: .2rem;
   }
 
-  // Toolbar plugin items render as .nav-link inside this bar. Quiet ghost
-  // buttons: muted at rest, a soft chrome pill + bronze ink on hover, with the
-  // icon sized to match so text and icon-only tools sit on one baseline.
+  // Toolbar tools (comments, spam, update notices — core and plugin) render as
+  // .nav-link.action-btn inside this bar. Match the shell controls exactly: a
+  // quiet ghost pill, muted at rest, soft chrome + bronze ink on hover. The
+  // explicit resets override the legacy .action-btn fill/border/margins so the
+  // tools stop reading as chunky boxes bolted onto the bench.
   .nav-link {
     align-items: center;
+    background-color: transparent;
+    border: 0;
     border-radius: $border-radius;
     color: var(--osc-ink-muted);
     display: inline-flex;
-    gap: .35rem;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    gap: .4rem;
+    margin: 0;
+    min-height: 2.25rem;
     padding: .4rem .6rem;
+    // Labels grow the bar horizontally; they never wrap to a second line.
+    white-space: nowrap;
 
     > i {
-      font-size: 1.05rem;
+      font-size: 1.1rem;
+    }
+
+    // The count is an <i class="circle"> too — hold it to a compact chip rather than
+    // letting the icon sizing above blow it up.
+    .circle {
+      align-items: center;
+      block-size: 1.15rem;
+      display: inline-flex;
+      float: none;
+      font-size: .72rem;
+      font-weight: 600;
+      justify-content: center;
+      line-height: 1;
+      margin: 0;
+      min-inline-size: 1.15rem;
+      padding: 0 .28rem;
     }
 
     &:hover,
@@ -470,6 +499,33 @@ $sidebar-gutter: 2.35rem;
       background-color: var(--osc-chrome-hover);
       color: var(--osc-bronze);
     }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: -2px;
+    }
+  }
+
+  // Count chips: calm tinted pills (tint fill + semantic ink), matching the
+  // status-badge tokens rather than the old saturated fills, so a count reads as
+  // information on the bench, not an alarm. Colour is never the only signal — the
+  // number and the label carry it too.
+  .circle-green {
+    background: var(--osc-success-tint);
+    border-color: transparent;
+    color: var(--osc-success-deep);
+  }
+
+  .circle-red {
+    background: var(--osc-danger-tint);
+    border-color: transparent;
+    color: var(--osc-danger-deep);
+  }
+
+  .circle-gray {
+    background: var(--osc-bench-sunk);
+    border-color: var(--osc-rule);
+    color: var(--osc-ink-muted);
   }
 
   // A hairline separating the plugin tools from the shell controls (theme +
@@ -611,6 +667,15 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
+// On phones and small tablets the bar also carries the hamburger, so drop the
+// tool labels to icon + count to keep it from overflowing. Each tool keeps its
+// title attribute, so the label is still available to a screen reader and on hover.
+@media (max-width: 767.98px) {
+  .admin-topbar .nav-link .toolbar-label {
+    display: none;
+  }
+}
+
 // The flyout header is rail-only: in the expanded menu the parent's own row
 // already names the section, so this injected <li> must never show inline.
 .rail-flyout-title {
@@ -654,14 +719,14 @@ $sidebar-gutter: 2.35rem;
 }
 
 .ghost-scrollbar-thumb {
-  background-color: var(--osc-rule-strong);
+  background-color: var(--osc-sidebar-scroll);
   border-radius: 999px;
   cursor: grab;
   transition: background-color var(--osc-duration-fast) var(--osc-ease);
   width: 100%;
 
   &:hover {
-    background-color: var(--osc-ink-muted);
+    background-color: var(--osc-sidebar-scroll-hover);
   }
 }
 
@@ -814,6 +879,17 @@ $sidebar-gutter: 2.35rem;
     .dashboard-sidebar .sidebar-submenu,
     .dashboard-sidebar .sidebar-flyout {
       --osc-flyout-hide: .15s;
+
+      // The detached flyout is a white popover over the content, not part of the navy
+      // rail — so re-point the sidebar tokens the submenu items consume back to the
+      // light-popover palette. The rail keeps its dark values; only this subtree flips.
+      --osc-sidebar-label:     var(--osc-nav-label);
+      --osc-sidebar-strong:    var(--osc-ink);
+      --osc-sidebar-icon:      var(--osc-rule-strong);
+      --osc-sidebar-accent:    var(--osc-bronze);
+      --osc-sidebar-active-bg: var(--osc-bronze-tint);
+      --osc-sidebar-hover-bg:  var(--osc-chrome-hover);
+      --osc-sidebar-divider:   var(--osc-chrome-edge);
 
       background-color: var(--osc-bench);
       border: 1px solid var(--osc-rule);

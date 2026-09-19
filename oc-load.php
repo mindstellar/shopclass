@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -57,6 +57,7 @@ OsclassErrors::newInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
+require_once LIB_PATH . 'osclass/helpers/hMaintenance.php';
 // check if Shopclass is installed
 if (!Preference::newInstance()->get('osclass_installed')) {
     osc_die(
@@ -109,6 +110,7 @@ require_once LIB_PATH . 'osclass/helpers/hSpam.php';
 require_once LIB_PATH . 'osclass/helpers/hWidgets.php';
 require_once LIB_PATH . 'osclass/helpers/hPageTemplates.php';
 require_once LIB_PATH . 'osclass/helpers/hFields.php';
+require_once LIB_PATH . 'osclass/helpers/hSettings.php';
 require_once LIB_PATH . 'osclass/helpers/hForms.php';
 require_once LIB_PATH . 'osclass/helpers/hBilling.php';
 require_once LIB_PATH . 'osclass/compatibility.php';
@@ -179,6 +181,10 @@ if (defined('OC_ADMIN') && OC_ADMIN) {
         require_once $functions_path;
     }
 }
+// Deliberately after the admin theme's functions.php, not up with the helpers above: every
+// function in here is function_exists()-guarded, so a theme shipping its own copy wins and
+// core only fills the gaps. Moving this line up inverts that.
+require_once LIB_PATH . 'osclass/helpers/hAdminUi.php';
 WebThemes::init();
 Translation::init();
 Csrf::init();

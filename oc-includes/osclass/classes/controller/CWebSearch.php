@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -20,6 +20,10 @@ class CWebSearch extends BaseModel
     public $mSearch;
     public $uri;
 
+    /**
+     * Boots the base controller, opens the Search model, and resolves the friendly search
+     * URI into request params (category slug, location, feed), 404ing when it matches nothing.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -116,6 +120,12 @@ class CWebSearch extends BaseModel
     }
 
     //Business Layer...
+    /**
+     * Runs the listing search, exports the results and paging/canonical data to the view,
+     * and renders the search template or the requested feed.
+     *
+     * @return void
+     */
     public function doModel()
     {
         osc_run_hook('before_search');
@@ -736,14 +746,34 @@ class CWebSearch extends BaseModel
         } else {
             // Public search / category results: cacheable for anonymous visitors.
             osc_mark_response_cacheable();
-            $this->doView('search.php');
+
+            // A theme may specialise a single category's results page. The token
+            // comes from the request as it stands -- resolving it to a row would
+            // cost a query on every search, and a file that does not exist is not
+            // worth one.
+            $viewCandidates = array();
+            if (count($p_sCategory) === 1) {
+                $viewCategory = reset($p_sCategory);
+                if (is_string($viewCategory)) {
+                    $segments     = explode('/', trim($viewCategory, '/'));
+                    $viewCategory = end($segments);
+                    if (preg_match('/^[a-zA-Z0-9_-]+$/', $viewCategory)) {
+                        $viewCandidates[] = 'search-' . $viewCategory . '.php';
+                    }
+                }
+            }
+            $viewCandidates[] = 'search.php';
+
+            $this->doView(osc_locate_template($viewCandidates, 'search'));
         }
     }
 
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the given theme template between the `before_html` and `after_html` hooks.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
@@ -764,7 +794,7 @@ class CWebSearch extends BaseModel
      *
      * @param string $value
      *
-     * @return array The category row, or an empty array when there is no such category
+     * @return array<string,mixed> The category row, or an empty array when there is no such category
      */
     public static function findCategory($value)
     {
@@ -789,9 +819,9 @@ class CWebSearch extends BaseModel
      * custom-field facets, each of which multiplies into its own crawlable URL
      * that would otherwise self-canonicalise as if it were a page of its own.
      *
-     * @param array $params
+     * @param array<string,mixed> $params
      *
-     * @return array
+     * @return array<string,mixed>
      */
     public static function canonicalParams(array $params)
     {

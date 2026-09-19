@@ -2,7 +2,7 @@
 title: Debug SQL queries
 description: Inspect the queries ShopClass runs with OSC_DEBUG_DB, log them from AJAX and cron, and EXPLAIN them to find the ones missing an index.
 sidebar:
-  order: 12
+  order: 13
 ---
 
 When a page is slow, or a plugin's data is not appearing, the useful question is

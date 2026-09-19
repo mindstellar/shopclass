@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -23,7 +23,17 @@
 class BanRulesDataTable extends DataTable
 {
     private $order_by;
-    private $column_names;
+
+    /**
+     * Header column id => the t_ban_rule column it sorts by.
+     *
+     * @var array<string,string>
+     */
+    private $sortable = array(
+        'name'  => 's_name',
+        'ip'    => 's_ip',
+        'email' => 's_email',
+    );
     private $userId;
     /**
      * @var bool
@@ -32,9 +42,11 @@ class BanRulesDataTable extends DataTable
     private $search;
 
     /**
-     * @param $params
+     * Builds the ban-rule listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength, sort, direction)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -56,6 +68,11 @@ class BanRulesDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the ban-rule columns and lets plugins extend them via admin_rules_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -69,7 +86,11 @@ class BanRulesDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Derives page, start, limit, search term and ordering from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -85,8 +106,7 @@ class BanRulesDataTable extends DataTable
             $this->iPage = Params::getParam('iPage');
         }
 
-        $this->order_by['column_name'] = 'pk_i_id';
-        $this->order_by['type']        = 'DESC';
+        $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         foreach ($_get as $k => $v) {
             if ($k === 'user') {
                 $this->search = $v;
@@ -94,14 +114,6 @@ class BanRulesDataTable extends DataTable
             if ($k === 'userId' && $v != '') {
                 $this->withUserId = true;
                 $this->userId     = $v;
-            }
-
-            /* for sorting */
-            if ($k === 'iSortCol_0') {
-                $this->order_by['column_name'] = $this->column_names[$v];
-            }
-            if ($k === 'sSortDir_0') {
-                $this->order_by['type'] = $v;
             }
         }
         // set start and limit using iPage param
@@ -112,7 +124,11 @@ class BanRulesDataTable extends DataTable
     }
 
     /**
-     * @param $rules
+     * Formats each ban rule into table cells and keeps the raw row.
+     *
+     * @param array<int,array<string,mixed>> $rules
+     *
+     * @return void
      */
     private function processData($rules)
     {

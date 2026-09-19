@@ -131,6 +131,10 @@ msgstr ""
 msgid "%s can't be disabled because it's the default language"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s could not be read from the catalog"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "%s couldn't be deleted because it has listings associated to it"
 msgstr ""
@@ -171,12 +175,34 @@ msgstr ""
 msgid "%s has been updated"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid ""
+"%s is already installed. Preview its update on the Data tab before "
+"importing it again."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s is installed with its regions and cities"
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "%s is invalid."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "%s is required."
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "%s is too long, the maximum is %d characters"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "%s is updated from the catalog"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "%s locations are still to be counted. Continue counting to finish."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
@@ -203,8 +229,21 @@ msgstr ""
 msgid "A new password has been sent to your e-mail"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "A saved search that emails you when a new listing matches it."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "A user with that email address already exists, if it is you, please log in"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "About you"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "About “%s”"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebRegister.php
@@ -217,12 +256,21 @@ msgid_plural "Activation email sent to %s users"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Active"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Activity log settings saved"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Added by admin"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Address"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -246,8 +294,13 @@ msgstr ""
 msgid "Alert id isn't in the correct format"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
-msgid "All fields are required."
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Alerts"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-register-content.php
+msgid "Already have an account?"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
@@ -261,6 +314,23 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Archived successfully!"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "At least six characters."
+msgstr ""
+
+#: oc-includes/osclass/gui/item-contact-content.php
+msgid "Attachment"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Awaiting validation"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-recover-content.php
+msgid "Back to sign in"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
@@ -305,12 +375,15 @@ msgstr ""
 msgid "Billing settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+#: oc-includes/osclass/classes/admin/form/BanRuleForm.php
 msgid "Both rules can not be empty"
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/buy-content.php
-#: oc-includes/osclass/gui/billing/buy.php
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Browse listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Buy credits"
 msgstr ""
@@ -321,6 +394,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "Buying credits is not available on this site."
+msgstr ""
+
+#: oc-includes/osclass/gui/user-delete_account-content.php
+msgid "Cancel"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
@@ -347,8 +424,21 @@ msgstr ""
 msgid "Check your inbox to validate your listing"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Choose a country and save; the regions for it load on the next screen."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Choose a new password"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "Choose a package"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "City"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -375,6 +465,10 @@ msgstr ""
 msgid "Cleanup settings saved"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Comment"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 msgid "Comment is required"
 msgstr ""
@@ -383,8 +477,8 @@ msgstr ""
 msgid "Comment settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsComments.php
-msgid "Comments per page must only contain numeric characters"
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Comments"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -403,8 +497,12 @@ msgstr ""
 msgid "Connection test succeeded"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Contact email field is required"
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Contact"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Contact the seller"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -419,8 +517,19 @@ msgstr ""
 msgid "Could not connect with the database. Error: %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid ""
+"Could not read the list of translations at %s. This server has to be able "
+"to reach it."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Could not select the database. Error: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Country"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -439,9 +548,20 @@ msgstr ""
 msgid "Country too short."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-register-content.php
+msgid "Create account"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Create an account"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+msgid "Create one"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/gui/billing/orders-content.php
-#: oc-includes/osclass/gui/billing/wallet-content.php
-#: oc-includes/osclass/gui/billing/wallet.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Credits"
 msgstr ""
@@ -470,12 +590,16 @@ msgstr ""
 msgid "Currency must be a 3-letter code, e.g. USD"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
+#: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Currency must be a 3-letter code, e.g. USD."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "Currency updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "Current password"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -494,13 +618,31 @@ msgstr ""
 msgid "Custom URL removed from the sitemap"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLatestSearches.php
-msgid "Custom number could not be left empty"
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Dashboard"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Date"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Delete"
+msgstr ""
+
+#: oc-includes/osclass/gui/user-delete_account-content.php
+msgid "Delete my account"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Delete this alert"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Delete your account"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -541,12 +683,26 @@ msgstr ""
 msgid "Directory '%s' couldn't be removed;)"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "Email already in use"
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "E-mail"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "Email invalid"
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Edit"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-recover-content.php
+#: oc-includes/osclass/gui/account/user-register-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "Email address"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+msgid "Email address or username"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
+msgid "Email already in use"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -555,6 +711,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 msgid "Email is not correct"
+msgstr ""
+
+#: oc-includes/osclass/gui/alert-form-content.php
+msgid "Email me when something new matches"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -575,6 +735,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Enter how many credits to add or remove"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-recover-content.php
+msgid ""
+"Enter the address you registered with and we will email you a link to set a "
+"new password."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
@@ -601,23 +767,27 @@ msgstr ""
 msgid "Error: the currency code is not in the correct format"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Existing email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Existing username"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Expired"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Failed"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "File <b>.htaccess</b> already exists and was not modified."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "File <b>.htaccess</b> couldn't be filled out with the right content."
 msgstr ""
 
@@ -625,19 +795,23 @@ msgstr ""
 msgid "File uploaded but unable to activate the language"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/gui/account/user-login-content.php
+msgid "Forgotten your password?"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Friendly URLs deactivated, but .htaccess file could not be deleted. Please, "
 "remove it manually"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Friendly URLs deactivated, but .htaccess file was modified outside "
 "Shopclass and was not deleted"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "Friendly URLs successfully deactivated"
 msgstr ""
 
@@ -653,20 +827,20 @@ msgstr ""
 msgid "Great! We've just updated your listing"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't create the file or experience some problems with the URLs, please "
 "deactivate the <em>Friendly URLs</em> option."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't create the file, please deactivate the <em>Friendly URLs</em> option."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't modify the file or experience some problems with the URLs, please "
@@ -677,7 +851,7 @@ msgstr ""
 msgid "History"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "However, we can't check if Apache module <b>mod_rewrite</b> is loaded. If "
 "you experience some problems with the URLs, you should deactivate "
@@ -710,7 +884,7 @@ msgstr ""
 msgid "Incorrect link"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Incorrent current password"
 msgstr ""
 
@@ -730,6 +904,14 @@ msgstr ""
 msgid "Invalid plugin file"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "It appears on your public profile and in the address of your listings."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+msgid "Keep me signed in"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "Keyword id isn't in the correct format"
 msgstr ""
@@ -740,6 +922,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "Keyword updated correctly"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "Landline"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -763,6 +949,10 @@ msgid "Language imported successfully"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Language imported, but %d file(s) could not be downloaded."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Language name field is required"
 msgstr ""
 
@@ -778,12 +968,24 @@ msgstr ""
 msgid "Last search settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Leave a comment"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Listing counts are recalculated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Listings"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Listings' settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
-msgid "Location imported successfully"
+#: oc-includes/osclass/gui/account/nav.php
+msgid "Log out"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -794,10 +996,6 @@ msgstr ""
 msgid "Mail server configuration has changed"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMailserver.php
-msgid "Mail server type is incorrect"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Maintenance mode is OFF"
 msgstr ""
@@ -806,16 +1004,35 @@ msgstr ""
 msgid "Maintenance mode is ON"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Max latest listings has to be a numeric value"
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Maintenance settings saved"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
 msgid "Media config has been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Member since %s"
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-content.php
+#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Message"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Mobile"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "Moderation settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "Municipality"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -826,8 +1043,10 @@ msgstr ""
 msgid "Municipality too short."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "Name invalid"
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/gui/account/user-register-content.php
+msgid "Name"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -838,9 +1057,22 @@ msgstr ""
 msgid "New city name cannot be blank"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "New email address"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "New password"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/orders-content.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Newer"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+msgid "No account yet?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -861,6 +1093,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "No city was selected"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "No comments yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -886,8 +1122,16 @@ msgstr ""
 msgid "No payment method is set up yet."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "No photo"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "No plugin selected"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "No published translation was found for %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -934,6 +1178,18 @@ msgstr ""
 msgid "Nothing has moved yet."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Nothing matches it yet."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Nothing published."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
+msgid "Nothing to update"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Number of decimals must only contain numeric characters"
 msgstr ""
@@ -942,28 +1198,8 @@ msgstr ""
 msgid "Number of expiration days has to be a numeric value"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Number of listings in the RSS has to be a numeric value"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Number of listings in the RSS must be an integer"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Number of listings on search has to be a numeric value"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsComments.php
-msgid "Number of moderate comments must only contain numeric characters"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Number of moderated listings must only contain numeric characters"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
-msgid "Number of recent listings displayed at home must be an integer"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
@@ -1004,12 +1240,6 @@ msgstr[1] ""
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "One currency has been deleted"
 msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
-msgid "One field was not updated"
-msgid_plural "%s fields were not updated"
-msgstr[0] ""
-msgstr[1] ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "One keyword has been deleted"
@@ -1131,12 +1361,24 @@ msgstr ""
 msgid "Package updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMain.php
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid "Page title field is required"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Pages"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Paid"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+#: oc-includes/osclass/gui/account/user-register-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+#: oc-includes/osclass/gui/user-delete_account-content.php
+msgid "Password"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -1146,10 +1388,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Password has been changed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "Password invalid"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -1178,16 +1416,28 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "Permalinks structure updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "Permalinks structure updated."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Phone invalid."
+msgstr ""
+
+#: oc-includes/osclass/gui/item-contact-content.php
+msgid "Phone number"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "Phone too long."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Picture"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1263,6 +1513,14 @@ msgstr ""
 msgid "Plugin uninstalled"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Post comment"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Postcode"
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Price must be a number."
 msgstr ""
@@ -1281,6 +1539,23 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Csrf.php
 msgid "Probable invalid request."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/nav.php
+msgid "Profile"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/nav.php
+msgid "Public profile"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "Publish a listing"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Published"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -1317,6 +1592,11 @@ msgstr ""
 msgid "Refunded"
 msgstr ""
 
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Region"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Region name cannot be blank"
 msgstr ""
@@ -1329,12 +1609,29 @@ msgstr ""
 msgid "Region too short."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Remove the current picture"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Removed by admin"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-register-content.php
+msgid "Repeat password"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "Repeat the new password"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Reports have been cleared for this listing"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Reset your password"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -1356,8 +1653,32 @@ msgstr ""
 msgid "Rule updated correctly"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "Save"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Save changes"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-forgot_password-content.php
+msgid "Save the new password"
+msgstr ""
+
+#: oc-includes/osclass/gui/alert-form-content.php
+msgid "Save this search"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Search alert settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "See all of your listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "Select a country to import"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -1380,12 +1701,40 @@ msgstr ""
 msgid "Seller limit settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Send"
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-content.php
+#: oc-includes/osclass/gui/item-contact-content.php
+msgid "Send message"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-recover-content.php
+msgid "Send the link"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Send this listing to someone"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
+msgid "Settings have been updated"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 msgid "Shopclass has been updated to %s"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-login-content.php
+#: oc-includes/osclass/gui/account/user-register-content.php
+#: oc-includes/osclass/gui/item-comments-content.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Sign in"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -1400,8 +1749,17 @@ msgstr ""
 msgid "Sign in to see your orders."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Sign-in details"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Sign-in protection settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "Signed in as %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
@@ -1456,8 +1814,16 @@ msgstr ""
 msgid "Storage settings updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-content.php
+msgid "Subject"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
 msgid "Subscribed correctly"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Telephone"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
@@ -1470,6 +1836,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Thanks! That's very helpful"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+msgid "That ban rule no longer exists"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
@@ -1526,6 +1896,14 @@ msgstr ""
 msgid "That payment method is not available"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
+msgid "That settings page is not available"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
+msgid "That settings page saves into a table, which needs a controller of its own"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That upgrade is not available"
 msgstr ""
@@ -1554,13 +1932,11 @@ msgstr ""
 msgid "The admin id isn't in the correct format"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebUser.php
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+#: oc-includes/osclass/classes/storage/AvatarUpload.php
 msgid "The avatar you tried to upload exceeds the maximum size"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebUser.php
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+#: oc-includes/osclass/classes/storage/AvatarUpload.php
 msgid "The avatar you tried to upload is not a valid image"
 msgstr ""
 
@@ -1570,6 +1946,18 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "The cache has been cleared"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no country with the code %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no country with the code %s. Add it by hand instead."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The catalog has no such country"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -1623,6 +2011,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 msgid "The comments have been unblocked"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The country code must be two letters, like IN or DE"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
@@ -1756,14 +2148,12 @@ msgid ""
 "public"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsPermalinks.php
-msgid ""
-"The listing permalink structure must include {ITEM_ID}; it was left "
-"unchanged."
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The listing you are trying to delete couldn't be deleted"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "The location catalog could not be reached. Try again in a few minutes."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1794,7 +2184,7 @@ msgstr ""
 msgid "The password cannot be empty"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "The password couldn't be updated. Passwords don't match"
 msgstr ""
 
@@ -1839,6 +2229,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/CWebAjax.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The selected photo has been successfully deleted"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-contact-content.php
+msgid "The seller replies to this address."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1926,7 +2320,7 @@ msgstr ""
 msgid "The username was updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "The watermark image has to be a .PNG file"
 msgstr ""
 
@@ -1934,6 +2328,14 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The zip file is not valid"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Their email address"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Their name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
@@ -1950,10 +2352,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "There are no tables to back up"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "There has been an error adding a new admin"
 msgstr ""
 
 #: oc-includes/osclass/emails.php
@@ -1996,7 +2394,7 @@ msgstr ""
 msgid "There was a problem removing the theme"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "There was a problem uploading the watermark image"
 msgstr ""
 
@@ -2016,6 +2414,10 @@ msgstr ""
 msgid ""
 "There were an error deleting the files, please check the permissions of the "
 "files in %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "There were some problems adding the country"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -2057,12 +2459,24 @@ msgstr ""
 msgid "This listing doesn't exist"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+msgid "This location no longer exists."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "This page has not deleted the account yet. Enter your password and click "
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid "This should never happen"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "This upgrade is not available right now"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "Title"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -2091,9 +2505,17 @@ msgstr[1] ""
 msgid "Unknown widget type"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Unsubscribed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebUser.php
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "Unsubscribed correctly"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Up to %s KB."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
@@ -2120,11 +2542,16 @@ msgstr ""
 msgid "User settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "Username"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Username already in use"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Username invalid"
 msgstr ""
 
@@ -2166,6 +2593,20 @@ msgstr ""
 msgid "We just sent your message to %s"
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-content.php
+msgid "We reply to this address."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid ""
+"We send a link to the new address. The change takes effect when you follow "
+"it."
+msgstr ""
+
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "We send them a link to this listing, nothing else."
+msgstr ""
+
 #: oc-includes/osclass/emails.php
 msgid ""
 "We tried to sent you an e-mail, but it failed. Please, contact an "
@@ -2182,6 +2623,11 @@ msgstr ""
 
 #: oc-includes/osclass/emails.php
 msgid "We've sent you an e-mail. Follow its instructions to validate the changes"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Website"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -2214,6 +2660,10 @@ msgstr ""
 msgid "You are not allowed to add this widget type"
 msgstr ""
 
+#: oc-includes/osclass/gui/alert-form-content.php
+msgid "You are subscribed to this search."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "You can't contact the seller, only registered users can"
 msgstr ""
@@ -2229,14 +2679,28 @@ msgid ""
 "configuration: <b>%d KB</b>"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "You currently sign in as %s."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 msgid "You don't have enough permissions"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "You have no alerts yet."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "You have not bought any credits yet."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "You have not published anything yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
@@ -2277,6 +2741,15 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Your Akismet key has been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Your account"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "Your account could not be created. Please try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebRegister.php
@@ -2324,8 +2797,19 @@ msgstr ""
 msgid "Your current email is not allowed"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Your current picture"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Your data could not be prepared"
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-content.php
+#: oc-includes/osclass/gui/item-comments-content.php
+#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Your email address"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
@@ -2338,6 +2822,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Your email has been sent properly. Thank you for contacting us!"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+msgid "Your latest listings"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -2360,9 +2848,33 @@ msgstr ""
 msgid "Your listing will be published after an admin approves the changes."
 msgstr ""
 
-#: oc-includes/osclass/gui/billing/orders-content.php
-#: oc-includes/osclass/gui/billing/orders.php
+#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/gui/account/user-dashboard-content.php
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Your listings"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Your listings and messages are removed with it. This cannot be undone."
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-content.php
+#: oc-includes/osclass/gui/item-comments-content.php
+#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/item-send-friend-content.php
+msgid "Your name"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "Your orders"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hTheme.php
+msgid "Your profile"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "Your profile could not be saved. Please try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -2381,18 +2893,44 @@ msgstr ""
 msgid "Your session has expired, please reload the page and try again."
 msgstr ""
 
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "Zip code"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "Zip code too long."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "credits available"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
+msgid ""
+"nginx does not read .htaccess: check the server rules below are in your "
+"nginx configuration, then reload nginx."
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "not published"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "optional"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt could not be saved"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt has been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+#: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
+msgstr ""
+
+#: oc-includes/osclass/gui/item-comments-content.php
+msgid "to leave a comment."
 msgstr ""

@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class ItemLocation extends DAO
 {
@@ -25,9 +24,7 @@ class ItemLocation extends DAO
      * It references to self object: ItemLocation.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
-     * @var ItemResource
+     * @var ItemLocation
      */
     private static $instance;
 
@@ -61,9 +58,7 @@ class ItemLocation extends DAO
      * It creates a new ItemLocation object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return ItemLocation
-     * @since  unknown
      */
     public static function newInstance()
     {

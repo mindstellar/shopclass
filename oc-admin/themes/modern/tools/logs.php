@@ -3,7 +3,7 @@
 }
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -34,14 +34,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Activity log')); ?>
 
     <div id="log-settings">
-        <h3 class="render-title"><?php _e('Logging'); ?></h3>
+        <?php osc_admin_form_section(__('Logging')); ?>
         <form name="log_settings_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="tools"/>
             <input type="hidden" name="action" value="logs_settings_post"/>
             <fieldset class="form-horizontal">
-                <div class="form-row">
-                    <div class="form-label"><?php _e('Record activity'); ?></div>
-                    <div class="form-controls">
+                <?php osc_admin_form_row_open(__('Record activity')); ?>
                         <div class="form-label-checkbox">
                             <input type="checkbox" id="admin_log_enabled" name="admin_log_enabled" value="1"
                                 <?php echo($enabled ? 'checked="checked"' : ''); ?> />
@@ -50,27 +48,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <div class="help-box">
                             <?php _e('Turn logging off to stop recording new entries. Existing entries are kept until pruned.'); ?>
                         </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-label"><?php _e('Keep entries for'); ?></div>
-                    <div class="form-controls">
-                        <div class="input-group input-group-sm" style="max-width:12rem">
-                            <input type="number" min="0" class="form-control" id="admin_log_retention_days"
-                                   name="admin_log_retention_days" value="<?php echo $retention; ?>">
-                            <span class="input-group-text"><?php _e('days'); ?></span>
-                        </div>
-                        <div class="help-box">
-                            <?php _e('The daily task deletes entries older than this. Set to 0 to keep them forever.'); ?>
-                        </div>
-                    </div>
-                </div>
+                <?php osc_admin_form_row_close(); ?>
+                <?php osc_admin_number(array(
+                    'id'     => 'admin_log_retention_days',
+                    'name'   => 'admin_log_retention_days',
+                    'label'  => __('Keep entries for'),
+                    'value'  => $retention,
+                    'min'    => 0,
+                    'suffix' => __('days'),
+                    'help'   => __('The daily task deletes entries older than this. Set to 0 to keep them forever.'),
+                )); ?>
                 <?php osc_admin_form_actions(); ?>
             </fieldset>
         </form>
     </div>
 
-    <h3 class="render-title separate-top"><?php _e('Recent activity'); ?></h3>
+    <?php osc_admin_form_section(__('Recent activity'), array('spaced' => true)); ?>
     <div class="relative">
         <div class="table-toolbar">
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>">

@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -85,6 +85,10 @@ function osc_response_is_cacheable()
     }
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if ($method !== 'GET' && $method !== 'HEAD') {
+        return false;
+    }
+    // The maintenance banner must disappear as soon as the admin changes or removes it.
+    if (defined('__OSC_MAINTENANCE__')) {
         return false;
     }
     if (osc_is_web_user_logged_in() || osc_is_admin_user_logged_in()) {

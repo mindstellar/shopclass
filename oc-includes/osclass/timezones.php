@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -15,7 +15,12 @@ use mindstellar\utility\Deprecate;
 
 Deprecate::deprecatedFile(__FILE__, '4.0.0', null, __('Use native php function for timezones list.'));
 
-/** @deprecated  $timezone */
+/**
+ * Timezone identifiers, kept only for installs that still include this file.
+ *
+ * @deprecated since 4.0.0 use DateTimeZone::listIdentifiers() instead
+ * @var string[]
+ */
 $timezone = array(
     'Africa/Abidjan',
     'Africa/Accra',

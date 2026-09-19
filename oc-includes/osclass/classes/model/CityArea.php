@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class CityArea extends DAO
 {
@@ -25,8 +24,6 @@ class CityArea extends DAO
      * It references to self object: CityArea.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var CityArea
      */
     private static $instance;
@@ -46,9 +43,7 @@ class CityArea extends DAO
      * It creates a new CityArea object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return CityArea
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -62,14 +57,10 @@ class CityArea extends DAO
     /**
      * Get the cityArea by its name and city
      *
-     * @access public
+     * @param string   $cityAreaName
+     * @param int|null $cityId
      *
-     * @param     $cityAreaName
-     * @param int $cityId
-     *
-     * @return array
-     * @since  unknown
-     *
+     * @return array<string,string|null> Empty when no city area matches
      */
     public function findByName($cityAreaName, $cityId = null)
     {
@@ -97,11 +88,9 @@ class CityArea extends DAO
     /**
      * Return city areas of a given city ID
      *
-     * @access public
+     * @param int $cityId
      *
-     * @param $cityId
-     *
-     * @return array
+     * @return array<int,array<string,string|null>> Empty when the city has no areas
      * @since  2.4
      */
     public function findByCity($cityId)
@@ -121,13 +110,10 @@ class CityArea extends DAO
     /**
      *  Delete a city area
      *
-     * @access public
-     *
-     * @param $pk
+     * @param int $pk
      *
      * @return int number of failed deletions or 0 in case of none
      * @since  3.1
-     *
      */
     public function deleteByPrimaryKey($pk)
     {

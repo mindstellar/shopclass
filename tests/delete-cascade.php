@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -74,12 +74,7 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 // Field and Category resolve the current locale in their constructors, through
 // osc_current_user_locale() -> osc_language(). These are the real helpers: with

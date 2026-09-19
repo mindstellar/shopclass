@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -59,6 +59,14 @@ return new class () implements MigrationInterface {
         'i_num_premium_views',
     );
 
+    /**
+     * Rebuild t_item_stats as one row of totals per listing and carry its per-day
+     * history into the site-wide t_item_stats_daily rollup.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $stats = DB_TABLE_PREFIX . 't_item_stats';
@@ -149,7 +157,12 @@ return new class () implements MigrationInterface {
     }
 
     /**
-     * "SUM(<prefix>i_num_views), SUM(<prefix>i_num_spam), ..." in schema order.
+     * A SUM() over every counter column in schema order, as
+     * "SUM(<prefix>i_num_views), SUM(<prefix>i_num_spam), ...".
+     *
+     * @param string $prefix Table alias with its trailing dot, or '' for none
+     *
+     * @return string
      */
     private function sums(string $prefix): string
     {

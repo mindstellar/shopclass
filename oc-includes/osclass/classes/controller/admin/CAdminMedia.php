@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -26,6 +26,9 @@ class CAdminMedia extends AdminSecBaseModel
 
     private ItemResource $resourcesManager;
 
+    /**
+     * Take the item-resource manager for this request.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -36,6 +39,12 @@ class CAdminMedia extends AdminSecBaseModel
     }
 
     //Business Layer...
+
+    /**
+     * Delete one media file, otherwise draw the media library filtered and paged.
+     *
+     * @return void
+     */
     public function doModel()
     {
         parent::doModel();
@@ -81,6 +90,10 @@ class CAdminMedia extends AdminSecBaseModel
 
     /**
      * URL of the media library, preserving the active type filter.
+     *
+     * @param string|null $type
+     *
+     * @return string
      */
     private function libraryUrl($type)
     {
@@ -95,6 +108,10 @@ class CAdminMedia extends AdminSecBaseModel
     /**
      * The requested filter, or 'all' when it is not a known source. Valid values
      * are 'all', 'item' (listings) and each owner type present in t_resource.
+     *
+     * @param string|null $type
+     *
+     * @return string
      */
     private function resolveType($type)
     {
@@ -116,7 +133,7 @@ class CAdminMedia extends AdminSecBaseModel
             array('type' => 'all', 'label' => __('All')),
             array('type' => 'item', 'label' => __('Listings')),
         );
-        $labels = array('user' => __('Users'), 'page' => __('Pages'));
+        $labels = array('user' => __('Users'), 'page' => __('Pages'), 'setting' => __('Settings'));
         foreach (osc_media_owner_types() as $ownerType) {
             $filters[] = array(
                 'type'  => $ownerType,
@@ -131,6 +148,11 @@ class CAdminMedia extends AdminSecBaseModel
      * Delete one media file through the right pipeline for its source, so files
      * (local or offloaded) and rows are both cleaned up: item images via the
      * legacy item-resource path, everything else via ResourceUploader.
+     *
+     * @param string|null $src 'item' or 'resource'; anything else deletes nothing
+     * @param int         $id
+     *
+     * @return void
      */
     private function deleteMedia($src, $id)
     {

@@ -5,7 +5,7 @@ if (!defined('OC_ADMIN')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -19,8 +19,11 @@ osc_enqueue_script('admin-categories');
 
 $categories = __get('categories');
 
-// Same URL the empty state offers; built here because the header registration runs
-// before the page body.
+// Same URL the empty state offers, and built before the registration below rather than
+// beside the body it is also used in: the header renders first, and an undefined variable
+// left its button pointing at "#".
+$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
+
 osc_admin_page(array(
     'section' => __('Listings'),
     'title'   => __('Categories'),
@@ -44,7 +47,9 @@ osc_admin_page(array(
  * dropped in to nest it). All behaviour lives in categories.js; this only emits
  * markup and the data-* the script reads.
  *
- * @param array $category
+ * @param array<string,mixed> $category Category row plus its nested `categories`
+ *
+ * @return void
  */
 function drawCategory($category)
 {
@@ -133,8 +138,6 @@ function drawCategory($category)
     </li>
     <?php
 } //End drawCategory
-
-$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Categories')); ?>
@@ -190,22 +193,21 @@ $add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_defa
             </ul>
         <?php } ?>
 
-        <!-- Edit drawer -->
-        <div class="cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
-        <aside class="cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
+        <div class="osc-drawer-backdrop cat-drawer-backdrop" id="catDrawerBackdrop" hidden></div>
+        <div class="osc-drawer cat-drawer" id="catDrawer" role="dialog" aria-modal="true"
                aria-labelledby="catDrawerTitle" hidden>
-            <header class="cat-drawer-head">
+            <header class="osc-drawer-head cat-drawer-head">
                 <div>
                     <span class="cat-drawer-eyebrow"><?php _e('Edit category'); ?></span>
-                    <h2 class="cat-drawer-title" id="catDrawerTitle"></h2>
+                    <h2 class="osc-drawer-title cat-drawer-title" id="catDrawerTitle"></h2>
                 </div>
-                <button type="button" class="cat-drawer-close" id="catDrawerClose"
+                <button type="button" class="osc-drawer-close cat-drawer-close" id="catDrawerClose"
                         aria-label="<?php echo osc_esc_html(__('Close')); ?>">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </header>
-            <div class="cat-drawer-body" id="catDrawerBody"></div>
-        </aside>
+            <div class="osc-drawer-body cat-drawer-body" id="catDrawerBody"></div>
+        </div>
 
         <!-- Delete confirmation -->
         <dialog class="osc-dialog osc-dialog-danger" id="catDeleteDialog">

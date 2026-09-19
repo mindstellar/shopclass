@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -34,6 +34,8 @@ class Cron extends DAO
     }
 
     /**
+     * Return the shared Cron model instance, creating it on first use.
+     *
      * @return \Cron
      */
     public static function newInstance()
@@ -48,13 +50,9 @@ class Cron extends DAO
     /**
      * Return crons by type
      *
-     * @access public
-     *
      * @param string $type
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false The row, or false when no cron of that type exists
      */
     public function getCronByType($type)
     {

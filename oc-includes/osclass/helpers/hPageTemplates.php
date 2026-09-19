@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -16,8 +16,8 @@ use mindstellar\pages\PageTemplateRegistry;
  *
  * See PageTemplateRegistry::register() for the $spec shape.
  *
- * @param string $id   Namespaced slug, [a-z0-9_.-]{1,60}.
- * @param array  $spec Template specification.
+ * @param string              $id   Namespaced slug, [a-z0-9_.-]{1,60}.
+ * @param array<string,mixed> $spec Template specification.
  *
  * @return void
  */
@@ -29,7 +29,7 @@ function osc_register_page_template($id, $spec)
 /**
  * All registered page templates, keyed by id.
  *
- * @return array
+ * @return array<string,array<string,mixed>>
  */
 function osc_page_templates()
 {
@@ -41,7 +41,7 @@ function osc_page_templates()
  *
  * @param string $id
  *
- * @return array|null
+ * @return array<string,mixed>|null
  */
 function osc_page_template($id)
 {

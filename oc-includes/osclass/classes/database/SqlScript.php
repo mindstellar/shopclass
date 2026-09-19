@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -82,6 +82,9 @@ final class SqlScript
     }
 
     /**
+     * Remove C-style block comments, which is also what erases the schema placeholder
+     * tokens once they have been substituted.
+     *
      * @param string $sql
      *
      * @return string
@@ -94,15 +97,12 @@ final class SqlScript
     /**
      * Remove `--` and `#` comments, leaving their line break in place.
      *
-     * Block comments were stripped long before this existed, line comments never
-     * were, and callers that read a statement's text rather than just executing it
-     * saw the comment as part of it. The schema reconciler takes a table's column
-     * list as everything between the first `(` and the last `)` of the statement,
-     * so a comment above a CREATE TABLE that merely happened to contain a bracket
-     * -- `SUM()`, `(value x 1000000)` -- started the column list early, and the
-     * prose that followed was read as column definitions and issued as ALTER TABLE
-     * ADD COLUMN. Comments describing the schema are the whole point of writing
-     * them, so they are removed here rather than being banned from struct.sql.
+     * A caller that reads a statement's text rather than executing it sees an unstripped
+     * comment as part of it. The schema reconciler takes a table's column list as
+     * everything between the first `(` and the last `)`, so a comment above a CREATE TABLE
+     * containing a bracket -- `SUM()`, `(value x 1000000)` -- starts the column list early
+     * and its prose is issued as ALTER TABLE ADD COLUMN. Comments describing the schema are
+     * worth writing, so they are removed here rather than banned from struct.sql.
      *
      * Quote-aware, because this also parses locale mail templates and dumps
      * uploaded through the admin importer, where `--` inside a string literal is

@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -22,6 +22,9 @@ class ItemReport extends DAO
     /** @var ItemReport */
     private static $instance;
 
+    /**
+     * Set data related to t_item_report_log table
+     */
     public function __construct()
     {
         parent::__construct();
@@ -37,6 +40,8 @@ class ItemReport extends DAO
     }
 
     /**
+     * Return the shared ItemReport model instance, creating it on first use.
+     *
      * @return ItemReport
      */
     public static function newInstance()
@@ -95,6 +100,8 @@ class ItemReport extends DAO
      *
      * @param int    $itemId
      * @param string $reason a report reason (spam|badcat|offensive|repeated|expired|…)
+     *
+     * @return void
      */
     public function log($itemId, $reason)
     {
@@ -127,6 +134,8 @@ class ItemReport extends DAO
     }
 
     /**
+     * Count the distinct reporters an item has.
+     *
      * @param int $itemId
      *
      * @return int how many DISTINCT reporters this item has
@@ -178,6 +187,8 @@ class ItemReport extends DAO
      * already on file.
      *
      * @param int $itemId
+     *
+     * @return void
      */
     public function clear($itemId)
     {

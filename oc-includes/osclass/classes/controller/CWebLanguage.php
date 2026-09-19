@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -19,6 +19,9 @@ use mindstellar\utility\Validate;
  */
 class CWebLanguage extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the `init_language` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -26,6 +29,12 @@ class CWebLanguage extends BaseModel
     }
 
     // business layer...
+    /**
+     * Applies the requested `locale` param when it is a valid locale code, then redirects
+     * back to the referring page (or the base URL when there is none).
+     *
+     * @return void
+     */
     public function doModel()
     {
         $locale = Params::getParam('locale');
@@ -46,7 +55,9 @@ class CWebLanguage extends BaseModel
     // hopefully generic...
 
     /**
-     * @param $file
+     * No-op: this controller always redirects and never renders a template.
+     *
+     * @param string $file
      *
      * @return void
      */

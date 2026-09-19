@@ -8,6 +8,7 @@
  * .market-app so this file stays static and cacheable — the categories.js
  * convention.
  */
+/* global setJsMessage */
 (function () {
     'use strict';
 
@@ -28,7 +29,7 @@
     function parseItem(el) {
         try {
             return JSON.parse(el.getAttribute('data-market-item') || '{}');
-        } catch (e) {
+        } catch {
             return {};
         }
     }
@@ -42,7 +43,7 @@
         var i18n = {};
         try {
             i18n = JSON.parse(app.getAttribute('data-i18n') || '{}');
-        } catch (e) {
+        } catch {
             i18n = {};
         }
 
@@ -223,6 +224,19 @@
             return window.CSS && CSS.escape ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&');
         }
 
+        // The Installed tab is rendered by PHP, so a package installed here is not in it
+        // until the page is fetched again. Reload on the way into that tab rather than
+        // under the flash message the owner is still reading.
+        var installedStale = false;
+        var installedTab = document.querySelector('.osc-tab a[href="#market-tab-installed"]');
+        if (installedTab) {
+            installedTab.addEventListener('click', function () {
+                if (installedStale) {
+                    window.location.reload();
+                }
+            });
+        }
+
         function performAction(btn) {
             var action = btn.getAttribute('data-market-action');
             var slug = btn.getAttribute('data-market-slug');
@@ -245,6 +259,7 @@
             }).then(function (res) {
                 if (res && res.ok) {
                     markInstalled(slug, action);
+                    installedStale = true;
                     flash('ok', res.message);
                     if (action === 'update') {
                         removeUpdateItem(slug);
@@ -392,6 +407,8 @@
         var dNote = dialog.querySelector('.market-detail-note');
         var dReason = dialog.querySelector('.market-detail-reason');
         var dVersion = dialog.querySelector('.market-detail-version');
+        var dRequiresRow = dialog.querySelector('.market-detail-requires-row');
+        var dRequires = dialog.querySelector('.market-detail-requires');
         var dDownloadsRow = dialog.querySelector('.market-detail-downloads-row');
         var dDownloads = dialog.querySelector('.market-detail-downloads');
         var dTags = dialog.querySelector('.market-detail-tags');
@@ -483,6 +500,9 @@
                 return;
             }
             var item = items[screenState.index];
+            // An icon standing in for missing screenshots is small art; blown up to the
+            // 16/9 stage it read as a poster, so that slide gets its own smaller box.
+            dScreensView.classList.toggle('market-detail-screens-view--art', !!item.node);
             if (item.node) {
                 dScreensView.appendChild(item.node.cloneNode(true));
             } else {
@@ -608,6 +628,23 @@
         }
 
         function applyDetail(detail, placeholderNode) {
+            // What the newest published version asks of this install, said once in words
+            // rather than read out of the version table below.
+            if (dRequiresRow && dRequires) {
+                var newest = (detail.versions || [])[0] || {};
+                var needs = [];
+                if (newest.requires) {
+                    needs.push((i18n.requiresCore || 'Shopclass %s or newer').replace('%s', newest.requires));
+                }
+                if (newest.requires_php) {
+                    needs.push((i18n.requiresPhp || 'PHP %s or newer').replace('%s', newest.requires_php));
+                }
+                if (newest.tested) {
+                    needs.push((i18n.testedTo || 'tested to %s').replace('%s', newest.tested));
+                }
+                dRequires.textContent = needs.join(' \u00b7 ');
+                dRequiresRow.hidden = needs.length === 0;
+            }
             dReadme.innerHTML = detail.description_html || '';
             setScreenshots(detail.screenshots, placeholderNode);
             renderVersions(detail.versions);

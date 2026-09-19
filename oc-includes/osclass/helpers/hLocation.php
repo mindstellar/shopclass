@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -23,7 +23,7 @@
 /**
  * Gets current country
  *
- * @return array|string
+ * @return array<string,mixed>|null Null when no countries have been loaded
  */
 function osc_country()
 {
@@ -37,7 +37,7 @@ function osc_country()
 /**
  * Gets current region
  *
- * @return array|string
+ * @return array<string,mixed>|null Null when no regions have been loaded
  */
 function osc_region()
 {
@@ -51,7 +51,7 @@ function osc_region()
 /**
  * Gets current city
  *
- * @return array|string
+ * @return array<string,mixed>|null Null when no cities have been loaded
  */
 function osc_city()
 {
@@ -65,7 +65,7 @@ function osc_city()
 /**
  * Gets current city area
  *
- * @return array|string
+ * @return array<string,mixed>|null Null when no city areas have been loaded
  */
 function osc_city_area()
 {
@@ -158,7 +158,7 @@ function osc_has_city_areas($city = '%%%%')
  */
 function osc_count_countries()
 {
-    if (!View::newInstance()->_exists('contries')) {
+    if (!View::newInstance()->_exists('countries')) {
         View::newInstance()
             ->_exportVariableToView('countries', CountryStats::newInstance()->listCountries('>=', 'country_name ASC'));
     }
@@ -233,7 +233,7 @@ function osc_country_name()
 /**
  * Gets country's items
  *
- * @return int
+ * @return int|string
  */
 function osc_country_items()
 {
@@ -243,7 +243,7 @@ function osc_country_items()
 /**
  * Gets region's name
  *
- * @return array|string
+ * @return string
  */
 function osc_region_name()
 {
@@ -253,7 +253,7 @@ function osc_region_name()
 /**
  * Gets region's items
  *
- * @return int
+ * @return int|string
  */
 function osc_region_items()
 {
@@ -273,7 +273,7 @@ function osc_city_name()
 /**
  * Gets city's items
  *
- * @return int
+ * @return int|string
  */
 function osc_city_items()
 {
@@ -293,7 +293,7 @@ function osc_city_area_name()
 /**
  * Gets city area's items
  *
- * @return int
+ * @return int|string
  */
 function osc_city_area_items()
 {
@@ -349,7 +349,7 @@ function osc_city_area_url()
  * renames in place, where this used to skip anything whose name already existed and so
  * could never refresh a row.
  *
- * @param string $location the catalog file name, e.g. "IN-India.json"
+ * @param string|null $location the catalog file name, e.g. "IN-India.json", or a country code
  *
  * @return bool
  */

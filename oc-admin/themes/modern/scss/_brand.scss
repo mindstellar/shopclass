@@ -236,11 +236,12 @@ $table-cell-vertical-align: middle;
   --osc-bench-warm:    #{$gray-100};  // toolbars, table headers (name retained; ramp is cool now)
   --osc-bench-sunk:    #{$gray-200};  // recessed wells
 
-  // The nav chrome surface. Deeper than bench-warm on purpose: the sidebar owns the
-  // whole left column and must read as chrome the content bench floats above, not as a
-  // near-white that dissolves into it. A one-off cool neutral between gray-200 and
-  // gray-300, its own defining edge, and a translucent hover that darkens in light /
-  // lightens in dark (see _theme-dark).
+  // The nav chrome surface. Deeper than bench-warm on purpose: the sidebar owns the whole
+  // left column and must read as chrome the content bench floats above, not as a near-white
+  // that dissolves into it. A one-off cool neutral between gray-200 and gray-300, its own
+  // defining edge, and a translucent hover that darkens in light / lightens in dark (see
+  // _theme-dark). The sidebar reaches it through the --osc-sidebar-* layer, which defaults
+  // here but can be repointed to retheme the rail.
   --osc-chrome:        #e4e9ef;
   --osc-chrome-edge:   #cfd6df;
   --osc-chrome-hover:  rgba(15, 24, 40, .07);
@@ -249,6 +250,31 @@ $table-cell-vertical-align: middle;
   // darker — 5.02:1 on chrome — and still reads as "resting/muted" against the ink the label
   // takes on hover/active. Dark mode keeps ink-muted (6.31:1 on the dark chrome).
   --osc-nav-label:     #576371;
+
+  // The sidebar runs on its own token layer so the whole rail can be re-themed from one
+  // place (e.g. a committed dark/navy rail) without touching sidebar.scss. These default
+  // to the historical chrome look; because each aliases a base token that already flips,
+  // dark mode inherits the matching dark values with no separate block. To retheme, point
+  // these at literal values (add a matching [data-bs-theme="dark"] override if the two
+  // modes should differ) — the collapsed-rail flyout re-points them to the light popover
+  // palette on its own.
+  --osc-sidebar-surface:      var(--osc-chrome);
+  --osc-sidebar-edge:         var(--osc-chrome-edge);
+  --osc-sidebar-divider:      var(--osc-chrome-edge);
+  --osc-sidebar-label:        var(--osc-nav-label);
+  --osc-sidebar-strong:       var(--osc-ink);          // hover text
+  --osc-sidebar-subhead:      var(--osc-ink-emphasis);  // group subheads
+  --osc-sidebar-icon:         var(--osc-rule-strong);   // resting submenu dots
+  --osc-sidebar-accent:       var(--osc-bronze);         // current-item ink, active dot, focus
+  --osc-sidebar-accent-hover: var(--osc-accent-brand);   // the hover-icon delight
+  --osc-sidebar-active-bg:    var(--osc-bronze-tint);
+  --osc-sidebar-hover-bg:     var(--osc-chrome-hover);
+  --osc-sidebar-scroll:       var(--osc-rule-strong);
+  --osc-sidebar-scroll-hover: var(--osc-ink-muted);
+  --osc-sidebar-brand-bg:     var(--osc-bench);          // the brand masthead (its own cap)
+  --osc-sidebar-brand-edge:   var(--osc-rule);
+  --osc-sidebar-brand-ink:    var(--osc-ink);
+  --osc-sidebar-brand-accent: var(--osc-bronze);
 
   --osc-rule:          #{$gray-300};  // decorative dividers
   // Interactive control border (WCAG 1.4.11, 3:1). One step darker than the ramp's $gray-500

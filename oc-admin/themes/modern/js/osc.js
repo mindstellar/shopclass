@@ -1,7 +1,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -9,6 +9,9 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+
+/* global osc, bootstrap */
+/* exported oscEscapeHTML, setJsMessage, bulkActionsSubmit */
 
 /* ===================================================
  * osc tooltip
@@ -120,6 +123,9 @@ function setJsMessage(alertClass, alertMessage) {
     var pTag = jsMessage.querySelector("p");
     pTag.setAttribute("class", alertClass);
     pTag.textContent = alertMessage;
+    ['ok', 'error', 'warning', 'info'].forEach(function (state) {
+        jsMessage.classList.toggle('flashmessage-' + state, state === alertClass);
+    });
     jsMessage.classList.remove('hide');
     jsMessage.removeAttribute('style');
 }
@@ -150,8 +156,7 @@ function bulkActionsSubmit() {
     document.getElementById("datatablesForm").submit();
 }
 // Set up the bulkActions dialog. Only pages that render #bulkActionsModal use
-// this flow; others (e.g. ban rules) own their own confirm dialog, so this must
-// not touch their form or assume the dialog exists.
+// this flow, so this must not touch a form on a page without one.
 window.addEventListener('load', function () {
     var datatablesForm = document.getElementById("datatablesForm");
     var bulkActionsModal = document.getElementById("bulkActionsModal");
@@ -163,13 +168,11 @@ window.addEventListener('load', function () {
     }
 });
 
-// Row actions live in-flow beneath each listing title and are always visible: they are quick
-// actions, so a keyboard or touch user must reach them in one click, not perform a hover the
-// pointer alone can do. (The old code revealed them on mouseover only — a WCAG 2.1.1 failure —
-// and the stylesheet reserved 2.5rem of dead space under every row so the reveal wouldn't reflow
-// the table. Both are gone.) This enhancer only (a) tags the one destructive link so the
-// stylesheet can hold it apart from the routine ones, and (b) drives the "More" overflow list as
-// an accessible click-to-open disclosure.
+// Row actions live in-flow beneath each listing title and are always visible: a keyboard or
+// touch user must reach them in one click, and revealing them on hover is a WCAG 2.1.1
+// failure. This enhancer only (a) tags the one destructive link so the stylesheet can hold it
+// apart from the routine ones, and (b) drives the "More" overflow list as an accessible
+// click-to-open disclosure.
 window.addEventListener('load', function () {
     var actionsDivs = document.querySelectorAll('#datatablesForm .actions');
     actionsDivs.forEach(function (actions) {
@@ -235,5 +238,33 @@ document.addEventListener('change', function (event) {
         if (cb !== checkAll) {
             cb.checked = checkAll.checked;
         }
+    });
+});
+
+// A package icon or screenshot that cannot load (a blocked CDN, an offline install) hands
+// its box back to the tinted initial underneath instead of leaving an empty frame.
+function oscThumbFailed(img) {
+    var box = img.closest ? img.closest('.osc-thumb') : null;
+    if (box) {
+        box.classList.add('osc-thumb--fallback');
+    }
+    img.remove();
+}
+
+// Art hosted somewhere the site cannot reach does not error, it hangs. Give each one a
+// deadline and take the box back when it passes.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.osc-thumb img').forEach(function (img) {
+        if (img.complete && img.naturalWidth > 0) {
+            return;
+        }
+        var deadline = window.setTimeout(function () {
+            if (!img.complete || img.naturalWidth === 0) {
+                oscThumbFailed(img);
+            }
+        }, 8000);
+        img.addEventListener('load', function () {
+            window.clearTimeout(deadline);
+        });
     });
 });

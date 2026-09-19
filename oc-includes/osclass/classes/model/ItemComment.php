@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class ItemComment extends DAO
 {
@@ -25,9 +24,7 @@ class ItemComment extends DAO
      * It references to self object: ItemComment.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
-     * @var Item
+     * @var ItemComment
      */
     private static $instance;
 
@@ -59,9 +56,7 @@ class ItemComment extends DAO
      * It creates a new ItemComment object class ir if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return ItemComment
-     * @since  unknown
      */
     public static function newInstance()
     {
@@ -75,12 +70,9 @@ class ItemComment extends DAO
     /**
      * Searches for comments information, given an item id.
      *
-     * @access public
+     * @param int $id
      *
-     * @param integer $id
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,string|null>>
      */
     public function findByItemIDAll($id)
     {
@@ -98,15 +90,11 @@ class ItemComment extends DAO
     /**
      * Searches for comments information, given an item id, page and comments per page.
      *
-     * @access public
+     * @param int             $id
+     * @param int|string|null $page            'all' returns every page
+     * @param int|null        $commentsPerPage Defaults to the site setting
      *
-     * @param integer $id
-     * @param integer $page
-     * @param null    $commentsPerPage
-     *
-     * @return array
-     * @since  unknown
-     *
+     * @return array<int,array<string,string|null>>
      */
     public function findByItemID($id, $page = null, $commentsPerPage = null)
     {
@@ -146,13 +134,11 @@ class ItemComment extends DAO
     /**
      * Return total of comments, given an item id. (active & enabled)
      *
-     * @access     public
+     * @param int $id
      *
-     * @param integer $id
-     *
-     * @return integer
+     * @return int|string|false The count as a string, int 0 when there are none,
+     *                          false on a null id or a query failure
      * @see        ItemComment::totalComments
-     * @since      unknown
      * @deprecated since 2.3
      */
     public function total_comments($id)
@@ -163,11 +149,10 @@ class ItemComment extends DAO
     /**
      * Return total of comments, given an item id. (active & enabled)
      *
-     * @access public
+     * @param int $id
      *
-     * @param integer $id
-     *
-     * @return integer
+     * @return int|string|false The count as a string, int 0 when there are none,
+     *                          false on a null id or a query failure
      * @since  2.3
      */
     public function totalComments($id)
@@ -202,12 +187,9 @@ class ItemComment extends DAO
     /**
      * Searches for comments information, given an user id.
      *
-     * @access public
+     * @param int $id
      *
-     * @param integer $id
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,string|null>>
      */
     public function findByAuthorID($id)
     {
@@ -225,14 +207,11 @@ class ItemComment extends DAO
     }
 
     /**
-     * Searches for comments information, given an user id.
+     * Searches for comments information, given an item id (or every item).
      *
-     * @access public
+     * @param int|null $itemId
      *
-     * @param integer $itemId
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,mixed>> Comment rows extended with their item's locale block
      */
     public function getAllComments($itemId = null)
     {
@@ -266,12 +245,9 @@ class ItemComment extends DAO
     /**
      * Extends an array of comments with title / description
      *
-     * @access private
+     * @param array<int,array<string,mixed>> $items
      *
-     * @param array $items
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,mixed>>
      */
     private function extendData($items)
     {
@@ -330,13 +306,9 @@ class ItemComment extends DAO
     /**
      * Searches for last comments information, given a limit of comments.
      *
-     * @access public
+     * @param int $num
      *
-     * @param integer $num
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<int,array<string,string|null>>|false False when $num is not a positive int
      */
     public function getLastComments($num)
     {
@@ -372,17 +344,15 @@ class ItemComment extends DAO
     /**
      * Return comments on command
      *
-     * @access public
+     * @param int|null $itemId   item's ID, or null for every item
+     * @param int      $start    offset
+     * @param int      $limit    row count
+     * @param string   $order_by sort column
+     * @param string   $order    order type [DESC|ASC|random]
+     * @param bool     $all      true returns all comments, false, returns comments
+     *                           which not display at frontend
      *
-     * @param int item's ID or null
-     * @param int start
-     * @param int limit
-     * @param string order by
-     * @param string order
-     * @param bool $all true returns all comments, false, returns comments
-     *                  which not display at frontend
-     *
-     * @return array
+     * @return array<int,array<string,string|null>>
      * @since  2.4
      */
     public function search(
@@ -449,9 +419,9 @@ class ItemComment extends DAO
     /**
      * Count the number of comments
      *
-     * @param int item's ID or null
+     * @param int|null $itemId item's ID, or null for every item
      *
-     * @return array|int
+     * @return string|array{}|null The count as a string, an empty array on a query failure
      */
     public function count($itemId = null)
     {
@@ -480,9 +450,12 @@ class ItemComment extends DAO
     }
 
     /**
-     * @param null $aConditions
+     * Count comments across every item, narrowed by optional WHERE conditions.
      *
-     * @return bool|int
+     * @param array<string,mixed>|string|null $aConditions Column => value map, or a raw SQL fragment
+     *
+     * @return int|string|false The count as a string, int 0 when there are none,
+     *                          false on a null condition value or a query failure
      */
     public function countAll($aConditions = null)
     {

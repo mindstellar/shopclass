@@ -1,7 +1,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -44,6 +44,15 @@
 .osc-thumb {
   overflow: hidden;
   position: relative;
+
+  // The art is a square plugin icon or a wide theme screenshot, so it is fitted inside
+  // the box rather than filling it: neither shape is cropped and neither is stretched.
+  img {
+    block-size: 100%;
+    display: block;
+    inline-size: 100%;
+    object-fit: contain;
+  }
 }
 
 .osc-thumb--fallback {
@@ -56,6 +65,12 @@
 
 [data-bs-theme="dark"] .osc-thumb--fallback {
   background-color: hsl(var(--osc-thumb-hue, 200) 28% 22%);
+}
+
+// The letter is always in the markup so a package whose art fails to load (a blocked CDN,
+// an offline install) still shows something; it only paints once the box is in fallback.
+.osc-thumb:not(.osc-thumb--fallback) .osc-thumb-letter {
+  display: none;
 }
 
 .osc-thumb-letter {

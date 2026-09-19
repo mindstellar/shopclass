@@ -2,7 +2,7 @@
 title: Admin toolbar
 description: Add shortcuts to the ShopClass admin toolbar from a plugin using AdminToolbar and the add_admin_toolbar_menus hook.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 The toolbar across the top of the admin panel holds shortcuts — publish a

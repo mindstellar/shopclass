@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -21,6 +21,9 @@ if (!defined('ABS_PATH')) {
  */
 class CAdminLogin extends AdminBaseModel
 {
+    /**
+     * Let plugins hook the admin login before anything is dispatched.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -30,8 +33,10 @@ class CAdminLogin extends AdminBaseModel
     //Business Layer...
 
     /**
-     * @return bool|false
-     * @throws \Exception
+     * Dispatch the login screen and its post, plus the forgot- and recover-password
+     * forms and their posts.
+     *
+     * @return false|null false when the recover form was refused and must be shown again
      */
     public function doModel()
     {
@@ -268,7 +273,9 @@ class CAdminLogin extends AdminBaseModel
     //in this case, this function is prepared for the "recover your password" form
 
     /**
-     * @param $file
+     * Render one of the logged-out admin screens, wrapped in the login chrome.
+     *
+     * @param string $file Path under the admin base path
      *
      * @return void
      */

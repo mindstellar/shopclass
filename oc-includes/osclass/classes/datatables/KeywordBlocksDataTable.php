@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -15,12 +15,24 @@
 class KeywordBlocksDataTable extends DataTable
 {
     private $order_by;
-    private $column_names;
 
     /**
-     * @param array $params
+     * Header column id => the t_keyword_block column it sorts by.
      *
-     * @return array
+     * @var array<string,string>
+     */
+    private $sortable = array(
+        'keyword'   => 's_keyword',
+        'scope'     => 's_scope',
+        'substring' => 'b_substring',
+    );
+
+    /**
+     * Builds the keyword-blocklist listing for the admin datatable.
+     *
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength, sort, direction)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -41,6 +53,11 @@ class KeywordBlocksDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the keyword columns and lets plugins extend them via admin_keyword_block_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
@@ -53,7 +70,11 @@ class KeywordBlocksDataTable extends DataTable
     }
 
     /**
-     * @param array $_get
+     * Derives page, start, limit and ordering from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -68,17 +89,7 @@ class KeywordBlocksDataTable extends DataTable
             $this->iPage = Params::getParam('iPage');
         }
 
-        $this->order_by['column_name'] = 'pk_i_id';
-        $this->order_by['type']        = 'DESC';
-        foreach ($_get as $k => $v) {
-            /* for sorting */
-            if ($k === 'iSortCol_0') {
-                $this->order_by['column_name'] = $this->column_names[$v];
-            }
-            if ($k === 'sSortDir_0') {
-                $this->order_by['type'] = $v;
-            }
-        }
+        $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         // set start and limit using iPage param
         $start = ($this->iPage - 1) * $_get['iDisplayLength'];
 
@@ -86,6 +97,13 @@ class KeywordBlocksDataTable extends DataTable
         $this->limit = (int)$_get['iDisplayLength'];
     }
 
+    /**
+     * Returns the translated label for a blocklist scope, defaulting to title and description.
+     *
+     * @param string $scope One of title, description, meta, all
+     *
+     * @return string
+     */
     private function scopeLabel($scope)
     {
         switch ($scope) {
@@ -102,7 +120,11 @@ class KeywordBlocksDataTable extends DataTable
     }
 
     /**
-     * @param array $keywords
+     * Formats each blocked keyword into table cells and keeps the raw row.
+     *
+     * @param array<int,array<string,mixed>> $keywords
+     *
+     * @return void
      */
     private function processData($keywords)
     {

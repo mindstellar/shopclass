@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -26,8 +26,6 @@
  * @param string $domain
  *
  * @return string
- * @since unknown
- *
  */
 function __($key, $domain = 'core')
 {
@@ -43,8 +41,7 @@ function __($key, $domain = 'core')
  * @param string $key
  * @param string $domain
  *
- * @since unknown
- *
+ * @return void
  */
 function _e($key, $domain = 'core')
 {
@@ -57,8 +54,6 @@ function _e($key, $domain = 'core')
  * @param string $key
  *
  * @return string
- * @since unknown
- *
  */
 function _m($key)
 {
@@ -93,6 +88,8 @@ function _x($key, $context, $domain = 'core')
  * @param string $key
  * @param string $context
  * @param string $domain
+ *
+ * @return void
  */
 function _ex($key, $context, $domain = 'core')
 {

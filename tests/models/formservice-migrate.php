@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -29,24 +29,17 @@
  *         php tests/run-models.php formservice-migrate (as part of the suite)
  */
 
-// FormService names its generated forms through __(); provide a passthrough
-// before any osclass code loads, so the real translation stack (a gettext
-// singleton this harness has no catalogue for) is not dragged in. The autoloader
-// is class-based and never pulls the hTranslations function file, so there is no
-// redeclaration to collide with.
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
-
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hLocale.php';
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hPreference.php';
 
 $admin = scratchdb_session('osc_models_formservice_migrate');
+
+// FormService names its generated forms through __(); the scratch session above already
+// loaded the real hPlugins.php, so only __() (hTranslations.php is never loaded here) is
+// left for stubs.php to fill in.
+require_once __DIR__ . '/../lib/stubs.php';
 
 // Field / Category construction stand-ins, matching tests/models/field.php:
 // osc_base_url only feeds a cache key, and forcing every cache lookup to miss

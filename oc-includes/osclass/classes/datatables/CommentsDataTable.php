@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -29,6 +29,9 @@ class CommentsDataTable extends DataTable
      */
     private $total_filtered;
 
+    /**
+     * Registers the row_class() filter so blocked/inactive comments get a status class.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -36,9 +39,11 @@ class CommentsDataTable extends DataTable
     }
 
     /**
-     * @param $params
+     * Builds the comment listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength, iDisplayStart, resourceId)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -74,6 +79,11 @@ class CommentsDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the comment columns and lets plugins extend them via admin_comments_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -89,7 +99,11 @@ class CommentsDataTable extends DataTable
     }
 
     /**
-     * @param $_get
+     * Derives start, limit, the item filter and the show-all flag from the request params.
+     *
+     * @param array<string,mixed> $_get
+     *
+     * @return void
      */
     private function getDBParams($_get)
     {
@@ -119,8 +133,11 @@ class CommentsDataTable extends DataTable
     }
 
     /**
-     * @param $comments
+     * Formats each comment into table cells and keeps the raw row.
      *
+     * @param array<int,array<string,mixed>> $comments
+     *
+     * @return void
      */
     private function processData($comments)
     {
@@ -193,7 +210,7 @@ class CommentsDataTable extends DataTable
                     osc_esc_html($aRow['s_author_name']) . ' (<a target="_blank" href="' . osc_esc_html(osc_item_url()) . '">'
                     . osc_esc_html(osc_item_title()) . '</a>)' . $actions;
                 $row['comment'] = osc_esc_html($aRow['s_body']);
-                $row['date']    = osc_format_date($aRow['dt_pub_date']);
+                $row['date']    = osc_admin_date($aRow['dt_pub_date'], true);
 
                 $row = osc_apply_filter('comments_processing_row', $row, $aRow);
 
@@ -209,9 +226,9 @@ class CommentsDataTable extends DataTable
      *     - inactive
      *     - active
      *
-     * @param $user
+     * @param array<string,mixed> $user The raw comment row
      *
-     * @return array Array with the class and text of the status of the listing in this row. Example:
+     * @return array{class:string,text:string} Array with the class and text of the status of the listing in this row. Example:
      *     array(
      *         'class' => '',
      *         'text'  => ''
@@ -243,11 +260,13 @@ class CommentsDataTable extends DataTable
     }
 
     /**
-     * @param $class
-     * @param $rawRow
-     * @param $row
+     * datatable_comment_class filter: appends the status class for a comment row.
      *
-     * @return array
+     * @param string[]            $class
+     * @param array<string,mixed> $rawRow The raw comment row
+     * @param array<string,mixed> $row    The formatted row
+     *
+     * @return string[]
      */
     public function row_class($class, $rawRow, $row)
     {

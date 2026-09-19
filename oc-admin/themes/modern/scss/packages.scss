@@ -1,0 +1,191 @@
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+// The package tile shared by the Plugins and Appearance screens (parts/package-ui.php).
+// A grid, not full-width rows: a row leaves its action button an arm's length from the
+// name it belongs to.
+
+.osc-pkg-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.osc-pkg {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  column-gap: 1rem;
+  display: grid;
+  // Content row stretches so the action strip lands on the same line in every tile.
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  padding: 1rem;
+  row-gap: .75rem;
+
+  &:hover {
+    border-color: var(--osc-rule-strong);
+  }
+}
+
+.osc-pkg-art {
+  flex: 0 0 auto;
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 4rem;
+
+  .osc-thumb {
+    aspect-ratio: 4 / 3;
+    background-color: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+  }
+}
+
+.osc-pkg-main {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
+}
+
+// The live theme leads its screen: it spans the grid and shows its screenshot at a size
+// worth looking at, instead of being one tile among equals.
+.osc-pkg--wide {
+  grid-column: 1 / -1;
+
+  .osc-pkg-art {
+    inline-size: 18rem;
+    max-inline-size: 45%;
+  }
+}
+
+.osc-pkg-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.osc-pkg-name {
+  font-size: 1.0625rem; // Title
+  font-weight: 600;
+  margin: 0;
+}
+
+.osc-pkg-state {
+  display: inline-flex;
+}
+
+.osc-pkg-meta {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem; // Label
+  margin: .2rem 0 0;
+
+  a {
+    color: inherit;
+  }
+}
+
+.osc-pkg-sep {
+  padding: 0 .1rem;
+}
+
+// Two lines is what a tile needs: the whole description is one click away in the detail
+// sheet, and a tile that runs to five lines stops being scannable.
+.osc-pkg-desc {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  margin: .35rem 0 0;
+  max-inline-size: 75ch;
+  overflow: hidden;
+}
+
+.osc-pkg-note {
+  font-size: .8125rem;
+  margin: .35rem 0 0;
+
+  &.osc-pkg-note--info {
+    color: var(--osc-ink-muted);
+  }
+
+  // An update waiting is the one note that should pull the eye, so it takes the brand ink
+  // rather than a second tinted block inside a tile that already carries a badge.
+  &.osc-pkg-note--update {
+    color: var(--osc-bronze);
+    font-weight: 500;
+  }
+}
+
+.osc-pkg-actions {
+  align-items: center;
+  border-block-start: 1px solid var(--osc-rule);
+  column-gap: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  padding-block-start: .75rem;
+  row-gap: .5rem;
+}
+
+.osc-pkg-links,
+.osc-pkg-danger {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: .8125rem;
+  gap: .15rem .75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  a {
+    color: var(--osc-ink-muted);
+    text-decoration-line: none;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-bronze);
+      text-decoration-line: underline;
+    }
+  }
+}
+
+// Removing a plugin or a theme is not one of the routine actions beside it: it sits at the
+// far end of the strip, and it is the only thing in the tile that goes red.
+.osc-pkg-danger {
+  margin-inline-start: auto;
+
+  a {
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-danger);
+    }
+  }
+}
+
+@include media-breakpoint-down(sm) {
+  .osc-pkg-list {
+    grid-template-columns: 1fr;
+  }
+
+  .osc-pkg--wide .osc-pkg-art {
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+
+  // On a phone the strip stacks, and a destructive link pushed to the end of a wrapped
+  // row would land under the primary button; it keeps its own line instead.
+  .osc-pkg-danger {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+  }
+}

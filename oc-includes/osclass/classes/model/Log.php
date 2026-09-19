@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,7 +24,7 @@ class Log extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_log table
      */
     public function __construct()
     {
@@ -44,6 +44,8 @@ class Log extends DAO
     }
 
     /**
+     * Return the shared Log model instance, creating it on first use.
+     *
      * @return \Log
      */
     public static function newInstance()
@@ -58,18 +60,14 @@ class Log extends DAO
     /**
      * Insert a log row.
      *
-     * @access public
+     * @param string     $section
+     * @param string     $action
+     * @param int|string $id    Primary key of the subject row
+     * @param string     $data
+     * @param string     $who   'admin' or 'user'
+     * @param int|null   $whoId
      *
-     * @param string  $section
-     * @param string  $action
-     * @param integer $id
-     * @param string  $data
-     * @param string  $who
-     * @param         $whoId
-     *
-     * @return boolean
-     * @since  unknown
-     *
+     * @return bool False when activity logging is off or the write failed
      */
     public function insertLog($section, $action, $id, $data, $who, $whoId)
     {
@@ -122,9 +120,10 @@ class Log extends DAO
      * @param int    $end
      * @param string $order_column
      * @param string $order_direction
-     * @param array  $filters optional {section:string, who:string, q:string}
+     * @param array{section?:string,who?:string,q?:string} $filters
      *
-     * @return array{rows:int,total_results:int,logs:array}
+     * @return array{rows:int|string,total_results:int|string,logs:array<int,array<string,string|null>>}
+     *         The two counts stay int 0 on failure and are unprepared-query strings otherwise
      */
     public function search($start = 0, $end = 20, $order_column = 'dt_date', $order_direction = 'DESC', $filters = array())
     {

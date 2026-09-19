@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -23,6 +23,13 @@ use mindstellar\migration\MigrationInterface;
  * Idempotent: a DELETE matching no rows is a no-op, so re-running is safe.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Delete the alert_email_instant page and its per-locale descriptions.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $conn->execute(

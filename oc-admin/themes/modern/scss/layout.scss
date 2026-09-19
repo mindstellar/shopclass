@@ -41,11 +41,10 @@
   }
 }
 
-// Section separators. Element-qualified so h2 and h3 keep a distinct rhythm on their
-// own specificity — a bare `.separate-top` used to sit in BOTH selector groups, so the
-// h3 rule (carrying !important) won for every element and collapsed all section gaps to
-// 20px, flattening the intended hierarchy. h2/generic sections breathe at 40px; h3
-// subsections at 20px. Logical property: the gap is block-flow, identical in RTL.
+// Section separators. Element-qualified so h2 and h3 keep a distinct rhythm on their own
+// specificity: a bare `.separate-top` in both selector groups lets the h3 rule (carrying
+// !important) win for every element and collapses every gap to 20px. h2/generic sections
+// breathe at 40px; h3 subsections at 20px. Logical property: block-flow, identical in RTL.
 .separate-top {
   margin-block-start: 40px;
 }

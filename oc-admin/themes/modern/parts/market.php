@@ -3,7 +3,7 @@
 }
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -93,6 +93,23 @@ function osc_market_installed_art($type, $slug)
     $has = $type === 'theme' ? osc_theme_has_screenshot($slug) : osc_plugin_has_icon($slug);
     $src = $type === 'theme' ? osc_theme_screenshot_url($slug) : osc_plugin_icon_url($slug);
 
+    // A package that ships no art on disk may still have some in the catalog it came
+    // from; the tinted initial is the last resort, not the second choice. Cache only,
+    // so a list render never reaches the network.
+    if (!$has) {
+        try {
+            $catalog = $type === 'theme'
+                ? \mindstellar\market\Catalog::forThemes()
+                : \mindstellar\market\Catalog::forPlugins();
+            $row = $catalog->index()[$slug] ?? null;
+            if (is_array($row) && !empty($row['icon'])) {
+                return array('src' => $row['icon'], 'has' => true);
+            }
+        } catch (\Throwable $e) {
+            // No catalog, no art: the initial still stands in.
+        }
+    }
+
     return array('src' => $src, 'has' => $has);
 }
 
@@ -100,20 +117,22 @@ function osc_market_installed_art($type, $slug)
  * The osc-thumb tile markup shared with the Appearance grid: real art, or the
  * hash-tinted placeholder with the package's initial overlaid.
  *
- * @param array  $art  {src, has} from osc_market_browse_art()/osc_market_installed_art()
- * @param string $slug
- * @param string $name
+ * @param array{src:string,has:bool} $art  From osc_market_browse_art()/osc_market_installed_art()
+ * @param string                     $slug
+ * @param string                     $name
+ *
+ * @return void
  */
 function osc_market_render_thumb($art, $slug, $name)
 {
     ?>
     <div class="osc-thumb market-card-thumb<?php echo $art['has'] ? '' : ' osc-thumb--fallback'; ?>"
-         <?php if (!$art['has']) : ?>style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>"<?php endif; ?>>
-        <img src="<?php echo osc_esc_html($art['src']); ?>"
-             alt="" width="400" height="300" loading="lazy"/>
-        <?php if (!$art['has']) : ?>
-            <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
+         style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>">
+        <?php if ($art['has']) : ?>
+            <img src="<?php echo osc_esc_html($art['src']); ?>" alt="" width="400" height="300" loading="lazy"
+                 onerror="oscThumbFailed(this)"/>
         <?php endif; ?>
+        <span class="osc-thumb-letter" aria-hidden="true"><?php echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
     </div>
     <?php
 }
@@ -125,14 +144,21 @@ function osc_market_render_thumb($art, $slug, $name)
  * never a verdict against this install; the tint still comes from the locally-evaluated
  * status so an incompatible or untested package still reads differently at a glance.
  *
- * @param array $compat {status, blocked, reason, badge}
+ * @param array<string,mixed> $compat {status, blocked, reason, badge}
+ *
+ * @return void
  */
 function osc_market_render_compat_badge($compat)
 {
     $class = osc_market_compat_class($compat['status'] ?? 'undeclared');
+    $title = ($compat['status'] ?? '') === 'untested'
+        ? __('Not tested with your Shopclass version yet. Installing and updating still work as normal.')
+        : (string) ($compat['reason'] ?? '');
     ?>
     <div class="market-card-status status-<?php echo osc_esc_html($class); ?>">
-        <span class="osc-status"><?php echo osc_esc_html($compat['badge'] ?? ''); ?></span>
+        <span class="osc-status"<?php echo $title !== '' ? ' title="' . osc_esc_html($title) . '"' : ''; ?>>
+            <?php echo osc_esc_html($compat['badge'] ?? ''); ?>
+        </span>
     </div>
     <?php
 }
@@ -144,15 +170,19 @@ function osc_market_render_compat_badge($compat)
  * (Compatibility::evaluate() returns blocked:false for it), so this must never read as a
  * warning -- just a fact the owner might want before installing.
  *
- * @param array $compat row's `compat`
+ * @param array<string,mixed> $compat Row's `compat`
+ *
+ * @return void
  */
 function osc_market_render_untested_note($compat)
 {
     if (($compat['status'] ?? '') !== 'untested') {
         return;
     }
+    // Hidden here on purpose: the badge already says "Works with 6.1 - 6.2" and carries this
+    // as its tooltip. The detail sheet reads the sentence from this element.
     ?>
-    <p class="market-card-note">
+    <p class="market-card-note" hidden>
         <?php echo osc_esc_html(__("Not tested with your Shopclass version yet. Installing and updating still work as normal.")); ?>
     </p>
     <?php
@@ -246,10 +276,12 @@ function osc_market_blocked_reason($meta, $compat)
  * the reason it is blocked. Shared between the card and (via the same markup, cloned
  * by JS) the detail dialog.
  *
- * @param array  $row     browse or update row
- * @param array  $meta    $aMarketMeta
- * @param string $mode    'install' or 'update'
- * @param string $label   button label when the action is available
+ * @param array<string,mixed> $row   Browse or update row
+ * @param array<string,mixed> $meta  $aMarketMeta
+ * @param string              $mode  'install' or 'update'
+ * @param string              $label Button label when the action is available
+ *
+ * @return void
  */
 function osc_market_render_action($row, $meta, $mode, $label)
 {
@@ -278,8 +310,10 @@ function osc_market_render_action($row, $meta, $mode, $label)
  * The .callout banner for catalog state: never fetched, fetch failed, not writable,
  * or in-app installs disabled. Several can be true at once; each gets its own line.
  *
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<string,mixed> $meta $aMarketMeta
+ * @param string              $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_meta_notices($meta, $type)
 {
@@ -327,9 +361,11 @@ function osc_market_render_meta_notices($meta, $type)
  * already-rendered cards) and a card grid, one card per catalog package not
  * currently installed.
  *
- * @param array  $rows $aMarketBrowse
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<int,array<string,mixed>> $rows $aMarketBrowse
+ * @param array<string,mixed>            $meta $aMarketMeta
+ * @param string                         $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_browse($rows, $meta, $type)
 {
@@ -338,7 +374,10 @@ function osc_market_render_browse($rows, $meta, $type)
     if ($meta['last_checked']) {
         ?>
         <p class="market-last-checked">
-            <?php echo osc_esc_html(sprintf(__('Last checked %s.'), osc_format_date(date('Y-m-d H:i:s', $meta['last_checked'])))); ?>
+            <?php echo sprintf(
+                osc_esc_html(__('Last checked %s.')),
+                osc_admin_date(date('Y-m-d H:i:s', $meta['last_checked']))
+            ); ?>
         </p>
         <?php
     }
@@ -379,13 +418,25 @@ function osc_market_render_browse($rows, $meta, $type)
         </button>
     </div>
     <?php if (empty($rows)) : ?>
-        <p class="market-empty">
-            <?php echo osc_esc_html(!empty($meta['catalog_available'])
-                ? ($type === 'theme' ? __('No themes are available right now.') : __('No plugins are available right now.'))
-                : ''); ?>
-        </p>
+        <?php if (!empty($meta['catalog_available'])) : ?>
+            <?php osc_admin_empty(array(
+                'icon'  => $type === 'theme' ? 'bi-palette' : 'bi-plug',
+                'title' => $type === 'theme'
+                    ? __('Every published theme is already installed')
+                    : __('Every published plugin is already installed'),
+                'text'  => __('New packages show up here as they are published. You can also upload one yourself.'),
+            )); ?>
+        <?php else : ?>
+            <?php osc_admin_empty(array(
+                'icon'  => 'bi-cloud-arrow-down',
+                'title' => __('Nothing to browse yet'),
+                'text'  => $type === 'theme'
+                    ? __('Check now to fetch the list of themes you can install.')
+                    : __('Check now to fetch the list of plugins you can install.'),
+            )); ?>
+        <?php endif; ?>
     <?php else : ?>
-        <div class="market-grid row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4">
+        <div class="market-grid row row-cols-1 row-cols-lg-2 row-cols-xxl-3">
             <?php foreach ($rows as $row) :
                 $art = osc_market_browse_art($type, $row['slug'], $row['icon']); ?>
                 <div class="col market-grid-item">
@@ -395,12 +446,14 @@ function osc_market_render_browse($rows, $meta, $type)
                             <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
                         </button>
                         <div class="card-body market-card-body">
-                            <?php osc_market_render_compat_badge($row['compat']); ?>
-                            <h3 class="market-card-title">
-                                <button type="button" class="market-card-title-btn" data-market-open-detail>
-                                    <?php echo osc_esc_html($row['name']); ?>
-                                </button>
-                            </h3>
+                            <div class="market-card-head">
+                                <h3 class="market-card-title">
+                                    <button type="button" class="market-card-title-btn" data-market-open-detail>
+                                        <?php echo osc_esc_html($row['name']); ?>
+                                    </button>
+                                </h3>
+                                <?php osc_market_render_compat_badge($row['compat']); ?>
+                            </div>
                             <p class="market-card-author">
                                 <?php echo osc_esc_html(sprintf(__('by %s'), $row['author'])); ?>
                                 <?php $downloads = osc_market_format_downloads($row['downloads'] ?? 0); ?>
@@ -415,6 +468,10 @@ function osc_market_render_browse($rows, $meta, $type)
                             <?php osc_market_render_untested_note($row['compat']); ?>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
+                                <button type="button" class="btn btn-sm btn-secondary market-card-details"
+                                        data-market-open-detail>
+                                    <?php _e('Details'); ?>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -430,9 +487,11 @@ function osc_market_render_browse($rows, $meta, $type)
  * The Updates tab: an "Update all" action and one row per installed package with a
  * pending, compatible update.
  *
- * @param array  $rows $aMarketUpdates
- * @param array  $meta $aMarketMeta
- * @param string $type 'plugin' or 'theme'
+ * @param array<int,array<string,mixed>> $rows $aMarketUpdates
+ * @param array<string,mixed>            $meta $aMarketMeta
+ * @param string                         $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_updates($rows, $meta, $type)
 {
@@ -455,9 +514,13 @@ function osc_market_render_updates($rows, $meta, $type)
         </button>
     </div>
     <?php if (empty($rows)) : ?>
-        <p class="market-empty">
-            <?php echo osc_esc_html($type === 'theme' ? __('Every installed theme is up to date.') : __('Every installed plugin is up to date.')); ?>
-        </p>
+        <?php osc_admin_empty(array(
+            'icon'  => 'bi-check-circle',
+            'title' => $type === 'theme'
+                ? __('Every installed theme is up to date')
+                : __('Every installed plugin is up to date'),
+            'text'  => __('Shopclass checks once a day. Check now if you are expecting something.'),
+        )); ?>
     <?php else : ?>
         <ul class="market-updates-list">
             <?php foreach ($rows as $row) :
@@ -469,12 +532,14 @@ function osc_market_render_updates($rows, $meta, $type)
                         <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
                     </button>
                     <div class="market-update-body">
-                        <?php osc_market_render_compat_badge($row['compat']); ?>
-                        <h3 class="market-update-title">
-                            <button type="button" class="market-card-title-btn" data-market-open-detail>
-                                <?php echo osc_esc_html($row['name']); ?>
-                            </button>
-                        </h3>
+                        <div class="market-update-head">
+                            <h3 class="market-update-title">
+                                <button type="button" class="market-card-title-btn" data-market-open-detail>
+                                    <?php echo osc_esc_html($row['name']); ?>
+                                </button>
+                            </h3>
+                            <?php osc_market_render_compat_badge($row['compat']); ?>
+                        </div>
                         <p class="market-update-versions">
                             <?php echo osc_esc_html(sprintf(
                                 __('%1$s → %2$s'),
@@ -490,6 +555,10 @@ function osc_market_render_updates($rows, $meta, $type)
                     </div>
                     <div class="market-update-actions">
                         <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to %s'), $row['new_version'])); ?>
+                        <button type="button" class="btn btn-sm btn-secondary market-card-details"
+                                data-market-open-detail>
+                            <?php _e('Details'); ?>
+                        </button>
                     </div>
                 </li>
             <?php endforeach; ?>
@@ -510,6 +579,8 @@ function osc_market_render_updates($rows, $meta, $type)
  * inline error rather than a blank dialog.
  *
  * @param string $type 'plugin' or 'theme'
+ *
+ * @return void
  */
 function osc_market_render_detail_dialog($type)
 {
@@ -530,6 +601,10 @@ function osc_market_render_detail_dialog($type)
                     <div class="market-detail-version-row">
                         <dt><?php _e('Version'); ?></dt>
                         <dd class="market-detail-version"></dd>
+                    </div>
+                    <div class="market-detail-requires-row" hidden>
+                        <dt><?php _e('Requires'); ?></dt>
+                        <dd class="market-detail-requires"></dd>
                     </div>
                     <div class="market-detail-downloads-row" hidden>
                         <dt><?php _e('Downloads'); ?></dt>
@@ -609,6 +684,9 @@ function osc_market_i18n($type)
         'checking'         => __('Checking…'),
         'noResults'        => __('No packages match your search.'),
         'byAuthor'         => __('by %s'),
+        'requiresCore'     => __('Shopclass %s or newer'),
+        'requiresPhp'      => __('PHP %s or newer'),
+        'testedTo'         => __('tested to %s'),
         'linkHomepage'     => __('Homepage'),
         'linkRepo'         => __('Repository'),
         'linkIssues'       => __('Issue tracker'),

@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -16,8 +16,12 @@ use mindstellar\form\base\FormInputs;
 
 /**
  * Class Form
- * For compatibility
- * Use \mindstellar\form\base\FormInputs or \mindstellar\form\base\FormBuilder instead
+ *
+ * The base every core form class still extends. New code should build on
+ * \mindstellar\form\base\FormInputs or \mindstellar\form\base\FormBuilder directly;
+ * this class is not going away while the twelve core forms rest on it.
+ *
+ * @see \mindstellar\form\base\FormInputs
  */
 class Form extends FormInputs
 {
@@ -26,12 +30,16 @@ class Form extends FormInputs
     protected $passwordClass = 'form-control form-control-sm';
 
     /**
-     * @param $name
-     * @param $items
-     * @param $fld_key
-     * @param $fld_name
-     * @param $default_item
-     * @param $id
+     * Echo a select box built from a list of rows.
+     *
+     * @param string                         $name
+     * @param array<int,array<string,mixed>> $items
+     * @param string                         $fld_key      Row key holding the option value
+     * @param string                         $fld_name     Row key holding the option label
+     * @param string|null                    $default_item Placeholder option label
+     * @param string|int|null                $id           The currently selected value
+     *
+     * @return void
      */
     protected static function generic_select($name, $items, $fld_key, $fld_name, $default_item, $id)
     {
@@ -50,11 +58,15 @@ class Form extends FormInputs
     }
 
     /**
-     * @param      $name
-     * @param      $value
-     * @param null $maxLength
-     * @param bool $readOnly
-     * @param bool $autocomplete
+     * Echo a text input.
+     *
+     * @param string          $name
+     * @param string|int|null $value
+     * @param int|null        $maxLength
+     * @param bool            $readOnly
+     * @param bool            $autocomplete
+     *
+     * @return void
      */
     protected static function generic_input_text(
         $name,
@@ -79,10 +91,14 @@ class Form extends FormInputs
     }
 
     /**
-     * @param      $name
-     * @param      $value
-     * @param null $maxLength
-     * @param bool $readOnly
+     * Echo a password input.
+     *
+     * @param string   $name
+     * @param string   $value
+     * @param int|null $maxLength
+     * @param bool     $readOnly
+     *
+     * @return void
      */
     protected static function generic_password($name, $value, $maxLength = null, $readOnly = false)
     {
@@ -98,8 +114,12 @@ class Form extends FormInputs
     }
 
     /**
-     * @param $name
-     * @param $value
+     * Echo a hidden input.
+     *
+     * @param string          $name
+     * @param string|int|null $value
+     *
+     * @return void
      */
     protected static function generic_input_hidden($name, $value)
     {
@@ -108,9 +128,13 @@ class Form extends FormInputs
     }
 
     /**
-     * @param      $name
-     * @param      $value
-     * @param bool $checked
+     * Echo a checkbox input.
+     *
+     * @param string          $name
+     * @param string|int|null $value
+     * @param bool            $checked
+     *
+     * @return void
      */
     protected static function generic_input_checkbox($name, $value, $checked = false)
     {
@@ -123,8 +147,12 @@ class Form extends FormInputs
     }
 
     /**
-     * @param $name
-     * @param $value
+     * Echo a textarea.
+     *
+     * @param string      $name
+     * @param string|null $value
+     *
+     * @return void
      */
     protected static function generic_textarea($name, $value)
     {

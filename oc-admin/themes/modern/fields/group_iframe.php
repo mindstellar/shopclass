@@ -3,7 +3,7 @@
 }
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -32,43 +32,33 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
             <h3 class="card-header"><?php _e('Edit field group'); ?></h3>
             <fieldset>
                 <div class="card-body">
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Group name'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="form-control" name="group_name" id="group_name"
-                                   value="<?php echo osc_esc_html($groupName); ?>" autocomplete="off" />
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Identifier name'); ?></div>
-                        <div class="form-controls">
-                            <input type="text" class="form-control" name="group_slug"
-                                   value="<?php echo osc_esc_html($groupSlug); ?>" />
+                    <?php osc_admin_form_row_open(__('Group name')); ?>
+                            <?php osc_admin_text(array(
+                                'row'   => false,
+                                'id'    => 'group_name',
+                                'name'  => 'group_name',
+                                'value' => $groupName,
+                                'attrs' => array('autocomplete' => 'off'),
+                            )); ?>
+                    <?php osc_admin_form_row_close(); ?>
+                    <?php osc_admin_form_row_open(__('Identifier name')); ?>
+                            <?php osc_admin_text(array(
+                                'row'   => false,
+                                'name'  => 'group_slug',
+                                'value' => $groupSlug,
+                            )); ?>
                             <p class="help-inline"><?php _e('Only alphanumeric characters are allowed [a-z0-9_-]'); ?></p>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"></div>
-                        <div class="form-controls">
+                    <?php osc_admin_form_row_close(); ?>
+                    <?php osc_admin_form_row_open(''); ?>
                             <label><input type="checkbox" name="group_placeable" value="1"<?php echo $isPlaceable ? ' checked' : ''; ?> />
                                 <span><?php _e('Available as a block (place this form on pages and layouts)'); ?></span></label>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div><?php _e('Select the categories where you want to apply this group:'); ?></div>
-                        <div class="separate-top">
-                            <div class="form-label">
-                                <a href="javascript:void(0);" onclick="checkAll('group_cat_tree', true); return false;"><?php _e('Check all'); ?></a>
-                                &middot;
-                                <a href="javascript:void(0);" onclick="checkAll('group_cat_tree', false); return false;"><?php _e('Uncheck all'); ?></a>
-                            </div>
-                            <div class="form-controls">
-                                <ul id="group_cat_tree">
-                                    <?php CategoryForm::categories_tree($categories, $selected); ?>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                    <?php osc_admin_form_row_close(); ?>
+                    <?php osc_admin_tree_picker(array(
+                        'id'         => 'group_cat_tree',
+                        'intro'      => __('Select the categories where you want to apply this group:'),
+                        'categories' => $categories,
+                        'selected'   => $selected,
+                    )); ?>
                 </div>
                 <div class="card-footer form-actions">
                     <input type="submit" id="group_save" value="<?php echo osc_esc_html(__('Save changes')); ?>" class="btn btn-submit" />

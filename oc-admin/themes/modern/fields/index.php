@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -159,9 +159,21 @@ if (!function_exists('cfields_form_cat_summary')) {
     }
 }
 
+/**
+ * Emit the custom-fields script: the inline field and group editors, their drawers, and the delete confirmations.
+ *
+ * @return void
+ */
 function customHead()
 {
-    $csrf_token = osc_csrf_token_url(); ?>
+    $csrf_token = osc_csrf_token_url();
+    // Fetched here rather than read from the file scope above: this is a function, so the
+    // view's own $catNames is not visible and json_encode() would emit an empty map --
+    // leaving every saved form labelled "not attached" until the page was reloaded.
+    $catNames = __get('category_names');
+    if (!is_array($catNames)) {
+        $catNames = array();
+    } ?>
     <script type="text/javascript">
         // Inject fetched HTML and run any <script> it carries (innerHTML alone does
         // not execute scripts; the editors wire themselves up in one).
@@ -241,14 +253,6 @@ function customHead()
             return false;
         }
 
-        function checkAll(id, check) {
-            var root = document.getElementById(id);
-            if (root) { root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; }); }
-        }
-        function checkCat(id, check) {
-            var root = document.getElementById('cat' + id);
-            if (root) { root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; }); }
-        }
 
         function delete_group(id) {
             var modal = document.getElementById('deleteGroupModal');

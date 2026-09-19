@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,6 +17,9 @@
  */
 class CWebContact extends BaseModel
 {
+    /**
+     * Boots the base controller and fires the `init_contact` hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -26,7 +29,10 @@ class CWebContact extends BaseModel
     //Business Layer...
 
     /**
-     * @return bool|false
+     * Sends the contact message on `contact_post`, otherwise renders the contact form.
+     *
+     * @return false|null false only when the captcha check failed and the request was
+     *                    redirected back to the form
      */
     public function doModel()
     {
@@ -169,14 +175,16 @@ MESSAGE;
                 $this->redirectTo(osc_contact_url());
                 break;
             default:                //contact
-                $this->doView('contact.php');
+                $this->doView(osc_locate_template(array('contact.php'), 'contact'));
         }
     }
 
     //hopefully generic...
 
     /**
-     * @param $file
+     * Renders the contact template with its canonical URL exported to the view.
+     *
+     * @param string $file Absolute path to the located template
      *
      * @return void
      */
@@ -186,7 +194,9 @@ MESSAGE;
         // only lacked a canonical, which it is reachable without.
         $this->_exportVariableToView('canonical', osc_contact_url());
         osc_run_hook('before_html');
-        osc_current_web_theme_path($file);
+        if (!osc_gui_page_view($file)) {
+            osc_current_web_theme_path($file);
+        }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
     }

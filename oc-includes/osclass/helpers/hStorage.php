@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -46,6 +46,8 @@ StorageManager::instance()->boot();
  * remote, and an upload processed on a request where the `init` registration
  * had not run would otherwise be dropped silently. On a stock install with no
  * connection configured this stays a no-op and behaviour is unchanged.
+ *
+ * @return void
  */
 function osc_storage_register_remote()
 {

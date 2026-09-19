@@ -4,6 +4,8 @@
  * Provides oscInitTabs() (the segmented locale/section tabs, replacing
  * jQuery-UI .tabs()) and wires the flash-message and help-box close buttons.
  */
+/* global osc */
+/* exported oscTab, tabberAutomatic, oscValidateForm, oscTreeview, checkCat */
 
 // Initialise every .osc-tab within `root` (default: document). Works on the
 // existing markup: a .osc-tab container holding `> ul > li > a[href="#panel"]`
@@ -68,6 +70,12 @@ function oscInitTabs(root) {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
                     select(link, false);
+                    // The tab goes in the address bar, so a link can point at one and Back
+                    // returns to the previous tab instead of leaving the screen.
+                    var href = link.getAttribute('href');
+                    if (href && window.history && window.history.pushState) {
+                        window.history.pushState(null, '', href);
+                    }
                 });
                 link.addEventListener('keydown', function (e) {
                     var next = null;
@@ -79,7 +87,26 @@ function oscInitTabs(root) {
                 });
             });
 
-            select(serverActive || linkArr[0], false);
+            function linkForHash() {
+                var hash = window.location.hash;
+                if (!hash || hash.length < 2) {
+                    return null;
+                }
+                for (var h = 0; h < linkArr.length; h++) {
+                    if (linkArr[h].getAttribute('href') === hash) {
+                        return linkArr[h];
+                    }
+                }
+
+                return null;
+            }
+
+            select(linkForHash() || serverActive || linkArr[0], false);
+
+            // No hash means the entry before the first tab click, so the default tab returns.
+            window.addEventListener('popstate', function () {
+                select(linkForHash() || serverActive || linkArr[0], false);
+            });
         })(containers[c]);
     }
 }
@@ -225,7 +252,55 @@ function oscTreeview(root, opts) {
             li.insertBefore(toggle, li.firstChild);
         })(lis[i]);
     }
+
+    // Reflect partial selection on a parent: an unchecked category whose subtree holds any
+    // checked box shows the indeterminate dash, so a collapsed branch still signals that
+    // something inside it is selected. Runs on load and after any box in the tree changes.
+    function oscTreeSyncParents() {
+        var items = root.querySelectorAll('li');
+        for (var i = 0; i < items.length; i++) {
+            var box = null;
+            var sub = null;
+            var kids = items[i].children;
+            for (var c = 0; c < kids.length; c++) {
+                if (kids[c].tagName === 'INPUT' && kids[c].type === 'checkbox') { box = kids[c]; }
+                if (kids[c].tagName === 'UL') { sub = kids[c]; }
+            }
+            if (!box || !sub) { continue; }
+            box.indeterminate = !box.checked && sub.querySelector('input[type=checkbox]:checked') !== null;
+        }
+    }
+
+    root.addEventListener('change', oscTreeSyncParents);
+    oscTreeSyncParents();
 }
+
+// Global so third-party plugins calling checkAll(id, check) by name keep working.
+function checkAll(id, check) {
+    var root = document.getElementById(id);
+    if (root) {
+        root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; });
+        // Bulk toggles set .checked in script, which fires no change event; nudge one so a
+        // treeview watching this root re-reads its parent indeterminate states.
+        root.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+// Toggle a category subtree (#cat<id>); emitted inline by CategoryForm::categories_tree
+// on every parent checkbox, so it must be global on every page a tree picker can appear.
+function checkCat(id, check) {
+    var root = document.getElementById('cat' + id);
+    if (root) { root.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = check; }); }
+}
+
+// Delegated, so it also covers tree pickers injected after load (e.g. the field
+// and group edit iframes, which are innerHTML-injected).
+document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-tree-toggle]');
+    if (!t) { return; }
+    e.preventDefault();
+    checkAll(t.getAttribute('data-tree-toggle'), t.getAttribute('data-tree-check') === '1');
+});
 
 // Flash messages — progressive enhancement shared by core- and plugin-rendered
 // markup (anything carrying .flashmessage). Adds the ARIA a screen reader needs,
@@ -310,8 +385,7 @@ document.addEventListener('click', function (e) {
 
 // Shift-click a checkbox to toggle every checkbox between it and the last one
 // clicked — a bulk-select convenience for the admin data tables. Scoped to the
-// nearest table or form so a range never leaks across regions. Pure vanilla,
-// replacing the jQuery shift-select this admin used to rely on.
+// nearest table or form so a range never leaks across regions.
 (function () {
     var lastChecked = null;
     document.addEventListener('click', function (e) {
@@ -333,3 +407,194 @@ document.addEventListener('click', function (e) {
         lastChecked = box;
     });
 })();
+
+// Reveal toggle for osc_admin_secret(..., 'reveal' => true). Delegated, so a field
+// rendered into a dialog or by a plugin after load is wired without re-initialising.
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-osc-reveal]') : null;
+    if (!btn) {
+        return;
+    }
+    var input = document.getElementById(btn.getAttribute('data-osc-reveal'));
+    if (!input) {
+        return;
+    }
+    var shown = input.type === 'text';
+    input.type = shown ? 'password' : 'text';
+    btn.setAttribute('aria-pressed', shown ? 'false' : 'true');
+    if (btn.dataset.labelShow || btn.dataset.labelHide) {
+        btn.textContent = shown ? btn.dataset.labelShow : btn.dataset.labelHide;
+    }
+});
+
+// Conditional fields: a form row carrying data-osc-depends="<field name>" is shown only
+// while that field is switched on, which is UX — the save path re-evaluates the same
+// relationship and discards a hidden field's value.
+// "On" matches the server: neither empty nor "0", or, for a row carrying
+// data-osc-depends-value, one of the listed values. A master that is itself dependent
+// counts as off while its own master is.
+function oscDependsValues(row) {
+    var raw = row.getAttribute('data-osc-depends-value');
+    if (raw === null) {
+        return null;
+    }
+    try {
+        var list = JSON.parse(raw);
+        return Array.isArray(list) ? list.map(String) : [];
+    } catch {
+        return [];
+    }
+}
+
+function oscDependsOn(name, scope, seen, values) {
+    if (!name || seen.indexOf(name) !== -1) {
+        return false;
+    }
+    seen.push(name);
+    var controls = scope.querySelectorAll('[name="' + name.replace(/"/g, '\\"') + '"]');
+    if (!controls.length) {
+        return false;
+    }
+    var on = false;
+    var masterRow = null;
+    for (var i = 0; i < controls.length; i++) {
+        var el = controls[i];
+        var value = String((el.type === 'checkbox' || el.type === 'radio')
+            ? (el.checked ? (el.value === '' ? '1' : el.value) : '')
+            : el.value);
+        if (values ? values.indexOf(value.trim()) !== -1 : (value.trim() !== '' && value !== '0')) {
+            on = true;
+        }
+        if (!masterRow && el.closest) {
+            masterRow = el.closest('[data-osc-depends]');
+        }
+    }
+    if (on && masterRow) {
+        on = oscDependsOn(masterRow.getAttribute('data-osc-depends'), scope, seen, oscDependsValues(masterRow));
+    }
+    return on;
+}
+
+// A hidden control that is still `required` blocks submission with a message pointing at
+// something nobody can see, so the flag is lifted while the row is off and put back with
+// it. The server decides again either way: the field is not required while its master is
+// off, whatever the browser was told.
+function oscDependsRequired(row, on) {
+    var controls = row.querySelectorAll('input, select, textarea');
+    for (var i = 0; i < controls.length; i++) {
+        var control = controls[i];
+        if (!on && control.required) {
+            control.setAttribute('data-osc-was-required', '1');
+            control.required = false;
+        } else if (on && control.hasAttribute('data-osc-was-required')) {
+            control.removeAttribute('data-osc-was-required');
+            control.required = true;
+        }
+    }
+}
+
+function oscSyncDepends(root) {
+    root = root || document;
+    var rows = root.querySelectorAll('[data-osc-depends]');
+    for (var i = 0; i < rows.length; i++) {
+        var scope = (rows[i].closest && rows[i].closest('form')) || document;
+        var on = oscDependsOn(rows[i].getAttribute('data-osc-depends'), scope, [], oscDependsValues(rows[i]));
+        rows[i].hidden = !on;
+        oscDependsRequired(rows[i], on);
+    }
+}
+
+// A control nothing declares a dependency on cannot flip any row, and typing in one is
+// the common case: without this every keystroke in any box re-scans every dependent row
+// on the page.
+function oscDependsIsMaster(target) {
+    var name = target && target.name;
+
+    return !!name && !!document.querySelector('[data-osc-depends="' + name.replace(/"/g, '\\"') + '"]');
+}
+
+// The action row of a declared settings page counts what has actually changed since the
+// page loaded, so Save is quiet on a form nobody has touched.
+function oscControlValue(el) {
+    if (el.type === 'checkbox' || el.type === 'radio') {
+        return el.checked ? '1' : '';
+    }
+    if (el.multiple && el.options) {
+        var picked = [];
+        for (var i = 0; i < el.options.length; i++) {
+            if (el.options[i].selected) { picked.push(el.options[i].value); }
+        }
+
+        return picked.join('\u0000');
+    }
+
+    return el.value;
+}
+
+function oscDirtyControls(form) {
+    var out = [];
+    var all = form.querySelectorAll('input, select, textarea');
+    for (var i = 0; i < all.length; i++) {
+        var el = all[i];
+        // A control with no name submits nothing, and the token is not the admin's edit.
+        if (!el.name || el.type === 'submit' || el.type === 'button' || el.name === 'CSRFName'
+            || el.name === 'CSRFToken') {
+            continue;
+        }
+        out.push(el);
+    }
+
+    return out;
+}
+
+function oscDirtySync(bar) {
+    var form = bar.closest && bar.closest('form');
+    if (!form) { return; }
+    var controls = oscDirtyControls(form);
+    var changed = 0;
+    for (var i = 0; i < controls.length; i++) {
+        if (controls[i].getAttribute('data-osc-was') !== oscControlValue(controls[i])) { changed++; }
+    }
+    var status = bar.querySelector('.form-actions-status');
+    if (status) {
+        status.textContent = changed === 0
+            ? ''
+            : (changed === 1
+                ? (bar.getAttribute('data-osc-dirty-one') || '')
+                : (bar.getAttribute('data-osc-dirty-many') || '').replace('%d', String(changed)));
+    }
+    bar.classList.toggle('is-dirty', changed > 0);
+}
+
+function oscDirtyInit(root) {
+    var bars = (root || document).querySelectorAll('[data-osc-dirty-bar]');
+    for (var i = 0; i < bars.length; i++) {
+        var form = bars[i].closest && bars[i].closest('form');
+        if (!form) { continue; }
+        var controls = oscDirtyControls(form);
+        for (var j = 0; j < controls.length; j++) {
+            controls[j].setAttribute('data-osc-was', oscControlValue(controls[j]));
+        }
+        oscDirtySync(bars[i]);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () { oscDirtyInit(document); });
+document.addEventListener('change', function (e) {
+    var bar = e.target && e.target.form && e.target.form.querySelector('[data-osc-dirty-bar]');
+    if (bar) { oscDirtySync(bar); }
+});
+document.addEventListener('input', function (e) {
+    var bar = e.target && e.target.form && e.target.form.querySelector('[data-osc-dirty-bar]');
+    if (bar) { oscDirtySync(bar); }
+});
+
+document.addEventListener('DOMContentLoaded', function () { oscSyncDepends(document); });
+// Delegated and re-run whole: one change can flip a chain of rows, not only the row
+// whose master was touched.
+document.addEventListener('change', function (e) {
+    if (oscDependsIsMaster(e.target)) { oscSyncDepends(document); }
+});
+document.addEventListener('input', function (e) {
+    if (oscDependsIsMaster(e.target)) { oscSyncDepends(document); }
+});

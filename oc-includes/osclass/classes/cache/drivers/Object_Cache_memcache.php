@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -20,7 +20,6 @@ class Object_Cache_memcache implements iObject_Cache
      * The amount of times the cache data was already stored in the cache.
      *
      * @since  3.4
-     * @access private
      * @var int
      */
     public $cache_hits = 0;
@@ -28,7 +27,6 @@ class Object_Cache_memcache implements iObject_Cache
      * Amount of times the cache did not have the request in cache
      *
      * @var int
-     * @access public
      * @since  3.4
      */
     public $cache_misses = 0;
@@ -36,7 +34,6 @@ class Object_Cache_memcache implements iObject_Cache
      * The blog prefix to prepend to keys in non-global groups.
      *
      * @var int
-     * @access private
      * @since  3.4
      */
     public $site_prefix;
@@ -52,7 +49,6 @@ class Object_Cache_memcache implements iObject_Cache
      * Holds the memcached object
      *
      * @var array
-     * @access private
      * @since  3.4
      */
     private $memcached;
@@ -152,7 +148,7 @@ class Object_Cache_memcache implements iObject_Cache
     /**
      * Clears the object cache of all data
      *
-     * @return bool Always returns true
+     * @return bool
      * @since 3.4
      *
      */
@@ -244,7 +240,9 @@ class Object_Cache_memcache implements iObject_Cache
      * Echoes the stats of the caching.
      * Gives the cache hits, and cache misses.
      *
+     * @return void
      * @since 3.4
+     *
      */
     public function stats()
     {
@@ -262,11 +260,6 @@ padding: 1em;'><h2>Memcache stats</h2>";
     }
 
     /**
-     * is_supported()
-     *
-     * Check to see if Memcache is available on this system, bail if it isn't.
-     */
-    /**
      * Normalised cache statistics for the admin's cache screen.
      *
      * Deliberately NOT part of iObject_Cache: third-party drivers implement that
@@ -274,7 +267,7 @@ padding: 1em;'><h2>Memcache stats</h2>";
      * method_exists() instead. The legacy stats() is left alone — it echoes debug
      * markup and anything already calling it keeps working.
      *
-     * @return array|null Null when the driver has nothing to report.
+     * @return array<string,int|string|null>|null Null when the driver has nothing to report.
      */
     public function statsData()
     {
@@ -330,6 +323,11 @@ padding: 1em;'><h2>Memcache stats</h2>";
         return $this->site_prefix . $key;
     }
 
+    /**
+     * Whether the legacy memcache extension is loaded.
+     *
+     * @return bool
+     */
     public static function is_supported()
     {
         if (!class_exists('Memcache')) {
@@ -343,13 +341,17 @@ padding: 1em;'><h2>Memcache stats</h2>";
     }
 
     /**
+     * Nothing to release: the memcached connection closes with the request.
      *
+     * @return void
      */
     public function __destruct()
     {
     }
 
     /**
+     * The driver's identifier, as accepted by OSC_CACHE.
+     *
      * @return string
      */
     public function _get_cache()
@@ -360,13 +362,10 @@ padding: 1em;'><h2>Memcache stats</h2>";
     /**
      * Utility function to determine whether a key exists in the cache.
      *
-     * @param $key
+     * @param int|string $key
      *
      * @return bool
      * @since  3.4.0
-     *
-     * @access protected
-     *
      */
     protected function _exists($key)
     {

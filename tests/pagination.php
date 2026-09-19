@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -24,18 +24,7 @@ require_once __DIR__ . '/../oc-includes/osclass/classes/Pagination.php';
 require_once __DIR__ . '/lib/harness.php';
 
 // Pagination's render methods call these osclass helpers; stub them DB-/bootstrap-free.
-if (!function_exists('osc_esc_html')) {
-    function osc_esc_html($s)
-    {
-        return htmlspecialchars((string) $s, ENT_QUOTES);
-    }
-}
-if (!function_exists('__')) {
-    function __($s, $d = '')
-    {
-        return $s;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;

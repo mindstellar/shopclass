@@ -2,7 +2,7 @@
 title: Self-hosted updates
 description: The legacy Update URI mechanism for ShopClass plugins and themes hosted outside the registry, and why the market replaced it.
 sidebar:
-  order: 8
+  order: 9
 ---
 
 Before the registry existed, a plugin or theme advertised its own updates: you

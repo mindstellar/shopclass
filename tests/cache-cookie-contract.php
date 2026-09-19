@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -25,12 +25,7 @@
 require_once __DIR__ . '/lib/harness.php';
 
 // hHttpCache is a pure helper; osc_apply_filter is the only core function it reaches for.
-if (!function_exists('osc_apply_filter')) {
-    function osc_apply_filter($tag, $value)
-    {
-        return $value;
-    }
-}
+require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
 
 $root     = dirname(__DIR__);
@@ -41,8 +36,8 @@ $sessionNames = array('osclass', 'PHPSESSID', session_name());
 
 harness_section('every allowlisted name is a real wire cookie, not a container key');
 foreach ($cookies as $name) {
+    // PHP emits these itself, so there is no setcookie() call to find.
     if (in_array($name, $sessionNames, true)) {
-        check("$name — PHP session cookie (exempt)", true);
         continue;
     }
     $found = array();
@@ -93,6 +88,30 @@ foreach ($proxyFiles as $rel) {
     sort($got);
     pin("$rel lists exactly the app's cookies", implode(',', $expected), implode(',', $got));
 }
+
+harness_section('maintenance banner pages are never shared-cached');
+if (!function_exists('osc_is_web_user_logged_in')) {
+    function osc_is_web_user_logged_in()
+    {
+        return false;
+    }
+}
+if (!function_exists('osc_is_admin_user_logged_in')) {
+    function osc_is_admin_user_logged_in()
+    {
+        return false;
+    }
+}
+$GLOBALS['osc_response_cacheable'] = true;
+$_SERVER['REQUEST_METHOD']         = 'GET';
+$_COOKIE                           = array();
+check('anonymous public GET is cacheable', osc_response_is_cacheable() === true);
+define('__OSC_MAINTENANCE__', true);
+check(
+    'not cacheable while the maintenance banner shows',
+    osc_response_is_cacheable() === false,
+    'a stored page would keep showing the banner after the admin changes or removes it'
+);
 
 $fail = $GLOBALS['failCount'];
 echo "\n" . ($fail === 0

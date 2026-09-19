@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,11 +12,13 @@
  */
 
 /**
- * @param     $key
- * @param     $data
- * @param int $expire
+ * Store a value under $key only if it is not cached yet.
  *
- * @return bool
+ * @param string $key
+ * @param mixed  $data
+ * @param int    $expire Seconds, 0 for the driver default
+ *
+ * @return bool False when the key already exists
  */
 function osc_cache_add($key, $data, $expire = 0)
 {
@@ -26,17 +28,26 @@ function osc_cache_add($key, $data, $expire = 0)
 }
 
 /**
- * @return mixed
+ * Close the active cache driver.
+ *
+ * No bundled driver implements close() -- iObject_Cache releases through __destruct --
+ * so this is a no-op unless a custom driver defines one.
+ *
+ * @return mixed True when the driver has nothing to close
  */
 function osc_cache_close()
 {
-    return Object_Cache_Factory::newInstance()->close();
+    $cache = Object_Cache_Factory::newInstance();
+
+    return method_exists($cache, 'close') ? $cache->close() : true;
 }
 
 /**
- * @param $key
+ * Drop the entry stored under $key.
  *
- * @return bool
+ * @param string $key
+ *
+ * @return bool False when nothing was deleted
  */
 function osc_cache_delete($key)
 {
@@ -46,6 +57,8 @@ function osc_cache_delete($key)
 }
 
 /**
+ * Empty the whole cache.
+ *
  * @return bool
  */
 function osc_cache_flush()
@@ -59,7 +72,7 @@ function osc_cache_flush()
  * Probed rather than declared on iObject_Cache, because third-party drivers
  * implement that interface and a new required method would fatal them.
  *
- * @return array|null
+ * @return array<string,mixed>|null
  */
 function osc_cache_stats()
 {
@@ -107,6 +120,8 @@ function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
 
 /**
  * Initialize Cache factory instance using singleton
+ *
+ * @return void
  */
 function osc_cache_init()
 {
@@ -114,10 +129,12 @@ function osc_cache_init()
 }
 
 /**
- * @param $key
- * @param $found
+ * Read the value stored under $key.
  *
- * @return bool|mixed
+ * @param string $key
+ * @param bool   $found Set by reference to whether the key was a hit
+ *
+ * @return mixed False on a miss
  */
 function osc_cache_get($key, &$found)
 {
@@ -127,9 +144,11 @@ function osc_cache_get($key, &$found)
 }
 
 /**
- * @param     $key
- * @param     $data
- * @param int $expire
+ * Store a value under $key, overwriting any existing entry.
+ *
+ * @param string $key
+ * @param mixed  $data
+ * @param int    $expire Seconds, 0 for the driver default
  *
  * @return bool
  */
@@ -298,6 +317,29 @@ function osc_invalidate_category_cache()
     $cache->set('osc_category_cache_gen', $gen, 0);
 
     return $gen;
+}
+
+/**
+ * Drop the memoised list of enabled locales (osc_settings_locales()) after a locale is
+ * added, edited, enabled, disabled or deleted.
+ *
+ * Unlike the rest of this family, the cache being invalidated is a per-request PHP static
+ * rather than the cross-request object cache: the list is read once and reused by every
+ * translated field on the page, so a write in the same request would otherwise keep
+ * rendering and storing the locale set as it was before. The list is re-read here, and
+ * the hook fires after it, so a listener already sees the new one.
+ *
+ * @return void
+ */
+function osc_invalidate_locale_cache()
+{
+    if (function_exists('osc_settings_locales')) {
+        osc_settings_locales(true);
+    }
+
+    if (function_exists('osc_run_hook')) {
+        osc_run_hook('invalidate_locale_cache');
+    }
 }
 
 // Clear an item's derived cache on the lifecycle events that change it, so reads

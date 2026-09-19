@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -18,6 +18,8 @@
 class WebSecBaseModel extends SecBaseModel
 {
     /**
+     * Whether a front-end user is logged in.
+     *
      * @return bool
      */
     public function isLogged()
@@ -26,6 +28,11 @@ class WebSecBaseModel extends SecBaseModel
     }
 
     //destroying current session
+    /**
+     * Clears the front-end user's session, ephemeral identity and remember-me cookies.
+     *
+     * @return void
+     */
     public function logout()
     {
         //destroying session
@@ -49,6 +56,11 @@ class WebSecBaseModel extends SecBaseModel
         Cookie::newInstance()->set();
     }
 
+    /**
+     * Answers an ajax request with a session-timeout error, otherwise redirects to the user login.
+     *
+     * @return void
+     */
     public function showAuthFailPage()
     {
         if (Params::getParam('page') === 'ajax') {

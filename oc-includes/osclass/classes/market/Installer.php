@@ -2,7 +2,7 @@
 
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -40,26 +40,45 @@ final class Installer
 
     private string $backupsPath;
 
+    private bool $isTheme;
+
+    /**
+     * @param bool $isTheme install into THEMES_PATH rather than PLUGINS_PATH
+     */
     private function __construct(bool $isTheme)
     {
+        $this->isTheme       = $isTheme;
         $this->basePath      = $isTheme ? THEMES_PATH : PLUGINS_PATH;
         $this->downloadsPath = CONTENT_PATH . 'downloads/';
         $this->backupsPath   = $this->downloadsPath . 'backups/';
     }
 
+    /**
+     * Installer writing into PLUGINS_PATH.
+     *
+     * @return self
+     */
     public static function forPlugins(): self
     {
         return new self(false);
     }
 
+    /**
+     * Installer writing into THEMES_PATH.
+     *
+     * @return self
+     */
     public static function forThemes(): self
     {
         return new self(true);
     }
 
     /**
-     * @param array $versionEntry catalog version entry: version, requires, requires_php,
-     *                            tested, url, sha256, size
+     * Installs a package that is not present yet.
+     *
+     * @param string              $slug
+     * @param array<string,mixed> $versionEntry catalog version entry: version, requires, requires_php,
+     *                                          tested, url, sha256, size
      *
      * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
@@ -69,8 +88,11 @@ final class Installer
     }
 
     /**
-     * @param array $versionEntry catalog version entry: version, requires, requires_php,
-     *                            tested, url, sha256, size
+     * Replaces an installed package with another catalog version, backing the old one up.
+     *
+     * @param string              $slug
+     * @param array<string,mixed> $versionEntry catalog version entry: version, requires, requires_php,
+     *                                          tested, url, sha256, size
      *
      * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
@@ -81,6 +103,8 @@ final class Installer
 
     /**
      * Restore the backup taken by the last install/update of this slug.
+     *
+     * @param string $slug
      *
      * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
@@ -101,6 +125,7 @@ final class Installer
         }
 
         $header = $this->parseHeader($targetDir . '/index.php');
+        $this->refreshUpdateCount();
 
         return $this->result(
             true,
@@ -115,6 +140,11 @@ final class Installer
      * Shared install/update pipeline: verify -> preflight -> download -> stage ->
      * validate -> back up -> swap. Every exit before the swap leaves the live
      * directory and the filesystem exactly as they were found.
+     *
+     * @param string              $slug
+     * @param array<string,mixed> $versionEntry catalog version entry
+     *
+     * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
     private function execute(string $slug, array $versionEntry): array
     {
@@ -227,6 +257,10 @@ final class Installer
      * Confirms nothing that follows will fail for want of a writable target, before
      * any network request is made. Returns null when writable, an error message
      * otherwise.
+     *
+     * @param string $targetDir
+     *
+     * @return string|null null when writable, a translated error message otherwise
      */
     private function checkWritable(string $targetDir): ?string
     {
@@ -256,7 +290,11 @@ final class Installer
      * a parseable header whose version matches the catalog entry, and whose
      * declared compatibility does not block the running core/PHP.
      *
-     * @return array{ok:bool, reason:string, packageDir:string}
+     * @param string $extractRoot     directory the zip was extracted into
+     * @param string $slug
+     * @param string $expectedVersion version the catalog entry promised
+     *
+     * @return array{ok:bool, reason:string, packageDir:string} `packageDir` is '' unless ok
      */
     private function validateStagedPackage(string $extractRoot, string $slug, string $expectedVersion): array
     {
@@ -310,6 +348,13 @@ final class Installer
      * Backs up an existing target directory, then atomically swaps the staged
      * directory into its place. Any failure after the backup restores it and
      * reports rolled_back: true; any failure before it never touches the target.
+     *
+     * @param string $slug
+     * @param string $targetDir
+     * @param string $stagedPackageDir
+     * @param string $newVersion
+     *
+     * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
     private function swap(string $slug, string $targetDir, string $stagedPackageDir, string $newVersion): array
     {
@@ -338,6 +383,8 @@ final class Installer
                 throw new RuntimeException(__('The package swap did not produce a valid package directory.'));
             }
 
+            $this->refreshUpdateCount();
+
             return $this->result(true, __('Package installed.'), $slug, $newVersion, false);
         } catch (Throwable $e) {
             $rolledBack = false;
@@ -362,6 +409,11 @@ final class Installer
      * Zips the current target directory to oc-content/downloads/backups/<slug>-<version>.zip
      * and records it as the slug's most recent backup. Returns the zip path on
      * success, null on any failure (nothing is left behind on failure).
+     *
+     * @param string $slug
+     * @param string $targetDir
+     *
+     * @return string|null the backup zip path, or null on failure
      */
     private function backupExisting(string $slug, string $targetDir): ?string
     {
@@ -398,6 +450,11 @@ final class Installer
      * in its place. The backup zip's entries are stored relative to ABS_PATH (as
      * produced by Zip::zipFolder()), so extracting it there reconstructs the
      * original directory at its original path.
+     *
+     * @param string $targetDir
+     * @param string $backupZipPath
+     *
+     * @return bool
      */
     private function restoreBackup(string $targetDir, string $backupZipPath): bool
     {
@@ -419,6 +476,10 @@ final class Installer
     }
 
     /**
+     * Resolves the pointer file written by backupExisting().
+     *
+     * @param string $slug
+     *
      * @return string|null the backup zip path recorded for $slug's last install/update,
      *                      or null when no pointer or no zip exists
      */
@@ -446,7 +507,10 @@ final class Installer
      * installed yet and therefore cannot be read through Plugins::getInfo() /
      * WebThemes::loadThemeInfo() (both resolve paths under the live install).
      *
+     * @param string $indexFile
+     *
      * @return array{version:string, requires:string, requires_php:string, tested_up_to:string}
+     *               every field is '' when the file or that header is missing
      */
     private function parseHeader(string $indexFile): array
     {
@@ -478,6 +542,34 @@ final class Installer
     }
 
     /**
+     * Re-count pending updates after the package tree changed. The admin toolbar badge reads
+     * that cached count, so without this it keeps announcing an update already applied.
+     *
+     * @return void
+     */
+    private function refreshUpdateCount(): void
+    {
+        $recount = $this->isTheme ? '_osc_check_themes_update' : '_osc_check_plugins_update';
+        if (function_exists($recount)) {
+            try {
+                // The header cache still holds the version this request read before the swap.
+                \Plugins::$plugins_infos = [];
+                $recount();
+            } catch (Throwable $e) {
+                // A stale badge must never fail an install that already succeeded.
+            }
+        }
+    }
+
+    /**
+     * Builds the outcome array every public entry point returns.
+     *
+     * @param bool        $ok
+     * @param string      $message    translated, user-facing
+     * @param string      $slug
+     * @param string|null $version    the version now installed, null when nothing was installed
+     * @param bool        $rolledBack
+     *
      * @return array{ok:bool, message:string, slug:string, version:?string, rolled_back:bool}
      */
     private function result(bool $ok, string $message, string $slug, ?string $version, bool $rolledBack): array

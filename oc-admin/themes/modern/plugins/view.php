@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,10 +24,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="theme-files">
         <?php
         // Already resolved by the controller, which is the only thing that renders this
-        // view: an absolute path inside the plugins directory, or the view is not reached
-        // at all. The check that used to live here matched the literal '../' and compared
-        // one of its two strpos() results with ==, so a path beginning '..\' — strpos 0,
-        // which == false — passed the test meant to stop it.
+        // view: an absolute path inside the plugins directory, or the view is not reached at
+        // all. Do not add a traversal check here -- a partial one is worse than none, and the
+        // resolution above is what the guarantee rests on.
         if (is_string($file) && $file !== '' && is_file($file)) {
             require_once $file;
         }

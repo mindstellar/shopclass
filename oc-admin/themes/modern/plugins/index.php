@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -33,6 +33,7 @@ $aData          = __get('aPlugins');
 $tab_index = 2;
 
 osc_current_admin_theme_path('parts/market.php');
+osc_current_admin_theme_path('parts/package-ui.php');
 
 $aMarketBrowse  = __get('aMarketBrowse');
 $aMarketUpdates = __get('aMarketUpdates');
@@ -89,56 +90,80 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
     <!-- /flash message -->
 <?php } ?>
 <div id="upload-plugins">
-    <table class="table" cellpadding="0" cellspacing="0">
-        <thead>
-        <tr>
-            <th><?php _e('Name'); ?></th>
-            <th class="col-status"><?php _e('Status'); ?></th>
-            <th><?php _e('Description'); ?></th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php if (count($aData['aaData']) > 0) { ?>
-            <?php foreach ($aData['aaData'] as $array) { ?>
-                <?php
-                // Both classes are wanted: `plugin-*` is the old row hook, kept because a site
-                // owner may have styled it, and `status-*` is what tints and shapes the badge.
-                $sStatus = $array['plugin_status'];
-                unset($array['plugin_status']);
-                // The controller appends the action links as five trailing cells
-                // (update, configure, enable/disable, install/uninstall, delete). Gather them into
-                // the shared .actions strip under the plugin name, the same row-actions pattern the
-                // datatables use, instead of one action per empty column. The update-available
-                // notice already sits in the name cell, so it stays out of the strip.
-                $options = array();
-                foreach (array(3, 4, 5, 6) as $ak) {
-                    if (isset($array[$ak]) && trim($array[$ak]) !== '') {
-                        $options[] = $array[$ak];
-                    }
-                }
-                $actions = empty($options) ? ''
-                    : '<div class="actions"><ul><li>' . implode('</li><li>', $options) . '</li></ul></div>';
-                ?>
-                <tr class="plugin-<?php echo $sStatus; ?> status-<?php echo $sStatus; ?>">
-                    <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>"><?php echo $array[0] . $actions; ?></td>
-                    <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php echo $array['status']; ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Description')); ?>"><?php echo $array[1]; ?></td>
-                </tr>
-            <?php } ?>
-        <?php } else {
-            osc_admin_table_empty(3, array(
-                'icon'   => 'bi-plug',
-                'title'  => __('No plugins installed'),
-                'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload a package.'),
-                'action' => array(
-                    'label'   => __('Add plugin'),
-                    'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
-                    'variant' => 'primary',
-                ),
+    <?php if (count($aData['aaData']) > 0) { ?>
+        <?php osc_package_list_open('osc-pkg-list--plugins'); ?>
+        <?php foreach ($aData['aaData'] as $array) {
+            $pkg  = $array['pkg'];
+            $url  = osc_admin_base_url(true) . '?page=plugins&amp;action=';
+            $csrf = '&amp;' . osc_csrf_token_url();
+            $file = $pkg['file'];
+
+            $meta   = array(sprintf(__('Version %s'), osc_esc_html($pkg['version'])));
+            $meta[] = $pkg['author_uri'] !== ''
+                ? sprintf(__('by %s'), '<a target="_blank" rel="noopener" href="'
+                    . osc_esc_html(osc_sanitize_url($pkg['author_uri'])) . '">' . osc_esc_html($pkg['author']) . '</a>')
+                : sprintf(__('by %s'), osc_esc_html($pkg['author']));
+
+            $links = array();
+            if ($pkg['configurable']) {
+                $links[] = '<a href="' . $url . 'admin&amp;plugin=' . urlencode($file) . $csrf . '">'
+                    . osc_esc_html(__('Settings')) . '</a>';
+            }
+            if ($pkg['plugin_uri'] !== '') {
+                $links[] = '<a target="_blank" rel="noopener" href="'
+                    . osc_esc_html(osc_sanitize_url($pkg['plugin_uri'])) . '">' . osc_esc_html(__('Website')) . '</a>';
+            }
+            if ($pkg['support_uri'] !== '') {
+                $links[] = '<a target="_blank" rel="noopener" href="'
+                    . osc_esc_html(osc_sanitize_url($pkg['support_uri'])) . '">' . osc_esc_html(__('Support')) . '</a>';
+            }
+
+            $danger = array();
+            if ($pkg['installed']) {
+                $primary = $pkg['enabled']
+                    ? array('label' => __('Disable'), 'url' => $url . 'disable&amp;plugin=' . urlencode($file) . $csrf,
+                            'variant' => 'btn-secondary')
+                    : array('label' => __('Enable'), 'url' => $url . 'enable&amp;plugin=' . urlencode($file) . $csrf,
+                            'variant' => 'btn-primary');
+                $danger[] = '<a href="' . $url . 'uninstall&amp;plugin=' . urlencode($file) . $csrf
+                    . '" onclick="return uninstall_dialog(\'' . osc_esc_js($file) . '\', \''
+                    . osc_esc_js($pkg['name']) . '\');">' . osc_esc_html(__('Uninstall')) . '</a>';
+            } else {
+                $primary  = array('label' => __('Install'),
+                                  'url'   => $url . 'install&amp;plugin=' . urlencode($file) . $csrf,
+                                  'variant' => 'btn-primary');
+                $danger[] = '<a href="#" onclick="return delete_plugin(\'' . osc_esc_js($file) . '\');">'
+                    . osc_esc_html(__('Delete files')) . '</a>';
+            }
+
+            osc_package_row(array(
+                'art'          => osc_market_installed_art('plugin', $pkg['slug']),
+                'slug'         => $pkg['slug'],
+                'name'         => $pkg['name'],
+                'state'        => $pkg['state'],
+                'class'        => 'plugin-' . $pkg['state'],
+                'meta'         => $meta,
+                'description'  => $pkg['description'],
+                'note'         => $pkg['update']
+                    ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.'))
+                    : '',
+                'note_variant' => 'update',
+                'actions'      => array('primary' => $primary, 'links' => $links, 'danger' => $danger),
             ));
         } ?>
-        </tbody>
-    </table>
+        <?php osc_package_list_close(); ?>
+    <?php } else {
+        osc_admin_empty(array(
+            'icon'   => 'bi-plug',
+            'title'  => __('No plugins installed'),
+            'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload a package.'),
+            'action' => array(
+                'label'   => __('Add plugin'),
+                'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
+                'variant' => 'primary',
+            ),
+        ));
+    } ?>
     <?php osc_admin_pagination($aData); ?>
 
     <div class="display-select-bottom">
@@ -158,7 +183,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
     <?php osc_market_render_detail_dialog('plugin'); ?>
 </div>
 <dialog id="pluginModal" class="osc-dialog osc-dialog-danger">
-    <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
+    <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
         <input type="hidden" name="page" value="plugins"/>
         <input type="hidden" name="action" value=""/>
         <input type="hidden" name="plugin" value=""/>

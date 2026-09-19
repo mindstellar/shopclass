@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -18,7 +18,9 @@
 class AlertForm extends Form
 {
     /**
-     * @return bool
+     * Echo the hidden input carrying the logged-in user id.
+     *
+     * @return bool always true
      */
     public static function user_id_hidden()
     {
@@ -28,7 +30,9 @@ class AlertForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the hidden input carrying the logged-in user email.
+     *
+     * @return bool always true
      */
     public static function email_hidden()
     {
@@ -38,7 +42,9 @@ class AlertForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the alert email text input, pre-filled with a placeholder for guests.
+     *
+     * @return bool always true
      */
     public static function email_text()
     {
@@ -52,6 +58,8 @@ class AlertForm extends Form
     }
 
     /**
+     * The placeholder text shown in the alert email field.
+     *
      * @return string
      */
     public static function default_email_text()
@@ -60,7 +68,9 @@ class AlertForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the hidden input pinning the alert form to the search page.
+     *
+     * @return bool always true
      */
     public static function page_hidden()
     {
@@ -70,7 +80,9 @@ class AlertForm extends Form
     }
 
     /**
-     * @return bool
+     * Echo the hidden input carrying the serialised search alert.
+     *
+     * @return bool always true
      */
     public static function alert_hidden()
     {

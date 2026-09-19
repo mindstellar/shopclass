@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -23,7 +23,7 @@
 /**
  * Gets current page object
  *
- * @return array
+ * @return array<string,mixed>|string|null
  */
 function osc_static_page()
 {
@@ -49,7 +49,7 @@ function osc_static_page()
  * @param string $field
  * @param string $locale
  *
- * @return string
+ * @return mixed Empty string when the field is not set
  */
 function osc_static_page_field($field, $locale = '')
 {
@@ -146,9 +146,9 @@ function osc_static_page_slug()
 /**
  * Gets current page meta information
  *
- * @param null $field
+ * @param string|null $field
  *
- * @return string
+ * @return mixed
  */
 function osc_static_page_meta($field = null)
 {
@@ -157,7 +157,7 @@ function osc_static_page_meta($field = null)
     } else {
         $meta = View::newInstance()->_get('page_meta');
     }
-    if ($field == null) {
+    if ($field !== null) {
         $meta = (isset($meta[$field]) && !empty($meta[$field])) ? $meta[$field] : '';
     }
 
@@ -266,7 +266,7 @@ function osc_has_static_pages()
  * It reset the osc_has_page function so you could have several loops
  * on the same page
  *
- * @return void
+ * @return mixed The first page, or array() when there is none
  */
 function osc_reset_static_pages()
 {

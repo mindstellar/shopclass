@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,7 +12,7 @@
  */
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 07/05/20
  * Time: 4:49 PM
@@ -65,6 +65,13 @@ class Upgrade
         $this->FileSystem = new FileSystem();
     }
 
+    /**
+     * Flag the package info as usable, and reject a checksum-carrying package from a host
+     * that is not on the allowlist.
+     *
+     * @return void
+     * @throws \RuntimeException when a verified download points outside the allowed hosts
+     */
     private function validatePackageInfo()
     {
         $this->packageInfoValid = false;
@@ -91,6 +98,8 @@ class Upgrade
     /**
      * Do an actual upgrade
      *
+     * @return void
+     * @throws \RuntimeException when the package info is invalid, incompatible or not upgradable
      * @throws \Exception
      */
     public function doUpgrade()
@@ -108,6 +117,8 @@ class Upgrade
     /**
      * process package upgrade
      *
+     * @return void
+     * @throws \RuntimeException on a zip whose layout has no index.php at the expected root
      * @throws \Exception
      */
     private function processUpgrade()
@@ -118,8 +129,9 @@ class Upgrade
         }
 
         try {
-            // Enable maintenance mode
-            $this->FileSystem->touch(ABS_PATH . '.maintenance');
+            // Enable maintenance mode. The marker locks visitors out even when the admin
+            // has chosen banner-only maintenance, since files are being replaced.
+            $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
 
             if (file_exists($extracted_package_path . '/index.php')) {
                 //make this the origin directory

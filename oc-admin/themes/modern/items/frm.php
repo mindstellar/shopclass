@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -23,9 +23,11 @@ $categories = Category::newInstance()->toTree();
 
 $new_item = __get('new_item');
 /**
- * @param string $return
+ * One label from the listing form's copy, keyed by name.
  *
- * @return mixed
+ * @param string $return One of 'title', 'subtitle' or 'button'
+ *
+ * @return string
  */
 function customText($return = 'title')
 {
@@ -55,7 +57,9 @@ osc_admin_page(array(
 ));
 
 /**
- * @param $string
+ * Filter callback for `admin_title`: prefix the browser title with the form's subtitle.
+ *
+ * @param string $string
  *
  * @return string
  */
@@ -67,6 +71,11 @@ function customPageTitle($string)
 osc_add_filter('admin_title', 'customPageTitle');
 
 //customize Head
+/**
+ * Emit the listing form's scripts: user autocomplete, price localisation, the expiration toggle, plus the location and photo widgets.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -142,6 +151,8 @@ $actions  = __get('actions');
 
 osc_add_filter('render-wrapper', 'render_offset');
 /**
+ * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
+ *
  * @return string
  */
 function render_offset()
@@ -325,13 +336,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
 </div>
 <script>
-    // This block used to call tinyMCE.init() inline, before the enqueued tinymce
-    // bundle had executed, which threw "tinyMCE is not defined" and left bare
-    // textareas. Wait for DOM ready (the library has loaded by then) and guard,
-    // the same way the page and email editors do. The old config also carried
-    // TinyMCE 3-era options (theme_advanced_*, forecolorpicker, fontsizeselect,
-    // the merged-in paste plugin) that are inert in TinyMCE 7 — replaced with the
-    // valid equivalents.
+    // Init on DOM ready and guard, the same way the page and email editors do: inline,
+    // the enqueued tinymce bundle has not executed yet and this throws "tinyMCE is not
+    // defined", leaving bare textareas. The options are TinyMCE 7's; the 3-era ones
+    // (theme_advanced_*, forecolorpicker, fontsizeselect, paste) are inert.
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof tinymce === 'undefined') {
             return;

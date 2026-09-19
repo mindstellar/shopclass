@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -32,17 +32,53 @@ $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
 $viewDir    = __DIR__ . '/../oc-admin/themes/modern/settings';
+$formDir    = __DIR__ . '/../oc-includes/osclass/classes/admin/form';
 $controller = __DIR__ . '/../oc-includes/osclass/classes/controller/admin/CAdminSettings.php';
 
 check('the settings view directory is where it is expected', is_dir($viewDir));
+check('the declared-form directory is where it is expected', is_dir($formDir));
 check('CAdminSettings.php is where it is expected', is_file($controller));
 
-/** Actions the settings views post, as `<input type="hidden" name="action" value="...">`. */
+/**
+ * Actions the settings views post. Two spellings, because a view may declare its form
+ * either way: osc_admin_form_open(array('action' => 'x')) is the current one, and a
+ * hand-written `<input type="hidden" name="action" value="x">` still works and still has
+ * to be routed. An action built at runtime is not scannable and is not checked here.
+ */
 $posted = array();
 foreach (glob($viewDir . '/*.php') as $view) {
-    if (preg_match_all('/name="action"\s+value="([a-z_]+)"/', (string) file_get_contents($view), $m)) {
+    $src = (string) file_get_contents($view);
+    foreach (array('/name="action"\s+value="([a-z_]+)"/', "/'action'\s*=>\s*'([a-z_]+)'/") as $pattern) {
+        if (preg_match_all($pattern, $src, $m)) {
+            foreach ($m[1] as $action) {
+                $posted[$action] = basename($view);
+            }
+        }
+    }
+}
+
+/*
+ * A declared form names its action in the declaration rather than in the view, so the same
+ * check has to read there too, or migrating a screen onto the declarative layer takes it
+ * out of this test's sight -- which is precisely the failure the file exists for.
+ */
+foreach (glob($formDir . '/*.php') as $form) {
+    $src = (string) file_get_contents($form);
+    if (strpos($src, 'CoreSettings::') === false) {
+        // An entity screen with a controller of its own -- admins, ban rules -- posts to
+        // that controller, not to ?page=settings, so its actions are not this router's.
+        continue;
+    }
+    if (preg_match_all("/CoreSettings::vars\(\s*[^,]+,\s*'([a-z_]+)'/", $src, $m)) {
         foreach ($m[1] as $action) {
-            $posted[$action] = basename($view);
+            $posted[$action] = basename($form);
+        }
+    }
+    // A screen with more than one form lists them, so the action is a bare literal rather
+    // than an argument in the call. Any *_post spelled out in a declaration is one.
+    if (preg_match_all("/'([a-z_]+_post)'/", $src, $m)) {
+        foreach ($m[1] as $action) {
+            $posted[$action] = basename($form);
         }
     }
 }
@@ -80,6 +116,30 @@ foreach (array(
     'billing_upgrades_post',
     'billing_limits_post',
 ) as $action) {
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
+/* The sitemap screen's two forms moved into a declaration, so the scan now finds their actions
+   there and nowhere else; name them so the move cannot take them out of its sight. */
+foreach (array('sitemap_settings_post', 'sitemap_robots_post') as $action) {
+    pin('scanned from SitemapSettingsForm.php: ' . $action, 'SitemapSettingsForm.php', $posted[$action] ?? '');
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
+/* The media save moved into a declaration as well, while regenerating is a link the view builds
+   from a URL rather than a form either scan reads, so it is named here or nobody checks it. */
+pin('scanned from MediaSettingsForm.php: media_post', 'MediaSettingsForm.php', $posted['media_post'] ?? '');
+foreach (array('media', 'media_post', 'images_post') as $action) {
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
+/* The storage save moved into a declaration too. The connection test, the queue run and the
+   migrations stay forms in the view, and each is still named so none drops out of routing. */
+pin('scanned from StorageSettingsForm.php: storage_post', 'StorageSettingsForm.php', $posted['storage_post'] ?? '');
+foreach (array('storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
+    pin('scanned from storage.php: ' . $action, 'storage.php', $posted[$action] ?? '');
+}
+foreach (array('storage', 'storage_post', 'storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }
 

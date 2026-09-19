@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -49,11 +49,11 @@ function osc_get_param($key)
  * Generic function for view layer, return the $field of $item
  * with specific $locale
  *
- * @param array  $item
- * @param string $field
- * @param string $locale
+ * @param array<string,mixed>|null $item
+ * @param string                   $field
+ * @param string                   $locale Empty for the item's own value
  *
- * @return string
+ * @return mixed Empty string when the field is not set
  */
 function osc_field($item, $field, $locale)
 {
@@ -118,13 +118,9 @@ function osc_show_widgets_by_description($description)
  * Every form gets the same widget. `$section` is only a per-form label kept for the
  * documented signature, so a theme passing one still works.
  *
- * It used to select a 'recover_password' branch that rendered a captcha only when a reset
- * had been requested in the last 20 minutes, recording in the session when it had not so
- * the reset action would skip validating one. Both values were session-scoped, so a client
- * discarding cookies was always on its first attempt and never saw a captcha at all — and
- * because LoginThrottle drops its per-account limit whenever a provider is configured, the
- * reset form ended up with neither. The window bought nothing a cookie jar could not
- * sidestep, so it is gone.
+ * There is deliberately no per-form exemption window. LoginThrottle drops its per-account
+ * limit whenever a provider is configured, so a form skipping the captcha would have
+ * neither guard, and any session-scoped window is sidestepped by discarding cookies.
  *
  * @param string $section per-form label; does not change what is rendered
  *
@@ -138,8 +134,12 @@ function osc_show_recaptcha($section = '')
 }
 
 /**
- * @param $siteKey
- * @param $lang
+ * Print the reCAPTCHA widget and its loader script.
+ *
+ * @param string $siteKey
+ * @param string $lang    Two-letter language code
+ *
+ * @return void
  */
 function _osc_recaptcha_get_html($siteKey, $lang)
 {
@@ -293,8 +293,8 @@ function osc_captcha_script_url()
 /**
  * Formats the date using the appropiate format.
  *
- * @param string $date
- * @param null   $dateformat
+ * @param string      $date
+ * @param string|null $dateformat Defaults to the site's date format
  *
  * @return string
  */
@@ -359,6 +359,48 @@ function osc_format_date($date, $dateformat = null)
 }
 
 /**
+ * Compact numeric format for an admin list table date column.
+ *
+ * 'admin_date_format' filter args: ($format, $dateOnly).
+ *
+ * @param bool $dateOnly True for a date with no time part
+ *
+ * @return string PHP date() format
+ */
+function osc_admin_date_format($dateOnly = false)
+{
+    $format = $dateOnly ? 'Y-m-d' : 'Y-m-d H:i';
+
+    return osc_apply_filter('admin_date_format', $format, $dateOnly);
+}
+
+/**
+ * Renders a date for an admin list table: a compact, unambiguous value with the
+ * site's long format kept on hover and for screen readers.
+ *
+ * Same date conversion as osc_format_date() -- only the display format differs.
+ *
+ * @param string $date     A date string parseable by strtotime()
+ * @param bool   $dateOnly True to render without a time part
+ *
+ * @return string Escaped <time> element, or '' when $date is empty
+ */
+function osc_admin_date($date, $dateOnly = false)
+{
+    if ($date == null || $date === '') {
+        return '';
+    }
+
+    $time  = strtotime($date);
+    $long  = osc_format_date($date, osc_date_format() . ' ' . osc_time_format());
+    $short = date(osc_admin_date_format($dateOnly), $time);
+    $iso   = date($dateOnly ? 'Y-m-d' : 'Y-m-d\TH:i', $time);
+
+    return '<time datetime="' . osc_esc_html($iso) . '" title="' . osc_esc_html($long) . '">'
+        . osc_esc_html($short) . '</time>';
+}
+
+/**
  * Escapes letters and numbers of a string
  *
  * @param string $string
@@ -377,7 +419,7 @@ function osc_escape_string($string)
 /**
  * Prints the user's account menu
  *
- * @param array $options array with options of the form array('name' => 'display name', 'url' => 'url of link')
+ * @param array<int,array<string,string>>|null $options array('name' => 'display name', 'url' => 'url of link')
  *
  * @return void
  */
@@ -676,7 +718,9 @@ function osc_request_counts_as_view()
 }
 
 /**
+ * Where the visitor came from: the rewrite's referer, the stored one, then a validated Referer header.
  *
+ * @return string Empty string when none is known
  */
 function osc_get_http_referer()
 {
@@ -746,13 +790,11 @@ function osc_upload_token()
 /**
  * Remember where a visitor came from across the login POST without a session.
  *
- * The login form used to stash the referer in $_SESSION so it could send the user back
- * after signing in — but that started a physical session on a mere GET of the login page,
- * leaving even a visitor who never logs in carrying an osclass cookie that defeats
- * reverse-proxy caching. Instead, carry the destination in a short-lived, HMAC-signed
- * cookie: set here on the login page, consumed and cleared by osc_pop_login_redirect() on
- * the login POST. Only a same-site URL (and never the login page itself) is stored, so
- * there is no open-redirect surface; the signature is defence in depth.
+ * Stashing the referer in $_SESSION would start a physical session on a GET of the login
+ * page, leaving a visitor who never logs in carrying a cookie that defeats reverse-proxy
+ * caching. The destination rides a short-lived HMAC-signed cookie instead: set here,
+ * consumed and cleared by osc_pop_login_redirect() on the login POST. Only a same-site URL
+ * (never the login page itself) is stored, so there is no open-redirect surface.
  *
  * @param string $url
  * @param bool   $keepExisting keep an already-stored destination instead of overwriting it,
@@ -917,14 +959,18 @@ function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
 }
 
 /**
- * @param        $id
- * @param        $regexp
- * @param        $url
- * @param        $file
- * @param bool   $user_menu
+ * Register a file-backed custom route.
+ *
+ * @param string $id
+ * @param string $regexp    Pattern the request URI is matched against
+ * @param string $url       URL template, with {placeholders}
+ * @param string $file      File rendered for the route
+ * @param bool   $user_menu List it in the account menu
  * @param string $location
  * @param string $section
  * @param string $title
+ *
+ * @return void
  */
 function osc_add_route(
     $id,
@@ -949,6 +995,8 @@ function osc_add_route(
  * @param string $id
  * @param string $regexp
  * @param string $url
+ *
+ * @return void
  */
 function osc_add_route_hook($id, $regexp, $url)
 {
@@ -956,7 +1004,9 @@ function osc_add_route_hook($id, $regexp, $url)
 }
 
 /**
+ * The search parameters the current subdomain pins, as osc_search_url() takes them.
  *
+ * @return array<string,string> Empty off a subdomain
  */
 function osc_get_subdomain_params()
 {
@@ -1022,6 +1072,8 @@ function osc_openstreet_api_key()
 /**
  * Get Google Maps geocode URL.
  *
+ * @param string $address
+ *
  * @return string
  */
 function osc_google_maps_geocode_url($address)
@@ -1032,6 +1084,8 @@ function osc_google_maps_geocode_url($address)
 
 /**
  * Get OpenStreetMaps geocode URL.
+ *
+ * @param string $address
  *
  * @return string
  */
@@ -1059,9 +1113,8 @@ function osc_get_locations_json_url()
     // so a corrected place name reaches installs without a core release. Pinning a
     // release here would tie the data to the version of Shopclass that shipped it.
     //
-    // The dataset behind it is built from Wikidata and published CC0, replacing the
-    // ODbL-licensed one this used to point at — no attribution or share-alike condition
-    // travels with the data a site imports.
+    // The dataset behind it is built from Wikidata and published CC0, so no attribution
+    // or share-alike condition travels with the data a site imports.
     return osc_apply_filter(
         'locations_json_url',
         'https://geo.mindstellar.com/releases/latest.json'
@@ -1083,7 +1136,8 @@ function osc_get_locations_json_url()
  * @param string $location
  *
  * @return string
- * @deprecated since 6.2.0; use osc_get_locations_json_url()
+ * @deprecated since 6.2.0
+ * @see osc_get_locations_json_url()
  */
 function osc_get_locations_sql_url($location)
 {
@@ -1094,6 +1148,9 @@ function osc_get_locations_sql_url($location)
 
 /**
  * Get i18n repository URL.
+ *
+ * @param string $path Repository-relative path; defaults to locale_list.json
+ *
  * @return string
  */
 function osc_get_i18n_repository_url($path = '')
@@ -1203,4 +1260,60 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
     $config = osc_apply_filter('tinymce_config', $config, $preset);
 
     return json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
+if (!function_exists('osc_server_software')) {
+    /**
+     * The web server's reported identity, lowercased, e.g. "nginx/1.27.0".
+     *
+     * @return string Empty when the SAPI does not report one (CLI, some FastCGI setups).
+     */
+    function osc_server_software()
+    {
+        return strtolower((string)Params::getServerParam('SERVER_SOFTWARE'));
+    }
+}
+
+if (!function_exists('osc_server_is_nginx')) {
+    /**
+     * Whether the site is served by nginx, which ignores .htaccess entirely: rewriting is
+     * configured in the server block instead, so anything written to that file is inert.
+     *
+     * @return bool
+     */
+    function osc_server_is_nginx()
+    {
+        return strpos(osc_server_software(), 'nginx') !== false;
+    }
+}
+
+if (!function_exists('osc_server_rewrite_rules')) {
+    /**
+     * The rewrite rules this server needs to route every request through index.php --
+     * an nginx location block, or the .htaccess body Apache reads.
+     *
+     * @return string
+     */
+    function osc_server_rewrite_rules()
+    {
+        $base = REL_WEB_URL;
+
+        if (osc_server_is_nginx()) {
+            return "location {$base} {\n"
+                   . "    try_files \$uri \$uri/ {$base}index.php?\$args;\n"
+                   . '}';
+        }
+
+        return "<IfModule mod_rewrite.c>\n"
+               . "RewriteEngine On\n"
+               . "RewriteBase {$base}\n"
+               . "RewriteRule ^index\\.php$ - [L]\n"
+               . "RewriteCond %{REQUEST_FILENAME} !-f\n"
+               . "RewriteCond %{REQUEST_FILENAME} !-d\n"
+               . "RewriteRule . {$base}index.php [L]\n"
+               . "</IfModule>\n"
+               . "<IfModule mod_mime.c>\n"
+               . "AddType text/xsl .xsl\n"
+               . '</IfModule>';
+    }
 }

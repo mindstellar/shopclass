@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -31,14 +31,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <input type="hidden" name="action" value="add_post"/>
                     <input type="hidden" name="page" value="plugins"/>
 
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Plugin package (.zip)'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox"><input type="file" name="package" id="package"/></div>
-                        </div>
-                    </div>
+                    <?php osc_admin_field(array(
+                        'type'  => 'file',
+                        'id'    => 'package',
+                        'name'  => 'package',
+                        'label' => __('Plugin package (.zip)'),
+                        'attrs' => array('accept' => '.zip'),
+                    )); ?>
                     <?php osc_admin_form_actions(array(
                         array('label' => __('Upload'), 'type' => 'submit'),
+                        array(
+                            'label'   => __('Back to plugins'),
+                            'type'    => 'link',
+                            'url'     => osc_admin_base_url(true) . '?page=plugins',
+                            'variant' => 'secondary',
+                        ),
                     )); ?>
                 </form>
             <?php } else { ?>

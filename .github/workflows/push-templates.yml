@@ -8,14 +8,17 @@
 # which are their own repositories, and locale.json is a maintainer's configuration
 # rather than anything extracted from here.
 #
-# Branches map to how Shopclass reads them: a prerelease install fetches from
-# develop and a stable one from master (see osc_get_i18n_repository_url()), so the
-# branch pushed to has to be the branch pushed from.
+# Only develop publishes. A prerelease install fetches translations from develop and
+# a stable one from master (see osc_get_i18n_repository_url()), but templates go to
+# develop alone: that is where translators work, so new strings reach them while the
+# release is still being built. shopclass-i18n's master takes its develop as it stands
+# at a release and is never written to in between -- a template commit pushed there
+# directly would be a commit its develop lacks, and the release merge would conflict.
 name: Publish translation templates
 
 on:
   push:
-    branches: [develop, master]
+    branches: [develop]
     paths:
       - 'oc-content/languages/core.pot'
       - 'oc-content/languages/messages.pot'
@@ -24,6 +27,8 @@ on:
 
 jobs:
   publish:
+    # A manual run from any other branch would publish there; only develop publishes.
+    if: github.ref_name == 'develop'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Shopclass
@@ -62,4 +67,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/templates/
           git commit -m "Templates from shopclass@${GITHUB_SHA:0:8}"
-          git push origin "${GITHUB_REF_NAME}"
+          # Crowdin's pull requests and the re-merge bot also push to develop over
+          # there. Rebase onto whatever landed first and retry rather than drop the
+          # templates.
+          for attempt in 1 2 3 4 5; do
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            echo "push rejected, rebasing (attempt $attempt)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            sleep $((attempt * 5))
+          done
+          echo "could not publish the templates after 5 attempts"
+          exit 1

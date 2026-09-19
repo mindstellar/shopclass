@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class Admin extends DAO
 {
@@ -25,8 +24,6 @@ class Admin extends DAO
      * It references to self object: Admin.
      * It is used as a singleton
      *
-     * @access private
-     * @since  unknown
      * @var Admin
      */
     private static $instance;
@@ -40,6 +37,8 @@ class Admin extends DAO
 
     /**
      * Set data from t_admin table
+     *
+     * @throws mysqli_sql_exception when the column probe fails
      */
     public function __construct()
     {
@@ -74,6 +73,8 @@ class Admin extends DAO
     }
 
     /**
+     * Return the shared Admin model instance, creating it on first use.
+     *
      * @return \Admin
      */
     public static function newInstance()
@@ -86,10 +87,12 @@ class Admin extends DAO
     }
 
     /**
-     * @param string $id
-     * @param null   $locale
+     * Find an admin by its id, memoising the row for the request.
      *
-     * @return mixed|string
+     * @param int|string  $id
+     * @param string|null $locale Accepted for signature compatibility; unused
+     *
+     * @return array<string,string|null>|string|false '' for an empty $id, false when unknown
      */
     public function findByPrimaryKey($id, $locale = null)
     {
@@ -108,13 +111,9 @@ class Admin extends DAO
      * Searches for admin information, given an email address.
      * If email not exist return false.
      *
-     * @access public
-     *
      * @param string $email
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false
      */
     public function findByEmail($email)
     {
@@ -135,14 +134,10 @@ class Admin extends DAO
      * Searches for admin information, given a username and password
      * If credential don't match return false.
      *
-     * @access public
-     *
      * @param string $userName
      * @param string $password
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false
      */
     public function findByCredentials($userName, $password)
     {
@@ -158,13 +153,9 @@ class Admin extends DAO
      * Searches for admin information, given a username.
      * If admin not exist return false.
      *
-     * @access public
-     *
      * @param string $username
      *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false
      */
     public function findByUsername($username)
     {
@@ -185,14 +176,10 @@ class Admin extends DAO
      * Searches for admin information, given a admin id and secret.
      * If credential don't match return false.
      *
-     * @access public
+     * @param int    $id
+     * @param string $secret
      *
-     * @param integer $id
-     * @param string  $secret
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false
      */
     public function findByIdSecret($id, $secret)
     {
@@ -216,14 +203,10 @@ class Admin extends DAO
      * Searches for admin information, given a admin id and password.
      * If credential don't match return false.
      *
-     * @access public
+     * @param int    $id
+     * @param string $password
      *
-     * @param integer $id
-     * @param string  $password
-     *
-     * @return array|bool
-     * @since  unknown
-     *
+     * @return array<string,string|null>|false
      */
     public function findByIdPassword($id, $password)
     {
@@ -246,11 +229,9 @@ class Admin extends DAO
     /**
      * Perform a batch delete (for more than one admin ID)
      *
-     * @access public
+     * @param array<int,int|string>|int|string $id
      *
-     * @param array $id
-     *
-     * @return boolean
+     * @return int|false Rows deleted, or false for an empty list or a query failure
      * @since  2.3.4
      */
     public function deleteBatch($id)

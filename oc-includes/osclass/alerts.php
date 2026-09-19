@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,8 +12,13 @@
  */
 
 /**
- * @param null $type
- * @param null $last_exec
+ * Send the saved-search alert emails due for one frequency band.
+ * Each saved search is isolated, so a failing one does not abort the rest of the run.
+ *
+ * @param string|null $type      One of HOURLY, DAILY or WEEKLY; anything else is a no-op
+ * @param string|null $last_exec Datetime to search from; taken from the cron row when null
+ *
+ * @return void
  */
 function osc_runAlert($type = null, $last_exec = null)
 {

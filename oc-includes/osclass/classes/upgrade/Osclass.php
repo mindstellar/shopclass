@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,7 +12,7 @@
  */
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 15/07/20
  * Time: 7:03 PM
@@ -211,6 +211,8 @@ class Osclass extends UpgradePackage
      * the schema against the struct.sql and migrations already on disk, so the
      * version it records must come from disk too. Falls back to the constant when
      * the file can't be read (e.g. a plain in-process db:upgrade, where they match).
+     *
+     * @return string
      */
     private static function newVersionOnDisk(): string
     {
@@ -241,6 +243,12 @@ class Osclass extends UpgradePackage
      *                           's_compatible' => csv of compatible osclass version (optional)
      *                           's_prerelease' => true or false (Optional)
      *                           ]
+     *
+     * @param bool      $force   fetch from GitHub even when the once-a-day check clock has not elapsed
+     * @param bool|null $isFresh set to true when the payload came from a live fetch, false when it is
+     *                           the cached last-known-good
+     *
+     * @return array<string,mixed>|null
      */
     public static function getPackageInfo($force = true, &$isFresh = null)
     {
@@ -327,9 +335,9 @@ class Osclass extends UpgradePackage
     /**
      * Pick the Shopclass package asset from a GitHub release's assets list. Prefers the
      * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
-     * selection (the old code blindly took assets[0]).
+     * selection. Never take assets[0].
      *
-     * @param array $assets GitHub release "assets" array
+     * @param array<int,array<string,mixed>> $assets GitHub release "assets" array
      *
      * @return string|null browser_download_url, or null if none suitable
      */

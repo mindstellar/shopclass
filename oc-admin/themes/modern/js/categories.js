@@ -7,6 +7,7 @@
  * locale tabs, submits over fetch). All endpoints and copy arrive as data-*
  * on .categories-app so this file stays static and cacheable.
  */
+/* global setJsMessage, oscEscapeHTML, oscInitTabs */
 (function () {
     'use strict';
 
@@ -26,7 +27,7 @@
     var I18N = {};
     try {
         I18N = JSON.parse(app.getAttribute('data-i18n') || '{}');
-    } catch (e) {
+    } catch {
         I18N = {};
     }
 
@@ -52,10 +53,10 @@
     function parseResponse(text) {
         try {
             return JSON.parse(text);
-        } catch (e) {
+        } catch {
             try {
                 return (new Function('return (' + text + ')'))();
-            } catch (e2) {
+            } catch {
                 return null;
             }
         }

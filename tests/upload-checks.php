@@ -1,0 +1,122 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Pins the two photo upload checks:
+ *
+ * - AjaxUploader matches the file extension against the allowed list exactly. It used a
+ *   substring search, so "x.pn", "x.jp" and a name with no extension passed.
+ * - ItemActions reads the image type from the file, not from the browser. A real photo
+ *   sent as application/octet-stream was refused.
+ *
+ * Usage: php tests/upload-checks.php
+ */
+
+define('ABS_PATH', dirname(__DIR__) . '/');
+define('LIB_PATH', ABS_PATH . 'oc-includes/');
+
+require ABS_PATH . 'oc-includes/vendor/autoload.php';
+require_once __DIR__ . '/lib/harness.php';
+require_once __DIR__ . '/lib/stubs.php';
+
+function osc_allowed_extension()
+{
+    return 'png, gif,jpg,jpeg';
+}
+
+function _m($s)
+{
+    return $s;
+}
+
+$GLOBALS['flashes'] = array();
+function osc_add_flash_error_message($msg, $section = 'pubMessages')
+{
+    $GLOBALS['flashes'][] = $msg;
+}
+
+$tmpDir = sys_get_temp_dir() . '/osc-upload-checks-' . getmypid();
+@mkdir($tmpDir);
+
+$png = $tmpDir . '/real.png';
+file_put_contents($png, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='));
+$text = $tmpDir . '/fake.png';
+file_put_contents($text, "<?php echo 'not an image';");
+
+/** Stand-in for the uploaded file object the uploader reads. */
+final class FakeUploadedFile
+{
+    public function __construct(private string $name, private string $source)
+    {
+    }
+
+    public function getOriginalName()
+    {
+        return $this->name;
+    }
+
+    public function getSize()
+    {
+        return filesize($this->source);
+    }
+
+    public function save($path)
+    {
+        return copy($this->source, $path);
+    }
+}
+
+$attempt = static function (string $name, string $source) use ($tmpDir): string {
+    $uploader = new AjaxUploader(null, 1024 * 1024);
+    $prop     = new ReflectionProperty(AjaxUploader::class, 'file');
+    $prop->setAccessible(true);
+    $prop->setValue($uploader, new FakeUploadedFile($name, $source));
+    $target = $tmpDir . '/' . uniqid('up_', true);
+    try {
+        $uploader->handleUpload($target);
+
+        return 'ok';
+    } catch (Exception $e) {
+        return strpos($e->getMessage(), 'invalid extension') !== false ? 'bad-ext' : 'error';
+    } finally {
+        @unlink($target);
+    }
+};
+
+harness_section('AjaxUploader extension check');
+
+pin('photo.png is accepted', 'ok', $attempt('photo.png', $png));
+pin('upper-case PHOTO.PNG is accepted', 'ok', $attempt('PHOTO.PNG', $png));
+pin('an entry with a space in the list still matches (gif)', 'ok', $attempt('photo.gif', $png));
+pin('a partial extension "pn" is refused', 'bad-ext', $attempt('photo.pn', $png));
+pin('a partial extension "jp" is refused', 'bad-ext', $attempt('photo.jp', $png));
+pin('a name with no extension is refused', 'bad-ext', $attempt('photo', $png));
+pin('photo.php is refused', 'bad-ext', $attempt('photo.php', $png));
+
+harness_section('ItemActions reads the image type from the file');
+
+$actions = (new ReflectionClass(ItemActions::class))->newInstanceWithoutConstructor();
+$check   = new ReflectionMethod(ItemActions::class, 'checkAllowedExt');
+$check->setAccessible(true);
+$files = static fn (string $path, string $type): array => array(
+    'error'    => array(UPLOAD_ERR_OK),
+    'type'     => array($type),
+    'tmp_name' => array($path),
+);
+
+check('a real PNG sent as image/png passes', $check->invoke($actions, $files($png, 'image/png')));
+check('a real PNG sent as application/octet-stream passes', $check->invoke($actions, $files($png, 'application/octet-stream')));
+check('a script sent as image/png is refused', !$check->invoke($actions, $files($text, 'image/png')));
+check('a script sent as application/octet-stream is refused', !$check->invoke($actions, $files($text, 'application/octet-stream')));
+
+array_map('unlink', glob($tmpDir . '/*'));
+@rmdir($tmpDir);
+
+exit(harness_result());

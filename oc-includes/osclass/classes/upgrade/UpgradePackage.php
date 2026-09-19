@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,7 +12,7 @@
  */
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 15/07/20
  * Time: 7:03 PM
@@ -116,6 +116,9 @@ abstract class UpgradePackage
      *                           's_requires_php' => minimum required PHP version (optional)
      *                           's_sha256' => lowercase hex sha256 of the package download (optional)
      *                           ]
+     *
+     * @return void
+     * @throws \RuntimeException when the info is empty, or has no valid source url or target directory
      */
     private function setVariable(array $package_info)
     {
@@ -213,7 +216,7 @@ abstract class UpgradePackage
     /**
      * Array of files to not overwrite them
      *
-     * @return array
+     * @return array<int,string>
      */
     public function getFilteredFiles(): array
     {
@@ -251,13 +254,14 @@ abstract class UpgradePackage
     /**
      * Actions after upgrade process is done
      *
+     * @return bool|null
      */
     abstract public function afterProcessUpgrade();
 
     /**
      * Is package upgradable
      *
-     * @return bool|int
+     * @return bool
      */
     public function isUpgradable()
     {
@@ -271,6 +275,8 @@ abstract class UpgradePackage
     }
 
     /**
+     * Version this package would upgrade to.
+     *
      * @return string
      */
     public function getNewVersion(): string

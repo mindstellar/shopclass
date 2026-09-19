@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -13,95 +13,23 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-$rule = __get('rule');
-
 /**
- * @return array
+ * The chrome around the declared ban-rule form. The form itself -- its route, its fields,
+ * their values and the submit row -- is core's, drawn from the declaration the controller
+ * saves through, so what is on screen and what is stored cannot say different things.
  */
-function customFrmText()
-{
-    $rule   = __get('rule');
-    $return = array();
 
-    if (isset($rule['pk_i_id'])) {
-        $return['edit']       = true;
-        $return['title']      = __('Edit rule');
-        $return['action_frm'] = 'edit_ban_rule_post';
-        $return['btn_text']   = __('Update rule');
-    } else {
-        $return['edit']       = false;
-        $return['title']      = __('Add new ban rule');
-        $return['action_frm'] = 'create_ban_rule_post';
-        $return['btn_text']   = __('Add new ban rule');
-    }
-
-    return $return;
-}
+$form = __get('ban_rule_form');
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'title'   => $form['title'],
 ));
-
-/**
- * @param $string
- *
- * @return string
- */
-function customPageTitle($string)
-{
-    $aux = customFrmText();
-
-    return sprintf('%s &raquo; %s', $aux['title'], $string);
-}
-
-osc_add_filter('admin_title', 'customPageTitle');
-
-//customize Head
-function customHead()
-{
-}
-
-osc_add_hook('admin_header', 'customHead', 10);
-
-$aux = customFrmText();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head($aux['title']); ?>
+<?php osc_admin_page_head($form['title']); ?>
 <div class="settings-user">
     <ul id="error_list"></ul>
-    <form name="register" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-        <input type="hidden" name="page" value="users"/>
-        <input type="hidden" name="action" value="<?php echo $aux['action_frm']; ?>"/>
-        <h3 class="render-title"><?php _e('Contact info'); ?></h3>
-        <?php BanRuleForm::primary_input_hidden($rule); ?>
-        <fieldset>
-            <div class="form-horizontal">
-                <div class="form-row">
-                    <div class="form-label"><?php _e('Ban name / Reason'); ?></div>
-                    <div class="form-controls">
-                        <?php BanRuleForm::name_text($rule); ?>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-label"><?php _e('IP rule'); ?></div>
-                    <div class="form-controls">
-                        <?php BanRuleForm::ip_text($rule); ?>
-                        <span class="help-box"><?php _e('(e.g. 192.168.10-20.*)'); ?></span>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-label"><?php _e('E-mail rule'); ?></div>
-                    <div class="form-controls">
-                        <?php BanRuleForm::email_text($rule); ?>
-                        <span class="help-box"><?php _e('(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)'); ?></span>
-                    </div>
-                </div>
-                <div class="clear"></div>
-                <?php osc_admin_form_actions(array(
-                    array('label' => $aux['btn_text'], 'type' => 'submit', 'variant' => 'primary'),
-                )); ?>
-            </div>
-        </fieldset>
-    </form>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

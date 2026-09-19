@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -24,6 +24,9 @@ abstract class BaseModel
     protected $ajax;
     protected $time;
 
+    /**
+     * Canonicalises the request host, resolves subdomain routing params and boots the web theme.
+     */
     public function __construct()
     {
         // this is necessary because if HTTP_HOST doesn't have the PORT the parse_url is null
@@ -62,8 +65,12 @@ abstract class BaseModel
     }
 
     /**
-     * @param      $url
-     * @param null $code
+     * Sends a Location header to $url and terminates the request.
+     *
+     * @param string   $url
+     * @param int|null $code HTTP status to send with the redirect; PHP's default (302) when null
+     *
+     * @return void
      */
     public function redirectTo($url, $code = null)
     {
@@ -71,7 +78,11 @@ abstract class BaseModel
     }
 
     /**
-     * @param $host
+     * Maps the request's subdomain onto a search/user parameter, or 404s when it resolves to nothing.
+     *
+     * @param string $host request host, without the port
+     *
+     * @return void
      */
     private function subdomain_params($host)
     {
@@ -218,12 +229,14 @@ abstract class BaseModel
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 400 Bad Request');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
     /**
+     * Reads the page and action request params into the controller.
      *
+     * @return void
      * @since 3.9.0
      */
     protected function setParams()
@@ -232,6 +245,9 @@ abstract class BaseModel
         $this->action = Params::getParam('action');
     }
 
+    /**
+     * Prints the request duration as an HTML comment on non-ajax debug requests.
+     */
     public function __destruct()
     {
         if (!$this->ajax && OSC_DEBUG) {
@@ -240,6 +256,8 @@ abstract class BaseModel
     }
 
     /**
+     * Seconds elapsed since the controller was constructed.
+     *
      * @return float
      */
     public function getTime()
@@ -250,8 +268,12 @@ abstract class BaseModel
     }
 
     /**
-     * @param $key
-     * @param $value
+     * Makes a value available to the view under $key.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return void
      */
     public function _exportVariableToView($key, $value)
     {
@@ -259,19 +281,28 @@ abstract class BaseModel
     }
 
     /**
-     * @param null $key
+     * Dumps one exported view variable, or all of them when $key is null.
+     *
+     * @param string|null $key
+     *
+     * @return void
      */
     public function _view($key = null)
     {
         View::newInstance()->_view($key);
     }
 
+    /**
+     * Renders the theme's 404 template with a 404 status and terminates the request.
+     *
+     * @return void
+     */
     public function do404()
     {
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 404 Not Found');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
@@ -287,7 +318,7 @@ abstract class BaseModel
         Rewrite::newInstance()->set_location('error');
         header('HTTP/1.1 410 Gone');
         $this->sendErrorCacheHeaders();
-        osc_current_web_theme_path('404.php');
+        osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
         exit;
     }
 
@@ -305,13 +336,17 @@ abstract class BaseModel
     }
     /**
      *  Functions that will have to be rewritten in the class that extends from this
+     *
+     * @return void
      */
     abstract protected function doModel();
 
     /**
-     * @param $file
+     * Renders the given template file.
      *
-     * @return mixed
+     * @param string $file
+     *
+     * @return void
      */
     abstract protected function doView($file);
 }

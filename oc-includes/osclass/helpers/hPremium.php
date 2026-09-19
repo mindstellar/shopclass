@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -29,7 +29,7 @@
  *
  * @param int $max
  *
- * @return array $premiums
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_premiums($max = 2)
 {
@@ -49,7 +49,7 @@ function osc_get_premiums($max = 2)
 /**
  * Gets current premium array from view
  *
- * @return array|string $premium, or null if not exist
+ * @return array<string,mixed>|null Null when none has been loaded
  */
 function osc_premium()
 {
@@ -63,10 +63,10 @@ function osc_premium()
 /**
  * Gets a specific field from current premium
  *
- * @param        $field
+ * @param string $field
  * @param string $locale
  *
- * @return string
+ * @return mixed Empty string when the field is not set
  */
 function osc_premium_field($field, $locale = '')
 {
@@ -239,7 +239,7 @@ function osc_premium_mod_date()
 /**
  * Gets price of current premium
  *
- * @return float
+ * @return float|null Null when the listing carries no price
  */
 function osc_premium_price()
 {
@@ -423,7 +423,7 @@ function osc_premium_is_premium()
 /**
  * return number of views of current premium
  *
- * @return int
+ * @return int|string|null
  */
 function osc_premium_views()
 {
@@ -490,7 +490,7 @@ function osc_premium_is_spam()
 /**
  * Gets total number of comments of current premium
  *
- * @return int
+ * @return int|string|false False when the premium id is null
  */
 function osc_premium_total_comments()
 {
@@ -523,7 +523,7 @@ function osc_premium_comments_page()
 /**
  * Gets next premium if there is, else return null
  *
- * @return bool
+ * @return bool False once the loop is exhausted
  */
 function osc_has_premiums()
 {
@@ -543,7 +543,7 @@ function osc_has_premiums()
 /**
  * Set the internal pointer of array premiums to its first element, and return it.
  *
- * @return array
+ * @return mixed The first premium, or array() when there is none
  */
 function osc_reset_premiums()
 {
@@ -580,7 +580,7 @@ function osc_count_premium_resources()
 /**
  * Gets next premium resource if there is, else return null
  *
- * @return bool
+ * @return bool False once the loop is exhausted
  */
 function osc_has_premium_resources()
 {
@@ -597,7 +597,7 @@ function osc_has_premium_resources()
 /**
  * Gets current resource of current array resources of current premium
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_premium_resources()
 {
@@ -633,7 +633,7 @@ function osc_count_premium_comments()
 /**
  * Gets next comment of current premium comments
  *
- * @return bool
+ * @return bool False once the loop is exhausted
  */
 function osc_has_premium_comments()
 {
@@ -652,7 +652,6 @@ function osc_has_premium_comments()
 /**
  * Gets number of premiums
  *
- * @access private
  * @return int
  */
 function osc_priv_count_premiums()
@@ -684,7 +683,7 @@ function osc_count_premium_meta()
 /**
  * Gets next premium meta field if there is, else return null
  *
- * @return bool
+ * @return bool False once the loop is exhausted
  */
 function osc_has_premium_meta()
 {
@@ -701,7 +700,7 @@ function osc_has_premium_meta()
 /**
  * Gets premium meta fields
  *
- * @return array
+ * @return array<int,array<string,mixed>>
  */
 function osc_get_premium_meta()
 {

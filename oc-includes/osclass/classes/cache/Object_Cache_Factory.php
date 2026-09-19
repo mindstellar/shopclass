@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -19,7 +19,9 @@ class Object_Cache_Factory
     private static $instance;
 
     /**
-     * @return \Object_Cache_default
+     * The shared object-cache driver for this request, building it on first call.
+     *
+     * @return \iObject_Cache
      */
     public static function newInstance()
     {
@@ -31,7 +33,10 @@ class Object_Cache_Factory
     }
 
     /**
-     * @return null|\Object_Cache_default
+     * Build the driver named by OSC_CACHE, falling back to the per-request default
+     * when it is unknown or unsupported.
+     *
+     * @return \iObject_Cache
      */
     public static function getCache()
     {

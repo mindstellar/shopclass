@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -26,6 +26,13 @@ use mindstellar\migration\MigrationInterface;
  * leaves an existing table alone.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Create t_item_upload_tmp, the ledger of photos uploaded before a listing is saved.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $table = DB_TABLE_PREFIX . 't_item_upload_tmp';

@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -100,20 +100,10 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-/*
- * __() with no translation domain loaded returns its key unchanged, which is what
- * the real helper does through an unregistered gettext filter. No model test
- * requires the real hTranslations.php, so this guarded stand-in cannot become a
- * redeclare.
- */
-if (!function_exists('__')) {
-    function __($key, $domain = 'core')
-    {
-        return $key;
-    }
-}
-
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';    // osc_run_hook/osc_add_hook (hCache uses osc_add_hook at load)
+// After hPlugins.php, so stubs.php's guarded osc_run_hook()/osc_apply_filter() stand-ins
+// stay out of the way and only __() (hTranslations.php is never loaded here) is filled in.
+require_once __DIR__ . '/../lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php'; // osc_language
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';     // osc_current_user_locale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';

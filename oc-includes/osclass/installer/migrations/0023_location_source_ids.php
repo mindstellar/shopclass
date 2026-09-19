@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -40,6 +40,14 @@ use mindstellar\migration\MigrationInterface;
  * the runner baselines rather than replays.
  */
 return new class () implements MigrationInterface {
+    /**
+     * Add i_source_id and the coordinate columns to t_region/t_city, key each unique
+     * on its source id, and create t_location_slug_history.
+     *
+     * @param Connection $conn
+     *
+     * @throws \mindstellar\database\DbException
+     */
     public function up(Connection $conn): void
     {
         $region = DB_TABLE_PREFIX . 't_region';
@@ -81,6 +89,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $column already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $column
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function columnExists(Connection $conn, string $table, string $column): bool
     {
@@ -97,6 +112,13 @@ return new class () implements MigrationInterface {
 
     /**
      * Whether $index already exists on $table in the current database.
+     *
+     * @param Connection $conn
+     * @param string     $table
+     * @param string     $index
+     *
+     * @return bool
+     * @throws \mindstellar\database\DbException
      */
     private function indexExists(Connection $conn, string $table, string $index): bool
     {

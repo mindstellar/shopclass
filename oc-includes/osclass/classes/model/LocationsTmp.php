@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -25,9 +25,8 @@ class LocationsTmp extends DAO
      * It references to self object: LocationsTmp.
      * It is used as a singleton
      *
-     * @access private
      * @since  2.4
-     * @var CountryStats
+     * @var LocationsTmp
      */
     private static $instance;
 
@@ -45,7 +44,6 @@ class LocationsTmp extends DAO
      * It creates a new LocationsTmp object class if it has been created
      * before, it return the previous object
      *
-     * @access public
      * @return LocationsTmp
      * @since  2.4
      */
@@ -59,9 +57,11 @@ class LocationsTmp extends DAO
     }
 
     /**
-     * @param $max
+     * Read a page of staged locations.
      *
-     * @return array
+     * @param int $max A non-numeric value returns every row
+     *
+     * @return array<int,array{id_location:string,e_type:string}> Empty when the query failed
      */
     public function getLocations($max)
     {
@@ -146,9 +146,11 @@ class LocationsTmp extends DAO
     }
 
     /**
-     * @param array $where
+     * Delete staged locations matching a column => value map.
      *
-     * @return bool|int
+     * @param array<string,mixed> $where
+     *
+     * @return int|false Rows deleted, or false for an empty $where or a query failure
      */
     public function delete($where)
     {
@@ -176,10 +178,12 @@ class LocationsTmp extends DAO
     }
 
     /**
-     * @param $ids
-     * @param $type
+     * Stage a batch of location ids of one type.
      *
-     * @return bool|\DBRecordsetClass
+     * @param array<int,int|string> $ids
+     * @param string                $type CITY|REGION|COUNTRY
+     *
+     * @return bool False for an empty $ids or a query failure
      */
     public function batchInsert($ids, $type)
     {
@@ -211,9 +215,11 @@ class LocationsTmp extends DAO
 
     /**
      * Batch Delete Locations
-     * @param $ids
-     * @param $type
-     * @return bool|\DBRecordsetClass
+     *
+     * @param array<int,int|string> $ids
+     * @param string                $type CITY|REGION|COUNTRY
+     *
+     * @return bool False for an empty $ids or a query failure
      */
     public function batchDelete($ids, $type)
     {

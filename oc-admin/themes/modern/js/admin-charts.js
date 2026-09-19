@@ -84,7 +84,7 @@
                         redraws.forEach(function (f) {
                             try {
                                 f();
-                            } catch (e) {
+                            } catch {
                                 /* a broken chart must not stop the others */
                             }
                         });

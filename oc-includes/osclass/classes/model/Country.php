@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -17,7 +17,6 @@
  *
  * @package    Shopclass
  * @subpackage Model
- * @since      unknown
  */
 class Country extends DAO
 {
@@ -28,7 +27,7 @@ class Country extends DAO
     private static $instance;
 
     /**
-     *
+     * Set data related to t_country table
      */
     public function __construct()
     {
@@ -39,6 +38,8 @@ class Country extends DAO
     }
 
     /**
+     * Return the shared Country model instance, creating it on first use.
+     *
      * @return \Country
      */
     public static function newInstance()
@@ -53,12 +54,9 @@ class Country extends DAO
     /**
      * Find a country by its ISO code
      *
-     * @access public
+     * @param string $code
      *
-     * @param $code
-     *
-     * @return array
-     * @since  unknown
+     * @return array<string,string|null> Empty when the code is unknown
      */
     public function findByCode($code)
     {
@@ -76,12 +74,9 @@ class Country extends DAO
     /**
      * Find a country by its name
      *
-     * @access public
+     * @param string $name
      *
-     * @param $name
-     *
-     * @return array
-     * @since  unknown
+     * @return array<string,string|null> Empty when the name is unknown
      */
     public function findByName($name)
     {
@@ -99,9 +94,7 @@ class Country extends DAO
     /**
      * List all the countries
      *
-     * @access public
-     * @return array
-     * @since  unknown
+     * @return array<int,array<string,string|null>> Empty when the query failed
      */
     public function listAll()
     {
@@ -119,13 +112,10 @@ class Country extends DAO
     /**
      *  Delete a country with its regions, cities,..
      *
-     * @access public
-     *
-     * @param $pk
+     * @param string $pk Country code
      *
      * @return int number of failed deletions or 0 in case of none
      * @since  2.4
-     *
      */
     public function deleteByPrimaryKey($pk)
     {
@@ -159,9 +149,7 @@ class Country extends DAO
     /**
      * List names of all the countries. Used for location import.
      *
-     * @access public
-     * @return array
-     * @since  unknown
+     * @return array<int,string>
      */
     public function listNames()
     {
@@ -179,12 +167,9 @@ class Country extends DAO
     /**
      * Function that work with the ajax file
      *
-     * @access public
+     * @param string $query Prefix typed into the autocomplete
      *
-     * @param $query
-     *
-     * @return array
-     * @since  unknown
+     * @return array<int,array{id:string,label:string,value:string}>
      */
     public function ajax($query)
     {
@@ -215,11 +200,9 @@ class Country extends DAO
     /**
      * Find a location by its slug
      *
-     * @access public
+     * @param string $slug
      *
-     * @param $slug
-     *
-     * @return array
+     * @return array<string,string|null> Empty when the slug is unknown
      * @since  3.2.1
      */
     public function findBySlug($slug)
@@ -238,8 +221,7 @@ class Country extends DAO
     /**
      * Find a locations with no slug
      *
-     * @access public
-     * @return array
+     * @return array<int,array<string,string|null>>
      * @since  3.2.1
      */
     public function listByEmptySlug()

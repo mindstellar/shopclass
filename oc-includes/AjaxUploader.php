@@ -72,7 +72,7 @@ class AjaxUploader
         $ext      = @$pathinfo['extension'];
         $uuid     = pathinfo($uploadFilename);
 
-        if ($this->allowedExtensions && stripos($this->allowedExtensions, strtolower($ext)) === false) {
+        if ($this->allowedExtensions && !in_array(strtolower((string) $ext), self::extensionList($this->allowedExtensions), true)) {
             @unlink($uploadFilename); // Wrong extension, remove it for security reasons
 
             throw new Exception(sprintf(
@@ -101,6 +101,20 @@ class AjaxUploader
         }
 
         throw new Exception('Could not save uploaded file. The upload was cancelled, or server error encountered');
+    }
+
+    /**
+     * The allowed extensions as a lower-case list, from a comma list or an array.
+     *
+     * @param string|array $allowed
+     *
+     * @return string[]
+     */
+    private static function extensionList($allowed): array
+    {
+        $list = is_array($allowed) ? $allowed : explode(',', (string) $allowed);
+
+        return array_values(array_filter(array_map(static fn ($e) => strtolower(trim((string) $e)), $list), 'strlen'));
     }
 
     /**

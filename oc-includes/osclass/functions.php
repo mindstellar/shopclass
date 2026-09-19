@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,7 +12,11 @@
  */
 
 /**
- * @param null $catId
+ * Print the custom-field inputs for the publish form.
+ *
+ * @param int|null $catId Category whose fields to render; null renders none
+ *
+ * @return void
  */
 function osc_meta_publish($catId = null)
 {
@@ -23,8 +27,12 @@ function osc_meta_publish($catId = null)
 }
 
 /**
- * @param null $catId
- * @param null $item_id
+ * Print the custom-field inputs for the edit form, pre-filled from the listing.
+ *
+ * @param int|null $catId   Category whose fields to render; null renders none
+ * @param int|null $item_id Listing the stored values are read from
+ *
+ * @return void
  */
 function osc_meta_edit($catId = null, $item_id = null)
 {
@@ -38,10 +46,13 @@ osc_add_hook('item_form', 'osc_meta_publish');
 osc_add_hook('item_edit', 'osc_meta_edit');
 
 /**
+ * Print the custom-field inputs for the search form.
  *
  * All CF will be searchable
  *
- * @param null $catId
+ * @param int|null $catId Category whose fields to render; null renders none
+ *
+ * @return void
  */
 function osc_meta_search($catId = null)
 {
@@ -51,6 +62,8 @@ function osc_meta_search($catId = null)
 osc_add_hook('search_form', 'osc_meta_search');
 
 /**
+ * Human-readable heading for the current search: keyword prefix, category and place.
+ *
  * @return string
  */
 function search_title()
@@ -90,7 +103,9 @@ function search_title()
 }
 
 /**
- * @return bool|mixed
+ * Build the <title> text for the current route, suffixed with the site name off the home page.
+ *
+ * @return string After the meta_title_filter filter has run
  */
 function meta_title()
 {
@@ -210,14 +225,27 @@ function meta_title()
                     $text = __('Public profile') . ' - ' . osc_user_name();
                     break;
                 case ('change_email'):
-                    $text = __('Change my email');
-                    break;
                 case ('change_username'):
-                    $text = __('Change my username');
-                    break;
                 case ('change_password'):
-                    $text = __('Change my password');
+                    // One page answers all three routes.
+                    $text = __('Sign-in details');
                     break;
+                case ('delete'):
+                    $text = __('Delete your account');
+                    break;
+            }
+            break;
+        case ('billing'):
+            switch ($section) {
+                case ('buy'):
+                case ('checkout'):
+                    $text = __('Buy credits');
+                    break;
+                case ('orders'):
+                    $text = __('Your orders');
+                    break;
+                default:
+                    $text = __('Credits');
             }
             break;
         case ('contact'):
@@ -227,7 +255,9 @@ function meta_title()
             $text = Rewrite::newInstance()->get_title();
             break;
         default:
-            $text = osc_page_title();
+            // Empty, not the site name: the tail below adds that. Setting it here
+            // produced "Site - Site" on any route without a case of its own.
+            $text = '';
             break;
     }
 
@@ -237,6 +267,12 @@ function meta_title()
         } else {
             $text = osc_page_title();
         }
+    }
+
+    // The home page skips the block above, so a route with no case of its own --
+    // home included -- still ends up titled rather than blank.
+    if ($text === '') {
+        $text = osc_page_title();
     }
 
     return osc_apply_filter('meta_title_filter', $text);
@@ -303,7 +339,9 @@ function osc_search_meta_description()
 }
 
 /**
- * @return bool|mixed
+ * Build the meta description for the current route.
+ *
+ * @return string After the meta_description_filter filter has run
  */
 function meta_description()
 {
@@ -327,7 +365,9 @@ function meta_description()
 }
 
 /**
- * @return bool|mixed
+ * Build the meta keywords list from the current listing or search results.
+ *
+ * @return string After the meta_keywords_filter filter has run
  */
 function meta_keywords()
 {
@@ -376,7 +416,10 @@ function meta_keywords()
 }
 
 /**
- * @return array
+ * Related region or city links for the search-page footer, one row per location group.
+ * Empty when friendly URLs are off, when a city is already selected, or on a query error.
+ *
+ * @return array<int,array<string,mixed>> Location rows carrying a total column
  */
 function osc_search_footer_links()
 {
@@ -438,10 +481,17 @@ function osc_search_footer_links()
         $groupBy = 'l.fk_i_region_id';
     }
 
-    $sql = 'SELECT i.fk_i_category_id, l.*, COUNT(*) AS total'
+    // The count is grouped in a subquery that also names one representative listing
+    // per group, and the displayed columns are read back from that listing. Selecting
+    // l.* beside GROUP BY on a single location column is rejected under
+    // ONLY_FULL_GROUP_BY, which emptied the footer links entirely.
+    $sql = 'SELECT i.fk_i_category_id, l.*, g.total'
+        . ' FROM (SELECT MIN(l.fk_i_item_id) AS rep_id, COUNT(*) AS total'
         . ' FROM ' . DB_TABLE_PREFIX . 't_item as i, ' . DB_TABLE_PREFIX . 't_item_location as l'
         . ' WHERE ' . implode(' AND ', $where)
-        . ' GROUP BY ' . $groupBy;
+        . ' GROUP BY ' . $groupBy . ') AS g'
+        . ' JOIN ' . DB_TABLE_PREFIX . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
+        . ' JOIN ' . DB_TABLE_PREFIX . 't_item as i ON i.pk_i_id = g.rep_id';
 
     try {
         return osc_db_stringify_rows(osc_db_select($sql, $params));
@@ -451,9 +501,11 @@ function osc_search_footer_links()
 }
 
 /**
- * @param null $f
+ * URL for one search-footer link.
  *
- * @return string
+ * @param array<string,mixed>|null $f Footer-link row; null reuses the row exported to the view
+ *
+ * @return string Empty when no row was passed and none is in the view
  */
 function osc_footer_link_url($f = null)
 {
@@ -482,9 +534,11 @@ function osc_footer_link_url($f = null)
 }
 
 /**
- * @param null $f
+ * Label for one search-footer link: keyword prefix, category and location name.
  *
- * @return string
+ * @param array<string,mixed>|null $f Footer-link row; null reuses the row exported to the view
+ *
+ * @return string Empty when no row was passed and none is in the view
  */
 function osc_footer_link_title($f = null)
 {
@@ -524,7 +578,6 @@ function osc_footer_link_title($f = null)
  *
  * @return bool
  * @since  3.0
- * @access private
  */
 function _osc_admin_toolbar_init()
 {
@@ -541,6 +594,8 @@ osc_add_hook('init_admin', '_osc_admin_toolbar_init');
 
 /**
  * Draws admin toolbar
+ *
+ * @return void
  */
 function osc_draw_admin_toolbar()
 {
@@ -553,6 +608,8 @@ function osc_draw_admin_toolbar()
 
 /**
  * Add logout link
+ *
+ * @return void
  */
 function osc_admin_toolbar_logout()
 {
@@ -564,42 +621,62 @@ function osc_admin_toolbar_logout()
                                           ));
 }
 
+/**
+ * Add a toolbar counter for comments awaiting moderation, when there are any.
+ *
+ * @return void
+ */
 function osc_admin_toolbar_comments()
 {
     $total = ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
     if ($total > 0) {
-        $title = '<i class="circle circle-green">' . $total . '</i>' . __('New comments');
+        $label = __('New comments');
+        $title = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>'
+            . '<span class="toolbar-label">' . $label . '</span>'
+            . '<i class="circle circle-green">' . $total . '</i>';
 
         AdminToolbar::newInstance()->add_menu(
             array(
                 'id'    => 'comments',
                 'title' => $title,
                 'href'  => osc_admin_base_url(true) . '?page=comments',
-                'meta'  => array('class' => 'action-btn ')
-            )
-        );
-    }
-}
-
-function osc_admin_toolbar_spam()
-{
-    $total = Item::newInstance()->countByMarkas('spam');
-    if ($total > 0) {
-        $title = '<i class="circle circle-red">' . $total . '</i>' . __('Spam');
-
-        AdminToolbar::newInstance()->add_menu(
-            array(
-                'id'    => 'spam',
-                'title' => $title,
-                'href'  => osc_admin_base_url(true) . '?page=items&action=items_reported&sort=spam',
-                'meta'  => array('class' => 'action-btn ')
+                'meta'  => array('class' => 'action-btn ', 'title' => $label)
             )
         );
     }
 }
 
 /**
- * @param bool $force
+ * Add a toolbar counter for listings marked as spam, when there are any.
+ *
+ * @return void
+ */
+function osc_admin_toolbar_spam()
+{
+    $total = Item::newInstance()->countByMarkas('spam');
+    if ($total > 0) {
+        $label = __('Spam');
+        $title = '<i class="bi bi-shield-exclamation" aria-hidden="true"></i>'
+            . '<span class="toolbar-label">' . $label . '</span>'
+            . '<i class="circle circle-red">' . $total . '</i>';
+
+        AdminToolbar::newInstance()->add_menu(
+            array(
+                'id'    => 'spam',
+                'title' => $title,
+                'href'  => osc_admin_base_url(true) . '?page=items&action=items_reported&sort=spam',
+                'meta'  => array('class' => 'action-btn ', 'title' => $label)
+            )
+        );
+    }
+}
+
+/**
+ * Add the toolbar entry announcing a core update, when one is recorded as available.
+ *
+ * @param bool $force Rebuild the entry rather than leaving an already-rendered one in place
+ *
+ * @return void
  */
 function osc_admin_toolbar_update_core($force = false)
 {
@@ -609,13 +686,26 @@ function osc_admin_toolbar_update_core($force = false)
         }
         if (getPreference('update_core_available')) {
             $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
-            $title       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
+            // The core can also be replaced outside the admin (a new container image, a manual
+            // deploy), which leaves this announcing a version already running.
+            if (!isset($update_json->s_new_version)
+                || version_compare($update_json->s_new_version, OSCLASS_VERSION, 'le')
+            ) {
+                osc_set_preference('update_core_available');
+                osc_set_preference('update_core_json');
+                osc_reset_preferences();
+
+                return;
+            }
+            $label       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
+            $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
+                . '<span class="toolbar-label">' . $label . '</span>';
             AdminToolbar::newInstance()->add_menu(
                 array(
                     'id'    => 'update_core',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=tools&action=upgrade',
-                    'meta'  => array('class' => 'action-btn ')
+                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
                 )
             );
         }
@@ -623,9 +713,12 @@ function osc_admin_toolbar_update_core($force = false)
 }
 
 /**
- * @param bool $force
+ * Number of plugins with an update available, from the cached count unless forced.
+ * Without $force it schedules a background re-check once the cached count is a day old.
  *
- * @return int|string
+ * @param bool $force Re-scan now instead of returning the cached count
+ *
+ * @return int|string Int when re-scanned, the stored preference string otherwise
  */
 function osc_check_plugins_update($force = false)
 {
@@ -642,7 +735,9 @@ function osc_check_plugins_update($force = false)
 }
 
 /**
- * @return int
+ * Re-scan every installed plugin against the catalogue and cache the result.
+ *
+ * @return int Number of plugins with an update available
  */
 function _osc_check_plugins_update()
 {
@@ -679,7 +774,11 @@ function _osc_check_plugins_update()
 }
 
 /**
- * @param bool $force
+ * Add the toolbar counter for plugin updates, when any are available.
+ *
+ * @param bool $force Re-scan for updates and rebuild the entry
+ *
+ * @return void
  */
 function osc_admin_toolbar_update_plugins($force = false)
 {
@@ -690,13 +789,16 @@ function osc_admin_toolbar_update_plugins($force = false)
             AdminToolbar::newInstance()->remove_menu('update_plugin');
         }
         if ($total > 0) {
-            $title = '<i class="circle circle-gray">' . $total . '</i>' . __('Plugin updates');
+            $label = __('Plugin updates');
+            $title = '<i class="bi bi-plug" aria-hidden="true"></i>'
+                . '<span class="toolbar-label">' . $label . '</span>'
+                . '<i class="circle circle-gray">' . $total . '</i>';
             AdminToolbar::newInstance()->add_menu(
                 array(
                     'id'    => 'update_plugin',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=plugins#update-plugins',
-                    'meta'  => array('class' => 'action-btn ')
+                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
                 )
             );
         }
@@ -704,9 +806,12 @@ function osc_admin_toolbar_update_plugins($force = false)
 }
 
 /**
- * @param bool $force
+ * Number of themes with an update available, from the cached count unless forced.
+ * Without $force it schedules a background re-check once the cached count is a day old.
  *
- * @return int|string
+ * @param bool $force Re-scan now instead of returning the cached count
+ *
+ * @return int|string Int when re-scanned, the stored preference string otherwise
  */
 function osc_check_themes_update($force = false)
 {
@@ -721,7 +826,9 @@ function osc_check_themes_update($force = false)
 }
 
 /**
- * @return int
+ * Re-scan every installed theme against the catalogue and cache the result.
+ *
+ * @return int Number of themes with an update available
  */
 function _osc_check_themes_update()
 {
@@ -754,7 +861,11 @@ function _osc_check_themes_update()
 }
 
 /**
- * @param bool $force
+ * Add the toolbar counter for theme updates, when any are available.
+ *
+ * @param bool $force Re-scan for updates and rebuild the entry
+ *
+ * @return void
  */
 function osc_admin_toolbar_update_themes($force = false)
 {
@@ -765,13 +876,16 @@ function osc_admin_toolbar_update_themes($force = false)
             AdminToolbar::newInstance()->remove_menu('update_theme');
         }
         if ($total > 0) {
-            $title = '<i class="circle circle-gray">' . $total . '</i>' . __('Theme updates');
+            $label = __('Theme updates');
+            $title = '<i class="bi bi-brush" aria-hidden="true"></i>'
+                . '<span class="toolbar-label">' . $label . '</span>'
+                . '<i class="circle circle-gray">' . $total . '</i>';
             AdminToolbar::newInstance()->add_menu(
                 array(
                     'id'    => 'update_theme',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=appearance',
-                    'meta'  => array('class' => 'action-btn ')
+                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
                 )
             );
         }
@@ -780,9 +894,12 @@ function osc_admin_toolbar_update_themes($force = false)
 
 // languages todo
 /**
- * @param bool $force
+ * Number of languages with an update available, from the cached count unless forced.
+ * Without $force it schedules a background re-check once the cached count is a day old.
  *
- * @return int|string
+ * @param bool $force Re-scan now instead of returning the cached count
+ *
+ * @return int|string Int when re-scanned, the stored preference string otherwise
  */
 function osc_check_languages_update($force = false)
 {
@@ -799,7 +916,9 @@ function osc_check_languages_update($force = false)
 }
 
 /**
- * @return int
+ * Re-check every installed language against its published version and cache the result.
+ *
+ * @return int Number of languages with an update available
  */
 function _osc_check_languages_update()
 {
@@ -824,7 +943,11 @@ function _osc_check_languages_update()
 }
 
 /**
- * @param bool $force
+ * Add the toolbar counter for language updates, when any are available.
+ *
+ * @param bool $force Re-scan for updates and rebuild the entry
+ *
+ * @return void
  */
 function osc_admin_toolbar_update_languages($force = false)
 {
@@ -835,19 +958,27 @@ function osc_admin_toolbar_update_languages($force = false)
             AdminToolbar::newInstance()->remove_menu('update_language');
         }
         if ($total > 0) {
-            $title = '<i class="circle circle-gray">' . $total . '</i>' . __('Language updates');
+            $label = __('Language updates');
+            $title = '<i class="bi bi-translate" aria-hidden="true"></i>'
+                . '<span class="toolbar-label">' . $label . '</span>'
+                . '<i class="circle circle-gray">' . $total . '</i>';
             AdminToolbar::newInstance()->add_menu(
                 array(
                     'id'    => 'update_language',
                     'title' => $title,
                     'href'  => osc_admin_base_url(true) . '?page=languages',
-                    'meta'  => array('class' => 'action-btn ')
+                    'meta'  => array('class' => 'action-btn ', 'title' => $label)
                 )
             );
         }
     }
 }
 
+/**
+ * Enqueue TinyMCE on the public publish and edit pages only.
+ *
+ * @return void
+ */
 function osc_item_tinymce_header()
 {
     if (!osc_is_publish_page() && !osc_is_edit_page()) {
@@ -857,21 +988,44 @@ function osc_item_tinymce_header()
 }
 
 /**
- * Load the shared oscAutocomplete combobox on the public item form (publish/edit),
- * where ItemForm::location_javascript_new() drives the location fields with it. It
- * replaces a jQuery-UI widget and pulls in no jQuery of its own.
- * (The photo uploader self-enqueues from ItemForm::ajax_photos when it renders.)
+ * Load what the public location and photo fields need, from the head.
+ *
+ * oscAutocomplete drives the location fields on the item form and the search
+ * bar's town/city field; osc-uploader is the photo field.
+ *
+ * The search bar lives on the home and search pages in every bundled theme, so
+ * those routes load the combobox too -- a theme that renders one elsewhere
+ * enqueues osc-ui-common itself, from the head.
+ *
+ * Styles print on the header hook, so a stylesheet enqueued while the body is
+ * rendering never lands -- ItemForm::ajax_photos() enqueues its own assets, but
+ * by then the head has been flushed and only the script survives.
+ *
+ * @return void
  */
 function osc_ui_common_header()
 {
-    if (!osc_is_publish_page() && !osc_is_edit_page()) {
+    $form = osc_is_publish_page() || osc_is_edit_page();
+    if (!$form && !osc_is_home_page() && !osc_is_search_page()) {
         return;
     }
+
     osc_enqueue_script('osc-ui-common');
     osc_enqueue_style('osc-ui-common');
+
+    if ($form) {
+        osc_enqueue_script('osc-uploader');
+        osc_enqueue_style('osc-uploader');
+    }
 }
 osc_add_hook('header', 'osc_ui_common_header');
+osc_add_hook('header', 'osc_head_hook_guard', 1);
 
+/**
+ * Print the TinyMCE init script for the listing description fields, in the footer.
+ *
+ * @return void
+ */
 function osc_item_tinymce_footer()
 {
     if (!osc_is_publish_page() && !osc_is_edit_page()) {
@@ -944,37 +1098,79 @@ function osc_expire_premium_items()
 }
 osc_add_hook('cron_hourly', 'osc_expire_premium_items');
 
+/**
+ * Print the maintenance-mode banner while maintenance mode is on.
+ *
+ * @return void
+ */
 function osc_show_maintenance()
 {
-    if (defined('__OSC_MAINTENANCE__')) { ?>
-        <div id="osc-maintenance-bar" role="status">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
-            </svg>
-            <?php _e('Maintenance mode is on — only signed-in admins can see the site right now.'); ?>
-        </div>
-        <style>
-            #osc-maintenance-bar {
-                width: 100%;
-                text-align: center;
-                padding: 10px 16px;
-                background-color: #fdf4d2;
-                color: #7a6716;
-                border-bottom: 1px solid #ecdca0;
-                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                font-size: 13px;
-                font-weight: 500;
-            }
-            #osc-maintenance-bar svg {
-                vertical-align: -3px;
-                margin-inline-end: 8px;
-            }
-        </style>
-    <?php }
+    if (!defined('__OSC_MAINTENANCE__')) {
+        return;
     }
+    // Lockout on: only admins reach this bar, so tell them the public site
+    // is down. Lockout off: everyone sees the (escaped) visitor message.
+    if (osc_maintenance_lockout_enabled()) {
+        $maintenanceBarText = __('Maintenance mode is on — only signed-in admins can see the site right now.');
+    } else {
+        $maintenanceBarText = osc_maintenance_visitor_message();
+    }
+    ?>
+    <div id="osc-maintenance-bar" role="status">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14.7 6.3a4 4 0 0 1-5.4 5.2l-4.6 4.6a1.5 1.5 0 0 1-2.1-2.1l4.6-4.6a4 4 0 0 1 5.2-5.4l-2.3 2.3 1.4 1.4 2.3-2.3q.5.4.9 1Z" stroke="#7a6716" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+        </svg>
+        <?php echo nl2br(osc_esc_html($maintenanceBarText), false); ?>
+    </div>
+    <style>
+        #osc-maintenance-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+            padding: 10px 16px;
+            background-color: #fdf4d2;
+            color: #7a6716;
+            border-bottom: 1px solid #ecdca0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        /* After the footer script prepends the bar, drop fixed so it sits in flow. */
+        body > #osc-maintenance-bar {
+            position: relative;
+            z-index: auto;
+        }
+        #osc-maintenance-bar svg {
+            vertical-align: -3px;
+            margin-inline-end: 8px;
+        }
+    </style>
+    <script>
+        (function () {
+            var bar = document.getElementById('osc-maintenance-bar');
+            if (bar && document.body) {
+                document.body.insertBefore(bar, document.body.firstChild);
+            }
+        })();
+    </script>
+    <?php
+}
 
-osc_add_hook('header', 'osc_show_maintenance');
+// Themes run `header` inside <head> (PACKAGE-SPEC). This bar is markup, so it
+// belongs on `footer`, the required hook at the end of <body>. The script
+// above then prepends it as body's first child so it sits in flow at the top.
+osc_add_hook('footer', 'osc_show_maintenance');
 
+/**
+ * Print the generator meta tag.
+ *
+ * @return void
+ */
 function osc_meta_generator()
 {
     echo '<meta name="generator" content="Shopclass" />';
@@ -986,6 +1182,8 @@ osc_add_hook('header', 'osc_meta_generator');
  * Emit <meta name="robots" content="noindex, follow"> when a controller has marked
  * the current response as thin/empty (e.g. a valid but empty category or location
  * browse page). Keeps the URL crawlable and 200, without indexing an empty page.
+ *
+ * @return void
  */
 function osc_meta_noindex()
 {
@@ -998,7 +1196,9 @@ osc_add_hook('header', 'osc_meta_noindex');
 
 if (osc_force_jpeg()) {
     /**
-     * @param $content
+     * Force the upload_image_extension filter to jpg.
+     *
+     * @param string $content Extension the filter chain has produced so far
      *
      * @return string
      */
@@ -1008,7 +1208,9 @@ if (osc_force_jpeg()) {
     }
 
     /**
-     * @param $content
+     * Force the upload_image_mime filter to image/jpeg.
+     *
+     * @param string $content MIME type the filter chain has produced so far
      *
      * @return string
      */

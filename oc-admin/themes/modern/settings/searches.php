@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -13,7 +13,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/**
+ * The chrome around the declared latest-searches form. The form itself -- its route, its
+ * fields, their values and the submit row -- is core's, drawn from the declaration the
+ * controller saves through.
+ */
+
+$form = __get('searches_form');
+
 //customize Head
+/**
+ * Emit the search-settings form's client-side validation rules.
+ *
+ * @return void
+ */
 function customHead()
 {
     ?>
@@ -45,20 +58,38 @@ function customHead()
                     if (h1) { h1.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                 }
             });
+
+            // The radios and the free-text box both write the hidden field the form stores.
+            // Typing a number is choosing it, or the value is entered and discarded.
+            var purge  = document.getElementById('customPurge');
+            var custom = document.getElementById('custom_queries');
+            if (purge) {
+                var sync = function () {
+                    var picked = document.querySelector('input[name=purge_searches]:checked');
+                    if (!picked) {
+                        return;
+                    }
+                    purge.value = picked.value === 'custom' ? (custom ? custom.value : '') : picked.value;
+                };
+                document.querySelectorAll('input[name=purge_searches]').forEach(function (radio) {
+                    radio.addEventListener('change', sync);
+                });
+                if (custom) {
+                    custom.addEventListener('input', function () {
+                        var radio = document.querySelector('input[name=purge_searches][value=custom]');
+                        if (radio) {
+                            radio.checked = true;
+                        }
+                        sync();
+                    });
+                }
+            }
         });
     </script>
     <?php
 }
 
 osc_add_hook('admin_header', 'customHead', 10);
-
-/**
- * @return string
- */
-function render_offset()
-{
-    return 'row-offset';
-}
 
 osc_admin_page(array(
     'section' => __('Settings'),
@@ -73,96 +104,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="general-settings">
         <?php osc_admin_page_head(__('Latest searches Settings')); ?>
         <ul id="error_list"></ul>
-        <form name="searches_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="page" value="settings"/>
-            <input type="hidden" name="action" value="latestsearches_post"/>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('Latest searches'); ?></div>
-                        <div class="form-controls">
-                            <div class="form-label-checkbox">
-                                <input type="checkbox" <?php echo (osc_save_latest_searches()) ? 'checked="checked"'
-                                    : ''; ?> name="save_latest_searches"/>
-                                <?php _e('Save the latest user searches'); ?>
-                                <div class="help-box">
-                                    <?php _e('It may be useful to know what queries users make.') ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-label"><?php _e('How long queries are stored'); ?></div>
-                        <div class="form-controls">
-                            <div>
-                                <input type="radio" name="purge_searches"
-                                       value="hour" <?php echo((osc_purge_latest_searches() === 'hour')
-                                        ? 'checked="checked"' : ''); ?>
-                                       onclick="document.getElementById('customPurge').value = 'hour';"/>
-                                <?php _e('One hour'); ?>
-                            </div>
-                            <div>
-                                <input type="radio" name="purge_searches"
-                                       value="day" <?php echo((osc_purge_latest_searches() === 'day')
-                                        ? 'checked="checked"' : ''); ?>
-                                       onclick="document.getElementById('customPurge').value = 'day';"/>
-                                <?php _e('One day'); ?>
-                            </div>
-                            <div>
-                                <input type="radio" name="purge_searches"
-                                       value="week" <?php echo((osc_purge_latest_searches() === 'week')
-                                        ? 'checked="checked"' : ''); ?>
-                                       onclick="document.getElementById('customPurge').value = 'week';"/>
-                                <?php _e('One week'); ?>
-                            </div>
-                            <div>
-                                <input type="radio" name="purge_searches"
-                                       value="forever" <?php echo((osc_purge_latest_searches() === 'forever')
-                                        ? 'checked="checked"' : ''); ?>
-                                       onclick="document.getElementById('customPurge').value = 'forever';"/>
-                                <?php _e('Forever'); ?>
-                            </div>
-                            <div>
-                                <input type="radio" name="purge_searches"
-                                       value="1000" <?php echo((osc_purge_latest_searches() == '1000')
-                                        ? 'checked="checked"' : ''); ?>
-                                       onclick="document.getElementById('customPurge').value = '1000';"/>
-                                <?php _e('Store 1000 queries'); ?>
-                            </div>
-                            <div>
-                                <input type="radio" name="purge_searches" id="purge_searches"
-                                       value="custom"
-                                    <?php echo(!in_array(
-                                        osc_purge_latest_searches(),
-                                        array('hour', 'day', 'week', 'forever', '1000')
-                                    ) ? 'checked="checked"' : ''); ?>
-                                />
-                                <?php printf(
-                                    __('Store %s queries'),
-                                    '<input name="custom_queries" id="custom_queries" type="number" class="input-medium" '
-                                    . 'style="width:6rem;display:inline-block" '
-                                    . (!in_array(
-                                        osc_purge_latest_searches(),
-                                        array('hour', 'day', 'week', 'forever', '1000')
-                                    ) ? 'value="'
-                                    . osc_esc_html(osc_purge_latest_searches()) . '"' : '')
-                                    . ' onchange="javascript:document.getElementById(\'customPurge\').value = this.value;" />'
-                                ); ?>
-                                <div class="help-box">
-                                    <?php _e(
-                                        "This feature can generate a lot of data. It's recommended to purge this data periodically."
-                                    ); ?>
-                                </div>
-                            </div>
-                            <input type="hidden" id="customPurge" name="customPurge"
-                                   value="<?php echo osc_esc_html(osc_purge_latest_searches()); ?>"/>
-
-                        </div>
-                    </div>
-                    <?php osc_admin_form_actions(); ?>
-                </div>
-            </fieldset>
-        </form>
+        <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>
     <!-- /settings form -->
 </div>

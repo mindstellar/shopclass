@@ -3,7 +3,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -26,9 +26,11 @@ class PagesDataTable extends DataTable
     private $total_filtered;
 
     /**
-     * @param $params
+     * Builds the static-pages listing for the admin datatable.
      *
-     * @return array
+     * @param array<string,mixed> $params Datatable request params (iPage, iDisplayLength)
+     *
+     * @return array<string,mixed> The getData() payload
      */
     public function table($params)
     {
@@ -50,6 +52,11 @@ class PagesDataTable extends DataTable
         return $this->getData();
     }
 
+    /**
+     * Registers the page columns and lets plugins extend them via admin_pages_table.
+     *
+     * @return void
+     */
     private function addTableHeader()
     {
 
@@ -63,8 +70,11 @@ class PagesDataTable extends DataTable
     }
 
     /**
-     * @param $pages
+     * Formats each page into table cells, preferring the current user's locale for the title.
      *
+     * @param array<int,array<string,mixed>> $pages
+     *
+     * @return void
      */
     private function processData($pages)
     {

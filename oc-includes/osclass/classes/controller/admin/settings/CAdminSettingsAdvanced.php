@@ -7,7 +7,7 @@ if (!defined('ABS_PATH')) {
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -16,11 +16,17 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\AdvancedSettingsForm;
+use mindstellar\admin\form\CoreSettings;
+
 /**
  * Class CAdminSettingsAdvanced
  */
 class CAdminSettingsAdvanced extends AdminSecBaseModel
 {
+    /**
+     * Boots the admin controller and fires the init_admin_settings_advanced hook.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -28,12 +34,17 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
     }
 
     //Business Layer...
+    /**
+     * Draws the advanced settings form, or saves a posted one and redirects back to it.
+     *
+     * @return void
+     */
     public function doModel()
     {
         switch ($this->action) {
             case ('advanced'):
                 //calling the advanced settings view
-                $this->doView('settings/advanced.php');
+                $this->drawForm();
                 break;
             case ('advanced_post'):
                 // updating advanced settings
@@ -42,21 +53,32 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=advanced');
                 }
                 osc_csrf_check();
-                $subdomain_type = Params::getParam('e_type');
-                if (!in_array($subdomain_type, array('category', 'country', 'region', 'city', 'user'))) {
-                    $subdomain_type = '';
-                }
-                $iUpdated = osc_set_preference('subdomain_type', $subdomain_type);
-                $iUpdated += osc_set_preference('subdomain_host', Params::getParam('s_host'));
 
-                if ($iUpdated > 0) {
-                    osc_add_flash_ok_message(_m('Advanced settings have been updated'), 'admin');
+                $result = CoreSettings::attempt(AdvancedSettingsForm::register());
+                if ($result['errors'] !== array()) {
+                    // Redrawn with what was typed rather than thrown away with a redirect.
+                    $this->drawForm($result['values']);
+                    break;
                 }
-                osc_calculate_location_slug(osc_subdomain_type());
+
+                osc_add_flash_ok_message(_m('Advanced settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=advanced');
                 break;
         }
     }
+
+    /**
+     * Exports the advanced settings form and renders its view.
+     *
+     * @param array|null $values values a rejected save is handing back
+     *
+     * @return void
+     */
+    private function drawForm(?array $values = null)
+    {
+        $this->_exportVariableToView('advanced_form', AdvancedSettingsForm::formVars($values));
+        $this->doView('settings/advanced.php');
+    }
 }
 
-// EOF: ./oc-admin/controller/settings/CAdminSettingsMain.php
+// EOF: ./oc-admin/controller/settings/CAdminSettingsAdvanced.php

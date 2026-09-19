@@ -4,7 +4,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -43,9 +43,11 @@ $pb_is_builder     = ($pb_saved_spec !== null && !empty($pb_saved_spec['builder'
 $pb_location       = $pb_is_builder ? ('page.' . $pb_page_id) : '';
 
 /**
- * @param string $return
+ * One value from the page form's add/edit copy, keyed by name.
  *
- * @return mixed
+ * @param string $return One of 'edit', 'title', 'action_frm' or 'btn_text'
+ *
+ * @return bool|string 'edit' is a bool, the rest are strings
  */
 function customFrmText($return = 'title')
 {
@@ -71,7 +73,9 @@ osc_admin_page(array(
 ));
 
 /**
- * @param $string
+ * Filter callback for `admin_title`: prefix the browser title with the form's title.
+ *
+ * @param string $string
  *
  * @return string
  */
@@ -86,6 +90,11 @@ osc_add_filter('admin_title', 'customPageTitle');
 // "#s_text"), never the whole page, so plugin textareas in the meta rail are
 // left alone. Paste is cleaned the way a WYSIWYG should: Word/Docs style cruft
 // is dropped, semantic tags are kept, and images are not inlined as data URIs.
+/**
+ * Emit the page form's TinyMCE setup for the per-language content editors.
+ *
+ * @return void
+ */
 function customHead()
 {
     // Editor images go to the media library (unattached, reusable), so the flow

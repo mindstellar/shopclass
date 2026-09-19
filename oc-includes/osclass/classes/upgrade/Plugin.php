@@ -2,7 +2,7 @@
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. The original
  * Osclass code it derives from was licensed under the Apache License 2.0.
@@ -12,7 +12,7 @@
  */
 
 /**
- * Created by Mindstellar Community.
+ * Created by Navjot Tomer (Mindstellar).
  * User: navjottomer
  * Date: 15/07/20
  * Time: 7:03 PM
@@ -33,6 +33,8 @@ use RuntimeException;
 class Plugin extends UpgradePackage
 {
     /**
+     * Extra actions after upgradeProcess is done; a plugin needs none.
+     *
      * @return bool
      */
     public function afterProcessUpgrade()
@@ -58,7 +60,10 @@ class Plugin extends UpgradePackage
      *                           's_requires_php' => minimum required PHP version (optional)
      *                           ]
      *
-     * @return array
+     * @param string $plugin_short_name bare slug, or the "slug/index.php" form Plugins::listAll() emits
+     *
+     * @return array<string,mixed>
+     * @throws \RuntimeException on an unknown plugin, a bad update uri, or an unusable remote payload
      */
     public static function getPackageInfo($plugin_short_name): array
     {

@@ -4,3 +4,6 @@
 
 # style: apply php-cs-fixer PSR-12 formatting across PHP tree
 f18358c2efa0179be8208a4a8f2362a599c3f55e
+
+# Copyright holder renamed in file headers
+114033d1d19491ce365d30af1e7da94e90438d37

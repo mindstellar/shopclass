@@ -1,7 +1,7 @@
 <?php
 /*
  * This file is part of Shopclass (Mindstellar).
- * Copyright (c) 2021-2026 Mindstellar Community
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
  *
  * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
  *
@@ -31,24 +31,10 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 define('ABS_PATH', dirname(__DIR__) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
+require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/location/LocationCatalog.php';
 
 use mindstellar\location\LocationCatalog;
-
-$ok = 0;
-$failed = 0;
-
-function check(string $label, bool $passed, string $detail = ''): void
-{
-    global $ok, $failed;
-    if ($passed) {
-        $ok++;
-        echo "PASS  $label\n";
-    } else {
-        $failed++;
-        echo "FAIL  $label" . ($detail !== '' ? "  ($detail)" : '') . "\n";
-    }
-}
 
 /* The pointer, as published: note `countries` is a COUNT here. */
 $pointer = array(
@@ -81,6 +67,8 @@ $manifest = array(
             'name'   => 'Malta',
             'files'  => array('data' => 'data/MT.ndjson', 'json' => 'json/MT.json'),
             'sha256' => array('data' => str_repeat('a', 64)),
+            'regions'     => 69,
+            'settlements' => 121,
         ),
     ),
 );
@@ -134,6 +122,9 @@ check('the country name survives', $mt['name'] === 'Malta');
 check('the streaming file survives', $mt['data'] === 'data/MT.ndjson');
 check('the whole-file form survives', $mt['json'] === 'json/MT.json');
 check('the data checksum survives', $mt['sha'] === str_repeat('a', 64));
+check('the settlement count survives as rows', $mt['rows'] === 121);
+check('the region count survives, for the add form\'s import offer', $mt['regions'] === 69);
+check('an older manifest without region counts reads as 0', LocationCatalog::normalizeManifest($legacyManifest)['countries'][0]['regions'] === 0);
 
 // The published manifest describes four formats per country with a checksum and a byte
 // count for each; two are read. Carrying the rest is pure per-read cost.
@@ -176,9 +167,6 @@ $junk = LocationCatalog::normalizeManifest(array('countries' => array(
 check('entries without a code are dropped', count($junk['countries']) === 1);
 check('a manifest with no countries normalises to an empty list', LocationCatalog::normalizeManifest(array())['countries'] === array());
 
-echo "\n----------------------------------------\n";
-echo "RESULT: $ok passed, $failed failed\n";
-
-exit($failed === 0 ? 0 : 1);
+exit(harness_result());
 
 /* file end: ./tests/location-catalog-shapes.php */
