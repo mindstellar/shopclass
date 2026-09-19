@@ -92,6 +92,36 @@ The `$id` is a global namespace shared with every other plugin on the install.
   same id load it once; register it as `my_strange_name` and the visitor
   downloads it twice.
 
+## Location autocomplete without writing JavaScript
+
+A theme that needs a country, region or city field does not have to write its own
+autocomplete. Core binds every `input[data-ac]` on the page to its own endpoints.
+Render the input, and nothing else.
+
+```html
+<input type="text" name="city" id="city"
+       data-ac="location_cities"
+       data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
+       data-ac-target="#cityId"
+       data-ac-scope="#regionId"
+       data-ac-scope-param="region">
+<input type="hidden" name="cityId" id="cityId">
+```
+
+| Attribute | What it is |
+|---|---|
+| `data-ac` | The endpoint: `location_countries`, `location_regions` or `location_cities`. |
+| `data-ac-url` | Where to post. Always `osc_base_url(true)`. |
+| `data-ac-target` | Selector of the hidden input that receives the chosen row's id. |
+| `data-ac-scope` | Selector whose value narrows the search — the region, for a city. |
+| `data-ac-scope-param` | The parameter name that value is sent as. |
+| `data-ac-clears` | Comma-separated selectors emptied when this field changes. |
+
+The endpoints match on the first letters of a name and return `{id, value}` rows.
+
+If your theme already ships its own binder, it wins the race and core's becomes a
+no-op for that field — so adopting this is safe and can be done one field at a time.
+
 ## Cache-busting
 
 Append a version to your asset URL so an update actually reaches returning

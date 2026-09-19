@@ -245,3 +245,52 @@ A declaration gives you the CSRF check, the capability check, the escaping, the
 `depends` handling and the redirect, written once in core. Move an existing
 screen when you next touch it; the Test Payments plugin in
 [Payment gateways](/docs/developers/payment-gateways/) shows the result.
+
+### When you cannot declare the page
+
+Some screens are not a settings form at all — a list with its own actions, a
+dialog, a panel inside another page. Do not hand-write the markup for those
+either. Core exposes the same field renderers the declared path uses, so your
+screen looks like the rest of the admin and keeps doing so when the admin theme
+changes.
+
+```php
+osc_admin_form_open(array('page' => 'plugins', 'action' => 'my_save'));
+
+osc_admin_form_section(__('Delivery'));
+
+osc_admin_text(array(
+    'name'  => 'sender_name',
+    'label' => __('Sender name'),
+    'value' => $current,
+    'help'  => __('Shown on every outgoing message.'),
+));
+
+osc_admin_checkbox(array(
+    'name'    => 'notify',
+    'label'   => __('Email me on each order'),
+    'checked' => $notify,
+));
+
+osc_admin_form_close(array(
+    array('label' => __('Save'), 'type' => 'submit', 'variant' => 'primary'),
+));
+```
+
+`osc_admin_form_open()` writes the CSRF token for you. A GET form never gets one.
+
+| Function | What it does |
+|---|---|
+| `osc_admin_field($spec)` | One labelled field. Everything below is sugar over it, so this is the only name you must depend on. |
+| `osc_admin_text()` · `osc_admin_number()` · `osc_admin_select()` · `osc_admin_textarea()` · `osc_admin_checkbox()` · `osc_admin_radio_group()` · `osc_admin_secret()` | One field of that type. |
+| `osc_admin_tree_picker()` | The category / location picker. |
+| `osc_admin_form_open()` · `osc_admin_form_close()` | The form element, the hidden route, the CSRF token, and the submit row. |
+| `osc_admin_form_section($title)` | A titled group of fields. |
+| `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
+| `osc_admin_page_head($title, $actions)` | The screen title with its action buttons. |
+| `osc_admin_action_section()` | An intro, a status block, and buttons — no form. |
+
+`osc_admin_field()` takes `type`, `name`, `label`, `value`, `help`, `options`,
+`prefix`, `suffix`, `width`, `required`, `disabled`, `id` and `attrs`. Pass
+`'row' => false` for the control on its own, and `'type' => 'custom'` with a
+`render` callable to put your own markup inside a normal row.
