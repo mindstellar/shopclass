@@ -45,9 +45,17 @@ setting up**.
 
 **Bank transfer / cash** is built in and needs no plugin — you write your own
 payment instructions and settle each order by hand once the money arrives, with
-no card processor or API keys involved. Right for a local site with a
-handful of paying sellers, and a way to test the whole flow before choosing a
-gateway.
+no card processor or API keys involved. Right for a local site with a handful of
+paying sellers.
+
+**Test Payments** is a bundled plugin for trying the flow out. Its checkout page
+lets you choose **Pay**, **Decline**, **Leave pending** or **Fail**, and each one
+drives the real billing callback — so you can see an order succeed, hang or fail
+without moving any money. Install it from **Plugins**, then enable it.
+
+:::caution[Take it off a live site]
+Test Payments hands out credits for nothing. It is for testing only.
+:::
 
 ### What you can sell
 

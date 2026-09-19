@@ -12,10 +12,19 @@ Plugins add what your particular site needs and core deliberately does not carry
 
 ## Installing
 
-**Plugins → Manage plugins** browses the
-[plugin registry](/docs/developers/market/): a public, static catalog of
-packages submitted by pull request and validated by CI. Search it, read what a
-package does, and install in one step.
+**Plugins → Manage plugins** has three tabs:
+
+| Tab | What it shows |
+|---|---|
+| **Installed** | What this site has, as cards with a state badge. |
+| **Browse** | The [plugin registry](/docs/developers/market/): a public, static catalog of packages submitted by pull request and validated by CI. One click installs. |
+| **Updates** | Installed plugins with a newer version, with a count in the tab. |
+
+Each card carries the version, the author, a short description, and whether the
+package runs on your version — *Needs 6.5 or newer*, *Needs PHP 8.2* — so you
+never have to compare numbers yourself.
+
+Appearance uses the same three tabs and the same cards.
 
 A plugin zip can also be **uploaded** directly, for something private or bought
 elsewhere.

@@ -19,10 +19,20 @@ palette and their own hero copy, which is a settings change, not a theme change.
 
 ## Installing another theme
 
-**Appearance → Manage themes** browses the
-[theme registry](/docs/developers/market/) — the same catalog `oc-cli.php` reads
-— and installs with one click. **Available themes** lists what is installed;
-**Current theme** marks the active one.
+**Appearance → Manage themes** has three tabs:
+
+| Tab | What it shows |
+|---|---|
+| **Themes** | What is installed. **Current theme** is the live one; **Other themes** follow. |
+| **Browse** | The [theme registry](/docs/developers/market/) — the same catalog `oc-cli.php` reads. One click installs. |
+| **Updates** | Installed themes with a newer version, with a count in the tab. |
+
+Each theme is a card carrying its version, its author, a short description and a
+state badge — *Live*, *Installed* — with the buttons that apply to it:
+**Activate**, **Preview**, **Delete**.
+
+**Plugins → Manage plugins** works the same way, with **Installed**, **Browse**
+and **Updates** tabs and the same card layout.
 
 A theme zip can also be uploaded directly, for something you built or bought
 outside the catalog.
@@ -45,8 +55,9 @@ Themes are not interchangeable. Check three things:
 - **Widget sections differ between themes.** A theme declares its own sections,
   so widgets placed for one theme may have nowhere to go in another. They are
   not deleted — they simply stop rendering until you place them again.
-- **Compatibility.** A theme declares the ShopClass versions it supports; the
-  admin will not offer one that does not match.
+- **Compatibility.** A theme declares the ShopClass and PHP versions it supports,
+  and the card says plainly whether it runs here — *Needs 6.5 or newer*, *Needs
+  PHP 8.2* — instead of leaving you to compare numbers.
 - **Try it on a copy.** Especially for a site with traffic.
 
 Deleting a theme removes its files. Switch away from it first.
