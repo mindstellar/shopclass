@@ -267,16 +267,10 @@ class AdminMenu
             'stats_comments',
             'moderator'
         );
-        // The two entries below run a recalculation rather than opening a report, so they
-        // are held apart from the views above instead of sitting in the same list.
+        // Runs a recalculation rather than opening a report, so it is held apart from the
+        // views above. Location counts have their own button on Listings → Locations → Data;
+        // `?page=tools&action=locations` still works for anything linking to it.
         $this->add_submenu_divider('stats', __('Maintenance'), 'stats_maintenance', 'administrator');
-        $this->add_submenu(
-            'stats',
-            __('Recalculate location stats'),
-            osc_admin_base_url(true) . '?page=tools&action=locations',
-            'tools_location',
-            'administrator'
-        );
         $this->add_submenu(
             'stats',
             __('Recalculate category stats'),

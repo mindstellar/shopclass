@@ -35,6 +35,8 @@ In development.
 
 ### Changed
 
+- Statistics → Recalculate location stats has left the menu. It has its own button on
+  Listings → Locations → Data. The old URL still works.
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.
 - Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
   that registered outside that range was stored and never run; it now runs. Admin table columns
