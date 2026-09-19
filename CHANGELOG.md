@@ -2,6 +2,16 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.0
+
+In development.
+
+### Changed
+
+- Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
+  that registered outside that range was stored and never run; it now runs. Admin table columns
+  accept the same range.
+
 ## Shopclass 6.3.0
 
 This release is mostly about making themes easier to build and the admin easier to live in.
