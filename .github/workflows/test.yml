@@ -138,6 +138,10 @@ jobs:
       # A priority outside the old 0-10 loop was stored and never run, with no warning.
       - name: Hook priority
         run: php tests/hook-priority.php
+      # Plugins on sites we cannot see register against these names, so a rename has to
+      # be a deliberate edit of the fixture rather than a silent break.
+      - name: Hook name pin
+        run: php tests/hook-contract.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
       - name: Pagination
