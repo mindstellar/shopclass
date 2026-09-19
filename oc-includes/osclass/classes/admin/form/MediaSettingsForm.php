@@ -99,7 +99,7 @@ final class MediaSettingsForm
         self::dimension($form, 'dimNormal', __('Normal size'));
 
         $form
-            ->checkbox('keep_original_image', __('Keep original image, unaltered after uploading.'), __('Image may occupy more space than usual.'))
+            ->checkbox('keep_original_image', __('Keep the photo at its full size.'), __('Stored alongside the resized copies, so uploads take more space. It is re-saved rather than kept byte for byte, which drops camera metadata.'))
                 ->rowLabel(__('Original size'))
                 ->set('id', 'keep_original_image')
             ->group(__('Restrictions'))

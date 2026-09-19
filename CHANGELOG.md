@@ -11,8 +11,14 @@ In development.
 - A Hooks and filters page in the developer docs, listing every hook and filter core fires,
   what it passes and where.
 
+### Security
+
+- "Keep the photo at its full size" stored the upload byte for byte, so anything appended after
+  the image survived on disk under a `.jpg` or `.png` name. The full-size copy is re-encoded now.
+
 ### Changed
 
+- The full-size photo copy drops camera metadata, because it is re-saved rather than copied.
 - Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
   that registered outside that range was stored and never run; it now runs. Admin table columns
   accept the same range.

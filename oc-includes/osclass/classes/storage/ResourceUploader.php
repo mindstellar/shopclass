@@ -145,7 +145,14 @@ final class ResourceUploader
             osc_copy($vtmp, $folder . $id . $suffix . '.' . $extension);
         }
         if ($keepOriginal) {
-            osc_copy($tmpFile, $folder . $id . '_original.' . $extension);
+            // Re-encoded, not copied. A copy stores the upload byte for byte, so anything
+            // appended after the image survives on disk under an image extension.
+            try {
+                ImageProcessing::fromFile($tmpFile)->autoRotate()
+                    ->saveToFile($folder . $id . '_original.' . $extension, $extension);
+            } catch (Throwable $e) {
+                @unlink($folder . $id . '_original.' . $extension);
+            }
         }
 
         $this->cleanupTemps($tmpFile, $normalTmp, $secondary);

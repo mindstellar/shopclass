@@ -145,6 +145,9 @@ jobs:
       # The hooks reference is generated, so it cannot drift from what core fires.
       - name: Hooks reference is current
         run: php tools/gen-hooks-doc.php --check
+      # Copying the upload stored whatever was appended after the image, under a .jpg name.
+      - name: Keep-original re-encodes
+        run: php tests/keep-original-reencode.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
       - name: Pagination

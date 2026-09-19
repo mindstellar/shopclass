@@ -1012,8 +1012,14 @@ class ItemActions
                         osc_copy($tmpName . '_preview', $folder . $resourceId . '_preview.' . $extension);
                         osc_copy($tmpName . '_thumbnail', $folder . $resourceId . '_thumbnail.' . $extension);
                         if (osc_keep_original_image()) {
+                            // Re-encoded, not copied. A copy stores the upload byte for byte, so
+                            // anything appended after the image survives under an image extension.
                             $path = $folder . $resourceId . '_original.' . $extension;
-                            osc_copy($tmpName, $path);
+                            try {
+                                ImageProcessing::fromFile($tmpName)->autoRotate()->saveToFile($path, $extension);
+                            } catch (Throwable $e) {
+                                @unlink($path);
+                            }
                         }
                         unlink($tmpName . '_normal');
                         unlink($tmpName . '_preview');
