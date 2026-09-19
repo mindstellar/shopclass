@@ -186,7 +186,7 @@ class Csrf
     {
         // One pass, so a page carrying two byte-identical opening tags stamps each of them
         // once. A str_replace loop restamped every copy on every iteration.
-        return preg_replace_callback(
+        $stamped = preg_replace_callback(
             '/<form(.*?)>/is',
             function ($m) {
                 if (strpos($m[1], 'nocsrf') !== false) {
@@ -204,6 +204,10 @@ class Csrf
             },
             $form_data_html
         );
+
+        // PCRE gives up on a page that exhausts the backtrack limit. Serve it unstamped
+        // rather than blank; the forms on it then fail their own token check.
+        return $stamped === null ? $form_data_html : $stamped;
     }
 
     /**

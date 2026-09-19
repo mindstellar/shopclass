@@ -87,6 +87,10 @@ pin('exactly one of the two is stamped', 1, substr_count($out, '<!--TOKEN-->'));
 $same = str_repeat('<form action="/" method="post"></form>', 5);
 pin('five identical forms get five tokens, not twenty-five', 5, substr_count($csrf->replaceForms($same), '<!--TOKEN-->'));
 
+// PCRE returns null when it gives up; the page must still reach the browser.
+$runaway = '<form' . str_repeat('x', 3000000);
+pin('a page PCRE cannot scan is served as it was, not blank', $runaway, $csrf->replaceForms($runaway));
+
 $twins = '<form method="post"></form><form method="get"></form><form method="post"></form>';
 pin('an identical pair around a GET form still stamps twice', 2, substr_count($csrf->replaceForms($twins), '<!--TOKEN-->'));
 pin('the GET form between them is untouched', 1, substr_count($csrf->replaceForms($twins), 'method="get"'));
