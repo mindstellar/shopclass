@@ -6,6 +6,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 In development.
 
+### New
+
+- A Hooks and filters page in the developer docs, listing every hook and filter core fires,
+  what it passes and where.
+
 ### Changed
 
 - Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
