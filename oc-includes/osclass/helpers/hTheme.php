@@ -760,6 +760,20 @@ function osc_head(): void
             echo '<link rel="canonical" href="' . osc_esc_html($canonical) . '">' . PHP_EOL;
         }
     }
+    if ($want('pagination') && osc_is_search_page()) {
+        // Page 0 is the first page. Bing still reads these; Google stopped in 2019 and works
+        // the sequence out on its own, so this is cheap insurance rather than a fix.
+        $page  = (int) osc_search_page();
+        $total = (int) osc_search_total_pages();
+        if ($page > 0) {
+            echo '<link rel="prev" href="'
+                . osc_esc_html((string) osc_update_search_url(array('iPage' => $page - 1))) . '">' . PHP_EOL;
+        }
+        if ($total > 0 && $page < $total - 1) {
+            echo '<link rel="next" href="'
+                . osc_esc_html((string) osc_update_search_url(array('iPage' => $page + 1))) . '">' . PHP_EOL;
+        }
+    }
     if ($want('feed')) {
         // The current search's feed on a results page, the site-wide one elsewhere.
         $feed = osc_is_search_page()

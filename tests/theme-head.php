@@ -151,7 +151,22 @@ function osc_search_url($params = array())
 
 function osc_update_search_url($params = array())
 {
+    // Echoes the page it was asked for, so a pin can tell rel=prev from rel=next.
+    if (isset($params['iPage'])) {
+        return 'https://example.test/search/cars/p' . (int)$params['iPage'];
+    }
+
     return 'https://example.test/search/cars/sFeed,rss';
+}
+
+function osc_search_page()
+{
+    return $GLOBALS['searchPage'] ?? 0;
+}
+
+function osc_search_total_pages()
+{
+    return $GLOBALS['searchTotal'] ?? 0;
 }
 
 // Every page predicate answers off one global, so a test names a page once.
@@ -250,6 +265,45 @@ $GLOBALS['page'] = 'search';
 check('results page feeds the search', strpos($head(), 'search/cars/sFeed,rss') !== false);
 $GLOBALS['page'] = 'item';
 check('everywhere else feeds the site', strpos($head(), 'example.test/search/sFeed,rss') !== false);
+
+harness_section('osc_head(): rel=prev / rel=next on a paged results page');
+$supports->reset();
+$GLOBALS['page'] = 'search';
+
+// Page 0 is the first page, so it has no predecessor.
+$GLOBALS['searchPage']  = 0;
+$GLOBALS['searchTotal'] = 3;
+$h                      = $head();
+check('the first page has no rel=prev', strpos($h, 'rel="prev"') === false);
+check('...but does have rel=next', strpos($h, '<link rel="next" href="https://example.test/search/cars/p1">') !== false);
+
+$GLOBALS['searchPage'] = 1;
+$h                     = $head();
+check('a middle page points back', strpos($h, '<link rel="prev" href="https://example.test/search/cars/p0">') !== false);
+check('...and forward', strpos($h, '<link rel="next" href="https://example.test/search/cars/p2">') !== false);
+
+$GLOBALS['searchPage'] = 2;
+$h                     = $head();
+check('the last page points back', strpos($h, 'rel="prev"') !== false);
+check('...and nowhere forward', strpos($h, 'rel="next"') === false);
+
+// One page of results is not a sequence.
+$GLOBALS['searchTotal'] = 1;
+$GLOBALS['searchPage']  = 0;
+$h                      = $head();
+check('a single page of results gets neither', strpos($h, 'rel="next"') === false && strpos($h, 'rel="prev"') === false);
+
+$GLOBALS['page']        = 'item';
+$GLOBALS['searchPage']  = 1;
+$GLOBALS['searchTotal'] = 3;
+check('a listing page gets neither', strpos($head(), 'rel="next"') === false);
+
+$GLOBALS['page'] = 'search';
+$supports->reset();
+osc_add_theme_support('head', array('pagination' => false));
+check('a theme can opt out', strpos($head(), 'rel="next"') === false);
+$supports->reset();
+$GLOBALS['page'] = 'item';
 
 harness_section('osc_language_attributes()');
 $GLOBALS['locale']    = 'en_US';

@@ -1125,6 +1125,24 @@ function osc_resource_download_url($variant = '')
 }
 
 /**
+ * Alt text for the photo the resource loop is on: the title of the listing it belongs to.
+ *
+ * Core had no answer here, so every theme either wrote `alt=""` on listing photos or left the
+ * attribute off. Costs no query — the listing is already the current one in the loop.
+ *
+ * Returns '' when there is no listing in scope, which is the correct alt for a decorative
+ * image and keeps a theme from printing the word "Array".
+ *
+ * @return string
+ */
+function osc_resource_alt()
+{
+    $title = function_exists('osc_item_title') ? trim((string)osc_item_title()) : '';
+
+    return (string)osc_apply_filter('resource_alt', $title, osc_resource());
+}
+
+/**
  * Gets thumbnail url of current resource
  *
  * @return string

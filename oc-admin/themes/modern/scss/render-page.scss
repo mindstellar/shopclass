@@ -135,34 +135,3 @@ h3.render-title.separate-top {
   width: 34px !important;
 }
 
-.locations img {
-  vertical-align: bottom;
-}
-
-#l_countries, #i_regions, #i_cities {
-  a {
-    font-size: .85rem;
-    text-decoration: none;
-  }
-
-  .list-group-item {
-    padding-bottom: .2rem;
-    padding-top: .2rem;
-  }
-}
-
-
-// The per-row delete on the locations panels. It removes a country and everything
-// under it, but inherited link colour, so it was indistinguishable from the row's
-// edit link while "Remove selected" beside it was already red. Colour alone is not
-// the signal — the glyph and the title attribute carry it too — but a destructive
-// control must not read as routine.
-.locations .list-group-item > a.close {
-  color: var(--osc-ink-muted);
-  text-decoration: none;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--osc-danger);
-  }
-}

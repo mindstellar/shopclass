@@ -12353,27 +12353,6 @@ h3.render-title.separate-top,
   width: 34px !important;
 }
 
-.locations img {
-  vertical-align: bottom;
-}
-
-#l_countries a, #i_regions a, #i_cities a {
-  font-size: 0.85rem;
-  text-decoration: none;
-}
-#l_countries .list-group-item, #i_regions .list-group-item, #i_cities .list-group-item {
-  padding-bottom: 0.2rem;
-  padding-top: 0.2rem;
-}
-
-.locations .list-group-item > a.close {
-  color: var(--osc-ink-muted);
-  text-decoration: none;
-}
-.locations .list-group-item > a.close:hover, .locations .list-group-item > a.close:focus-visible {
-  color: var(--osc-danger);
-}
-
 .clear {
   clear: both;
 }

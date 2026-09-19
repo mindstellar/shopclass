@@ -223,6 +223,14 @@ function osc_sanitize_html($value)
             'font-weight', 'font-style', 'text-decoration',
         ));
         $config->set('URI.AllowedSchemes', array('http' => true, 'https' => true, 'mailto' => true));
+        // A seller's outbound links pass search-engine ranking to whatever they point at,
+        // which is what makes a listing description worth spamming. Links back into this
+        // site are left alone, so URI.Host has to be set for the check to know which is which.
+        $config->set('HTML.Nofollow', true);
+        $host = function_exists('osc_base_url') ? parse_url((string)osc_base_url(), PHP_URL_HOST) : null;
+        if (is_string($host) && $host !== '') {
+            $config->set('URI.Host', $host);
+        }
         $config->set('Cache.DefinitionImpl', null);
         $purifier = new HTMLPurifier($config);
     }

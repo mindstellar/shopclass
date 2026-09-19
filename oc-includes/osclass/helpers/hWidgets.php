@@ -208,7 +208,7 @@ osc_register_widget('core.image', array(
             return;
         }
         $img  = '<img src="' . osc_esc_html($src) . '" alt="' . osc_esc_html((string) ($config['alt'] ?? ''))
-            . '" style="max-width:100%;height:auto"/>';
+            . '" loading="lazy" decoding="async" style="max-width:100%;height:auto"/>';
         $link = (string) ($config['link'] ?? '');
         if ($link !== '' && preg_match('#^https?://#i', $link)) {
             echo '<a href="' . osc_esc_html($link) . '">' . $img . '</a>';

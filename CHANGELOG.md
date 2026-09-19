@@ -10,6 +10,15 @@ In development.
 
 - A Hooks and filters page in the developer docs, listing every hook and filter core fires,
   what it passes and where.
+- Links a seller writes in a listing description now carry `rel="nofollow"`. Links back into
+  your own site are left alone.
+- Paginated search and category pages declare `rel="prev"` and `rel="next"`.
+- `osc_resource_alt()` gives a theme alt text for a listing photo, filterable as `resource_alt`.
+
+### Breaking
+
+- Removed the admin CSS kept one release for compatibility with the old Locations screen:
+  `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
 
 ### Security
 
