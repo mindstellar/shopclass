@@ -1,0 +1,26 @@
+name: Publish docs
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'docs/site/**'
+  # A manual run republishes without touching a page, e.g. after a change to the
+  # site template itself.
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: publish-docs
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # The published docs at mindstellar.com/docs are built by Cloudflare Pages,
+      # which clones docs/site from master when it builds. Pages rebuilds only
+      # when its own repository is pushed, so a docs change landing here stays
+      # invisible until something asks for a build. This is that ask.
+      - name: Rebuild the documentation site
+        env:
+          HOOK: ${{ secrets.CF_PAGES_DOCS_HOOK }}
+        run: curl --fail --silent --show-error -X POST "$HOOK"
