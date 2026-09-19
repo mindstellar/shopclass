@@ -76,6 +76,18 @@ if (!function_exists('osc_test_cache_flush')) {
     }
 }
 
+if (!function_exists('osc_invalidate_user_cache')) {
+    // Stands in for the hCache helper, which the standalone bootstrap does not load.
+    // Counts its calls so the pins below prove update() reaches it, not just that a
+    // re-read happened to be fresh.
+    $GLOBALS['__user_cache_busts'] = 0;
+    function osc_invalidate_user_cache($userId)
+    {
+        $GLOBALS['__user_cache_busts']++;
+        unset($GLOBALS['__user_test_cache'][md5(osc_base_url() . 'User:findByPrimaryKey:' . (int)$userId)]);
+    }
+}
+
 if (!function_exists('osc_verify_password')) {
     // findByCredentials verifies the hash; the fixtures never store a real one,
     // so a stand-in that only accepts a known sentinel is enough to exercise the
@@ -161,6 +173,29 @@ $warm = harness_query_count(static function () use ($model, $victim) {
 });
 check('a cold lookup issues queries', $cold > 0, (string)$cold);
 pin('a warm lookup is served from cache at zero queries', 0, $warm);
+
+/* A write has to drop the cached row, or the change is invisible for the whole TTL:
+ * an account just activated cannot sign in, and a banned one keeps working. */
+osc_test_cache_flush();
+$model->findByPrimaryKey($victim);
+
+$busts = $GLOBALS['__user_cache_busts'] ?? null;
+$model->update(array('b_active' => 0), array('pk_i_id' => $victim));
+pin('deactivating is visible at once', '0', $model->findByPrimaryKey($victim)['b_active']);
+
+$model->update(array('b_active' => 1), array('pk_i_id' => $victim));
+pin('...and so is activating', '1', $model->findByPrimaryKey($victim)['b_active']);
+
+$model->update(array('b_enabled' => 0), array('pk_i_id' => $victim));
+pin('banning takes effect at once', '0', $model->findByPrimaryKey($victim)['b_enabled']);
+
+$model->update(array('b_enabled' => 1), array('pk_i_id' => $victim));
+if ($busts !== null) {
+    pin('every pk-targeted write busts the cache', 4, $GLOBALS['__user_cache_busts'] - $busts);
+}
+
+// A write with no pk has no single row to drop; it must not blow up either.
+check('an update without a pk is still accepted', $model->update(array('b_enabled' => 1), array('s_email' => 'victim@example.test')) !== false);
 
 /* ----------------------------------------------------------------------------
  * Email / username lookups — positive AND negative (this is an auth surface).

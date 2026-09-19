@@ -291,6 +291,9 @@ an image, such as a theme logo.
 - Untranslated strings under RTL no longer flip trailing punctuation to the front of the line.
 - CSRF tokens are no longer added to forms inside JSON responses.
 - A page with several identical form tags stamped each of them with a CSRF token per form, so a settings screen shipped five copies in every form.
+- On a site with an object cache, a change to a user's account was ignored for up to a minute:
+  a member who had just activated could not sign in, and a banned one kept working. Only a
+  password change cleared the cached row; every write to that user does now.
 - The location recount no longer fails on places deleted while it runs.
 - The location recount keeps a batch queued when its write fails, and stops instead of polling forever.
 

@@ -148,13 +148,12 @@ class User extends DAO
     }
 
     /**
-     * Update user rows, dropping the cached row when the password changes.
+     * Update user rows, dropping the cached row for the user written.
      *
-     * findByPrimaryKey() caches the full user row, including s_password. That hash is the
-     * remember-me binding, so with a persistent object cache a password change would keep
-     * authenticating old cookies until the entry's TTL lapsed. Clear this user's cache the
-     * moment its s_password is written. Scoped to s_password writes so ordinary field updates
-     * keep their TTL behaviour; only pk-targeted updates carry an id to invalidate.
+     * findByPrimaryKey() caches the whole row, so with a persistent object cache every write
+     * is invisible until the entry's TTL lapses: a newly activated account cannot sign in, a
+     * banned one keeps working, and a changed s_password goes on authenticating old remember-me
+     * cookies. Only pk-targeted updates carry an id to invalidate.
      *
      * @param array<string,mixed> $values
      * @param array<string,mixed> $where
@@ -165,8 +164,7 @@ class User extends DAO
     {
         $result = parent::update($values, $where);
 
-        if (is_array($values) && array_key_exists('s_password', $values)
-            && is_array($where) && isset($where['pk_i_id'])
+        if (is_array($where) && isset($where['pk_i_id'])
             && function_exists('osc_invalidate_user_cache')
         ) {
             osc_invalidate_user_cache($where['pk_i_id']);
