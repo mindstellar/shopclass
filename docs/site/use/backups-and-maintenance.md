@@ -45,17 +45,43 @@ tar -czf uploads-$(date +%F).tar.gz oc-content/
 
 ## Maintenance mode
 
-**Tools → Maintenance mode** takes the front end offline while leaving the admin
-panel reachable. The screen shows the current state — *maintenance mode is: ON /
-OFF* — with a single button to toggle it.
+**Tools → Maintenance mode** puts the site into maintenance while you work. Signed-in
+admins always keep full access. What everyone else sees is up to you.
 
-Turn it on before a major update, a large migration or a schema change. It means
-visitors see a maintenance page rather than half-broken pages, and nobody
+The top of the screen shows the current state — *Maintenance mode is: ON / OFF* —
+with one button to switch it.
+
+### Two ways to run it
+
+Under **Visitors** there is a checkbox, **Block the public site (HTTP 503)**.
+
+| Checkbox | What a visitor gets |
+|---|---|
+| **Ticked** (the default) | An HTTP 503 page carrying your message. Nobody can browse or post. |
+| **Unticked** | The site as normal, with your message as a banner across the top. |
+
+Tick it before a major update, a large migration or a schema change — nobody
 publishes a listing into a database you are in the middle of moving.
 
+Leave it unticked for work that does not risk the data: a theme change, a price
+update, a slow import. Visitors keep shopping and simply know something is going on.
+
+Your choice is remembered when you turn maintenance mode off again.
+
+### The message
+
+The **Message** box under the checkbox is shown on the banner and on the 503 page.
+Plain text only, up to 500 characters — HTML is stripped. Leave it blank and
+Shopclass writes a polite default using your site name.
+
 :::caution[Do not forget it is on]
-A site left in maintenance mode is indistinguishable from a dead one, to
-visitors and to search engines alike.
+A site left blocked is indistinguishable from a dead one, to visitors and to
+search engines alike. The banner mode carries no such risk.
+:::
+
+:::note[The cron keeps running]
+Blocking the public site does not stop scheduled jobs. An upgrade in progress is
+the one exception: it locks out everything except a signed-in admin.
 :::
 
 ## Cleanup

@@ -12,12 +12,58 @@ place names — so you install the countries you actually serve.
 
 ## From the admin panel
 
-**Admin → Listings → Locations** lists every country in the published catalog
-alongside what this install currently holds. Pick a country and install it; the
+**Admin → Listings → Locations** has two tabs.
+
+### Data — install and update countries
+
+**Data** lists all 255 countries in the published catalog. Filter them by **All**,
+**Installed**, **Updates** or **Not installed**, then install a country; its
 regions and cities come with it.
 
-Installing a large country moves a lot of rows. If the request times out
-half-way, use the command line instead — it has no web-server timeout to hit.
+Importing never deletes a location that holds listings.
+
+A large country is no problem. Germany's 91,385 places import in well under a
+minute, in chunks, so no single request runs long enough to time out.
+
+The tab also shows the catalog release date, with a **Check for updates** button.
+
+#### Listing counts
+
+The number of listings shown against each location can drift after an import or a
+bulk change. **Recalculate** counts them again. It reports progress — *27%
+counted: 24,198 of 88,301 locations* — and the site stays online while it runs.
+
+### Browse — edit what you have
+
+**Browse** walks your installed data: countries, then regions, then cities. A
+breadcrumb across the top takes you back up.
+
+Each level shows the name, the slug, how many children it has, how many listings
+it holds, and whether it is active or hidden.
+
+| Tool | What it does |
+|---|---|
+| **Search** | Type a name. Choose **This level** or **Everywhere** to search the whole tree. |
+| **A–Z strip** | Jump to a letter. Appears once a level has many entries. |
+| **Paging** | 50 rows a page — *Showing 1–50 of 17,505 cities*. |
+| **Edit** | Opens a drawer beside the list. Rename, change the slug, hide or show. |
+| **Add** | **Add country**, **Add region** or **Add city**, depending on the level. |
+| **Bulk actions** | Tick rows, then apply an action to all of them. |
+
+### Deleting a location
+
+Delete shows you what goes with it: the places underneath, how many listings are
+deleted, and how many users keep their account but lose their location.
+
+If any listing would be deleted, you must type something before the button works —
+the location's name for one row, or the number of listings for a selection. If no
+listing is affected, it just asks you to confirm.
+
+It cannot be undone.
+
+:::caution[Editing locations affects your statistics]
+Listing counts stay as they were until you recalculate them on the **Data** tab.
+:::
 
 ## From the command line
 

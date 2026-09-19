@@ -25,6 +25,42 @@ easier to undo when you can put them back.
 
 That is the whole procedure on a healthy install.
 
+## Upgrading to 6.3.0 specifically
+
+Nothing is required. One setting is worth knowing about.
+
+### Strict SQL modes
+
+MySQL and MariaDB can refuse a value that does not fit its column. Shopclass used
+to switch that off, so a name too long for its field was quietly cut short instead
+of rejected.
+
+**A new install now leaves the strict modes on.** The installer writes this into
+`config.php`:
+
+```php
+define('OSC_DB_STRICT_MODE', true);
+```
+
+**An upgraded site does not get that line**, and keeps the old, forgiving
+behaviour. That is deliberate: a plugin that has been silently truncating a value
+for years would start failing mid-request.
+
+To opt your site in, add the line to `config.php` yourself. In a container with no
+`config.php`, set the environment variable instead:
+
+```
+OSC_DB_STRICT_MODE=1
+```
+
+Remove it to go back — nothing is stored in the database either way.
+
+:::caution[Try it on a copy first]
+Core is tested under strict modes. Third-party plugins write through the same
+connection and are not. A plugin storing an over-length or out-of-range value gets
+an error where it used to get a silently altered row.
+:::
+
 ## Upgrading to 6.2.0 specifically
 
 6.2.0 rebuilds foreign keys on **twenty-four tables** so the database removes

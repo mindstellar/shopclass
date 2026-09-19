@@ -50,6 +50,9 @@ Worth knowing before you port something:
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
+| Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
+| Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
+| Let core write the document head | [Theme head](/docs/developers/theme-head/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |
