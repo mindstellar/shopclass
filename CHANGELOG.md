@@ -13,6 +13,9 @@ In development.
 
 ### Security
 
+- On installs old enough to predate 5.0.0, `t_user.s_email` accepted NULL, which weakened the
+  unique index on it: a unique index permits any number of NULLs. It is NOT NULL now, matching
+  every new install. Nothing about who must supply an address changes.
 - "Keep the photo at its full size" stored the upload byte for byte, so anything appended after
   the image survived on disk under a `.jpg` or `.png` name. The full-size copy is re-encoded now.
 
