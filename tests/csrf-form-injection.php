@@ -82,6 +82,15 @@ $mixed = '<form method="get"></form><form method="post"></form>';
 $out   = $csrf->replaceForms($mixed);
 pin('exactly one of the two is stamped', 1, substr_count($out, '<!--TOKEN-->'));
 
+// Settings screens render several identical forms; a str_replace loop stamped each of
+// them once per match, so five such forms carried five token pairs apiece.
+$same = str_repeat('<form action="/" method="post"></form>', 5);
+pin('five identical forms get five tokens, not twenty-five', 5, substr_count($csrf->replaceForms($same), '<!--TOKEN-->'));
+
+$twins = '<form method="post"></form><form method="get"></form><form method="post"></form>';
+pin('an identical pair around a GET form still stamps twice', 2, substr_count($csrf->replaceForms($twins), '<!--TOKEN-->'));
+pin('the GET form between them is untouched', 1, substr_count($csrf->replaceForms($twins), 'method="get"'));
+
 harness_section('only HTML responses are rewritten');
 // A form inside a JSON string used to get token inputs spliced in, breaking the JSON.
 require_once ABS_PATH . 'oc-includes/osclass/classes/Csrf.php';

@@ -184,24 +184,26 @@ class Csrf
      */
     public function replaceForms($form_data_html)
     {
-        preg_match_all('/<form(.*?)>/is', $form_data_html, $matches, PREG_SET_ORDER);
-        if (is_array($matches)) {
-            foreach ($matches as $m) {
+        // One pass, so a page carrying two byte-identical opening tags stamps each of them
+        // once. A str_replace loop restamped every copy on every iteration.
+        return preg_replace_callback(
+            '/<form(.*?)>/is',
+            function ($m) {
                 if (strpos($m[1], 'nocsrf') !== false) {
-                    continue;
+                    return $m[0];
                 }
                 // A GET form cannot need a token: CSRF protects state changes, and a
                 // state change is never a GET. Stamping one anyway put the token in the
                 // query string -- shared in links, kept in referrers and logs, and
                 // unique per visitor, which makes every search URL its own cache entry.
                 if (preg_match('/\bmethod\s*=\s*(["\']?)get\1/i', $m[1])) {
-                    continue;
+                    return $m[0];
                 }
-                $form_data_html = str_replace($m[0], "<form{$m[1]}>" . $this->tokenForm(), $form_data_html);
-            }
-        }
 
-        return $form_data_html;
+                return "<form{$m[1]}>" . $this->tokenForm();
+            },
+            $form_data_html
+        );
     }
 
     /**

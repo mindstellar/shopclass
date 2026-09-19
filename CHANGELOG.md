@@ -318,6 +318,7 @@ version rather than leaving you to compare numbers.
 - The categories edit drawer no longer puts an invalid ARIA role on an `<aside>`.
 - Untranslated strings under RTL no longer flip trailing punctuation to the front of the line.
 - CSRF tokens are no longer added to forms inside JSON responses.
+- A page with several identical form tags stamped each of them with a CSRF token per form, so a settings screen shipped five copies in every form.
 - The location recount no longer fails on places deleted while it runs.
 - The location recount keeps a batch queued when its write fails, and stops instead of polling forever.
 
