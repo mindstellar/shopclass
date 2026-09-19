@@ -109,11 +109,7 @@ JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
 `osc_show_item_comments()` renders the comment thread and its form inside your
-listing page. Comments are enabled by default, so a theme that skips this ships a
-feature nobody can reach; the field names belong to core's `add_comment` action,
-not to the theme. It prints nothing when comments are switched off, fires
-`item_comments_before`, `comment_form` and `item_comments_after`, and styles
-itself with `:where()` rules you override using a single class.
+listing page — see [The comment block](#the-comment-block) below.
 
 The title and description inputs pick their own locale — the visitor's when
 publishing, and when editing the one the listing's text actually came from, so an
@@ -123,3 +119,44 @@ one. `osc_item_content_locale()` reports that locale and
 
 Core loads the uploader and the location combobox from the head on both routes,
 so you no longer enqueue `osc-uploader` or `osc-ui-common` before the form.
+
+## The comment block
+
+Comments are on by default, so a theme that draws no comment block ships a
+feature nobody can reach. One call renders the whole thing — the count, the
+thread, the form:
+
+```php
+<?php osc_show_item_comments(); ?>
+```
+
+It prints nothing when comments are switched off, so it needs no guard.
+
+The field names belong to core's `add_comment` action, not to your theme. That is
+the point: you restyle it, you do not rebuild it.
+
+### Restyling it
+
+The block carries its own class names and styles itself with `:where()` rules, so
+**any rule of yours wins** without `!important` and without raising specificity.
+
+| Class | What it wraps |
+|---|---|
+| `oe-comments` | The whole block |
+| `oe-comments-head` · `oe-comments-count` | The heading and its count |
+| `oe-comments-list` | The thread |
+| `oe-comment` | One comment |
+| `oe-comment-head` · `oe-comment-author` · `oe-comment-date` | Its byline |
+| `oe-comment-title` · `oe-comment-body` | Its text |
+| `oe-comment-actions` · `oe-comment-delete` | Its actions |
+| `oe-comments-empty` | Shown when there are none yet |
+| `oe-comments-gate` | Shown when a visitor must sign in first |
+| `oe-comment-form` · `oe-field` · `oe-comment-optional` · `oe-actions` | The form |
+
+### Hooks
+
+| Hook | When |
+|---|---|
+| `item_comments_before` | Before the block |
+| `comment_form` | Inside the form, after the built-in fields |
+| `item_comments_after` | After the block |

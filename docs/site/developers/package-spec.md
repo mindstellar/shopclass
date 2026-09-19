@@ -89,6 +89,33 @@ correctly on people's sites.
 package at all. Set `Requires Shopclass` to the oldest core version you actually
 support — not the newest one you happen to run.
 
+### The compatibility badge
+
+Every package card in the admin carries one short verdict about *that* install.
+These are the four, and what earns each:
+
+The checks run in this order, and the first one that matches wins:
+
+| Badge | When | What to do |
+|---|---|---|
+| **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing — the site must upgrade first |
+| **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing — the server must upgrade first |
+| **Tested up to 6.2** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
+| **Works with 6.4** | It runs here and nothing is behind | nothing — this is the goal |
+| **No version declared** | You declared none of the three headers | declare at least `Requires Shopclass` |
+
+Two details worth knowing:
+
+- `Tested up to` is compared by **minor line only**. `6.3` and `6.3.7` are the
+  same answer, so you do not re-release for a patch.
+- Declaring `Requires Shopclass` or `Requires PHP` and **no** `Tested up to`
+  still reads as *Works with*. `Tested up to` is what lets a site see that you
+  have fallen behind, so declare it.
+
+The catalog uses the same first two checks when it picks which of your releases
+an install is offered: the newest one whose `Requires Shopclass` and
+`Requires PHP` that site satisfies. So an old release stays reachable for old sites.
+
 ## Artwork
 
 | Asset | Plugin | Theme | Spec |
