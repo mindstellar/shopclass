@@ -2063,17 +2063,33 @@ class ItemActions
         $aItem['s_zip']        = Params::getParam('zip') ?: null;
         $aItem['contactPhone'] = Params::getParam('contactPhone');
 
-        // $ajax_photos is an array of filenames of the photos uploaded by ajax to a temporary folder
-        // fake insert them into the array of the form-uploaded photos
+        // Photos uploaded by ajax arrive as names in uploads/temp/, to be folded in with the
+        // form-uploaded ones. The name is the poster's to choose, so two things are checked
+        // before it becomes a path: it is a bare filename, and it was staged under this
+        // form's own upload token. Without the second, any readable image on the server could
+        // be attached to a listing -- and would then be unlinked once the post finished.
         if (is_array($ajax_photos) && !empty($ajax_photos)) {
+            $tmpDir = osc_content_path() . 'uploads/temp/';
+            $staged = ItemTmpUpload::newInstance();
+            $token  = osc_upload_token();
+            // This runs before the CSRF check, so an anonymous POST decides how many
+            // lookups it costs. The form cannot offer more than the site's photo cap.
+            $remaining = max(1, (int)osc_max_images_per_item());
             foreach ($ajax_photos as $photo) {
-                if (file_exists(osc_content_path() . 'uploads/temp/' . $photo)) {
-                    $aItem['photos']['name'][]     = $photo;
-                    $aItem['photos']['type'][]     = 'image/*';
-                    $aItem['photos']['tmp_name'][] = osc_content_path() . 'uploads/temp/' . $photo;
-                    $aItem['photos']['error'][]    = UPLOAD_ERR_OK;
-                    $aItem['photos']['size'][]     = 0;
+                if ($remaining-- <= 0) {
+                    break;
                 }
+                if (!is_string($photo) || $photo === '' || basename($photo) !== $photo) {
+                    continue;
+                }
+                if (!$staged->belongsToToken($token, $photo) || !is_file($tmpDir . $photo)) {
+                    continue;
+                }
+                $aItem['photos']['name'][]     = $photo;
+                $aItem['photos']['type'][]     = 'image/*';
+                $aItem['photos']['tmp_name'][] = $tmpDir . $photo;
+                $aItem['photos']['error'][]    = UPLOAD_ERR_OK;
+                $aItem['photos']['size'][]     = 0;
             }
         }
 

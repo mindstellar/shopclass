@@ -33,6 +33,10 @@ In development.
 
 ### Security
 
+- A listing could attach a photo it did not upload. The names in `ajax_photos[]` became paths
+  under `uploads/temp/` with nothing checking them, and every temp file a post processes is
+  deleted afterwards — so a crafted name attached, and then removed, somebody else's photo.
+  A name must now be a plain filename staged under the posting form's own upload token.
 - On installs old enough to predate 5.0.0, `t_user.s_email` accepted NULL, which weakened the
   unique index on it: a unique index permits any number of NULLs. It is NOT NULL now, matching
   every new install. Nothing about who must supply an address changes.

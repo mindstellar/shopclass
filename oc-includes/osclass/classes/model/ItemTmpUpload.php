@@ -88,6 +88,31 @@ class ItemTmpUpload extends DAO
     }
 
     /**
+     * Whether this file was staged under this token.
+     *
+     * The authorisation the attach path needs: a name the poster did not upload is not one
+     * they may attach, and the answer is looked up rather than derived from the name.
+     *
+     * @param string $token
+     * @param string $file
+     *
+     * @return bool
+     */
+    public function belongsToToken($token, $file)
+    {
+        if ((string)$token === '' || (string)$file === '') {
+            return false;
+        }
+
+        $row = osc_db_select_one(
+            'SELECT 1 AS found FROM ' . $this->getTableName() . ' WHERE s_token = ? AND s_file = ? LIMIT 1',
+            array((string)$token, (string)$file)
+        );
+
+        return !empty($row);
+    }
+
+    /**
      * Forget every file staged under a token (e.g. on a fresh form or after a successful post).
      *
      * @param string $token
