@@ -43,6 +43,7 @@ full setup:
 |---|---|
 | `install --unattended` | Headless install from environment variables or flags — no browser. |
 | `db:upgrade [--skip-db] [--skip-reconcile]` | Run pending migrations, repairing a drifted schema first. `--skip-db` continues past false-positive query errors. |
+| `db:doctor` | Report where this database differs from what ShopClass declares. Changes nothing. Exits 1 when it finds anything. |
 | `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content` — a no-op outside a container image. |
 | `version` | Print the installed version. |
 

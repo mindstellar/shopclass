@@ -176,3 +176,12 @@ jobs:
           # passed" reads as full coverage even when only one was reachable.
           COUNT=$(wc -l < /tmp/baselines/index)
           echo "$COUNT distinct schema(s) checked, back to ${{ steps.baselines.outputs.oldest }}, all reproduced from migrations alone."
+
+      # db:doctor is what an operator runs against a real database, so it has to be
+      # silent on one built straight from struct.sql and specific about anything else.
+      - name: Schema doctor
+        env:
+          DRIFT_DB_HOST: 127.0.0.1
+          DRIFT_DB_USER: root
+          DRIFT_DB_PASS: root
+        run: php tests/schema-doctor.php

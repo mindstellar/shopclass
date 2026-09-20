@@ -42,6 +42,7 @@ class Cli
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
+        'db:doctor'           => ['cmdDbDoctor', 'Report where this database differs from struct.sql; changes nothing'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'storage:work'        => ['cmdStorageWork', 'Drain the storage-offload queue and nothing else (--max-seconds=)'],
@@ -401,6 +402,93 @@ class Cli
         if ($error === 2) {
             $this->err("Re-run with --skip-db to continue past false-positive query errors.\n");
         }
+
+        return 1;
+    }
+
+    /**
+     * Report where this database differs from struct.sql. Reads only; changes nothing.
+     *
+     * The upgrade's own repair pass is additive and cannot see a nullability difference, a
+     * column core stopped declaring, or an index whose columns are in the wrong order. Those
+     * survive every upgrade in silence, which is why they need asking for rather than fixing.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when the schema matches, 1 when it does not
+     */
+    private function cmdDbDoctor(array $args): int
+    {
+        try {
+            $findings = (new \mindstellar\database\SchemaDoctor(Connection::instance()))->diagnose();
+        } catch (\Throwable $e) {
+            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+
+        if ($findings === []) {
+            $this->out("Schema matches struct.sql — nothing to report.\n");
+
+            return 0;
+        }
+
+        $labels = [
+            \mindstellar\database\SchemaDoctor::MISSING_TABLE  => 'table is missing',
+            \mindstellar\database\SchemaDoctor::MISSING_COLUMN => 'column is missing',
+            \mindstellar\database\SchemaDoctor::EXTRA_COLUMN   => 'column is not declared by core',
+            \mindstellar\database\SchemaDoctor::NULLABILITY    => 'column nullability differs',
+            \mindstellar\database\SchemaDoctor::COLUMN_TYPE    => 'column type differs',
+            \mindstellar\database\SchemaDoctor::MISSING_INDEX  => 'index is missing',
+            \mindstellar\database\SchemaDoctor::EXTRA_INDEX    => 'index is not declared by core',
+            \mindstellar\database\SchemaDoctor::INDEX_COLUMNS  => 'index columns differ',
+        ];
+
+        $byTable = [];
+        foreach ($findings as $f) {
+            $byTable[$f['table']][] = $f;
+        }
+        ksort($byTable);
+
+        $this->out(sprintf(
+            "%d difference(s) in %d table(s), against struct.sql for %s:\n\n",
+            count($findings),
+            count($byTable),
+            OSCLASS_VERSION
+        ));
+
+        foreach ($byTable as $table => $rows) {
+            $this->out($table . "\n");
+            foreach ($rows as $f) {
+                $this->out(sprintf("  %-30s %s\n", $f['name'], $labels[$f['kind']] ?? $f['kind']));
+
+                $extra = [
+                    \mindstellar\database\SchemaDoctor::EXTRA_COLUMN,
+                    \mindstellar\database\SchemaDoctor::EXTRA_INDEX,
+                ];
+                if (in_array($f['kind'], $extra, true)) {
+                    $this->out(sprintf("      this database has %s\n", $f['found']));
+                    continue;
+                }
+                if ($f['found'] === 'absent') {
+                    $this->out(sprintf("      core declares %s; this database has none\n", $f['declared']));
+                    continue;
+                }
+                $this->out(sprintf(
+                    "      core declares %s, this database has %s\n",
+                    $f['declared'],
+                    $f['found']
+                ));
+            }
+            $this->out("\n");
+        }
+
+        $this->out("Nothing was changed, and not every line above is a fault.\n");
+        $this->out("  A missing table, column or index is repaired by db:upgrade.\n");
+        $this->out("  An undeclared index or column is usually something this site added on purpose;\n");
+        $this->out("  core leaves it alone. It is worth a look only if nobody remembers adding it.\n");
+        $this->out("  A nullability or type difference is the one core cannot repair on its own.\n");
+        $this->out("  Report those rather than altering tables by hand.\n");
 
         return 1;
     }

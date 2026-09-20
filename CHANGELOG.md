@@ -14,6 +14,8 @@ In development.
   your own site are left alone.
 - Paginated search and category pages declare `rel="prev"` and `rel="next"`.
 - `osc_resource_alt()` gives a theme alt text for a listing photo, filterable as `resource_alt`.
+- `php oc-cli.php db:doctor` reports where your database differs from what Shopclass declares.
+  It changes nothing. Upgrades repair what they can; this names what they cannot.
 
 ### Breaking
 
