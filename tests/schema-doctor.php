@@ -38,7 +38,14 @@ $pass = getenv('DRIFT_DB_PASS') ?: 'root';
 $port = (int) (getenv('DRIFT_DB_PORT') ?: 3306);
 $db   = 'shopclass_doctor_' . getmypid();
 
-$root = @new mysqli($host, $user, $pass, '', $port);
+// mysqli throws rather than setting connect_errno under the default error mode, so the
+// "no database here" case has to be caught, not tested for.
+try {
+    $root = @new mysqli($host, $user, $pass, '', $port);
+} catch (Throwable $e) {
+    fwrite(STDERR, 'SKIP: no database (' . $e->getMessage() . ")\n");
+    exit(0);
+}
 if ($root->connect_errno) {
     fwrite(STDERR, "SKIP: no database ({$root->connect_error})\n");
     exit(0);

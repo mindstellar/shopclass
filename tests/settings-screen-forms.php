@@ -298,6 +298,18 @@ class AdminSecBaseModel
 
         include $copy;
     }
+
+    /** Mirrors the real guard: flashes, redirects, and says that it refused. */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+        osc_add_flash_warning_message('This action cannot be done because it is a demo site', 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
 }
 
 foreach (array(

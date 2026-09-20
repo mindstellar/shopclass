@@ -178,6 +178,18 @@ class AdminSecBaseModel
     {
         include ABS_PATH . 'oc-admin/themes/modern/' . $view;
     }
+
+    /** Mirrors the real guard: flashes, redirects, and says that it refused. */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+        osc_add_flash_warning_message('This action cannot be done because it is a demo site', 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php';
