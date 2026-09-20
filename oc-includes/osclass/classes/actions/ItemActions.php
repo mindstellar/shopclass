@@ -424,48 +424,13 @@ class ItemActions
     private function checkAllowedExt($aResources)
     {
         $success = true;
-        require LIB_PATH . 'osclass/mimes.php';
         if (!empty($aResources)) {
-            // get allowedExt
-            $aMimesAllowed = array();
-            $aExt          = explode(',', osc_allowed_extension());
-            foreach ($aExt as $ext) {
-                if (isset($mimes[$ext])) {
-                    /** @var array $mimes */
-                    $mime = $mimes[$ext];
-                    if (is_array($mime)) {
-                        foreach ($mime as $aux) {
-                            if (!in_array($aux, $aMimesAllowed, false)) {
-                                $aMimesAllowed[] = $aux;
-                            }
-                        }
-                    } elseif (!in_array($mime, $aMimesAllowed, false)) {
-                        $aMimesAllowed[] = $mime;
-                    }
-                }
-            }
             foreach ($aResources['error'] as $key => $error) {
-                $bool_img = false;
-                if ($error == UPLOAD_ERR_OK) {
-                    // Read the type from the file itself; browsers send a wrong or generic type for some real images.
-                    if (function_exists('getimagesize')) {
-                        // check if it is a file
-                        $filePath = $aResources['tmp_name'][$key];
-                        $fileMime = '';
-                        if (file_exists($filePath)) {
-                            $imageInfo = @getimagesize($filePath);
-                            if (isset($imageInfo['mime'])) {
-                                $fileMime = $imageInfo['mime'];
-                                // check if it's in the allowed mimes
-                                if (in_array($fileMime, $aMimesAllowed, false)) {
-                                    $bool_img = true;
-                                }
-                            }
-                        }
-                    }
-                    if (!$bool_img && $success) {
-                        $success = false;
-                    }
+                if ($error !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+                if (!\mindstellar\storage\UploadMimes::isAllowed((string)$aResources['tmp_name'][$key])) {
+                    $success = false;
                 }
             }
 

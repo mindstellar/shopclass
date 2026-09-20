@@ -116,6 +116,35 @@ check('a real PNG sent as application/octet-stream passes', $check->invoke($acti
 check('a script sent as image/png is refused', !$check->invoke($actions, $files($text, 'image/png')));
 check('a script sent as application/octet-stream is refused', !$check->invoke($actions, $files($text, 'application/octet-stream')));
 
+harness_section('UploadMimes: one allowed list, one way of reading a file');
+
+use mindstellar\storage\UploadMimes;
+
+$allowed = UploadMimes::allowed();
+check('the allowed list is derived from the configured extensions', in_array('image/png', $allowed, true));
+check('...and carries every mime an extension maps to', in_array('image/jpeg', $allowed, true));
+check('a type no configured extension maps to is not on it', !in_array('application/x-php', $allowed, true));
+
+pin('a real PNG is read as image/png from its bytes', 'image/png', UploadMimes::detect($png));
+pin('a file that is not there has no type', '', UploadMimes::detect('/no/such/file'));
+pin('an empty path has no type', '', UploadMimes::detect(''));
+
+check('a real PNG is allowed', UploadMimes::isAllowed($png));
+
+// The browser-supplied type is the one thing about an upload nobody should trust, and
+// detect() never reads it -- a PHP script keeps its own type whatever it is named.
+$script = sys_get_temp_dir() . '/upload-mimes-' . getmypid() . '.png';
+file_put_contents($script, "<?php echo 1;");
+pin('a script named .png is not read as an image', false, UploadMimes::isAllowed($script));
+check('...and its detected type is not an image one', stripos(UploadMimes::detect($script), 'image/') === false);
+@unlink($script);
+
+// A file whose type nothing can establish is refused rather than trusted.
+$empty = sys_get_temp_dir() . '/upload-mimes-empty-' . getmypid() . '.png';
+file_put_contents($empty, '');
+pin('an empty file is not an accepted upload', false, UploadMimes::isAllowed($empty));
+@unlink($empty);
+
 array_map('unlink', glob($tmpDir . '/*'));
 @rmdir($tmpDir);
 

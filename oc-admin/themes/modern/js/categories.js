@@ -326,8 +326,15 @@
         if (e.key !== 'Tab') {
             return;
         }
-        var focusables = drawer.querySelectorAll(
-            'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        // A hidden control still matches the selector, so without this the trap can send
+        // focus to something nobody can see. location.js filters the same way.
+        var focusables = Array.prototype.filter.call(
+            drawer.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            ),
+            function (node) {
+                return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
+            }
         );
         if (!focusables.length) {
             return;

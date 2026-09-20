@@ -124,52 +124,7 @@ class AjaxUploader
      */
     public function checkAllowedExt($file)
     {
-        require LIB_PATH . 'osclass/mimes.php';
-        if ($file != '') {
-            $aMimesAllowed = array();
-            $aExt          = explode(',', osc_allowed_extension());
-            foreach ($aExt as $ext) {
-                if (isset($mimes[$ext])) {
-                    $mime = $mimes[$ext];
-                    if (is_array($mime)) {
-                        foreach ($mime as $aux) {
-                            if (!in_array($aux, $aMimesAllowed, false)) {
-                                $aMimesAllowed[] = $aux;
-                            }
-                        }
-                    } elseif (!in_array($mime, $aMimesAllowed, false)) {
-                        $aMimesAllowed[] = $mime;
-                    }
-                }
-            }
-
-            if (function_exists('finfo_file') && function_exists('finfo_open')) {
-                $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-                $fileMime = finfo_file($finfo, $file);
-            } elseif (function_exists('mime_content_type')) {
-                $fileMime = mime_content_type($file);
-            } else {
-                // *WARNING* There's no way check the mime type of the file,
-                // you should not blindly trust on your users' input!
-                $ftmp     = Params::getFiles('qqfile');
-                $fileMime = @$ftmp['type'];
-            }
-
-            if (function_exists('getimagesize') && (stripos($fileMime, 'image/') !== false)) {
-                $info = getimagesize($file);
-                if (isset($info['mime'])) {
-                    $fileMime = $info['mime'];
-                } else {
-                    $fileMime = '';
-                }
-            }
-
-            if (in_array($fileMime, $aMimesAllowed, false)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $file != '' && \mindstellar\storage\UploadMimes::isAllowed((string)$file);
     }
 }
 
