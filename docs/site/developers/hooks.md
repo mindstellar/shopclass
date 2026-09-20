@@ -223,18 +223,18 @@ Core fires 510 names. Generated from the source; do not edit by hand.
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
-| `activate_comment` | action | `$_id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `activate_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `add_comment` | action | `$commentID` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `before_add_comment` | action | `$aComment` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `comment_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `comment_form` | action | — | `oc-includes/osclass/gui/item-comments-content.php` |
 | `comments_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/CommentsDataTable.php` |
 | `datatable_comment_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/comments/index.php` |
-| `deactivate_comment` | action | `$_id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `delete_comment` | action | `$_id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `disable_comment` | action | `$_id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `deactivate_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `delete_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `disable_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `edit_comment` | action | `Params::getParam('id')` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `enable_comment` | action | `$_id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `enable_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 
 ### Email (93)
 
