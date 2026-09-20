@@ -49,10 +49,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/import.php');
                 break;
             case ('import_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=import');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=import');
                 // calling
                 osc_csrf_check();
                 $sql = Params::getFiles('sql');
@@ -77,10 +74,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/category.php');
                 break;
             case ('category_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=category');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=category');
                 osc_update_cat_stats();
                 osc_add_flash_ok_message(_m('Recount category stats has been successful'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=category');
@@ -152,10 +146,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo($back);
                 break;
             case ('upgrade'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true));
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true));
                 $this->doView('tools/upgrade.php');
                 break;
             case 'version':
@@ -178,10 +169,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/backup.php');
                 break;
             case ('backup-sql'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 osc_csrf_check();
                 //databasse dump...
                 if (Params::getParam('bck_dir') != '') {
@@ -219,10 +207,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-sql_file'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 //databasse dump...
 
                 $filename = 'Osclass_mysqlbackup.' . date('YmdHis') . '.sql';
@@ -274,10 +259,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-zip_file'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 $filename = 'Osclass_backup.' . date('YmdHis') . '.zip';
                 $path     = sys_get_temp_dir() . '/';
 
@@ -302,10 +284,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-zip'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 //zip of the code just to back it up
                 osc_csrf_check();
                 if (Params::getParam('bck_dir')) {
@@ -385,10 +364,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/cleanup.php');
                 break;
             case 'cleanup_post':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 osc_csrf_check();
                 $limit = Params::getParamInt('batch_limit');
                 osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'osclass', 'INTEGER');
@@ -422,10 +398,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 break;
             case 'cleanup_run':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 osc_csrf_check();
                 $total = osc_run_cleanup();
                 if ($total > 0) {
@@ -492,10 +465,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case ('logs_clear'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 osc_csrf_check();
                 $removed = Log::newInstance()->clearAll();
                 osc_add_flash_ok_message(

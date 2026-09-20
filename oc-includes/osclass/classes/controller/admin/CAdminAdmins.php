@@ -66,9 +66,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->drawForm(null);
                 break;
             case ('add_post'):
-                if ($this->refusedByDemo()) {
-                    break;
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
                 osc_csrf_check();
                 $this->saveAdmin(null);
                 break;
@@ -80,9 +78,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->drawForm($adminId);
                 break;
             case ('edit_post'):
-                if ($this->refusedByDemo()) {
-                    break;
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
                 osc_csrf_check();
                 $adminId = $this->adminRowId(false);
                 if ($adminId === null) {
@@ -91,10 +87,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->saveAdmin($adminId);
                 break;
             case ('delete'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
                 osc_csrf_check();
                 // deleting and admin
                 $isDeleted = false;
@@ -217,24 +210,6 @@ class CAdminAdmins extends AdminSecBaseModel
     }
 
     //hopefully generic...
-
-    /**
-     * Whether this install refuses the write outright. A demo site shows every screen and
-     * saves none of them.
-     *
-     * @return bool
-     */
-    private function refusedByDemo()
-    {
-        if (!defined('DEMO')) {
-            return false;
-        }
-
-        osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-        $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
-
-        return true;
-    }
 
     /**
      * The administrator account this request is about, or null once the admin has been

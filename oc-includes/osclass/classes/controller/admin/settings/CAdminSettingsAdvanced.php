@@ -48,10 +48,7 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
                 break;
             case ('advanced_post'):
                 // updating advanced settings
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=advanced');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=advanced');
                 osc_csrf_check();
 
                 $result = CoreSettings::attempt(AdvancedSettingsForm::register());

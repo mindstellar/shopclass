@@ -47,10 +47,7 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                 $this->drawForm();
                 break;
             case ('mailserver_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=mailserver');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=mailserver');
 
                 osc_csrf_check();
 

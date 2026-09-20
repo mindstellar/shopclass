@@ -156,10 +156,7 @@ class CAdminLogin extends AdminBaseModel
                 $this->doView();
                 break;
             case ('recover_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url());
-                }
+                $this->refuseOnDemo(osc_admin_base_url());
                 osc_csrf_check();
 
                 // post execution to recover the password

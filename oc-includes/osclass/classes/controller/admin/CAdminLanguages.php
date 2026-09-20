@@ -53,10 +53,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 $this->doView('languages/add.php');
                 break;
             case ('add_post'):           // adding a new language
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages');
                 osc_csrf_check();
                 $filePackage = Params::getFiles('package');
 
@@ -105,10 +102,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_csrf_check();
                 $languageToImport = Params::getParam('language');
                 if ($languageToImport != '') {
-                    if (defined('DEMO')) {
-                        osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                    }
+                    $this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages');
 
                     $url  = osc_get_i18n_repository_url();
                     $json = json_decode((string) osc_file_get_contents($url), true);

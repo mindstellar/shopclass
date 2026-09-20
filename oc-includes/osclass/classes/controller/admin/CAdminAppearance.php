@@ -38,10 +38,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->doView('appearance/add.php');
                 break;
             case ('add_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance');
                 osc_csrf_check();
                 $filePackage = Params::getFiles('package');
                 if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
@@ -80,10 +77,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
             case ('delete'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance');
                 osc_csrf_check();
                 $theme = Params::getParam('webtheme');
                 if ($theme != '') {

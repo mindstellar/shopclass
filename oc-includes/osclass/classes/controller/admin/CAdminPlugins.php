@@ -52,10 +52,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->doView('plugins/add.php');
                 break;
             case 'add_post':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
                 osc_csrf_check();
 
                 $package = Params::getFiles('package');
@@ -94,10 +91,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'install':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
                 osc_csrf_check();
                 $pn = Params::getParam('plugin');
 
@@ -140,10 +134,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'uninstall':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
                 osc_csrf_check();
 
                 if (Plugins::uninstall(Params::getParam('plugin'))) {
@@ -155,10 +146,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'enable':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
                 osc_csrf_check();
 
                 if (Plugins::activate(Params::getParam('plugin'))) {
@@ -170,10 +158,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'disable':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
-                }
+                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
                 osc_csrf_check();
 
                 if (Plugins::deactivate(Params::getParam('plugin'))) {

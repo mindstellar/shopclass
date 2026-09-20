@@ -2248,20 +2248,12 @@ msgstr ""
 msgid "There were some problems editing the country"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-#: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsAdvanced.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMailserver.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
 msgid "This action can't be done because it's a demo site"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
