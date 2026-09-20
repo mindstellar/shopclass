@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\BanRuleForm;
 use mindstellar\admin\ListPaging;
 
@@ -178,7 +179,6 @@ class CAdminUsers extends AdminSecBaseModel
             case ('resend_activation'):
                 //activate
                 osc_csrf_check();
-                $iUpdated = 0;
                 $userId   = Params::getParam('id');
                 if (!is_array($userId)) {
                     osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
@@ -186,157 +186,94 @@ class CAdminUsers extends AdminSecBaseModel
                 }
 
                 $userActions = new UserActions(true);
-                foreach ($userId as $id) {
-                    $iUpdated += $userActions->resend_activation($id);
-                }
-
-                if ($iUpdated == 0) {
+                $sent        = BulkAction::apply(
+                    static fn ($id) => (bool)$userActions->resend_activation($id),
+                    'Activation email sent to one user',
+                    'Activation email sent to %s users',
+                    ''
+                );
+                if ($sent === 0) {
                     osc_add_flash_error_message(_m('No users have been selected'), 'admin');
-                } else {
-                    osc_add_flash_ok_message(sprintf(_mn(
-                        'Activation email sent to one user',
-                        'Activation email sent to %s users',
-                        $iUpdated
-                    ), $iUpdated), 'admin');
                 }
 
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 break;
             case ('activate'):       //activate
                 osc_csrf_check();
-                $iUpdated = 0;
                 $userId   = Params::getParam('id');
-                if (!is_array($userId)) {
-                    osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users');
-                }
-
                 $userActions = new UserActions(true);
-                foreach ($userId as $id) {
-                    $iUpdated += $userActions->activate($id);
-                }
-
-                if ($iUpdated == 0) {
-                    $msg = _m('No users have been activated');
-                } else {
-                    $msg = sprintf(
-                        _mn('One user has been activated', '%s users have been activated', $iUpdated),
-                        $iUpdated
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                BulkAction::apply(
+                    static fn ($id) => (bool)$userActions->activate($id),
+                    'One user has been activated',
+                    '%s users have been activated',
+                    _m('No users have been activated')
+                );
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case ('deactivate'):     //deactivate
                 osc_csrf_check();
-                $iUpdated = 0;
                 $userId   = Params::getParam('id');
 
-                if (!is_array($userId)) {
-                    osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users');
-                }
-
                 $userActions = new UserActions(true);
-                foreach ($userId as $id) {
-                    $iUpdated += $userActions->deactivate($id);
-                }
-
-                if ($iUpdated == 0) {
-                    $msg = _m('No users have been deactivated');
-                } else {
-                    $msg = sprintf(
-                        _mn('One user has been deactivated', '%s users have been deactivated', $iUpdated),
-                        $iUpdated
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                BulkAction::apply(
+                    static fn ($id) => (bool)$userActions->deactivate($id),
+                    'One user has been deactivated',
+                    '%s users have been deactivated',
+                    _m('No users have been deactivated')
+                );
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case ('enable'):
                 osc_csrf_check();
-                $iUpdated = 0;
                 $userId   = Params::getParam('id');
-                if (!is_array($userId)) {
-                    osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users');
-                }
-
                 $userActions = new UserActions(true);
-                foreach ($userId as $id) {
-                    $iUpdated += $userActions->enable($id);
-                }
-
-                if ($iUpdated == 0) {
-                    $msg = _m('No users have been enabled');
-                } else {
-                    $msg = sprintf(
-                        _mn('One user has been unblocked', '%s users have been unblocked', $iUpdated),
-                        $iUpdated
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                BulkAction::apply(
+                    static fn ($id) => (bool)$userActions->enable($id),
+                    'One user has been unblocked',
+                    '%s users have been unblocked',
+                    _m('No users have been enabled')
+                );
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case ('disable'):
                 osc_csrf_check();
-                $iUpdated = 0;
                 $userId   = Params::getParam('id');
-                if (!is_array($userId)) {
-                    osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users');
-                }
-
                 $userActions = new UserActions(true);
-                foreach ($userId as $id) {
-                    $iUpdated += $userActions->disable($id);
-                }
-
-                if ($iUpdated == 0) {
-                    $msg = _m('No users have been disabled');
-                } else {
-                    $msg =
-                        sprintf(_mn('One user has been blocked', '%s users have been blocked', $iUpdated), $iUpdated);
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                BulkAction::apply(
+                    static fn ($id) => (bool)$userActions->disable($id),
+                    'One user has been blocked',
+                    '%s users have been blocked',
+                    _m('No users have been disabled')
+                );
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case ('delete'):         //delete
                 osc_csrf_check();
-                $iDeleted = 0;
                 $userId   = Params::getParam('id');
 
-                if (!is_array($userId)) {
-                    osc_add_flash_error_message(_m("User id isn't in the correct format"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users');
-                }
+                $manager = $this->userManager;
+                BulkAction::apply(
+                    static function ($id) use ($manager) {
+                        $user = $manager->findByPrimaryKey($id);
+                        Log::newInstance()->insertLog(
+                            'user',
+                            'delete',
+                            $id,
+                            $user['s_email'] ?? '',
+                            'admin',
+                            osc_logged_admin_id()
+                        );
 
-                foreach ($userId as $id) {
-                    $user = $this->userManager->findByPrimaryKey($id);
-                    Log::newInstance()
-                        ->insertLog('user', 'delete', $id, $user['s_email'], 'admin', osc_logged_admin_id());
-                    if ($this->userManager->deleteUser($id)) {
-                        $iDeleted++;
-                    }
-                }
-
-                if ($iDeleted == 0) {
-                    $msg = _m('No users have been deleted');
-                } else {
-                    $msg =
-                        sprintf(_mn('One user has been deleted', '%s users have been deleted', $iDeleted), $iDeleted);
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                        return (bool)$manager->deleteUser($id);
+                    },
+                    'One user has been deleted',
+                    '%s users have been deleted',
+                    _m('No users have been deleted')
+                );
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 break;
             case ('delete_alerts'):
                 osc_csrf_check();
-                $iDeleted = 0;
                 $alertId  = Params::getParam('alert_id');
                 if (!is_array($alertId)) {
                     osc_add_flash_error_message(_m("Alert id isn't in the correct format"), 'admin');
@@ -349,19 +286,18 @@ class CAdminUsers extends AdminSecBaseModel
                 }
 
                 $mAlerts = new Alerts();
-                foreach ($alertId as $id) {
-                    Log::newInstance()->insertLog('user', 'delete_alerts', $id, $id, 'admin', osc_logged_admin_id());
-                    $iDeleted += $mAlerts->delete(array('pk_i_id' => $id));
-                }
+                BulkAction::apply(
+                    static function ($id) use ($mAlerts) {
+                        Log::newInstance()
+                            ->insertLog('user', 'delete_alerts', $id, $id, 'admin', osc_logged_admin_id());
 
-                if ($iDeleted == 0) {
-                    $msg = _m('No alerts have been deleted');
-                } else {
-                    $msg =
-                        sprintf(_mn('One alert has been deleted', '%s alerts have been deleted', $iDeleted), $iDeleted);
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                        return (bool)$mAlerts->delete(array('pk_i_id' => $id));
+                    },
+                    'One alert has been deleted',
+                    '%s alerts have been deleted',
+                    _m('No alerts have been deleted'),
+                    'alert_id'
+                );
                 if (Params::getParam('user_id') == '') {
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
                 } else {
@@ -371,7 +307,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('status_alerts'):
                 $status   = Params::getParam('status');
-                $iUpdated = 0;
                 $alertId  = Params::getParam('alert_id');
 
                 if (!is_array($alertId)) {
@@ -384,35 +319,15 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-                $mAlerts = new Alerts();
-                foreach ($alertId as $id) {
-                    if ($status == 1) {
-                        $iUpdated += $mAlerts->activate($id);
-                    } else {
-                        $iUpdated += $mAlerts->deactivate($id);
-                    }
-                }
-
-                if ($status == 1) {
-                    if ($iUpdated == 0) {
-                        $msg = _m('No alerts have been activated');
-                    } else {
-                        $msg = sprintf(
-                            _mn('One alert has been activated', '%s alerts have been activated', $iUpdated),
-                            $iUpdated
-                        );
-                    }
-                } elseif ($iUpdated == 0) {
-                    $msg = _m('No alerts have been deactivated');
-                } else {
-                    $msg =
-                        sprintf(
-                            _mn('One alert has been deactivated', '%s alerts have been deactivated', $iUpdated),
-                            $iUpdated
-                        );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                $mAlerts   = new Alerts();
+                $activating = $status == 1;
+                BulkAction::apply(
+                    static fn ($id) => (bool)($activating ? $mAlerts->activate($id) : $mAlerts->deactivate($id)),
+                    $activating ? 'One alert has been activated' : 'One alert has been deactivated',
+                    $activating ? '%s alerts have been activated' : '%s alerts have been deactivated',
+                    $activating ? _m('No alerts have been activated') : _m('No alerts have been deactivated'),
+                    'alert_id'
+                );
                 if (Params::getParam('user_id') == '') {
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=alerts');
                 } else {
@@ -425,7 +340,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('settings_post'):  // updating users
                 osc_csrf_check();
-                $iUpdated                = 0;
                 $enabledUserValidation   = Params::getParam('enabled_user_validation');
                 $enabledUserValidation   = (($enabledUserValidation != '') ? true : false);
                 $enabledUserRegistration = Params::getParam('enabled_user_registration');
@@ -440,6 +354,7 @@ class CAdminUsers extends AdminSecBaseModel
                 }
                 $usernameBlacklist = implode(',', $usernameBlacklistTmp);
 
+                $iUpdated = 0;
                 $iUpdated += osc_set_preference('enabled_user_validation', $enabledUserValidation);
                 $iUpdated += osc_set_preference('enabled_user_registration', $enabledUserRegistration);
                 $iUpdated += osc_set_preference('enabled_users', $enabledUsers);
@@ -593,7 +508,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('delete_ban_rule'):         //delete ban rules
                 osc_csrf_check();
-                $iDeleted = 0;
                 $ruleId   = Params::getParam('id');
 
                 if (!is_array($ruleId)) {
@@ -602,22 +516,12 @@ class CAdminUsers extends AdminSecBaseModel
                 }
 
                 $ruleMgr = BanRule::newInstance();
-                foreach ($ruleId as $id) {
-                    if ($ruleMgr->deleteByPrimaryKey($id)) {
-                        $iDeleted++;
-                    }
-                }
-
-                if ($iDeleted == 0) {
-                    $msg = _m('No rules have been deleted');
-                } else {
-                    $msg = sprintf(
-                        _mn('One ban rule has been deleted', '%s ban rules have been deleted', $iDeleted),
-                        $iDeleted
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                BulkAction::apply(
+                    static fn ($id) => (bool)$ruleMgr->deleteByPrimaryKey($id),
+                    'One ban rule has been deleted',
+                    '%s ban rules have been deleted',
+                    _m('No rules have been deleted')
+                );
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
                 break;
             case ('user_login'):

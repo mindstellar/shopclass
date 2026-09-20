@@ -40,15 +40,21 @@ final class BulkAction
      * than a TypeError, and each is cast to a positive integer. A screen keyed by something
      * other than a numeric primary key needs its own helper, not a looser one here.
      *
-     * @param callable $action fn(int $id): bool
-     * @param string   $one    singular message, taking the count
-     * @param string   $many   plural message, taking the count
-     * @param string   $param
+     * @param callable    $action fn(int $id): bool
+     * @param string      $one    singular message, taking the count
+     * @param string      $many   plural message, taking the count
+     * @param string|null $none   message when nothing changed; the plural with 0 if omitted
+     * @param string      $param
      *
      * @return int rows changed
      */
-    public static function apply(callable $action, string $one, string $many, string $param = 'id'): int
-    {
+    public static function apply(
+        callable $action,
+        string $one,
+        string $many,
+        ?string $none = null,
+        string $param = 'id'
+    ): int {
         $ids = Params::getParamArray($param);
         if ($ids === array()) {
             return 0;
@@ -71,7 +77,10 @@ final class BulkAction
             }
         }
 
-        osc_add_flash_ok_message(sprintf(_mn($one, $many, $changed), $changed), 'admin');
+        osc_add_flash_ok_message(
+            ($changed === 0 && $none !== null) ? $none : sprintf(_mn($one, $many, $changed), $changed),
+            'admin'
+        );
 
         return $changed;
     }

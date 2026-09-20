@@ -13,6 +13,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\KeywordBlockSettingsForm;
 use mindstellar\admin\ListPaging;
@@ -140,24 +141,13 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 }
 
-                $model    = KeywordBlock::newInstance();
-                $iDeleted = 0;
-                foreach ($ids as $id) {
-                    if ($model->deleteByPrimaryKey((int) $id)) {
-                        $iDeleted++;
-                    }
-                }
-
-                if ($iDeleted == 0) {
-                    $msg = _m('No keywords have been deleted');
-                } else {
-                    $msg = sprintf(
-                        _mn('One keyword has been deleted', '%s keywords have been deleted', $iDeleted),
-                        $iDeleted
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                $model = KeywordBlock::newInstance();
+                BulkAction::apply(
+                    static fn ($id) => (bool)$model->deleteByPrimaryKey($id),
+                    'One keyword has been deleted',
+                    '%s keywords have been deleted',
+                    _m('No keywords have been deleted')
+                );
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 break;
             case ('keyword_block_import_post'):
