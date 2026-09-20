@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminPages
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminPages extends AdminSecBaseModel
 {
     //specific for this class
@@ -275,18 +277,7 @@ class CAdminPages extends AdminSecBaseModel
 
                 require_once osc_lib_path() . 'osclass/classes/datatables/PagesDataTable.php';
 
-                // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } else {
-                    // set a default value if it's set in the cookie
-                    $listing_iDisplayLength = (int)Cookie::newInstance()->get_value('listing_iDisplayLength');
-                    if ($listing_iDisplayLength == 0) {
-                        $listing_iDisplayLength = 10;
-                    }
-                    Params::setParam('iDisplayLength', $listing_iDisplayLength);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 // Table header order by related
@@ -297,11 +288,7 @@ class CAdminPages extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 

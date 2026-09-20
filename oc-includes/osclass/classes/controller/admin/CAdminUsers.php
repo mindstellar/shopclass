@@ -17,6 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\BanRuleForm;
+use mindstellar\admin\ListPaging;
 
 /**
  * Class CAdminUsers
@@ -454,14 +455,7 @@ class CAdminUsers extends AdminSecBaseModel
                 require_once osc_lib_path() . 'osclass/classes/datatables/AlertsDataTable.php';
 
                 // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 10);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 // Table header order by related
@@ -472,11 +466,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 
@@ -514,14 +504,7 @@ class CAdminUsers extends AdminSecBaseModel
                 require_once osc_lib_path() . 'osclass/classes/datatables/BanRulesDataTable.php';
 
                 // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 10);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 // Table header order by related
@@ -532,11 +515,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 
@@ -663,14 +642,7 @@ class CAdminUsers extends AdminSecBaseModel
                 require_once osc_lib_path() . 'osclass/classes/datatables/UsersDataTable.php';
 
                 // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 10);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 // Table header order by related
@@ -681,11 +653,7 @@ class CAdminUsers extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 

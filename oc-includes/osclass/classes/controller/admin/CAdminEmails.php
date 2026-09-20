@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminEmails
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminEmails extends AdminSecBaseModel
 {
     //specific for this class
@@ -107,22 +109,15 @@ class CAdminEmails extends AdminSecBaseModel
                 break;
             default:
                 //-
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 10);
-                }
-
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                Params::setParam('iDisplayLength', ListPaging::length());
+                $p_iPage = ListPaging::page();
 
                 $prefLocale = osc_current_admin_locale();
                 $emails     = $this->emailManager->listAll(1);
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($emails);
 
                 $displayRecords = $limit;

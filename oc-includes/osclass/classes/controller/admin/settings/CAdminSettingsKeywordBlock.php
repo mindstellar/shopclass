@@ -15,6 +15,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\KeywordBlockSettingsForm;
+use mindstellar\admin\ListPaging;
 
 /**
  * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
@@ -49,14 +50,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
         switch ($this->action) {
             case ('keyword_block'):
                 // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 10);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 if (Params::getParam('sort') == '') {
@@ -66,11 +60,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 

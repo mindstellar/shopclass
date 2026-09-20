@@ -20,6 +20,8 @@
  * @subpackage classes
  * @author     Shopclass
  */
+use mindstellar\admin\ListPaging;
+
 class PagesDataTable extends DataTable
 {
     private $pages;
@@ -37,10 +39,8 @@ class PagesDataTable extends DataTable
 
         $this->addTableHeader();
 
-        $start = ((int)$params['iPage'] - 1) * $params['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$params['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($params['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start(ListPaging::page(), $this->limit);
 
         $pages = Page::newInstance()->listAll(0, null, null, $this->start, $this->limit);
         $this->processData($pages);

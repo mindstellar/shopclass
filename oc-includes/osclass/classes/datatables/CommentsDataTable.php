@@ -19,6 +19,8 @@
  * @subpackage classes
  * @author     Shopclass
  */
+use mindstellar\admin\ListPaging;
+
 class CommentsDataTable extends DataTable
 {
     private $resourceID;
@@ -126,10 +128,8 @@ class CommentsDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $start = (Params::getParamInt('iPage') - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start(ListPaging::page(), $this->limit);
     }
 
     /**

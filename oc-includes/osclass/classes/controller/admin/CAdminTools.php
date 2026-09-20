@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminTools
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminTools extends AdminSecBaseModel
 {
     /**
@@ -435,14 +437,7 @@ class CAdminTools extends AdminSecBaseModel
                 break;
             case ('logs'):
                 // set default iDisplayLength (same cookie behaviour as the listings)
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 20);
-                }
+                ListPaging::rememberedLength(20);
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 if (Params::getParam('sort') == '') {
@@ -452,11 +447,7 @@ class CAdminTools extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $logsDataTable = new LogsDataTable();
                 $logsDataTable->table(Params::getParamsAsArray());

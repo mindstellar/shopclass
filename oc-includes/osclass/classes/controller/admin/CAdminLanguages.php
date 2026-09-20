@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminLanguages
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminLanguages extends AdminSecBaseModel
 {
     //specific for this class
@@ -505,23 +507,16 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 // -----
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 10);
-                }
-                // ?
+                Params::setParam('iDisplayLength', ListPaging::length());
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                $p_iPage = ListPaging::page();
 
                 $aLanguages = OSCLocale::newInstance()->listAll();
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aLanguages);
 
                 $displayRecords = $limit;

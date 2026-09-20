@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\security\PluginAjaxFile;
 
 /**
@@ -318,8 +319,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $active_plugins = osc_get_plugins();
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aPlugin);
 
                 // --------------------------------------------------------

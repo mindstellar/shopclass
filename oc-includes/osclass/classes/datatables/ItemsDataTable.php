@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\utility\Sanitize;
 
 /**
@@ -209,10 +210,8 @@ class ItemsDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start($this->iPage, $this->limit);
         $this->mSearch->limit($this->start, $this->limit);
 
         $direction      = isset($_get['direction']) && !is_array($_get['direction'])

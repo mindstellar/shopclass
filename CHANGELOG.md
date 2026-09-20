@@ -22,6 +22,12 @@ In development.
 - Removed the admin CSS kept one release for compatibility with the old Locations screen:
   `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
 
+### Fixed
+
+- `?iDisplayLength=0` or `?iDisplayLength=abc` answered with an error page on 13 of the 14 admin
+  list screens, and `?iPage=-3` left Ban rules and Alerts redirecting to themselves. Every list
+  screen reads its page and page size the same way now.
+
 ### Security
 
 - On installs old enough to predate 5.0.0, `t_user.s_email` accepted NULL, which weakened the

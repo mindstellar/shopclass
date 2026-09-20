@@ -17,6 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\AdminAccountForm;
+use mindstellar\admin\ListPaging;
 
 /**
  * Class CAdminAdmins
@@ -127,21 +128,14 @@ class CAdminAdmins extends AdminSecBaseModel
                     osc_run_hook('admin_bulk_' . Params::getParam('action'), Params::getParam('id'));
                 }
 
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 10);
-                }
-
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                Params::setParam('iDisplayLength', ListPaging::length());
+                $p_iPage = ListPaging::page();
 
                 $admins = $this->adminManager->listAll();
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($admins);
 
                 $displayRecords = $limit;
