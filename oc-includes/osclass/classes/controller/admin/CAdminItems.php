@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminItems
  */
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
 
 class CAdminItems extends AdminSecBaseModel
@@ -63,306 +64,109 @@ class CAdminItems extends AdminSecBaseModel
                 $mItems = new ItemActions(true);
                 switch (Params::getParam('bulk_actions')) {
                     case 'enable_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->enable($_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been enabled',
-                                '%d listings have been enabled',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->enable($id),
+                            '%d listing has been enabled',
+                            '%d listings have been enabled'
+                        );
                         break;
                     case 'disable_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->disable((int)$_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been disabled',
-                                '%d listings have been disabled',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->disable((int)$id),
+                            '%d listing has been disabled',
+                            '%d listings have been disabled'
+                        );
                         break;
                     case 'activate_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->activate($_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been activated',
-                                '%d listings have been activated',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->activate($id) === true,
+                            '%d listing has been activated',
+                            '%d listings have been activated'
+                        );
                         break;
                     case 'deactivate_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->deactivate($_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been deactivated',
-                                '%d listings have been deactivated',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->deactivate($id),
+                            '%d listing has been deactivated',
+                            '%d listings have been deactivated'
+                        );
                         break;
                     case 'premium_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->premium($_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been marked as premium',
-                                '%d listings have been marked as premium',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->premium($id, true),
+                            '%d listing has been marked as premium',
+                            '%d listings have been marked as premium'
+                        );
                         break;
                     case 'depremium_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->premium($_id, false)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d change has been made',
-                                '%d changes have been made',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->premium($id, false),
+                            '%d listing is no longer premium',
+                            '%d listings are no longer premium'
+                        );
                         break;
                     case 'spam_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->spam($_id)) {
-                                    $numSuccess++;
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been marked as spam',
-                                '%d listings have been marked as spam',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->spam($id, true),
+                            '%d listing has been marked as spam',
+                            '%d listings have been marked as spam'
+                        );
                         break;
                     case 'despam_all':
-                        $id = Params::getParam('id');
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $_id) {
-                                if ($mItems->spam($_id, false)) {
-                                    $numSuccess++;
-                                }
-                            }
-
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d change has been made',
-                                '%d changes have been made',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        BulkAction::apply(
+                            static fn ($id) => $mItems->spam($id, false),
+                            '%d listing is no longer marked as spam',
+                            '%d listings are no longer marked as spam'
+                        );
                         break;
                     case 'delete_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
+                        $manager = $this->itemManager;
+                        BulkAction::apply(
+                            static function ($id) use ($mItems, $manager) {
+                                $item = $manager->findByPrimaryKey($id);
 
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $item    = $this->itemManager->findByPrimaryKey($i);
-                                    $success = $mItems->delete($item['s_secret'], $item['pk_i_id']);
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been deleted',
-                                '%d listings have been deleted',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                                return $item && $mItems->delete($item['s_secret'], $item['pk_i_id']);
+                            },
+                            '%d listing has been deleted',
+                            '%d listings have been deleted'
+                        );
                         break;
                     case 'clear_spam_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'spam');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been unmarked as spam',
-                                '%d listings have been unmarked as spam',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        $this->bulkClearStat('spam', '%d listing has been unmarked as spam', '%d listings have been unmarked as spam');
                         break;
                     case 'clear_bad_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'bad');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(
-                                sprintf(_mn(
-                                    '%d listing has been unmarked as missclassified',
-                                    '%d listings have been unmarked as missclassified',
-                                    $numSuccess
-                                ), $numSuccess),
-                                'admin'
-                            );
-                        }
+                        $this->bulkClearStat('bad', '%d listing has been unmarked as missclassified', '%d listings have been unmarked as missclassified');
                         break;
                     case 'clear_dupl_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'duplicated');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been unmarked as duplicated',
-                                '%d listings have been unmarked as duplicated',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        $this->bulkClearStat('duplicated', '%d listing has been unmarked as duplicated', '%d listings have been unmarked as duplicated');
                         break;
                     case 'clear_expi_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'expired');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been unmarked as expired',
-                                '%d listings have been unmarked as expired',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        $this->bulkClearStat('expired', '%d listing has been unmarked as expired', '%d listings have been unmarked as expired');
                         break;
                     case 'clear_offe_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'offensive');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been unmarked as offensive',
-                                '%d listings have been unmarked as offensive',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        $this->bulkClearStat('offensive', '%d listing has been unmarked as offensive', '%d listings have been unmarked as offensive');
                         break;
                     case 'clear_all':
-                        $id      = Params::getParam('id');
-                        $success = false;
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $success = $this->itemManager->clearStat($i, 'all');
-                                    if ($success) {
-                                        $numSuccess++;
-                                    }
-                                }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has been unmarked',
-                                '%d listings have been unmarked',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                        $this->bulkClearStat('all', '%d listing has been unmarked', '%d listings have been unmarked');
                         break;
                     case 'clear_reports_all':
                         // 'clear_all' only resets the raw t_item_stats counters. This also
                         // forgets the deduplicated report log, so the reports already on
                         // file cannot immediately re-trigger the report-threshold auto-block.
-                        $id = Params::getParam('id');
-
-                        if ($id) {
-                            $numSuccess = 0;
-                            foreach ($id as $i) {
-                                if ($i) {
-                                    $this->itemManager->clearStat($i, 'all');
-                                    ItemReport::newInstance()->clear((int) $i);
-                                    $numSuccess++;
+                        $manager = $this->itemManager;
+                        BulkAction::apply(
+                            static function ($id) use ($manager) {
+                                if (!$manager->findByPrimaryKey($id)) {
+                                    return false;
                                 }
-                            }
-                            osc_add_flash_ok_message(sprintf(_mn(
-                                '%d listing has had its reports cleared',
-                                '%d listings have had their reports cleared',
-                                $numSuccess
-                            ), $numSuccess), 'admin');
-                        }
+                                $manager->clearStat($id, 'all');
+                                ItemReport::newInstance()->clear((int)$id);
+
+                                return true;
+                            },
+                            '%d listing has had its reports cleared',
+                            '%d listings have had their reports cleared'
+                        );
                         break;
                     default:
                         if (Params::getParam('bulk_actions') != '') {
@@ -1036,6 +840,36 @@ class CAdminItems extends AdminSecBaseModel
 
     //hopefully generic...
 
+    /**
+     * Clear one moderation counter on the selected listings.
+     *
+     * Six bulk actions differ only in which counter they reset and what they say afterwards.
+     * A listing that no longer exists is not counted: `clearStat()` reports nothing, so the
+     * row has to be looked up for the number to mean what it says.
+     *
+     * @param string $stat
+     * @param string $one  singular message, taking the count
+     * @param string $many plural message, taking the count
+     *
+     * @return void
+     */
+    private function bulkClearStat($stat, $one, $many)
+    {
+        $manager = $this->itemManager;
+
+        BulkAction::apply(
+            static function ($id) use ($manager, $stat) {
+                if (!$manager->findByPrimaryKey($id)) {
+                    return false;
+                }
+                $manager->clearStat($id, $stat);
+
+                return true;
+            },
+            $one,
+            $many
+        );
+    }
 }
 
 /* file end: ./oc-admin/CAdminItems.php */

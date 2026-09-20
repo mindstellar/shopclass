@@ -146,6 +146,9 @@ jobs:
       # Paging params come straight from a URL; a bad one used to 500 the screen.
       - name: Admin list paging
         run: php tests/admin-list-paging.php
+      # One loop behind 21 bulk actions; the counts it reports used to be wrong three ways.
+      - name: Admin bulk actions
+        run: php tests/admin-bulk-apply.php
       - name: Hooks reference is current
         run: php tools/gen-hooks-doc.php --check
       # Copying the upload stored whatever was appended after the image, under a .jpg name.

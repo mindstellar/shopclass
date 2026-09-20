@@ -27,6 +27,9 @@ In development.
 - `?iDisplayLength=0` or `?iDisplayLength=abc` answered with an error page on 13 of the 14 admin
   list screens, and `?iPage=-3` left Ban rules and Alerts redirecting to themselves. Every list
   screen reads its page and page size the same way now.
+- Bulk actions on listings counted wrongly. Activating, or clearing a mark, counted a listing
+  that was not there or had nothing to do, so selecting two could report three. The comments
+  screen reported no count at all, and now says how many changed.
 
 ### Security
 

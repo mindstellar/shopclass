@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminItemComments
  */
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
 
 class CAdminItemComments extends AdminSecBaseModel
@@ -53,73 +54,83 @@ class CAdminItemComments extends AdminSecBaseModel
         switch ($this->action) {
             case ('bulk_actions'):
                 osc_csrf_check();
-                $id = Params::getParam('id');
-                if ($id) {
-                    switch (Params::getParam('bulk_actions')) {
-                        case ('delete_all'):
-                            $this->itemCommentManager->delete(array(
-                                DB_CUSTOM_COND => 'pk_i_id IN (' . implode(', ', $id) . ')'
-                            ));
-                            foreach ($id as $_id) {
-                                $iUpdated = $this->itemCommentManager->delete(array(
-                                    'pk_i_id' => $_id
-                                ));
-                                osc_run_hook('delete_comment', $_id);
-                            }
-                            osc_add_flash_ok_message(_m('The comments have been deleted'), 'admin');
-                            break;
-                        case ('activate_all'):
-                            foreach ($id as $_id) {
-                                $iUpdated = $this->itemCommentManager->update(
-                                    array('b_active' => 1),
-                                    array('pk_i_id' => $_id)
-                                );
-                                if ($iUpdated) {
-                                    $this->sendCommentActivated($_id);
+                $manager = $this->itemCommentManager;
+                switch (Params::getParam('bulk_actions')) {
+                    case ('delete_all'):
+                        BulkAction::apply(
+                            static function ($id) use ($manager) {
+                                $deleted = $manager->delete(array('pk_i_id' => $id));
+                                osc_run_hook('delete_comment', $id);
+
+                                return (bool)$deleted;
+                            },
+                            '%d comment has been deleted',
+                            '%d comments have been deleted'
+                        );
+                        break;
+                    case ('activate_all'):
+                        $self = $this;
+                        BulkAction::apply(
+                            static function ($id) use ($manager, $self) {
+                                $updated = $manager->update(array('b_active' => 1), array('pk_i_id' => $id));
+                                if ($updated) {
+                                    $self->sendCommentActivated($id);
                                 }
-                                osc_run_hook('activate_comment', $_id);
-                            }
-                            osc_add_flash_ok_message(_m('The comments have been approved'), 'admin');
-                            break;
-                        case ('deactivate_all'):
-                            foreach ($id as $_id) {
-                                $this->itemCommentManager->update(
-                                    array('b_active' => 0),
-                                    array('pk_i_id' => $_id)
-                                );
-                                osc_run_hook('deactivate_comment', $_id);
-                            }
-                            osc_add_flash_ok_message(_m('The comments have been disapproved'), 'admin');
-                            break;
-                        case ('enable_all'):
-                            foreach ($id as $_id) {
-                                $iUpdated = $this->itemCommentManager->update(
-                                    array('b_enabled' => 1),
-                                    array('pk_i_id' => $_id)
-                                );
-                                if ($iUpdated) {
-                                    $this->sendCommentActivated($_id);
+                                osc_run_hook('activate_comment', $id);
+
+                                return (bool)$updated;
+                            },
+                            '%d comment has been approved',
+                            '%d comments have been approved'
+                        );
+                        break;
+                    case ('deactivate_all'):
+                        BulkAction::apply(
+                            static function ($id) use ($manager) {
+                                $updated = $manager->update(array('b_active' => 0), array('pk_i_id' => $id));
+                                osc_run_hook('deactivate_comment', $id);
+
+                                return (bool)$updated;
+                            },
+                            '%d comment has been disapproved',
+                            '%d comments have been disapproved'
+                        );
+                        break;
+                    case ('enable_all'):
+                        $self = $this;
+                        BulkAction::apply(
+                            static function ($id) use ($manager, $self) {
+                                $updated = $manager->update(array('b_enabled' => 1), array('pk_i_id' => $id));
+                                if ($updated) {
+                                    $self->sendCommentActivated($id);
                                 }
-                                osc_run_hook('enable_comment', $_id);
-                            }
-                            osc_add_flash_ok_message(_m('The comments have been unblocked'), 'admin');
-                            break;
-                        case ('disable_all'):
-                            foreach ($id as $_id) {
-                                $this->itemCommentManager->update(
-                                    array('b_enabled' => 0),
-                                    array('pk_i_id' => $_id)
-                                );
-                                osc_run_hook('disable_comment', $_id);
-                            }
-                            osc_add_flash_ok_message(_m('The comments have been blocked'), 'admin');
-                            break;
-                        default:
-                            if (Params::getParam('bulk_actions') != '') {
-                                osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
-                            }
-                            break;
-                    }
+                                osc_run_hook('enable_comment', $id);
+
+                                return (bool)$updated;
+                            },
+                            '%d comment has been unblocked',
+                            '%d comments have been unblocked'
+                        );
+                        break;
+                    case ('disable_all'):
+                        BulkAction::apply(
+                            static function ($id) use ($manager) {
+                                $updated = $manager->update(array('b_enabled' => 0), array('pk_i_id' => $id));
+                                osc_run_hook('disable_comment', $id);
+
+                                return (bool)$updated;
+                            },
+                            '%d comment has been blocked',
+                            '%d comments have been blocked'
+                        );
+                        break;
+                    default:
+                        // Guarded on a selection, as the whole switch used to be: a plugin
+                        // listening here has never been handed an empty one.
+                        if (Params::getParam('bulk_actions') != '' && Params::getParam('id')) {
+                            osc_run_hook('item_bulk_' . Params::getParam('bulk_actions'), Params::getParam('id'));
+                        }
+                        break;
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
                 break;

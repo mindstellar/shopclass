@@ -9,12 +9,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "x-generator: scripts/build-i18n.mjs\n"
 
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d change has been made"
-msgid_plural "%d changes have been made"
-msgstr[0] ""
-msgstr[1] ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
 msgstr ""
@@ -26,90 +20,6 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "%d keyword has been imported"
 msgid_plural "%d keywords have been imported"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been activated"
-msgid_plural "%d listings have been activated"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been deactivated"
-msgid_plural "%d listings have been deactivated"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been deleted"
-msgid_plural "%d listings have been deleted"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been disabled"
-msgid_plural "%d listings have been disabled"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been enabled"
-msgid_plural "%d listings have been enabled"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been marked as premium"
-msgid_plural "%d listings have been marked as premium"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been marked as spam"
-msgid_plural "%d listings have been marked as spam"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked"
-msgid_plural "%d listings have been unmarked"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked as duplicated"
-msgid_plural "%d listings have been unmarked as duplicated"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked as expired"
-msgid_plural "%d listings have been unmarked as expired"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked as missclassified"
-msgid_plural "%d listings have been unmarked as missclassified"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked as offensive"
-msgid_plural "%d listings have been unmarked as offensive"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has been unmarked as spam"
-msgid_plural "%d listings have been unmarked as spam"
-msgstr[0] ""
-msgstr[1] ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "%d listing has had its reports cleared"
-msgid_plural "%d listings have had their reports cleared"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1991,26 +1901,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The comment was not added by you, you cannot delete it"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-msgid "The comments have been approved"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-msgid "The comments have been blocked"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-msgid "The comments have been deleted"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-msgid "The comments have been disapproved"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-msgid "The comments have been unblocked"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
