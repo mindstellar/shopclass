@@ -73,7 +73,9 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=media');
                 break;
             case ('images_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=media');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=media')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 if (\mindstellar\storage\StorageManager::instance()->remote() === null) {

@@ -49,7 +49,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/import.php');
                 break;
             case ('import_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=import');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=import')) {
+                    break;
+                }
                 // calling
                 osc_csrf_check();
                 $sql = Params::getFiles('sql');
@@ -74,7 +76,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/category.php');
                 break;
             case ('category_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=category');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=category')) {
+                    break;
+                }
                 osc_update_cat_stats();
                 osc_add_flash_ok_message(_m('Recount category stats has been successful'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=category');
@@ -146,7 +150,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo($back);
                 break;
             case ('upgrade'):
-                $this->refuseOnDemo(osc_admin_base_url(true));
+                if ($this->refuseOnDemo(osc_admin_base_url(true))) {
+                    break;
+                }
                 $this->doView('tools/upgrade.php');
                 break;
             case 'version':
@@ -169,7 +175,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/backup.php');
                 break;
             case ('backup-sql'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                    break;
+                }
                 osc_csrf_check();
                 //databasse dump...
                 if (Params::getParam('bck_dir') != '') {
@@ -207,7 +215,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-sql_file'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                    break;
+                }
                 //databasse dump...
 
                 $filename = 'Osclass_mysqlbackup.' . date('YmdHis') . '.sql';
@@ -259,7 +269,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-zip_file'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                    break;
+                }
                 $filename = 'Osclass_backup.' . date('YmdHis') . '.zip';
                 $path     = sys_get_temp_dir() . '/';
 
@@ -284,7 +296,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
                 break;
             case ('backup-zip'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                    break;
+                }
                 //zip of the code just to back it up
                 osc_csrf_check();
                 if (Params::getParam('bck_dir')) {
@@ -364,7 +378,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/cleanup.php');
                 break;
             case 'cleanup_post':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
+                    break;
+                }
                 osc_csrf_check();
                 $limit = Params::getParamInt('batch_limit');
                 osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'osclass', 'INTEGER');
@@ -398,7 +414,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 break;
             case 'cleanup_run':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
+                    break;
+                }
                 osc_csrf_check();
                 $total = osc_run_cleanup();
                 if ($total > 0) {
@@ -465,7 +483,9 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case ('logs_clear'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=logs');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=logs')) {
+                    break;
+                }
                 osc_csrf_check();
                 $removed = Log::newInstance()->clearAll();
                 osc_add_flash_ok_message(

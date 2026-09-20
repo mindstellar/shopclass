@@ -124,21 +124,26 @@ class AdminSecBaseModel extends SecBaseModel
      * Send the admin away when this install is a demo, before an action changes anything.
      *
      * Thirty-five screens carried a copy of this, in two wordings of the same sentence, and
-     * every missing copy is a demo site something can be done to. Returns so a caller can
-     * keep reading; the redirect exits on its own when it fires.
+     * every missing copy is a demo site something can be done to.
+     *
+     * Answers whether it refused, so a caller stops on its own rather than trusting
+     * redirectTo() to exit. It does exit today, and the answer is still worth acting on: it
+     * is what keeps the refusal true if that ever stops being the case.
      *
      * @param string $redirectUrl where to send them; the admin home by default
      *
-     * @return void
+     * @return bool true when this is a demo install and the action was refused
      */
     protected function refuseOnDemo($redirectUrl = null)
     {
         if (!defined('DEMO')) {
-            return;
+            return false;
         }
 
         osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
         $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
     }
 
     /**

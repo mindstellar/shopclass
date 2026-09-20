@@ -201,6 +201,18 @@ class AdminSecBaseModel
         return !empty($GLOBALS['isModerator']);
     }
 
+    /** Mirrors the real guard: flashes, redirects, and says that it refused. */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+        osc_add_flash_warning_message('This action cannot be done because it is a demo site', 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
+
     public function redirectTo($url, $code = null)
     {
         $GLOBALS['redirects'][] = $url;
@@ -1329,7 +1341,7 @@ foreach (array('add_post', 'edit_post') as $action) {
     pin('and changes nothing for ' . $action, $before, row($admin, $new));
     pin(
         'saying so for ' . $action,
-        array(array('warning', "This action can't be done because it's a demo site")),
+        array(array('warning', "This action cannot be done because it is a demo site")),
         $driven['flashes']
     );
     pin('with no CSRF check, because there is nothing to check for ' . $action, array(), $driven['csrf']);

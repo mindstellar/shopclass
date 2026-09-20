@@ -48,7 +48,9 @@ class CAdminSettingsAdvanced extends AdminSecBaseModel
                 break;
             case ('advanced_post'):
                 // updating advanced settings
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=advanced');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=advanced')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 $result = CoreSettings::attempt(AdvancedSettingsForm::register());

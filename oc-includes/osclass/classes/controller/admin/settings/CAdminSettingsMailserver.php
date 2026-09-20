@@ -47,7 +47,9 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
                 $this->drawForm();
                 break;
             case ('mailserver_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=mailserver');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=mailserver')) {
+                    break;
+                }
 
                 osc_csrf_check();
 

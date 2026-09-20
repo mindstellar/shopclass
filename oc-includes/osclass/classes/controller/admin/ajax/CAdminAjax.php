@@ -1059,7 +1059,9 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'upgrade_db':
                 osc_csrf_check();
-                $this->refuseOnDemo(osc_admin_base_url(true));
+                if ($this->refuseOnDemo(osc_admin_base_url(true))) {
+                    break;
+                }
                 $this->ajax     = true;
                 $upgrade_result = Osclass::upgradeDB(Params::getParam('skipdb'));
                 echo $upgrade_result;

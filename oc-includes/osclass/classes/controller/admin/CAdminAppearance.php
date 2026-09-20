@@ -38,7 +38,9 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->doView('appearance/add.php');
                 break;
             case ('add_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+                    break;
+                }
                 osc_csrf_check();
                 $filePackage = Params::getFiles('package');
                 if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
@@ -77,7 +79,9 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
             case ('delete'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+                    break;
+                }
                 osc_csrf_check();
                 $theme = Params::getParam('webtheme');
                 if ($theme != '') {

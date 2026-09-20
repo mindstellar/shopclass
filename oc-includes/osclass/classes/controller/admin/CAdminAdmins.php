@@ -66,7 +66,9 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->drawForm(null);
                 break;
             case ('add_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+                    break;
+                }
                 osc_csrf_check();
                 $this->saveAdmin(null);
                 break;
@@ -78,7 +80,9 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->drawForm($adminId);
                 break;
             case ('edit_post'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+                    break;
+                }
                 osc_csrf_check();
                 $adminId = $this->adminRowId(false);
                 if ($adminId === null) {
@@ -87,7 +91,9 @@ class CAdminAdmins extends AdminSecBaseModel
                 $this->saveAdmin($adminId);
                 break;
             case ('delete'):
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
+                    break;
+                }
                 osc_csrf_check();
                 // deleting and admin
                 $isDeleted = false;

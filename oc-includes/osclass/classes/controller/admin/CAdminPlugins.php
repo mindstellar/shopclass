@@ -52,7 +52,9 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->doView('plugins/add.php');
                 break;
             case 'add_post':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 $package = Params::getFiles('package');
@@ -91,7 +93,9 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'install':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
                 osc_csrf_check();
                 $pn = Params::getParam('plugin');
 
@@ -134,7 +138,9 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'uninstall':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 if (Plugins::uninstall(Params::getParam('plugin'))) {
@@ -146,7 +152,9 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'enable':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 if (Plugins::activate(Params::getParam('plugin'))) {
@@ -158,7 +166,9 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'disable':
-                $this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
                 osc_csrf_check();
 
                 if (Plugins::deactivate(Params::getParam('plugin'))) {

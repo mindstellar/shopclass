@@ -156,7 +156,9 @@ class CAdminLogin extends AdminBaseModel
                 $this->doView();
                 break;
             case ('recover_post'):
-                $this->refuseOnDemo(osc_admin_base_url());
+                if ($this->refuseOnDemo(osc_admin_base_url())) {
+                    break;
+                }
                 osc_csrf_check();
 
                 // post execution to recover the password
