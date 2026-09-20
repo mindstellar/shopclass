@@ -145,6 +145,15 @@ file_put_contents($empty, '');
 pin('an empty file is not an accepted upload', false, UploadMimes::isAllowed($empty));
 @unlink($empty);
 
+// A listing photo has to decode, not merely carry an allowed type: with a non-image
+// extension configured, application/octet-stream is on the list and any bytes would pass.
+$blob = sys_get_temp_dir() . '/upload-mimes-blob-' . getmypid() . '.png';
+file_put_contents($blob, random_bytes(200));
+check('random bytes are not an allowed image', !UploadMimes::isAllowedImage($blob));
+@unlink($blob);
+
+check('a real PNG still is', UploadMimes::isAllowedImage($png));
+
 array_map('unlink', glob($tmpDir . '/*'));
 @rmdir($tmpDir);
 

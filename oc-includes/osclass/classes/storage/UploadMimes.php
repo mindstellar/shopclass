@@ -30,6 +30,11 @@ final class UploadMimes
      */
     public static function allowed(): array
     {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $mimes = array();
         require LIB_PATH . 'osclass/mimes.php';
 
@@ -47,7 +52,7 @@ final class UploadMimes
             }
         }
 
-        return $out;
+        return $cached = $out;
     }
 
     /**
@@ -101,5 +106,25 @@ final class UploadMimes
         $mime = self::detect($path);
 
         return $mime !== '' && in_array($mime, self::allowed(), true);
+    }
+
+    /**
+     * Whether a file is an allowed type *and* an image something can actually decode.
+     *
+     * A listing photo is never anything else, and the type alone is not enough: with a
+     * non-image extension configured, `application/octet-stream` is on the allowed list and
+     * any 200 bytes would pass the type check, only to throw when the resizer opened it.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public static function isAllowedImage(string $path): bool
+    {
+        if (!self::isAllowed($path)) {
+            return false;
+        }
+
+        return function_exists('getimagesize') && is_array(@getimagesize($path));
     }
 }

@@ -124,7 +124,7 @@ class AjaxUploader
      */
     public function checkAllowedExt($file)
     {
-        return $file != '' && \mindstellar\storage\UploadMimes::isAllowed((string)$file);
+        return $file != '' && \mindstellar\storage\UploadMimes::isAllowedImage((string)$file);
     }
 }
 

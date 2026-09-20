@@ -429,7 +429,7 @@ class ItemActions
                 if ($error !== UPLOAD_ERR_OK) {
                     continue;
                 }
-                if (!\mindstellar\storage\UploadMimes::isAllowed((string)$aResources['tmp_name'][$key])) {
+                if (!\mindstellar\storage\UploadMimes::isAllowedImage((string)$aResources['tmp_name'][$key])) {
                     $success = false;
                 }
             }
