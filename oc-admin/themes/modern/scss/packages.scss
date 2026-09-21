@@ -86,7 +86,7 @@
 
 .osc-pkg-meta {
   color: var(--osc-ink-muted);
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   margin: .2rem 0 0;
 
   a {
@@ -110,7 +110,7 @@
 }
 
 .osc-pkg-note {
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .35rem 0 0;
 
   &.osc-pkg-note--info {
@@ -140,7 +140,7 @@
 .osc-pkg-danger {
   display: flex;
   flex-wrap: wrap;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   gap: .15rem .75rem;
   list-style: none;
   margin: 0;

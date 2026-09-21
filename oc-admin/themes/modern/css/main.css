@@ -388,7 +388,7 @@ strong {
 }
 
 small, .small {
-  font-size: 0.875em;
+  font-size: 0.8125rem;
 }
 
 mark, .mark {
@@ -439,7 +439,7 @@ pre {
   margin-top: 0;
   margin-bottom: 1rem;
   overflow: auto;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
 }
 pre code {
   font-size: inherit;
@@ -448,7 +448,7 @@ pre code {
 }
 
 code {
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-code-color);
   word-wrap: break-word;
 }
@@ -458,7 +458,7 @@ a > code {
 
 kbd {
   padding: 0.1875rem 0.375rem;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-body-bg);
   background-color: var(--bs-body-color);
   border-radius: 4px;
@@ -748,7 +748,7 @@ progress {
 }
 
 .initialism {
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   text-transform: uppercase;
 }
 
@@ -763,7 +763,7 @@ progress {
 .blockquote-footer {
   margin-top: -1rem;
   margin-bottom: 1rem;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: #5f6b7a;
 }
 .blockquote-footer::before {
@@ -794,7 +794,7 @@ progress {
 }
 
 .figure-caption {
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-secondary-color);
 }
 
@@ -2172,7 +2172,7 @@ progress {
 
 .form-text {
   margin-top: 0.25rem;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-secondary-color);
 }
 
@@ -2929,7 +2929,7 @@ input.form-control-color.xlarge,
   display: none;
   width: 100%;
   margin-top: 0.25rem;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-form-valid-color);
 }
 
@@ -3049,7 +3049,7 @@ textarea.is-valid.input-password, .form-controls textarea.is-valid {
   display: none;
   width: 100%;
   margin-top: 0.25rem;
-  font-size: 0.875em;
+  font-size: 0.8125rem;
   color: var(--bs-form-invalid-color);
 }
 
@@ -5038,7 +5038,7 @@ textarea.is-invalid.input-password, .form-controls textarea.is-invalid {
 .badge {
   --bs-badge-padding-x: 0.65em;
   --bs-badge-padding-y: 0.35em;
-  --bs-badge-font-size: 0.75em;
+  --bs-badge-font-size: 0.8125rem;
   --bs-badge-font-weight: 700;
   --bs-badge-color: #fff;
   --bs-badge-border-radius: var(--bs-border-radius);
@@ -14142,6 +14142,9 @@ div.widget-box-content-no-wrapp li a {
   color: inherit;
   text-decoration-line: none;
 }
+.table > tbody {
+  font-size: 0.875rem;
+}
 .table > tbody a {
   color: var(--osc-ink);
   text-decoration-line: none;
@@ -14151,6 +14154,7 @@ div.widget-box-content-no-wrapp li a {
   text-decoration-line: underline;
 }
 .table > tbody .col-title {
+  font-size: 1rem;
   font-weight: 500;
 }
 .table > tbody > tr:last-child > * {

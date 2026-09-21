@@ -135,7 +135,7 @@
 
   dt {
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label
+    font-size: $font-size-label; // Label
     font-weight: 500;
     letter-spacing: .01em;
     line-height: 1.4;
@@ -214,7 +214,7 @@
 
 .osc-pager-range {
   color: var(--osc-ink-muted);
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   margin: 0;
 }
 
@@ -308,7 +308,7 @@
 .cat-drawer-eyebrow {
   color: var(--osc-ink-muted);
   display: block;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   letter-spacing: .01em;
 }

@@ -48,7 +48,7 @@ table.table-small td {
 
     h4 {
       color: var(--osc-ink-muted);
-      font-size: .8125rem;
+      font-size: $font-size-label;
       font-weight: 600;
       letter-spacing: .01em;
       margin-block-end: 6px;
@@ -75,7 +75,7 @@ table.table-small td {
 // Names a group of choices inside a row whose own label is the pair of them.
 .form-sublabel {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   margin-block-end: .35rem;
 }

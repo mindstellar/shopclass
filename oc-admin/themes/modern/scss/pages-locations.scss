@@ -114,7 +114,7 @@
   border-radius: $border-radius-sm;
   color: var(--osc-ink-muted);
   font-family: $font-family-monospace;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   inset-block-start: 50%;
   inset-inline-end: .6rem;
   line-height: 1;
@@ -335,7 +335,7 @@
 .loc-slug {
   color: var(--osc-ink-muted);
   display: inline-block;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin-inline-start: .6rem;
   overflow-wrap: anywhere;
 }
@@ -417,7 +417,7 @@
 
   .form-text {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     margin: .35rem 0 0;
   }
 }
@@ -470,7 +470,7 @@
 
 .loc-hits-title {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 600;
   letter-spacing: .01em;
   margin: 0 0 .4rem;
@@ -649,7 +649,7 @@ a.loc-hit-name {
 .loc-fact-error::before {
   content: "\f33a"; // exclamation-circle-fill
   font-family: "bootstrap-icons";
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin-inline-end: .35rem;
 }
 
@@ -1137,7 +1137,7 @@ a.loc-hit-name {
 
 .loc-renames-level {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 400;
   margin-inline-start: .4rem;
 }
@@ -1147,7 +1147,7 @@ a.loc-hit-name {
   color: var(--osc-ink-muted);
   display: inline-flex;
   flex-wrap: wrap;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   gap: .1rem .4rem;
   overflow-wrap: anywhere;
 
@@ -1263,7 +1263,7 @@ a.loc-hit-name {
       > .loc-col-count,
       > .loc-col-status {
         color: var(--osc-ink-muted);
-        font-size: .8125rem;
+        font-size: $font-size-label;
         inline-size: auto;
         order: 4;
         padding-inline: 0 1rem;

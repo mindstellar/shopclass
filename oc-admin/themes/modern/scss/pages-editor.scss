@@ -73,7 +73,7 @@
 
   .page-field-hint {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     margin-block: .35rem 0;
   }
 
@@ -140,7 +140,7 @@
 
     .page-block-type {
       color: var(--osc-ink-muted);
-      font-size: .8125rem;
+      font-size: $font-size-label;
     }
   }
 

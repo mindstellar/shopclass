@@ -66,7 +66,7 @@
 
 .market-last-checked {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .5rem 0 0;
 }
 
@@ -170,7 +170,7 @@
 
 .market-card-author {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: 0;
 }
 
@@ -189,7 +189,7 @@
 
 .market-card-reason {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .25rem 0 0;
 }
 
@@ -197,7 +197,7 @@
 // gets the same muted treatment as .market-card-reason rather than a callout tint.
 .market-card-note {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .25rem 0 0;
 }
 
@@ -314,7 +314,7 @@
 
 .market-update-versions {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .15rem 0 0;
 }
 
@@ -381,7 +381,7 @@
 
 .market-detail-author {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .15rem 0 .5rem;
 }
 
@@ -391,7 +391,7 @@
 
 .market-detail-note {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
 
   &:empty {
     display: none;
@@ -400,7 +400,7 @@
 
 .market-detail-reason {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
 
   &:empty {
     display: none;
@@ -414,7 +414,7 @@
 
   dt {
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label — the system's smallest step
+    font-size: $font-size-label; // Label — the system's smallest step
     font-weight: 500;
     text-transform: uppercase;
   }
@@ -440,7 +440,7 @@
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius-pill;
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label — the system's smallest step
+    font-size: $font-size-label; // Label — the system's smallest step
     padding: .1rem .55rem;
   }
 }
@@ -535,7 +535,7 @@
 
 .market-detail-screens-caption {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .5rem 0 0;
 
   &:empty {
@@ -675,7 +675,7 @@
 }
 
 .market-detail-versions-table {
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: 0;
   min-inline-size: 36rem;
 
@@ -701,7 +701,7 @@
     align-items: center;
     color: var(--osc-ink);
     display: inline-flex;
-    font-size: .8125rem;
+    font-size: $font-size-label;
     font-weight: 500;
     gap: .35rem;
     text-decoration: none;

@@ -278,7 +278,7 @@ $sidebar-gutter: 2.35rem;
     // group boundary looks like one thing in this menu, at both levels.
     border-block-start: 1px solid var(--osc-sidebar-divider);
     color: var(--osc-sidebar-subhead);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     font-weight: 600;
     margin-block-start: .4rem;
     padding-block: .4rem .2rem;

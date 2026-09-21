@@ -190,7 +190,7 @@ $callout-icons: (
     border-radius: $border-radius;
     color: var(--osc-ink);
     display: inline-flex;
-    font-size: .8125rem; // Label. Was .85rem AND italic — italic microcopy is the hardest
+    font-size: $font-size-label; // Label. Was .85rem AND italic — italic microcopy is the hardest
     gap: .4rem;          // thing on the page to read, and this copy exists to be read.
     margin-top: .2rem;
     padding: .35rem .6rem;

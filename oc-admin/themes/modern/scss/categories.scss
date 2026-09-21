@@ -68,7 +68,7 @@
   border-radius: $border-radius-pill;
   color: var(--osc-ink-muted);
   flex: 0 0 auto;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   letter-spacing: .01em;
   padding: .1rem .55rem;
@@ -79,7 +79,7 @@
   border-radius: $border-radius-pill;
   color: var(--osc-bronze);
   flex: 0 0 auto;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 600;
   letter-spacing: .01em;
   padding: .1rem .55rem;
@@ -238,7 +238,7 @@
   color: var(--osc-ink-muted);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   gap: .25rem;
   padding: .1rem .55rem;
 }
@@ -300,7 +300,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    font-size: .8125rem;
+    font-size: $font-size-label;
     gap: .1rem;
     line-height: 1.4;
     min-width: 0;
@@ -355,7 +355,7 @@
 
 .col-hint {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: 0 0 .75rem;
   // Reserve two lines so the Forms and Fields lists start at the same height and
   // the two columns line up.
@@ -445,7 +445,7 @@
 // with none is flagged, because it then appears on no listing at all.
 .form-card-cats {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   line-height: 1.35;
 
   .cats-label {
@@ -508,7 +508,7 @@
   border: 1px dashed var(--osc-rule);
   border-radius: $border-radius;
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin-top: .4rem;
   padding: .6rem;
   text-align: center;
@@ -732,7 +732,7 @@
     border-radius: $border-radius;
     color: var(--osc-info);
     display: flex;
-    font-size: .8125rem;
+    font-size: $font-size-label;
     gap: .4rem;
     line-height: 1.4;
     margin-bottom: 1rem;
@@ -895,7 +895,7 @@
 
 .cf-add-empty {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   padding: .5rem .55rem;
 }
 
@@ -983,7 +983,7 @@
   border-radius: $border-radius;
   color: var(--osc-ink-muted);
   cursor: pointer;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   padding: .4rem .5rem;
   white-space: nowrap;
@@ -1170,7 +1170,7 @@
   color: var(--osc-ink-muted);
   display: flex;
   flex: 0 0 auto;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-variant-numeric: tabular-nums;
   gap: .75rem;
 }
@@ -1192,7 +1192,7 @@
   border-radius: $border-radius-pill;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   gap: .3rem;
   letter-spacing: .01em;
@@ -1301,7 +1301,7 @@
   label {
     color: var(--osc-ink);
     display: block;
-    font-size: .8125rem;
+    font-size: $font-size-label;
     font-weight: 500;
     letter-spacing: .01em;
     margin-bottom: .3rem;
@@ -1332,7 +1332,7 @@
 
   .help-inline {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     margin: .35rem 0 0;
   }
 }
@@ -1400,7 +1400,7 @@
       color: var(--osc-ink-muted);
       cursor: pointer;
       display: block;
-      font-size: .8125rem;
+      font-size: $font-size-label;
       font-weight: 500;
       padding: .3rem .7rem;
       text-decoration: none;

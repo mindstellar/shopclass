@@ -120,6 +120,13 @@ $font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetic
 $font-family-monospace:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 $font-size-root:         87.5%; // 14px at the browser default, and it still scales if that is changed
 $font-size-base:         1rem;
+// Label: column headers, row actions, badges, metadata. The smallest type in the system
+// and the floor for it -- it is for labels, never a place to shrink body text into.
+$font-size-label:        .8125rem;
+// Bootstrap sizes badges and <small> in `em`, which compounds: in a table cell already
+// at Small they land near 9px. Both are Label type, so they are pinned to it.
+$badge-font-size:        $font-size-label;
+$small-font-size:        $font-size-label;
 $headings-font-weight:   600;
 $headings-color:         $navy;
 
@@ -286,7 +293,7 @@ $table-cell-vertical-align: middle;
 
   --osc-ink:           #{$gray-900};
   --osc-ink-muted:     #{$gray-600};
-  // One step up from muted, and the ink of every neutral status badge. A 13px Label on a
+  // One step up from muted, and the ink of every neutral status badge. A Label on a
   // tint has less to work with than body text on white, so it does not use the muted grey.
   --osc-ink-emphasis:  #{$gray-700};
   // The ink that sits ON a saturated fill — white text on a teal button, on a danger

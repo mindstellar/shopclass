@@ -54,7 +54,7 @@
 // the .osc-status badge — a half-step heavier (600) because it is the scan anchor.
 .sysinfo-state {
   border-radius: $border-radius-pill;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 600;
   letter-spacing: .01em;
   line-height: 1.4;
@@ -175,7 +175,7 @@
 // A muted count riding beside the card title.
 .sysinfo-count {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
 
   &::before {
@@ -198,7 +198,7 @@
   border-radius: $border-radius-pill;
   color: var(--osc-ink-emphasis);
   font-family: var(--bs-font-monospace);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   line-height: 1.5;
   padding: .1rem .5rem;
 }

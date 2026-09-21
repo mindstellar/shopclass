@@ -33,7 +33,7 @@
 
     th {
       color: var(--osc-ink-muted);
-      font-size: .8125rem;   // Label — reserved for labels, not a body-text size.
+      font-size: $font-size-label;   // Label — reserved for labels, not a body-text size.
       font-weight: 500;
       letter-spacing: .01em;
       white-space: nowrap;
@@ -46,6 +46,11 @@
   }
 
   > tbody {
+    // Three steps, not two: the title carries body size, the supporting columns drop to
+    // Small, and the column headers and row actions sit at Label. Every column at body
+    // size made the row one flat block with nothing to scan for.
+    font-size: $font-size-sm;
+
     // Table data is Ink, and that includes the data that happens to be a link. Every listing
     // title is an <a>, so colouring them $link-color made a full column of bronze the most
     // common thing on the screen — which spends the entire colour budget that is supposed to
@@ -62,6 +67,7 @@
     }
 
     .col-title {
+      font-size: $font-size-base;
       font-weight: 500;
     }
 
@@ -106,7 +112,7 @@
   // space. Muted by default so the listing is what you read. Colour goes through --osc-*
   // tokens, never a Sass variable, so it follows dark mode.
   .actions {
-    font-size: .8125rem;  // Label — metadata weight, matching the column headers.
+    font-size: $font-size-label;  // Label — metadata weight, matching the column headers.
     margin-top: .3rem;
 
     ul {
@@ -271,7 +277,7 @@
   border-radius: $border-radius-pill;
   color: var(--osc-ink-emphasis);
   display: inline-flex;
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   font-weight: 500;
   gap: .35rem;
   letter-spacing: .01em;
