@@ -125,7 +125,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 510 names. Generated from the source; do not edit by hand.
+Core fires 511 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -415,7 +415,7 @@ Core fires 510 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (182)
+### Other (183)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -566,6 +566,7 @@ Core fires 510 names. Generated from the source; do not edit by hand.
 | `regenerate_image` | action | `$resource` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `regenerated_image` | action | `ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/actions/UserActions.php` |
+| `register_jobs` | action | — | `oc-includes/osclass/classes/job/JobWorker.php` |
 | `register_storage_adapters` | action | `StorageManager::instance()` | `oc-includes/osclass/helpers/hStorage.php` |
 | `render_admintoolbar` | action | — | `oc-includes/osclass/classes/AdminToolbar.php` |
 | `resource_alt` | filter | `$title, osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |

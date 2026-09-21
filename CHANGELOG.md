@@ -16,14 +16,28 @@ In development.
 - `osc_resource_alt()` gives a theme alt text for a listing photo, filterable as `resource_alt`.
 - `php oc-cli.php db:doctor` reports where your database differs from what Shopclass declares.
   It changes nothing. Upgrades repair what they can; this names what they cannot.
+- A shared background job queue any plugin can use: `osc_job_enqueue()` queues work,
+  `osc_job_register_handler()` says what runs it, and cron does the rest. See
+  [Background jobs](https://shopclass.org/docs/developers/jobs/).
+- Tools -> Background jobs shows what is waiting, what is running and what gave up.
+- `php oc-cli.php jobs:work` drains the queue on its own schedule, and `jobs:status`
+  reports it. `storage:work` still works as an alias.
 
 ### Breaking
 
 - Removed the admin CSS kept one release for compatibility with the old Locations screen:
   `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
+- `t_storage_queue` is now `t_job_queue`, and its job types are namespaced -- `offload`
+  became `storage.offload`. Queued jobs are carried across on upgrade. `StorageQueue` and
+  `StorageWorker` still work and forward to the new classes.
 
 ### Fixed
 
+- Deleting a category with thousands of listings timed out and rolled back, leaving a category
+  that could not be deleted. A large one is now hidden immediately and emptied in the
+  background.
+- `php oc-cli.php storage:work` never reported a failed job: it counted a status the queue
+  never writes, so it always exited 0.
 - `?iDisplayLength=0` or `?iDisplayLength=abc` answered with an error page on 13 of the 14 admin
   list screens, and `?iPage=-3` left Ban rules and Alerts redirecting to themselves. Every list
   screen reads its page and page size the same way now.

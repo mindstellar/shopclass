@@ -9,50 +9,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\job\JobQueue;
+use mindstellar\storage\StorageJobs;
+
 /**
- * Class StorageQueue
+ * Deprecated. `t_storage_queue` is now `t_job_queue`, a queue any part of the site can
+ * use, and its job types are namespaced -- `offload` became `storage.offload`.
  *
- * Durable job queue backing t_storage_queue. Jobs are self-contained
- * (payload is a JSON snapshot, not a foreign-key lookup) so a job survives
- * the deletion of the row that spawned it. Handlers that consume the queue
- * must be idempotent: rows are claimed under a worker token rather than
- * removed, so a crashed worker's rows are recovered and retried.
+ * This forwards the old shape onto the new one so code outside core that queued a
+ * storage job keeps working. New code calls `osc_job_enqueue()`.
+ *
+ * @deprecated 6.4.0 use osc_job_enqueue() / mindstellar\job\JobQueue
  */
-class StorageQueue extends DAO
+class StorageQueue
 {
-    /**
-     * @var StorageQueue
-     */
+    /** @var StorageQueue|null */
     private static $instance;
 
     /**
-     * Set data related to t_storage_queue table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_storage_queue');
-        $this->setPrimaryKey('pk_i_id');
-        $this->setFields(
-            array(
-                'pk_i_id',
-                's_type',
-                's_storage',
-                's_payload',
-                's_status',
-                'i_attempts',
-                's_last_error',
-                's_worker',
-                'dt_next_run',
-                'dt_locked',
-                'dt_created',
-            )
-        );
-    }
-
-    /**
-     * Return the shared StorageQueue model instance, creating it on first use.
-     *
      * @return StorageQueue
      */
     public static function newInstance()
@@ -65,227 +39,78 @@ class StorageQueue extends DAO
     }
 
     /**
-     * Queue a job. The payload is trimmed to a minimal, self-contained
-     * snapshot; duplicates are allowed since handlers are idempotent.
-     *
-     * @param string              $type
+     * @param string              $type      delete|offload|restore|adopt|regenerate
      * @param string              $storageId
-     * @param array<string,mixed> $snapshot Resource row fields the handler needs
+     * @param array<string,mixed> $snapshot
+     *
+     * @return void
      */
     public function enqueue(string $type, string $storageId, array $snapshot): void
     {
-        $now = date('Y-m-d H:i:s');
-
-        // s_owner_type / i_owner_id are the polymorphic discriminator. StorageWorker routes a
-        // job to the Resource (t_resource) model vs ItemResource (t_item_resource) purely on
-        // s_owner_type (resolveRow/updateStorage). Dropping them here sent every t_resource
-        // offload — user avatars via the uploaded_resource hook — to the item table, where the
-        // pk hits an unrelated item resource (or none): the avatar never flipped, and its
-        // freshly-uploaded object could even be queued for deletion.
-        $payload = array(
-            'pk_i_id'        => $snapshot['pk_i_id'] ?? null,
-            'fk_i_item_id'   => $snapshot['fk_i_item_id'] ?? null,
-            's_owner_type'   => $snapshot['s_owner_type'] ?? null,
-            'i_owner_id'     => $snapshot['i_owner_id'] ?? null,
-            's_path'         => $snapshot['s_path'] ?? null,
-            's_extension'    => $snapshot['s_extension'] ?? null,
-            's_content_type' => $snapshot['s_content_type'] ?? null,
-            's_storage'      => $snapshot['s_storage'] ?? $storageId,
-        );
-        if (array_key_exists('local', $snapshot)) {
-            $payload['local'] = (bool) $snapshot['local'];
-        }
-
-        $this->insert(
-            array(
-                's_type'      => $type,
-                's_storage'   => $storageId,
-                's_payload'   => json_encode($payload),
-                's_status'    => 'pending',
-                'dt_next_run' => $now,
-                'dt_created'  => $now,
-            )
-        );
+        StorageJobs::enqueue($type, $storageId, $snapshot);
     }
 
     /**
-     * Queue a single "seed" job that the worker expands into per-resource jobs
-     * in the background. This keeps a bulk migration (offload/restore/adopt of
-     * a whole catalogue) off the admin request, which would otherwise run one
-     * INSERT per resource inline and time out at the web server on a large site.
-     * The worker pages through the resources on $sourceStorage from $offset and
-     * re-queues the seed until the catalogue is exhausted.
-     *
      * @param string $op              adopt|offload|restore
-     * @param string $sourceStorage   storage id the resources currently live on
-     * @param string $targetStorageId storage id to migrate them to
-     * @param int    $offset          paging offset to resume from
+     * @param string $sourceStorage
+     * @param string $targetStorageId
+     * @param int    $offset
+     *
+     * @return void
      */
     public function enqueueSeed(string $op, string $sourceStorage, string $targetStorageId, int $offset = 0): void
     {
-        $now = date('Y-m-d H:i:s');
-
-        $this->insert(
-            array(
-                's_type'      => 'seed',
-                's_storage'   => $targetStorageId,
-                's_payload'   => json_encode(array(
-                    'op'     => $op,
-                    'source' => $sourceStorage,
-                    'offset' => $offset,
-                )),
-                's_status'    => 'pending',
-                'dt_next_run' => $now,
-                'dt_created'  => $now,
-            )
-        );
+        StorageJobs::enqueueSeed($op, $sourceStorage, $targetStorageId, $offset);
     }
 
     /**
-     * Recover stale locks (a worker that died mid-job), then claim up to
-     * $batch pending, due jobs under a fresh worker token.
-     *
      * @param int $batch
      *
-     * @return array<int,array<string,string|null>> The claimed rows, empty when none were due
+     * @return array<int,array<string,string|null>>
      */
     public function claim(int $batch = 20): array
     {
-        $table = $this->getTableName();
-        $now   = date('Y-m-d H:i:s');
-        $stale = date('Y-m-d H:i:s', time() - 15 * 60);
-        $token = uniqid('w', true);
-
-        // Recover stale locks. The result is discarded and the failure swallowed
-        // on its own, so a hiccup here never aborts the claim below — the legacy
-        // query() returned false without throwing and the sequence ran on.
-        try {
-            osc_db_execute(
-                'UPDATE ' . $table . " SET s_status = 'pending', s_worker = NULL"
-                . " WHERE s_status = 'running' AND dt_locked < ?",
-                array($stale)
-            );
-        } catch (\mindstellar\database\DbException $e) {
-            // absorbed, as the legacy false return was
-        }
-
-        // Claim up to max(1, $batch) pending, due rows under a fresh token, oldest
-        // id first. ORDER BY and LIMIT on an UPDATE are not expressible through the
-        // builder, so this is hand-written: the table name is a fixed model
-        // constant, every value is a bound '?', and the limit is an int.
-        try {
-            osc_db_execute(
-                'UPDATE ' . $table . " SET s_status = 'running', s_worker = ?, dt_locked = ?"
-                . " WHERE s_status = 'pending' AND dt_next_run <= ?"
-                . ' ORDER BY pk_i_id LIMIT ' . (int) max(1, $batch),
-                array($token, $now, $now)
-            );
-        } catch (\mindstellar\database\DbException $e) {
-            // absorbed
-        }
-
-        try {
-            $rows = osc_db_select(
-                'SELECT * FROM ' . $table . ' WHERE s_worker = ?'
-                . " AND s_status = 'running' ORDER BY pk_i_id",
-                array($token)
-            );
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        if ($rows === array()) {
-            return array();
-        }
-
-        return osc_db_stringify_rows($rows);
+        return JobQueue::instance()->claim($batch);
     }
 
     /**
-     * Remove a finished job from the queue.
-     *
      * @param int $id
+     *
+     * @return void
      */
     public function complete(int $id): void
     {
-        $this->deleteByPrimaryKey($id);
+        JobQueue::instance()->complete($id);
     }
 
     /**
-     * Record a failed attempt. Dead-letters the job past the retry ceiling,
-     * otherwise reschedules it with an exponential backoff.
-     *
      * @param int    $id
      * @param string $error
+     *
+     * @return void
      */
     public function fail(int $id, string $error): void
     {
-        $row = $this->findByPrimaryKey($id);
-        if ($row === false) {
-            return;
-        }
-
-        $attempts     = (int) $row['i_attempts'];
-        $nextAttempts = $attempts + 1;
-
-        $values = array(
-            'i_attempts'   => $nextAttempts,
-            's_last_error' => substr($error, 0, 250),
-            's_worker'     => null,
-        );
-
-        if ($nextAttempts >= 8) {
-            $values['s_status'] = 'error';
-        } else {
-            $values['s_status']    = 'pending';
-            $values['dt_next_run'] = date('Y-m-d H:i:s', time() + (2 ** min($attempts, 7)) * 60);
-        }
-
-        $this->updateByPrimaryKey($values, $id);
+        JobQueue::instance()->fail($id, $error);
     }
 
     /**
-     * Count the queued jobs in one status.
-     *
      * @param string $status pending|running|error
      *
-     * @return int 0 when the query failed
+     * @return int
      */
     public function countByStatus(string $status): int
     {
-        try {
-            return osc_db_table($this->getTableName())->where('s_status', $status)->count();
-        } catch (\mindstellar\database\DbException $e) {
-            return 0;
-        }
+        return JobQueue::instance()->count($status);
     }
 
     /**
-     * The most recent jobs that exhausted their retries, newest first.
-     *
      * @param int $limit
      *
      * @return array<int,array<string,string|null>>
      */
     public function deadLetters(int $limit = 50): array
     {
-        if ($limit <= 0) {
-            return array();
-        }
-
-        try {
-            $rows = osc_db_table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('s_status', 'error')
-                ->orderBy('pk_i_id', 'DESC')
-                ->limit($limit)
-                ->get();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        return osc_db_stringify_rows($rows);
+        return JobQueue::instance()->deadLetters($limit);
     }
 }
-
-/* file end: ./oc-includes/osclass/classes/model/StorageQueue.php */

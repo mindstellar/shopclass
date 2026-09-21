@@ -464,6 +464,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
+            __('Background jobs'),
+            osc_admin_base_url(true) . '?page=tools&action=jobs',
+            'tools_jobs',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
             __('Activity log'),
             osc_admin_base_url(true) . '?page=tools&action=logs',
             'tools_logs',

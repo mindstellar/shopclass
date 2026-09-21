@@ -376,6 +376,74 @@ class CAdminTools extends AdminSecBaseModel
             case 'cleanup':
                 $this->doView('tools/cleanup.php');
                 break;
+            case 'jobs':
+                $queue = \mindstellar\job\JobQueue::instance();
+                \mindstellar\job\JobWorker::registerHandlers();
+
+                $status = Params::getParamString('status');
+                if (!in_array($status, array('pending', 'running', 'error'), true)) {
+                    $status = '';
+                }
+
+                $this->_exportVariableToView('jobs_summary', $queue->summary());
+                $this->_exportVariableToView('jobs_status', $status);
+                $this->_exportVariableToView('jobs_rows', $queue->page($status ?: null, null, 100));
+                $this->_exportVariableToView('jobs_queued_types', $queue->queuedTypes());
+                $this->_exportVariableToView('jobs_registered_types', \mindstellar\job\JobRegistry::types());
+                $this->doView('tools/jobs.php');
+                break;
+            case 'jobs_run':
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                    break;
+                }
+                osc_csrf_check();
+                $ran = osc_job_run(20);
+                if ($ran > 0) {
+                    osc_add_flash_ok_message(
+                        sprintf(_mn('%d job ran.', '%d jobs ran.', $ran), $ran),
+                        'admin'
+                    );
+                } else {
+                    osc_add_flash_warning_message(_m('Nothing was waiting to run.'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                break;
+            case 'jobs_retry':
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                    break;
+                }
+                osc_csrf_check();
+                $id = Params::getParamInt('id');
+                if ($id > 0) {
+                    $done = \mindstellar\job\JobQueue::instance()->retry($id);
+                } else {
+                    $done = \mindstellar\job\JobQueue::instance()->retryAll() > 0;
+                }
+                if ($done) {
+                    osc_add_flash_ok_message(_m('Queued again. It runs on the next cron tick.'), 'admin');
+                } else {
+                    osc_add_flash_warning_message(_m('Nothing to queue again.'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                break;
+            case 'jobs_forget':
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                    break;
+                }
+                osc_csrf_check();
+                $id = Params::getParamInt('id');
+                if ($id > 0) {
+                    $done = \mindstellar\job\JobQueue::instance()->forget($id);
+                } else {
+                    $done = \mindstellar\job\JobQueue::instance()->forgetAll() > 0;
+                }
+                if ($done) {
+                    osc_add_flash_ok_message(_m('Thrown away.'), 'admin');
+                } else {
+                    osc_add_flash_warning_message(_m('Nothing to throw away.'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                break;
             case 'cleanup_post':
                 if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
                     break;

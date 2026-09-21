@@ -15,10 +15,11 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\StorageSettingsForm;
+use mindstellar\job\JobQueue;
 use mindstellar\storage\ProviderPresets;
 use mindstellar\storage\S3Storage;
+use mindstellar\storage\StorageJobs;
 use mindstellar\storage\StorageManager;
-use mindstellar\storage\StorageWorker;
 
 /**
  * Class CAdminSettingsStorage
@@ -90,7 +91,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
             case ('storage_queue_run'):
                 osc_csrf_check();
 
-                StorageWorker::run();
+                osc_job_run();
 
                 osc_add_flash_ok_message(_m('Storage queue processed'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=storage');
@@ -108,7 +109,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                             break;
                         }
 
-                        StorageQueue::newInstance()->enqueueSeed('offload', 'local', $remote->getId());
+                        StorageJobs::enqueueSeed('offload', 'local', $remote->getId());
                         osc_add_flash_ok_message(
                             _m('Offload queued. Images move to remote storage in the background as the storage worker runs.'),
                             'admin'
@@ -121,7 +122,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                             break;
                         }
 
-                        StorageQueue::newInstance()->enqueueSeed('restore', $remote->getId(), $remote->getId());
+                        StorageJobs::enqueueSeed('restore', $remote->getId(), $remote->getId());
                         osc_add_flash_ok_message(
                             _m('Restore queued. Images download back to local storage in the background as the storage worker runs.'),
                             'admin'
@@ -156,7 +157,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                         // re-upload. The 's3' adapter for this run may not exist yet if it wasn't
                         // already active; the worker resolves it fresh from the prefs saved above
                         // on the next cron run, once hStorage.php has registered it.
-                        StorageQueue::newInstance()->enqueueSeed('adopt', 'local', 's3');
+                        StorageJobs::enqueueSeed('adopt', 'local', 's3');
                         osc_add_flash_ok_message(
                             _m('Better S3 settings imported. Existing images are adopted in the background as the storage worker runs.'),
                             'admin'
@@ -197,10 +198,10 @@ class CAdminSettingsStorage extends AdminSecBaseModel
         );
 
         try {
-            $queue = StorageQueue::newInstance();
+            $queue = JobQueue::instance();
             $queueStats = array(
-                'pending' => $queue->countByStatus('pending'),
-                'error' => $queue->countByStatus('error'),
+                'pending' => $queue->count(JobQueue::STATUS_PENDING),
+                'error' => $queue->count(JobQueue::STATUS_ERROR),
                 'dead_letters' => $queue->deadLetters(20),
             );
         } catch (Throwable $e) {

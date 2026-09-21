@@ -100,22 +100,24 @@ See [installing locations](/docs/configure/locations/).
 | `doctor` | Check PHP version, extensions, database, writability, cron freshness and cache. Exits non-zero if any check fails. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
-| `storage:work [--max-seconds=]` | Drain the storage-offload queue and nothing else. Safe to run every minute. |
+| `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |
+| `jobs:status` | Show what is waiting and name anything that gave up. |
 
-When listings are offloaded to remote storage, uploads queue up and a worker moves
-them. That worker also runs from the hourly `cron` tier, but a busy site can queue
-images faster than one pass an hour clears them, and the hourly tier does too much
-else to schedule it more often. `storage:work` turns only that crank, so it can go
-on a tight schedule of its own:
+Slow work — moving photos to remote storage, emptying a large category, whatever a
+plugin queues — is done in the background rather than during a page load. That queue
+also drains from the hourly `cron` tier, but a busy site fills it faster than one pass
+an hour clears, and the hourly tier does too much else to schedule it more often.
+`jobs:work` turns only that crank, so it can go on a tight schedule of its own:
 
 ```cron
-* * * * * php /path/to/site/oc-cli.php storage:work --max-seconds=50 >/dev/null 2>&1
+* * * * * php /path/to/site/oc-cli.php jobs:work --max-seconds=50 >/dev/null 2>&1
 ```
 
 It exits non-zero only when the queue holds jobs the worker gave up on — a backlog
-still draining is the normal case and exits `0`. On a site with no remote storage
-configured it prints one line and exits `0`, so the entry is harmless to leave in
-place.
+still draining is the normal case and exits `0`. An empty queue costs one query, so
+the entry is harmless to leave in place on a site that queues nothing.
+
+`storage:work` still works, as an alias for `jobs:work`.
 
 `doctor` is the first thing to run when a site is misbehaving and you do not yet
 know why:

@@ -98,7 +98,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     do {
                         $ids = $itemResourceManager->getResourceIdsBatch($offset, $batchSize);
                         foreach ($ids as $id) {
-                            StorageQueue::newInstance()->enqueue(
+                            \mindstellar\storage\StorageJobs::enqueue(
                                 'regenerate',
                                 $remoteId,
                                 array('pk_i_id' => $id, 's_storage' => $remoteId)

@@ -53,6 +53,7 @@ Worth knowing before you port something:
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
+| Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |

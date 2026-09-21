@@ -80,7 +80,7 @@ osc_add_hook('uploaded_resource', static function ($resource) {
     if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
         return;
     }
-    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
+    \mindstellar\storage\StorageJobs::enqueue('offload', $remote->getId(), $resource);
 });
 
 // App-level cascade: deleting a user removes every resource it owns (avatars in

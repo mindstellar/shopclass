@@ -373,10 +373,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
+CREATE TABLE /*TABLE_PREFIX*/t_job_queue (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    s_type VARCHAR(20) NOT NULL,
-    s_storage VARCHAR(30) NOT NULL,
+    s_type VARCHAR(60) NOT NULL,
+    s_storage VARCHAR(30) NULL,
     s_payload TEXT NOT NULL,
     s_status VARCHAR(10) NOT NULL DEFAULT 'pending',
     i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,

@@ -705,24 +705,26 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'delete_category':
                 osc_csrf_check();
-                $id    = Params::getParam('id');
-                $error = 0;
+                $id = Params::getParamInt('id');
 
-                $categoryManager = Category::newInstance();
-                $res             = $categoryManager->deleteByPrimaryKey($id);
-
-                if ($res > 0) {
-                    $message = __('The categories have been deleted');
-                } else {
-                    $error   = 1;
-                    $message = __('An error occurred while deleting');
+                // A category with more listings than one request can remove is deleted in
+                // the background instead: it is hidden immediately and emptied in batches,
+                // because doing it here holds locks for minutes and a host's
+                // max_execution_time would roll the whole thing back part-way.
+                switch (\mindstellar\job\CategoryJobs::requestDelete($id)) {
+                    case 'done':
+                        $result = array('ok' => __('The categories have been deleted'));
+                        break;
+                    case 'queued':
+                        $result = array('ok' => __(
+                            'The category is too large to delete at once. It has been hidden'
+                            . ' and is being emptied in the background.'
+                        ));
+                        break;
+                    default:
+                        $result = array('error' => __('An error occurred while deleting'));
                 }
 
-                if ($error) {
-                    $result = array('error' => $message);
-                } else {
-                    $result = array('ok' => $message);
-                }
                 AjaxResponse::json($result);
 
                 break;

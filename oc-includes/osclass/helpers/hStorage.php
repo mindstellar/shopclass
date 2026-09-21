@@ -85,14 +85,9 @@ osc_add_hook('init', static function () {
     osc_storage_register_remote();
 });
 
-// The worker self-exits instantly when the queue is empty, so running it on
-// every cron tick is cheap for installs that never queue a job. Register the
-// remote first so the worker can resolve the adapter regardless of the request
-// context it is triggered from (web cron vs. CLI).
-osc_add_hook('cron', static function () {
-    osc_storage_register_remote();
-    \mindstellar\storage\StorageWorker::run();
-});
+// Draining the queue is hJobs.php's cron hook now, and it runs every job type rather
+// than only storage's. The remote adapter is registered from StorageJobs::register(),
+// which the worker calls before its first claim.
 
 // Queue a freshly uploaded resource for offload to the configured remote
 // adapter. No-op on installs that never configured one.
@@ -108,7 +103,7 @@ $oscStorageEnqueueOffload = static function ($resource) {
     if ($remote === null) {
         return;
     }
-    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
+    \mindstellar\storage\StorageJobs::enqueue('offload', $remote->getId(), $resource);
 };
 
 osc_add_hook('uploaded_file', $oscStorageEnqueueOffload);

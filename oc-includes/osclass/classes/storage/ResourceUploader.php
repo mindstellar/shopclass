@@ -14,7 +14,6 @@ namespace mindstellar\storage;
 use ImageProcessing;
 use mindstellar\model\Resource;
 use mindstellar\utility\FileSystem;
-use StorageQueue;
 use Throwable;
 
 /**
@@ -255,7 +254,7 @@ final class ResourceUploader
             return;
         }
 
-        StorageQueue::newInstance()->enqueue('delete', $storage, $row);
+        StorageJobs::enqueue('delete', $storage, $row);
     }
 
     /**

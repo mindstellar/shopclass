@@ -108,7 +108,7 @@ function osc_deleteResource($id, $admin, $resource = null)
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         } else {
-            \StorageQueue::newInstance()->enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
+            \mindstellar\storage\StorageJobs::enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
         }
         osc_run_hook('delete_resource', $resource);
     }
