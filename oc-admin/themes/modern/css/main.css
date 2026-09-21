@@ -14172,6 +14172,12 @@ div.widget-box-content-no-wrapp li a {
   padding: 0;
   width: 0;
 }
+.table > tbody > tr > .col-status .osc-status {
+  background-color: transparent;
+  border-color: transparent;
+  gap: 0.3rem;
+  padding-inline: 0;
+}
 .table .actions {
   font-size: 0.8125rem;
   margin-top: 0.3rem;

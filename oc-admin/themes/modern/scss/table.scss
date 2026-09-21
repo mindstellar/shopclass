@@ -112,6 +112,18 @@
     }
   }
 
+  // A list column is scanned down, not read one row at a time, so the state does not need
+  // the chrome a standalone badge needs: the glyph carries the colour and the silhouette,
+  // the word carries the rest, and the fill is one tinted lozenge per row buying nothing.
+  // Scoped to the column on purpose -- .osc-status is deliberately unscoped, and a badge a
+  // plugin renders on a detail screen still needs its container.
+  > tbody > tr > .col-status .osc-status {
+    background-color: transparent;
+    border-color: transparent;
+    gap: .3rem;
+    padding-inline: 0;
+  }
+
   // Row actions sit in-flow beneath the listing title and are ALWAYS visible: revealing them
   // on hover fails WCAG 2.1.1 for keyboard and touch, and costs every row a reserve of dead
   // space. Muted by default so the listing is what you read. Colour goes through --osc-*
