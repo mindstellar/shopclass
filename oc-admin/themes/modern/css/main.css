@@ -14153,7 +14153,9 @@ div.widget-box-content-no-wrapp li a {
   color: var(--osc-bronze);
   text-decoration-line: underline;
 }
-.table > tbody .col-title {
+.table > tbody .col-title,
+.table > tbody .col-email,
+.table > tbody .col-author {
   font-size: 1rem;
   font-weight: 500;
 }
@@ -15076,7 +15078,7 @@ input.input-actions {
 }
 
 .field-num {
-  width: 7rem !important;
+  width: 8rem !important;
 }
 
 input[type=number].field-num {
