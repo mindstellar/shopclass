@@ -378,8 +378,18 @@ document.addEventListener('click', function (e) {
         }
         return;
     }
+    // A backdrop click is judged by where the pointer landed, not by what the event
+    // names as its target. A control that removes itself between mousedown and click --
+    // an autocomplete list closing as you pick from it -- leaves the click reporting the
+    // dialog underneath, and a target test then reads that as "clicked the backdrop".
     if (e.target.matches && e.target.matches('dialog.osc-dialog') && typeof e.target.close === 'function') {
-        e.target.close();
+        var box = e.target.getBoundingClientRect();
+        var inside = e.clientX >= box.left && e.clientX <= box.right
+                  && e.clientY >= box.top && e.clientY <= box.bottom;
+        // A keyboard-triggered click reports 0,0 and is never a backdrop click.
+        if (!inside && (e.clientX !== 0 || e.clientY !== 0)) {
+            e.target.close();
+        }
     }
 });
 

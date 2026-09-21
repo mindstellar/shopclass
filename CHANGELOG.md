@@ -38,6 +38,7 @@ In development.
 - On the user editor, choosing a country did not reload the regions: the script was emitted
   in the page head, so it never found the field it was meant to watch.
 - Suggestions under a field inside a dialog were drawn behind it.
+- Picking a suggestion inside a dialog closed the dialog instead of filling the field.
 - Deleting a category with thousands of listings timed out and rolled back, leaving a category
   that could not be deleted. A large one is now hidden immediately and emptied in the
   background.
