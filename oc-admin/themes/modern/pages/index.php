@@ -69,8 +69,6 @@ osc_current_admin_theme_path('parts/header.php');
 ?>
     <?php osc_admin_page_head(__('Manage pages')); ?>
     <div class="relative">
-        <div id="pages-toolbar" class="table-toolbar">
-        </div>
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="pages"/>
             <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>

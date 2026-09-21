@@ -1136,12 +1136,15 @@ function _osc_theme_screenshot_asset($theme)
  * @param string                          $name
  * @param array<int,array<string,string>> $options
  * @param string                          $class
+ * @param string                          $attributes Extra markup for the <select>, already escaped
  *
  * @return void
  */
-function osc_print_bulk_actions($id, $name, $options, $class = '')
+function osc_print_bulk_actions($id, $name, $options, $class = '', $attributes = '')
 {
-    echo '<select id="' . $id . '" name="' . $name . '" ' . ($class != '' ? 'class="form-select ' . $class . '"' : 'form-select') . '>';
+    echo '<select id="' . $id . '" name="' . $name . '" '
+         . ($attributes !== '' ? $attributes . ' ' : '')
+         . ($class != '' ? 'class="form-select ' . $class . '"' : 'form-select') . '>';
     foreach ($options as $o) {
         $opt   = '';
         $label = '';

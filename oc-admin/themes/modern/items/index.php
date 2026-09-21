@@ -87,61 +87,60 @@ $rows    = $aData['aRows'];
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Manage listings')); ?>
 <div class="relative">
-    <div id="listing-toolbar">
-        <div class="d-flex justify-content-end gap-1">
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters">
-                <input type="hidden" name="page" value="items" />
-                <input type="hidden" name="iDisplayLength" value="<?php echo $iDisplayLength; ?>" />
-                <div class="input-group-sm input-group">
-                    <?php if ($withFilters) { ?>
-                        <a id="btn-hide-filters" class="btn btn-dim" href="<?php echo osc_admin_base_url(true) . '?page=items'; ?>"><?php _e('Reset filters'); ?></a>
-                    <?php } ?>
-                    <?php $opt = 'oPattern';
-if (Params::getParam('shortcut-filter') != '') {
-    $opt = Params::getParam('shortcut-filter');
-} ?>
-                    <?php $classPattern = 'hide';
-$classUser          = 'hide';
-$classItemId        = 'hide'; ?>
-                    <?php if ($opt === 'oUser') {
-                        $classUser = '';
-                    } ?>
-                    <?php if ($opt === 'oPattern') {
-                        $classPattern = '';
-                    } ?>
-                    <?php if ($opt === 'oItemId') {
-                        $classItemId = '';
-                    } ?>
-                    <select id="filter-select" name="shortcut-filter" class="form-select form-select-sm">
-                        <option value="oPattern" <?php if ($opt === 'oPattern') {
-                            echo 'selected="selected"';
-                        } ?>><?php _e('Pattern'); ?></option>
-                        <option value="oUser" <?php if ($opt === 'oUser') {
-                            echo 'selected="selected"';
-                        } ?>><?php _e('Email'); ?></option>
-                        <option value="oItemId" <?php if ($opt === 'oItemId') {
-                            echo 'selected="selected"';
-                        } ?>><?php _e('Item ID'); ?></option>
-                    </select>
-                    <input id="fPattern" type="text" name="sSearch" placeholder="<?php _e('Keywords') ?>" value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>" class="form-control w-25 <?php echo $classPattern; ?>" />
-                    <input id="fUser" name="user" type="text" placeholder="<?php _e('User Email') ?>" class="fUser form-control w-25 <?php echo $classUser; ?>" value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
-                    <input id="fUserId" name="userId" type="hidden" placeholder="<?php _e('User ID') ?>" class="form-control w-25" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
-                    <input id="fItemId" type="text" name="itemId" placeholder="<?php _e('Item ID') ?>" value="<?php echo osc_esc_html(Params::getParam('itemId')); ?>" class="form-control w-25 <?php echo $classItemId; ?>" />
-                    <a id="btn-display-filters" data-osc-dialog-open="#display-filters" href="#" class="btn <?php
-                                                                                                        echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>" title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
-                    </a>
-                    <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-            </form>
-            <?php osc_admin_per_page(array('label' => __('%d Listings'), 'current' => $iDisplayLength)); ?>
-        </div>
-    </div>
+    <?php osc_admin_list_filter(array(
+            'page'     => 'items',
+            'id'       => 'shortcut-filters',
+            'hidden'   => array('iDisplayLength' => $iDisplayLength),
+            'active'   => $withFilters,
+            'advanced' => '#display-filters',
+            'reset'    => osc_admin_base_url(true) . '?page=items',
+            'fields'   => array(
+                array(
+                    'type'    => 'switch',
+                    'name'    => 'shortcut-filter',
+                    'id'      => 'filter-select',
+                    'value'   => Params::getParamString('shortcut-filter'),
+                    'options' => array(
+                        'oPattern' => array(
+                            'label'       => __('Pattern'),
+                            'name'        => 'sSearch',
+                            'id'          => 'fPattern',
+                            'placeholder' => __('Keywords'),
+                            'value'       => Params::getParam('sSearch'),
+                        ),
+                        'oUser' => array(
+                            'label'       => __('Email'),
+                            'name'        => 'user',
+                            'id'          => 'fUser',
+                            'placeholder' => __('User Email'),
+                            'value'       => Params::getParam('user'),
+                        ),
+                        'oItemId' => array(
+                            'label'       => __('Item ID'),
+                            'name'        => 'itemId',
+                            'id'          => 'fItemId',
+                            'placeholder' => __('Item ID'),
+                            'value'       => Params::getParam('itemId'),
+                        ),
+                    ),
+                ),
+                array(
+                    'type'  => 'hidden',
+                    'name'  => 'userId',
+                    'id'    => 'fUserId',
+                    'value' => Params::getParam('userId'),
+                ),
+            ),
+            'bulk'     => array(
+                'name'    => 'bulk_actions',
+                'options' => __get('bulk_options'),
+                'form'    => 'datatablesForm',
+            ),
+            'per_page' => array('label' => __('%d Listings'), 'current' => $iDisplayLength),
+        )); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
-        <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
@@ -301,19 +300,6 @@ osc_admin_pagination($aData);
 )); ?>
 <?php osc_admin_bulk_confirm_dialog(); ?>
 <script>
-    var filterSelect = document.getElementById("filter-select")
-    filterSelect.onchange = function() {
-        let selectedOption = this.options[this.selectedIndex].value
-        let inputIdsArr = ['ItemId', 'User', 'Pattern']
-        for (let i = 0; i < inputIdsArr.length; i++) {
-            if ('o' + inputIdsArr[i] === selectedOption) {
-                document.getElementById("f" + inputIdsArr[i]).classList.remove("hide");
-            } else {
-                document.getElementById("f" + inputIdsArr[i]).classList.add("hide");
-            }
-        }
-    }
-
     function delete_dialog(item_id) {
         var deleteModal = document.getElementById("itemDeleteModal");
         var input = deleteModal.querySelector("input[name='id[]']");

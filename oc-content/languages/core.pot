@@ -21,6 +21,10 @@ msgstr ""
 msgid " is available"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "#"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/ui.php
 msgid "%1$s &raquo; %2$s"
 msgstr ""
@@ -933,6 +937,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/list.php
+#: oc-admin/themes/modern/tools/jobs.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "All"
@@ -1390,6 +1395,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Background Hexadecimal color value"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Background jobs"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -3825,6 +3835,7 @@ msgid "Filters"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/users/alerts.php
 #: oc-admin/themes/modern/users/index.php
@@ -3995,6 +4006,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Garage Sale"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Gave up"
 msgstr ""
 
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -4937,6 +4952,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/index.php
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid "Last checked on "
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Last error"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
@@ -6036,6 +6055,10 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Next run"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Next screenshot"
 msgstr ""
@@ -6415,6 +6438,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
 msgid "Nothing here yet"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Nothing here."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -7203,6 +7230,10 @@ msgstr ""
 msgid "Queue uploads"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Queued work has no handler, so it cannot run. This usually means a "
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid ""
 "Quickly find out how many new listings have been published on your site and "
@@ -7572,6 +7603,7 @@ msgstr ""
 msgid "Resend the activation to"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Reset"
 msgstr ""
@@ -7632,6 +7664,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Run cleanup now?"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Run waiting jobs now"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Running"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -7782,6 +7822,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Search all locations"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/ui.php
+msgid "Search by"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -8289,6 +8333,7 @@ msgid "Show e-mail"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/users/index.php
 msgid "Show filters"
 msgstr ""
@@ -8492,6 +8537,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Sporting Goods - Bicycles"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "State"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/index.php
@@ -8809,6 +8858,10 @@ msgstr ""
 msgid "The category as well as its subcategories have been enabled"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+msgid "The category is too large to delete at once. It has been hidden"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "The cheapest speed-up there is — PHP stops recompiling every file on every "
@@ -9059,6 +9112,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "The widgets below make up this page. Widgets can also appear in your"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "The work they were going to do will never happen. This can't be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
@@ -9348,6 +9405,18 @@ msgstr ""
 msgid "Thousands separator: this field is required"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Throw away all failed"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Throw away every failed job?"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Throw them away"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Thu"
 msgstr ""
@@ -9462,6 +9531,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cache.php
 #: oc-admin/themes/modern/tools/cleanup.php
 #: oc-admin/themes/modern/tools/import.php
+#: oc-admin/themes/modern/tools/jobs.php
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/tools/maintenance.php
 #: oc-admin/themes/modern/tools/system-info.php
@@ -9499,6 +9569,10 @@ msgstr ""
 msgid "Toys - Games - Hobbies"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Tries"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Trucks - Commercial Vehicles"
 msgstr ""
@@ -9508,7 +9582,12 @@ msgid "Try a different status or payment method."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
+#: oc-admin/themes/modern/tools/jobs.php
 msgid "Try again"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Try all failed again"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -10267,6 +10346,14 @@ msgstr ""
 msgid "Volunteers"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Waiting"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Waiting jobs also run on every cron tick."
+msgstr ""
+
 #: oc-admin/themes/modern/items/settings.php
 msgid "Warn about expiration"
 msgstr ""
@@ -10363,6 +10450,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Welcome to Shopclass"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "What"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -10469,6 +10560,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Women looking for Women"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Work that is too slow to do while somebody waits — emptying a large "
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Compatibility.php

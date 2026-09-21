@@ -49,6 +49,16 @@
   color: var(--osc-danger);
 }
 
+// A wide dialog is a panel of work, not a sentence and two buttons, so its title has to
+// hold the top of it rather than sit as the first line of the form.
+.osc-dialog-wide .osc-dialog-title {
+  border-block-end: 1px solid var(--osc-rule);
+  font-size: 1.15rem;
+  margin-block-end: 1.1rem;
+  margin-inline: -1.35rem;
+  padding: 0 1.35rem .75rem;
+}
+
 .osc-dialog-text {
   color: var(--osc-ink-muted);
   line-height: 1.55;

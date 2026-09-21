@@ -600,23 +600,32 @@ if (!function_exists('osc_admin_bulk_actions')) {
      * @return void
      */
     function osc_admin_bulk_actions(array $opts)
-    { ?>
+    {
+        // 'form' lets the group sit in the toolbar row while still submitting the table's
+        // POST form below it. Forms cannot nest, and the row wants the filter beside it.
+        $form = isset($opts['form'])
+            ? ' form="' . osc_esc_html((string) $opts['form']) . '"'
+            : ''; ?>
         <div id="bulk-actions">
+            <?php // Outside the group: a visually-hidden label still counts as its first
+                  // child, and Bootstrap strips the start radius off everything that is not.?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($opts['id'] ?? 'bulk_actions'); ?>">
+                <?php echo osc_esc_html($opts['label'] ?? __('Bulk actions')); ?>
+            </label>
             <div class="input-group input-group-sm">
-                <label class="visually-hidden" for="<?php echo osc_esc_html($opts['id'] ?? 'bulk_actions'); ?>">
-                    <?php echo osc_esc_html($opts['label'] ?? __('Bulk actions')); ?>
-                </label>
                 <?php if (!empty($opts['options_html'])) {
-                    ($opts['options_html'])();
+                    ($opts['options_html'])($form);
                 } else {
                     osc_print_bulk_actions(
                         $opts['id'] ?? 'bulk_actions',
                         $opts['name'] ?? 'action',
                         $opts['options'] ?? array(),
-                        'select-box-extra'
+                        'select-box-extra',
+                        $form
                     );
                 } ?>
-                <button type="submit" id="bulk_apply" class="btn btn-submit"><?php _e('Apply'); ?></button>
+                <button type="submit" id="bulk_apply" class="btn btn-submit"<?php
+                    echo $form; ?>><?php _e('Apply'); ?></button>
             </div>
         </div>
         <?php
@@ -649,6 +658,170 @@ if (!function_exists('osc_admin_bulk_confirm_dialog')) {
                         class="btn btn-danger btn-sm"><?php echo osc_esc_html($opts['confirm'] ?? __('Delete')); ?></button>
             </div>
         </dialog>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_list_filter')) {
+    /**
+     * The filter strip above a list.
+     *
+     * Every list screen had written its own: four different wrappers, the page-size select
+     * before the form on one screen and after it on the next, and the same "which field am
+     * I searching" select rebuilt with its own inline script. The names and ids are the
+     * contract with the controllers and with the CSS, so they are passed in rather than
+     * generated -- this unifies the shape, not the parameters.
+     *
+     * Keys: 'page' (the screen's page parameter), 'fields', 'hidden' => name => value,
+     *       'advanced' => a dialog selector, 'active' => bool, 'reset' => url,
+     *       'id' => form id, 'submit' => the find button's title.
+     *
+     * A field is one of:
+     *   search  name, value, placeholder, id
+     *   select  name, value, options (value => word), placeholder (the "any" row), label, id
+     *   switch  name, value, id, options (value => array(label, name, id, placeholder))
+     *           -- one select choosing which of its own inputs is in play
+     *   hidden  name, value, id
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @return void
+     */
+    function osc_admin_list_filter(array $opts = array())
+    {
+        $fields = $opts['fields'] ?? array();
+        $active = !empty($opts['active']);
+        $row    = isset($opts['bulk']) || isset($opts['per_page']);
+
+        if ($row) {
+            osc_admin_toolbar_open(array('align' => isset($opts['bulk']) ? 'between' : 'end'));
+            if (isset($opts['bulk'])) {
+                osc_admin_bulk_actions($opts['bulk']);
+            }
+            echo '<div class="osc-toolbar-group">';
+        } ?>
+        <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>"
+              class="osc-filter nocsrf"<?php echo isset($opts['id'])
+                  ? ' id="' . osc_esc_html($opts['id']) . '"' : ''; ?>>
+            <?php if (isset($opts['page'])) { ?>
+                <input type="hidden" name="page" value="<?php echo osc_esc_html($opts['page']); ?>"/>
+            <?php } ?>
+            <?php foreach (($opts['hidden'] ?? array()) as $name => $value) { ?>
+                <input type="hidden" name="<?php echo osc_esc_html($name); ?>"
+                       value="<?php echo osc_esc_html((string) $value); ?>"/>
+            <?php } ?>
+
+            <?php foreach ($fields as $field) {
+                osc_admin_list_filter_field($field);
+            } ?>
+
+            <?php if (!empty($opts['advanced'])) { ?>
+                <?php // One class or the other, never both. Red is for destructive actions;
+                      // "a filter is applied" is a state, so it takes the accent.?>
+                <a href="#" data-osc-dialog-open="<?php echo osc_esc_html($opts['advanced']); ?>"
+                   class="btn btn-sm <?php echo $active ? 'btn-primary' : 'btn-dim'; ?>"
+                   title="<?php echo osc_esc_html(__('Show filters')); ?>"><i class="bi bi-filter"></i></a>
+            <?php } ?>
+
+            <button type="submit" class="btn btn-sm btn-primary"
+                    title="<?php echo osc_esc_html($opts['submit'] ?? __('Find')); ?>">
+                <i class="bi bi-search"></i>
+            </button>
+
+            <?php if ($active && !empty($opts['reset'])) { ?>
+                <a class="btn btn-sm btn-dim osc-filter-reset"
+                   href="<?php echo osc_esc_html($opts['reset']); ?>"><?php _e('Reset'); ?></a>
+            <?php } ?>
+        </form>
+        <?php
+        if ($row) {
+            if (isset($opts['per_page'])) {
+                osc_admin_per_page($opts['per_page']);
+            }
+            echo '</div>';
+            osc_admin_toolbar_close();
+        }
+    }
+}
+
+if (!function_exists('osc_admin_list_filter_field')) {
+    /**
+     * One control inside osc_admin_list_filter(). Split out so a screen with a control
+     * nothing else has can render the rest through the component and print that one itself.
+     *
+     * @param array<string,mixed> $field
+     *
+     * @return void
+     */
+    function osc_admin_list_filter_field(array $field)
+    {
+        $type  = $field['type'] ?? 'search';
+        $name  = (string) ($field['name'] ?? '');
+        $id    = (string) ($field['id'] ?? ('osc-filter-' . $name));
+        $value = (string) ($field['value'] ?? '');
+
+        if ($type === 'hidden') { ?>
+            <input type="hidden" id="<?php echo osc_esc_html($id); ?>"
+                   name="<?php echo osc_esc_html($name); ?>"
+                   value="<?php echo osc_esc_html($value); ?>"/>
+            <?php
+            return;
+        }
+
+        if ($type === 'select') { ?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+                <?php echo osc_esc_html($field['label'] ?? $name); ?>
+            </label>
+            <select id="<?php echo osc_esc_html($id); ?>" name="<?php echo osc_esc_html($name); ?>"
+                    class="form-select form-select-sm">
+                <?php if (isset($field['placeholder'])) { ?>
+                    <option value=""><?php echo osc_esc_html($field['placeholder']); ?></option>
+                <?php } ?>
+                <?php foreach (($field['options'] ?? array()) as $optValue => $word) { ?>
+                    <option value="<?php echo osc_esc_html((string) $optValue); ?>"
+                        <?php echo (string) $optValue === $value ? ' selected' : ''; ?>>
+                        <?php echo osc_esc_html((string) $word); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <?php
+            return;
+        }
+
+        if ($type === 'switch') {
+            $options = $field['options'] ?? array();
+            $current = isset($options[$value]) ? $value : (string) array_key_first($options); ?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+                <?php echo osc_esc_html($field['label'] ?? __('Search by')); ?>
+            </label>
+            <select id="<?php echo osc_esc_html($id); ?>" name="<?php echo osc_esc_html($name); ?>"
+                    class="form-select form-select-sm" data-osc-filter-switch>
+                <?php foreach ($options as $optValue => $spec) { ?>
+                    <option value="<?php echo osc_esc_html((string) $optValue); ?>"
+                        <?php echo (string) $optValue === $current ? ' selected' : ''; ?>>
+                        <?php echo osc_esc_html((string) ($spec['label'] ?? $optValue)); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <?php foreach ($options as $optValue => $spec) { ?>
+                <input type="text" data-osc-filter-for="<?php echo osc_esc_html((string) $optValue); ?>"
+                       id="<?php echo osc_esc_html((string) ($spec['id'] ?? ('osc-filter-' . $optValue))); ?>"
+                       name="<?php echo osc_esc_html((string) ($spec['name'] ?? '')); ?>"
+                       class="form-control form-control-sm<?php
+                           echo (string) $optValue === $current ? '' : ' hide'; ?>"
+                       placeholder="<?php echo osc_esc_html((string) ($spec['placeholder'] ?? '')); ?>"
+                       value="<?php echo osc_esc_html((string) ($spec['value'] ?? '')); ?>"/>
+            <?php }
+            return;
+        } ?>
+
+        <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+            <?php echo osc_esc_html($field['label'] ?? $field['placeholder'] ?? $name); ?>
+        </label>
+        <input type="search" id="<?php echo osc_esc_html($id); ?>"
+               name="<?php echo osc_esc_html($name); ?>" class="form-control form-control-sm"
+               placeholder="<?php echo osc_esc_html((string) ($field['placeholder'] ?? '')); ?>"
+               value="<?php echo osc_esc_html($value); ?>"/>
         <?php
     }
 }

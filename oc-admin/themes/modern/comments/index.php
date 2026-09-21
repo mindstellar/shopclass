@@ -38,17 +38,15 @@ $rows    = $aData['aRows'];
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Comments')); ?>
 <div class="relative">
-    <div id="listing-toolbar">
-        <div class="float-right">
-            <?php if (Params::getParam('showAll') !== 'off') { ?>
-                <a href="<?php echo osc_admin_base_url(true) . '?page=comments&showAll=off'; ?>"
-                   class="btn btn-sm btn-dim"><?php _e('Hidden comments'); ?></a>
-            <?php } else { ?>
-                <a href="<?php echo osc_admin_base_url(true) . '?page=comments'; ?>"
-                   class="btn btn-sm btn-dim"><?php _e('All comments'); ?></a>
-            <?php } ?>
-        </div>
-    </div>
+    <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
+        <?php if (Params::getParam('showAll') !== 'off') { ?>
+            <a href="<?php echo osc_admin_base_url(true) . '?page=comments&showAll=off'; ?>"
+               class="btn btn-sm btn-dim"><?php _e('Hidden comments'); ?></a>
+        <?php } else { ?>
+            <a href="<?php echo osc_admin_base_url(true) . '?page=comments'; ?>"
+               class="btn btn-sm btn-dim"><?php _e('All comments'); ?></a>
+        <?php } ?>
+    <?php osc_admin_toolbar_close(); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post"
           data-dialog-open="false">
         <input type="hidden" name="page" value="comments"/>

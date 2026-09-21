@@ -72,6 +72,8 @@ In development.
   root, so it still follows a larger browser font size if you have set one.
 - List rows read in three sizes instead of one, and the status column drops its fill — the
   dot and the word carry it. Status badges outside a table are unchanged.
+- Every list screen's filter bar is the same control in the same place, with bulk actions
+  beside it on one row instead of stacked above the table.
 - Statistics → Recalculate location stats has left the menu. It has its own button on
   Listings → Locations → Data. The old URL still works.
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.

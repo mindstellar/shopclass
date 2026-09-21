@@ -241,6 +241,30 @@ document.addEventListener('change', function (event) {
     });
 });
 
+// A list filter whose select chooses which of its own inputs is in play. Delegated, so
+// every screen gets it from the component rather than shipping its own inline script.
+document.addEventListener('change', function (event) {
+    var picker = event.target;
+    if (!picker || !picker.hasAttribute || !picker.hasAttribute('data-osc-filter-switch')) {
+        return;
+    }
+    var form = picker.form || picker.closest('form');
+    if (!form) {
+        return;
+    }
+    var shown = null;
+    form.querySelectorAll('[data-osc-filter-for]').forEach(function (input) {
+        var on = input.getAttribute('data-osc-filter-for') === picker.value;
+        input.classList.toggle('hide', !on);
+        if (on) {
+            shown = input;
+        }
+    });
+    if (shown) {
+        shown.focus();
+    }
+});
+
 // A package icon or screenshot that cannot load (a blocked CDN, an offline install) hands
 // its box back to the tinted initial underneath instead of leaving an empty frame.
 function oscThumbFailed(img) {

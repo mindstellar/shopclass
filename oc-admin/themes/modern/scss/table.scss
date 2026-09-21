@@ -115,9 +115,11 @@
   // A list column is scanned down, not read one row at a time, so the state does not need
   // the chrome a standalone badge needs: the glyph carries the colour and the silhouette,
   // the word carries the rest, and the fill is one tinted lozenge per row buying nothing.
-  // Scoped to the column on purpose -- .osc-status is deliberately unscoped, and a badge a
-  // plugin renders on a detail screen still needs its container.
-  > tbody > tr > .col-status .osc-status {
+  // Scoped to a table body on purpose -- .osc-status is deliberately unscoped, and a badge
+  // a plugin renders on a card or a detail screen still needs its container. Not keyed to
+  // .col-status: Billing, Packages and the Locations screens put the badge in a plain cell,
+  // and a column that has to be tagged to look right is a component with a trap in it.
+  > tbody .osc-status {
     background-color: transparent;
     border-color: transparent;
     gap: .3rem;

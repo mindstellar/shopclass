@@ -13043,6 +13043,69 @@ ul.showing-results {
   width: auto;
 }
 
+.osc-filter {
+  align-items: stretch;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  overflow: hidden;
+}
+.osc-filter .form-control, .osc-filter input.input-large, .osc-filter input.input-medium, .osc-filter input.input-small, .osc-filter input.large,
+.osc-filter input.xlarge,
+.osc-filter .input-text,
+.osc-filter .input-password, .osc-filter .form-controls textarea, .form-controls .osc-filter textarea, .osc-filter .form-controls input:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls .osc-filter input:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.osc-filter .form-select,
+.osc-filter select.field-select,
+.osc-filter .form-controls select,
+.form-controls .osc-filter select,
+.osc-filter .widget-box-title select,
+.widget-box-title .osc-filter select {
+  background-color: transparent;
+  border: 0;
+  border-inline-end: 1px solid var(--osc-rule);
+  border-radius: 0;
+  width: auto;
+}
+.osc-filter .form-control:focus, .osc-filter input.input-large:focus, .osc-filter input.input-medium:focus, .osc-filter input.input-small:focus, .osc-filter input.large:focus,
+.osc-filter input.xlarge:focus,
+.osc-filter .input-text:focus,
+.osc-filter .input-password:focus, .osc-filter .form-controls textarea:focus, .form-controls .osc-filter textarea:focus, .osc-filter .form-controls input:focus:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls .osc-filter input:focus:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.osc-filter .form-select:focus,
+.osc-filter select.field-select:focus,
+.osc-filter .form-controls select:focus,
+.form-controls .osc-filter select:focus,
+.osc-filter .widget-box-title select:focus,
+.widget-box-title .osc-filter select:focus {
+  background-color: var(--osc-bench);
+  box-shadow: none;
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: -2px;
+  position: relative;
+}
+.osc-filter .form-control[type=search], .osc-filter input[type=search].input-large, .osc-filter input[type=search].input-medium, .osc-filter input[type=search].input-small, .osc-filter input[type=search].large,
+.osc-filter input[type=search].xlarge,
+.osc-filter [type=search].input-text,
+.osc-filter [type=search].input-password, .osc-filter .form-controls textarea[type=search], .form-controls .osc-filter textarea[type=search], .osc-filter .form-controls input[type=search]:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls .osc-filter input[type=search]:not([type=checkbox]):not([type=radio]):not([type=submit]),
+.osc-filter [data-osc-filter-for] {
+  flex: 1 1 11rem;
+  min-width: 8rem;
+}
+.osc-filter .btn {
+  border-radius: 0;
+  border-width: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.osc-filter > :last-child {
+  border-inline-end: 0;
+}
+.osc-filter .hide {
+  display: none;
+}
+
 .osc-toolbar-between {
   justify-content: space-between;
 }
@@ -13294,6 +13357,14 @@ ul.showing-results {
 
 .osc-dialog-danger .osc-dialog-title > i {
   color: var(--osc-danger);
+}
+
+.osc-dialog-wide .osc-dialog-title {
+  border-block-end: 1px solid var(--osc-rule);
+  font-size: 1.15rem;
+  margin-block-end: 1.1rem;
+  margin-inline: -1.35rem;
+  padding: 0 1.35rem 0.75rem;
 }
 
 .osc-dialog-text {
@@ -14172,7 +14243,7 @@ div.widget-box-content-no-wrapp li a {
   padding: 0;
   width: 0;
 }
-.table > tbody > tr > .col-status .osc-status {
+.table > tbody .osc-status {
   background-color: transparent;
   border-color: transparent;
   gap: 0.3rem;
@@ -15758,14 +15829,14 @@ code {
   margin-bottom: 1rem;
   max-width: 15rem;
 }
+.osc-toolbar > #bulk-actions {
+  margin-bottom: 0;
+}
 
 .submit-right {
   margin: 0;
 }
 
-#display-filters {
-  padding: 40px 0 0;
-}
 #display-filters .form-row {
   display: flex;
   flex-direction: column;

@@ -83,36 +83,36 @@ $withFilters = __get('withFilters');
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Manage users')); ?>
     <div class="relative">
-        <div id="users-toolbar" class="table-toolbar d-flex justify-content-end">
-            <?php osc_admin_per_page(array('label' => __('%d Users'), 'current' => $iDisplayLength)); ?>
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
-                  class="inline nocsrf">
-                <fieldset class="input-group input-group-sm">
-                    <input type="hidden" name="page" value="users"/>
-                    <input id="fUser" name="user" type="text" class="fUser input-text input-actions"
-                           value="<?php echo osc_esc_html(Params::getParam('user')); ?>"/>
-                    <input id="fUserId" name="userId" type="hidden"
-                           value="<?php echo osc_esc_html(Params::getParam('userId')); ?>"/>
-                    <?php if ($withFilters) { ?>
-                        <a id="btn-hide-filters" href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"
-                           class="btn btn-dim"><?php _e('Reset filters'); ?></a>
-                    <?php } ?>
-                    <?php // One class or the other, never both — see items/index.php. Red is for destructive
-                          // actions; "a filter is applied" is a state.?>
-                    <a data-osc-dialog-open="#display-filters" href="#"
-                       class="btn <?php echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>"
-                       title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
-                    </a>
-                    <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </fieldset>
-            </form>
-        </div>
+        <?php osc_admin_list_filter(array(
+                'page'     => 'users',
+                'id'       => 'shortcut-filters',
+                'active'   => $withFilters,
+                'advanced' => '#display-filters',
+                'reset'    => osc_admin_base_url(true) . '?page=users',
+                'fields'   => array(
+                    array(
+                        'type'        => 'search',
+                        'name'        => 'user',
+                        'id'          => 'fUser',
+                        'label'       => __('User'),
+                        'placeholder' => __('User Email'),
+                        'value'       => Params::getParam('user'),
+                    ),
+                    array(
+                        'type'  => 'hidden',
+                        'name'  => 'userId',
+                        'id'    => 'fUserId',
+                        'value' => Params::getParam('userId'),
+                    ),
+                ),
+                'bulk'     => array(
+                    'options' => __get('bulk_options'),
+                    'form'    => 'datatablesForm',
+                ),
+                'per_page' => array('label' => __('%d Users'), 'current' => $iDisplayLength),
+            )); ?>
         <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
-
-            <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
             <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>

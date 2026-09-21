@@ -188,6 +188,62 @@
   }
 }
 
+// The filter strip above a list. One row of controls that reads as one control: the
+// fields share a hairline box and only the buttons at the end carry a fill, so a screen
+// with three filters does not look like a screen with three buttons.
+.osc-filter {
+  align-items: stretch;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  overflow: hidden;
+
+  .form-control,
+  .form-select {
+    background-color: transparent;
+    border: 0;
+    border-inline-end: 1px solid var(--osc-rule);
+    border-radius: 0;
+    width: auto;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    background-color: var(--osc-bench);
+    box-shadow: none;
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+    position: relative;
+  }
+
+  // The search field is the one that should grow into whatever room is left.
+  .form-control[type="search"],
+  [data-osc-filter-for] {
+    flex: 1 1 11rem;
+    min-width: 8rem;
+  }
+
+  .btn {
+    border-radius: 0;
+    border-width: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // Only the last control in the row keeps a square outer edge against the box.
+  > :last-child {
+    border-inline-end: 0;
+  }
+
+  // A control the switcher has put away must not hold its place in the row.
+  .hide {
+    display: none;
+  }
+}
+
 .osc-toolbar-between {
   justify-content: space-between;
 }

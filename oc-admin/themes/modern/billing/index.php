@@ -47,39 +47,32 @@ $isFiltered = ($filters['status'] ?? '') !== ''
     <?php osc_admin_page_head(__('Orders')); ?>
 
     <?php osc_admin_toolbar_open(); ?>
-        <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>"
-              class="inline nocsrf billing-filters">
-            <input type="hidden" name="page" value="billing"/>
-
-            <label class="visually-hidden" for="fStatus"><?php _e('Status'); ?></label>
-            <select id="fStatus" name="status" class="form-select form-select-sm">
-                <option value=""><?php _e('Any status'); ?></option>
-                <?php foreach ($statusWords as $value => $word) { ?>
-                    <option value="<?php echo osc_esc_html($value); ?>"
-                        <?php echo ($filters['status'] ?? '') === $value ? 'selected' : ''; ?>>
-                        <?php echo osc_esc_html($word); ?>
-                    </option>
-                <?php } ?>
-            </select>
-
-            <?php if (!empty($gateways)) { ?>
-                <label class="visually-hidden" for="fGateway"><?php _e('Payment method'); ?></label>
-                <select id="fGateway" name="gateway" class="form-select form-select-sm">
-                    <option value=""><?php _e('Any payment method'); ?></option>
-                    <?php foreach ($gateways as $gatewayId) { ?>
-                        <option value="<?php echo osc_esc_html($gatewayId); ?>"
-                            <?php echo ($filters['gateway'] ?? '') === $gatewayId ? 'selected' : ''; ?>>
-                            <?php echo osc_esc_html($gatewayId); ?>
-                        </option>
-                    <?php } ?>
-                </select>
-            <?php } ?>
-
-            <button type="submit" class="btn btn-secondary btn-sm"><?php _e('Filter'); ?></button>
-            <?php if ($isFiltered) { ?>
-                <a class="btn btn-dim btn-sm" href="<?php echo osc_esc_html($base); ?>"><?php _e('Clear'); ?></a>
-            <?php } ?>
-        </form>
+        <?php osc_admin_list_filter(array(
+            'page'   => 'billing',
+            'active' => $isFiltered,
+            'reset'  => $base,
+            'submit' => __('Filter'),
+            'fields' => array_values(array_filter(array(
+                array(
+                    'type'        => 'select',
+                    'name'        => 'status',
+                    'id'          => 'fStatus',
+                    'label'       => __('Status'),
+                    'placeholder' => __('Any status'),
+                    'options'     => $statusWords,
+                    'value'       => (string) ($filters['status'] ?? ''),
+                ),
+                empty($gateways) ? null : array(
+                    'type'        => 'select',
+                    'name'        => 'gateway',
+                    'id'          => 'fGateway',
+                    'label'       => __('Payment method'),
+                    'placeholder' => __('Any payment method'),
+                    'options'     => array_combine($gateways, $gateways),
+                    'value'       => (string) ($filters['gateway'] ?? ''),
+                ),
+            ))),
+        )); ?>
 
         <p class="billing-summary">
             <?php printf(

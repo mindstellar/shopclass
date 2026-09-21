@@ -13,6 +13,12 @@
 #bulk-actions {
   margin-bottom: 1rem;
   max-width: 15rem;
+
+  // In a toolbar row the gap is the toolbar's to give, and the row aligns the group
+  // against the filter beside it rather than hanging it below the line.
+  .osc-toolbar > & {
+    margin-bottom: 0;
+  }
 }
 
 .submit-right {
@@ -24,8 +30,6 @@
 // "Choose…" truncated to "Choo…". The rows stack instead, label above a control
 // that fills its column, which is the shape the rest of the admin's forms use.
 #display-filters {
-  padding: 40px 0 0;
-
   .form-row {
     display: flex;
     flex-direction: column;
