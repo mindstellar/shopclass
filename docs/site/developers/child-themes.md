@@ -98,6 +98,38 @@ So:
 - **Writing a child theme:** do not redeclare a function the parent does not guard, and do
   not bother guarding your own. Prefix them with your theme's slug so they cannot collide.
 
+### A worked example
+
+Storefront wraps all 33 of its functions, so any of them can be replaced. To change how a
+listing description is trimmed, copy the signature into the child and write your own body:
+
+```php
+// oc-content/themes/storefront-blue/functions.php
+function storefront_excerpt($html, $len = 180)
+{
+    $text = trim(preg_replace('/\s+/', ' ', strip_tags((string) $html)));
+
+    return $text === '' ? '' : mb_substr($text, 0, 40) . '…';
+}
+```
+
+That is the whole override. No registration, no hook, no call to the parent. The child's
+copy is declared first, storefront's guard sees the name is taken and skips its own, and
+every `storefront_excerpt()` call in the parent's templates now runs yours.
+
+### When the parent did not guard
+
+Then you cannot replace that function, and there is no workaround — declaring it is a
+fatal either way. Two things still work:
+
+- **Hooks and filters.** Both themes may add to the same hook and both run, so a child can
+  change behaviour without touching the function. This is the escape hatch.
+- **Copy the view.** If the function is only called from one template, copy that template
+  into the child and call something else.
+
+If you own the parent, add the guards. It costs nothing and it is the only thing that
+makes the theme extensible.
+
 Hooks have no such problem — a child and parent may both add to the same hook, and both
 run.
 
