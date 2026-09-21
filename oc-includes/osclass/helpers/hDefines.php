@@ -240,12 +240,46 @@ function osc_current_web_theme()
  */
 function osc_current_web_theme_url($file = '')
 {
-    $info = WebThemes::newInstance()->loadThemeInfo(WebThemes::newInstance()->getCurrentTheme());
-    if (!file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file) && $info['template'] != '') {
-        WebThemes::newInstance()->setParentTheme();
+    return osc_theme_asset_url($file);
+}
+
+/**
+ * URL of a theme asset, taken from the parent when the active theme does not carry it.
+ *
+ * Resolving used to run through setParentTheme(), which does not describe a file -- it
+ * switches the active theme for the rest of the request. So the first asset only the
+ * parent had flipped every later lookup to the parent too, and a child's own stylesheet
+ * came back as a 404 under the parent's directory. This answers the question and changes
+ * nothing.
+ *
+ * @param string $file path inside the theme, e.g. 'css/style.css'
+ *
+ * @return string
+ */
+function osc_theme_asset_url($file = '')
+{
+    $themes  = WebThemes::newInstance();
+    $ownUrl  = $themes->getCurrentThemeUrl() . $file;
+
+    if ($file === '' || file_exists($themes->getCurrentThemePath() . $file)) {
+        return $ownUrl;
     }
 
-    return WebThemes::newInstance()->getCurrentThemeUrl() . $file;
+    $current = (string) $themes->getCurrentTheme();
+    $info    = $themes->loadThemeInfo($current);
+    if (!is_array($info) || empty($info['template'])
+        || !preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+        || $info['template'] === $current
+    ) {
+        return $ownUrl;
+    }
+
+    $parentPath = osc_themes_path() . $info['template'] . '/';
+    if (!file_exists($parentPath . $file)) {
+        return $ownUrl;
+    }
+
+    return osc_base_url() . str_replace(osc_base_path(), '', $parentPath) . $file;
 }
 
 /**
@@ -289,7 +323,7 @@ function osc_current_web_theme_path($file = '')
  */
 function osc_current_web_theme_styles_url($file = '')
 {
-    return WebThemes::newInstance()->getCurrentThemeStyles() . $file;
+    return osc_theme_asset_url('css/' . $file);
 }
 
 /**
@@ -301,7 +335,7 @@ function osc_current_web_theme_styles_url($file = '')
  */
 function osc_current_web_theme_js_url($file = '')
 {
-    return WebThemes::newInstance()->getCurrentThemeJs() . $file;
+    return osc_theme_asset_url('js/' . $file);
 }
 
 /**

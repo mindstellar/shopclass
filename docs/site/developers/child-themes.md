@@ -62,7 +62,7 @@ Anything the walk reaches:
 | Chrome (`header.php` + `footer.php`, or `common/`) | yes | The pair is taken from one theme, never split |
 | `functions.php` | **both run** | See below — this one is not a fallback |
 | `osc_add_theme_support()` declarations | yes | The child wins a contested feature |
-| `css/`, `js/`, images | **no walk** | See [Assets](#assets) |
+| `css/`, `js/`, images | yes | Per file — the child's copy, else the parent's |
 
 ## functions.php
 
@@ -152,27 +152,38 @@ the child says nothing about is inherited whole.
 
 ## Assets
 
-Stylesheets, scripts and images do **not** walk. `osc_current_web_theme_styles_url()` and
-its siblings always point at the active theme, so a child that ships no `css/style.css`
-gets nothing rather than the parent's.
+Stylesheets, scripts and images walk like views do. `osc_current_web_theme_url()`,
+`osc_current_web_theme_styles_url()` and `osc_current_web_theme_js_url()` each answer
+**per file**: the child's copy when it ships one, the parent's when it does not.
 
-This is on purpose: a child usually wants the parent's stylesheet *and* its own, in that
-order, which a silent fallback cannot express. Enqueue both:
+So there are two ways to change the styling.
+
+**Replace the sheet.** Ship a file at the same path as the parent's and yours is served
+instead. Nothing to register — the walk finds it.
+
+```
+storefront/css/style.css        <- parent
+storefront-blue/css/style.css   <- yours wins
+```
+
+Check the exact filename the parent asks for. A theme that prefers a minified build
+requests `style.min.css`, and a child shipping only `style.css` will not be matched.
+
+**Add on top.** Keep the parent's sheet and enqueue your own after it, so your rules come
+last and win on equal specificity:
 
 ```php
 // CHILD functions.php
-osc_enqueue_style(
-    'parent-style',
-    osc_base_url() . 'oc-content/themes/storefront/css/style.css'
-);
-osc_enqueue_style(
-    'child-style',
-    osc_current_web_theme_styles_url('style.css')
-);
+function storefront_blue_styles()
+{
+    osc_enqueue_style('storefront-blue', osc_current_web_theme_styles_url('child.css'));
+}
+// The parent enqueues on `header` at priority 5, so a later number prints after it.
+osc_add_hook('header', 'storefront_blue_styles', 6);
 ```
 
-Registering the parent's stylesheet first means the child's rules come after it and win on
-equal specificity.
+This is usually what you want: the parent keeps updating its stylesheet and you carry only
+your differences.
 
 ## Things to know
 

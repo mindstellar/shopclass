@@ -38,6 +38,12 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 
 $root = sys_get_temp_dir() . '/osc-theme-child-' . getmypid() . '/';
 
+// The real path helpers read these, so the fixture tree becomes the whole world and the
+// functions under test are the shipped ones rather than local copies.
+define('WEB_PATH', 'http://example.test/');
+define('CONTENT_PATH', $root);
+define('THEMES_PATH', $root . 'themes/');
+
 /** Stands in for the real WebThemes: a theme name, its path, and its declared parent. */
 class WebThemes
 {
@@ -61,6 +67,20 @@ class WebThemes
         return self::$root . self::$current . '/';
     }
 
+    public function getCurrentThemeUrl(): string
+    {
+        return WEB_PATH . 'themes/' . self::$current . '/';
+    }
+
+    /**
+     * The real method, side effect and all: it does not describe the parent, it becomes
+     * it for the rest of the request. Reproduced here so a pin can show what that cost.
+     */
+    public function setParentTheme(): void
+    {
+        self::$current = self::$parents[self::$current] ?? self::$current;
+    }
+
     /**
      * @param string $theme
      *
@@ -76,19 +96,21 @@ class WebThemes
     }
 }
 
-function osc_themes_path(): string
-{
-    return WebThemes::$root;
-}
-
-function osc_content_path(): string
-{
-    return WebThemes::$root === '' ? '' : dirname(rtrim(WebThemes::$root, '/')) . '/';
+// osc_base_url() runs its result through a filter; the walk does not depend on plugins,
+// so the registry stands in as a pass-through rather than being loaded.
+if (!function_exists('osc_apply_filter')) {
+    function osc_apply_filter($hook, $value = '')
+    {
+        return $value;
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hTheme.php';
+// hDefines brings osc_theme_asset_url() and the two helpers that route through it, plus
+// its own osc_base_url()/osc_base_path(); WebThemes::$root is set under that base below.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hDefines.php';
 
-WebThemes::$root = $root . 'themes/';
+WebThemes::$root = THEMES_PATH;
 
 /** Create a theme directory, optionally with a file in it. */
 $makeTheme = static function (string $slug, string $parent = '', array $files = array()) use ($root) {
@@ -211,6 +233,36 @@ $supports->add('views', array('first'));
 $supports->add('views', array('second'));
 pin('a theme may still change its own mind', array('second'), $supports->get('views'));
 $supports->reset();
+
+harness_section('An asset falls back without moving the theme');
+
+$makeTheme('parent-s', '', array('css/style.css', 'js/app.js'));
+$makeTheme('child-s', 'parent-s', array('css/child.css'));
+WebThemes::$current = 'child-s';
+
+/** The theme directory an asset URL points at, through the long-standing public helper. */
+$asset = static function (string $file) {
+    $url   = osc_current_web_theme_url($file);
+    $parts = explode('/themes/', $url, 2);
+
+    return count($parts) === 2 ? $parts[1] : $url;
+};
+
+pin('a file the child ships comes from the child', 'child-s/css/child.css', $asset('css/child.css'));
+pin('a file only the parent ships comes from the parent', 'parent-s/css/style.css', $asset('css/style.css'));
+
+// Resolving used to run through setParentTheme(), which switches the active theme for the
+// rest of the request -- so one parent-only asset sent every later lookup to the parent,
+// and the child's own stylesheet came back as a 404 under the parent's directory.
+pin('resolving a parent asset leaves the active theme alone', 'child-s', WebThemes::$current);
+pin('the child is still the child afterwards', 'child-s/css/child.css', $asset('css/child.css'));
+
+pin('a file neither ships stays on the child, so the 404 names the right theme',
+    'child-s/css/nothing.css', $asset('css/nothing.css'));
+pin('the styles helper walks too', 'parent-s/css/style.css', osc_current_web_theme_styles_url('style.css')
+    ? explode('/themes/', osc_current_web_theme_styles_url('style.css'), 2)[1] : '');
+pin('the js helper walks too', 'parent-s/js/app.js',
+    explode('/themes/', osc_current_web_theme_js_url('app.js'), 2)[1]);
 
 /* Clean up the fixture tree. */
 $rm = static function (string $dir) use (&$rm) {
