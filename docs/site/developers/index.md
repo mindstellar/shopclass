@@ -51,6 +51,7 @@ Worth knowing before you port something:
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
+| Extend a theme without forking it | [Child themes](/docs/developers/child-themes/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |

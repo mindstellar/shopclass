@@ -123,6 +123,13 @@
     color: var(--osc-bronze);
     font-weight: 500;
   }
+
+  // A theme depending on this one, or a parent that is not installed: something the
+  // owner has to act on before it bites, so it carries the warning ink.
+  &.osc-pkg-note--warning {
+    color: var(--osc-warning-deep);
+    font-weight: 500;
+  }
 }
 
 .osc-pkg-actions {

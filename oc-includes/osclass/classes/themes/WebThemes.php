@@ -64,11 +64,22 @@ class WebThemes extends Themes
         }
 
         $info = $this->loadThemeInfo($this->theme);
-        if (isset($info['template']) && $info['template'] != '') {
-            //$this->setCurrentTheme($info['template']);
+        if (isset($info['template']) && $info['template'] !== ''
+            && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+            && $info['template'] !== $this->theme
+        ) {
             $parent_functions_path = osc_base_path() . 'oc-content/themes/' . $info['template'] . '/functions.php';
             if (file_exists($parent_functions_path)) {
-                require_once $parent_functions_path;
+                // The parent fills in what the child left unsaid. Its declarations run
+                // second, so without this marker the newest value wins and the parent
+                // overrules the child on everything they both declare.
+                $supports = \mindstellar\theme\ThemeSupports::instance();
+                $supports->beginInherited();
+                try {
+                    require_once $parent_functions_path;
+                } finally {
+                    $supports->endInherited();
+                }
             }
         }
     }

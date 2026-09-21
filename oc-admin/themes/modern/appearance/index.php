@@ -106,6 +106,29 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
             return $meta;
         };
+
+        // The parent a theme declares, when it names one that is actually installed.
+        $parentOf = static function ($slug) {
+            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            if (!is_array($i) || empty($i['template'])
+                || !preg_match('/^[a-zA-Z0-9._-]+$/', (string) $i['template'])
+                || $i['template'] === $slug
+            ) {
+                return null;
+            }
+
+            return (string) $i['template'];
+        };
+
+        /** A theme's display name, falling back to its directory name. */
+        $nameOf = static function ($slug) {
+            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+
+            return is_array($i) && $i['name'] !== '' ? ucfirst($i['name']) : $slug;
+        };
+
+        $activeParent  = $parentOf(osc_theme());
+        $parentMissing = $activeParent !== null && !in_array($activeParent, $themes, true);
         ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
@@ -116,8 +139,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'state'       => 'live',
             'size'        => 'wide',
             'class'       => 'current-theme',
-            'meta'        => $themeMeta($info),
+            'meta'        => array_merge(
+                $themeMeta($info),
+                $activeParent !== null && !$parentMissing
+                    ? array(sprintf(__('extends %s'), osc_esc_html($nameOf($activeParent))))
+                    : array()
+            ),
             'description' => $info['description'],
+            'note'        => $parentMissing
+                ? osc_esc_html(sprintf(
+                    __('This theme extends "%s", which is not installed. '
+                       . 'Anything it does not carry itself is coming from the default theme.'),
+                    $activeParent
+                ))
+                : '',
+            'note_variant' => 'warning',
             'actions'     => array(
                 'links' => array(
                     '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true)) . '">'
@@ -139,6 +175,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 $tInfo  = WebThemes::newInstance()->loadThemeInfo($theme);
                 $tName  = ucfirst($tInfo['name']);
                 $update = $bThemesToUpdate && in_array($theme, $aThemesToUpdate, true);
+                // Deleting this one would leave the active theme rendering on the default.
+                $isParent  = $activeParent === $theme;
+                $ownParent = $parentOf($theme);
                 osc_package_row(array(
                     'art'         => array(
                         'src' => osc_theme_screenshot_url($theme),
@@ -148,12 +187,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     'name'        => $tName,
                     'state'       => 'disabled',
                     'state_word'  => __('Installed'),
-                    'meta'        => $themeMeta($tInfo),
+                    'meta'        => array_merge(
+                        $themeMeta($tInfo),
+                        $ownParent !== null
+                            ? array(sprintf(__('extends %s'), osc_esc_html($nameOf($ownParent))))
+                            : array()
+                    ),
                     'description' => $tInfo['description'],
-                    'note'        => $update
-                        ? osc_esc_html(__('An update is ready for this theme. Open the Updates tab to apply it.'))
-                        : '',
-                    'note_variant' => 'update',
+                    'note'        => $isParent
+                        ? osc_esc_html(__('The active theme extends this one. Deleting it would leave '
+                                          . 'your site rendering on the default theme.'))
+                        : ($update
+                            ? osc_esc_html(__('An update is ready for this theme. Open the Updates tab to apply it.'))
+                            : ''),
+                    'note_variant' => $isParent ? 'warning' : 'update',
                     'actions'     => array(
                         'primary' => array(
                             'label' => __('Activate'),

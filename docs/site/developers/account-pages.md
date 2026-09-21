@@ -2,7 +2,7 @@
 title: Account pages
 description: ShopClass renders every account and sign-in page itself when your theme does not, using a published set of class names you can restyle without shipping a line of PHP.
 sidebar:
-  order: 20
+  order: 21
 ---
 
 Thirteen views make up the account section — the dashboard, the seller's

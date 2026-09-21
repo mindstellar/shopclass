@@ -2,7 +2,7 @@
 title: Theme chrome
 description: Declare where your theme's header and footer live so ShopClass can render its own pages inside your layout instead of falling back to a standalone one.
 sidebar:
-  order: 17
+  order: 18
 ---
 
 Some pages belong to core rather than to your theme — the account-delete

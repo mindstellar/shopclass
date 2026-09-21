@@ -8,6 +8,8 @@ In development.
 
 ### New
 
+- A Child themes page in the developer docs: what a child inherits, the order Shopclass looks
+  in, and the two rules that stop a child breaking its parent.
 - A Hooks and filters page in the developer docs, listing every hook and filter core fires,
   what it passes and where.
 - Links a seller writes in a listing description now carry `rel="nofollow"`. Links back into
@@ -33,6 +35,10 @@ In development.
 
 ### Fixed
 
+- A parent theme overruled its child on anything both declared with `osc_add_theme_support()`.
+  The child wins now, and a feature it says nothing about is still inherited.
+- Appearance names the theme a child extends, warns when that parent is not installed, and
+  says so before you delete a theme another one depends on.
 - The admin user search did nothing: searching by name or e-mail returned the unfiltered
   list. Searching by username matched only an exact string.
 - On the user editor, choosing a country did not reload the regions: the script was emitted

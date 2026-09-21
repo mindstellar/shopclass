@@ -33,6 +33,9 @@ final class ThemeSupports
     /** @var array<string,mixed> feature arguments, keyed by feature name */
     private array $features = [];
 
+    /** True while a parent theme's functions.php is being loaded. */
+    private bool $inherited = false;
+
     /**
      * Singleton: obtain the registry through instance().
      */
@@ -69,7 +72,34 @@ final class ThemeSupports
                 'ThemeSupports: invalid feature name "' . $feature . '" (expected [a-z0-9_-]+, max 60 chars)'
             );
         }
+        // A parent theme fills gaps; it does not overrule the child that chose it. The
+        // child's functions.php is required first, so without this the newest value wins
+        // and every contested feature goes to the parent.
+        if ($this->inherited && array_key_exists($feature, $this->features)) {
+            return;
+        }
         $this->features[$feature] = $args;
+    }
+
+    /**
+     * Declarations from here until endInherited() are a parent theme's: they fill in
+     * features the child left unsaid and leave the rest alone.
+     *
+     * @return void
+     */
+    public function beginInherited(): void
+    {
+        $this->inherited = true;
+    }
+
+    /**
+     * Back to ordinary declarations, where the newest value wins.
+     *
+     * @return void
+     */
+    public function endInherited(): void
+    {
+        $this->inherited = false;
     }
 
     /**
@@ -100,7 +130,8 @@ final class ThemeSupports
      */
     public function reset(): void
     {
-        $this->features = [];
+        $this->features  = [];
+        $this->inherited = false;
     }
 
     /**

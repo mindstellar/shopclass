@@ -19820,6 +19820,10 @@ form h3, form .h3 {
   color: var(--osc-bronze);
   font-weight: 500;
 }
+.osc-pkg-note.osc-pkg-note--warning {
+  color: var(--osc-warning-deep);
+  font-weight: 500;
+}
 
 .osc-pkg-actions {
   align-items: center;

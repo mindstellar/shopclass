@@ -74,7 +74,7 @@ Same idea, different names, because theme parsing is a separate function:
 | `Theme URI` | recommended | |
 | `Requires Shopclass` | recommended | |
 | `Tested up to` | recommended | |
-| `Parent Theme` | optional | Slug of the theme this one extends. |
+| `Parent Theme` | optional | Slug of the theme this one extends. See [Child themes](/docs/developers/child-themes/). |
 | `Widgets` | optional | Comma-separated widget location ids. |
 | `Author URI` | optional | |
 | `Theme update URI` | optional | Legacy self-hosted updates. |

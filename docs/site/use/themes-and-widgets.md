@@ -106,6 +106,8 @@ Two durable approaches:
 
 - **A child theme.** Declare `Parent Theme` in the child's header block and
   override only the templates you change. The parent keeps updating underneath.
+  See [Child themes](/docs/developers/child-themes/) for what is inherited and
+  the two rules that stop a child breaking its parent.
 - **A plugin.** Styles, scripts and behaviour can be added from a plugin with
   [the enqueue functions](/docs/developers/scripts-and-styles/), leaving the
   theme untouched entirely.
