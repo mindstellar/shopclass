@@ -253,9 +253,32 @@
     }
 
     // --- Edit drawer ---------------------------------------------------------
-    var lastFocus = null;
+    var panel = window.oscDrawer({
+        drawer: drawer,
+        backdrop: backdrop,
+        // The open class lives on the app here, not on the panel.
+        openOn: app,
+        openClass: 'drawer-open',
+        empty: false,
+        focusFirst: function () {
+            closeBtn.focus();
+        },
+        beforeClose: function () {
+            drawer.dataset.catId = '';
+            document.querySelectorAll('.cat-node.is-editing').forEach(function (n) {
+                n.classList.remove('is-editing');
+            });
+        },
+        afterClose: function () {
+            drawerBody.innerHTML = '';
+        }
+    });
+
+    function closeDrawer() {
+        panel.close();
+    }
+
     function openDrawer(node) {
-        lastFocus = document.activeElement;
         var id = node.getAttribute('data-cat-id');
         var name = node.getAttribute('data-name') || '';
         document.querySelectorAll('.cat-node.is-editing').forEach(function (n) {
@@ -265,12 +288,7 @@
         drawerTitle.textContent = name;
         drawer.dataset.catId = id;
         drawerBody.innerHTML = '<div class="cat-drawer-loading"><i class="bi bi-arrow-repeat"></i></div>';
-        drawer.hidden = false;
-        backdrop.hidden = false;
-        // Force a reflow so the transform transition runs from the hidden state.
-        void drawer.offsetWidth;
-        app.classList.add('drawer-open');
-        closeBtn.focus();
+        panel.open(document.activeElement);
 
         fetch(CFG.edit + '&id=' + encodeURIComponent(id), {
             credentials: 'same-origin',
@@ -292,63 +310,7 @@
         });
     }
 
-    function closeDrawer() {
-        app.classList.remove('drawer-open');
-        drawer.dataset.catId = '';
-        document.querySelectorAll('.cat-node.is-editing').forEach(function (n) {
-            n.classList.remove('is-editing');
-        });
-        var onEnd = function () {
-            drawer.hidden = true;
-            backdrop.hidden = true;
-            drawerBody.innerHTML = '';
-            drawer.removeEventListener('transitionend', onEnd);
-        };
-        // If motion is reduced the transition is instant; guard with a timeout.
-        drawer.addEventListener('transitionend', onEnd);
-        setTimeout(onEnd, 320);
-        if (lastFocus && document.contains(lastFocus)) {
-            lastFocus.focus();
-        }
-    }
-
     closeBtn.addEventListener('click', closeDrawer);
-    backdrop.addEventListener('click', closeDrawer);
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && app.classList.contains('drawer-open')) {
-            closeDrawer();
-        }
-    });
-
-    // Keep focus inside the open drawer.
-    drawer.addEventListener('keydown', function (e) {
-        if (e.key !== 'Tab') {
-            return;
-        }
-        // A hidden control still matches the selector, so without this the trap can send
-        // focus to something nobody can see. location.js filters the same way.
-        var focusables = Array.prototype.filter.call(
-            drawer.querySelectorAll(
-                'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            ),
-            function (node) {
-                return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
-            }
-        );
-        if (!focusables.length) {
-            return;
-        }
-        var first = focusables[0];
-        var last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-        }
-    });
 
     // Cancel button inside the fetched form, and the form submit.
     drawerBody.addEventListener('click', function (e) {

@@ -16,8 +16,6 @@
     'use strict';
 
     const XHR = { 'X-Requested-With': 'XMLHttpRequest' };
-    const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), '
-        + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const SEARCH_DELAY = 250;
     const SLUG_DELAY = 300;
     const RECALC_DELAY = 250;
@@ -525,8 +523,33 @@
         }
 
         // ---- Drawer ---------------------------------------------------------------
+        const panel = drawer ? window.oscDrawer({
+            drawer: drawer,
+            backdrop: backdrop,
+            // The delete dialog sits over the drawer and owns Escape while it is up.
+            canClose: function () {
+                return !dialog.open;
+            },
+            beforeClose: function () {
+                clearTimeout(slugTimer);
+                [countsRequest, slugRequest].forEach(function (request) {
+                    if (request) {
+                        request.abort();
+                    }
+                });
+                countsRequest = null;
+                slugRequest = null;
+                drawerOpener = null;
+                // A drawer the server opened for ?form=… leaves its URL behind.
+                const clean = listHref(window.location.href);
+                if (clean !== window.location.href) {
+                    window.history.replaceState({ locations: true }, '', clean);
+                }
+            }
+        }) : null;
+
         function isDrawerOpen() {
-            return !!drawer && drawer.classList.contains('is-open');
+            return !!panel && panel.isOpen();
         }
 
         function focusFirst(container) {
@@ -539,12 +562,7 @@
 
         function openDrawerShell(opener) {
             drawerOpener = opener || null;
-            drawer.hidden = false;
-            backdrop.hidden = false;
-            // Reflow so the slide runs from the closed position.
-            void drawer.offsetWidth;
-            drawer.classList.add('is-open');
-            backdrop.classList.add('is-open');
+            panel.open(drawerOpener);
         }
 
         function showDrawerLoading(opener) {
@@ -629,36 +647,8 @@
         }
 
         function closeDrawer(restoreFocus) {
-            if (!isDrawerOpen()) {
-                return;
-            }
-            clearTimeout(slugTimer);
-            [countsRequest, slugRequest].forEach(function (request) {
-                if (request) {
-                    request.abort();
-                }
-            });
-            countsRequest = null;
-            slugRequest = null;
-            drawer.classList.remove('is-open');
-            backdrop.classList.remove('is-open');
-            const done = function () {
-                if (!isDrawerOpen()) {
-                    drawer.hidden = true;
-                    backdrop.hidden = true;
-                    drawer.replaceChildren();
-                }
-            };
-            drawer.addEventListener('transitionend', done, { once: true });
-            window.setTimeout(done, 320);
-            if (restoreFocus !== false && drawerOpener && drawerOpener.isConnected) {
-                drawerOpener.focus();
-            }
-            drawerOpener = null;
-            // A drawer the server opened for ?form=… leaves its URL behind.
-            const clean = listHref(window.location.href);
-            if (clean !== window.location.href) {
-                window.history.replaceState({ locations: true }, '', clean);
+            if (panel) {
+                panel.close(restoreFocus);
             }
         }
 
@@ -770,38 +760,12 @@
                 }
             });
 
-            drawer.addEventListener('keydown', function (event) {
-                if (event.key !== 'Tab') {
-                    return;
-                }
-                const items = Array.prototype.filter.call(drawer.querySelectorAll(FOCUSABLE), function (node) {
-                    return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
-                });
-                if (items.length === 0) {
-                    event.preventDefault();
-                    return;
-                }
-                const first = items[0];
-                const last = items[items.length - 1];
-                if (event.shiftKey && (document.activeElement === first || document.activeElement === drawer)) {
-                    event.preventDefault();
-                    last.focus();
-                } else if (!event.shiftKey && document.activeElement === last) {
-                    event.preventDefault();
-                    first.focus();
-                }
-            });
-
             drawer.addEventListener('submit', function (event) {
                 const form = event.target.closest('.loc-form');
                 if (form) {
                     event.preventDefault();
                     submitForm(form, event.submitter);
                 }
-            });
-
-            backdrop.addEventListener('click', function () {
-                closeDrawer();
             });
         }
 
@@ -1620,11 +1584,6 @@
         });
 
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && !dialog.open && isDrawerOpen()) {
-                event.preventDefault();
-                closeDrawer();
-                return;
-            }
             if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || dialog.open || isDrawerOpen()) {
                 return;
             }

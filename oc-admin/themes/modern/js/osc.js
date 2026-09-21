@@ -268,3 +268,147 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+/* ===================================================
+ * osc drawer
+ * ===================================================
+ * The slide-over panel the Categories and Locations screens edit in. Both wrote the same
+ * open/close dance -- unhide, force a reflow so the slide starts from the closed position,
+ * toggle a class, then wait for transitionend with a timeout because a reduced-motion
+ * transition never fires one -- and both trapped Tab inside it.
+ *
+ * oscDrawer({
+ *     drawer:      the panel element                              (required)
+ *     backdrop:    the element behind it                          (required)
+ *     openOn:      element the open class goes on (default: both drawer and backdrop)
+ *     openClass:   default 'is-open'
+ *     focusFirst:  fn(drawer) -> what to focus once it is open
+ *     canClose:    fn() -> false to refuse a backdrop or Escape close, e.g. while a
+ *                  <dialog> sits over the panel and owns Escape itself
+ *     beforeClose: fn() -> run before the panel starts closing; abort requests, tidy state
+ *     afterClose:  fn() -> run once it is hidden and emptied
+ *     empty:       false to keep the panel's markup on close
+ * })
+ *
+ * Returns { open(opener), close(restoreFocus), isOpen(), element }.
+ */
+window.oscDrawer = function (options) {
+    var drawer = options.drawer;
+    var backdrop = options.backdrop;
+    var openClass = options.openClass || 'is-open';
+    var targets = options.openOn ? [options.openOn] : [drawer, backdrop];
+    var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), '
+        + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    var opener = null;
+
+    function isOpen() {
+        return !!drawer && targets.some(function (t) {
+            return t && t.classList.contains(openClass);
+        });
+    }
+
+    function open(from) {
+        // An explicit null means this panel has nothing to give focus back to; only an
+        // absent argument falls back to whatever had focus when it opened.
+        opener = from === undefined ? document.activeElement : (from || null);
+        drawer.hidden = false;
+        backdrop.hidden = false;
+        // Reflow, so the slide runs from the closed position rather than jumping.
+        void drawer.offsetWidth;
+        targets.forEach(function (t) {
+            if (t) { t.classList.add(openClass); }
+        });
+        if (typeof options.focusFirst === 'function') {
+            options.focusFirst(drawer);
+        }
+    }
+
+    function close(restoreFocus) {
+        if (!isOpen()) {
+            return;
+        }
+        if (typeof options.beforeClose === 'function') {
+            options.beforeClose();
+        }
+        targets.forEach(function (t) {
+            if (t) { t.classList.remove(openClass); }
+        });
+
+        var settled = false;
+        var done = function () {
+            if (settled || isOpen()) {
+                return;
+            }
+            settled = true;
+            drawer.hidden = true;
+            backdrop.hidden = true;
+            if (options.empty !== false) {
+                drawer.replaceChildren();
+            }
+            if (typeof options.afterClose === 'function') {
+                options.afterClose();
+            }
+        };
+        // A reduced-motion transition never fires transitionend, so the timeout is the
+        // one that actually lands on those machines -- not a safety net.
+        drawer.addEventListener('transitionend', done, { once: true });
+        window.setTimeout(done, 320);
+
+        if (restoreFocus !== false && opener && opener.isConnected) {
+            opener.focus();
+        }
+        opener = null;
+    }
+
+    function mayClose() {
+        return typeof options.canClose !== 'function' || options.canClose() !== false;
+    }
+
+    backdrop.addEventListener('click', function () {
+        if (mayClose()) {
+            close();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (!isOpen()) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            if (mayClose()) {
+                close();
+            }
+
+            return;
+        }
+        if (event.key !== 'Tab') {
+            return;
+        }
+        // A hidden control still matches the selector, so filter to what is on screen --
+        // otherwise Tab can land somewhere nobody can see.
+        var items = Array.prototype.filter.call(drawer.querySelectorAll(FOCUSABLE), function (node) {
+            return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
+        });
+        if (items.length === 0) {
+            event.preventDefault();
+
+            return;
+        }
+        var first = items[0];
+        var last = items[items.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === drawer)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
+    return {
+        open: open,
+        close: close,
+        isOpen: isOpen,
+        element: drawer
+    };
+};
