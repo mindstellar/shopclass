@@ -79,8 +79,24 @@ if ($files === array()) {
 $start   = microtime(true);
 $results = array();
 
+// A model file that calls exit() outside the MODELS_RUNNER guard ends the whole suite
+// where it stands -- and PHP's exit code is the file's own, so the run looks green while
+// every later file is skipped. That happened, silently, for 36 of 44 files. The runner
+// now names the file it stopped in and fails.
+$GLOBALS['runnerCurrent']  = null;
+$GLOBALS['runnerFinished'] = false;
+register_shutdown_function(static function () {
+    if ($GLOBALS['runnerFinished'] || $GLOBALS['runnerCurrent'] === null) {
+        return;
+    }
+    fwrite(STDERR, "\nFAIL  the suite stopped inside tests/models/" . $GLOBALS['runnerCurrent']
+                   . ".php -- it exits outside the MODELS_RUNNER guard, so every later file was skipped\n");
+    exit(1);
+});
+
 foreach ($files as $file) {
     $name = basename($file, '.php');
+    $GLOBALS['runnerCurrent'] = $name;
     echo "\n########## $name ##########\n";
 
     $okBefore   = $GLOBALS['okCount'];
@@ -99,6 +115,8 @@ foreach ($files as $file) {
         'fail' => $GLOBALS['failCount'] - $failBefore,
     );
 }
+
+$GLOBALS['runnerFinished'] = true;
 
 echo "\n########## summary ##########\n";
 foreach ($results as $name => $r) {

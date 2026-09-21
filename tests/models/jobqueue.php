@@ -389,4 +389,6 @@ pin('an empty storage reads as none', null, $job->storage());
 
 $truncate();
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}

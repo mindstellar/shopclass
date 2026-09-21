@@ -226,4 +226,6 @@ pin('with its listing', 1, $countItems($other));
 
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_job_queue');
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}
