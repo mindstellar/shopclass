@@ -241,6 +241,26 @@ document.addEventListener('change', function (event) {
     });
 });
 
+// A control that invalidates the ones below it -- picking a country makes the region and
+// city chosen under the old one meaningless. Declared on the control, so any screen can
+// use it without its own script.
+document.addEventListener('change', function (event) {
+    var source = event.target;
+    if (!source || !source.hasAttribute || !source.hasAttribute('data-osc-clears')) {
+        return;
+    }
+    source.getAttribute('data-osc-clears').split(',').forEach(function (selector) {
+        selector = selector.trim();
+        if (!selector) {
+            return;
+        }
+        var field = document.querySelector(selector);
+        if (field) {
+            field.value = '';
+        }
+    });
+});
+
 // A list filter whose select chooses which of its own inputs is in play. Delegated, so
 // every screen gets it from the component rather than shipping its own inline script.
 document.addEventListener('change', function (event) {

@@ -33,6 +33,11 @@ In development.
 
 ### Fixed
 
+- The admin user search did nothing: searching by name or e-mail returned the unfiltered
+  list. Searching by username matched only an exact string.
+- On the user editor, choosing a country did not reload the regions: the script was emitted
+  in the page head, so it never found the field it was meant to watch.
+- Suggestions under a field inside a dialog were drawn behind it.
 - Deleting a category with thousands of listings timed out and rolled back, leaving a category
   that could not be deleted. A large one is now hidden immediately and emptied in the
   background.
@@ -74,6 +79,9 @@ In development.
   dot and the word carry it. Status badges outside a table are unchanged.
 - Every list screen's filter bar is the same control in the same place, with bulk actions
   beside it on one row instead of stacked above the table.
+- Comments can be searched by author, address or text, and "Hidden comments" is a filter in
+  that bar rather than a button beside the table.
+- Both filter panels pick a country from a list and suggest the region and city inside it.
 - Statistics → Recalculate location stats has left the menu. It has its own button on
   Listings → Locations → Data. The old URL still works.
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.

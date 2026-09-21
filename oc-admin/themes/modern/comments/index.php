@@ -38,20 +38,41 @@ $rows    = $aData['aRows'];
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Comments')); ?>
 <div class="relative">
-    <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
-        <?php if (Params::getParam('showAll') !== 'off') { ?>
-            <a href="<?php echo osc_admin_base_url(true) . '?page=comments&showAll=off'; ?>"
-               class="btn btn-sm btn-dim"><?php _e('Hidden comments'); ?></a>
-        <?php } else { ?>
-            <a href="<?php echo osc_admin_base_url(true) . '?page=comments'; ?>"
-               class="btn btn-sm btn-dim"><?php _e('All comments'); ?></a>
-        <?php } ?>
-    <?php osc_admin_toolbar_close(); ?>
+    <?php // "Hidden comments" was a lone button floating beside the table. It is a filter,
+          // so it belongs in the filter bar with the search, not off on its own.?>
+    <?php osc_admin_list_filter(array(
+        'page'     => 'comments',
+        'active'   => (bool) __get('withFilters'),
+        'reset'    => osc_admin_base_url(true) . '?page=comments',
+        'fields'   => array(
+            array(
+                'type'        => 'search',
+                'name'        => 'sSearch',
+                'id'          => 'fComment',
+                'label'       => __('Search comments'),
+                'placeholder' => __('Author, e-mail or text'),
+                'value'       => Params::getParam('sSearch'),
+            ),
+            array(
+                'type'    => 'select',
+                'name'    => 'showAll',
+                'id'      => 'fShowAll',
+                'label'   => __('Show'),
+                'options' => array('' => __('All comments'), 'off' => __('Needs attention')),
+                'value'   => Params::getParam('showAll') === 'off' ? 'off' : '',
+            ),
+        ),
+        'bulk'     => array(
+            'name'    => 'bulk_actions',
+            'options' => __get('bulk_options'),
+            'form'    => 'datatablesForm',
+        ),
+        'per_page' => array('label' => __('%d Comments'), 'current' => __get('iDisplayLength')),
+    )); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post"
           data-dialog-open="false">
         <input type="hidden" name="page" value="comments"/>
         <input type="hidden" name="action" value="bulk_actions"/>
-        <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'options' => __get('bulk_options'))); ?>
         <div class="table-contains-actions">
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>

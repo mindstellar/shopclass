@@ -26,6 +26,12 @@ class CommentsDataTable extends DataTable
     private $resourceID;
     private $order_by;
     private $showAll;
+
+    /** The admin's search term, or '' for an unfiltered list. */
+    private $term = '';
+
+    /** True once a search or the hidden-only view narrows the list. */
+    public $withFilters = false;
     /**
      * @var bool|int
      */
@@ -59,20 +65,18 @@ class CommentsDataTable extends DataTable
             $this->limit,
             ($this->order_by['column_name'] ?: 'pk_i_id'),
             ($this->order_by['type'] ?: 'desc'),
-            $this->showAll
+            $this->showAll,
+            $this->term
         );
         $this->processData($comments);
 
-        if ($this->showAll) {
-            $this->total = ItemComment::newInstance()->countAll();
-        } else {
-            $this->total =
-                ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
-        }
+        // The unfiltered size of the list, so "x of y" still says what the whole set is.
+        $this->total = (int) ItemComment::newInstance()->countMatching(true, '');
 
         if ($this->resourceID === null) {
-            $this->total_filtered = $this->total;
-            $this->totalFiltered  = $this->total;
+            $matching             = ItemComment::newInstance()->countMatching($this->showAll, $this->term);
+            $this->total_filtered = $matching;
+            $this->totalFiltered  = $matching;
         } else {
             $this->total_filtered = ItemComment::newInstance()->count($this->resourceID);
             $this->totalFiltered  = $this->total_filtered;
@@ -114,6 +118,11 @@ class CommentsDataTable extends DataTable
         $this->order_by['type']        = 'desc';
 
         $this->showAll = Params::getParam('showAll') !== 'off';
+
+        $this->term = trim((string) Params::getParamString('sSearch'));
+        if ($this->term !== '' || !$this->showAll) {
+            $this->withFilters = true;
+        }
 
         foreach ($_get as $k => $v) {
             if (($k === 'resourceId') && !empty($v)) {

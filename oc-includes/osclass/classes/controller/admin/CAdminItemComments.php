@@ -274,6 +274,8 @@ class CAdminItemComments extends AdminSecBaseModel
 
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $commentsDataTable->rawRows());
+                $this->_exportVariableToView('withFilters', $commentsDataTable->withFilters);
+                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 $bulk_options = array(
                     array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),

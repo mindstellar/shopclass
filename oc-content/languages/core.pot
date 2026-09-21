@@ -106,6 +106,10 @@ msgstr ""
 msgid "%1$s–%2$s of %3$s"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/index.php
+msgid "%d Comments"
+msgstr ""
+
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/items/reported.php
 msgid "%d Listings"
@@ -1088,12 +1092,43 @@ msgstr ""
 msgid "Anonymous"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/users/index.php
+msgid "Any city"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/users/index.php
+msgid "Any country"
+msgstr ""
+
+#: oc-admin/themes/modern/users/index.php
+msgid "Any e-mail"
+msgstr ""
+
+#: oc-admin/themes/modern/users/index.php
+msgid "Any name"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 msgid "Any payment method"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/users/index.php
+msgid "Any region"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Any seller"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 msgid "Any status"
+msgstr ""
+
+#: oc-admin/themes/modern/users/index.php
+msgid "Any username"
 msgstr ""
 
 #: oc-admin/themes/modern/users/settings.php
@@ -1305,6 +1340,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
 msgid "Author's e-mail"
+msgstr ""
+
+#: oc-admin/themes/modern/comments/index.php
+msgid "Author, e-mail or text"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
@@ -2030,10 +2069,6 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cleanup.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Cleanup"
-msgstr ""
-
-#: oc-admin/themes/modern/billing/index.php
-msgid "Clear"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -3834,11 +3869,9 @@ msgstr ""
 msgid "Filters"
 msgstr ""
 
-#: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/users/alerts.php
-#: oc-admin/themes/modern/users/index.php
 msgid "Find"
 msgstr ""
 
@@ -4118,10 +4151,6 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Hidden"
-msgstr ""
-
-#: oc-admin/themes/modern/comments/index.php
-msgid "Hidden comments"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -5966,6 +5995,10 @@ msgstr ""
 msgid ""
 "Needs a CAPTCHA provider configured under Settings &raquo; "
 "reCAPTCHA/Turnstile; otherwise no challenge is shown."
+msgstr ""
+
+#: oc-admin/themes/modern/comments/index.php
+msgid "Needs attention"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
@@ -7832,6 +7865,10 @@ msgstr ""
 msgid "Search cities in %s"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/index.php
+msgid "Search comments"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Search countries"
 msgstr ""
@@ -8315,6 +8352,7 @@ msgstr ""
 msgid "Short name: this field is required"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Show"
@@ -8332,9 +8370,7 @@ msgstr ""
 msgid "Show e-mail"
 msgstr ""
 
-#: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/users/index.php
 msgid "Show filters"
 msgstr ""
 
@@ -9486,6 +9522,10 @@ msgstr ""
 msgid "Title only"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "Title or description"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cache.php
 msgid ""
 "To cache between requests, install one of the extensions above and set %s "
@@ -10045,17 +10085,15 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "User"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/users/index.php
 msgid "User Email"
-msgstr ""
-
-#: oc-admin/themes/modern/items/index.php
-msgid "User ID"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php

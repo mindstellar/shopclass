@@ -72,6 +72,7 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 
 $categories  = __get('categories');
+$countries   = __get('countries');
 $withFilters = __get('withFilters');
 
 $iDisplayLength = __get('iDisplayLength');
@@ -216,26 +217,65 @@ osc_admin_pagination($aData);
                     <div class="col-lg-6">
                         <div class="row-wrapper">
                             <?php osc_admin_form_row_open(__('Pattern')); ?>
-                                    <input class="form-control" type="text" name="sSearch" id="sSearch" value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>" />
+                                    <input class="form-control" type="text" name="sSearch" id="sSearch"
+                                           placeholder="<?php echo osc_esc_html(__('Title or description')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParam('sSearch')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('Category')); ?>
                                     <?php ManageItemsForm::category_select($categories, null, null, true); ?>
                             <?php osc_admin_form_row_close(); ?>
+                            <?php // Written out rather than through ManageItemsForm so the fields can
+                                  // carry the data-ac attributes ui-common.js reads: each one suggests
+                                  // from the location endpoints and clears whatever sits below it.?>
+                            <?php // A country is a closed list, so it picks rather than suggests: typing
+                                  // a name and not choosing a suggestion used to leave countryId empty,
+                                  // and the filter then did nothing at all.?>
                             <?php osc_admin_form_row_open(__('Country')); ?>
-                                    <?php ManageItemsForm::country_text(); ?>
+                                    <select class="form-select" id="countryId" name="countryId"
+                                            data-osc-clears="#regionId,#region,#cityId,#city">
+                                        <option value=""><?php _e('Any country'); ?></option>
+                                        <?php foreach (($countries ?: array()) as $c) { ?>
+                                            <option value="<?php echo osc_esc_html($c['pk_c_code']); ?>"
+                                                <?php echo Params::getParam('countryId') === $c['pk_c_code']
+                                                    ? ' selected' : ''; ?>>
+                                                <?php echo osc_esc_html($c['s_name']); ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('Region')); ?>
-                                    <?php ManageItemsForm::region_text(); ?>
+                                    <input class="form-control" type="text" id="region" name="region"
+                                           placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParam('region')); ?>"
+                                           autocomplete="off"
+                                           data-ac="location_regions"
+                                           data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
+                                           data-ac-target="#regionId"
+                                           data-ac-scope="#countryId" data-ac-scope-param="country"
+                                           data-ac-clears="#cityId,#city"/>
+                                    <input type="hidden" id="regionId" name="regionId"
+                                           value="<?php echo osc_esc_html(Params::getParam('regionId')); ?>"/>
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('City')); ?>
-                                    <?php ManageItemsForm::city_text(); ?>
+                                    <input class="form-control" type="text" id="city" name="city"
+                                           placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParam('city')); ?>"
+                                           autocomplete="off"
+                                           data-ac="location_cities"
+                                           data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
+                                           data-ac-target="#cityId"
+                                           data-ac-scope="#regionId" data-ac-scope-param="region"/>
+                                    <input type="hidden" id="cityId" name="cityId"
+                                           value="<?php echo osc_esc_html(Params::getParam('cityId')); ?>"/>
                             <?php osc_admin_form_row_close(); ?>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="row-wrapper">
                             <?php osc_admin_form_row_open(__('Email')); ?>
-                                    <input class="form-control" id="user" name="user" type="text" value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
+                                    <input class="form-control" id="user" name="user" type="text"
+                                           placeholder="<?php echo osc_esc_html(__('Any seller')); ?>"
+                                           value="<?php echo osc_esc_html(Params::getParam('user')); ?>" />
                                     <input id="userId" name="userId" type="hidden" value="<?php echo osc_esc_html(Params::getParam('userId')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open(__('Premium')); ?>

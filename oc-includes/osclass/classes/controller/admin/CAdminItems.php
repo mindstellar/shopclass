@@ -752,6 +752,7 @@ class CAdminItems extends AdminSecBaseModel
                 }
 
                 $this->_exportVariableToView('aData', $aData);
+                $this->_exportVariableToView('countries', Country::newInstance()->listAll());
                 $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
                 $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
 

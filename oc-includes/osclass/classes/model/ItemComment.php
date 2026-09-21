@@ -361,7 +361,8 @@ class ItemComment extends DAO
         $limit = 10,
         $order_by = 'c.pk_i_id',
         $order = 'DESC',
-        $all = true
+        $all = true,
+        $term = ''
     ) {
         $itemTable = DB_TABLE_PREFIX . 't_item';
         $sql       = 'SELECT c.* FROM ' . $this->getTableName() . ' c CROSS JOIN ' . $itemTable . ' i WHERE ';
@@ -378,6 +379,8 @@ class ItemComment extends DAO
             // A fixed literal, not caller input.
             $sql .= ' AND ( c.b_enabled = 0 OR c.b_active = 0 OR c.b_spam = 1 )';
         }
+
+        $sql    .= self::searchClause($term, $params);
 
         // Validate the sort column against the same identifier allowlist the other
         // paged searches use before it reaches ORDER BY. Every in-repo caller
@@ -447,6 +450,70 @@ class ItemComment extends DAO
         // unreachable through this method's own signature; kept for parity with the
         // legacy row() call on an empty result set.
         return $row === null ? null : (string)$row['numrows'];
+    }
+
+    /**
+     * How many comments the admin list would show, for the same two narrowings the
+     * listing itself applies. countAll() cannot answer this: it takes raw conditions,
+     * and a search term must be bound.
+     *
+     * @param bool   $all  false counts only the ones needing attention
+     * @param string $term
+     *
+     * @return int
+     */
+    public function countMatching($all = true, $term = '')
+    {
+        $itemTable = DB_TABLE_PREFIX . 't_item';
+        $sql       = 'SELECT COUNT(*) AS total FROM ' . $this->getTableName() . ' c CROSS JOIN '
+                     . $itemTable . ' i WHERE c.fk_i_item_id = i.pk_i_id';
+        $params    = array();
+
+        if (!$all) {
+            $sql .= ' AND ( c.b_enabled = 0 OR c.b_active = 0 OR c.b_spam = 1 )';
+        }
+        $sql .= self::searchClause($term, $params);
+
+        try {
+            $row = osc_db_select_one($sql, $params);
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
+
+        return $row === null ? 0 : (int)$row['total'];
+    }
+
+    /**
+     * The `AND (...)` that narrows a comment list to a search term, with its values
+     * appended to $params. Empty when there is nothing to search for, so a caller can
+     * concatenate it unconditionally.
+     *
+     * The columns are fixed and the term is bound; a `%` or `_` the admin typed is
+     * escaped so it matches itself rather than acting as a wildcard.
+     *
+     * @param string             $term
+     * @param array<int,mixed>   $params Appended to in place
+     *
+     * @return string
+     */
+    private static function searchClause($term, array &$params)
+    {
+        $term = trim((string)$term);
+        if ($term === '') {
+            return '';
+        }
+
+        $value = str_replace(array('\\', '%', '_'), array('\\\\', '\%', '\_'), $term);
+        $value = strpos($term, '*') === false ? '%' . $value . '%' : str_replace('*', '%', $value);
+
+        $columns = array('c.s_author_name', 'c.s_author_email', 'c.s_title', 'c.s_body');
+        $parts   = array();
+        foreach ($columns as $column) {
+            $parts[]  = $column . ' LIKE ?';
+            $params[] = $value;
+        }
+
+        return ' AND (' . implode(' OR ', $parts) . ')';
     }
 
     /**

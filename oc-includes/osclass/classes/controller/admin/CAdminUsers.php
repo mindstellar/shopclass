@@ -564,6 +564,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $usersDataTable = new UsersDataTable();
                 $usersDataTable->table($params);
                 $aData = $usersDataTable->getData();
+                $this->_exportVariableToView('countries', Country::newInstance()->listAll());
 
                 if (count($aData['aRows']) == 0 && $page != 1) {
                     $total   = (int)$aData['iTotalDisplayRecords'];
