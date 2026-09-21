@@ -507,6 +507,183 @@ class QueryBuilder
     }
 
     /**
+     * SUM, MIN, MAX or AVG of one column, honouring the wheres and joins set so far.
+     *
+     * The column is a validated identifier, never interpolated text, and the function is
+     * matched against a fixed set -- both halves land inside the SELECT, where a binding
+     * cannot go.
+     *
+     * @param string $function SUM|MIN|MAX|AVG
+     * @param string $column
+     *
+     * @return mixed null when nothing matched
+     * @throws DbException on an unknown function
+     */
+    public function aggregate(string $function, string $column)
+    {
+        $function = strtoupper(trim($function));
+        if (!in_array($function, ['SUM', 'MIN', 'MAX', 'AVG'], true)) {
+            throw new DbException('Unsupported aggregate: ' . $function);
+        }
+
+        $sql = 'SELECT ' . $function . '(' . $this->quoteIdent($column) . ') AS aggregate FROM '
+            . $this->quoteIdent($this->table);
+        $sql .= $this->compileJoins();
+        [$whereSql, $bindings] = $this->compileWheres();
+        $sql .= $whereSql;
+
+        return Connection::instance()->scalar($sql, $bindings);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return float 0.0 when nothing matched
+     * @throws DbException
+     */
+    public function sum(string $column): float
+    {
+        return (float) $this->aggregate('SUM', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function min(string $column)
+    {
+        return $this->aggregate('MIN', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function max(string $column)
+    {
+        return $this->aggregate('MAX', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function avg(string $column)
+    {
+        return $this->aggregate('AVG', $column);
+    }
+
+    /**
+     * Move a numeric column by $amount, in one statement.
+     *
+     * `update(['i_balance' => $new])` has to read the balance first, and two requests that
+     * read the same figure both write it -- one top-up disappears. `i_balance = i_balance + ?`
+     * has no such window, which is why a balance or a counter belongs here rather than there.
+     *
+     * $also sets plain columns in the same statement (a dt_modified, say).
+     *
+     * @param string              $column
+     * @param int|float           $amount  negative to decrease
+     * @param array<string,mixed> $also    column => value, set alongside
+     *
+     * @return int rows changed
+     * @throws DbException without a WHERE clause
+     */
+    public function increment(string $column, $amount = 1, array $also = []): int
+    {
+        if ($this->wheres === []) {
+            throw new DbException('Refusing to UPDATE without a WHERE clause');
+        }
+        if (!is_int($amount) && !is_float($amount)) {
+            throw new DbException('Increment amount must be a number');
+        }
+
+        $quoted      = $this->quoteIdent($column);
+        $assignments = [$quoted . ' = ' . $quoted . ' + ?'];
+        $bindings    = [$amount];
+        foreach ($also as $name => $value) {
+            $assignments[] = $this->quoteIdent((string) $name) . ' = ?';
+            $bindings[]    = $value;
+        }
+
+        $sql = 'UPDATE ' . $this->quoteIdent($this->table) . ' SET ' . implode(', ', $assignments);
+        [$whereSql, $whereBindings] = $this->compileWheres();
+        $sql     .= $whereSql;
+        $bindings = array_merge($bindings, $whereBindings);
+
+        return Connection::instance()->execute($sql, $bindings);
+    }
+
+    /**
+     * @param string    $column
+     * @param int|float $amount positive number to subtract
+     * @param array     $also
+     *
+     * @return int
+     * @throws DbException
+     */
+    public function decrement(string $column, $amount = 1, array $also = []): int
+    {
+        if (!is_int($amount) && !is_float($amount)) {
+            throw new DbException('Decrement amount must be a number');
+        }
+
+        return $this->increment($column, -$amount, $also);
+    }
+
+    /**
+     * INSERT a row, or update the named columns when a unique key already holds it.
+     *
+     * The alternative is SELECT-then-INSERT-or-UPDATE, which two requests can run at once:
+     * both find nothing and both insert, and one gets a duplicate-key error the caller then
+     * has to unpick. This is one statement, so the server decides.
+     *
+     * @param array<string,mixed> $data   the row to insert
+     * @param array<int,string>   $update which of those columns to overwrite on a clash;
+     *                                    every one but the keys, when omitted
+     *
+     * @return int rows affected: 1 inserted, 2 updated, 0 unchanged
+     * @throws DbException when $data is empty
+     */
+    public function upsert(array $data, array $update = []): int
+    {
+        if ($data === []) {
+            throw new DbException('Cannot upsert an empty row');
+        }
+
+        $columns      = [];
+        $placeholders = [];
+        $bindings     = [];
+        foreach ($data as $column => $value) {
+            $columns[]      = $this->quoteIdent((string) $column);
+            $placeholders[] = '?';
+            $bindings[]     = $value;
+        }
+
+        $onUpdate = $update === [] ? array_keys($data) : $update;
+        $sets     = [];
+        foreach ($onUpdate as $column) {
+            $quoted = $this->quoteIdent((string) $column);
+            $sets[] = $quoted . ' = VALUES(' . $quoted . ')';
+        }
+        if ($sets === []) {
+            throw new DbException('Upsert needs at least one column to update');
+        }
+
+        $sql = 'INSERT INTO ' . $this->quoteIdent($this->table)
+            . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')'
+            . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $sets);
+
+        return Connection::instance()->execute($sql, $bindings);
+    }
+
+    /**
      * Return the value of $column from the first matching row, or null.
      *
      * @param string $column

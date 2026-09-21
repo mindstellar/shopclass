@@ -142,7 +142,6 @@ jobs:
       # be a deliberate edit of the fixture rather than a silent break.
       - name: Hook name pin
         run: php tests/hook-contract.php
-      # The hooks reference is generated, so it cannot drift from what core fires.
       # Paging params come straight from a URL; a bad one used to 500 the screen.
       - name: Admin list paging
         run: php tests/admin-list-paging.php
@@ -152,6 +151,7 @@ jobs:
       # ajax_photos[] names become paths, and every temp file handed in is unlinked after.
       - name: Ajax photo attach
         run: php tests/ajax-photo-attach.php
+      # The hooks reference is generated, so it cannot drift from what core fires.
       - name: Hooks reference is current
         run: php tools/gen-hooks-doc.php --check
       # Copying the upload stored whatever was appended after the image, under a .jpg name.
@@ -458,6 +458,9 @@ jobs:
       # long — which is also why the column widths are pinned against the live schema.
       - name: Strict write guards
         run: php tests/strict-write-guards.php
+      # A balance read and written back loses a concurrent top-up; increment() cannot.
+      - name: QueryBuilder writes
+        run: php tests/querybuilder-writes.php
       # The upgrade screen and upgradeDB() are replaced at different moments — an
       # opcode cache can serve the previous class behind the new template — so the
       # screen has to stay truthful when the answer predates it.
