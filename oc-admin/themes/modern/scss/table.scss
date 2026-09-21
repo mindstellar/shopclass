@@ -33,8 +33,8 @@
 
     th {
       color: var(--osc-ink-muted);
-      font-size: .8125rem;   // Label, 13px. The system floor, and reserved for labels —
-      font-weight: 500;      // it is not a body-text escape hatch (The Sixteen Pixel Floor).
+      font-size: .8125rem;   // Label — reserved for labels, not a body-text size.
+      font-weight: 500;
       letter-spacing: .01em;
       white-space: nowrap;
 
@@ -106,7 +106,7 @@
   // space. Muted by default so the listing is what you read. Colour goes through --osc-*
   // tokens, never a Sass variable, so it follows dark mode.
   .actions {
-    font-size: .8125rem;  // Label, 13px — metadata weight, matching the column headers.
+    font-size: .8125rem;  // Label — metadata weight, matching the column headers.
     margin-top: .3rem;
 
     ul {

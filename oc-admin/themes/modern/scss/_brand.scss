@@ -105,19 +105,20 @@ $body-secondary-color: $gray-600;
 
 
 // -----------------------------------------------------------------------------
-// Typography — The Sixteen Pixel Floor
+// Typography
 // -----------------------------------------------------------------------------
 // One family, many weights. The system stack is a choice, not a default: it renders
 // with no webfont round-trip (Shopclass often runs on cheap shared hosting) and looks
 // native on whatever OS the site owner happens to be using.
 //
-// Body never drops below 16px. The owner of a classifieds site is not a developer on
-// a 27" display; density is bought with spacing, never by shrinking type.
+// The scale is set on the root, not on body: every size and space in the theme is
+// written in rem, so one number moves type and density together and stays in proportion.
 //
 // Headings take the brand navy — the type carries the brand colour so the chrome does
-// not have to, and at 15.12:1 it reads harder than body text, not softer.
+// not have to, and it reads harder than body text, not softer.
 $font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 $font-family-monospace:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+$font-size-root:         87.5%; // 14px at the browser default, and it still scales if that is changed
 $font-size-base:         1rem;
 $headings-font-weight:   600;
 $headings-color:         $navy;
@@ -191,8 +192,8 @@ $input-focus-box-shadow:   0 0 0 $focus-ring-width $focus-ring-color;
 // 1px rule does the same job silently, and the hover wash does it better — it tracks the
 // row you are actually looking at instead of the ones you are not.
 $table-border-color:        $gray-300;
-$table-cell-padding-y:      .625rem; // 10px — density is bought with spacing, never by
-$table-cell-padding-x:      .75rem;  // 12px   shrinking type (The Sixteen Pixel Floor)
+$table-cell-padding-y:      .625rem;
+$table-cell-padding-x:      .75rem;
 $table-cell-vertical-align: middle;
 
 

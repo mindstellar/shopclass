@@ -137,6 +137,7 @@
   --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --bs-font-monospace: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+  --bs-root-font-size: 87.5%;
   --bs-body-font-family: var(--bs-font-sans-serif);
   --bs-body-font-size: 1rem;
   --bs-body-font-weight: 400;
@@ -250,6 +251,9 @@
   box-sizing: border-box;
 }
 
+:root {
+  font-size: var(--bs-root-font-size);
+}
 @media (prefers-reduced-motion: no-preference) {
   :root {
     scroll-behavior: smooth;
@@ -12284,13 +12288,13 @@ div.row-offset {
 }
 
 .render-title {
-  font-size: 21px;
+  font-size: 1.3125rem;
   font-weight: 600;
   margin: 0 0 20px;
 }
 
 h3.render-title, .render-title.h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 * + .render-title,
@@ -12382,7 +12386,7 @@ a.ico-32 {
 .action-btn {
   background-color: var(--osc-bench-sunk);
   border: solid 1px var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 14px;
   margin: 0 10px;
   padding: 9px 10px;
@@ -13350,7 +13354,7 @@ ul.showing-results {
 
 .widget-box-title {
   color: var(--osc-ink);
-  font-size: 18px;
+  font-size: 1.125rem;
   position: relative;
 }
 
@@ -13363,7 +13367,7 @@ ul.showing-results {
 .widget-box-title .h4,
 .widget-box-title h5,
 .widget-box-title .h5 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: normal;
   margin: 0;
 }
@@ -13393,7 +13397,7 @@ ul.showing-results {
 .widget-box h4, .widget-box .h4 {
   border-bottom: 1px dotted var(--osc-ink-emphasis);
   color: var(--osc-ink-emphasis);
-  font-size: 16px;
+  font-size: 1rem;
   margin: 20px 0 10px;
 }
 
@@ -13403,13 +13407,13 @@ ul.showing-results {
 
 .stats-title {
   color: var(--osc-ink-emphasis);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 20px;
 }
 
 .stats-detail {
   color: var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .widget-box .form-row {
@@ -13435,7 +13439,7 @@ div.widget-box-content-no-wrapp li {
 }
 
 div.widget-box-content-no-wrapp li a {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .dash-widget-form {
@@ -15778,7 +15782,7 @@ code {
 
 #item-form label {
   display: block;
-  font-size: 14px;
+  font-size: 0.875rem;
   margin-bottom: 5px;
   margin-top: 10px;
 }
@@ -15789,7 +15793,7 @@ code {
 }
 
 .input-title-wide label {
-  font-size: 18px !important;
+  font-size: 1.125rem !important;
 }
 
 .input-description-wide textarea {
@@ -15797,14 +15801,14 @@ code {
 }
 
 #item-form .input-currency {
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 28px;
   vertical-align: bottom;
 }
 
 #item-form h3.label, #item-form .label.h3 {
   color: var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   margin: 0 0 10px;
 }
@@ -16681,7 +16685,7 @@ code {
 
 #advanced_fields_iframe {
   border-bottom: solid 1px var(--osc-bench-sunk);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: normal;
   margin-bottom: 10px;
   padding-bottom: 5px;
@@ -19134,7 +19138,7 @@ a.loc-hit-name:hover {
 }
 
 form h3, form .h3 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: normal;
 }
 

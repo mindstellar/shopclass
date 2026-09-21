@@ -68,6 +68,8 @@ In development.
 
 ### Changed
 
+- The admin is set at 14px instead of 16px, so more of a list fits on screen. It is set on the
+  root, so it still follows a larger browser font size if you have set one.
 - Statistics → Recalculate location stats has left the menu. It has its own button on
   Listings → Locations → Data. The old URL still works.
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.

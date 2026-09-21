@@ -56,7 +56,7 @@
 
 #item-form label {
   display: block;
-  font-size: 14px;
+  font-size: .875rem;
   margin-bottom: 5px;
   margin-top: 10px;
 }
@@ -67,7 +67,7 @@
 }
 
 .input-title-wide label {
-  font-size: 18px !important;
+  font-size: 1.125rem !important;
 }
 
 .input-description-wide textarea {
@@ -75,14 +75,14 @@
 }
 
 #item-form .input-currency {
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 28px;
   vertical-align: bottom;
 }
 
 #item-form h3.label {
   color: var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: .875rem;
   font-weight: 500;
   margin: 0 0 10px;
 }

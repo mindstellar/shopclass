@@ -18,7 +18,7 @@
 .widget-box-title {
   @extend .card-header;
   color: var(--osc-ink);
-  font-size: 18px;
+  font-size: 1.125rem;
   position: relative;
 }
 
@@ -27,7 +27,7 @@
 .widget-box-title h3,
 .widget-box-title h4,
 .widget-box-title h5 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: normal;
   margin: 0;
 }
@@ -59,7 +59,7 @@
 .widget-box h4 {
   border-bottom: 1px dotted var(--osc-ink-emphasis);
   color: var(--osc-ink-emphasis);
-  font-size: 16px;
+  font-size: 1rem;
   margin: 20px 0 10px;
 }
 
@@ -69,13 +69,13 @@
 
 .stats-title {
   color: var(--osc-ink-emphasis);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 20px;
 }
 
 .stats-detail {
   color: var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .widget-box .form-row {
@@ -107,7 +107,7 @@ div.widget-box-content-no-wrapp li {
 }
 
 div.widget-box-content-no-wrapp li a {
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .dash-widget-form {
