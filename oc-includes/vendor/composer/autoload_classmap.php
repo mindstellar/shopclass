@@ -919,6 +919,7 @@ return array(
     'mindstellar\\upgrade\\Theme' => $baseDir . '/oc-includes/osclass/classes/upgrade/Theme.php',
     'mindstellar\\upgrade\\Upgrade' => $baseDir . '/oc-includes/osclass/classes/upgrade/Upgrade.php',
     'mindstellar\\upgrade\\UpgradePackage' => $baseDir . '/oc-includes/osclass/classes/upgrade/UpgradePackage.php',
+    'mindstellar\\utility\\AjaxResponse' => $baseDir . '/oc-includes/osclass/classes/utility/AjaxResponse.php',
     'mindstellar\\utility\\Deprecate' => $baseDir . '/oc-includes/osclass/classes/utility/Deprecate.php',
     'mindstellar\\utility\\Escape' => $baseDir . '/oc-includes/osclass/classes/utility/Escape.php',
     'mindstellar\\utility\\FileSystem' => $baseDir . '/oc-includes/osclass/classes/utility/FileSystem.php',

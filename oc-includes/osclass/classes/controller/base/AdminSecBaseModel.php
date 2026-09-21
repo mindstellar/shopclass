@@ -14,6 +14,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\Utils;
 
 /**
@@ -214,7 +215,7 @@ class AdminSecBaseModel extends SecBaseModel
     public function showAuthFailPage()
     {
         if (Params::getParam('page') === 'ajax') {
-            echo json_encode(array('error' => 1, 'msg' => __('Session timed out')));
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Session timed out')));
             exit;
         }
 

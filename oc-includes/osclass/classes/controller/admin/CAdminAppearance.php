@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\utility\AjaxResponse;
+
 class CAdminAppearance extends AdminSecBaseModel
 {
     //Business Layer...
@@ -244,8 +246,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     $newId = 0;
                 }
 
-                header('Content-Type: application/json');
-                echo json_encode($newId > 0
+                AjaxResponse::json($newId > 0
                     ? array(
                         'error'       => 0,
                         'id'          => (int)$newId,
@@ -291,8 +292,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     $ok = Widget::newInstance()->reorder($ids);
                 }
 
-                header('Content-Type: application/json');
-                echo json_encode(array('error' => $ok ? 0 : 1));
+                AjaxResponse::json(array('error' => $ok ? 0 : 1));
                 exit;
             case ('reorder_widgets_post'):
                 // JSON endpoint: flagging the request as AJAX makes the CSRF check
@@ -319,8 +319,7 @@ class CAdminAppearance extends AdminSecBaseModel
 
                 $ok = Widget::newInstance()->reorder($ids);
 
-                header('Content-Type: application/json');
-                echo json_encode(array('error' => $ok ? 0 : 1));
+                AjaxResponse::json(array('error' => $ok ? 0 : 1));
                 exit;
                 /* /widget */
             case ('activate'):

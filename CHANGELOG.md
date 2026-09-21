@@ -33,6 +33,10 @@ In development.
 
 ### Security
 
+- Ajax replies now say they are JSON. Every one on the public side went out labelled
+  `text/html`, so a browser pointed straight at the URL rendered the body instead of
+  downloading it. Nothing exploitable was found — request parameters are already stripped of
+  markup — but a reply that has to be labelled correctly should not depend on that.
 - A listing could attach a photo it did not upload. The names in `ajax_photos[]` became paths
   under `uploads/temp/` with nothing checking them, and every temp file a post processes is
   deleted afterwards — so a crafted name attached, and then removed, somebody else's photo.

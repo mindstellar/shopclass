@@ -285,7 +285,7 @@ class Csrf
 
         // check ajax request
         if (defined('IS_AJAX') && IS_AJAX === true) {
-            echo json_encode(array(
+            \mindstellar\utility\AjaxResponse::json(array(
                 'error'   => 1,
                 'expired' => $expired ? 1 : 0,
                 'msg'     => $str_error

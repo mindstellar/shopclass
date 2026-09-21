@@ -15,6 +15,8 @@
 /**
  * Class CWebUser
  */
+use mindstellar\utility\AjaxResponse;
+
 class CWebUser extends WebSecBaseModel
 {
     /**
@@ -356,7 +358,7 @@ class CWebUser extends WebSecBaseModel
                 header('Content-Disposition: attachment; filename="my-data-' . date('Y-m-d') . '.json"');
                 header('X-Content-Type-Options: nosniff');
                 header('Cache-Control: private, no-store');
-                echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                AjaxResponse::json($data, flags: JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
             case 'delete':
                 // GET must not delete. Older themes still point here with id and

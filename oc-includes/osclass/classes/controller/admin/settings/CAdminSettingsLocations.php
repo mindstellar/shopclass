@@ -20,6 +20,7 @@ use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
+use mindstellar\utility\AjaxResponse;
 
 /**
  * Class CAdminSettingsLocations
@@ -915,9 +916,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             header('Content-Type: application/json');
             header('Cache-Control: no-store');
             // Tags escaped, so the CSRF injector finds no <form> inside the JSON.
-            echo json_encode(
+            AjaxResponse::json(
                 array('ok' => $status === 'ok', 'message' => $message, 'redirect' => $redirect) + $extra,
-                JSON_HEX_TAG
+                flags: JSON_HEX_TAG
             );
             exit;
         }

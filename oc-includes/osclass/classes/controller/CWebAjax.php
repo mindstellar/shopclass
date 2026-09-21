@@ -17,6 +17,8 @@ define('IS_AJAX', true);
 /**
  * Class CWebAjax
  */
+use mindstellar\utility\AjaxResponse;
+
 class CWebAjax extends BaseModel
 {
     /**
@@ -45,25 +47,25 @@ class CWebAjax extends BaseModel
                 break;
             case 'regions': //Return regions given a countryId
                 $regions = Region::newInstance()->findByCountry(Params::getParam('countryId'));
-                echo json_encode($regions);
+                AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
                 $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'location': // This is the autocomplete AJAX
                 $cities = City::newInstance()->ajax(Params::getParam('term'));
                 foreach ($cities as $k => $city) {
                     $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
                 }
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'location_countries': // This is the autocomplete AJAX
                 $countries = Country::newInstance()->ajax(Params::getParam('term'));
-                echo json_encode($countries);
+                AjaxResponse::json($countries);
                 break;
             case 'custom_field_autocomplete': // Suggestions for an AUTOCOMPLETE custom field
-                echo json_encode($this->customFieldAutocomplete(
+                AjaxResponse::json($this->customFieldAutocomplete(
                     (int) Params::getParam('field'),
                     (string) Params::getParam('term')
                 ));
@@ -71,12 +73,12 @@ class CWebAjax extends BaseModel
             case 'location_regions': // This is the autocomplete AJAX
                 $regions = Region::newInstance()
                     ->ajax(Params::getParam('term'), Params::getParam('country'));
-                echo json_encode($regions);
+                AjaxResponse::json($regions);
                 break;
             case 'location_cities': // This is the autocomplete AJAX
                 $cities =
                     City::newInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'delete_image': // Delete images via AJAX
                 $ajax_photo = Params::getParam('ajax_photo');
@@ -97,7 +99,7 @@ class CWebAjax extends BaseModel
                         $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
                     }
 
-                    echo json_encode(array(
+                    AjaxResponse::json(array(
                         'success' => $success,
                         'msg'     => _m($success
                             ? 'The selected photo has been successfully deleted'
@@ -122,7 +124,7 @@ class CWebAjax extends BaseModel
                     $json['success'] = false;
                     $json['msg']     =
                         _m("The selected photo couldn't be deleted, the url doesn't exist");
-                    echo json_encode($json);
+                    AjaxResponse::json($json);
 
                     return false;
                 }
@@ -133,7 +135,7 @@ class CWebAjax extends BaseModel
                 if (count($aItem) == 0) {
                     $json['success'] = false;
                     $json['msg']     = _m("The listing doesn't exist");
-                    echo json_encode($json);
+                    AjaxResponse::json($json);
 
                     return false;
                 }
@@ -143,7 +145,7 @@ class CWebAjax extends BaseModel
                     if ($userId != null && $userId != $aItem['fk_i_user_id']) {
                         $json['success'] = false;
                         $json['msg']     = _m("The listing doesn't belong to you");
-                        echo json_encode($json);
+                        AjaxResponse::json($json);
 
                         return false;
                     }
@@ -154,7 +156,7 @@ class CWebAjax extends BaseModel
                     ) {
                         $json['success'] = false;
                         $json['msg']     = _m("The listing doesn't belong to you");
-                        echo json_encode($json);
+                        AjaxResponse::json($json);
 
                         return false;
                     }
@@ -206,7 +208,7 @@ class CWebAjax extends BaseModel
                     $json['success'] = 'false';
                 }
 
-                echo json_encode($json);
+                AjaxResponse::json($json);
 
                 return true;
                 break;
@@ -294,7 +296,7 @@ class CWebAjax extends BaseModel
                 $hook = Params::getParam('hook');
 
                 if ($hook == '') {
-                    echo json_encode(array('error' => 'hook parameter not defined'));
+                    AjaxResponse::json(array('error' => 'hook parameter not defined'));
                     break;
                 }
 
@@ -327,7 +329,7 @@ class CWebAjax extends BaseModel
                 }
 
                 if ($file == '') {
-                    echo json_encode(array('error' => 'no action defined'));
+                    AjaxResponse::json(array('error' => 'no action defined'));
                     break;
                 }
 
@@ -335,12 +337,12 @@ class CWebAjax extends BaseModel
                 if (strpos($file, '../') !== false || strpos($file, '..\\') !== false
                     || stripos($file, '/admin/') !== false
                 ) { //If the file is inside an "admin" folder, it should NOT be opened in frontend
-                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
                     break;
                 }
 
                 if (!file_exists(osc_plugins_path() . $file)) {
-                    echo json_encode(array('error' => "ajaxFile doesn't exist"));
+                    AjaxResponse::json(array('error' => "ajaxFile doesn't exist"));
                     break;
                 }
 
@@ -349,7 +351,7 @@ class CWebAjax extends BaseModel
                 // are followed.
                 $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
                 if ($resolved === null) {
-                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
                     break;
                 }
 
@@ -358,13 +360,13 @@ class CWebAjax extends BaseModel
             case 'check_username_availability':
                 $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
                 if (osc_is_username_blacklisted($username)) {
-                    echo json_encode(array('exists' => 1, 's_username' => $username));
+                    AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                 } else {
                     $user = User::newInstance()->findByUsername($username);
                     if (isset($user['s_username'])) {
-                        echo json_encode(array('exists' => 1, 's_username' => $username));
+                        AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                     } else {
-                        echo json_encode(array('exists' => 0, 's_username' => $username));
+                        AjaxResponse::json(array('exists' => 0, 's_username' => $username));
                     }
                 }
                 break;
@@ -379,7 +381,7 @@ class CWebAjax extends BaseModel
                         $uploader->handleUpload(osc_content_path() . 'uploads/temp/' . $filename);
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_WARNING);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
 
@@ -394,7 +396,7 @@ class CWebAjax extends BaseModel
                     );
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_NOTICE);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
                 try {
@@ -404,7 +406,7 @@ class CWebAjax extends BaseModel
                     );
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_NOTICE);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
 
@@ -420,7 +422,7 @@ class CWebAjax extends BaseModel
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
             default:
-                echo json_encode(array('error' => __('no action defined')));
+                AjaxResponse::json(array('error' => __('no action defined')));
                 break;
         }
     }

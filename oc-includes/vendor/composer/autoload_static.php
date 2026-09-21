@@ -1046,6 +1046,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\upgrade\\Theme' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Theme.php',
         'mindstellar\\upgrade\\Upgrade' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Upgrade.php',
         'mindstellar\\upgrade\\UpgradePackage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/UpgradePackage.php',
+        'mindstellar\\utility\\AjaxResponse' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/AjaxResponse.php',
         'mindstellar\\utility\\Deprecate' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Deprecate.php',
         'mindstellar\\utility\\Escape' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Escape.php',
         'mindstellar\\utility\\FileSystem' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/FileSystem.php',

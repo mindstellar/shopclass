@@ -20,6 +20,7 @@ if (!defined('ABS_PATH')) {
  * Class CAdminTools
  */
 use mindstellar\admin\ListPaging;
+use mindstellar\utility\AjaxResponse;
 
 class CAdminTools extends AdminSecBaseModel
 {
@@ -99,8 +100,7 @@ class CAdminTools extends AdminSecBaseModel
                 osc_csrf_check();
                 if (defined('DEMO')) {
                     if ($isXhr) {
-                        header('Content-Type: application/json');
-                        echo json_encode(array('error' => _m('This action cannot be done because it is a demo site')));
+                        AjaxResponse::json(array('error' => _m('This action cannot be done because it is a demo site')));
                         exit;
                     }
                     osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
@@ -113,9 +113,8 @@ class CAdminTools extends AdminSecBaseModel
                 $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
 
                 if ($isXhr) {
-                    header('Content-Type: application/json');
                     header('Cache-Control: no-store');
-                    echo json_encode(array(
+                    AjaxResponse::json(array(
                         'status'  => $pending > 0 ? 'more' : 'done',
                         'pending' => $pending,
                         'total'   => $total,
