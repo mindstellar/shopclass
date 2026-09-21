@@ -192,8 +192,8 @@ $input-focus-box-shadow:   0 0 0 $focus-ring-width $focus-ring-color;
 // 1px rule does the same job silently, and the hover wash does it better — it tracks the
 // row you are actually looking at instead of the ones you are not.
 $table-border-color:        $gray-300;
-$table-cell-padding-y:      .625rem;
-$table-cell-padding-x:      .75rem;
+$table-cell-padding-y:      .5rem;
+$table-cell-padding-x:      .5rem;
 $table-cell-vertical-align: middle;
 
 

@@ -483,8 +483,8 @@ table {
 }
 
 caption {
-  padding-top: 0.625rem;
-  padding-bottom: 0.625rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
   color: var(--bs-secondary-color);
   text-align: left;
 }
@@ -1940,7 +1940,7 @@ progress {
   border-color: var(--bs-table-border-color);
 }
 .table > :not(caption) > * > * {
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.5rem;
   color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
   background-color: var(--bs-table-bg);
   border-bottom-width: var(--bs-border-width);
@@ -14844,6 +14844,7 @@ td.children-cat {
   max-height: 19rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background: linear-gradient(var(--osc-bench) 30%, rgba(0, 0, 0, 0)) top/100% 1.5rem local no-repeat, linear-gradient(rgba(0, 0, 0, 0), var(--osc-bench) 70%) bottom/100% 1.5rem local no-repeat, radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0)) top/100% 0.5rem scroll no-repeat, radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0)) bottom/100% 0.5rem scroll no-repeat;
 }
 
 .dash-system {
