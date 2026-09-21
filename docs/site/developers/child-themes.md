@@ -87,11 +87,16 @@ own copy.
 is `Cannot redeclare storefront_listing_card()` — a fatal the site cannot catch or recover
 from, and because the child loads first it is the *parent* that crashes. The page is blank.
 
+**The guard belongs on the parent, and only there.** Putting one in the child does
+nothing: the child loads first, so `function_exists()` is always false at that point, the
+function is declared anyway, and the parent still hits the fatal.
+
 So:
 
-- **Writing a parent theme:** wrap every function in `function_exists()`. Every one.
-- **Writing a child theme:** do not redeclare a function the parent does not guard.
-  Prefix your own functions with your theme's slug.
+- **Writing a parent theme:** wrap every function in `function_exists()`. Every one. It is
+  the only thing that lets a child override anything.
+- **Writing a child theme:** do not redeclare a function the parent does not guard, and do
+  not bother guarding your own. Prefix them with your theme's slug so they cannot collide.
 
 Hooks have no such problem — a child and parent may both add to the same hook, and both
 run.
