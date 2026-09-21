@@ -420,10 +420,10 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
         ) {
             $parentPath = osc_themes_path() . $info['template'] . '/';
             if (file_exists($parentPath . $themeView)) {
-                // Switches the theme URLs to the parent, exactly as the walk does,
-                // so the parent's view loads the parent's assets.
-                $themes->setParentTheme();
-                require $themes->getCurrentThemePath() . $themeView;
+                // Required from the parent's directory without becoming the parent:
+                // osc_theme_asset_url() resolves each asset on its own, so the parent's
+                // view already gets the parent's files, and the child keeps its own.
+                require $parentPath . $themeView;
 
                 return;
             }

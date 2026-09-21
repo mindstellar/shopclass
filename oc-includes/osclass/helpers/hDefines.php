@@ -291,26 +291,37 @@ function osc_theme_asset_url($file = '')
  */
 function osc_current_web_theme_path($file = '')
 {
-    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-        require WebThemes::newInstance()->getCurrentThemePath() . $file;
-    } else {
-        $info = WebThemes::newInstance()->loadThemeInfo(WebThemes::newInstance()->getCurrentTheme());
-        if (isset($info['template']) && $info['template'] != '') {
-            WebThemes::newInstance()->setParentTheme();
-            if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                require WebThemes::newInstance()->getCurrentThemePath() . $file;
-            } else {
-                WebThemes::newInstance()->setGuiTheme();
-                if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                    require WebThemes::newInstance()->getCurrentThemePath() . $file;
-                }
-            }
-        } else {
-            WebThemes::newInstance()->setGuiTheme();
-            if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                require WebThemes::newInstance()->getCurrentThemePath() . $file;
-            }
+    $themes = WebThemes::newInstance();
+
+    if (file_exists($themes->getCurrentThemePath() . $file)) {
+        require $themes->getCurrentThemePath() . $file;
+
+        return;
+    }
+
+    // A parent's view is required from the parent's directory, without making the parent
+    // the active theme. Switching used to be how a parent's view got the parent's assets;
+    // osc_theme_asset_url() answers that per file now, so the switch bought nothing and
+    // cost the child every asset it ships -- they resolved under the parent from here on.
+    $current = (string) $themes->getCurrentTheme();
+    $info    = $themes->loadThemeInfo($current);
+    if (is_array($info) && !empty($info['template'])
+        && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+        && $info['template'] !== $current
+    ) {
+        $parentPath = osc_themes_path() . $info['template'] . '/';
+        if (file_exists($parentPath . $file)) {
+            require $parentPath . $file;
+
+            return;
         }
+    }
+
+    // Nothing in the stack has it: the bundled fallback theme is the last resort, and
+    // that one IS a theme switch -- the site is no longer rendering its own theme.
+    $themes->setGuiTheme();
+    if (file_exists($themes->getCurrentThemePath() . $file)) {
+        require $themes->getCurrentThemePath() . $file;
     }
 }
 

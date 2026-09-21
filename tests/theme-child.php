@@ -81,6 +81,12 @@ class WebThemes
         self::$current = self::$parents[self::$current] ?? self::$current;
     }
 
+    /** The bundled last resort. This one IS a switch: the site left its own theme. */
+    public function setGuiTheme(): void
+    {
+        self::$current = 'storefront';
+    }
+
     /**
      * @param string $theme
      *
@@ -124,7 +130,8 @@ $makeTheme = static function (string $slug, string $parent = '', array $files = 
         if (!is_dir($sub)) {
             mkdir($sub, 0777, true);
         }
-        file_put_contents($dir . $rel, '<?php /* ' . $slug . ' */');
+        // Echoes its own slug, so a pin can say which theme's copy was rendered.
+        file_put_contents($dir . $rel, '<?php echo ' . var_export($slug, true) . ';');
     }
 };
 
@@ -263,6 +270,32 @@ pin('the styles helper walks too', 'parent-s/css/style.css', osc_current_web_the
     ? explode('/themes/', osc_current_web_theme_styles_url('style.css'), 2)[1] : '');
 pin('the js helper walks too', 'parent-s/js/app.js',
     explode('/themes/', osc_current_web_theme_js_url('app.js'), 2)[1]);
+
+harness_section('Loading a parent view does not change the active theme');
+
+$makeTheme('parent-w', '', array('footer.php'));
+$makeTheme('child-w', 'parent-w', array('header.php'));
+WebThemes::$current = 'child-w';
+
+ob_start();
+osc_current_web_theme_path('header.php');
+$own = trim(ob_get_clean());
+pin('the child renders its own view', 'child-w', $own);
+pin('and is still the active theme', 'child-w', WebThemes::$current);
+
+ob_start();
+osc_current_web_theme_path('footer.php');
+$inherited = trim(ob_get_clean());
+pin('a view only the parent has renders from the parent', 'parent-w', $inherited);
+// setParentTheme() does not describe the parent, it becomes it -- so this used to leave
+// every later lookup, including the child's own assets, resolving under the parent.
+pin('and the child is STILL the active theme', 'child-w', WebThemes::$current);
+
+pin(
+    'the child asset still points at the child afterwards',
+    'child-w/css/x.css',
+    explode('/themes/', osc_current_web_theme_url('css/x.css'), 2)[1]
+);
 
 /* Clean up the fixture tree. */
 $rm = static function (string $dir) use (&$rm) {

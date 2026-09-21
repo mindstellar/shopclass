@@ -37,6 +37,9 @@ In development.
 
 - A parent theme overruled its child on anything both declared with `osc_add_theme_support()`.
   The child wins now, and a feature it says nothing about is still inherited.
+- A child theme's own stylesheets and scripts could resolve to its parent's folder, and 404.
+  Loading a view the parent owned switched the whole site to the parent for the rest of the
+  request; theme files are resolved one at a time now and nothing is switched.
 - Appearance names the theme a child extends, warns when that parent is not installed, and
   says so before you delete a theme another one depends on.
 - The admin user search did nothing: searching by name or e-mail returned the unfiltered
