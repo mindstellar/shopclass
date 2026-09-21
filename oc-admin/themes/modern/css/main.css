@@ -19584,6 +19584,10 @@ form h3, form .h3 {
 .osc-tabnav li {
   margin: 0;
 }
+.osc-tabnav .tab-count {
+  color: var(--osc-ink-muted);
+  font-weight: 400;
+}
 .osc-tabnav a {
   border-block-end: 2px solid transparent;
   color: var(--osc-ink-muted);

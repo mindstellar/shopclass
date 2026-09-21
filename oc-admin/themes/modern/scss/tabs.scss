@@ -85,6 +85,13 @@
     margin: 0;
   }
 
+  // A count beside a tab label is how many, not a state, so it is quieter text rather
+  // than a second badge competing with the status column below it.
+  .tab-count {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
+  }
+
   a {
     border-block-end: 2px solid transparent;
     color: var(--osc-ink-muted);

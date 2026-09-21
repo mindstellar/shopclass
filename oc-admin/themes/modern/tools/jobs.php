@@ -33,6 +33,14 @@ $filters = array(
     'error'   => array('label' => __('Gave up'), 'count' => $summary['error']),
 );
 
+// Job states map onto the admin's existing badge vocabulary rather than inventing a
+// second one: waiting borrows the clock, running the filled disc, gave-up the slashed ring.
+$stateClass = array(
+    'pending' => 'status-pending',
+    'running' => 'status-active',
+    'error'   => 'status-failed',
+);
+
 // A type on the queue that nothing registered a handler for. Almost always a plugin
 // switched off with its work still queued, and worth naming before the admin goes
 // looking for a bug that is not there.
@@ -65,7 +73,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <a<?php echo $status === $key ? ' class="is-active"' : ''; ?>
                    href="<?php echo osc_esc_html($base . ($key === '' ? '' : '&status=' . $key)); ?>">
                     <?php echo osc_esc_html($filter['label']); ?>
-                    <span class="badge bg-secondary"><?php echo number_format($filter['count']); ?></span>
+                    <span class="tab-count">(<?php echo number_format($filter['count']); ?>)</span>
                 </a>
             </li>
         <?php } ?>
@@ -91,7 +99,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <?php foreach ($rows as $row) {
                     $rowStatus = (string) $row['s_status'];
                     $label     = $filters[$rowStatus]['label'] ?? $rowStatus;
-                    $variant   = $rowStatus === 'error' ? 'danger' : ($rowStatus === 'running' ? 'info' : 'secondary'); ?>
+                    $state     = $stateClass[$rowStatus] ?? 'status-inactive'; ?>
                     <tr>
                         <td><?php echo (int) $row['pk_i_id']; ?></td>
                         <td>
@@ -100,7 +108,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <span class="text-muted"><?php echo osc_esc_html((string) $row['s_storage']); ?></span>
                             <?php } ?>
                         </td>
-                        <td><span class="badge bg-<?php echo $variant; ?>"><?php echo osc_esc_html($label); ?></span></td>
+                        <td class="col-status"><span class="osc-status <?php echo $state; ?>"><?php
+                            echo osc_esc_html($label); ?></span></td>
                         <td class="text-end"><?php echo (int) $row['i_attempts']; ?></td>
                         <td class="text-muted"><?php echo osc_esc_html((string) $row['dt_next_run']); ?></td>
                         <td class="text-muted"><?php echo osc_esc_html((string) ($row['s_last_error'] ?? '')); ?></td>
