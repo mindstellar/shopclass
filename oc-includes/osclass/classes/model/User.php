@@ -494,6 +494,9 @@ class User extends DAO
      *         The two counts stay int 0 on failure and are strings otherwise
      * @since  2.4
      */
+    /** The comparisons a structured search condition may ask for. */
+    private const SEARCH_OPERATORS = array('=', '!=', '<>', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE');
+
     public function search(
         $start = 0,
         $end = 10,
@@ -546,6 +549,33 @@ class User extends DAO
         if (is_array($fields) && count($fields) > 0) {
             $clauses = array();
             foreach ($fields as $k => $v) {
+                // A structured condition: one bound value tested against one or more
+                // columns. Anything beyond equality has to arrive this way -- the admin
+                // search used to pass whole SQL fragments as the array key, which the
+                // column allowlist below then dropped without a word, so every search
+                // quietly returned the unfiltered list.
+                if (is_array($v) && isset($v['columns'])) {
+                    $columns = array();
+                    foreach ((array)$v['columns'] as $column) {
+                        if (preg_match('/^[A-Za-z0-9_.]+$/', (string)$column)) {
+                            $columns[] = (string)$column;
+                        }
+                    }
+                    if ($columns === array()) {
+                        continue;
+                    }
+                    $operator = strtoupper(trim((string)($v['op'] ?? '=')));
+                    if (!in_array($operator, self::SEARCH_OPERATORS, true)) {
+                        $operator = '=';
+                    }
+                    $parts = array();
+                    foreach ($columns as $column) {
+                        $parts[]  = $column . ' ' . $operator . ' ?';
+                        $params[] = $v['value'] ?? null;
+                    }
+                    $clauses[] = count($parts) > 1 ? '(' . implode(' OR ', $parts) . ')' : $parts[0];
+                    continue;
+                }
                 // Each key is a fixed column name supplied by the wrapper methods,
                 // validated against the same allowlist as the sort column; each
                 // value is bound.
