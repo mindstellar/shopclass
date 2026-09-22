@@ -2,7 +2,7 @@
 title: Payment gateways
 description: Take payments in ShopClass by registering a gateway, and give it a declared settings page — walked through with the bundled Test Payments plugin.
 sidebar:
-  order: 22
+  order: 23
 ---
 
 Core sells credits, keeps the wallet and applies upgrades. It never touches money.

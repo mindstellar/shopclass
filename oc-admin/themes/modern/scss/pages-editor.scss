@@ -155,4 +155,20 @@
       cursor: pointer;
     }
   }
+
+  // Below the rail's breakpoint the block row is being tapped, so its handle and its two
+  // links grow to the 24px floor.
+  @media (max-width: 991.98px) {
+    .page-block-handle {
+      justify-content: center;
+      min-block-size: 1.75rem;
+      min-inline-size: 1.75rem;
+    }
+
+    .page-block-actions > * {
+      align-items: center;
+      display: inline-flex;
+      min-block-size: 1.75rem;
+    }
+  }
 }

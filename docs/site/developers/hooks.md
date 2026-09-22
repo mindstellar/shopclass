@@ -2,7 +2,7 @@
 title: Hooks and filters
 description: How ShopClass hooks work — actions, filters, priority, the naming standard, and the full reference of every name core fires.
 sidebar:
-  order: 23
+  order: 24
 ---
 
 A hook is a named place in core where your code can run. An **action** lets you do

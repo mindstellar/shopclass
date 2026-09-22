@@ -294,3 +294,8 @@ osc_admin_form_close(array(
 `prefix`, `suffix`, `width`, `required`, `disabled`, `id` and `attrs`. Pass
 `'row' => false` for the control on its own, and `'type' => 'custom'` with a
 `render` callable to put your own markup inside a normal row.
+
+If the screen edits **one record** rather than a list of preferences — a main
+column, a rail saying what state the record is in, one Save at the foot — build
+it from the editor components instead:
+[Admin editors](/docs/developers/admin-editors/).

@@ -2,7 +2,7 @@
 title: Template hierarchy
 description: Every front-end page now resolves through an ordered list of candidate views, so a theme can specialise a page or add a view of its own without a patch to ShopClass.
 sidebar:
-  order: 19
+  order: 20
 ---
 
 Every front-end controller used to name exactly one view. Rendering a listing

@@ -2,7 +2,7 @@
 title: Child themes
 description: Extend a theme without forking it — what a child inherits, the order Shopclass looks in, how assets and functions.php resolve, and the two rules that stop a child breaking its parent.
 sidebar:
-  order: 17
+  order: 18
 ---
 
 A child theme is a theme that names another as its `Parent Theme`. It ships only the files

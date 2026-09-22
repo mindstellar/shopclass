@@ -2,7 +2,7 @@
 title: How to write a bug report
 description: What to include in a ShopClass bug report so it can actually be reproduced and fixed — versions, environment, steps, and where to file it.
 sidebar:
-  order: 16
+  order: 17
 ---
 
 One rule governs everything below:

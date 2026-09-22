@@ -15,6 +15,8 @@ In development.
 - `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern for a
   screen that spells its posted names its own way, and an `'error'` slot per field.
   Declared settings pages can carry a rich-text field too.
+- An Admin editors page in the developer docs: every component an add/edit screen is built
+  from, with a worked example of a plugin screen with a rail.
 - A Child themes page in the developer docs: what a child inherits, the order Shopclass looks
   in, and the two rules that stop a child breaking its parent.
 - Appearance warns when a child theme and its parent would both declare the same function.
@@ -110,6 +112,10 @@ In development.
 
 ### Changed
 
+- On a phone both editors give every small control a 24px tap target, stack the two-up field
+  row and show photos two across.
+- `printMultiLangTitleDesc()`, `ItemForm::category_multiple_selects()` in the admin and
+  `ItemForm::photos_javascript()` are documented as deprecated. They keep working.
 - The listing editor has a Status panel in its rail, with the state, the dates, the
   moderation actions and the expiry; blocking a listing and marking it as spam ask first.
 - The listing's category is chosen from one searchable list showing the whole path, not a

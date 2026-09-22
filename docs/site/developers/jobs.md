@@ -2,7 +2,7 @@
 title: Background jobs
 description: Queue slow work and let cron run it — osc_job_enqueue(), handler registration, retries, batching long work, and the admin queue screen.
 sidebar:
-  order: 24
+  order: 25
 ---
 
 Some work is too slow to do while somebody waits. Emptying a category with 39,000

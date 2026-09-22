@@ -16596,8 +16596,44 @@ select[aria-invalid=true].field-select {
 }
 
 @media (max-width: 767.98px) {
+  .osc-editor-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .osc-photo-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 575.98px) {
+  .osc-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 991.98px) {
+  .osc-disclosure > summary {
+    min-block-size: 1.75rem;
+  }
+  .osc-publish .osc-deflist a {
+    align-items: center;
+    display: inline-flex;
+    min-block-size: 1.75rem;
+  }
+  .osc-editor .form-label-checkbox > label {
+    align-items: center;
+    display: flex !important;
+    gap: 0.4rem;
+  }
+  .osc-editor .form-label-checkbox input[type=checkbox] {
+    block-size: 1.75rem;
+    flex: 0 0 auto;
+    inline-size: 1.75rem;
+  }
+  .osc-photo-remove,
+  .osc-photo-make-cover {
+    height: 2rem;
+    width: 2rem;
+  }
+  .osc-photo-make-cover {
+    inset-inline-end: 2.7rem;
   }
 }
 .osc-catpick {
@@ -16681,6 +16717,7 @@ select[aria-invalid=true].field-select {
 }
 .osc-price-field > .input-text {
   flex: 1 1 6rem;
+  min-inline-size: 0;
   width: auto !important;
 }
 .osc-price-field > select.field-select {
@@ -16853,6 +16890,18 @@ select[aria-invalid=true].field-select {
 #adminPageForm .page-footer-toggle .form-check-label {
   color: var(--osc-ink);
   cursor: pointer;
+}
+@media (max-width: 991.98px) {
+  #adminPageForm .page-block-handle {
+    justify-content: center;
+    min-block-size: 1.75rem;
+    min-inline-size: 1.75rem;
+  }
+  #adminPageForm .page-block-actions > * {
+    align-items: center;
+    display: inline-flex;
+    min-block-size: 1.75rem;
+  }
 }
 
 .upgrade-running {

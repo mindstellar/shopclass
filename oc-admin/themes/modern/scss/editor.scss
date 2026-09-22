@@ -570,8 +570,60 @@
 }
 
 @media (max-width: 767.98px) {
+  // Half a column here is narrower than a label and its help sentence want, and too narrow
+  // for the price amount to sit beside its currency.
+  .osc-editor-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .osc-photo-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// On a phone three tiles across leave a thumbnail too small to judge, with its own controls
+// over most of it.
+@media (max-width: 575.98px) {
+  .osc-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// Below the rail's breakpoint the screen is being tapped, so the small controls grow to the
+// 24px floor a finger needs.
+@media (max-width: 991.98px) {
+  .osc-disclosure > summary {
+    min-block-size: 1.75rem;
+  }
+
+  .osc-publish .osc-deflist a {
+    align-items: center;
+    display: inline-flex;
+    min-block-size: 1.75rem;
+  }
+
+  // A bigger box needs the label beside it rather than run against it. The listing form's
+  // own label rule is an id selector making every label a block, so this has to out-weigh it.
+  .osc-editor .form-label-checkbox > label {
+    align-items: center;
+    display: flex !important;
+    gap: .4rem;
+  }
+
+  .osc-editor .form-label-checkbox input[type="checkbox"] {
+    block-size: 1.75rem;
+    flex: 0 0 auto;
+    inline-size: 1.75rem;
+  }
+
+  .osc-photo-remove,
+  .osc-photo-make-cover {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .osc-photo-make-cover {
+    inset-inline-end: 2.7rem;
   }
 }
 
@@ -668,9 +720,12 @@
     margin-block-end: 0;
   }
 
-  // The width tokens carry !important, so overriding them here has to as well.
+  // The width tokens carry !important, so overriding them here has to as well. A flex item
+  // will not shrink past its min-content width either, and an input's is wide enough to push
+  // the currency select onto a line of its own.
   > .input-text {
     flex: 1 1 6rem;
+    min-inline-size: 0;
     width: auto !important;
   }
 

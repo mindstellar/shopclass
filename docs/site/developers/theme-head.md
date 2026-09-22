@@ -2,7 +2,7 @@
 title: Head and body
 description: Hand the document head to ShopClass with osc_head(), and let core name the page for you with osc_body_class() and osc_language_attributes().
 sidebar:
-  order: 20
+  order: 21
 ---
 
 The `<head>` used to belong entirely to the theme. Core could not put a title, a

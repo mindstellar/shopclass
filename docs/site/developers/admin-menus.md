@@ -100,5 +100,6 @@ claiming the same id will overwrite each other's menus.
 :::caution[Settings screens]
 Pointing a menu at a hand-written `admin/settings.php` is deprecated for settings.
 [Declare a settings page](/docs/developers/settings-pages/) instead — core adds its
-menu entry for you.
+menu entry for you. For a screen that edits one record, build it from the
+[editor components](/docs/developers/admin-editors/).
 :::
