@@ -309,6 +309,11 @@ jobs:
       # including both locale rows, which a single-locale check cannot see.
       - name: Admin editor save
         run: php tests/admin-editor-save.php
+      # The composites both editors are assembled from. A dropped rail class stops the
+      # status panel coming first on a phone; a dropped dirty attribute turns the save bar
+      # back into a row that counts nothing.
+      - name: Admin editor components
+        run: php tests/admin-editor-components.php
       # The twelve settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,

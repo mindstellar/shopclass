@@ -1207,7 +1207,8 @@ pin(
     . ' class="input-text field-text" value="" autocomplete="off" spellcheck="false" />'
     . '<div class="help-box">For security, type <b>your current password</b></div></div></div>'
     . '<!--plugin-row-->'
-    . '<div class="form-actions"><button type="submit" class="btn btn-sm btn-submit">Add</button></div>'
+    . '<div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
+    . '<button type="submit" class="btn btn-sm btn-submit">Add</button></div>'
     . '</div></fieldset></form>',
     $form
 );

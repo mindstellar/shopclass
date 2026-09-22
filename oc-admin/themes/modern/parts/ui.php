@@ -197,7 +197,8 @@ if (!function_exists('osc_admin_action_button')) {
      * One action, as a link or a button.
      *
      * Keys: label, url, variant (primary|secondary|danger|dim), icon (bootstrap-icon
-     * name), title, attrs (associative, rendered verbatim as escaped attributes).
+     * name), title, attrs (associative, rendered verbatim as escaped attributes), class
+     * (extra classes, for a button a script has to find).
      *
      * Variant maps to the button vocabulary in DESIGN: one primary per region, secondary
      * for everything routine, danger reserved for genuinely destructive work.
@@ -211,6 +212,11 @@ if (!function_exists('osc_admin_action_button')) {
         $variant = $action['variant'] ?? 'secondary';
         $classes = array('btn', 'btn-sm');
         $classes[] = 'btn-' . ($variant === 'primary' ? 'submit' : $variant);
+        // Its own classes go here, not in attrs: a second class attribute is dropped by
+        // the parser, which silently takes a script's hook off the button.
+        if (!empty($action['class'])) {
+            $classes[] = osc_esc_html($action['class']);
+        }
 
         $attrs = '';
         foreach (($action['attrs'] ?? array()) as $name => $value) {
@@ -280,6 +286,7 @@ if (!function_exists('osc_admin_panel_open')) {
      * Options:
      *   'subtitle' => string  One line under the title, for the thing a header cannot say.
      *   'actions'  => array   Action specs rendered in the header, inline-end.
+     *   'class'    => string  Extra classes on the box, for a panel with a variant.
      *
      * @param string              $title Omit for a panel that needs no header
      * @param array<string,mixed> $opts
@@ -288,7 +295,8 @@ if (!function_exists('osc_admin_panel_open')) {
      */
     function osc_admin_panel_open($title = '', array $opts = array())
     {
-        echo '<div class="widget-box">';
+        echo '<div class="widget-box'
+             . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '">';
 
         if ($title !== '') { ?>
             <div class="widget-box-title">
@@ -541,16 +549,26 @@ if (!function_exists('osc_admin_form_actions')) {
      * settings screens.
      *
      * @param array<int,array<string,mixed>> $actions Action specs; the first defaults to variant 'primary'
+     * @param array<string,mixed>            $opts    'dirty' => true for the unsaved-changes status bar
      *
      * @return void
      */
-    function osc_admin_form_actions(array $actions = array())
+    function osc_admin_form_actions(array $actions = array(), array $opts = array())
     {
         if ($actions === array()) {
             $actions = array(array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'));
         }
 
-        echo '<div class="form-actions">';
+        // Opt-in, so an existing screen's action row is the markup it has always been.
+        $dirty = !empty($opts['dirty'])
+            ? ' data-osc-dirty-bar data-osc-dirty-one="' . osc_esc_html(__('1 unsaved change')) . '"'
+              . ' data-osc-dirty-many="' . osc_esc_html(__('%d unsaved changes')) . '"'
+            : '';
+
+        echo '<div class="form-actions"' . $dirty . '>';
+        if ($dirty !== '') {
+            echo '<p class="form-actions-status" role="status" aria-live="polite"></p>';
+        }
         foreach ($actions as $i => $action) {
             $action['variant'] = $action['variant'] ?? ($i === 0 ? 'primary' : 'secondary');
             $action['type']    = $action['type'] ?? 'submit';

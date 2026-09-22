@@ -442,6 +442,125 @@ if (!function_exists('osc_admin_secret')) {
 }
 
 /*
+ * The composites an *editing* screen is made of, one layer above the field primitives: the
+ * shell both core editors sit in, the rail's status panel, and the collapsible group each
+ * rail needs for the settings nobody changes twice a year.
+ */
+
+if (!function_exists('osc_admin_editor_open')) {
+    /**
+     * Open an editing screen: the form, its hidden route, the error summary, and the main
+     * column of the two-column grid.
+     *
+     * Takes everything osc_admin_form_open() takes -- 'action', 'page', 'url', 'method',
+     * 'fields', 'name', 'id', 'class', 'upload', 'csrf' -- and always opens the form
+     * unwrapped, because an editor stacks its labels above its controls. Plus:
+     *
+     *   'main_id', 'main_class' => on the main column, for the script that has to find it
+     *   'errors'       => name => message. Non-empty draws the #error_list summary.
+     *   'error_labels' => name => the field's label, for the summary's links
+     *   'error_ids'    => name => the control's id, where it is not the name
+     *
+     * Follow it with the main column's content, optionally osc_admin_editor_rail() and the
+     * rail's panels, then osc_admin_editor_close(). A screen that wants no rail skips
+     * osc_admin_editor_rail() and gets one column.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_editor_open(array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::open($opts);
+    }
+}
+
+if (!function_exists('osc_admin_editor_rail')) {
+    /**
+     * Close the main column and open the rail beside it. Sticky from 992px up; above the
+     * content on anything narrower, so a status panel is reachable without scrolling past
+     * the body.
+     *
+     * @param array $opts 'id', 'class'
+     *
+     * @return void
+     */
+    function osc_admin_editor_rail(array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::rail($opts);
+    }
+}
+
+if (!function_exists('osc_admin_editor_close')) {
+    /**
+     * Close the editor, ending on the sticky save bar that counts what has changed.
+     *
+     * @param array|null $actions Action specs; null for a form whose buttons are elsewhere
+     * @param array      $opts    'dirty' => false for a plain action row
+     *
+     * @return void
+     */
+    function osc_admin_editor_close($actions = array(), array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::close($actions, $opts);
+    }
+}
+
+if (!function_exists('osc_admin_publish_panel')) {
+    /**
+     * The rail's status panel: what state the record is in, the facts about it, and the
+     * actions that change that state.
+     *
+     * It carries no Save: the form's one primary is the bar at its foot. Routine actions
+     * are secondary buttons; 'danger' renders after a rule, apart from them.
+     *
+     * Keys: 'title' (default "Status"), 'title_actions', 'class',
+     *       'status'  => list of array($state, $word) -- or array('state' =>, 'word' =>),
+     *       'rows'    => osc_admin_definition() rows,
+     *       'body_html' => markup between the rows and the actions,
+     *       'actions', 'danger' => action specs.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_publish_panel(array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::publishPanel($opts);
+    }
+}
+
+if (!function_exists('osc_admin_disclosure_open')) {
+    /**
+     * A collapsible group, for the settings a screen has to offer and nobody changes
+     * twice a year. A <details>, so it works with no JavaScript and is findable by the
+     * browser's own in-page search.
+     *
+     * @param string $title
+     * @param array  $opts 'open' => true to start expanded, 'id', 'class',
+     *                     'summary_hint' => a muted line beside the title naming what is inside
+     *
+     * @return void
+     */
+    function osc_admin_disclosure_open($title, array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::disclosureOpen($title, $opts);
+    }
+}
+
+if (!function_exists('osc_admin_disclosure_close')) {
+    /**
+     * Close what osc_admin_disclosure_open() opened.
+     *
+     * @return void
+     */
+    function osc_admin_disclosure_close()
+    {
+        \mindstellar\admin\ui\Editor::disclosureClose();
+    }
+}
+
+/*
  * Fallbacks for the theme components the primitives above build on. The active admin
  * theme defines these already and loads first, so on a stock install nothing below runs --
  * they exist so a plugin calling osc_admin_field() still renders on a theme that ships
@@ -483,7 +602,8 @@ if (!function_exists('osc_admin_action_button')) {
     /**
      * One action, as a link or a button.
      *
-     * Keys: label, url, variant (primary|secondary|danger|dim), icon, title, attrs, type.
+     * Keys: label, url, variant (primary|secondary|danger|dim), icon, title, attrs, type,
+     * class (extra classes, for a button a script has to find).
      *
      * @param array $action
      *
@@ -492,7 +612,8 @@ if (!function_exists('osc_admin_action_button')) {
     function osc_admin_action_button(array $action)
     {
         $variant   = $action['variant'] ?? 'secondary';
-        $classes   = 'btn btn-sm btn-' . ($variant === 'primary' ? 'submit' : $variant);
+        $classes   = 'btn btn-sm btn-' . ($variant === 'primary' ? 'submit' : $variant)
+            . (!empty($action['class']) ? ' ' . $action['class'] : '');
         $attrs     = osc_admin_field_attrs($action['attrs'] ?? array());
         if (!empty($action['title'])) {
             $attrs .= ' title="' . osc_esc_html($action['title']) . '"';
@@ -548,6 +669,91 @@ if (!function_exists('osc_admin_form_actions')) {
             osc_admin_action_button($action);
         }
         echo '</div>';
+    }
+}
+
+if (!function_exists('osc_admin_panel_open')) {
+    /**
+     * A titled panel. Opens the box and its content area; osc_admin_panel_close() ends both.
+     *
+     * @param string $title Omit for a panel that needs no header
+     * @param array  $opts  'subtitle', 'actions' (action specs in the header), 'class'
+     *
+     * @return void
+     */
+    function osc_admin_panel_open($title = '', array $opts = array())
+    {
+        echo '<div class="widget-box'
+            . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '">';
+
+        if ($title !== '') {
+            echo '<div class="widget-box-title"><h3>' . osc_esc_html($title) . '</h3>';
+            if (!empty($opts['actions'])) {
+                echo '<span class="widget-box-title-actions">';
+                foreach ($opts['actions'] as $action) {
+                    osc_admin_action_button($action);
+                }
+                echo '</span>';
+            }
+            echo '</div>';
+        }
+
+        echo '<div class="widget-box-content">';
+
+        if (!empty($opts['subtitle'])) {
+            echo '<p class="panel-subtitle">' . osc_esc_html($opts['subtitle']) . '</p>';
+        }
+    }
+}
+
+if (!function_exists('osc_admin_panel_close')) {
+    /**
+     * Close the panel osc_admin_panel_open() opened.
+     *
+     * @return void
+     */
+    function osc_admin_panel_close()
+    {
+        echo '</div></div>';
+    }
+}
+
+if (!function_exists('osc_admin_status')) {
+    /**
+     * A status pill: a tint, a shape, and the word. An unmapped state still renders, in
+     * the neutral tint, so a plugin's own word degrades instead of vanishing.
+     *
+     * @param string $state Lower-case state key, e.g. 'paid'
+     * @param string $word  The visible word, already translated
+     *
+     * @return void
+     */
+    function osc_admin_status($state, $word)
+    {
+        echo '<span class="osc-status status-' . osc_esc_html($state) . '">'
+            . osc_esc_html($word) . '</span>';
+    }
+}
+
+if (!function_exists('osc_admin_definition')) {
+    /**
+     * Label/value rows -- the read-only counterpart to a form. A row may set 'html' => true
+     * to pass markup through, which is why the default escapes.
+     *
+     * @param array $rows Each with 'label', 'value', optionally 'html' and 'mono'
+     *
+     * @return void
+     */
+    function osc_admin_definition(array $rows)
+    {
+        echo '<dl class="osc-deflist">';
+        foreach ($rows as $row) {
+            echo '<div class="osc-deflist-row"><dt>' . osc_esc_html($row['label'] ?? '') . '</dt>'
+                . '<dd' . (!empty($row['mono']) ? ' class="osc-mono"' : '') . '>'
+                . (!empty($row['html']) ? $row['value'] : osc_esc_html((string)($row['value'] ?? '')))
+                . '</dd></div>';
+        }
+        echo '</dl>';
     }
 }
 

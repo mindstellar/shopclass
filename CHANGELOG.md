@@ -37,6 +37,8 @@ In development.
 
 ### Fixed
 
+- Settings screens never showed the unsaved-changes save bar: the admin theme's copy of the
+  action row dropped the option core passed it.
 - The Show e-mail box on the listing editor no longer opens unticked on a listing that has it on.
 - A parent theme overruled its child on anything both declared with `osc_add_theme_support()`.
   The child wins now, and a feature it says nothing about is still inherited.
@@ -96,6 +98,8 @@ In development.
 
 ### Changed
 
+- The page editor has a Status panel in its rail, an Advanced group for the internal name,
+  and a save bar that counts unsaved changes.
 - The admin is set at 14px instead of 16px, so more of a list fits on screen. It is set on the
   root, so it still follows a larger browser font size if you have set one.
 - List rows read in three sizes instead of one, and the status column drops its fill — the
