@@ -300,6 +300,15 @@ jobs:
       # Add always failed with an invalid-email error.
       - name: Admin user form
         run: php tests/admin-user-form.php
+      # The listing and page editors are hand-built screens whose fields nothing declares.
+      # A field renamed, dropped or turned into another kind of control is silent: the form
+      # draws, the save runs, and the column it fed keeps its old value.
+      - name: Admin editor fields
+        run: php tests/admin-editor-fields.php
+      # The other end of the same contract -- what each field's save actually writes,
+      # including both locale rows, which a single-locale check cannot see.
+      - name: Admin editor save
+        run: php tests/admin-editor-save.php
       # The twelve settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,
