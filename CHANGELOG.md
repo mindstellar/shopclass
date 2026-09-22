@@ -8,6 +8,9 @@ In development.
 
 ### New
 
+- `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern for a
+  screen that spells its posted names its own way, and an `'error'` slot per field.
+  Declared settings pages can carry a rich-text field too.
 - A Child themes page in the developer docs: what a child inherits, the order Shopclass looks
   in, and the two rules that stop a child breaking its parent.
 - Appearance warns when a child theme and its parent would both declare the same function.
@@ -37,6 +40,7 @@ In development.
 
 ### Fixed
 
+- The page editor's rich-text body drew near-black text on a dark sheet, at 1.31:1.
 - Settings screens never showed the unsaved-changes save bar: the admin theme's copy of the
   action row dropped the option core passed it.
 - The Show e-mail box on the listing editor no longer opens unticked on a listing that has it on.
@@ -100,6 +104,13 @@ In development.
 
 - The page editor has a Status panel in its rail, an Advanced group for the internal name,
   and a save bar that counts unsaved changes.
+- The listing and page editors draw their titles and bodies from the shared field, so both
+  screens have one locale tab strip, one rich-text setup and one place a field says what is
+  wrong with it.
+- A rejected save on either editor comes back with what was typed still in it, the message
+  under the field it belongs to and the locale tab marked.
+- The rich-text editor follows the admin's light/dark toggle instead of keeping the skin it
+  loaded with.
 - The admin is set at 14px instead of 16px, so more of a list fits on screen. It is set on the
   root, so it still follows a larger browser font size if you have set one.
 - List rows read in three sizes instead of one, and the status column drops its fill — the

@@ -50,6 +50,7 @@ final class SettingsPageRegistry
         'checkbox',
         'hidden',
         'image',
+        'richtext',
         'custom',
     );
 
@@ -64,6 +65,9 @@ final class SettingsPageRegistry
         'tel',
         'color',
         'hidden',
+        // Not reduced to plain text like the rest: a body is markup, so it is sanitized
+        // rather than stripped, and 'purify' => false still stores it raw.
+        'richtext',
     );
 
     /** Appended to an image field's name to name its "Remove image" box. */
@@ -602,11 +606,11 @@ final class SettingsPageRegistry
                     }
                 }
                 if (isset($field['translate']) && $field['translate']
-                    && !in_array($type, array('text', 'textarea'), true)
+                    && !in_array($type, array('text', 'textarea', 'richtext'), true)
                 ) {
                     throw new InvalidArgumentException(
                         'SettingsPageRegistry: page "' . $id . '" field "' . $field['name']
-                        . '" cannot be translated: only text and textarea expand over locales'
+                        . '" cannot be translated: only text, textarea and richtext expand over locales'
                     );
                 }
                 if (isset($field['purify'])) {

@@ -378,45 +378,7 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items');
                 }
 
-                $csrf_token = osc_csrf_token_url();
-                if ($item['b_active']) {
-                    $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=INACTIVE">' . __('Deactivate') . '</a>';
-                } else {
-                    $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=ACTIVE">' . __('Activate') . '</a>';
-                }
-                if ($item['b_enabled']) {
-                    $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=DISABLE">' . __('Block') . '</a>';
-                } else {
-                    $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
-                }
-                if ($item['b_premium']) {
-                    $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status_premium&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=0">' . __('Unmark as premium') . '</a>';
-                } else {
-                    $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status_premium&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=1">' . __('Mark as premium') . '</a>';
-                }
-                if ($item['b_spam']) {
-                    $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status_spam&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=0">' . __('Unmark as spam') . '</a>';
-                } else {
-                    $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
-                        . '?page=items&amp;action=status_spam&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
-                        . '&amp;value=1">' . __('Mark as spam') . '</a>';
-                }
-
-                $this->_exportVariableToView('actions', $actions);
+                $this->_exportVariableToView('actions', $this->itemStateActions($item));
 
                 $form     = count(Session::newInstance()->_getForm());
                 $keepForm = count(Session::newInstance()->_getKeepForm());
@@ -467,7 +429,10 @@ class CAdminItems extends AdminSecBaseModel
 
                 $success = $mItems->edit();
 
-                if ($success == 1) {
+                // edit() answers with the number of rows it changed, or with the message it
+                // refused on. A save that changed nothing affected no rows and is still a
+                // save, so only a message is a refusal.
+                if (!is_string($success) && $success !== false) {
                     osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
                     $url = osc_admin_base_url(true) . '?page=items';
                     // if Referer is saved that means referer is ManageListings or ReportListings
@@ -483,9 +448,13 @@ class CAdminItems extends AdminSecBaseModel
 
                     $this->redirectTo($url);
                 } else {
+                    // Drawn again with what was typed still in it, rather than thrown away
+                    // with a redirect. prepareData() has already put the submission in the
+                    // session form, which is where the view reads the content fields from.
                     osc_add_flash_error_message($success, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=item_edit&id='
-                        . Params::getParam('id'));
+                    $this->drawItemForm(false, $this->itemErrors($success, $mItems->data));
+
+                    return;
                 }
                 break;
             case 'deleteResource':  //delete resource
@@ -560,7 +529,9 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo($url);
                 } else {
                     osc_add_flash_error_message($success, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=post');
+                    $this->drawItemForm(true, $this->itemErrors($success, $mItem->data));
+
+                    return;
                 }
                 break;
             case ('settings'):          // calling the items settings view
@@ -837,6 +808,123 @@ class CAdminItems extends AdminSecBaseModel
                 //calling the view...
                 $this->doView('items/index.php');
         }
+    }
+
+    /**
+     * The moderation links the listing editor draws above the form: activate or
+     * deactivate, block or unblock, premium and spam. Each is its own CSRF-signed GET, as
+     * it has always been; this is only where they are built.
+     *
+     * @param array<string,mixed> $item
+     *
+     * @return array<int,string>
+     */
+    private function itemStateActions(array $item)
+    {
+        $actions    = array();
+        $csrf_token = osc_csrf_token_url();
+        if ($item['b_active']) {
+            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=INACTIVE">' . __('Deactivate') . '</a>';
+        } else {
+            $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=ACTIVE">' . __('Activate') . '</a>';
+        }
+        if ($item['b_enabled']) {
+            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=DISABLE">' . __('Block') . '</a>';
+        } else {
+            $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=ENABLE">' . __('Unblock') . '</a>';
+        }
+        if ($item['b_premium']) {
+            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status_premium&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=0">' . __('Unmark as premium') . '</a>';
+        } else {
+            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status_premium&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=1">' . __('Mark as premium') . '</a>';
+        }
+        if ($item['b_spam']) {
+            $actions[] = '<a class="btn btn-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status_spam&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=0">' . __('Unmark as spam') . '</a>';
+        } else {
+            $actions[] = '<a class="btn btn-outline-danger" href="' . osc_admin_base_url(true)
+                . '?page=items&amp;action=status_spam&amp;id=' . $item['pk_i_id'] . '&amp;' . $csrf_token
+                . '&amp;value=1">' . __('Mark as spam') . '</a>';
+        }
+
+        return $actions;
+    }
+
+    /**
+     * Draw the listing form again over a rejected save, with what was typed still in it
+     * rather than thrown away with a redirect.
+     *
+     * @param bool                    $isNew  The add form, not the edit form
+     * @param array<array-key,mixed>  $errors field name => message, or a plain list
+     *
+     * @return void
+     */
+    private function drawItemForm($isNew, array $errors)
+    {
+        $this->_exportVariableToView('editorErrors', $errors);
+
+        if ($isNew) {
+            $this->_exportVariableToView('new_item', true);
+            osc_run_hook('post_item');
+            $this->doView('items/frm.php');
+
+            return;
+        }
+
+        $item = Item::newInstance()->findByPrimaryKey(Params::getParam('id'));
+        $this->_exportVariableToView('actions', $this->itemStateActions($item));
+        $this->_exportVariableToView('item', $item);
+        $this->_exportVariableToView('new_item', false);
+        osc_run_hook('before_item_edit', $item);
+        $this->doView('items/frm.php');
+    }
+
+    /**
+     * What a refused save has to say, split into the summary's lines plus the fields the
+     * screen can name. ItemActions reports one message with a line per problem, so the
+     * lines are what the summary lists; an empty title is named per locale, because the
+     * field promises one and the tab strip is where it has to be pointed out.
+     *
+     * @param string              $message The message ItemActions refused with
+     * @param array<string,mixed> $data    The submission, as prepareData() left it
+     *
+     * @return array<array-key,mixed>
+     */
+    private function itemErrors($message, array $data)
+    {
+        $errors = array();
+        foreach (explode(PHP_EOL, (string)$message) as $line) {
+            $line = trim($line);
+            if ($line !== '') {
+                $errors[] = $line;
+            }
+        }
+
+        $titles = array();
+        foreach (osc_get_locales() as $locale) {
+            $code = $locale['pk_c_code'];
+            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) === '') {
+                $titles[$code] = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
+            }
+        }
+        if ($titles !== array()) {
+            $errors['title'] = $titles;
+        }
+
+        return $errors;
     }
 
     //hopefully generic...

@@ -14,6 +14,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\store\StoreFactory;
+use mindstellar\settings\SettingsPageRegistry;
 
 /**
  * Class CAdminSettingsCustom
@@ -116,6 +117,17 @@ class CAdminSettingsCustom extends AdminSecBaseModel
      */
     private function render(array $page, array $values)
     {
+        // A rich-text field needs the editor and the script that mounts it, and the header
+        // this view emits is what prints the queue -- so it is decided here, not by the
+        // field, which draws long after the queue has gone out.
+        foreach (SettingsPageRegistry::instance()->fields($page['id']) as $field) {
+            if (($field['type'] ?? '') === 'richtext') {
+                osc_enqueue_script('tiny_mce');
+                osc_enqueue_script('admin-editor');
+                break;
+            }
+        }
+
         $this->_exportVariableToView('settings_page', $page);
         $this->_exportVariableToView('settings_values', $values);
 

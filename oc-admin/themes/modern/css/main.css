@@ -12613,6 +12613,19 @@ input.ico-32 {
   --bs-btn-focus-shadow-rgb: var(--osc-bronze-rgb);
 }
 
+.btn-outline-danger {
+  --bs-btn-color: var(--osc-danger);
+  --bs-btn-border-color: var(--osc-danger);
+  --bs-btn-hover-color: var(--osc-ink-inverse);
+  --bs-btn-hover-bg: var(--osc-danger);
+  --bs-btn-hover-border-color: var(--osc-danger);
+  --bs-btn-active-color: var(--osc-ink-inverse);
+  --bs-btn-active-bg: var(--osc-danger-deep);
+  --bs-btn-active-border-color: var(--osc-danger-deep);
+  --bs-btn-disabled-color: var(--osc-ink-muted);
+  --bs-btn-disabled-border-color: var(--osc-rule-strong);
+}
+
 .btn-submit {
   background-color: var(--osc-bronze);
   border-color: var(--osc-bronze);
@@ -16109,7 +16122,9 @@ pre code {
   font-size: 1.25rem;
   font-weight: 600;
   height: auto;
+  max-width: none !important;
   padding-block: 10px;
+  width: 100% !important;
 }
 
 .form-control[aria-invalid=true], .form-controls input[aria-invalid=true]:not([type=checkbox]):not([type=radio]):not([type=submit]), .form-controls textarea[aria-invalid=true], input[aria-invalid=true].large,
@@ -16546,12 +16561,6 @@ select[aria-invalid=true].field-select {
 #adminPageForm .page-view-link:hover, #adminPageForm .page-view-link:focus-visible {
   color: var(--osc-bronze);
   text-decoration: underline;
-}
-#adminPageForm #left-side input[id$="#s_title"] {
-  font-size: 1.25rem;
-  font-weight: 600;
-  height: auto;
-  padding-block: 10px;
 }
 #adminPageForm #left-side.page-mode-builder .multilang-description {
   display: none;

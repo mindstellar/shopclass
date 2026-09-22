@@ -47,12 +47,19 @@ if (!function_exists('osc_admin_field')) {
      * is the only new name a plugin has to depend on.
      *
      * Keys, all optional but `name`:
-     *   'type'      => text|email|url|tel|number|color|file|select|textarea|radio|checkbox|secret|custom
+     *   'type'      => text|email|url|tel|number|color|file|select|textarea|richtext|radio|checkbox|secret|custom
      *   'name'      => request/preference key
      *   'label'     => the label. For a checkbox it sits beside the control, so the row's
      *                  own label column comes from 'row_label' instead.
      *   'value'     => current value ('selected' is accepted for select and radio)
      *   'help'      => hint under the field. 'help_html' for a hint carrying markup.
+     *   'error'     => the message under a rejected control, which also marks it invalid.
+     *                  On a translated field, a map of locale code => message.
+     *   'layout'    => 'stacked' for the label above the control, no label column
+     *   'translate' => true expands the field over 'locales' (text, textarea, richtext)
+     *   'translate_name' => how one locale's name is spelled, %s standing for the code
+     *                  ('title[%s]'). Absent, it is the name with the code appended.
+     *   'preset', 'height', 'media', 'upload_url', 'config' => a richtext field's editor
      *   'prefix'    => leading words that belong to the field, e.g. "Break comments into"
      *   'suffix'    => trailing words that belong to the field, e.g. "listings at most"
      *   'width'     => text|num|key|select|full, overriding the width the type implies
@@ -503,6 +510,26 @@ if (!function_exists('osc_admin_editor_close')) {
     function osc_admin_editor_close($actions = array(), array $opts = array())
     {
         \mindstellar\admin\ui\Editor::close($actions, $opts);
+    }
+}
+
+if (!function_exists('osc_admin_error_summary')) {
+    /**
+     * The list of what a rejected save refused, at the head of a form. Fills the same
+     * #error_list the client-side validator writes to, so both read the same.
+     *
+     * An entry keyed by a field name links to that field; one with no name is a plain
+     * line. osc_admin_editor_open() emits this from its 'errors'; a screen that draws its
+     * own form calls it directly.
+     *
+     * @param array $errors name => message, or a plain list of messages
+     * @param array $opts   'error_labels' and 'error_ids', keyed by field name
+     *
+     * @return void
+     */
+    function osc_admin_error_summary(array $errors, array $opts = array())
+    {
+        \mindstellar\admin\ui\Editor::errorSummary($errors, $opts);
     }
 }
 

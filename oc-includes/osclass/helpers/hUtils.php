@@ -1238,11 +1238,11 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
         $config['paste_data_images']             = false;
         $config['paste_remove_styles_if_webkit'] = true;
         $config['paste_webkit_styles']           = 'none';
-        // Only the light oxide skin ships, so the editor is a consistent "sheet of
-        // paper" in both themes rather than a half-dark panel.
+        // Type only. A colour here would be a light-mode value baked in, and it beat the
+        // dark content stylesheet: near-black text on a dark sheet, at 1.31:1.
         $config['content_style'] = 'body{font-family:system-ui,-apple-system,"Segoe UI",'
                                    . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
-                                   . 'line-height:1.55;color:#14181f}';
+                                   . 'line-height:1.55}';
     } else {
         // Lean set: basic inline formatting, lists and links. No source view -- this is the
         // preset the public listing form uses, and handing a poster a raw-HTML pane invites

@@ -14,6 +14,7 @@
  */
 
 osc_enqueue_script('tiny_mce');
+osc_enqueue_script('admin-editor');
 
 $page      = __get('page');
 $templates = __get('templates');
@@ -86,55 +87,6 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
-// TinyMCE 7 — scoped to the per-language content editors only (name ends with
-// "#s_text"), never the whole page, so plugin textareas in the meta rail are
-// left alone. Paste is cleaned the way a WYSIWYG should: Word/Docs style cruft
-// is dropped, semantic tags are kept, and images are not inlined as data URIs.
-/**
- * Emit the page form's TinyMCE setup for the per-language content editors.
- *
- * @return void
- */
-function customHead()
-{
-    // Editor images go to the media library (unattached, reusable), so the flow
-    // works on unsaved pages and the same images are pickable elsewhere.
-    $uploadUrl = osc_admin_base_url(true)
-        . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
-    ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (typeof tinymce === 'undefined') {
-                return;
-            }
-            var uploadUrl = <?php echo json_encode($uploadUrl); ?>;
-            var cfg = <?php echo osc_tinymce_config('full', array(
-                'selector' => 'textarea[name$="#s_text"]',
-                'height'   => 460,
-            )); ?>;
-            // Drag/drop and paste auto-upload straight to the library; the image
-            // dialog's picker opens the media library (browse existing or upload).
-            cfg.automatic_uploads = true;
-            cfg.images_upload_credentials = true;
-            cfg.images_upload_url = uploadUrl;
-            cfg.file_picker_types = 'image';
-            cfg.file_picker_callback = function (cb, value, meta) {
-                if (meta.filetype !== 'image' || !window.oscMediaPicker) {
-                    return;
-                }
-                window.oscMediaPicker.open(function (url) {
-                    cb(url, { title: '' });
-                });
-            };
-            if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
-            tinymce.init(cfg);
-        });
-    </script>
-    <?php
-}
-
-osc_add_hook('admin_header', 'customHead', 10);
-
 /**
  * Add the content column offset used by the other admin editors.
  *
@@ -146,6 +98,41 @@ function pageFrmRenderOffset()
 }
 
 osc_add_filter('render-wrapper', 'pageFrmRenderOffset');
+
+// The editor's content fields: one value per locale, with what was typed winning over
+// what is stored, so a rejected save comes back with the submission still in it.
+$pageErrors   = __get('editorErrors');
+$pageErrors   = is_array($pageErrors) ? $pageErrors : array();
+$pageLocales  = array();
+$pageTitles   = array();
+$pageBodies   = array();
+$pageSubmitted = Session::newInstance()->_getForm('aFieldsDescription');
+// What was typed wins here too, the way PageForm::internal_name_input_text() reads it.
+$pageInternalName = $page['s_internal_name'] ?? '';
+if (Session::newInstance()->_getForm('s_internal_name') != '') {
+    $pageInternalName = Session::newInstance()->_getForm('s_internal_name');
+}
+foreach (osc_get_admin_locales() as $pageLocale) {
+    $code                = $pageLocale['pk_c_code'];
+    $pageLocales[$code]  = $pageLocale['s_name'];
+    $pageTitles[$code]   = osc_apply_filter(
+        'admin_page_title',
+        $pageSubmitted[$code]['s_title'] ?? $page['locale'][$code]['s_title'] ?? '',
+        $page,
+        $pageLocale
+    );
+    $pageBodies[$code]   = osc_apply_filter(
+        'admin_page_description',
+        $pageSubmitted[$code]['s_text'] ?? $page['locale'][$code]['s_text'] ?? '',
+        $page,
+        $pageLocale
+    );
+}
+
+// Editor images go to the media library (unattached, reusable), so the flow works on
+// unsaved pages and the same images are pickable elsewhere.
+$pageUploadUrl = osc_admin_base_url(true)
+    . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
 
 $pageBackUrl = osc_admin_base_url(true) . '?page=pages';
 $pageViewUrl = customFrmText('edit')
@@ -171,16 +158,65 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     // mode script + .page-mode-* CSS). The title always shows; the text editor and the
     // widget canvas swap.
     osc_admin_editor_open(array(
-        'id'         => 'item-form',
-        'class'      => 'page-editor',
-        'page'       => 'pages',
-        'action'     => customFrmText('action_frm'),
-        'main_id'    => 'left-side',
-        'main_class' => 'page-mode-' . ($pb_is_builder ? 'builder' : 'classic'),
+        'id'           => 'item-form',
+        'class'        => 'page-editor',
+        'page'         => 'pages',
+        'action'       => customFrmText('action_frm'),
+        'main_id'      => 'left-side',
+        'main_class'   => 'page-mode-' . ($pb_is_builder ? 'builder' : 'classic'),
+        'errors'       => $pageErrors,
+        'error_labels' => array(
+            's_title'         => __('Title'),
+            's_text'          => __('Body'),
+            's_internal_name' => __('Internal name'),
+        ),
+        'error_ids'    => array(
+            's_title'         => osc_admin_field_id(array('name' => 's_title')),
+            's_text'          => osc_admin_field_id(array('name' => 's_text')),
+            's_internal_name' => 's_internal_name',
+        ),
     ));
 
     PageForm::primary_input_hidden($page);
-    PageForm::printMultiLangTitleDesc($page);
+
+    // The posted names are the ones the save has always read; only what draws them is new.
+    // No 'required': the rule is that one locale carries a title, not that this one does,
+    // and the browser would refuse to submit a page titled in another language.
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'translate_name' => '%s#s_title',
+        'label'          => __('Title'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        'locales'        => $pageLocales,
+        'value'          => $pageTitles,
+        'error'          => $pageErrors['s_title'] ?? '',
+        'class'          => 'osc-editor-title',
+        'placeholder'    => __('Enter title here'),
+    ));
+
+    // The wrapper is what the builder mode hides: a page composed from widgets has no
+    // body to write.
+    echo '<div class="multilang-description">';
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 's_text',
+        'translate_name' => '%s#s_text',
+        'label'          => __('Body'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        // The title's strip above switches this field too; a second strip could disagree with it.
+        'tabs'           => false,
+        'locales'        => $pageLocales,
+        'value'          => $pageBodies,
+        'error'          => $pageErrors['s_text'] ?? '',
+        'preset'         => 'full',
+        'height'         => 460,
+        'media'          => true,
+        'upload_url'     => $pageUploadUrl,
+    ));
+    echo '</div>';
 
     // Functional widget canvas — rendered only for a page already saved with a builder
     // template, so its page.{id} widgets are real and an Add widget lands on a builder
@@ -339,15 +375,25 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
 
     <?php
-    osc_admin_disclosure_open(__('Advanced'), array('summary_hint' => __('Internal name'))); ?>
-    <div class="osc-field">
-        <label class="form-label" for="s_internal_name">
-            <?php _e('Internal name'); ?> / <?php echo osc_esc_html(__('Slug')); ?>
-        </label>
-        <?php PageForm::internal_name_input_text($page); ?>
-        <span class="help-box"><?php _e('Used to quickly identify this page'); ?></span>
-    </div>
-    <?php
+    // Open on a rejected save, so the message is not behind a closed summary.
+    osc_admin_disclosure_open(__('Advanced'), array(
+        'summary_hint' => __('Internal name'),
+        'open'         => isset($pageErrors['s_internal_name']),
+    ));
+    // Drawn here rather than through PageForm::internal_name_input_text(), which has no
+    // slot for an error; the posted name and the id are the same either way.
+    $pageIndelible = isset($page['b_indelible']) && $page['b_indelible'] == 1;
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 's_internal_name',
+        'name'   => 's_internal_name',
+        'label'  => __('Internal name') . ' / ' . __('Slug'),
+        'layout' => 'stacked',
+        'value'  => $pageInternalName,
+        'help'   => __('Used to quickly identify this page'),
+        'error'  => $pageErrors['s_internal_name'] ?? '',
+        'attrs'  => $pageIndelible ? array('readonly' => true, 'disabled' => true) : array(),
+    ));
     osc_admin_disclosure_close();
 
     osc_admin_panel_close();

@@ -10,6 +10,7 @@
 
 use mindstellar\admin\form\store\StoreException;
 use mindstellar\admin\form\store\StoreFactory;
+use mindstellar\admin\ui\Field;
 use mindstellar\database\DbException;
 use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
@@ -281,7 +282,7 @@ if (!function_exists('osc_settings_field_locales')) {
     function osc_settings_field_locales(array $field)
     {
         if (empty($field['translate'])
-            || !in_array($field['type'] ?? 'text', array('text', 'textarea'), true)
+            || !in_array($field['type'] ?? 'text', array('text', 'textarea', 'richtext'), true)
         ) {
             return array();
         }
@@ -428,6 +429,13 @@ if (!function_exists('osc_settings_sanitize')) {
         // here would store a hash of something the sign-in form never sees.
         if ($field['type'] !== 'secret') {
             $value = trim($value);
+        }
+
+        // A body is written as markup, so it is sanitized rather than stripped: taking the
+        // tags out would empty the field the admin just formatted. 'purify' => false
+        // stores exactly what was typed.
+        if ($field['type'] === 'richtext') {
+            return ($field['purify'] ?? true) ? osc_sanitize_html($value) : $value;
         }
 
         // Every tag out of free-typed text, contents and all: what Params::getParam() has
@@ -639,8 +647,9 @@ if (!function_exists('osc_settings_save')) {
             }
             $translated = array();
             foreach ($locales[$name] as $code => $localeName) {
+                // The posted name, which a field may spell its own way, not the storage key.
                 $translated[$code] = osc_settings_sanitize(
-                    array('name' => $name . $code) + $field
+                    array('name' => Field::translatedName($field, (string)$code)) + $field
                 );
             }
             $values[$name] = $translated;

@@ -108,6 +108,20 @@ if (!function_exists('osc_csrf_check')) {
         return true;
     }
 }
+// The rejected-save path draws the form again: the moderation links it puts above the
+// listing carry a token, and the page form offers the registered templates.
+if (!function_exists('osc_csrf_token_url')) {
+    function osc_csrf_token_url()
+    {
+        return 'CSRFName=t&CSRFToken=t';
+    }
+}
+if (!function_exists('osc_page_templates')) {
+    function osc_page_templates()
+    {
+        return array();
+    }
+}
 if (!function_exists('osc_add_flash_ok_message')) {
     function osc_add_flash_ok_message($msg, $section = 'pubMessages')
     {

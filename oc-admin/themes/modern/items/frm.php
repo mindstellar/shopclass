@@ -15,6 +15,7 @@
 
 osc_enqueue_script('php-date');
 osc_enqueue_script('tiny_mce');
+osc_enqueue_script('admin-editor');
 
 /* Not used ?
 // cateogry js
@@ -160,6 +161,33 @@ function render_offset()
     return 'row-offset';
 }
 
+// The editor's content fields: one value per locale, with what was typed winning over
+// what is stored, so a rejected save comes back with the submission still in it.
+$itemErrors     = __get('editorErrors');
+$itemErrors     = is_array($itemErrors) ? $itemErrors : array();
+$itemRecord     = $new_item ? null : osc_item();
+$itemLocales    = array();
+$itemTitles     = array();
+$itemBodies     = array();
+$sessionTitles  = Session::newInstance()->_getForm('title');
+$sessionBodies  = Session::newInstance()->_getForm('description');
+foreach (osc_get_locales() as $itemLocale) {
+    $code               = $itemLocale['pk_c_code'];
+    $itemLocales[$code] = $itemLocale['s_name'];
+    $itemTitles[$code]  = osc_apply_filter(
+        'admin_item_title',
+        $sessionTitles[$code] ?? $itemRecord['locale'][$code]['s_title'] ?? '',
+        $itemRecord,
+        $itemLocale
+    );
+    $itemBodies[$code]  = osc_apply_filter(
+        'admin_item_description',
+        $sessionBodies[$code] ?? $itemRecord['locale'][$code]['s_description'] ?? '',
+        $itemRecord,
+        $itemLocale
+    );
+}
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminItemForm" class="col-xl-10">
     <div class="row ">
@@ -184,7 +212,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
     <div class="row">
         <div class="col">
-            <ul id="error_list"></ul>
+            <?php if ($itemErrors === array()) { ?>
+                <ul id="error_list"></ul>
+            <?php } else {
+                // The same surface the client-side validator writes to, filled server-side
+                // when a save comes back rejected.
+                osc_admin_error_summary($itemErrors, array(
+                    'error_labels' => array(
+                        'title'       => __('Title'),
+                        'description' => __('Description'),
+                    ),
+                    'error_ids'    => array(
+                        'title'       => osc_admin_field_id(array('name' => 'title')),
+                        'description' => osc_admin_field_id(array('name' => 'description')),
+                    ),
+                ));
+            } ?>
             <div id="item-form">
                 <form class="row" action="<?php echo osc_admin_base_url(true); ?>" method="post" enctype="multipart/form-data"
                       name="item">
@@ -196,14 +239,54 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <input type="hidden" name="id" value="<?php echo osc_item_id(); ?>"/>
                         <input type="hidden" name="secret" value="<?php echo osc_item_secret(); ?>"/>
                     <?php } ?>
-                    <ul id="error_list"></ul>
                     <div id="left-side" class="col">
-                        <?php \mindstellar\form\admin\Item::instance()->printMultiLangTab(); ?>
                         <div class="category mb-3">
                             <label><?php _e('Category'); ?> *</label>
                             <?php ItemForm::category_multiple_selects(); ?>
                         </div>
-                        <?php \mindstellar\form\admin\Item::instance()->printMultiLangTitleDesc(null, false); ?>
+                        <?php
+                        // The posted names are the ones the save has always read; only what
+                        // draws them is new.
+                        osc_admin_field(array(
+                            'type'           => 'text',
+                            'name'           => 'title',
+                            'translate_name' => 'title[%s]',
+                            'label'          => __('Title'),
+                            'layout'         => 'stacked',
+                            'required'       => true,
+                            'translate'      => true,
+                            'locales'        => $itemLocales,
+                            'value'          => $itemTitles,
+                            'error'          => $itemErrors['title'] ?? '',
+                            'class'          => 'osc-editor-title',
+                            'placeholder'    => __('Enter title here'),
+                        ));
+
+                        // Neither preset: a listing description wants tables and a colour
+                        // picker but no embedded image or media, so the pair is passed here
+                        // rather than earning a preset of its own for one caller.
+                        osc_admin_field(array(
+                            'type'           => 'richtext',
+                            'name'           => 'description',
+                            'translate_name' => 'description[%s]',
+                            'label'          => __('Description'),
+                            'layout'         => 'stacked',
+                            'required'       => true,
+                            'translate'      => true,
+                            // The title's strip above switches this field too; a second strip could disagree with it.
+                            'tabs'           => false,
+                            'locales'        => $itemLocales,
+                            'value'          => $itemBodies,
+                            'error'          => $itemErrors['description'] ?? '',
+                            'preset'         => 'basic',
+                            'height'         => 320,
+                            'config'         => array(
+                                'plugins' => 'advlist anchor autolink charmap code fullscreen insertdatetime'
+                                             . ' link lists preview searchreplace table',
+                                'toolbar' => 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
+                                             . ' | link charmap table | removeformat | searchreplace code fullscreen preview',
+                            ),
+                        )); ?>
                         <?php \mindstellar\form\admin\Item::instance()->itemPrice(); ?>
                         <?php if (osc_images_enabled_at_items()) { ?>
                             <div class="photo_container">
@@ -335,30 +418,4 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     </div>
 </div>
-<script>
-    // Init on DOM ready and guard, the same way the page and email editors do: inline,
-    // the enqueued tinymce bundle has not executed yet and this throws "tinyMCE is not
-    // defined", leaving bare textareas. The options are TinyMCE 7's; the 3-era ones
-    // (theme_advanced_*, forecolorpicker, fontsizeselect, paste) are inert.
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof tinymce === 'undefined') {
-            return;
-        }
-        // Neither preset: a listing description wants tables and a colour picker but no
-        // embedded image or media, so the pair is passed here rather than earning a
-        // preset of its own for one caller. The selector takes only the per-locale
-        // description editors (name="description[<locale>]"), never plugin textareas
-        // elsewhere on the form.
-        var cfg = <?php echo osc_tinymce_config('basic', array(
-            'selector' => 'textarea[name^="description["]',
-            'height'   => 320,
-            'plugins'  => 'advlist anchor autolink charmap code fullscreen insertdatetime'
-                          . ' link lists preview searchreplace table',
-            'toolbar'  => 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
-                          . ' | link charmap table | removeformat | searchreplace code fullscreen preview',
-        )); ?>;
-        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
-        tinymce.init(cfg);
-    });
-</script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

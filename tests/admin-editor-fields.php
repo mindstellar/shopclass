@@ -475,12 +475,16 @@ function control_shape(DOMElement $node): array
     $type = $tag === 'input' ? strtolower($node->getAttribute('type') ?: 'text') : $tag;
 
     if ($tag === 'textarea') {
-        // Serialised rather than read as text: the HTML parser turns a body's markup into
-        // real child nodes, and textContent would hand back the tags stripped.
+        // What a browser would hand back as .value. Serialised rather than read as text,
+        // because this parser turns a body's markup into real child nodes and textContent
+        // would strip the tags; then decoded, because a browser reads a textarea's body as
+        // raw text either way -- "<p>" and "&lt;p&gt;" in the source are the same value to
+        // it, and only one of the two is safe to write.
         $value = '';
         foreach ($node->childNodes as $child) {
             $value .= $node->ownerDocument->saveHTML($child);
         }
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     } elseif ($tag === 'select') {
         $value = '';
         foreach ($node->getElementsByTagName('option') as $option) {

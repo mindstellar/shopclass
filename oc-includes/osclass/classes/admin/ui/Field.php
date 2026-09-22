@@ -28,7 +28,10 @@ class Field
      * browser counted. Mirrors SettingsPageRegistry::PURIFIED_TYPES, copied rather than
      * imported so a field primitive need not know about the settings registry.
      */
-    private const PURIFIED_TYPES = array('text', 'textarea', 'tel', 'color', 'hidden');
+    private const PURIFIED_TYPES = array('text', 'textarea', 'tel', 'color', 'hidden', 'richtext');
+
+    /** The types one value per locale can be spread over. */
+    private const TRANSLATED_TYPES = array('text', 'textarea', 'richtext');
 
     /** @var array<string,mixed> */
     private $spec;
@@ -59,11 +62,20 @@ class Field
         $type    = $this->type;
         $id      = $this->id;
         $spec    = $this->spec;
+        $locales = self::localesFor($spec);
+        // The editors stack a field -- label above control, no label column -- because a
+        // body that fills the column has nothing to sit beside. A row is the settings
+        // shape and stays the default.
+        $stacked = $type !== 'hidden' && ($spec['layout'] ?? '') === 'stacked';
         // A hidden input has nothing to label and nothing to hint at; a row around it would
         // draw an empty label column and a gap where no control is, and a help box under it
         // would explain something nobody can see.
-        $row     = $type === 'hidden' ? false : ($spec['row'] ?? true);
-        $locales = self::localesFor($spec);
+        $row     = $type === 'hidden' || $stacked ? false : ($spec['row'] ?? true);
+
+        if ($stacked && $locales === array()) {
+            echo '<div class="osc-field">';
+            self::stackedLabel($id, $spec);
+        }
 
         if ($row) {
             // A checkbox carries its own label beside the control; anything else labels the
@@ -81,7 +93,7 @@ class Field
             $opts = in_array($type, array('radio', 'custom'), true)
                 ? array()
                 : array('for' => $locales === array() ? $id : self::idFor(array(
-                    'name' => (string)($spec['name'] ?? '') . array_key_first($locales),
+                    'name' => self::translatedName($spec, (string)array_key_first($locales)),
                 )));
             // The marked-up form of the row label, for the label carrying an <em> or a
             // link. It is raw markup and so is the declaration's to get right, exactly as
@@ -109,6 +121,7 @@ class Field
         if ($type === 'checkbox') {
             $spec['id'] = $id;
             osc_admin_checkbox($spec);
+            self::errorText($id, $spec);
         } elseif ($locales !== array()) {
             self::translated($id, $spec, $locales);
             self::help($spec);
@@ -143,6 +156,7 @@ class Field
             }
 
             if ($type !== 'hidden') {
+                self::errorText($id, $spec);
                 self::help($spec);
             }
         }
@@ -150,6 +164,40 @@ class Field
         if ($row) {
             osc_admin_form_row_close();
         }
+        if ($stacked && $locales === array()) {
+            echo '</div>';
+        }
+    }
+
+    /**
+     * The label above a stacked field, marked when the field is required.
+     *
+     * @param string              $id
+     * @param array<string,mixed> $spec
+     *
+     * @return void
+     */
+    private static function stackedLabel($id, array $spec)
+    {
+        $type = $spec['type'] ?? 'text';
+        if ($type === 'checkbox') {
+            // It carries its own label beside the control; a second one above would say
+            // the same thing twice.
+            return;
+        }
+        $label = (string)($spec['label'] ?? '');
+        if ($label === '' && empty($spec['label_html'])) {
+            return;
+        }
+
+        $class = 'form-label' . (empty($spec['required']) ? '' : ' osc-field-required');
+        // Neither a choice list nor a custom field has one control to point at.
+        $for   = in_array($type, array('radio', 'custom'), true)
+            ? ''
+            : ' for="' . osc_esc_html($id) . '"';
+        echo '<label class="' . $class . '"' . $for . '>'
+            . (empty($spec['label_html']) ? osc_esc_html($label) : $spec['label_html'])
+            . '</label>';
     }
 
     /**
@@ -189,11 +237,21 @@ class Field
         $lifted = empty($spec['depends']) || ($spec['row'] ?? true);
         // An image already stored satisfies 'required', so the picker may be left empty.
         $kept = $type === 'image' && (string)$value !== '';
-        if (!empty($spec['required']) && $type !== 'hidden' && $lifted && !$kept) {
+        // A rich-text control is hidden by the editor that replaces it, and the browser
+        // silently refuses to submit a form holding a required control it cannot show --
+        // no submit event, so the page's own validator never runs and the button looks
+        // dead. The label still says required and the save still enforces it.
+        $mounted = $type === 'richtext';
+        if (!empty($spec['required']) && $type !== 'hidden' && $lifted && !$kept && !$mounted) {
             $attrs .= ' required';
         }
         if (!empty($spec['disabled'])) {
             $attrs .= ' disabled';
+        }
+        // The control says it is wrong and points at the sentence saying why, so a screen
+        // reader announces the message with the field instead of leaving it as loose text.
+        if ($type !== 'hidden' && self::errorFor($spec) !== '') {
+            $attrs .= ' aria-invalid="true" aria-describedby="' . osc_esc_html($id . '-error') . '"';
         }
         if (isset($spec['placeholder']) && $type !== 'select') {
             $attrs .= ' placeholder="' . osc_esc_html($spec['placeholder']) . '"';
@@ -238,6 +296,17 @@ class Field
                 echo '<textarea' . $common . ' class="' . self::cssClass($type, $spec) . '"'
                     . ' rows="' . (int)($spec['rows'] ?? 5) . '"' . $attrs . '>'
                     . osc_esc_html((string)$value) . '</textarea>';
+                break;
+
+            case 'richtext':
+                // A textarea carrying its editor's configuration. One shared script mounts
+                // every one of them, so no screen writes an editor setup of its own and
+                // nothing has to find its editors by a name pattern. With no JavaScript it
+                // is the textarea, and the markup in it still posts.
+                echo '<textarea' . $common . ' class="' . self::cssClass($type, $spec) . '"'
+                    . ' rows="' . (int)($spec['rows'] ?? 12) . '"'
+                    . ' data-osc-richtext="' . osc_esc_html(self::richtextConfig($spec)) . '"'
+                    . $attrs . '>' . osc_esc_html((string)$value) . '</textarea>';
                 break;
 
             case 'radio':
@@ -324,9 +393,9 @@ class Field
 
     /**
      * The locales a field expands over: what 'locales' carries when 'translate' is set on
-     * a text or textarea, and nothing otherwise. The caller supplies the list -- core's
-     * declared settings page from osc_settings_field_locales(), a plugin from whatever it
-     * already has -- so drawing a field never queries anything.
+     * a text, textarea or richtext field, and nothing otherwise. The caller supplies the
+     * list -- core's declared settings page from osc_settings_field_locales(), a plugin
+     * from whatever it already has -- so drawing a field never queries anything.
      *
      * @param array<string,mixed> $spec
      *
@@ -335,7 +404,7 @@ class Field
     public static function localesFor(array $spec)
     {
         if (empty($spec['translate'])
-            || !in_array($spec['type'] ?? 'text', array('text', 'textarea'), true)
+            || !in_array($spec['type'] ?? 'text', self::TRANSLATED_TYPES, true)
             || empty($spec['locales'])
             || !is_array($spec['locales'])
         ) {
@@ -347,8 +416,9 @@ class Field
 
     /**
      * One control per locale, in the tab widget the rest of the admin's multilang editors
-     * use. Each control is named for its locale (the field name with the locale code
-     * appended), which is the key the value is stored under.
+     * use. Each control is named for its locale -- the field name with the locale code
+     * appended, or the pattern 'translate_name' gives -- which is the key the value is
+     * stored under.
      *
      * One enabled locale gets no tabs: a single tab is a label pretending to be a choice.
      *
@@ -360,17 +430,29 @@ class Field
      */
     public static function translated($id, array $spec, array $locales)
     {
-        $type   = $spec['type'] ?? 'text';
-        $name   = (string)($spec['name'] ?? '');
-        $stored = is_array($spec['value'] ?? null) ? $spec['value'] : array();
-        $label  = (string)($spec['label'] ?? '');
-        $tabs   = count($locales) > 1;
+        $type    = $spec['type'] ?? 'text';
+        $stored  = is_array($spec['value'] ?? null) ? $spec['value'] : array();
+        $label   = (string)($spec['label'] ?? '');
+        $tabs    = count($locales) > 1;
+        $stacked = ($spec['layout'] ?? '') === 'stacked';
+        // A second field on the same locales does not need a second strip: 'tabs' => false
+        // draws the panels without one, and the strip above them switches these too. Two
+        // strips on one screen can disagree, and a title in one language beside a body in
+        // another is a mistake nothing on screen explains.
+        $strip   = $tabs && ($spec['tabs'] ?? true);
 
         echo '<div class="field-translate">';
-        if ($tabs) {
+        if ($strip) {
             echo '<div class="osc-tab"><ul>';
             foreach ($locales as $code => $localeName) {
-                echo '<li><a href="#' . osc_esc_html(self::localePanelId($id, $code)) . '">'
+                // A locale whose control was rejected says so on its tab, so the error is
+                // findable without opening every one of them.
+                $error = self::errorFor($spec, $code);
+                echo '<li'
+                    . ($error === ''
+                        ? ''
+                        : ' data-osc-tab-error title="' . osc_esc_html($error) . '"')
+                    . '><a href="#' . osc_esc_html(self::localePanelId($id, $code)) . '">'
                     . osc_esc_html($localeName) . '</a></li>';
             }
             echo '</ul></div>';
@@ -379,10 +461,11 @@ class Field
         $first = true;
         foreach ($locales as $code => $localeName) {
             $sub          = $spec;
-            $sub['name']  = $name . $code;
+            $sub['name']  = self::translatedName($spec, (string)$code);
             $sub['value'] = (string)($stored[$code] ?? '');
+            $sub['error'] = self::errorFor($spec, $code);
             unset($sub['id']);
-            if ($tabs && $label !== '') {
+            if ($tabs && $label !== '' && !$stacked) {
                 // Only the tab strip says which locale a control belongs to, and a tab is
                 // not the control's label. A caller's own aria-label still wins.
                 $sub['attrs'] = (array)($spec['attrs'] ?? array())
@@ -393,13 +476,122 @@ class Field
                     . osc_esc_html(self::localePanelId($id, $code)) . '"'
                     . ($first ? '' : ' hidden') . '>';
             }
-            self::control($type, self::idFor($sub), $sub);
+            $subId = self::idFor($sub);
+            if ($stacked) {
+                // The label belongs inside the panel: one label above the strip would name
+                // whichever locale happens to be open.
+                echo '<div class="osc-field">';
+                $shown = $tabs && $label !== '' ? $label . ' (' . $localeName . ')' : $label;
+                self::stackedLabel($subId, array('label' => $shown, 'required' => !empty($spec['required'])) + $sub);
+            }
+            // Only the locale on screen is required of the browser: a required control in a
+            // hidden panel is a form the browser refuses to submit and says nothing about --
+            // no submit event, so the page's own validator never runs and the button looks
+            // dead. Every locale is still checked on save.
+            $sub['required'] = $first && !empty($spec['required']);
+            self::control($type, $subId, $sub);
+            self::errorText($subId, $sub);
+            if ($stacked) {
+                echo '</div>';
+            }
             if ($tabs) {
                 echo '</div>';
             }
             $first = false;
         }
         echo '</div>';
+    }
+
+    /**
+     * One locale's posted name: the pattern 'translate_name' gives, with %s standing for
+     * the locale code, or the field name with the code appended when there is none.
+     *
+     * The pattern exists because a screen's posted names are a contract with whatever
+     * already reads them -- title[en_US], en_US#s_title -- and adopting the shared field
+     * must not change a single one of them.
+     *
+     * @param array<string,mixed> $spec
+     * @param string              $code
+     *
+     * @return string
+     */
+    public static function translatedName(array $spec, $code)
+    {
+        $name = (string)($spec['name'] ?? '');
+        if (empty($spec['translate_name'])) {
+            return $name . $code;
+        }
+
+        return sprintf((string)$spec['translate_name'], $code);
+    }
+
+    /**
+     * A field's error message: the one it was given, or the one its locale was given when
+     * 'error' is a map keyed by locale code.
+     *
+     * @param array<string,mixed> $spec
+     * @param string|null         $code
+     *
+     * @return string Empty when the field was not rejected
+     */
+    public static function errorFor(array $spec, $code = null)
+    {
+        $error = $spec['error'] ?? '';
+        if (is_array($error)) {
+            $error = $code === null ? '' : ($error[$code] ?? '');
+        }
+
+        return (string)$error;
+    }
+
+    /**
+     * The sentence under a rejected control. Mandatory where there is an error: a red
+     * border says something is wrong and never says what.
+     *
+     * @param string              $id
+     * @param array<string,mixed> $spec
+     *
+     * @return void
+     */
+    public static function errorText($id, array $spec)
+    {
+        $error = self::errorFor($spec);
+        if ($error === '') {
+            return;
+        }
+
+        echo '<p class="field-error" id="' . osc_esc_html($id . '-error') . '">'
+            . osc_esc_html($error) . '</p>';
+    }
+
+    /**
+     * The editor configuration a richtext field carries, as JSON for its data attribute.
+     * Built here rather than in the browser so the toolbar presets stay in one place and a
+     * plugin's tinymce_config filter still reaches them.
+     *
+     * @param array<string,mixed> $spec
+     *
+     * @return string
+     */
+    public static function richtextConfig(array $spec)
+    {
+        $overrides = (array)($spec['config'] ?? array());
+        if (!empty($spec['height'])) {
+            $overrides['height'] = (int)$spec['height'];
+        }
+        if (!empty($spec['media'])) {
+            // The library picker and the paste/drop upload are the script's to wire, since
+            // both are callbacks; what it cannot invent is the signed endpoint.
+            $overrides['osc_media']      = true;
+            $overrides['osc_upload_url'] = (string)($spec['upload_url'] ?? '');
+        }
+
+        if (!function_exists('osc_tinymce_config')) {
+            return (string)json_encode($overrides);
+        }
+        $config = osc_tinymce_config((string)($spec['preset'] ?? 'basic'), $overrides);
+
+        return is_string($config) ? $config : '{}';
     }
 
     /**
@@ -486,6 +678,7 @@ class Field
             'select'   => 'field-select',
             'secret'   => 'field-key',
             'textarea' => 'field-text',
+            'richtext' => '',
             'color'    => 'field-color',
             'file'     => '',
         );

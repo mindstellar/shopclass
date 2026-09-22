@@ -323,8 +323,8 @@ check(
 );
 pin(
     'and the refusal says which types are purified',
-    'SettingsPageRegistry: page "x31" field "a" cannot set purify: only text, textarea, tel, color, hidden'
-    . ' are purified',
+    'SettingsPageRegistry: page "x31" field "a" cannot set purify: only text, textarea, tel, color, hidden,'
+    . ' richtext are purified',
     register_error('x31', array('title' => 'X', 'fields' => array(
         array('name' => 'a', 'type' => 'secret', 'purify' => false),
     )))
@@ -402,7 +402,7 @@ check('and it is not a table-store-only key', register_error('w8', array(
 )) === null);
 pin(
     'and the list the registry accepts is the list the save path purifies',
-    array('text', 'textarea', 'tel', 'color', 'hidden'),
+    array('text', 'textarea', 'tel', 'color', 'hidden', 'richtext'),
     SettingsPageRegistry::PURIFIED_TYPES
 );
 

@@ -19,16 +19,7 @@
     }
   }
 
-  // The title is the page's headline — give it the weight WordPress gives it,
-  // so it reads as the thing you name first, not just another field.
   #left-side {
-    input[id$="#s_title"] {
-      font-size: 1.25rem;
-      font-weight: 600;
-      height: auto;
-      padding-block: 10px;
-    }
-
     // The page template select drives which of these is shown; the mode class is
     // set on load (no flash) and flipped live by the template select. In builder
     // mode the text editor is hidden and the widget canvas takes its place.

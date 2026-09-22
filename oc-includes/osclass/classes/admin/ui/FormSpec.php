@@ -387,6 +387,20 @@ final class FormSpec
     }
 
     /**
+     * Add a rich-text field: a body written with formatting, stored as markup.
+     *
+     * @param string $name
+     * @param string $label
+     * @param string $help
+     *
+     * @return self
+     */
+    public function richtext(string $name, string $label = '', string $help = ''): self
+    {
+        return $this->field($this->base('richtext', $name, $label, $help));
+    }
+
+    /**
      * Add a select field.
      *
      * @param string               $name

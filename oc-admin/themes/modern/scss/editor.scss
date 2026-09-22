@@ -68,11 +68,16 @@
   content: " *";
 }
 
+// The headline field fills its column. The shared .field-text width would leave it shorter
+// than the body under it -- three ragged edges in one column -- and that rule is !important,
+// so this has to be as well.
 .osc-editor-title {
   font-size: 1.25rem;
   font-weight: 600;
   height: auto;
+  max-width: none !important;
   padding-block: 10px;
+  width: 100% !important;
 }
 
 // Inline error: border, tint, and the sentence under the field.

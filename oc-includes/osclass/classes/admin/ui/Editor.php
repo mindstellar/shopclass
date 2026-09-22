@@ -49,7 +49,7 @@ class Editor
         $form['horizontal'] = false;
         osc_admin_form_open($form);
 
-        self::errorSummary($opts['errors'] ?? array(), $opts);
+        osc_admin_error_summary($opts['errors'] ?? array(), $opts);
 
         echo '<div class="osc-editor">';
         echo '<div class="osc-editor-main'
@@ -205,12 +205,15 @@ class Editor
      * then one link per field. Fills the same #error_list the client-side validator writes
      * to, so a server-rejected save and a caught-in-the-browser one read the same.
      *
-     * @param array<string,string> $errors name => message
-     * @param array<string,mixed>  $opts
+     * An entry keyed by a field name links to that field. One with no name -- a rejection
+     * that belongs to the record rather than to a control -- is a plain line.
+     *
+     * @param array<array-key,string> $errors name => message
+     * @param array<string,mixed>     $opts
      *
      * @return void
      */
-    private static function errorSummary(array $errors, array $opts)
+    public static function errorSummary(array $errors, array $opts = array())
     {
         if ($errors === array()) {
             return;
@@ -218,13 +221,33 @@ class Editor
 
         $labels = $opts['error_labels'] ?? array();
         $ids    = $opts['error_ids'] ?? array();
+
+        // A translated field is rejected one locale at a time, so its entry is a map and
+        // each locale earns its own line.
+        $lines = array();
+        foreach ($errors as $name => $message) {
+            foreach (is_array($message) ? $message : array($message) as $one) {
+                if ((string)$one !== '') {
+                    $lines[] = array(is_int($name) ? null : $name, (string)$one);
+                }
+            }
+        }
+        if ($lines === array()) {
+            return;
+        }
+
         echo '<ul id="error_list" role="alert" style="display: block">';
         echo '<li><strong>' . osc_esc_html(
-            count($errors) === 1
+            count($lines) === 1
                 ? __('1 thing needs fixing before this can be saved.')
-                : sprintf(__('%d things need fixing before this can be saved.'), count($errors))
+                : sprintf(__('%d things need fixing before this can be saved.'), count($lines))
         ) . '</strong></li>';
-        foreach ($errors as $name => $message) {
+        foreach ($lines as $line) {
+            list($name, $message) = $line;
+            if ($name === null) {
+                echo '<li>' . osc_esc_html($message) . '</li>';
+                continue;
+            }
             $label = (string)($labels[$name] ?? $name);
             echo '<li><a href="#' . osc_esc_html((string)($ids[$name] ?? $name)) . '">'
                 . osc_esc_html($label . ': ' . $message) . '</a></li>';

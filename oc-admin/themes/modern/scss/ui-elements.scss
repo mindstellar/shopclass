@@ -222,6 +222,22 @@ input.btn-mini {
   --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
 }
 
+// Same reasoning as .btn-primary above: Bootstrap compiles its danger colour at build time,
+// so the outline variant kept the light-mode red on a dark card and landed near 3:1. On the
+// token it is legible in both themes.
+.btn-outline-danger {
+  --#{$prefix}btn-color: var(--osc-danger);
+  --#{$prefix}btn-border-color: var(--osc-danger);
+  --#{$prefix}btn-hover-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-hover-bg: var(--osc-danger);
+  --#{$prefix}btn-hover-border-color: var(--osc-danger);
+  --#{$prefix}btn-active-color: var(--osc-ink-inverse);
+  --#{$prefix}btn-active-bg: var(--osc-danger-deep);
+  --#{$prefix}btn-active-border-color: var(--osc-danger-deep);
+  --#{$prefix}btn-disabled-color: var(--osc-ink-muted);
+  --#{$prefix}btn-disabled-border-color: var(--osc-rule-strong);
+}
+
 .btn-submit {
   background-color: var(--osc-bronze);
   border-color: var(--osc-bronze);
