@@ -10,6 +10,8 @@ In development.
 
 - A Child themes page in the developer docs: what a child inherits, the order Shopclass looks
   in, and the two rules that stop a child breaking its parent.
+- Appearance warns when a child theme and its parent would both declare the same function.
+  PHP cannot survive that, so it had to be said before you switch rather than after.
 - A Hooks and filters page in the developer docs, listing every hook and filter core fires,
   what it passes and where.
 - Links a seller writes in a listing description now carry `rel="nofollow"`. Links back into

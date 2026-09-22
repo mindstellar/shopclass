@@ -129,6 +129,31 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         $activeParent  = $parentOf(osc_theme());
         $parentMissing = $activeParent !== null && !in_array($activeParent, $themes, true);
+
+        // Function names a theme and its parent would both declare with no guard between
+        // them. PHP cannot recover from that -- the request is over before anything can
+        // catch it -- so it has to be said before the theme is switched on, not after.
+        $clashesOf = static function ($slug) use ($parentOf) {
+            $parent = $parentOf($slug);
+            if ($parent === null) {
+                return array();
+            }
+
+            return \mindstellar\theme\ThemeFunctions::collisions(
+                osc_themes_path() . $slug . '/functions.php',
+                osc_themes_path() . $parent . '/functions.php'
+            );
+        };
+
+        $clashNote = static function (array $clashes, $parent) {
+            return sprintf(
+                __('This theme cannot run with "%1$s": both declare %2$s, and PHP stops the '
+                   . 'request when that happens. The parent has to wrap those in '
+                   . 'function_exists() before a child can replace them.'),
+                $parent,
+                '<code>' . implode('</code>, <code>', array_map('osc_esc_html', $clashes)) . '</code>'
+            );
+        };
         ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
@@ -152,7 +177,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                        . 'Anything it does not carry itself is coming from the default theme.'),
                     $activeParent
                 ))
-                : '',
+                : ($clashesOf(osc_theme()) !== array()
+                    ? $clashNote($clashesOf(osc_theme()), $activeParent)
+                    : ''),
             'note_variant' => 'warning',
             'actions'     => array(
                 'links' => array(
@@ -178,6 +205,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 // Deleting this one would leave the active theme rendering on the default.
                 $isParent  = $activeParent === $theme;
                 $ownParent = $parentOf($theme);
+                $clashes   = $clashesOf($theme);
                 osc_package_row(array(
                     'art'         => array(
                         'src' => osc_theme_screenshot_url($theme),
@@ -194,13 +222,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             : array()
                     ),
                     'description' => $tInfo['description'],
-                    'note'        => $isParent
-                        ? osc_esc_html(__('The active theme extends this one. Deleting it would leave '
-                                          . 'your site rendering on the default theme.'))
-                        : ($update
-                            ? osc_esc_html(__('An update is ready for this theme. Open the Updates tab to apply it.'))
-                            : ''),
-                    'note_variant' => $isParent ? 'warning' : 'update',
+                    'note'        => $clashes !== array()
+                        ? $clashNote($clashes, $ownParent)
+                        : ($isParent
+                            ? osc_esc_html(__('The active theme extends this one. Deleting it would leave '
+                                              . 'your site rendering on the default theme.'))
+                            : ($update
+                                ? osc_esc_html(__('An update is ready for this theme. '
+                                                  . 'Open the Updates tab to apply it.'))
+                                : '')),
+                    'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
                     'actions'     => array(
                         'primary' => array(
                             'label' => __('Activate'),

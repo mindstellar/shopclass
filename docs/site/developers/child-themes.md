@@ -114,6 +114,10 @@ own copy.
 is `Cannot redeclare storefront_listing_card()` — a fatal the site cannot catch or recover
 from, and because the child loads first it is the *parent* that crashes. The page is blank.
 
+Appearance checks for this before you switch: a theme whose `functions.php` declares a
+name its parent declares **unguarded** carries a warning on its card, naming the
+functions. A guarded name is not reported — that one is the override working.
+
 **The guard belongs on the parent, and only there.** Putting one in the child does
 nothing: the child loads first, so `function_exists()` is always false at that point, the
 function is declared anyway, and the parent still hits the fatal.
@@ -219,7 +223,8 @@ of this costs anything; all of it is invisible until somebody tries.
 
 **Guard every function.** This is the big one. A child cannot replace a function the
 parent declares unguarded — redeclaring is a fatal, and because the child loads first it
-is the parent that crashes.
+is the parent that crashes. Appearance names the clashes on the child's card, so an
+unguarded parent shows up as somebody else's theme being marked broken.
 
 ```php
 if (!function_exists('mytheme_listing_card')) {

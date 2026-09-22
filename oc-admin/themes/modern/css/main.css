@@ -15808,11 +15808,24 @@ pre,
 code {
   background-color: var(--osc-bench-warm);
   border: 1px solid var(--osc-bench-sunk);
-  padding: 8px;
   white-space: pre;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   border-radius: 4px;
+}
+
+pre {
+  padding: 8px;
+}
+
+code {
+  padding: 0.1em 0.35em;
+}
+
+pre code {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
 }
 
 #listing-toolbar,

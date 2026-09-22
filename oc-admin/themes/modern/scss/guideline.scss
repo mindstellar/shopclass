@@ -6,11 +6,27 @@ pre,
 code {
   background-color: var(--osc-bench-warm);
   border: 1px solid var(--osc-bench-sunk);
-  padding: 8px;
   white-space: pre;
   white-space: pre-wrap;
   // Break only when a token can't fit, and prefer natural break points, rather
   // than the greedy mid-word breaking of `word-break: break-all`.
   overflow-wrap: anywhere;
   @include rounded-corners;
+}
+
+pre {
+  padding: 8px;
+}
+
+// A code span sits inside a line of prose, so its box has to fit that line. The 8px it
+// shared with `pre` made it taller than the line and it painted over the text above.
+code {
+  padding: .1em .35em;
+}
+
+// Inside a pre the span is the block, so it carries none of its own chrome.
+pre code {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
 }
