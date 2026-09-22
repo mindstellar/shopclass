@@ -992,8 +992,11 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (!Session::newInstance()->_getForm('showEmail')) {
-            $item['b_show_email'] = Session::newInstance()->_getForm('showEmail');
+        // A checkbox posts nothing when it is off, so the saved value may only be replaced
+        // when a rejected submit actually put the key in the form session.
+        $form = Session::newInstance()->_getForm();
+        if (is_array($form) && array_key_exists('showEmail', $form)) {
+            $item['b_show_email'] = $form['showEmail'];
         }
         parent::generic_input_checkbox(
             'showEmail',

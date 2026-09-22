@@ -37,6 +37,7 @@ In development.
 
 ### Fixed
 
+- The Show e-mail box on the listing editor no longer opens unticked on a listing that has it on.
 - A parent theme overruled its child on anything both declared with `osc_add_theme_support()`.
   The child wins now, and a feature it says nothing about is still inherited.
 - A child theme's own stylesheets and scripts could resolve to its parent's folder, and 404.

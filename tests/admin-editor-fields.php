@@ -606,9 +606,7 @@ $itemEdit = array(
     'contactName'          => array('text', 'Ada Lovelace'),
     'contactEmail'         => array('text', 'ada@example.test'),
     'contactPhone'         => array('text', '555-0100'),
-    // Unticked although the fixture listing has b_show_email set: show_email_checkbox()
-    // overwrites the listing's value with the (empty) session value. Pinned as it is.
-    'showEmail'            => array('checkbox', 'unchecked:1'),
+    'showEmail'            => array('checkbox', 'checked:1'),
     'ipAddress'            => array('text', '203.0.113.7'),
     // Location
     'countryId'            => array('select', 'US'),
