@@ -62,6 +62,10 @@ In development.
 
 ### Security
 
+- The `?theme=` preview took whatever name it was given. The name becomes a directory and
+  core requires `functions.php` out of it, so a signed-in admin could point it outside the
+  themes folder and run that file. A preview must now name an installed theme, and a theme
+  path can no longer resolve outside `oc-content/themes/`.
 - Ajax replies now say they are JSON. Every one on the public side went out labelled
   `text/html`, so a browser pointed straight at the URL rendered the body instead of
   downloading it. Nothing exploitable was found — request parameters are already stripped of

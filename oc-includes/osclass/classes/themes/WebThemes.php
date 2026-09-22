@@ -52,8 +52,15 @@ class WebThemes extends Themes
      */
     private function loadActive()
     {
-        if (Params::getParam('theme') != '' && Session::newInstance()->_get('adminId') != '') {
-            $this->setCurrentTheme(Params::getParam('theme'));
+        // ?theme= is request input that decides which directory functions.php is
+        // required from, so it is matched against the installed themes rather than
+        // trusted. An admin session was the only gate: "../../../tmp/evil" resolved
+        // and its functions.php ran, which is arbitrary code from a query string.
+        $preview = Params::getParamString('theme');
+        if ($preview !== '' && Session::newInstance()->_get('adminId') != ''
+            && in_array($preview, $this->getListThemes(), true)
+        ) {
+            $this->setCurrentTheme($preview);
         } else {
             $this->setCurrentTheme(osc_theme());
         }
@@ -224,7 +231,12 @@ class WebThemes extends Themes
      */
     public function setCurrentThemePath()
     {
-        if (file_exists($this->path . $this->theme . '/')) {
+        // A theme is a directory name, never a path. Belt and braces behind the
+        // caller-side checks: nothing may resolve outside oc-content/themes/.
+        if (preg_match('/^[a-zA-Z0-9._-]+$/', (string) $this->theme)
+            && strpos((string) $this->theme, '..') === false
+            && file_exists($this->path . $this->theme . '/')
+        ) {
             $this->theme_exists = true;
             $this->theme_path   = $this->path . $this->theme . '/';
         } else {
