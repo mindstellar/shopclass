@@ -496,7 +496,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ));
 
     if (!$new_item) {
-        osc_admin_disclosure_open(__('Advanced'), array('summary_hint' => __('Posted from')));
+        osc_admin_disclosure_open(__('Advanced'), array('summary_hint' => __('IP address')));
         osc_admin_field(array(
             'type'   => 'text',
             'id'     => 'ipAddress',
