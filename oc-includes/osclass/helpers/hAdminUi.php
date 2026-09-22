@@ -557,6 +557,70 @@ if (!function_exists('osc_admin_publish_panel')) {
     }
 }
 
+if (!function_exists('osc_admin_category_picker')) {
+    /**
+     * The category chooser: a control showing the chosen path, and a searchable list of
+     * the whole tree behind it.
+     *
+     * The hidden field it writes keeps the posted name and the id it has always had, and
+     * picking fires `change` on it -- which is where the plugin-field loader and the price
+     * show/hide listen -- so both keep working untouched.
+     *
+     * Keys: 'name' (default catId), 'id', 'value', 'label', 'required', 'help', 'error',
+     *       'categories' => rows carrying pk_i_id, fk_i_parent_id and s_name; the enabled
+     *       tree by default.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_category_picker(array $opts = array())
+    {
+        \mindstellar\admin\ui\Picker::category($opts);
+    }
+}
+
+if (!function_exists('osc_admin_location_picker')) {
+    /**
+     * Where a record is: the country select, the region and city inputs with their hidden
+     * ids, and the rest of the address behind a disclosure.
+     *
+     * Every control keeps the id core's location autocomplete already binds to.
+     *
+     * Keys: 'value' and 'errors' keyed by countryId, region, regionId, city, cityId,
+     *       cityArea, zip, address; 'names' to post any of them under another name;
+     *       'countries'; 'detail' => 'disclosure' (default), 'inline' or 'none';
+     *       'label_*' for each label.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_location_picker(array $opts = array())
+    {
+        \mindstellar\admin\ui\Picker::location($opts);
+    }
+}
+
+if (!function_exists('osc_admin_user_picker')) {
+    /**
+     * Who a record belongs to: the card when a registered user matches, and a search that
+     * fills the named fields when one is picked.
+     *
+     * Keys: 'user' => array with name, email and url; null for no match, 'id', 'label',
+     *       'placeholder', 'help', 'source' => the autocomplete endpoint,
+     *       'fields' => what a pick fills, as key => the posted name of the field.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_user_picker(array $opts = array())
+    {
+        \mindstellar\admin\ui\Picker::user($opts);
+    }
+}
+
 if (!function_exists('osc_admin_disclosure_open')) {
     /**
      * A collapsible group, for the settings a screen has to offer and nobody changes
@@ -638,8 +702,17 @@ if (!function_exists('osc_admin_action_button')) {
      */
     function osc_admin_action_button(array $action)
     {
-        $variant   = $action['variant'] ?? 'secondary';
-        $classes   = 'btn btn-sm btn-' . ($variant === 'primary' ? 'submit' : $variant)
+        $variant = $action['variant'] ?? 'secondary';
+        // The quiet destructive button is the theme's own: Bootstrap's .btn-outline-danger
+        // paints from its own danger colour, which nothing re-points per theme, and lands
+        // at 2.86:1 on a dark card.
+        $variantClass = 'btn-' . $variant;
+        if ($variant === 'primary') {
+            $variantClass = 'btn-submit';
+        } elseif ($variant === 'outline-danger') {
+            $variantClass = 'osc-btn-danger';
+        }
+        $classes   = 'btn btn-sm ' . $variantClass
             . (!empty($action['class']) ? ' ' . $action['class'] : '');
         $attrs     = osc_admin_field_attrs($action['attrs'] ?? array());
         if (!empty($action['title'])) {

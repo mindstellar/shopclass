@@ -378,7 +378,7 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items');
                 }
 
-                $this->_exportVariableToView('actions', $this->itemStateActions($item));
+                $this->exportItemState($item);
 
                 $form     = count(Session::newInstance()->_getForm());
                 $keepForm = count(Session::newInstance()->_getKeepForm());
@@ -864,6 +864,138 @@ class CAdminItems extends AdminSecBaseModel
     }
 
     /**
+     * Hand the listing editor everything it draws about the record's state: the badges, the
+     * facts, the moves that change it, and the account it belongs to. The view lays them
+     * out; what they are is decided here.
+     *
+     * The legacy `actions` list of ready-made links is exported alongside, because an admin
+     * theme older than the rail still renders it.
+     *
+     * @param array<string,mixed> $item
+     *
+     * @return void
+     */
+    private function exportItemState(array $item)
+    {
+        $this->_exportVariableToView('actions', $this->itemStateActions($item));
+        $this->_exportVariableToView('itemStatus', $this->itemStatePills($item));
+        $this->_exportVariableToView('itemActions', $this->itemStateMoves($item));
+
+        $expired = osc_isExpired($item['dt_expiration'] ?? '');
+        $this->_exportVariableToView('itemFacts', array(
+            'published' => empty($item['dt_pub_date']) ? '' : osc_format_date($item['dt_pub_date']),
+            // A listing that never expires carries the year-9999 sentinel, which is a date
+            // nobody means to read.
+            'expires'   => empty($item['dt_expiration']) || strpos((string)$item['dt_expiration'], '9999') === 0
+                ? __('Never')
+                : osc_format_date($item['dt_expiration']) . ($expired ? ' (' . __('expired') . ')' : ''),
+            'views'     => $item['i_num_views'] ?? null,
+        ));
+
+        // The seller is whichever account matches the contact e-mail -- the rule the save
+        // applies -- so the editor says so instead of leaving it to be guessed.
+        $user = User::newInstance()->findByEmail($item['s_contact_email'] ?? '');
+        $this->_exportVariableToView('itemUser', is_array($user) && isset($user['pk_i_id'])
+            ? array(
+                'id'    => $user['pk_i_id'],
+                'name'  => $user['s_name'],
+                'email' => $user['s_email'],
+                'url'   => osc_admin_base_url(true) . '?page=users&action=edit&id=' . $user['pk_i_id'],
+            )
+            : null);
+    }
+
+    /**
+     * The badges the status panel opens with: the state the listing is in, and whatever
+     * else is true of it.
+     *
+     * @param array<string,mixed> $item
+     *
+     * @return array<int,array<int,string>>
+     */
+    private function itemStatePills(array $item)
+    {
+        if (!empty($item['b_spam'])) {
+            $pills = array(array('spam', __('Spam')));
+        } elseif (empty($item['b_enabled'])) {
+            $pills = array(array('blocked', __('Blocked')));
+        } elseif (empty($item['b_active'])) {
+            $pills = array(array('inactive', __('Inactive')));
+        } else {
+            $pills = array(array('active', __('Active')));
+        }
+
+        if (!empty($item['b_premium'])) {
+            $pills[] = array('premium', __('Premium'));
+        }
+        if (osc_isExpired($item['dt_expiration'] ?? '')) {
+            $pills[] = array('expired', __('Expired'));
+        }
+
+        return $pills;
+    }
+
+    /**
+     * The state changes the editor offers, as action specs: the routine ones, and the two
+     * that hide a listing, which ask first.
+     *
+     * @param array<string,mixed> $item
+     *
+     * @return array{routine: array<int,array<string,mixed>>, danger: array<int,array<string,mixed>>}
+     */
+    private function itemStateMoves(array $item)
+    {
+        // Plain ampersands: an action spec's url is escaped where it is drawn.
+        $url = static function ($action, $value) use ($item) {
+            return osc_admin_base_url(true) . '?page=items&action=' . $action
+                . '&id=' . $item['pk_i_id'] . '&' . osc_csrf_token_url()
+                . '&value=' . $value;
+        };
+
+        $routine = array(
+            !empty($item['b_active'])
+                ? array('label' => __('Deactivate'), 'url' => $url('status', 'INACTIVE'))
+                : array('label' => __('Activate'), 'url' => $url('status', 'ACTIVE')),
+            !empty($item['b_premium'])
+                ? array('label' => __('Remove premium'), 'url' => $url('status_premium', '0'))
+                : array('label' => __('Mark as premium'), 'url' => $url('status_premium', '1')),
+        );
+
+        // Only the two that take a listing off the site ask: activating and premium are one
+        // click to undo, and a confirm nobody needs is a confirm nobody reads.
+        $danger = array(
+            !empty($item['b_enabled'])
+                ? array(
+                    'label' => __('Block listing'),
+                    'url'   => $url('status', 'DISABLE'),
+                    'attrs' => array(
+                        'data-osc-confirm'        => __('The listing is hidden from the site and from'
+                            . " the seller's account until it is unblocked."),
+                        'data-osc-confirm-title'  => __('Block this listing?'),
+                        'data-osc-confirm-label'  => __('Block listing'),
+                        'data-osc-confirm-cancel' => __('Cancel'),
+                    ),
+                )
+                : array('label' => __('Unblock listing'), 'url' => $url('status', 'ENABLE')),
+            empty($item['b_spam'])
+                ? array(
+                    'label' => __('Mark as spam'),
+                    'url'   => $url('status_spam', '1'),
+                    'attrs' => array(
+                        'data-osc-confirm'        => __('The listing is hidden from the site and counted'
+                            . ' against the seller.'),
+                        'data-osc-confirm-title'  => __('Mark this listing as spam?'),
+                        'data-osc-confirm-label'  => __('Mark as spam'),
+                        'data-osc-confirm-cancel' => __('Cancel'),
+                    ),
+                )
+                : array('label' => __('Unmark as spam'), 'url' => $url('status_spam', '0')),
+        );
+
+        return array('routine' => $routine, 'danger' => $danger);
+    }
+
+    /**
      * Draw the listing form again over a rejected save, with what was typed still in it
      * rather than thrown away with a redirect.
      *
@@ -885,7 +1017,7 @@ class CAdminItems extends AdminSecBaseModel
         }
 
         $item = Item::newInstance()->findByPrimaryKey(Params::getParam('id'));
-        $this->_exportVariableToView('actions', $this->itemStateActions($item));
+        $this->exportItemState($item);
         $this->_exportVariableToView('item', $item);
         $this->_exportVariableToView('new_item', false);
         osc_run_hook('before_item_edit', $item);
@@ -905,21 +1037,26 @@ class CAdminItems extends AdminSecBaseModel
      */
     private function itemErrors($message, array $data)
     {
+        $titles    = array();
+        $superseded = array();
+        foreach (osc_get_locales() as $locale) {
+            $code = $locale['pk_c_code'];
+            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) === '') {
+                $titles[$code]  = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
+                // The same refusal in the validator's own words. Both would be listed, so
+                // the summary counted one empty title twice and said so.
+                $superseded[] = trim(sprintf(_m('Title too short (%s).'), $code));
+            }
+        }
+
         $errors = array();
         foreach (explode(PHP_EOL, (string)$message) as $line) {
             $line = trim($line);
-            if ($line !== '') {
+            if ($line !== '' && !in_array($line, $superseded, true)) {
                 $errors[] = $line;
             }
         }
 
-        $titles = array();
-        foreach (osc_get_locales() as $locale) {
-            $code = $locale['pk_c_code'];
-            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) === '') {
-                $titles[$code] = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
-            }
-        }
         if ($titles !== array()) {
             $errors['title'] = $titles;
         }

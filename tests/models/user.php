@@ -226,7 +226,13 @@ harness_section('User::ajax');
 
 $ajax = $model->ajax('vic');
 check('a name-prefix search finds the user', count($ajax) === 1 && $ajax[0]['value'] === 'victim');
-pin('the autocomplete row is aliased to id/label/value', array('id', 'label', 'value'), array_keys($ajax[0]));
+// The e-mail is its own key beside the label, because the admin listing editor fills a
+// seller's contact fields from a pick and matching on e-mail is what the save does.
+pin(
+    'the autocomplete row is aliased to id/label/value/email',
+    array('id', 'label', 'value', 'email'),
+    array_keys($ajax[0])
+);
 check('the label combines name and email', strpos($ajax[0]['label'], 'victim@example.test') !== false);
 $byEmail = $model->ajax('other@');
 check('it also matches on the email prefix', count($byEmail) === 1 && $byEmail[0]['value'] === 'other');

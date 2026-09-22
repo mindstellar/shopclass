@@ -223,12 +223,19 @@ class Editor
         $ids    = $opts['error_ids'] ?? array();
 
         // A translated field is rejected one locale at a time, so its entry is a map and
-        // each locale earns its own line.
+        // each locale earns its own line. A `summary` key overrides that with one line,
+        // for a rule that is satisfied by any one locale and so is a single fault however
+        // many tabs are marked.
         $lines = array();
         foreach ($errors as $name => $message) {
+            $key = is_int($name) ? null : $name;
+            if (is_array($message) && isset($message['summary']) && (string)$message['summary'] !== '') {
+                $lines[] = array($key, (string)$message['summary']);
+                continue;
+            }
             foreach (is_array($message) ? $message : array($message) as $one) {
                 if ((string)$one !== '') {
-                    $lines[] = array(is_int($name) ? null : $name, (string)$one);
+                    $lines[] = array($key, (string)$one);
                 }
             }
         }

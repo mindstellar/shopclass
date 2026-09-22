@@ -8,6 +8,8 @@ In development.
 
 ### New
 
+- `osc_admin_category_picker()`, `osc_admin_location_picker()` and `osc_admin_user_picker()`:
+  the three composites an entity editor is made of, for plugins as well as core.
 - `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern for a
   screen that spells its posted names its own way, and an `'error'` slot per field.
   Declared settings pages can carry a rich-text field too.
@@ -40,6 +42,9 @@ In development.
 
 ### Fixed
 
+- Both editors counted one refused title as several and listed it twice.
+- The listing editor posted a `cityAreaId` nothing read, and wired an autocomplete to
+  elements it never drew.
 - The page editor's rich-text body drew near-black text on a dark sheet, at 1.31:1.
 - Settings screens never showed the unsaved-changes save bar: the admin theme's copy of the
   action row dropped the option core passed it.
@@ -102,6 +107,12 @@ In development.
 
 ### Changed
 
+- The listing editor has a Status panel in its rail, with the state, the dates, the
+  moderation actions and the expiry; blocking a listing and marking it as spam ask first.
+- The listing's category is chosen from one searchable list showing the whole path, not a
+  row of cascading selects.
+- The listing's seller says which account it belongs to, and a search fills the contact
+  fields from a registered user.
 - The page editor has a Status panel in its rail, an Advanced group for the internal name,
   and a save bar that counts unsaved changes.
 - The listing and page editors draw their titles and bodies from the shared field, so both

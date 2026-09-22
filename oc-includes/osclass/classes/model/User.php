@@ -98,7 +98,10 @@ class User extends DAO
         // term is bound; legacy like(..., 'after') matched a prefix and escaped
         // %/_ in the payload, reproduced here. LIMIT 0, 10 is offset 0, count 10.
         $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
-        $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value'
+        // The e-mail is its own key as well as part of the label: the admin listing editor
+        // resolves a seller by e-mail, and reading it back out of a label is guesswork.
+        $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value,'
+            . ' s_email as email'
             . ' FROM ' . $this->getTableName()
             . ' WHERE s_name LIKE ? OR s_email LIKE ? LIMIT 10';
 

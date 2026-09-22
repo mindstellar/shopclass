@@ -619,7 +619,6 @@ $itemEdit = array(
     'city'                 => array('text', 'San Jose'),
     'cityId'               => array('hidden', '340'),
     'cityArea'             => array('text', 'Downtown'),
-    'cityAreaId'           => array('hidden', '88'),
     'zip'                  => array('text', '95110'),
     'address'              => array('text', '1 Market Street'),
     // Expiry
@@ -631,6 +630,13 @@ harness_section('the listing editor posts every name the save path reads');
 
 foreach ($itemEdit as $name => $spec) {
     pin_field('item-edit', $name, $spec[0], $spec[1]);
+}
+
+// The city-area id was drawn beside the city-area name and read by nothing: not
+// ItemActions::prepareData(), not a model, not a theme. It is pinned absent so it does not
+// come back with the next field that copies its neighbour.
+foreach (array('item-edit', 'item-add') as $screen) {
+    pin("$screen: no control named cityAreaId", 0, count(controls($screen, 'cityAreaId')));
 }
 
 harness_section('the listing add form is the same form without the record');
@@ -662,10 +668,11 @@ harness_section('the listing editor keeps its plugin surfaces inside the form');
 
 check('item-edit: #plugin-hook is inside the form', id_in_form('item-edit', 'plugin-hook'));
 check('item-add: #plugin-hook is inside the form', id_in_form('item-add', 'plugin-hook'));
-// The cascading category selects are written into #select_holder by the inline script, so
-// the anchor is what can be pinned server-side.
-check('item-edit: #select_holder is inside the form', id_in_form('item-edit', 'select_holder'));
-check('item-add: #select_holder is inside the form', id_in_form('item-add', 'select_holder'));
+// The category is chosen through the picker now, not the cascading selects the inline
+// script used to write into #select_holder. What has to hold is that the control the
+// administrator operates is the one sitting over the hidden field the save reads.
+check('item-edit: the category picker is inside the form', id_in_form('item-edit', 'catId-picker'));
+check('item-add: the category picker is inside the form', id_in_form('item-add', 'catId-picker'));
 
 harness_section('the listing editor draws the photos it already has');
 

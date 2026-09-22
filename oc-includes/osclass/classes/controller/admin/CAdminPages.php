@@ -419,6 +419,12 @@ class CAdminPages extends AdminSecBaseModel
             }
         }
 
+        if ($errors !== array()) {
+            // One rule, one line in the summary: every tab is marked, but a title in any
+            // single language satisfies it, so this is not one fault per language.
+            $errors['summary'] = _m('A page needs a title in at least one language.');
+        }
+
         return $errors;
     }
 }

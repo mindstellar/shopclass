@@ -22,7 +22,9 @@
  *  - an unbalanced open/close pair and every element after the editor is nested inside the
  *    form, which submits things the screen never meant to submit;
  *  - an unescaped title or status word is stored XSS on a page only an administrator sees;
- *  - a Save button inside the status panel is a second primary on one screen.
+ *  - a Save button inside the status panel is a second primary on one screen;
+ *  - a picker that stops emitting its hidden field, or emits it under another name, posts
+ *    nothing where the save reads a category, a place or a seller.
  *
  * DB-free: the helpers are pure markup over the options array they are handed.
  *
@@ -56,6 +58,7 @@ function osc_admin_base_url($index = false)
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Editor.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Picker.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** Capture what a helper prints. */
@@ -215,8 +218,10 @@ emits('the body slot lands between the rows and the actions', $panel,
 emits('routine actions are secondary', $panel,
     '<a class="btn btn-sm btn-secondary" href="https://example.test/off">Deactivate</a>');
 emits('destructive ones sit apart, after the rule', $panel, '<div class="osc-publish-danger">');
-emits('and are drawn as danger', $panel,
-    '<a class="btn btn-sm btn-outline-danger" href="https://example.test/block">Block</a>');
+// Not Bootstrap's .btn-outline-danger: that class paints from a colour nothing re-points
+// per theme, and measures 2.86:1 on a dark card.
+emits('and are drawn on the theme\'s own danger colour', $panel,
+    '<a class="btn btn-sm osc-btn-danger" href="https://example.test/block">Block</a>');
 omits('the panel never carries a second Save', $panel, 'type="submit"');
 divs_balance('every div the panel opens is closed', $panel);
 
@@ -241,6 +246,141 @@ omits('and a row escapes unless it asks not to', $escaped, '<i>v</i>');
 emits('a row that asks for markup gets it', render(static function () {
     osc_admin_publish_panel(array('rows' => array(array('label' => 'x', 'value' => '<a href="#">y</a>', 'html' => true))));
 }), '<dd><a href="#">y</a></dd>');
+
+/* ----------------------------------------------------------------------------
+ * The pickers.
+ * ------------------------------------------------------------------------- */
+
+harness_section('the category picker');
+
+$catRows = array(
+    array('pk_i_id' => 4, 'fk_i_parent_id' => null, 's_name' => 'Vehicles'),
+    array('pk_i_id' => 7, 'fk_i_parent_id' => 4, 's_name' => 'Bicycles'),
+    array('pk_i_id' => 9, 'fk_i_parent_id' => null, 's_name' => 'Property'),
+);
+
+$catpick = render(static function () use ($catRows) {
+    osc_admin_category_picker(array(
+        'name'       => 'catId',
+        'value'      => 7,
+        'label'      => 'Category',
+        'required'   => true,
+        'categories' => $catRows,
+        'help'       => 'Changing the category changes which details apply below.',
+    ));
+});
+
+emits('posts the name the save reads, from a hidden field on its own id', $catpick,
+    '<input type="hidden" id="catId" name="catId" value="7" />');
+emits('the control on screen is a button over that field', $catpick,
+    '<button type="button" class="input-text osc-catpick-value" id="catId-picker"');
+emits('which says it opens a list', $catpick, 'aria-haspopup="listbox" aria-expanded="false"');
+emits('the button shows the whole path, not just the leaf', $catpick,
+    "Vehicles<span class=\"osc-catpick-sep\" aria-hidden=\"true\">\u{203a}</span>Bicycles");
+emits('every category is an option carrying its value and path', $catpick,
+    "data-value=\"7\" data-path=\"Vehicles \u{203a} Bicycles\"");
+emits('a child is indented by its depth', $catpick, 'style="--osc-catpick-depth: 1"');
+emits('the chosen one is marked', $catpick, 'aria-selected="true"');
+emits('and the root it sits under is named beside it', $catpick,
+    '<span class="osc-catpick-under">Vehicles</span>');
+emits('the list is searchable', $catpick, '<input type="text" class="form-control osc-catpick-search"');
+emits('and says when nothing matches', $catpick, '<p class="osc-catpick-empty" hidden>');
+emits('the label points at the control, not the hidden field', $catpick, 'for="catId-picker"');
+emits('required is said on the label', $catpick, 'class="form-label osc-field-required"');
+emits('and the hint is the shared help box', $catpick, '<div class="help-box">Changing the category');
+divs_balance('every div the picker opens is closed', $catpick);
+
+$catpickEmpty = render(static function () use ($catRows) {
+    osc_admin_category_picker(array('value' => '', 'categories' => $catRows));
+});
+emits('nothing chosen yet reads as a prompt', $catpickEmpty,
+    '<span class="osc-catpick-placeholder">Choose a category</span>');
+emits('and still posts the field, empty', $catpickEmpty, 'name="catId" value=""');
+
+$catpickBad = render(static function () {
+    osc_admin_category_picker(array(
+        'value'      => 1,
+        'error'      => 'Choose one category.',
+        'categories' => array(array('pk_i_id' => 1, 'fk_i_parent_id' => 0, 's_name' => '<b>x</b>')),
+    ));
+});
+emits('a rejected pick says why, under the control', $catpickBad,
+    '<p class="field-error" id="catId-picker-error">Choose one category.</p>');
+emits('and the control points at the message', $catpickBad, 'aria-describedby="catId-picker-error"');
+omits('a category name is escaped', $catpickBad, '<b>x</b>');
+
+harness_section('the location picker');
+
+$loc = render(static function () {
+    osc_admin_location_picker(array(
+        'countries' => array(
+            array('pk_c_code' => 'US', 's_name' => 'United States'),
+            array('pk_c_code' => 'ES', 's_name' => 'Spain'),
+        ),
+        'value'     => array(
+            'countryId' => 'US',
+            'region'    => 'California',
+            'regionId'  => 12,
+            'city'      => 'San Jose',
+            'cityId'    => 340,
+            'cityArea'  => 'Downtown',
+            'zip'       => '95110',
+            'address'   => '1 Market Street',
+        ),
+    ));
+});
+
+// Every id here is one the shipped location autocomplete binds to by name.
+emits('the country is a select on its own id', $loc, '<select id="countryId" name="countryId"');
+emits('with the stored country chosen', $loc, '<option value="US" selected>United States</option>');
+emits('the region is a text field', $loc, 'id="region" name="region"');
+emits('with its id beside it, hidden', $loc, '<input type="hidden" id="regionId" name="regionId" value="12" />');
+emits('the city is a text field', $loc, 'id="city" name="city"');
+emits('with its id beside it, hidden', $loc, '<input type="hidden" id="cityId" name="cityId" value="340" />');
+emits('neither offers the browser its own history over the suggestions', $loc, 'autocomplete="off"');
+emits('the rest of the address is behind a disclosure', $loc, '<details class="osc-disclosure"');
+emits('which says what is in it', $loc, '<span class="osc-disclosure-hint">City area, ZIP, street</span>');
+emits('and holds the city area', $loc, 'id="cityArea" name="cityArea"');
+emits('the ZIP', $loc, 'id="zip" name="zip"');
+emits('and the street', $loc, 'id="address" name="address"');
+check('a filled address opens the disclosure', strpos($loc, '<details class="osc-disclosure" open>') !== false);
+
+$locEmpty = render(static function () {
+    osc_admin_location_picker(array('countries' => array(), 'value' => array(), 'detail' => 'none'));
+});
+emits('a site with no countries loaded types the country instead', $locEmpty, 'id="country" name="country"');
+omits("and 'none' draws no address detail at all", $locEmpty, 'name="zip"');
+
+harness_section('the user picker');
+
+$userPick = render(static function () {
+    osc_admin_user_picker(array(
+        'user'   => array('name' => 'Ada Lovelace', 'email' => 'ada@example.test',
+                          'url' => 'https://example.test/u/3'),
+        'source' => 'https://example.test/oc-admin/index.php?page=ajax&action=userajax',
+        'fields' => array('name' => 'contactName', 'email' => 'contactEmail'),
+    ));
+});
+
+emits('a matched account is a card', $userPick, '<div class="osc-user-card">');
+emits('naming the user', $userPick, '<span class="osc-user-card-name">Ada Lovelace</span>');
+emits('and the e-mail the save matches on', $userPick,
+    '<span class="osc-user-card-mail">ada@example.test</span>');
+emits('with a way through to the account', $userPick, 'href="https://example.test/u/3"');
+emits('the search is a field like the ones it fills', $userPick,
+    '<input type="text" id="userPicker" class="input-text field-text osc-user-search"');
+emits('bound to the shared autocomplete', $userPick, 'data-osc-user-search="1"');
+emits('carrying its endpoint', $userPick, 'data-osc-user-source="https://example.test/oc-admin/index.php?page=ajax&amp;action=userajax"');
+emits('and the fields a pick fills', $userPick,
+    'data-osc-user-fields="{&quot;name&quot;:&quot;contactName&quot;,&quot;email&quot;:&quot;contactEmail&quot;}"');
+omits('the search itself posts nothing', $userPick, 'name="userPicker"');
+divs_balance('every div the picker opens is closed', $userPick);
+
+$noUser = render(static function () {
+    osc_admin_user_picker(array('user' => null, 'source' => 'https://example.test/u'));
+});
+omits('no matching account draws no card', $noUser, 'osc-user-card');
+emits('but still offers the search', $noUser, 'data-osc-user-search');
 
 /* ----------------------------------------------------------------------------
  * The disclosure.
