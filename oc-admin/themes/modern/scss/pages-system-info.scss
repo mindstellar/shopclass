@@ -1,6 +1,6 @@
 // Tools -> System info. A "ledger": every row is a fact with a spelled-out verdict
-// (never colour alone — see DESIGN.md), a note on why it matters, its value, and
-// sometimes one action. Flat at rest; the cards carry the grouping.
+// (never colour alone, since colour is not readable to everyone), a note on why it
+// matters, its value, and sometimes one action. Flat at rest; the cards carry the grouping.
 
 #system-info {
   // The tab strip is now the theme's own .osc-tabnav (see tabs.scss).
