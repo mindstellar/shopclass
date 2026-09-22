@@ -64,6 +64,12 @@ In development.
 
 ### Security
 
+- Deleting a theme whose directory is a symlink deleted what the link pointed at, rather than
+  the link. `is_link()` resolves through a trailing slash and answers false, and the delete
+  passes one -- so the check that was there never saw the link. Reported after it emptied a
+  developer's theme checkout, `.git` and all. Applies to every delete core does, not just themes.
+- Deleting a theme another theme extends is refused, and a theme name that is not installed is
+  refused before it reaches the filesystem.
 - The `?theme=` preview took whatever name it was given. The name becomes a directory and
   core requires `functions.php` out of it, so a signed-in admin could point it outside the
   themes folder and run that file. A preview must now name an installed theme, and a theme

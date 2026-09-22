@@ -85,23 +85,48 @@ class CAdminAppearance extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                $theme = Params::getParam('webtheme');
-                if ($theme != '') {
-                    if ($theme != osc_current_web_theme()) {
-                        if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
-                            include osc_content_path() . 'themes/' . $theme . '/functions.php';
-                        }
-                        osc_run_hook('theme_delete_' . $theme);
-                        if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
-                            osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
-                        }
-                    } else {
-                        osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
+                $theme   = Params::getParamString('webtheme');
+                $themes  = WebThemes::newInstance();
+                // The name decides which directory is included and then deleted, so it is
+                // matched against the installed themes rather than trusted.
+                $known   = $themes->getListThemes();
+                // A theme another one extends: deleting it leaves that child rendering on
+                // the default theme, which is a broken site nobody asked for.
+                $needed  = array();
+                foreach ($known as $other) {
+                    $info = $themes->loadThemeInfo($other);
+                    if (is_array($info) && !empty($info['template']) && $info['template'] === $theme
+                        && $other !== $theme
+                    ) {
+                        $needed[] = $other;
                     }
-                } else {
+                }
+
+                if ($theme === '') {
                     osc_add_flash_error_message(_m('No theme selected'), 'admin');
+                } elseif (!in_array($theme, $known, true)) {
+                    osc_add_flash_error_message(_m('That theme is not installed'), 'admin');
+                } elseif ($theme === osc_current_web_theme()) {
+                    osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
+                } elseif ($needed !== array()) {
+                    osc_add_flash_error_message(
+                        sprintf(
+                            _m('"%1$s" extends this theme. Delete it first, or switch it to '
+                               . 'another parent.'),
+                            implode('", "', $needed)
+                        ),
+                        'admin'
+                    );
+                } else {
+                    if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
+                        include osc_content_path() . 'themes/' . $theme . '/functions.php';
+                    }
+                    osc_run_hook('theme_delete_' . $theme);
+                    if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
+                        osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
+                    } else {
+                        osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
+                    }
                 }
 
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');

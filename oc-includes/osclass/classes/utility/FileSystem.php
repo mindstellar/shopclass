@@ -336,14 +336,20 @@ class FileSystem
         }
         $files = array_reverse($files);
         foreach ($files as $file) {
+            // is_link() resolves THROUGH a trailing slash and answers false, while is_dir()
+            // still answers true -- so "themes/mytheme/" took the directory branch below and
+            // walked into whatever the link pointed at, deleting somebody else's files. The
+            // name is trimmed before the test so a link is recognised either way.
+            $link         = rtrim((string) $file, '/\\');
+            $link         = $link === '' ? (string) $file : $link;
             $isFileExists = file_exists($file);
-            if (is_link($file)) {
+            if (is_link($link)) {
+                // A symlink is removed as itself. What it points at is not ours to delete.
                 // See https://bugs.php.net/52176
-                if ($isFileExists
-                    && !(self::callback('unlink', $file) || '\\' !== DIRECTORY_SEPARATOR
-                        || self::callback('rmdir', $file))
+                if (!(self::callback('unlink', $link) || '\\' !== DIRECTORY_SEPARATOR
+                        || self::callback('rmdir', $link))
                 ) {
-                    throw new RuntimeException(sprintf('Unable to remove symlink "%s": ' . self::$lastError, $file));
+                    throw new RuntimeException(sprintf('Unable to remove symlink "%s": ' . self::$lastError, $link));
                 }
             } elseif (is_dir($file)) {
                 $this->remove(new FilesystemIterator(
