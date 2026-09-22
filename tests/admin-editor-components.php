@@ -55,10 +55,16 @@ function osc_admin_base_url($index = false)
     return 'https://example.test/oc-admin/index.php';
 }
 
+function osc_base_url($index = false)
+{
+    return 'https://example.test/' . ($index ? 'index.php' : '');
+}
+
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Editor.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Picker.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/PhotoGrid.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** Capture what a helper prints. */
@@ -381,6 +387,102 @@ $noUser = render(static function () {
 });
 omits('no matching account draws no card', $noUser, 'osc-user-card');
 emits('but still offers the search', $noUser, 'data-osc-user-search');
+
+/* ----------------------------------------------------------------------------
+ * The photo grid.
+ * ------------------------------------------------------------------------- */
+
+harness_section('the photo grid');
+
+$photoOpts = array(
+    'resources'  => array(
+        array('pk_i_id' => 101, 'fk_i_item_id' => 42, 's_name' => 'abc123',
+              's_path' => 'oc-content/uploads/0/', 's_extension' => 'jpg'),
+        array('pk_i_id' => 102, 'fk_i_item_id' => 42, 's_name' => 'def456',
+              's_path' => 'oc-content/uploads/0/', 's_extension' => 'png'),
+    ),
+    'max'        => 4,
+    'max_size'   => 2097152,
+    'extensions' => 'gif,jpg,png',
+    'upload_url' => 'https://example.test/index.php?page=ajax&action=ajax_upload',
+    'delete_url' => 'https://example.test/index.php?page=ajax&action=delete_image',
+    'temp_url'   => 'https://example.test/oc-content/uploads/temp/',
+    'secret'     => 'sekrit42',
+    'cover'      => true,
+);
+
+$photos = render(static function () use ($photoOpts) {
+    osc_admin_photo_grid($photoOpts);
+});
+
+emits('the grid is a list, named by the field label', $photos,
+    '<div class="osc-photo-grid" role="list" aria-labelledby="photos-label" data-osc-photo-grid>');
+emits('one tile per attached photo, keyed by what the delete endpoint authorises on', $photos,
+    '<div class="osc-photo" role="listitem" data-osc-photo data-id="101" data-item="42"'
+    . ' data-code="abc123" data-secret="sekrit42" data-label="101.jpg">');
+emits('each tile shows the stored thumbnail', $photos,
+    'src="https://example.test/oc-content/uploads/0/101_thumbnail.jpg"');
+emits('the first photo is the cover', $photos, '<span class="osc-photo-cover">Cover</span>');
+pin('and only the first', 1, substr_count($photos, '<span class="osc-photo-cover">'));
+emits('every tile can be removed', $photos, 'class="osc-photo-remove" data-osc-photo-remove');
+emits('the drop target is the file input\'s label', $photos,
+    '<label class="osc-photo-add" data-osc-photo-add>');
+emits('the no-JavaScript upload keeps its posted name', $photos,
+    '<input type="file" name="photos[]" accept=".gif,.jpg,.png" multiple />');
+emits('the count line says where the ceiling is', $photos, '>2 of 4 photos.</span>');
+emits('the endpoints and limits ride on the container, not in a script', $photos,
+    'data-upload-url="https://example.test/index.php?page=ajax&amp;action=ajax_upload"');
+emits('...including the delete endpoint', $photos,
+    'data-delete-url="https://example.test/index.php?page=ajax&amp;action=delete_image"');
+emits('...the folder a staged photo is served from', $photos,
+    'data-temp-url="https://example.test/oc-content/uploads/temp/"');
+emits('...the size a file may not pass', $photos, 'data-max-size="2097152"');
+emits('...and the extensions it may have', $photos, 'data-extensions="gif,jpg,png"');
+divs_balance('every div the grid opens is closed', $photos);
+
+harness_section('a photo waiting for the save');
+
+$staged = render(static function () use ($photoOpts) {
+    osc_admin_photo_grid(array_merge($photoOpts, array(
+        'resources' => array(),
+        'staged'    => array('auto_qqfile_one.jpg', 'auto_qqfile_two.jpg'),
+    )));
+});
+
+emits('carries the name the save reads it by', $staged,
+    '<input type="hidden" name="ajax_photos[]" value="auto_qqfile_one.jpg" />');
+emits('and is drawn from the staging folder', $staged,
+    'src="https://example.test/oc-content/uploads/temp/auto_qqfile_one.jpg"');
+emits('it is removed by that name, not by a row id', $staged, 'data-temp="auto_qqfile_one.jpg"');
+
+harness_section('choosing the cover');
+
+// The save attaches photos in the order it is handed them and stores no order afterwards,
+// so a tile may be moved to the front only while every tile is still staged.
+emits('a grid of staged photos offers the choice', $staged, 'data-cover="1"');
+emits('and every tile but the first carries the control', $staged,
+    'class="osc-photo-make-cover" data-osc-photo-cover');
+omits('a grid holding an attached photo does not', $photos, 'data-cover="1"');
+omits('...and offers the control on no tile', $photos, 'data-osc-photo-cover');
+
+harness_section('the grid stops at the ceiling');
+
+$full = render(static function () use ($photoOpts) {
+    osc_admin_photo_grid(array_merge($photoOpts, array('max' => 2)));
+});
+emits('a full grid hides the way to add more', $full,
+    '<label class="osc-photo-add" data-osc-photo-add hidden>');
+emits('and says so', $full, '>2 of 2 photos.</span>');
+
+$dirtyPhotos = render(static function () {
+    osc_admin_photo_grid(array(
+        'label'     => '<script>x</script>',
+        'resources' => array(array('pk_i_id' => '1"><script>y</script>', 'fk_i_item_id' => 5,
+                                   's_name' => 'n', 's_path' => '', 's_extension' => 'jpg')),
+    ));
+});
+omits('the label is escaped', $dirtyPhotos, '<script>x</script>');
+omits('and so is anything a row carries', $dirtyPhotos, '<script>y</script>');
 
 /* ----------------------------------------------------------------------------
  * The disclosure.

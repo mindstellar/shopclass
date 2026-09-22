@@ -440,6 +440,341 @@
     }
 
     // ---------------------------------------------------------------------
+    // The photo grid: a tile per photo, staged by the upload endpoint and
+    // carried to the save in the ajax_photos[] input the tile holds. The first
+    // tile is the cover, and can be chosen while no photo is attached yet.
+    // ---------------------------------------------------------------------
+    function initPhotoGrids() {
+        document.querySelectorAll('[data-osc-photos]').forEach(mountPhotoGrid);
+    }
+
+    function mountPhotoGrid(root) {
+        var grid = root.querySelector('[data-osc-photo-grid]');
+        var add = root.querySelector('[data-osc-photo-add]');
+        var count = root.querySelector('[data-osc-photo-count]');
+        if (!grid || !add) {
+            return;
+        }
+
+        var input = add.querySelector('input[type="file"]');
+        var max = parseInt(root.getAttribute('data-max'), 10) || 0;
+        var maxSize = parseInt(root.getAttribute('data-max-size'), 10) || 0;
+        var pickCover = root.getAttribute('data-cover') === '1';
+        var extensions = (root.getAttribute('data-extensions') || '').split(',').filter(Boolean);
+        var text = {};
+        try {
+            text = JSON.parse(root.getAttribute('data-strings') || '{}');
+        } catch (e) {
+            text = {};
+        }
+
+        function say(key, map) {
+            var s = text[key] || '';
+
+            return s.replace(/\{(\w+)\}/g, function (whole, k) {
+                return map && map[k] != null ? map[k] : whole;
+            });
+        }
+
+        function tiles() {
+            return Array.prototype.slice.call(grid.querySelectorAll('[data-osc-photo]'));
+        }
+
+        // A tile holding a refusal is a message, not a photo: it posts nothing, so it is
+        // neither counted nor eligible to be the cover.
+        function photos() {
+            return tiles().filter(function (tile) { return !tile.classList.contains('is-error'); });
+        }
+
+        function icon(name) {
+            var i = document.createElement('i');
+            i.className = 'bi ' + name;
+            i.setAttribute('aria-hidden', 'true');
+
+            return i;
+        }
+
+        function button(cls, iconName, label) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = cls;
+            b.title = label;
+            b.setAttribute('aria-label', label);
+            b.appendChild(icon(iconName));
+
+            return b;
+        }
+
+        // The badge, the make-cover control and the count line all follow from the order
+        // the tiles are in, so one pass after every change keeps them from disagreeing.
+        function refresh() {
+            var all = photos();
+            all.forEach(function (tile, index) {
+                var label = tile.getAttribute('data-label') || '';
+                var badge = tile.querySelector('.osc-photo-cover');
+                var make = tile.querySelector('[data-osc-photo-cover]');
+                if (index === 0) {
+                    if (make) {
+                        make.remove();
+                    }
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'osc-photo-cover';
+                        badge.textContent = text.cover || 'Cover';
+                        tile.appendChild(badge);
+                    }
+
+                    return;
+                }
+                if (badge) {
+                    badge.remove();
+                }
+                if (pickCover && !make) {
+                    make = button('osc-photo-make-cover', 'bi-star', say('coverOf', { file: label }));
+                    make.setAttribute('data-osc-photo-cover', '');
+                    make.title = text.makeCover || '';
+                    tile.appendChild(make);
+                }
+            });
+
+            if (count) {
+                count.textContent = max > 0
+                    ? say('countMax', { n: all.length, max: max })
+                    : say('count', { n: all.length });
+            }
+            add.hidden = max > 0 && all.length >= max;
+        }
+
+        function reject(name, message) {
+            var tile = document.createElement('div');
+            tile.className = 'osc-photo is-error';
+            tile.setAttribute('role', 'listitem');
+            tile.setAttribute('data-osc-photo', '');
+            tile.setAttribute('data-label', name);
+            var body = document.createElement('p');
+            body.className = 'osc-photo-msg';
+            body.setAttribute('role', 'alert');
+            body.textContent = message;
+            tile.appendChild(body);
+            var remove = button('osc-photo-remove', 'bi-x-lg', say('removeOf', { file: name }));
+            remove.setAttribute('data-osc-photo-remove', '');
+            tile.appendChild(remove);
+            var caption = document.createElement('span');
+            caption.className = 'osc-photo-name';
+            caption.textContent = name;
+            tile.appendChild(caption);
+            grid.insertBefore(tile, add);
+            refresh();
+        }
+
+        function extensionOf(name) {
+            var dot = name.lastIndexOf('.');
+
+            return dot < 0 ? '' : name.slice(dot + 1).toLowerCase();
+        }
+
+        function accept(file) {
+            if (extensions.length && extensions.indexOf(extensionOf(file.name)) < 0) {
+                return say('type', { file: file.name });
+            }
+            if (maxSize && file.size > maxSize) {
+                return say('size', { file: file.name });
+            }
+
+            return null;
+        }
+
+        function upload(file) {
+            var tile = document.createElement('div');
+            tile.className = 'osc-photo is-uploading';
+            tile.setAttribute('role', 'listitem');
+            tile.setAttribute('data-osc-photo', '');
+            tile.setAttribute('data-label', file.name);
+
+            var img = document.createElement('img');
+            img.className = 'osc-photo-img';
+            img.alt = '';
+            var preview = URL.createObjectURL(file);
+            img.src = preview;
+            tile.appendChild(img);
+
+            var bar = document.createElement('span');
+            bar.className = 'osc-photo-bar';
+            var fill = document.createElement('span');
+            bar.appendChild(fill);
+            tile.appendChild(bar);
+
+            var remove = button('osc-photo-remove', 'bi-x-lg', say('removeOf', { file: file.name }));
+            remove.setAttribute('data-osc-photo-remove', '');
+            tile.appendChild(remove);
+
+            var caption = document.createElement('span');
+            caption.className = 'osc-photo-name';
+            caption.textContent = file.name;
+            tile.appendChild(caption);
+
+            grid.insertBefore(tile, add);
+            refresh();
+
+            var body = new FormData();
+            body.append('qqfile', file);
+            body.append('qquuid', window.crypto && window.crypto.randomUUID
+                ? window.crypto.randomUUID()
+                : String(Date.now()) + '-' + String(Math.random()).slice(2));
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', root.getAttribute('data-upload-url'), true);
+            xhr.withCredentials = true;
+            if (xhr.upload) {
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        fill.style.inlineSize = Math.round((e.loaded / e.total) * 100) + '%';
+                    }
+                });
+            }
+            xhr.addEventListener('loadend', function () {
+                URL.revokeObjectURL(preview);
+                bar.remove();
+                var answer = null;
+                try {
+                    answer = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    answer = null;
+                }
+                if (xhr.status !== 200 || !answer || answer.success !== true || !answer.uploadName) {
+                    tile.classList.remove('is-uploading');
+                    tile.classList.add('is-error');
+                    img.remove();
+                    var badge = tile.querySelector('.osc-photo-cover');
+                    if (badge) {
+                        badge.remove();
+                    }
+                    var failed = document.createElement('p');
+                    failed.className = 'osc-photo-msg';
+                    failed.setAttribute('role', 'alert');
+                    failed.textContent = say('failed', { file: file.name });
+                    tile.insertBefore(failed, tile.firstChild);
+                    refresh();
+
+                    return;
+                }
+
+                tile.classList.remove('is-uploading');
+                tile.setAttribute('data-temp', answer.uploadName);
+                img.src = root.getAttribute('data-temp-url') + encodeURIComponent(answer.uploadName);
+                var carry = document.createElement('input');
+                carry.type = 'hidden';
+                carry.name = 'ajax_photos[]';
+                carry.value = answer.uploadName;
+                tile.appendChild(carry);
+                refresh();
+            });
+            xhr.send(body);
+        }
+
+        function take(files) {
+            for (var i = 0; i < files.length; i++) {
+                if (max > 0 && photos().length >= max) {
+                    reject(files[i].name, text.tooMany || '');
+                    continue;
+                }
+                var refusal = accept(files[i]);
+                if (refusal) {
+                    reject(files[i].name, refusal);
+                    continue;
+                }
+                upload(files[i]);
+            }
+        }
+
+        function drop(tile) {
+            // A tile with nothing behind it -- a refused file, or an upload that never
+            // finished -- is only on screen, so there is nothing to ask the server about.
+            var query = null;
+            if (tile.getAttribute('data-temp')) {
+                query = 'ajax_photo=' + encodeURIComponent(tile.getAttribute('data-temp'));
+            } else if (tile.getAttribute('data-id')) {
+                query = 'id=' + encodeURIComponent(tile.getAttribute('data-id'))
+                    + '&item=' + encodeURIComponent(tile.getAttribute('data-item'))
+                    + '&code=' + encodeURIComponent(tile.getAttribute('data-code'))
+                    + '&secret=' + encodeURIComponent(tile.getAttribute('data-secret'));
+            }
+            if (query === null) {
+                tile.remove();
+                refresh();
+
+                return;
+            }
+            if (!window.confirm(text.confirm || '')) {
+                return;
+            }
+
+            var url = root.getAttribute('data-delete-url');
+            fetch(url + (url.indexOf('?') > -1 ? '&' : '?') + query, { credentials: 'same-origin' })
+                .then(function (response) { return response.json(); })
+                .then(function (answer) {
+                    if (answer && answer.success === false) {
+                        throw new Error('refused');
+                    }
+                    tile.remove();
+                    refresh();
+                })
+                .catch(function () {
+                    tile.classList.add('is-error');
+                    var failed = tile.querySelector('.osc-photo-msg') || document.createElement('p');
+                    failed.className = 'osc-photo-msg';
+                    failed.setAttribute('role', 'alert');
+                    failed.textContent = text.gone || '';
+                    tile.insertBefore(failed, tile.firstChild);
+                });
+        }
+
+        input.addEventListener('change', function () {
+            take(input.files);
+            // The same files must not be posted a second time by the field itself.
+            input.value = '';
+        });
+
+        root.addEventListener('click', function (e) {
+            var tile = e.target.closest ? e.target.closest('[data-osc-photo]') : null;
+            if (!tile) {
+                return;
+            }
+            if (e.target.closest('[data-osc-photo-remove]')) {
+                e.preventDefault();
+                drop(tile);
+
+                return;
+            }
+            if (e.target.closest('[data-osc-photo-cover]')) {
+                e.preventDefault();
+                grid.insertBefore(tile, grid.firstChild);
+                refresh();
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(function (name) {
+            root.addEventListener(name, function (e) {
+                e.preventDefault();
+                add.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (name) {
+            root.addEventListener(name, function (e) {
+                e.preventDefault();
+                add.classList.remove('is-dragover');
+            });
+        });
+        root.addEventListener('drop', function (e) {
+            if (e.dataTransfer && e.dataTransfer.files.length) {
+                take(e.dataTransfer.files);
+            }
+        });
+
+        refresh();
+    }
+
+    // ---------------------------------------------------------------------
     // A destructive state change asks first, and says what it does. One dialog,
     // built on demand from the link that opens it.
     // ---------------------------------------------------------------------
@@ -510,6 +845,7 @@
         revealErrors();
         initCategoryPickers();
         initUserPickers();
+        initPhotoGrids();
         initExpiry();
         initConfirms();
 

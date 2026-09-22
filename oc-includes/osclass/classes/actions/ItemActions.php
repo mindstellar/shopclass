@@ -2073,8 +2073,10 @@ class ItemActions
             $staged = ItemTmpUpload::newInstance();
             $token  = osc_upload_token();
             // This runs before the CSRF check, so an anonymous POST decides how many
-            // lookups it costs. The form cannot offer more than the site's photo cap.
-            $remaining = max(1, (int)osc_max_images_per_item());
+            // lookups it costs. A zero cap means unlimited, which still needs a ceiling
+            // here -- this bounds the work, it is not the site's photo limit.
+            $cap       = (int)osc_max_images_per_item();
+            $remaining = $cap > 0 ? $cap : 100;
             foreach ($ajax_photos as $photo) {
                 if ($remaining-- <= 0) {
                     break;

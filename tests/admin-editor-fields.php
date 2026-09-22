@@ -236,6 +236,18 @@ if (!function_exists('osc_max_images_per_item')) {
         return 10;
     }
 }
+if (!function_exists('osc_max_size_kb')) {
+    function osc_max_size_kb()
+    {
+        return 2048;
+    }
+}
+if (!function_exists('osc_allowed_extension')) {
+    function osc_allowed_extension()
+    {
+        return 'gif,jpg,png,webp';
+    }
+}
 if (!function_exists('osc_locale_thousands_sep')) {
     function osc_locale_thousands_sep()
     {
@@ -676,9 +688,28 @@ check('item-add: the category picker is inside the form', id_in_form('item-add',
 
 harness_section('the listing editor draws the photos it already has');
 
-$photoLinks = dom('item-edit')->query('//div[@class="photos_div"]/div');
-pin('item-edit: one tile per existing photo', 3, $photoLinks->length);
-pin('item-edit: the add form has none', 0, dom('item-add')->query('//div[@class="photos_div"]/div')->length);
+// One tile per attached photo, the first of them marked as the cover, and the file input
+// still inside the drop target so a browser with no JavaScript uploads the ordinary way.
+pin('item-edit: one tile per existing photo', 3, dom('item-edit')->query('//div[@data-osc-photo]')->length);
+pin('item-edit: the add form has none', 0, dom('item-add')->query('//div[@data-osc-photo]')->length);
+pin('item-edit: exactly one tile is the cover', 1, dom('item-edit')->query('//span[@class="osc-photo-cover"]')->length);
+pin(
+    'item-edit: the cover is the first photo',
+    '101.jpg',
+    dom('item-edit')->query('//div[@data-osc-photo][1]/@data-label')->item(0)->nodeValue
+);
+check('item-edit: the photo grid is inside the form', id_in_form('item-edit', 'photos-label'));
+check('item-add: the photo grid is inside the form', id_in_form('item-add', 'photos-label'));
+
+// The save attaches photos in the order it is handed them and stores no order, so the
+// cover can only be chosen while every tile is still staged.
+pin(
+    'item-edit: an attached photo offers no cover control',
+    0,
+    dom('item-edit')->query('//button[@data-osc-photo-cover]')->length
+);
+pin('item-add: but the empty grid may still choose one', '1',
+    dom('item-add')->query('//div[@data-osc-photos]/@data-cover')->item(0)->nodeValue);
 
 /* ----------------------------------------------------------------------------
  * The page editor.

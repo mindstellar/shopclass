@@ -17,6 +17,13 @@ osc_enqueue_script('php-date');
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('admin-editor');
 
+// The photo grid stages its uploads against this token, and the token is a cookie. Ask for
+// it before the page prints: two photos chosen at once upload at the same time, and with no
+// cookie yet each request would mint a token of its own and only one would survive.
+if (osc_images_enabled_at_items()) {
+    osc_upload_token();
+}
+
 $new_item = __get('new_item');
 
 /**
@@ -94,9 +101,6 @@ function customHead()
         <?php
     } ?>
     <?php ItemForm::location_javascript_new('admin'); ?>
-    <?php if (osc_images_enabled_at_items()) {
-        ItemForm::photos_javascript();
-    } ?>
     <?php
 }
 
@@ -159,6 +163,32 @@ foreach (osc_get_locales() as $itemLocale) {
         $itemRecord,
         $itemLocale
     );
+}
+
+// Photos uploaded before the save and refused by it: they are still in uploads/temp/ and
+// still posted, so the grid draws them again. Each name is checked the way the save checks
+// it -- a bare file name, staged under this form's own upload token -- because a name from
+// the request would otherwise become the src of an <img> and a value the next post carries.
+$itemStaged = array();
+$posted     = Params::getParam('ajax_photos');
+if (is_array($posted) && $posted !== array()) {
+    $stagedDir   = osc_content_path() . 'uploads/temp/';
+    $stagedStore = ItemTmpUpload::newInstance();
+    $stagedToken = osc_upload_token();
+    // The same ceiling the save stops at, so the screen shows what would be attached and
+    // a long list costs no more lookups here than it does there.
+    $stagedRoom  = max(1, (int)osc_max_images_per_item());
+    foreach ($posted as $stagedName) {
+        if ($stagedRoom-- <= 0) {
+            break;
+        }
+        if (!is_string($stagedName) || $stagedName === '' || basename($stagedName) !== $stagedName) {
+            continue;
+        }
+        if ($stagedStore->belongsToToken($stagedToken, $stagedName) && is_file($stagedDir . $stagedName)) {
+            $itemStaged[] = $stagedName;
+        }
+    }
 }
 
 // The chosen category: the record's, or the one a rejected save or a link carried.
@@ -324,28 +354,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ),
     ));
 
-    if (osc_images_enabled_at_items()) { ?>
-        <div class="osc-field osc-editor-photos photo_container">
-            <span class="form-label" id="photos-label"><?php _e('Photos'); ?></span>
-            <?php ItemForm::photos(); ?>
-            <div id="photos">
-                <?php if (osc_max_images_per_item() == 0
-                          || (osc_max_images_per_item() != 0
-                              && osc_count_item_resources() < osc_max_images_per_item())
-                ) { ?>
-                    <div>
-                        <input type="file" name="photos[]"/> (<?php _e('optional'); ?>)
-                    </div>
-                <?php } ?>
-            </div>
-            <p>
-                <a href="#" class="add-photo-btn" title="<?php echo osc_esc_html(__('Add new photo')); ?>"
-                   aria-label="<?php echo osc_esc_html(__('Add new photo')); ?>" onclick="addNewPhoto(); return false;">
-                    <i class="h4 bi bi-plus-circle-fill"></i>
-                </a>
-            </p>
-        </div>
-    <?php }
+    if (osc_images_enabled_at_items()) {
+        osc_admin_photo_grid(array(
+            'label'      => __('Photos'),
+            'resources'  => $new_item ? array() : osc_get_item_resources(),
+            'staged'     => $itemStaged,
+            'max'        => (int)osc_max_images_per_item(),
+            'max_size'   => (int)osc_max_size_kb() * 1024,
+            'upload_url' => osc_base_url(true) . '?page=ajax&action=ajax_upload',
+            'delete_url' => osc_base_url(true) . '?page=ajax&action=delete_image',
+            'temp_url'   => osc_base_url() . 'oc-content/uploads/temp/',
+            'secret'     => $new_item ? '' : osc_item_secret(),
+            'cover'      => true,
+        ));
+    }
 
     // The category's own fields, fetched after load by the item_form / item_edit hook.
     if ($new_item) {

@@ -10,6 +10,8 @@ In development.
 
 - `osc_admin_category_picker()`, `osc_admin_location_picker()` and `osc_admin_user_picker()`:
   the three composites an entity editor is made of, for plugins as well as core.
+- `osc_admin_photo_grid()` draws a record's photos as a grid of tiles, with the cover marked,
+  a remove control per photo and a drop target that uploads before the save.
 - `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern for a
   screen that spells its posted names its own way, and an `'error'` slot per field.
   Declared settings pages can carry a rich-text field too.
@@ -42,6 +44,7 @@ In development.
 
 ### Fixed
 
+- With the photo limit set to zero, meaning unlimited, a listing saved only its first photo.
 - Both editors counted one refused title as several and listed it twice.
 - The listing editor posted a `cityAreaId` nothing read, and wired an autocomplete to
   elements it never drew.

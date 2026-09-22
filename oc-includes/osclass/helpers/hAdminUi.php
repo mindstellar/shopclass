@@ -621,6 +621,35 @@ if (!function_exists('osc_admin_user_picker')) {
     }
 }
 
+if (!function_exists('osc_admin_photo_grid')) {
+    /**
+     * A record's photos as a grid of tiles: the ones it already has, the ones uploaded
+     * ahead of the save, one drop target and the count against the site's ceiling.
+     *
+     * Uploads go to the endpoint the form supplies, which is the same one the front-end
+     * uploader uses -- so a file is checked and staged under this form's upload token
+     * before the grid ever shows it, and the save reads it from ajax_photos[] as it
+     * always has. The file input keeps its posted name for a browser with no JavaScript.
+     *
+     * The first tile is the cover. 'cover' offers the control that moves a tile to the
+     * front, which the helper honours only while every tile is still staged: the save
+     * attaches photos in the order it is handed them and stores no order afterwards.
+     *
+     * Keys: 'name' (default photos), 'id', 'label', 'resources' => rows carrying pk_i_id,
+     *       fk_i_item_id, s_name, s_path and s_extension, 'staged' => file names in
+     *       uploads/temp/, 'max' (0 for no ceiling), 'max_size' in bytes, 'extensions',
+     *       'upload_url', 'delete_url', 'temp_url', 'secret', 'cover'.
+     *
+     * @param array $opts
+     *
+     * @return void
+     */
+    function osc_admin_photo_grid(array $opts = array())
+    {
+        \mindstellar\admin\ui\PhotoGrid::render($opts);
+    }
+}
+
 if (!function_exists('osc_admin_disclosure_open')) {
     /**
      * A collapsible group, for the settings a screen has to offer and nobody changes

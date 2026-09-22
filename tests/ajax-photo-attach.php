@@ -101,6 +101,8 @@ $stage = static function (string $name, ?string $token) use ($tmpDir): void {
 };
 
 $stage('mine.jpg', 'this-form');
+$stage('cover.jpg', 'this-form');
+$stage('second.jpg', 'this-form');
 $stage('someone-elses.jpg', 'another-form');
 $stage('never-staged.jpg', null);
 
@@ -136,6 +138,35 @@ pin(
     'no more names are considered than the site allows photos',
     array('mine.jpg', 'mine.jpg', 'mine.jpg', 'mine.jpg'),
     attach(array_fill(0, 500, 'mine.jpg'))
+);
+
+// Zero is the setting's word for unlimited, and it used to clamp to one -- so a site that
+// had turned the cap off attached the first photo and dropped the rest without saying so.
+$GLOBALS['maxImages'] = 0;
+check('a zero cap attaches more than one', count(attach(array_fill(0, 12, 'mine.jpg'))) === 12);
+check('and is still bounded', count(attach(array_fill(0, 500, 'mine.jpg'))) === 100);
+$GLOBALS['maxImages'] = 4;
+
+harness_section('The order chooses the cover');
+
+// Nothing stores a photo order, so the cover is whichever photo is attached first. The
+// grid says which that is by the order it posts ajax_photos[], and the guard must hand
+// that order on untouched -- a filter that sorted or de-duplicated would silently move
+// the cover to a photo the administrator did not choose.
+pin(
+    'the order posted is the order attached',
+    array('cover.jpg', 'second.jpg', 'mine.jpg'),
+    attach(array('cover.jpg', 'second.jpg', 'mine.jpg'))
+);
+pin(
+    'moving a photo to the front moves the cover with it',
+    array('second.jpg', 'cover.jpg'),
+    attach(array('second.jpg', 'cover.jpg'))
+);
+pin(
+    'a refused name does not become the cover, and does not shift the one that is',
+    array('cover.jpg', 'second.jpg'),
+    attach(array('someone-elses.jpg', 'cover.jpg', 'second.jpg'))
 );
 
 harness_section('One bad name does not take the good ones with it');

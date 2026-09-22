@@ -16277,12 +16277,49 @@ select[aria-invalid=true].field-select {
 
 .osc-photo-img {
   align-items: center;
+  block-size: 100%;
   color: var(--osc-rule-strong);
   display: flex;
   font-size: 2rem;
-  height: 100%;
+  inline-size: 100%;
   justify-content: center;
-  width: 100%;
+  object-fit: cover;
+}
+
+.osc-photo.is-uploading .osc-photo-img {
+  opacity: 0.55;
+}
+
+.osc-photo.is-error {
+  border-color: var(--osc-danger);
+}
+
+.osc-photo-msg {
+  align-items: center;
+  color: var(--osc-danger);
+  display: flex;
+  font-size: 0.8125rem;
+  inset: 0;
+  margin: 0;
+  padding: 0.5rem 2.4rem 1.6rem 0.5rem;
+  position: absolute;
+  text-align: start;
+}
+
+.osc-photo-bar {
+  background: var(--osc-rule);
+  block-size: 0.25rem;
+  inset-block-end: 1.5rem;
+  inset-inline: 0;
+  position: absolute;
+}
+
+.osc-photo-bar > span {
+  background: var(--osc-bronze);
+  display: block;
+  inline-size: 0;
+  block-size: 100%;
+  transition: inline-size 0.15s linear;
 }
 
 .osc-photo-name {
@@ -16314,7 +16351,7 @@ select[aria-invalid=true].field-select {
 }
 
 .osc-photo-remove,
-.osc-photo-handle {
+.osc-photo-make-cover {
   align-items: center;
   background: var(--osc-bench);
   border: 1px solid var(--osc-rule-strong);
@@ -16333,9 +16370,16 @@ select[aria-invalid=true].field-select {
   inset-inline-end: 0.4rem;
 }
 
-.osc-photo-handle {
-  cursor: grab;
+.osc-photo-make-cover {
   inset-inline-end: 2.3rem;
+}
+
+.osc-photo-remove:hover,
+.osc-photo-remove:focus-visible,
+.osc-photo-make-cover:hover,
+.osc-photo-make-cover:focus-visible {
+  border-color: var(--osc-bronze);
+  color: var(--osc-bronze);
 }
 
 .osc-photo-add {
@@ -16345,17 +16389,23 @@ select[aria-invalid=true].field-select {
   border-radius: 4px;
   color: var(--osc-bronze);
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   font-size: 0.8125rem;
   font-weight: 500;
   gap: 0.25rem;
   justify-content: center;
+  margin: 0 !important;
   text-align: center;
 }
 
 .osc-photo-add .bi {
   font-size: 1.5rem;
+}
+
+.osc-photo-add.is-dragover {
+  background: var(--osc-bench-sunk);
+  border-color: var(--osc-bronze);
 }
 
 .osc-photo-add input {
@@ -16670,10 +16720,6 @@ select[aria-invalid=true].field-select {
   color: var(--osc-ink-muted);
   line-height: 1.55;
   margin: 0;
-}
-
-.osc-editor-photos .photos_div > div {
-  margin-block-end: 0.35rem;
 }
 
 .osc-editor-main > #plugin-hook:not(:has(*)) {
