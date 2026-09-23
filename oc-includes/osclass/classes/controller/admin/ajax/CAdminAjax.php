@@ -851,7 +851,8 @@ class CAdminAjax extends AdminSecBaseModel
                 AjaxResponse::json($array);
                 break;
             case 'test_mail_template':
-                // replace por valores por defecto
+                // Sends mail to any address, so another site must not be able to trigger it.
+                osc_csrf_check();
                 $email = Params::getParam('email');
                 $title = Params::getParam('title');
                 $body  = Params::getParam('body', false, false);
