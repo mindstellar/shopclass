@@ -44,6 +44,56 @@ osc_route_url($id, $args = array());        // public site
 osc_route_admin_url($id, $args = array());  // admin panel
 ```
 
+## Linking to a core page
+
+Core's own pages — login, contact, the account screens, the credit wallet — are in
+a shared table, and `osc_core_url()` builds their URLs from it. The same table
+compiles the rewrite rules, so you get the friendly URL when the site has friendly
+URLs on and the query-string form when it does not, without testing for it:
+
+```php
+echo osc_core_url('user_login');                          // login page
+echo osc_core_url('item_edit', array('id' => 42, 'secret' => $secret));
+echo osc_core_url('user_pub_profile', array('username' => 'jo'));
+```
+
+Most core pages also have a named helper — `osc_user_login_url()`,
+`osc_contact_url()`, `osc_billing_wallet_url()` — and those are thin wrappers over
+this. Prefer the named helper where one exists; reach for `osc_core_url()` for a
+page that has none. The route names are the keys of
+`mindstellar\routing\CoreRoutes::all()`.
+
+An unknown name returns an empty string rather than a broken link.
+
+### Permalink structures
+
+Listings, static pages and categories do not have a fixed path — an admin writes
+their shape on **Settings → Permalinks**, with placeholders:
+
+| Structure | Placeholders |
+|---|---|
+| Listing | `{ITEM_ID}` (required), `{ITEM_TITLE}`, `{ITEM_CITY}`, `{CATEGORIES}` |
+| Page | `{PAGE_ID}`, `{PAGE_SLUG}` |
+| Category | `{CATEGORY_ID}`, `{CATEGORY_NAME}`, `{CATEGORIES}` |
+
+These live in the same table, and `CoreRoutes::expand()` fills one in:
+
+```php
+echo \mindstellar\routing\CoreRoutes::expand('page', array(
+    'PAGE_ID'   => 3,
+    'PAGE_SLUG' => 'about-us',
+));
+// → about-us-p3
+```
+
+It returns the path only — no site address and no language prefix, because the
+caller decides both. Use `osc_item_url()`, `osc_static_page_url()` and
+`osc_search_url()` for a finished link; reach for `expand()` when you are
+building something else out of the same structure, such as a sitemap.
+
+Where two placeholders could answer the same thing, the one that appears first in
+the structure wins.
+
 ## A worked example
 
 ```php

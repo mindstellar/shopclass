@@ -8,6 +8,8 @@ In development.
 
 ### New
 
+- `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
+  compiled from, so a link and the rule that answers it cannot drift apart.
 - A `field-group` class for controls that read as one field, such as an amount and its currency.
 - `osc_admin_category_picker()`, `osc_admin_location_picker()` and `osc_admin_user_picker()`:
   the three composites an entity editor is made of, for plugins as well as core.
@@ -47,6 +49,9 @@ In development.
 
 ### Fixed
 
+- Paging a category broke when the category permalink was built from two keywords, such as
+  `{CATEGORY_NAME}-c{CATEGORY_ID}`: page 2 read the category id as the page number.
+- "My listings" lost the type filter when friendly URLs were off.
 - A system page could not be saved: its internal name was disabled, so the browser never sent it.
 - A refused page save no longer stores the page template, the bodies or the modified date
   before refusing.
@@ -117,6 +122,9 @@ In development.
 
 ### Changed
 
+- Core page URLs and the rewrite rules that match them are declared once, in a shared
+  route table, instead of being written out twice. The listing, page and category permalink
+  structures go through the same table, so a link and the rule that answers it cannot drift.
 - A category's own fields sit on a responsive grid instead of one per line, and share a right edge.
 - On a phone both editors give every small control a 24px tap target, stack the two-up field
   row and show photos two across.
