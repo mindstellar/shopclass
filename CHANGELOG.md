@@ -49,6 +49,8 @@ In development.
 
 ### Fixed
 
+- An empty listing, page or category permalink setting no longer builds a rule that
+  answers the site's front page with the wrong screen.
 - Paging a category broke when the category permalink was built from two keywords, such as
   `{CATEGORY_NAME}-c{CATEGORY_ID}`: page 2 read the category id as the page number.
 - "My listings" lost the type filter when friendly URLs were off.
