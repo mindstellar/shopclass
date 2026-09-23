@@ -16,9 +16,6 @@
 (function () {
     'use strict';
 
-    // Every editor this module mounted, so the theme toggle can re-mount them.
-    var mounted = [];
-
     // Mount one editor per <textarea data-osc-richtext>. The configuration is the
     // server's, so no screen writes an editor setup of its own and none of them has to
     // find its editors by a name pattern.
@@ -61,29 +58,6 @@
                 };
             }
 
-            if (window.oscTinymceTheme) {
-                Object.assign(cfg, window.oscTinymceTheme());
-            }
-            mounted.push(cfg);
-            tinymce.init(cfg);
-        });
-    }
-
-    // The theme toggle rewrites data-bs-theme in place and never reloads, but an editor's
-    // skin and content stylesheet are chosen once at init -- so a light admin kept a dark
-    // editor until the next page load. Re-mounting is the only way to change them; remove()
-    // writes the content back to the textarea and init() reads it again, so nothing is lost.
-    function followTheme() {
-        if (typeof tinymce === 'undefined' || !window.oscTinymceTheme) {
-            return;
-        }
-        mounted.forEach(function (cfg) {
-            var editor = cfg.target && tinymce.get(cfg.target.id);
-            if (!editor) {
-                return;
-            }
-            editor.remove();
-            Object.assign(cfg, window.oscTinymceTheme());
             tinymce.init(cfg);
         });
     }
@@ -848,15 +822,5 @@
         initPhotoGrids();
         initExpiry();
         initConfirms();
-
-        new MutationObserver(function (records) {
-            for (var i = 0; i < records.length; i++) {
-                if (records[i].attributeName === 'data-bs-theme') {
-                    followTheme();
-
-                    return;
-                }
-            }
-        }).observe(document.documentElement, { attributes: true });
     });
 })();

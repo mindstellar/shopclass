@@ -126,7 +126,8 @@ check(
 
 /* ----------------------------------------------------------------------------
  * The rule that keeps the base in one place: no call site may hand-roll a config.
- * A literal init({...}) is how the five drifted apart in the first place.
+ * A literal init({...}) is how the five drifted apart in the first place. Scripts count
+ * too: one editor is mounted from JavaScript, and it reads a config the server wrote.
  * ------------------------------------------------------------------------- */
 harness_section('every editor is configured through the helper');
 
@@ -136,7 +137,8 @@ $editors = 0;
 foreach ($roots as $root) {
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
     foreach ($it as $file) {
-        if ($file->getExtension() !== 'php' || strpos($file->getPathname(), '/assets/') !== false) {
+        $ext = $file->getExtension();
+        if (($ext !== 'php' && $ext !== 'js') || strpos($file->getPathname(), '/assets/') !== false) {
             continue;
         }
         $src = (string) file_get_contents($file->getPathname());
@@ -144,9 +146,12 @@ foreach ($roots as $root) {
             continue;
         }
         $editors++;
-        // Every init must be handed a config the helper built -- directly, or through a
-        // variable the helper filled in on the line above.
-        if (!preg_match('/osc_tinymce_config\s*\(/', $src)) {
+        // A PHP call site builds the config with the helper. A script cannot call it, so it
+        // must take one the server built and wrote onto the field instead of writing its own.
+        $sourced = $ext === 'php'
+            ? preg_match('/osc_tinymce_config\s*\(/', $src)
+            : preg_match('/data-osc-richtext/', $src);
+        if (!$sourced) {
             $offend[] = str_replace(dirname(__DIR__) . '/', '', (string) realpath($file->getPathname()));
         }
     }

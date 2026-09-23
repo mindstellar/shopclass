@@ -50,8 +50,6 @@ function customHead()
             'toolbar'  => 'undo redo | bold italic underline | bullist numlist | link'
                           . ' | removeformat | code',
         )); ?>;
-        // JavaScript, so it cannot come through the JSON above.
-        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
         tinymce.init(cfg);
         });
 

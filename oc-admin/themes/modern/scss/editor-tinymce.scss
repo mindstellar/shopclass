@@ -1,0 +1,841 @@
+// This file is part of Shopclass (Mindstellar).
+// Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+// Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// =============================================================================
+// TinyMCE — the editor wearing the admin's own clothes
+// -----------------------------------------------------------------------------
+// This styles a VENDOR UI by class name. Every `.tox-*` selector below belongs to
+// TinyMCE, not to us: a major upgrade may rename them, and this file is the one
+// place to revisit when it does. Never rename a `.tox-*` class, only restyle it.
+//
+// The vendor skin stylesheet is injected into <head> AFTER ours, so an identical
+// selector of ours would lose on source order. Every rule here is therefore
+// nested under `body`, which adds one element to the specificity and wins without
+// a single `!important`.
+//
+// Colour goes through tokens only, so the whole editor follows the admin's
+// `data-bs-theme` at paint time and needs no skin swap and no re-mount. The
+// editing surface is an iframe — a separate document the tokens cannot reach — so
+// the values are copied onto its root by the admin script instead.
+// =============================================================================
+
+body {
+
+  // --- The box --------------------------------------------------------------
+  // At rest it is one of our fields: the same 1px rule-strong edge and 4px corner
+  // as a .form-control, over the content bench.
+  .tox.tox-tinymce {
+    background-color: var(--osc-bench);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+    font-family: var(--bs-body-font-family);
+  }
+
+  .tox,
+  .tox.tox-tinymce-aux {
+    font-family: var(--bs-body-font-family);
+  }
+
+  // Focus: the field's treatment, on the whole box. The skin draws its own blue
+  // inset ring on the editing surface; one indicator is enough.
+  .tox.tox-tinymce.tox-edit-focus {
+    border-color: var(--osc-bronze);
+    box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .2);
+  }
+
+  .tox .tox-edit-area::before {
+    display: none;
+  }
+
+  .tox .tox-edit-area__iframe {
+    background-color: var(--osc-bench);
+  }
+
+  // Fullscreen fills the viewport, so the field edge has nothing left to bound.
+  .tox.tox-tinymce.tox-fullscreen {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  // --- Toolbar --------------------------------------------------------------
+  .tox:not(.tox-tinymce-inline) .tox-editor-header,
+  .tox:not(.tox-tinymce-inline).tox-tinymce--toolbar-sticky-on .tox-editor-header {
+    background-color: var(--osc-chrome);
+    border-block-end: 1px solid var(--osc-rule);
+    box-shadow: none;
+    padding: 2px 0;
+  }
+
+  .tox .tox-toolbar-overlord,
+  .tox .tox-toolbar,
+  .tox .tox-toolbar__primary,
+  .tox .tox-toolbar__overflow,
+  .tox .tox-menubar {
+    background-color: var(--osc-chrome);
+    background-image: none;
+  }
+
+  .tox .tox-toolbar__group {
+    padding: 0 6px;
+  }
+
+  .tox:not([dir="rtl"]) .tox-toolbar__group:not(:last-of-type) {
+    border-right: 1px solid var(--osc-rule);
+  }
+
+  .tox[dir="rtl"] .tox-toolbar__group:not(:last-of-type) {
+    border-left: 1px solid var(--osc-rule);
+  }
+
+  // --- Toolbar buttons ------------------------------------------------------
+  .tox .tox-tbtn,
+  .tox .tox-mbtn {
+    background: transparent;
+    border-radius: 4px;
+    color: var(--osc-ink-emphasis);
+    font-size: .875rem;
+  }
+
+  .tox .tox-tbtn svg,
+  .tox .tox-mbtn svg {
+    fill: currentColor;
+  }
+
+  .tox .tox-tbtn:hover,
+  .tox .tox-mbtn:hover:not(:disabled):not(.tox-mbtn--active) {
+    background: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-tbtn:hover svg {
+    fill: currentColor;
+  }
+
+  .tox .tox-tbtn:active {
+    background: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-tbtn:active svg {
+    fill: currentColor;
+  }
+
+  // Pressed: bold is on, the list is the one you are in.
+  .tox .tox-tbtn--active,
+  .tox .tox-tbtn--enabled,
+  .tox .tox-tbtn--enabled:focus,
+  .tox .tox-tbtn--enabled:hover,
+  .tox .tox-mbtn--active,
+  .tox .tox-mbtn:not(:disabled).tox-mbtn--active:focus {
+    background: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-tbtn--active svg,
+  .tox .tox-tbtn--enabled svg,
+  .tox .tox-tbtn--enabled:focus svg,
+  .tox .tox-tbtn--enabled:hover svg {
+    fill: currentColor;
+  }
+
+  .tox .tox-tbtn:focus:not(.tox-tbtn--disabled) {
+    background: transparent;
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-tbtn:focus:not(.tox-tbtn--disabled) svg {
+    fill: currentColor;
+  }
+
+  .tox .tox-tbtn:focus::after,
+  .tox .tox-tbtn--enabled:focus::after,
+  .tox .tox-mbtn:focus:not(:disabled)::after,
+  .tox .tox-split-button__main:focus::after,
+  .tox .tox-split-button__chevron:focus::after,
+  .tox .tox-number-input:focus::after,
+  .tox .tox-number-input button:focus::after,
+  .tox .tox-statusbar a:focus-visible::after,
+  .tox .tox-statusbar__path-item:focus-visible::after,
+  .tox .tox-statusbar__wordcount:focus-visible::after,
+  .tox .tox-statusbar__resize-handle:focus-visible::after {
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px var(--osc-bronze);
+  }
+
+  .tox .tox-tbtn--disabled,
+  .tox .tox-tbtn--disabled:hover,
+  .tox .tox-tbtn:disabled,
+  .tox .tox-tbtn:disabled:hover,
+  .tox .tox-mbtn[disabled] {
+    background: transparent;
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-tbtn--disabled svg,
+  .tox .tox-tbtn--disabled:hover svg,
+  .tox .tox-tbtn:disabled svg,
+  .tox .tox-tbtn:disabled:hover svg,
+  .tox .tox-tbtn--disabled .tox-tbtn--enabled svg {
+    fill: var(--osc-ink-muted);
+  }
+
+  // --- Split buttons and the format/blocks control --------------------------
+  .tox .tox-split-button__main:focus,
+  .tox .tox-split-button__chevron:focus {
+    background: transparent;
+  }
+
+  .tox .tox-split-button__main,
+  .tox .tox-split-button__main:focus::after {
+    border-radius: 4px 0 0 4px;
+  }
+
+  .tox .tox-split-button__chevron,
+  .tox .tox-split-button__chevron:focus::after {
+    border-radius: 0 4px 4px 0;
+  }
+
+  .tox .tox-split-button__chevron svg,
+  .tox .tox-tbtn__select-chevron svg,
+  .tox .tox-listbox__select-chevron svg,
+  .tox .tox-mbtn__select-chevron svg,
+  .tox .tox-selectfield svg {
+    fill: var(--osc-ink-muted);
+  }
+
+  .tox .tox-split-button__chevron.tox-tbtn--disabled,
+  .tox .tox-split-button__main.tox-tbtn--disabled,
+  .tox .tox-split-button__chevron.tox-tbtn--disabled:hover,
+  .tox .tox-split-button__main.tox-tbtn--disabled:hover,
+  .tox .tox-split-button__chevron.tox-tbtn--disabled:focus,
+  .tox .tox-split-button__main.tox-tbtn--disabled:focus {
+    background: transparent;
+    color: var(--osc-ink-muted);
+  }
+
+  // The blocks control reads as a small select, not a bare button.
+  .tox .tox-tbtn--bordered,
+  .tox .tox-tbtn--bordered:focus,
+  .tox .tox-tbtn--bordered:hover,
+  .tox .tox-tbtn--bespoke,
+  .tox .tox-tbtn--bespoke:focus {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+  }
+
+  .tox .tox-tbtn--bespoke:hover {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-ink-muted);
+  }
+
+  .tox .tox-tbtn--bespoke.tox-tbtn--active {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-bronze);
+  }
+
+  .tox .tox-tbtn__select-label,
+  .tox .tox-mbtn__select-label {
+    font-size: .875rem;
+  }
+
+  // --- Status bar: the quietest thing in the box ----------------------------
+  .tox .tox-statusbar {
+    background-color: var(--osc-chrome);
+    border-top: 1px solid var(--osc-rule);
+    color: var(--osc-nav-label);
+    font-size: .8125rem;
+  }
+
+  // --osc-nav-label, not --osc-ink-muted: this text sits on the chrome, where the muted
+  // grey measures 4.44:1 and misses the 4.5:1 bar.
+  .tox .tox-statusbar a,
+  .tox .tox-statusbar__path-item,
+  .tox .tox-statusbar__wordcount {
+    color: var(--osc-nav-label);
+  }
+
+  .tox .tox-statusbar a:focus:not(:disabled):not([aria-disabled="true"]),
+  .tox .tox-statusbar a:hover:not(:disabled):not([aria-disabled="true"]),
+  .tox .tox-statusbar__path-item:focus:not(:disabled):not([aria-disabled="true"]),
+  .tox .tox-statusbar__path-item:hover:not(:disabled):not([aria-disabled="true"]),
+  .tox .tox-statusbar__wordcount:focus:not(:disabled):not([aria-disabled="true"]),
+  .tox .tox-statusbar__wordcount:hover:not(:disabled):not([aria-disabled="true"]) {
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-statusbar__resize-handle svg {
+    fill: var(--osc-nav-label);
+  }
+
+  .tox .tox-statusbar__resize-handle:focus svg,
+  .tox .tox-statusbar__resize-handle:hover svg {
+    fill: var(--osc-ink);
+  }
+
+  // --- Menus and dropdown panels --------------------------------------------
+  // These render at the end of <body>, outside the editor box.
+  .tox .tox-menu {
+    background-color: var(--osc-bench);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+    box-shadow: var(--osc-shadow-overlay);
+  }
+
+  .tox.tox-tinymce-aux .tox-toolbar__overflow {
+    background-color: var(--osc-chrome);
+    background-image: none;
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+    box-shadow: var(--osc-shadow-overlay);
+  }
+
+  .tox .tox-collection__item {
+    border-radius: 4px;
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-collection__item-label {
+    font-size: .875rem;
+  }
+
+  .tox .tox-collection__item-accessory {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+  }
+
+  .tox .tox-collection--list .tox-collection__group {
+    border-color: var(--osc-rule);
+  }
+
+  .tox .tox-collection__item-separator {
+    border-bottom-color: var(--osc-rule);
+  }
+
+  .tox .tox-collection__group-heading {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+  }
+
+  // Checked (the format you are in) reads as brand ink; the row under the pointer
+  // or the keyboard takes the brand wash.
+  .tox .tox-collection--list .tox-collection__item--enabled:not(.tox-collection__item--state-disabled) {
+    background-color: transparent;
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-collection--list .tox-collection__item--active:not(.tox-collection__item--state-disabled),
+  .tox .tox-collection--grid .tox-collection__item--active:not(.tox-collection__item--state-disabled),
+  .tox .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled),
+  .tox .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled):hover,
+  .tox .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled):focus {
+    background-color: var(--osc-bronze-tint);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-collection--grid .tox-collection__item--enabled:not(.tox-collection__item--state-disabled),
+  .tox .tox-collection--toolbar .tox-collection__item--enabled:not(.tox-collection__item--state-disabled) {
+    background-color: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-collection--grid .tox-collection__item--active:not(.tox-collection__item--state-disabled):focus::after,
+  .tox .tox-collection--toolbar .tox-collection__item--active:not(.tox-collection__item--state-disabled):focus::after {
+    box-shadow: 0 0 0 2px var(--osc-bronze) inset;
+  }
+
+  .tox .tox-collection__item-image {
+    border-color: var(--osc-rule);
+  }
+
+  // The colour menu.
+  .tox .tox-swatches__picker-btn svg {
+    fill: var(--osc-ink);
+  }
+
+  .tox .tox-swatches__picker-btn:hover {
+    background: var(--osc-chrome-hover);
+  }
+
+  .tox .tox-swatch--remove svg path {
+    stroke: var(--osc-danger);
+  }
+
+  // The chosen-colour tick is deliberately NOT tokenised: it sits on whatever colour the
+  // author picked, not on one of our surfaces, and the vendor's white glyph with a dark
+  // outline is what keeps it readable over every swatch.
+
+  // The table-size grid.
+  .tox .tox-insert-table-picker {
+    background-color: var(--osc-bench);
+  }
+
+  .tox .tox-insert-table-picker > div {
+    border-color: var(--osc-rule-strong);
+  }
+
+  .tox .tox-insert-table-picker .tox-insert-table-picker__selected {
+    background-color: var(--osc-bronze);
+    border-color: var(--osc-bronze);
+  }
+
+  .tox .tox-insert-table-picker__label {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+  }
+
+  // --- The context toolbar over a selected link or image --------------------
+  .tox .tox-pop__dialog {
+    background-color: var(--osc-chrome);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+    box-shadow: var(--osc-shadow-overlay);
+  }
+
+  .tox .tox-pop.tox-pop--bottom::after {
+    border-top-color: var(--osc-chrome);
+  }
+
+  .tox .tox-pop.tox-pop--bottom::before {
+    border-top-color: var(--osc-rule-strong);
+  }
+
+  .tox .tox-pop.tox-pop--top::after {
+    border-bottom-color: var(--osc-chrome);
+  }
+
+  .tox .tox-pop.tox-pop--top::before {
+    border-bottom-color: var(--osc-rule-strong);
+  }
+
+  .tox .tox-pop.tox-pop--left::after {
+    border-right-color: var(--osc-chrome);
+  }
+
+  .tox .tox-pop.tox-pop--left::before {
+    border-right-color: var(--osc-rule-strong);
+  }
+
+  .tox .tox-pop.tox-pop--right::after {
+    border-left-color: var(--osc-chrome);
+  }
+
+  .tox .tox-pop.tox-pop--right::before {
+    border-left-color: var(--osc-rule-strong);
+  }
+
+  // --- Dialogs (link, table, source code, …) --------------------------------
+  .tox .tox-dialog-wrap__backdrop {
+    background-color: rgba(0, 0, 0, .38);
+  }
+
+  .tox .tox-dialog {
+    background-color: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 6px;
+    box-shadow: var(--osc-shadow-modal);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-dialog__header {
+    background-color: var(--osc-bench);
+    color: var(--osc-ink);
+    padding: 1rem 1.35rem .25rem;
+  }
+
+  .tox .tox-dialog__title {
+    font-family: var(--bs-body-font-family);
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+
+  .tox .tox-dialog__body {
+    color: var(--osc-ink);
+    font-size: .875rem;
+  }
+
+  .tox .tox-dialog__body-content {
+    padding: .9rem 1.35rem 1.1rem;
+  }
+
+  .tox .tox-dialog__footer {
+    background-color: var(--osc-bench-warm);
+    border-top: 1px solid var(--osc-rule);
+    padding: .75rem 1.35rem;
+  }
+
+  .tox .tox-dialog__busy-spinner {
+    background-color: rgba(var(--bs-body-bg-rgb), .75);
+  }
+
+  .tox .tox-spinner > div {
+    background-color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-dialog__body-nav-item {
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-dialog__body-nav-item:focus {
+    background-color: var(--osc-bronze-tint);
+  }
+
+  .tox .tox-dialog__body-nav-item--active {
+    border-bottom-color: var(--osc-bronze);
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-dialog__body-content .tox-form__group h1,
+  .tox .tox-dialog__body-content .tox-form__group h2 {
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-form__group--error {
+    color: var(--osc-danger);
+  }
+
+  // --- Dialog form controls -------------------------------------------------
+  .tox .tox-label,
+  .tox .tox-toolbar-label {
+    color: var(--osc-ink-emphasis);
+    font-size: .8125rem;
+    font-weight: 500;
+  }
+
+  .tox .tox-listboxfield .tox-listbox--select,
+  .tox .tox-textarea,
+  .tox .tox-textfield,
+  .tox .tox-toolbar-textfield,
+  .tox .tox-selectfield select {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-rule-strong);
+    border-radius: 4px;
+    color: var(--osc-ink);
+    font-family: var(--bs-body-font-family);
+    font-size: .875rem;
+  }
+
+  .tox .tox-listboxfield .tox-listbox--select:focus,
+  .tox .tox-textarea:focus,
+  .tox .tox-textfield:focus,
+  .tox .tox-toolbar-textfield:focus,
+  .tox .tox-selectfield select:focus,
+  .tox .tox-custom-editor:focus-within,
+  .tox .tox-textarea-wrap:focus-within {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-bronze);
+    box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .2);
+  }
+
+  .tox .tox-listboxfield .tox-listbox--select[disabled],
+  .tox .tox-textarea[disabled],
+  .tox .tox-textfield[disabled],
+  .tox .tox-toolbar-textfield[disabled],
+  .tox .tox-selectfield select[disabled] {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-navobj-bordered::before {
+    border-color: var(--osc-rule-strong);
+  }
+
+  .tox .tox-navobj-bordered-focus.tox-navobj-bordered::before {
+    border-color: var(--osc-bronze);
+    box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .2);
+  }
+
+  .tox .tox-color-input span {
+    border-color: var(--osc-rule-strong);
+    border-radius: 4px;
+  }
+
+  .tox .tox-color-input span:focus:not([aria-disabled="true"]),
+  .tox .tox-color-input span:hover:not([aria-disabled="true"]) {
+    border-color: var(--osc-bronze);
+  }
+
+  .tox .tox-checkbox__icons .tox-checkbox-icon__unchecked svg {
+    fill: var(--osc-rule-strong);
+  }
+
+  .tox .tox-checkbox__icons .tox-checkbox-icon__checked svg,
+  .tox .tox-checkbox__icons .tox-checkbox-icon__indeterminate svg {
+    fill: var(--osc-bronze);
+  }
+
+  .tox input.tox-checkbox__input:focus + .tox-checkbox__icons {
+    box-shadow: 0 0 0 2px var(--osc-bronze);
+  }
+
+  .tox .tox-checkbox--disabled,
+  .tox .tox-checkbox--disabled .tox-checkbox__icons .tox-checkbox-icon__checked svg,
+  .tox .tox-checkbox--disabled .tox-checkbox__icons .tox-checkbox-icon__unchecked svg {
+    color: var(--osc-ink-muted);
+    fill: var(--osc-ink-muted);
+  }
+
+  // The width/height pair in the table and image dialogs.
+  .tox .tox-number-input,
+  .tox .tox-number-input:focus {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule-strong);
+    border-radius: 4px;
+  }
+
+  .tox .tox-number-input input,
+  .tox .tox-number-input button {
+    color: var(--osc-ink);
+    font-size: .875rem;
+  }
+
+  .tox .tox-number-input input:hover,
+  .tox .tox-number-input input:focus,
+  .tox .tox-number-input button:hover,
+  .tox .tox-number-input button:focus,
+  .tox .tox-number-input .tox-input-wrapper:focus,
+  .tox .tox-number-input:focus:not(:active) > .tox-input-wrapper,
+  .tox .tox-number-input:focus:not(:active) > button {
+    background: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-number-input button:active {
+    background: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  .tox .tox-number-input button svg,
+  .tox .tox-number-input button:hover svg,
+  .tox .tox-number-input button:active svg {
+    fill: currentColor;
+  }
+
+  .tox .tox-number-input input:disabled,
+  .tox .tox-number-input button:disabled {
+    background: transparent;
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-number-input button:disabled svg {
+    fill: var(--osc-ink-muted);
+  }
+
+  // --- Dialog buttons -------------------------------------------------------
+  .tox .tox-button {
+    background-color: var(--osc-bronze);
+    border-color: var(--osc-bronze);
+    border-radius: 4px;
+    color: var(--osc-ink-inverse);
+    font-family: var(--bs-body-font-family);
+    font-size: .875rem;
+    font-weight: 500;
+  }
+
+  .tox .tox-button:focus:not(:disabled),
+  .tox .tox-button:hover:not(:disabled),
+  .tox .tox-button.tox-button--enabled,
+  .tox .tox-button.tox-button--enabled:focus:not(:disabled),
+  .tox .tox-button.tox-button--enabled:hover:not(:disabled) {
+    background-color: var(--osc-bronze-deep);
+    border-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
+  }
+
+  .tox .tox-button:active:not(:disabled),
+  .tox .tox-button.tox-button--enabled:active:not(:disabled) {
+    background-color: var(--osc-bronze-deep);
+    border-color: var(--osc-bronze-deep);
+    color: var(--osc-ink-inverse);
+  }
+
+  .tox .tox-button[disabled],
+  .tox .tox-button.tox-button--enabled[disabled] {
+    background-color: var(--osc-bronze);
+    border-color: var(--osc-bronze);
+    color: var(--osc-ink-inverse);
+    opacity: .5;
+  }
+
+  .tox .tox-button::before {
+    box-shadow: none;
+  }
+
+  .tox .tox-button:focus:not(:disabled)::before {
+    box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .35);
+  }
+
+  .tox .tox-button--secondary,
+  .tox .tox-button--secondary--outline {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-rule-strong);
+    border-radius: 4px;
+    color: var(--osc-ink);
+    font-size: .875rem;
+    font-weight: 500;
+  }
+
+  .tox .tox-button--secondary:focus:not(:disabled),
+  .tox .tox-button--secondary:hover:not(:disabled),
+  .tox .tox-button--secondary--outline:focus:not(:disabled),
+  .tox .tox-button--secondary--outline:hover:not(:disabled) {
+    background-color: var(--osc-bench-warm);
+    border-color: var(--osc-ink-muted);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-button--secondary:active:not(:disabled),
+  .tox .tox-button--secondary--outline:active:not(:disabled) {
+    background-color: var(--osc-bench-sunk);
+    border-color: var(--osc-ink-muted);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-button--secondary.tox-button--enabled,
+  .tox .tox-button--secondary.tox-button--enabled:focus:not(:disabled),
+  .tox .tox-button--secondary.tox-button--enabled:hover:not(:disabled),
+  .tox .tox-button--secondary.tox-button--enabled:active:not(:disabled) {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-button--secondary[disabled],
+  .tox .tox-button--secondary.tox-button--enabled[disabled],
+  .tox .tox-button--secondary--outline[disabled] {
+    background-color: var(--osc-bench-sunk);
+    border-color: var(--osc-rule);
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-button--naked {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-button--naked:focus:not(:disabled),
+  .tox .tox-button--naked:hover:not(:disabled) {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-button--naked:active:not(:disabled) {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-button--naked[disabled] {
+    color: var(--osc-ink-muted);
+  }
+
+  .tox .tox-button--naked.tox-button--enabled,
+  .tox .tox-button--naked.tox-button--enabled:focus:not(:disabled),
+  .tox .tox-button--naked.tox-button--enabled:hover:not(:disabled),
+  .tox .tox-button--naked.tox-button--enabled:active:not(:disabled) {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+
+  // --- Tooltips -------------------------------------------------------------
+  .tox .tox-tooltip__body {
+    background-color: var(--osc-ink);
+    border-radius: 4px;
+    color: var(--osc-ink-inverse);
+    font-size: .8125rem;
+    font-weight: 500;
+  }
+
+  .tox .tox-tooltip--down .tox-tooltip__arrow {
+    border-top-color: var(--osc-ink);
+  }
+
+  .tox .tox-tooltip--up .tox-tooltip__arrow {
+    border-bottom-color: var(--osc-ink);
+  }
+
+  .tox .tox-tooltip--right .tox-tooltip__arrow {
+    border-left-color: var(--osc-ink);
+  }
+
+  .tox .tox-tooltip--left .tox-tooltip__arrow {
+    border-right-color: var(--osc-ink);
+  }
+
+  // --- Notifications --------------------------------------------------------
+  .tox .tox-notification {
+    border-radius: 4px;
+    font-size: .8125rem;
+  }
+
+  .tox .tox-notification:focus {
+    border-color: var(--osc-bronze);
+    box-shadow: 0 0 0 3px rgba(var(--osc-bronze-rgb), .2);
+  }
+
+  .tox .tox-notification__body,
+  .tox .tox-notification--success,
+  .tox .tox-notification--error,
+  .tox .tox-notification--warn,
+  .tox .tox-notification--warning,
+  .tox .tox-notification--info,
+  .tox .tox-notification--success p,
+  .tox .tox-notification--error p,
+  .tox .tox-notification--warn p,
+  .tox .tox-notification--warning p,
+  .tox .tox-notification--info p {
+    color: var(--osc-ink);
+  }
+
+  .tox .tox-notification--success {
+    background-color: var(--osc-success-tint);
+    border-color: var(--osc-success);
+  }
+
+  .tox .tox-notification--success a,
+  .tox .tox-notification--success svg {
+    color: var(--osc-success);
+    fill: var(--osc-success);
+  }
+
+  .tox .tox-notification--error {
+    background-color: var(--osc-danger-tint);
+    border-color: var(--osc-danger);
+  }
+
+  .tox .tox-notification--error a,
+  .tox .tox-notification--error svg {
+    color: var(--osc-danger);
+    fill: var(--osc-danger);
+  }
+
+  .tox .tox-notification--warn,
+  .tox .tox-notification--warning {
+    background-color: var(--osc-warning-tint);
+    border-color: var(--osc-warning);
+  }
+
+  .tox .tox-notification--warn a,
+  .tox .tox-notification--warning a,
+  .tox .tox-notification--warn svg,
+  .tox .tox-notification--warning svg {
+    color: var(--osc-warning-deep);
+    fill: var(--osc-warning-deep);
+  }
+
+  .tox .tox-notification--info {
+    background-color: var(--osc-info-tint);
+    border-color: var(--osc-info);
+  }
+
+  .tox .tox-notification--info a,
+  .tox .tox-notification--info svg {
+    color: var(--osc-info);
+    fill: var(--osc-info);
+  }
+}

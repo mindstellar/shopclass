@@ -213,17 +213,81 @@ window.addEventListener('load', function () {
         });
     });
 });
-// TinyMCE draws its toolbar from a UI skin and its editing surface from a separate
-// content skin inside an iframe. Neither inherits the admin's dark mode, so an
-// editor sat as a bright white panel in a dark admin. Pick the matching pair at
-// init time; the theme is read from the same data-bs-theme the rest of the admin
-// uses. (Switching theme after an editor is up needs a re-init, so it follows on
-// the next page load rather than live.)
-window.oscTinymceTheme = function () {
-    var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+// TinyMCE's toolbar, menus and dialogs are ordinary elements the admin stylesheet
+// paints from the theme tokens, so they follow data-bs-theme on their own. The
+// editing surface is an iframe -- a separate document, where those tokens do not
+// exist -- so the current values are copied onto its root and consumed by a small
+// sheet of the same rules TinyMCE's own content skin sets.
+(function () {
+    'use strict';
 
-    return { skin: dark ? 'oxide-dark' : 'oxide', content_css: dark ? 'dark' : 'default' };
-};
+    var TOKENS = [
+        '--osc-bench', '--osc-bench-sunk', '--osc-ink', '--osc-ink-muted',
+        '--osc-bronze', '--osc-rule-strong'
+    ];
+
+    var SHEET = 'body{background-color:var(--osc-bench);color:var(--osc-ink)}'
+        + 'a{color:var(--osc-bronze)}'
+        + 'hr{border-color:var(--osc-rule-strong)}'
+        + 'code{background-color:var(--osc-bench-sunk);color:var(--osc-ink)}'
+        + 'figure figcaption{color:var(--osc-ink-muted)}'
+        + 'table[border]:not([border="0"]):not([style*=border-color]) td,'
+        + 'table[border]:not([border="0"]):not([style*=border-color]) th'
+        + '{border-color:var(--osc-rule-strong)}'
+        + '.mce-content-body:not([dir=rtl]) blockquote{border-left-color:var(--osc-rule-strong)}'
+        + '.mce-content-body[dir=rtl] blockquote{border-right-color:var(--osc-rule-strong)}';
+
+    function paint(editor) {
+        var doc = editor && editor.getDoc && editor.getDoc();
+        if (!doc || !doc.documentElement || !doc.head) {
+            return;
+        }
+        var style = doc.getElementById('osc-editor-theme');
+        if (!style) {
+            style = doc.createElement('style');
+            style.id = 'osc-editor-theme';
+            style.textContent = SHEET;
+            doc.head.appendChild(style);
+        }
+        var from = getComputedStyle(document.documentElement);
+        var root = doc.documentElement;
+        TOKENS.forEach(function (name) {
+            root.style.setProperty(name, from.getPropertyValue(name).trim());
+        });
+        root.style.colorScheme =
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+    }
+
+    function paintAll() {
+        if (typeof tinymce !== 'undefined') {
+            tinymce.get().forEach(paint);
+        }
+    }
+
+    // Registered before any screen mounts an editor, so every editor on the page is
+    // covered -- including the ones other screens and plugins mount themselves.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        tinymce.on('AddEditor', function (e) {
+            e.editor.on('init', function () {
+                paint(e.editor);
+            });
+        });
+        paintAll();
+
+        new MutationObserver(function (records) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].attributeName === 'data-bs-theme') {
+                    paintAll();
+
+                    return;
+                }
+            }
+        }).observe(document.documentElement, { attributes: true });
+    });
+})();
 
 // Select-all for a list's bulk-action column. Every list screen shipped its own
 // copy of this listener; it is one behaviour, so it lives once. Delegated from the

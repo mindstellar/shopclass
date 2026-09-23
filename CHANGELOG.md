@@ -134,8 +134,8 @@ In development.
   wrong with it.
 - A rejected save on either editor comes back with what was typed still in it, the message
   under the field it belongs to and the locale tab marked.
-- The rich-text editor follows the admin's light/dark toggle instead of keeping the skin it
-  loaded with.
+- The rich-text editor is drawn in the admin's own colours, type and corners -- toolbar,
+  menus, dialogs and status bar -- and follows the light/dark toggle without reloading.
 - The admin is set at 14px instead of 16px, so more of a list fits on screen. It is set on the
   root, so it still follows a larger browser font size if you have set one.
 - List rows read in three sizes instead of one, and the status column drops its fill — the
