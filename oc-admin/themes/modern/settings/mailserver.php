@@ -75,7 +75,7 @@ function customHead()
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     };
                     if (controller) { opts.signal = controller.signal; }
-                    fetch("<?php echo osc_admin_base_url(true)?>?page=ajax&action=test_mail", opts)
+                    fetch(<?php echo json_encode(osc_admin_base_url(true) . '?page=ajax&action=test_mail&' . osc_csrf_token_url()); ?>, opts)
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
                             show(data.html, data.status == 1);

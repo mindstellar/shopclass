@@ -832,6 +832,7 @@ class CAdminAjax extends AdminSecBaseModel
                 require_once $resolved;
                 break;
             case 'test_mail':
+                osc_csrf_check();
                 $title = sprintf(__('Test email, %s'), osc_page_title());
                 $body  = __('Test email') . '<br><br>' . osc_page_title();
 
