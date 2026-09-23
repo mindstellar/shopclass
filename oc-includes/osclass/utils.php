@@ -584,8 +584,8 @@ function _osc_mail_text($html)
 /**
  * The plain copy a mail is sent with.
  *
- * Every core mail builder hands over its HTML as alt_body, so HTML there is converted
- * rather than sent as markup. A plain copy written by hand is sent as written.
+ * With no alt_body, or HTML in it, the copy is made from the HTML. A plain copy
+ * written by hand is sent as written.
  *
  * @param array<string,mixed> $params osc_sendMail() parameters
  *

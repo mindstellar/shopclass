@@ -170,7 +170,7 @@ foreach (array('hourly', 'daily', 'weekly') as $period) {
         . '<a href="http://example.com/unsub?id=12&email=michael%40example.com&secret=SEC">unsubscribe alert</a>',
         $out['sent'][0]['body']
     );
-    pin('the plain-text part is the same', $out['sent'][0]['body'], $out['sent'][0]['alt_body']);
+    pin('no plain copy is handed over, so osc_sendMail() makes one', false, isset($out['sent'][0]['alt_body']));
 
     harness_section('the ' . $period . ' digest, to someone with no account');
 

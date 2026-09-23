@@ -91,7 +91,6 @@ function fn_email_alert_validation($alert, $email, $secret)
         'to_name'  => $user['s_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
@@ -179,7 +178,6 @@ function _alert_email_deliver($user, $title, $body)
         'to_name'  => $user['s_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     ));
 }
 
@@ -462,7 +460,6 @@ function fn_email_comment_validated($aComment)
             'to_name'  => $aComment['s_author_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
     }
@@ -543,7 +540,6 @@ function fn_email_new_item_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
@@ -623,7 +619,6 @@ function fn_email_user_forgot_password($user, $password_url)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
 
         osc_sendMail($emailParams);
@@ -688,7 +683,6 @@ function fn_email_user_registration($user)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
 
         osc_sendMail($emailParams);
@@ -759,7 +753,6 @@ function fn_email_new_email($new_email, $validation_url)
             'to_name'  => Session::newInstance()->_get('userName'),
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
         osc_add_flash_ok_message(_m("We've sent you an e-mail. Follow its instructions to validate the changes"));
@@ -836,7 +829,6 @@ function fn_email_user_validation($user, $input)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
     }
@@ -1009,7 +1001,6 @@ function fn_email_item_inquiry($aItem)
         'reply_to'  => $yourEmail,
         'subject'   => $title,
         'body'      => $body,
-        'alt_body'  => $body
     );
 
     if (osc_notify_contact_item()) {
@@ -1132,7 +1123,6 @@ function fn_email_new_comment_admin($aItem)
                 'to_name'  => __('Admin'),
                 'subject'  => $title_email,
                 'body'     => $body_email,
-                'alt_body' => $body_email
             );
             osc_sendMail($emailParams);
         }
@@ -1245,7 +1235,6 @@ function fn_email_item_validation($item)
         'to_name'  => $contactName,
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
     osc_sendMail($emailParams);
 }
@@ -1365,7 +1354,6 @@ function fn_email_admin_new_item($item)
                 'to_name'  => __('Admin'),
                 'subject'  => $title,
                 'body'     => $body,
-                'alt_body' => $body
             );
             osc_sendMail($emailParams);
         }
@@ -1494,7 +1482,6 @@ function fn_email_item_validation_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
@@ -1561,7 +1548,6 @@ function fn_email_admin_new_user($user)
                     'to_name'  => osc_page_title(),
                     'subject'  => $title,
                     'body'     => $body,
-                    'alt_body' => $body,
                 );
                 osc_sendMail($emailParams);
             }
@@ -1653,7 +1639,6 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         'reply_to' => $yourEmail,
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     if (osc_notify_contact_item()) {
@@ -1758,7 +1743,6 @@ function fn_email_new_comment_user($aItem)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1824,7 +1808,6 @@ function fn_email_new_admin($data)
         'to_name'  => $data['s_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1911,7 +1894,6 @@ function fn_email_warn_expiration($aItem)
         'to_name'  => $aItem['s_contact_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1979,7 +1961,6 @@ function fn_email_auto_upgrade($result)
                 'to_name'  => osc_page_title(),
                 'subject'  => $title,
                 'body'     => $body,
-                'alt_body' => $body,
             );
             osc_sendMail($emailParams);
         }

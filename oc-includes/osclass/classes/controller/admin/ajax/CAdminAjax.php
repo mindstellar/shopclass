@@ -840,7 +840,6 @@ class CAdminAjax extends AdminSecBaseModel
                     'to'       => osc_contact_email(),
                     'to_name'  => 'admin',
                     'body'     => $body,
-                    'alt_body' => $body
                 );
 
                 $array = array();
@@ -862,7 +861,6 @@ class CAdminAjax extends AdminSecBaseModel
                     'to'       => $email,
                     'to_name'  => 'admin',
                     'body'     => $body,
-                    'alt_body' => $body
                 );
 
                 $array = array();
