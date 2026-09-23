@@ -860,6 +860,17 @@ emits(
     '<li class="ui-tabs-active ui-state-active" data-osc-tab-mine title="Your admin language"><a href="#field-s_title-es_ES">'
 );
 pin('only one tab per strip is marked', 2, substr_count($mine, 'data-osc-tab-mine'));
+// A locale's name and a panel id are printed into markup, so both are escaped.
+$tab = \mindstellar\admin\ui\Field::localeTab('p"x', '<b>De</b>&"', 'de_DE', 'de_DE');
+pin(
+    'a tab escapes the name it shows and the panel it points at',
+    array(false, true, true),
+    array(
+        strpos($tab, '<b>') !== false,
+        strpos($tab, '&lt;b&gt;De&lt;/b&gt;&amp;&quot;') !== false,
+        strpos($tab, 'href="#p&quot;x"') !== false,
+    )
+);
 pin(
     'a language the field does not offer opens the first tab and marks none',
     array(0, array(true, false)),
