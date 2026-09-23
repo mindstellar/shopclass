@@ -124,6 +124,9 @@ In development.
 
 ### Changed
 
+- The search URL builder declares its five subdomain modes, its two canonical place
+  URLs, its filter names and its country/region/city lists once each, instead of
+  writing each one out in full.
 - Core page URLs and the rewrite rules that match them are declared once, in a shared
   route table, instead of being written out twice. The listing, page and category permalink
   structures go through the same table, so a link and the rule that answers it cannot drift.
