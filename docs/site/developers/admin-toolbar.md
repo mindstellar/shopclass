@@ -29,8 +29,8 @@ AdminToolbar::newInstance()->add_menu(array(
 
 ## Hooking it up
 
-Nodes must be added while the toolbar is being built, which is what the
-`add_admin_toolbar_menus` hook is for:
+Add a node on the `add_admin_toolbar_menus` hook. It fires while the toolbar
+is being built:
 
 ```php
 function myplugin_toolbar()
@@ -46,11 +46,11 @@ function myplugin_toolbar()
 osc_add_hook('add_admin_toolbar_menus', 'myplugin_toolbar', 0);
 ```
 
-The third argument is priority — lower runs earlier, so `0` puts your node near
-the front of the bar.
+The third argument is priority. Lower numbers run earlier, so `0` puts your
+node near the front of the bar.
 
 ## Keep it to one
 
-The toolbar is shared by every plugin on the install and it is narrow. One node
-per plugin, with a short label; put everything else behind an
+The toolbar is shared by every plugin on the install, and it is narrow. Add
+one node per plugin, with a short label. Put everything else behind an
 [admin menu entry](/docs/developers/admin-menus/).

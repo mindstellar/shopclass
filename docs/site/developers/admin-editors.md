@@ -5,18 +5,18 @@ sidebar:
   order: 7
 ---
 
-A settings page is a list of preferences, and core will
+A settings page is a list of preferences. Core will
 [declare and render the whole thing](/docs/developers/settings-pages/) for you. An
 **editor** is different: one record, a main column of content, a rail of panels beside it
-saying what state the record is in, and one Save at the foot.
+showing what state the record is in, and one Save at the foot.
 
 Core's listing and page editors are built from a set of helpers, and those helpers are
-public. Your plugin's own add/edit screen can use them, which means it looks like the rest
-of the admin on every install — and keeps looking like it when the admin theme changes.
+public. Your plugin's own add/edit screen can use them too. It then looks like the rest
+of the admin on every install, and keeps looking that way when the admin theme changes.
 
-Everything here lives in `oc-includes/osclass/helpers/hAdminUi.php`, is wrapped in
-`function_exists()`, takes one options array, and escapes every value it is handed. Only a
-key ending in `_html` is passed through raw.
+Everything here lives in `oc-includes/osclass/helpers/hAdminUi.php`. Each helper is
+wrapped in `function_exists()`, takes one options array, and escapes every value it is
+handed. Only a key ending in `_html` is passed through raw.
 
 ## The shell
 
@@ -46,7 +46,7 @@ osc_admin_editor_close(array(
 `osc_admin_editor_open()` emits the `<form>`, its hidden route, the CSRF token, the error
 summary and the main column. It takes everything
 [`osc_admin_form_open()`](/docs/developers/settings-pages/) takes — `action`, `page`, `url`,
-`method`, `fields`, `name`, `id`, `class`, `upload`, `csrf` — and always opens the form
+`method`, `fields`, `name`, `id`, `class`, `upload`, `csrf`. It always opens the form
 unwrapped, because an editor stacks its labels above its controls. Plus:
 
 | Key | What it does |
@@ -60,15 +60,15 @@ unwrapped, because an editor stacks its labels above its controls. Plus:
 **Skip this call and you get one full-width column** — right for a screen with nothing to
 say about state.
 
-`osc_admin_editor_close($actions, $opts)` closes the form on the sticky save bar that counts
-what has changed since the page loaded. A second argument of `array('dirty' => false)` makes
-it a plain action row; `null` in place of `$actions` emits no row at all, for a screen whose
-buttons live elsewhere. Each action takes `label`, `url` or `type`, `variant`
-(`primary`, `secondary`, `dim`, `danger`, `outline-danger`), `icon`, `class`, `title` and
-`attrs`.
+`osc_admin_editor_close($actions, $opts)` closes the form with the sticky save bar. It
+counts what has changed since the page loaded. A second argument of
+`array('dirty' => false)` makes it a plain action row. `null` in place of `$actions` emits
+no row at all, for a screen whose buttons live elsewhere. Each action takes `label`, `url`
+or `type`, `variant` (`primary`, `secondary`, `dim`, `danger`, `outline-danger`), `icon`,
+`class`, `title` and `attrs`.
 
-The grid is CSS grid, not Bootstrap columns. From 992px up the rail is 20rem wide and
-sticky; below that there is one column and **the rail comes first**, so a moderator on a
+The grid is CSS grid, not Bootstrap columns. From 992px up, the rail is 20rem wide and
+sticky. Below that there is one column, and **the rail comes first** — so a moderator on a
 phone reaches the record's state without scrolling past its body.
 
 ## The status panel
@@ -109,10 +109,12 @@ osc_admin_publish_panel(array(
 and `uninstalled`. **An unmapped state still renders**, in the neutral tint, so your own
 word degrades instead of vanishing.
 
-Two rules the panel enforces for you: no Save lives inside it — a form has one primary, and
-it is the save bar — and a destructive action uses `outline-danger`, which paints from the
-theme's own danger token. Bootstrap's `.btn-outline-danger` reads a colour nothing re-points
-per theme and lands at 2.86:1 on a dark card.
+The panel enforces two rules for you:
+
+- No Save lives inside it. A form has one primary, and it is the save bar.
+- A destructive action uses `outline-danger`, which paints from the theme's own danger
+  token. Bootstrap's `.btn-outline-danger` reads a colour nothing re-points per theme, and
+  lands at 2.86:1 on a dark card.
 
 ## Fields
 
@@ -120,12 +122,12 @@ per theme and lands at 2.86:1 on a dark card.
 its keys matter most on an editor.
 
 **`error`** puts the message under the control it belongs to, marks the control invalid, and
-wires `aria-describedby`. On a translated field it takes a map of locale code to message.
+wires `aria-describedby`. On a translated field, it takes a map of locale code to message.
 
-**`translate`** expands one field into one control per locale under a tab strip.
-**`translate_name`** says how one locale's posted name is spelled, `%s` standing for the
-locale code. Without it the name is the field's name with the code appended — which is what
-existing callers get, so nothing changed under them.
+**`translate`** expands one field into one control per locale, under a tab strip.
+**`translate_name`** says how one locale's posted name is spelled, with `%s` standing for
+the locale code. Without it, the name is the field's name with the code appended — which is
+what existing callers already get, so nothing changed under them.
 
 `locales` carries the list, as `code => name`. It is required: the field never queries
 anything to draw itself, so `translate` with no `locales` renders one plain control.
@@ -156,9 +158,9 @@ osc_admin_field(array(
 A tab whose panel holds an error is marked, so the error is findable without opening every
 locale in turn.
 
-**`'type' => 'richtext'`** renders a textarea that one shared script turns into the admin's
-rich-text editor after load, already following the light/dark toggle. No `tinymce.init` of
-your own, and no selecting editors by a name pattern.
+**`'type' => 'richtext'`** renders a textarea. One shared script turns it into the admin's
+rich-text editor after load, already following the light/dark toggle. Write no
+`tinymce.init` of your own, and select no editors by a name pattern.
 
 ```php
 osc_admin_field(array(
@@ -183,15 +185,15 @@ Each renders a composite control and posts the same plain names a hand-written f
 **`osc_admin_category_picker()`** — a control showing the chosen path, and a searchable list
 of the whole tree behind it. Keys: `name` (default `catId`), `id`, `value`, `label`,
 `required`, `help`, `error`, `categories` (rows carrying `pk_i_id`, `fk_i_parent_id` and
-`s_name`; the enabled tree by default). Picking fires `change` on the hidden field, so a
-script of yours can listen there.
+`s_name`; the enabled tree by default). Picking a category fires `change` on the hidden
+field, so a script of yours can listen for it.
 
 **`osc_admin_location_picker()`** — the country select, region and city inputs with their
 hidden ids, and the rest of the address behind a disclosure. Keys: `value` and `errors`
 keyed by `countryId`, `region`, `regionId`, `city`, `cityId`, `cityArea`, `zip`, `address`;
 `names` to post any of them under another name; `countries`; `detail` (`disclosure` by
 default, or `inline` or `none`); `label_*` per label. Every control keeps the id core's
-location autocomplete binds to, so the suggestions work with no script of your own.
+location autocomplete already binds to, so the suggestions work with no script of your own.
 
 **`osc_admin_user_picker()`** — the card when a registered user matches, and a search that
 fills the named fields when one is picked. Keys: `user` (an array with `name`, `email` and
@@ -222,16 +224,16 @@ Keys: `name` (default `photos`), `id`, `label`, `resources` (rows carrying `pk_i
 `delete_url`, `temp_url`, `secret`, `cover`.
 
 The file input keeps its posted name, so a browser with no JavaScript still uploads on
-submit. **The first tile is the cover**, and `cover => true` offers the control that moves a
-tile to the front — honoured only while every tile is still staged, because the save
+submit. **The first tile is the cover.** `cover => true` offers the control that moves a
+tile to the front. It works only while every tile is still staged, because the save
 attaches photos in the order it is handed them and stores no order afterwards. On a record
 that already has photos, the first one uploaded stays the cover.
 
 ## The disclosure
 
-A `<details>` for the settings a screen has to offer and nobody changes twice a year. It
-works with no JavaScript, the browser's in-page search finds inside it, and it opens itself
-when a field inside it carries an error.
+A `<details>` element for the settings a screen has to offer that nobody changes twice a
+year. It works with no JavaScript, the browser's in-page search finds inside it, and it
+opens itself when a field inside it carries an error.
 
 ```php
 osc_admin_disclosure_open(__('Advanced', 'acme'), array('summary_hint' => __('Internal name', 'acme')));
@@ -244,16 +246,16 @@ the title naming what is inside).
 
 ## A panel of your own
 
-The status panel is one shape of rail panel. For any other,
+The status panel is one shape of rail panel. For any other shape,
 `osc_admin_panel_open($title, $opts)` and `osc_admin_panel_close()` bracket a `.widget-box`
-you fill yourself — fields, a definition list via `osc_admin_definition($rows)`, a pill via
+you fill yourself: fields, a definition list via `osc_admin_definition($rows)`, a pill via
 `osc_admin_status($state, $word)`, whatever the record needs.
 
 ## Errors
 
-`osc_admin_editor_open()`'s `errors` map does two jobs at once: it draws the summary at the
+`osc_admin_editor_open()`'s `errors` map does two jobs at once. It draws the summary at the
 head of the form, and it is where the per-field messages come from. Pass the same map to
-your fields' `error` keys and a rejected save reads the same in both places.
+your fields' `error` keys, and a rejected save reads the same message in both places.
 
 ```php
 $errors = array('title' => __('Give the offer a title.', 'acme'));
@@ -411,24 +413,24 @@ osc_admin_editor_close(array(
 ));
 ```
 
-The save side is yours: read the posted names with `Params::getParamInt()` /
+The save side is yours. Read the posted names with `Params::getParamInt()` /
 `getParamString()`, check `osc_csrf_check()`, and build `$errors` for a re-render.
-`Params::getParam()` returns raw request data and is not sanitisation.
+`Params::getParam()` returns raw request data — it is not sanitisation.
 
 ## Hooking core's editors
 
-A plugin that renders into the listing or page editor — `item_form`, `item_edit`,
+A plugin that renders into the listing or page editor — on `item_form`, `item_edit`,
 `page_meta` — draws below the core fields, inside the same main column. Nothing about
 those hooks or their arguments changed. Draw your fields with `osc_admin_field()` and they
-match what is above them; hand-written markup keeps working as it always did.
+match what is above them. Hand-written markup keeps working as it always did.
 
-One thing that will catch your eye: inside the plugin-field panel a value's right edge sits
-in from core's fields above it. That is deliberate and long-standing — leave it alone, it is
-not your markup misbehaving.
+One thing that will catch your eye: inside the plugin-field panel, a value's right edge
+sits in from core's fields above it. That is deliberate and long-standing. Leave it alone —
+it is not your markup misbehaving.
 
 ## Class names you can target
 
-These are published and additive. Restyle them freely; they will not be renamed.
+These are published and additive. Restyle them freely — they will not be renamed.
 
 `osc-editor`, `osc-editor-main`, `osc-editor-side`, `osc-editor-cols`, `osc-editor-actions`,
 `osc-editor-title`, `osc-field`, `osc-field-required`, `osc-publish`, `osc-publish-status`,
@@ -441,9 +443,9 @@ These are published and additive. Restyle them freely; they will not be renamed.
 The rich-text field is the exception: it mounts a third-party editor, whose own markup is
 not a contract. Style it through `.osc-field` around it, not the editor's internals.
 
-An admin theme can replace any of these helpers by defining the function in its
-`functions.php`, which loads before core's — the same `function_exists()` contract every
-`osc_admin_*` helper has.
+An admin theme can replace any of these helpers by defining the function in its own
+`functions.php`, which loads before core's. That is the same `function_exists()` contract
+every `osc_admin_*` helper has.
 
 ## What these replace
 

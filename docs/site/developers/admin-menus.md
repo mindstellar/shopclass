@@ -22,9 +22,9 @@ osc_add_admin_menu_page(
 ```
 
 :::caution[Argument order]
-`$capability` comes **before** `$icon_url`. Older Osclass documentation had these
-two the other way round; passing an icon where a capability is expected silently
-hides your menu from every user.
+`$capability` comes **before** `$icon_url`. Older Osclass documentation had
+these two the other way round. Passing an icon where a capability is expected
+silently hides your menu from every user.
 :::
 
 ## Adding an entry under it
@@ -47,13 +47,13 @@ osc_remove_admin_submenu_page($menu_id, $submenu_id);
 osc_remove_admin_menu();                              // clears the lot
 ```
 
-Removing core entries is a blunt instrument — another plugin may be linking to
-what you just deleted. Prefer capabilities.
+Removing core entries is a blunt instrument: another plugin may be linking to
+what you just deleted. Use capabilities to hide a menu instead.
 
 ## Adding to an existing core section
 
-Most plugins belong under a section that already exists rather than in one of
-their own. There is a helper per core section:
+Most plugins belong under a section that already exists, not one of their
+own. There is a helper for each core section:
 
 ```php
 osc_admin_menu_items($submenu_title, $url, $submenu_id, $capability = null, $icon_url = null);
@@ -94,12 +94,12 @@ function myplugin_admin_menu()
 osc_add_hook('admin_menu_init', 'myplugin_admin_menu');
 ```
 
-Use a **unique** `$menu_id` — prefix it with your plugin folder. Two plugins
-claiming the same id will overwrite each other's menus.
+Use a **unique** `$menu_id`. Prefix it with your plugin folder — two plugins
+claiming the same id overwrite each other's menus.
 
 :::caution[Settings screens]
-Pointing a menu at a hand-written `admin/settings.php` is deprecated for settings.
-[Declare a settings page](/docs/developers/settings-pages/) instead — core adds its
-menu entry for you. For a screen that edits one record, build it from the
-[editor components](/docs/developers/admin-editors/).
+Pointing a menu at a hand-written `admin/settings.php` is deprecated for
+settings. [Declare a settings page](/docs/developers/settings-pages/) instead
+— core adds its menu entry for you. For a screen that edits one record, build
+it from the [editor components](/docs/developers/admin-editors/).
 :::
