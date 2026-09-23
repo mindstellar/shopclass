@@ -127,7 +127,7 @@ function _alert_email_template($internalName)
  */
 function _alert_email_recipient($user, $ads, $s_search)
 {
-    if ($user['fk_i_user_id'] != 0) {
+    if (isset($user['fk_i_user_id']) && $user['fk_i_user_id'] != 0) {
         $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
     } else {
         $user['s_name'] = $user['s_email'];
@@ -254,15 +254,13 @@ osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
  */
 function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_daily');
-    $page_description = $page['locale'];
+    $template = _alert_email_template('alert_email_daily');
 
     $_title = osc_apply_filter(
         'email_title',
         osc_apply_filter(
             'alert_email_daily_title',
-            $page_description[$prefLocale]['s_title'],
+            $template['s_title'],
             $user,
             $ads,
             $s_search,
@@ -274,7 +272,7 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
         'email_description',
         osc_apply_filter(
             'alert_email_daily_description',
-            $page_description[$prefLocale]['s_text'],
+            $template['s_text'],
             $user,
             $ads,
             $s_search,
@@ -283,62 +281,33 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
         )
     );
 
-    if (isset($user['fk_i_user_id']) && $user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
-        $user['s_name'] = $user['s_email'];
-    }
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
 
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
-
-    $title = osc_apply_filter(
-        'alert_email_daily_title_after',
-        osc_mailBeauty($_title, $words),
+    _alert_email_deliver(
         $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
+        osc_apply_filter(
+            'alert_email_daily_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_daily_description_after',
+            osc_mailBeauty($_body, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
-    $body  = osc_apply_filter(
-        'alert_email_daily_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
-    );
-
-    osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
