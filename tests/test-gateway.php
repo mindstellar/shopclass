@@ -55,6 +55,12 @@ function osc_route_url($id, $args = array())
 {
     return WEB_PATH . 'index.php?page=route&route=' . $id . '&' . http_build_query($args);
 }
+// The billing URL helpers build from the core route table; hDefines.php, where
+// osc_core_url() lives, pulls in far more than this file needs.
+function osc_core_url($name, $args = array())
+{
+    return \mindstellar\routing\CoreRoutes::url($name, $args);
+}
 $GLOBALS['flash'] = array();
 function osc_add_flash_ok_message($msg, $section = 'pubMessages')
 {

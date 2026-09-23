@@ -579,8 +579,12 @@ function osc_search_url($params = null)
                 $category = Category::newInstance()->findBySlug($params['sCategory']);
             }
             if (isset($category['pk_i_id'])) {
-                $url = osc_get_preference('rewrite_cat_url');
-                if (preg_match('|{CATEGORIES}|', $url)) {
+                $values = array(
+                    'CATEGORY_NAME' => $category['s_slug'],
+                    'CATEGORY_SLUG' => $category['s_slug'], // the older spelling, still built
+                    'CATEGORY_ID'   => $category['pk_i_id'],
+                );
+                if (stripos((string)osc_get_preference('rewrite_cat_url'), '{CATEGORIES}') !== false) {
                     $categories           =
                         Category::newInstance()->hierarchy($category['pk_i_id']);
                     $sanitized_categories = array();
@@ -590,18 +594,13 @@ function osc_search_url($params = null)
                             $mCat->findByPrimaryKey($categories[$i - 1]['pk_i_id']);
                         $sanitized_categories[] = $tmpcat['s_slug'];
                     }
-                    $url = str_replace('{CATEGORIES}', implode('/', $sanitized_categories), $url);
+                    $values['CATEGORIES'] = implode('/', $sanitized_categories);
                 }
                 $seo_prefix = '';
                 if (osc_get_preference('seo_url_search_prefix') != '') {
                     $seo_prefix = osc_get_preference('seo_url_search_prefix') . '/';
                 }
-                // DEPRECATED : CATEGORY_SLUG is going to be removed in 3.4
-                $url = str_replace(
-                    array('{CATEGORY_NAME}', '{CATEGORY_SLUG}', '{CATEGORY_ID}'),
-                    array($category['s_slug'], $category['s_slug'], $category['pk_i_id']),
-                    $url
-                );
+                $url = \mindstellar\routing\CoreRoutes::expand('category', $values);
             } else {
                 // Search by a category which does not exists (by form)
                 // TODO CHANGE TO NEW ROUTES!!

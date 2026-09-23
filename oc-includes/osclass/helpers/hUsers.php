@@ -260,9 +260,9 @@ function osc_user_public_profile_url($id = null)
     if ($id != '') {
         if (osc_rewrite_enabled()) {
             $user = User::newInstance()->findByPrimaryKey($id);
-            $path = osc_base_url() . osc_get_preference('rewrite_user_profile') . '/' . $user['s_username'];
+            $path = osc_core_url('user_pub_profile', array('username' => $user['s_username']));
         } else {
-            $path = sprintf(osc_base_url(true) . '?page=user&action=pub_profile&id=%d', $id);
+            $path = osc_core_url('user_pub_profile_id', array('id' => (int)$id));
         }
     } else {
         $path = '';

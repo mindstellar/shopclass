@@ -646,11 +646,7 @@ function osc_billing_packages(): array
  */
 function osc_billing_wallet_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_wallet');
-    }
-
-    return osc_base_url(true) . '?page=billing';
+    return osc_core_url('billing_wallet');
 }
 
 /**
@@ -660,11 +656,7 @@ function osc_billing_wallet_url(): string
  */
 function osc_billing_buy_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_buy');
-    }
-
-    return osc_base_url(true) . '?page=billing&action=buy';
+    return osc_core_url('billing_buy');
 }
 
 /**
@@ -674,11 +666,7 @@ function osc_billing_buy_url(): string
  */
 function osc_billing_orders_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_orders');
-    }
-
-    return osc_base_url(true) . '?page=billing&action=orders';
+    return osc_core_url('billing_orders');
 }
 
 /**
@@ -692,7 +680,7 @@ function osc_billing_orders_url(): string
  */
 function osc_billing_upgrade_url(int $itemId): string
 {
-    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId;
+    return osc_core_url('billing_upgrade', array('itemId' => $itemId));
 }
 
 /**
@@ -871,7 +859,7 @@ function osc_item_can_bump(?array $item = null): bool
  */
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
-    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+    return osc_core_url('billing_upgrade', array('itemId' => $itemId, 'feature' => $feature));
 }
 
 /**

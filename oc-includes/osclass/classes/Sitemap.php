@@ -536,20 +536,21 @@ class Sitemap extends DAO
     public function itemUrl($itemId, $itemTitle, $itemCategory = '', $itemCity = '', $locale = '')
     {
         if (osc_rewrite_enabled()) {
-            $url = osc_get_preference('rewrite_item_url');
-            if (preg_match('{CATEGORIES}', $url)) {
+            $values = array(
+                'ITEM_ID'    => osc_sanitizeString($itemId),
+                'ITEM_CITY'  => osc_sanitizeString($itemCity),
+                'ITEM_TITLE' => osc_sanitizeString($itemTitle),
+            );
+            if (stripos((string)osc_get_preference('rewrite_item_url'), '{CATEGORIES}') !== false) {
                 $sanitizedCategories = array();
                 $cat                 = Category::newInstance()->hierarchy($itemCategory);
                 for ($i = count($cat); $i > 0; $i--) {
                     $sanitizedCategories[] = $cat[$i - 1]['s_slug'];
                 }
-                $url = str_replace('{CATEGORIES}', implode('/', $sanitizedCategories), $url);
+                $values['CATEGORIES'] = implode('/', $sanitizedCategories);
             }
-            $url = str_replace('{ITEM_ID}', osc_sanitizeString($itemId), $url);
-            $url = str_replace('{ITEM_CITY}', osc_sanitizeString($itemCity), $url);
-            $url = str_replace('{ITEM_TITLE}', osc_sanitizeString($itemTitle), $url);
-            $url = str_replace('?', '', $url);
-            $path = ($locale !== '') ? osc_base_url() . $locale . '/' . $url : osc_base_url() . $url;
+            $url  = \mindstellar\routing\CoreRoutes::expand('item', $values);
+            $path = osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $url;
         } else {
             $path = osc_item_url_ns($itemId, $locale);
         }

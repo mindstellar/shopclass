@@ -220,7 +220,7 @@ osc_register_form_context('page', array(
             $title = 'Page #' . $id;
         }
 
-        return array('label' => $title, 'url' => osc_base_url(true) . '?page=page&id=' . $id);
+        return array('label' => $title, 'url' => osc_core_url('page', array('id' => $id)));
     },
 ));
 

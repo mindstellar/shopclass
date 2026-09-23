@@ -689,13 +689,7 @@ function osc_item_is_spam()
  */
 function osc_item_link_spam()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=spam&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/spam/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'spam', 'id' => osc_item_id()));
 }
 
 /**
@@ -705,13 +699,7 @@ function osc_item_link_spam()
  */
 function osc_item_link_bad_category()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=badcat&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/badcat/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'badcat', 'id' => osc_item_id()));
 }
 
 /**
@@ -721,13 +709,7 @@ function osc_item_link_bad_category()
  */
 function osc_item_link_repeated()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=repeated&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/repeated/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'repeated', 'id' => osc_item_id()));
 }
 
 /**
@@ -737,13 +719,7 @@ function osc_item_link_repeated()
  */
 function osc_item_link_offensive()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=offensive&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/offensive/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'offensive', 'id' => osc_item_id()));
 }
 
 /**
@@ -753,13 +729,7 @@ function osc_item_link_offensive()
  */
 function osc_item_link_expired()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=expired&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/expired/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'expired', 'id' => osc_item_id()));
 }
 
 // DEPRECATED: This function will be removed in version 4.0
@@ -905,8 +875,8 @@ function osc_comment_user_id()
  */
 function osc_delete_comment_url()
 {
-    return (string)osc_base_url(true) . '?page=item&action=delete_comment&id=' . osc_item_id() . '&comment='
-        . osc_comment_id() . '&' . osc_csrf_token_url();
+    return osc_core_url('item_delete_comment', array('id' => osc_item_id(), 'comment' => osc_comment_id()))
+        . '&' . osc_csrf_token_url();
 }
 
 //////////////////////////////

@@ -49,6 +49,14 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
+// The billing URL helpers delegate to the core route table; hDefines.php, where
+// osc_core_url() lives, pulls in far more than this file needs.
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = array())
+    {
+        return \mindstellar\routing\CoreRoutes::url($name, $args);
+    }
+}
 // hBilling.php also registers the wallet/buy/orders render targets, which needs
 // osc_register_render_target() from hTheme.php -- a no-op stand-in keeps that
 // registration harmless without pulling in hTheme.php.
