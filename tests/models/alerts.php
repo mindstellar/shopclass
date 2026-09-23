@@ -422,9 +422,18 @@ $targetSub = $seedAlert('sub@example.test', 66, '{"q":"sub"}', 'subSecret', 'DAI
 pin('the target starts subscribed (dt_unsub_date is NULL)', null, $rawColFor($targetSub, 'dt_unsub_date'));
 pin('unsub() reports one changed row', 1, $model->unsub($targetSub));
 check('dt_unsub_date is now populated', $rawColFor($targetSub, 'dt_unsub_date') !== null, 'still null');
-// A second unsub in the same second rewrites dt_unsub_date to the identical
-// value, so MySQL reports zero changed rows (affected_rows counts CHANGED rows).
-pin('a same-second repeat unsub reports zero changed rows (value unchanged)', 0, $model->unsub($targetSub));
+// affected_rows counts CHANGED rows, so a repeat unsub reports zero only while the new
+// dt_unsub_date is identical -- which holds within one second and not across a boundary.
+// Asserting the count alone made this a coin flip, so the stored value decides which
+// answer is correct and the count is checked against that.
+$unsubFirst  = $rawColFor($targetSub, 'dt_unsub_date');
+$unsubRows   = $model->unsub($targetSub);
+$unsubSecond = $rawColFor($targetSub, 'dt_unsub_date');
+pin(
+    'a repeat unsub reports a changed row only when the timestamp actually moved',
+    $unsubFirst === $unsubSecond ? 0 : 1,
+    $unsubRows
+);
 pin('unsubbing a non-existent id reports zero changed rows', 0, $model->unsub(987654));
 
 /* ----------------------------------------------------------------------------
