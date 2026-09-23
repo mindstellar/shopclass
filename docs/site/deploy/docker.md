@@ -5,9 +5,10 @@ sidebar:
   order: 1
 ---
 
-ShopClass publishes a self-contained image — Nginx, PHP-FPM and Supervisor in
-one container, with the Storefront theme baked in — that provisions itself on
-first boot.
+ShopClass publishes a self-contained image — Nginx (the web server), PHP-FPM
+(the process that runs the PHP code) and Supervisor (the tool that keeps both
+running), all in one container, with the Storefront theme baked in — that
+provisions itself on first boot.
 
 ```bash
 docker pull ghcr.io/mindstellar/shopclass:latest
@@ -25,8 +26,8 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 It comes up **already installed** at `http://localhost:8080`, admin at
-`/oc-admin/`. There is no installer to click through — the container runs the
-headless install itself from the environment.
+`/oc-admin/`. There is no installer to click through: the container installs
+itself from the environment when it first starts.
 
 ## Configuration
 
@@ -40,9 +41,9 @@ Everything is set from environment variables:
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
-| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the CIDRs to trust it from — see [putting it behind TLS](#putting-it-behind-tls) |
+| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`) — see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
-| `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx — see [page caching](/docs/configure/page-cache/). The image carries the purge module, so the nginx Cache plugin works with nothing further to configure |
+| `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx — see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 
 For a real deployment: point `DB_HOST` at a managed database, set `WEB_PATH` to
@@ -86,10 +87,11 @@ over itself, only to lose the write on the next redeploy.
 the admin market, or through `oc-cli.php market:install` / `market:update`,
 survives a redeploy.
 
-On every start the entrypoint reconciles the volume against the packages baked
-into the new image — installing any that are missing, refreshing any the image
-ships a newer version of — **without ever touching a package installed through
-the market**. You can run that yourself:
+On every start, the entrypoint (the script the container runs on startup)
+compares the volume against the packages baked into the new image: it installs
+any that are missing and refreshes any the image ships a newer version of —
+**without ever touching a package installed through the market**. You can run
+that step yourself:
 
 ```bash
 docker compose exec app php oc-cli.php package:reconcile
@@ -108,7 +110,8 @@ docker compose exec app php oc-cli.php user:reset-password --user=admin
 ## Cron in a container
 
 The container does not schedule anything for you. Run cron from the host, from
-a sidecar, or from your orchestrator:
+a sidecar (a small helper container running next to the app), or from your
+orchestrator (the system managing your containers, such as Kubernetes):
 
 ```cron
 */5 * * * * docker compose -f /path/to/docker-compose.prod.yml exec -T app php oc-cli.php cron
@@ -182,13 +185,13 @@ systemctl list-timers | grep certbot     # twice-daily check
 certbot renew --dry-run                  # prove the whole path works
 ```
 
-`certbot renew` is a no-op until a certificate is within 30 days of expiry, so
+`certbot renew` does nothing until a certificate is within 30 days of expiry, so
 running it often is free and expected. Two things keep it working:
 
-- **Leave port 80 open on the host.** The HTTP-01 challenge arrives there. The
-  redirect certbot adds is fine — Let's Encrypt follows it — but a firewall that
-  drops :80 entirely will fail every renewal, silently, until the certificate
-  expires.
+- **Leave port 80 open on the host.** The HTTP-01 challenge — Let's Encrypt's way
+  of confirming you control the domain — arrives there. The redirect certbot adds
+  is fine, since Let's Encrypt follows it, but a firewall that drops :80 entirely
+  will fail every renewal, silently, until the certificate expires.
 - **Do not hand-edit the `managed by Certbot` lines** in the server block. That
   is how certbot finds what to update.
 
@@ -206,21 +209,22 @@ TLS is invisible to ShopClass unless these are set:
 
 `X-Forwarded-Proto` is what makes the app treat the request as secure: it sets
 `HTTPS=on` for PHP, so `osc_is_ssl()` is true and the login cookie is issued with
-the `Secure` flag. Without it a visitor on HTTPS gets cookies that are not marked
-secure, and the app generates `http://` links.
+the `Secure` flag. Without it, a visitor on HTTPS gets cookies that are not
+marked secure, and the app generates `http://` links.
 
 `OSC_REAL_IP_TRUSTED` is the one people get wrong. When the host proxies into a
 published port, the container does not see `127.0.0.1` — it sees the Docker
-bridge gateway, an address like `172.19.0.1`. Trusting loopback there restores
-nothing, and every visitor arrives as the gateway, which collapses login
-throttling and abuse-report keying onto a single identity. `172.16.0.0/12`
-covers Docker's default pools; narrow it to your own gateway with
-`docker network inspect`.
+bridge gateway (the address Docker's internal network uses to reach the host),
+something like `172.19.0.1`. Trusting loopback there restores nothing, and every
+visitor arrives as the gateway, which collapses login throttling and abuse-report
+keying onto a single identity. `172.16.0.0/12` covers Docker's default pools;
+narrow it to your own gateway with `docker network inspect`.
 
 ### Other terminators
 
-An ALB, a Kubernetes ingress, Cloudflare or a managed platform all work the same
-way — the contract is the three settings above plus a proxy that sends
+An ALB (a cloud load balancer), a Kubernetes ingress (the routing rules for a
+Kubernetes cluster), Cloudflare or a managed platform all work the same way —
+the contract is the three settings above plus a proxy that sends
 `X-Forwarded-Proto`. Only the certificate's owner changes. See
 [security](/docs/deploy/security/) and the
 [caching contract](/docs/developers/caching/).
@@ -239,8 +243,8 @@ visitors send and therefore what the cache is keyed on. See
 Three things have to be true before a second instance is safe:
 
 1. **Uploads are offloaded to S3** — otherwise each instance has its own photos.
-2. **The object cache is memcached, not APCu** — APCu is per-process, so two
-   instances disagree.
+2. **The object cache is memcached, not APCu** — APCu lives inside one PHP
+   process, so two instances never see the same cache.
 3. **Cron runs once**, not once per instance.
 
 ## Local development

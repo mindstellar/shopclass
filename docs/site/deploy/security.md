@@ -5,9 +5,10 @@ sidebar:
   order: 2
 ---
 
-ShopClass ships with CSRF protection, hardened sessions, login throttling and
-CAPTCHA support. What follows is the deployment side — the parts that are your
-server's job rather than the application's.
+ShopClass ships with CSRF protection (stopping another site from tricking a
+visitor's browser into taking an action on yours), hardened sessions, login
+throttling and CAPTCHA support. What follows is the deployment side — the parts
+that are your server's job rather than the application's.
 
 ## Keep it updated
 
@@ -29,7 +30,8 @@ capturing.
 
 - Redirect HTTP to HTTPS at the web server.
 - Set `WEB_PATH` to the `https://` URL so generated links and e-mails match.
-- Consider HSTS once you are confident TLS will not be turned off.
+- Consider HSTS (a header that tells browsers to always use HTTPS for this
+  site) once you are confident TLS will not be turned off.
 
 ## File permissions
 
@@ -74,7 +76,8 @@ database structure and sometimes credentials to anyone who can trigger one.
 - **Remove accounts when people leave.**
 
 For a site where the admin panel has no reason to be publicly reachable, put it
-behind an IP allowlist, a VPN or an identity proxy at the web-server layer.
+behind an IP allowlist, a VPN, or an identity proxy (a separate login wall in
+front of the admin panel) at the web-server layer.
 
 Locked out? `php oc-cli.php user:reset-password --user=<name>` — see the
 [CLI reference](/docs/cli/).
@@ -86,9 +89,10 @@ IP and 10 per account in a 15-minute window.
 
 :::danger[Behind a proxy this needs configuring, or it protects nothing]
 If your site sits behind Cloudflare, a tunnel, a load balancer or any reverse
-proxy and the real client IP is not passed through, **every visitor arrives as
-the proxy**. The per-IP limit then treats your entire audience as one person,
-and abuse reports all key to the same address.
+proxy (a server in front of yours that passes requests through) and the real
+client IP is not passed through, **every visitor arrives as the proxy**. The
+per-IP limit then treats your entire audience as one person, and abuse reports
+all key to the same address.
 
 In the container image, set `OSC_REAL_IP_HEADER` to the header your proxy sets —
 `CF-Connecting-IP` behind Cloudflare. Behind a self-hosted proxy, restrict which
@@ -100,9 +104,9 @@ Tune the limits in **Settings → Spam and bots**.
 
 ## Bots and abuse
 
-Turn on a CAPTCHA for publishing and registration before the site is public, add
-a posting delay, and require e-mail validation. See
-[spam and abuse](/docs/use/spam-and-abuse/).
+Turn on a CAPTCHA (a check that tells a human from a bot) for publishing and
+registration before the site is public, add a posting delay, and require
+e-mail validation. See [spam and abuse](/docs/use/spam-and-abuse/).
 
 ## The database
 
@@ -115,8 +119,9 @@ a posting delay, and require e-mail validation. See
 
 Uploaded images are user-controlled files. Make sure your web server will not
 execute anything in the uploads directory — deny PHP execution under
-`oc-content/uploads/` at the server level. A polyglot file that is a valid image
-*and* valid PHP is a real technique.
+`oc-content/uploads/` at the server level. A single file can be a valid image
+and valid PHP at once (called a polyglot file) — this is a real attack
+technique, not a theoretical one.
 
 If you have [offloaded uploads to S3](/docs/use/media-and-storage/), the bucket
 should be public-read at most — never public-write.

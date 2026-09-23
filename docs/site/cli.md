@@ -6,7 +6,7 @@ sidebar:
 ---
 
 ShopClass ships a small command-line tool for the jobs that do not belong in a
-browser: scheduled tasks, migrations, recovering a locked-out admin, and
+browser: scheduled tasks, database migrations, recovering a locked-out admin, and
 installing packages on a server you deploy to from a script.
 
 ```bash
@@ -16,13 +16,15 @@ php oc-cli.php help          # list every command
 ```
 
 :::note[It cannot be reached over HTTP]
-`oc-cli.php` refuses any non-CLI SAPI and answers `403` if it is ever requested
-through the web server. The commands below are only reachable from a shell on
-the server, which is why they can do things the admin panel will not.
+`oc-cli.php` only runs from the command line. If you request it through a web
+browser, it answers `403` (forbidden) instead of running. So every command
+below needs a shell (a command-line session) on the server — which is also why
+these commands can do things the admin panel will not.
 :::
 
-Every command sets a proper exit code — `0` on success, non-zero on failure — so
-they slot into schedulers and monitoring without wrapper scripts.
+Every command ends with an **exit code**: `0` means it worked, anything else
+means it failed. Schedulers and monitoring tools can read this directly, with
+no wrapper script needed.
 
 ## Scheduled tasks
 
@@ -41,10 +43,10 @@ full setup:
 
 | Command | What it does |
 |---|---|
-| `install --unattended` | Headless install from environment variables or flags — no browser. |
+| `install --unattended` | Install with no browser — settings come from environment variables or flags. |
 | `db:upgrade [--skip-db] [--skip-reconcile]` | Run pending migrations, repairing a drifted schema first. `--skip-db` continues past false-positive query errors. |
-| `db:doctor` | Report where this database differs from what ShopClass declares. Changes nothing. Exits 1 when it finds anything. |
-| `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content` — a no-op outside a container image. |
+| `db:doctor` | Report where this database differs from what ShopClass declares. Changes nothing. Exits `1` when it finds anything. |
+| `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content`. Outside a container image, it does nothing. |
 | `version` | Print the installed version. |
 
 ## Recovering access
@@ -117,7 +119,8 @@ It exits non-zero only when the queue holds jobs the worker gave up on — a bac
 still draining is the normal case and exits `0`. An empty queue costs one query, so
 the entry is harmless to leave in place on a site that queues nothing.
 
-`storage:work` still works, as an alias for `jobs:work`.
+`storage:work` still works, as a deprecated alias for `jobs:work`. New crontabs
+should use `jobs:work` directly.
 
 `doctor` is the first thing to run when a site is misbehaving and you do not yet
 know why:
