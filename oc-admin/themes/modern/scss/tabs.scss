@@ -111,3 +111,15 @@
     }
   }
 }
+
+// The admin's own language: the tab a locale strip opens on, marked with a dot.
+.osc-tab li[data-osc-tab-mine] > a::after {
+  background-color: var(--osc-bronze);
+  border-radius: 50%;
+  content: "";
+  display: inline-block;
+  height: .375rem;
+  margin-inline-start: .375rem;
+  vertical-align: middle;
+  width: .375rem;
+}

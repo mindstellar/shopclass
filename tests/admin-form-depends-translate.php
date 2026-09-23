@@ -144,6 +144,11 @@ function osc_apply_filter($hook, $content = '', ...$args)
     return $content;
 }
 
+/** The admin's own language, which a locale strip opens on. */
+function osc_current_admin_locale()
+{
+    return $GLOBALS['__adminLocale'] ?? 'en_US';
+}
 require_once __DIR__ . '/lib/stubs.php';
 
 /** Register a filter listener for the duration of one assertion, and drop it after. */
@@ -231,7 +236,7 @@ function translate_widgets(string $html): array
 {
     $widgets = array();
     foreach (array_slice(explode('<div class="field-translate">', $html), 1) as $chunk) {
-        preg_match_all('#<li><a href="([^"]*)">#', $chunk, $tabs);
+        preg_match_all('#<li[^>]*><a href="([^"]*)">#', $chunk, $tabs);
         preg_match_all('#<div class="field-translate-panel" id="([^"]*)"( hidden)?>#', $chunk, $panels);
         $visible = array();
         foreach ($panels[1] as $i => $id) {
@@ -804,7 +809,7 @@ pin(
 
 $html = render_settings_page('multi');
 emits('the tab strip is the shared widget, not a private one', $html, '<div class="osc-tab">');
-emits('one tab per locale: the first', $html, '>English</a>');
+emits('one tab per locale: the first', $html, '>English <span class="visually-hidden">');
 emits('and the second', $html, '>Español</a>');
 emits('one control per locale: the first', $html, 'name="s_titleen_US"');
 emits('and the second', $html, 'name="s_titlees_ES"');
@@ -835,6 +840,32 @@ foreach ($widgets as $index => $widget) {
         array_values($widget['panels'])
     );
 }
+
+// The strip opens on the admin's own language, wherever it sits in the list, and marks it.
+$GLOBALS['__adminLocale'] = 'es_ES';
+$mine = render_settings_page('multi');
+$GLOBALS['__adminLocale'] = 'fr_FR';
+$other = render_settings_page('multi');
+unset($GLOBALS['__adminLocale']);
+foreach (translate_widgets($mine) as $index => $widget) {
+    pin(
+        'widget ' . $index . ': the admin\'s own language opens, not the first',
+        array(false, true),
+        array_values($widget['panels'])
+    );
+}
+emits(
+    'and its tab is the one marked',
+    $mine,
+    '<li class="ui-tabs-active ui-state-active" data-osc-tab-mine title="Your admin language"><a href="#field-s_title-es_ES">'
+);
+pin('only one tab per strip is marked', 2, substr_count($mine, 'data-osc-tab-mine'));
+pin(
+    'a language the field does not offer opens the first tab and marks none',
+    array(0, array(true, false)),
+    array(substr_count($other, 'data-osc-tab-mine'), array_values(translate_widgets($other)[0]['panels']))
+);
+
 $panelIds = array_merge(...array_map(static function ($widget) {
     return array_keys($widget['panels']);
 }, $widgets));

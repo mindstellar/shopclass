@@ -238,9 +238,7 @@ class UserForm extends Form
         if (count($locales) > 1) {
             echo '<ul>';
             foreach ($locales as $locale) {
-                $active = ($locale['pk_c_code'] === osc_current_admin_locale()) ? ' class="ui-tabs-active ui-state-active"' : '';
-                echo '<li' . $active . '><a href="#' . osc_esc_html($locale['pk_c_code']) . '">'
-                     . osc_esc_html($locale['s_name']) . '</a></li>';
+                echo \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code']);
             }
             echo '</ul>';
         }

@@ -440,6 +440,7 @@ class Field
         // strips on one screen can disagree, and a title in one language beside a body in
         // another is a mistake nothing on screen explains.
         $strip   = $tabs && ($spec['tabs'] ?? true);
+        $open    = self::openLocale($locales);
 
         echo '<div class="field-translate">';
         if ($strip) {
@@ -448,18 +449,19 @@ class Field
                 // A locale whose control was rejected says so on its tab, so the error is
                 // findable without opening every one of them.
                 $error = self::errorFor($spec, $code);
-                echo '<li'
-                    . ($error === ''
-                        ? ''
-                        : ' data-osc-tab-error title="' . osc_esc_html($error) . '"')
-                    . '><a href="#' . osc_esc_html(self::localePanelId($id, $code)) . '">'
-                    . osc_esc_html($localeName) . '</a></li>';
+                echo self::localeTab(
+                    self::localePanelId($id, $code),
+                    $localeName,
+                    (string)$code,
+                    $open,
+                    $error === '' ? '' : ' data-osc-tab-error title="' . osc_esc_html($error) . '"'
+                );
             }
             echo '</ul></div>';
         }
 
-        $first = true;
         foreach ($locales as $code => $localeName) {
+            $opens        = (string)$code === $open;
             $sub          = $spec;
             $sub['name']  = self::translatedName($spec, (string)$code);
             $sub['value'] = (string)($stored[$code] ?? '');
@@ -474,7 +476,7 @@ class Field
             if ($tabs) {
                 echo '<div class="field-translate-panel" id="'
                     . osc_esc_html(self::localePanelId($id, $code)) . '"'
-                    . ($first ? '' : ' hidden') . '>';
+                    . ($opens ? '' : ' hidden') . '>';
             }
             $subId = self::idFor($sub);
             if ($stacked) {
@@ -488,7 +490,7 @@ class Field
             // hidden panel is a form the browser refuses to submit and says nothing about --
             // no submit event, so the page's own validator never runs and the button looks
             // dead. Every locale is still checked on save.
-            $sub['required'] = $first && !empty($spec['required']);
+            $sub['required'] = $opens && !empty($spec['required']);
             self::control($type, $subId, $sub);
             self::errorText($subId, $sub);
             if ($stacked) {
@@ -497,7 +499,6 @@ class Field
             if ($tabs) {
                 echo '</div>';
             }
-            $first = false;
         }
         echo '</div>';
     }
@@ -592,6 +593,53 @@ class Field
         $config = osc_tinymce_config((string)($spec['preset'] ?? 'basic'), $overrides);
 
         return is_string($config) ? $config : '{}';
+    }
+
+    /**
+     * One tab of a locale strip. The admin's own language opens first by default, and its
+     * tab carries a marker saying so.
+     *
+     * @param string      $panel   the id of the panel the tab shows
+     * @param string      $label   the locale's name
+     * @param string      $code    the locale's code
+     * @param string|null $current the locale that opens first; the admin's own by default
+     * @param string      $attrs   extra attributes for the <li>, already escaped
+     *
+     * @return string
+     */
+    public static function localeTab($panel, $label, $code, $current = null, $attrs = '')
+    {
+        $current = $current ?? self::adminLocale();
+        $opens   = (string)$code === (string)$current;
+        $marker  = '';
+        if ((string)$code === self::adminLocale() && defined('OC_ADMIN') && OC_ADMIN) {
+            $attrs  .= ' data-osc-tab-mine title="' . osc_esc_html(__('Your admin language')) . '"';
+            $marker = ' <span class="visually-hidden">(' . osc_esc_html(__('Your admin language')) . ')</span>';
+        }
+
+        return '<li' . ($opens ? ' class="ui-tabs-active ui-state-active"' : '') . $attrs . '>'
+            . '<a href="#' . osc_esc_html($panel) . '">' . osc_esc_html($label) . $marker . '</a></li>';
+    }
+
+    /**
+     * The locale a translated field opens on: the admin's own when the field offers it,
+     * otherwise the first one.
+     *
+     * @param array<string,string> $locales code => locale name
+     *
+     * @return string
+     */
+    public static function openLocale(array $locales)
+    {
+        $admin = self::adminLocale();
+
+        return array_key_exists($admin, $locales) ? $admin : (string)array_key_first($locales);
+    }
+
+    /** The admin's own language, or '' outside the admin. */
+    private static function adminLocale()
+    {
+        return function_exists('osc_current_admin_locale') ? (string)osc_current_admin_locale() : '';
     }
 
     /**

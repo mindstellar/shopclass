@@ -241,11 +241,6 @@ class CategoryForm extends Form
             $nameTextarea  = $locale['pk_c_code'] . '#s_description';
             $valueTextarea = isset($category['locale'][$locale['pk_c_code']])
                 ? $category['locale'][$locale['pk_c_code']]['s_description'] : '';
-            if ($current_locale_code === $locale['pk_c_code']) {
-                $active_class = ' class="ui-tabs-active ui-state-active"';
-            } else {
-                $active_class = '';
-            }
             $contentTemp = '<div id="' . $category['pk_i_id'] . '-' . $locale['pk_c_code']
                 . '" class="category-details-form">';
             $contentTemp .= '<div class="form-controls"><label>' . __('Name') . '</label><input id="'
@@ -260,9 +255,12 @@ class CategoryForm extends Form
             $contentTemp .= '<textarea id="' . $nameTextarea . '" name="' . $nameTextarea
                 . '" rows="10">' . $valueTextarea . '</textarea>';
             $contentTemp .= '</div></div>';
-            $tabs[]      =
-                '<li'.$active_class.'><a href="#' . $category['pk_i_id'] . '-' . $locale['pk_c_code'] . '">'
-                . $locale['s_name'] . '</a></li>';
+            $tabs[]      = \mindstellar\admin\ui\Field::localeTab(
+                $category['pk_i_id'] . '-' . $locale['pk_c_code'],
+                $locale['s_name'],
+                $locale['pk_c_code'],
+                $current_locale_code
+            );
             $content[]   = $contentTemp;
         }
         echo '<div class="ui-osc-tabs osc-tab">';

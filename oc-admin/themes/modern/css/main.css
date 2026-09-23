@@ -21177,6 +21177,17 @@ form h3, form .h3 {
   color: var(--osc-bronze);
 }
 
+.osc-tab li[data-osc-tab-mine] > a::after {
+  background-color: var(--osc-bronze);
+  border-radius: 50%;
+  content: "";
+  display: inline-block;
+  height: 0.375rem;
+  margin-inline-start: 0.375rem;
+  vertical-align: middle;
+  width: 0.375rem;
+}
+
 .plugin-support-icon {
   margin: 5px;
 }
