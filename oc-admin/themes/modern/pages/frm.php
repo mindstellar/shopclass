@@ -386,7 +386,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'value'  => $pageInternalName,
         'help'   => __('Used to quickly identify this page'),
         'error'  => $pageErrors['s_internal_name'] ?? '',
-        'attrs'  => $pageIndelible ? array('readonly' => true, 'disabled' => true) : array(),
+        // Readonly, never disabled: a disabled control posts nothing, and the save refuses
+        // a page whose internal name is empty -- so a system page could not be saved at all.
+        'attrs'  => $pageIndelible ? array('readonly' => true) : array(),
     ));
     osc_admin_disclosure_close();
 

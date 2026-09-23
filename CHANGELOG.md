@@ -47,6 +47,7 @@ In development.
 
 ### Fixed
 
+- A system page could not be saved: its internal name was disabled, so the browser never sent it.
 - A refused page save no longer stores the page template, the bodies or the modified date
   before refusing.
 - A page title or internal name of nothing but spaces is refused rather than stored.

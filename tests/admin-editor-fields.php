@@ -761,6 +761,22 @@ foreach (array('page-edit', 'page-add') as $screen) {
     pin_field($screen, 'plugin_meta_probe', 'text', 'from-a-plugin');
 }
 
+harness_section('no field is disabled, on any screen');
+
+// A disabled control is left out of the POST entirely, so a field marked read-only that
+// way arrives empty and the save either refuses it or stores nothing. The system-page
+// editor was unsavable for exactly this reason. Read-only is the attribute that posts.
+foreach (array('item-edit', 'item-add', 'page-edit', 'page-add') as $screen) {
+    $disabled = array();
+    foreach (dom($screen)->query('//input[@name] | //select[@name] | //textarea[@name]') as $node) {
+        if ($node instanceof DOMElement && $node->hasAttribute('disabled')) {
+            $disabled[] = $node->getAttribute('name');
+        }
+    }
+    sort($disabled);
+    pin($screen . ': no named control is disabled', array(), $disabled);
+}
+
 exit(harness_result());
 
 /* file end: ./tests/admin-editor-fields.php */
