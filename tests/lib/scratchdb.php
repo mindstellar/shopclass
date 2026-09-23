@@ -193,10 +193,65 @@ if (!function_exists('scratchdb_truncate_all')) {
         if (!$res) {
             return;
         }
+        $tables = array();
         while ($row = $res->fetch_array(MYSQLI_NUM)) {
-            $admin->query('TRUNCATE TABLE `' . $row[0] . '`');
+            $tables[] = (string) $row[0];
         }
         $res->free();
+        if ($tables === array()) {
+            return;
+        }
+
+        // Truncating every table is the slow part of this suite: a file calls this between
+        // sections, and on InnoDB each TRUNCATE rebuilds a tablespace whether or not the
+        // table held anything. A table is skipped only when it is both empty and still on
+        // its first id, which is exactly the state a truncate would leave it in.
+        $auto = array();
+        $stat = $admin->query(
+            'SELECT TABLE_NAME, AUTO_INCREMENT FROM information_schema.TABLES'
+            . ' WHERE TABLE_SCHEMA = DATABASE()'
+        );
+        if ($stat) {
+            while ($row = $stat->fetch_assoc()) {
+                $auto[(string) $row['TABLE_NAME']] = $row['AUTO_INCREMENT'];
+            }
+            $stat->free();
+        }
+
+        // One round trip for all of them: an emptiness probe per table costs nothing on an
+        // empty InnoDB table, and asking 59 times separately would undo the saving.
+        $parts = array();
+        foreach ($tables as $table) {
+            $parts[] = 'SELECT ' . ($admin->real_escape_string($table) !== $table ? "''" : "'" . $table . "'")
+                       . ' AS t, EXISTS(SELECT 1 FROM `' . $table . '` LIMIT 1) AS filled';
+        }
+        $probe = $admin->query(implode(' UNION ALL ', $parts));
+        if (!$probe) {
+            // The probe is an optimisation, never the contract. Fall back to emptying all.
+            foreach ($tables as $table) {
+                $admin->query('TRUNCATE TABLE `' . $table . '`');
+            }
+
+            return;
+        }
+
+        $filled = array();
+        while ($row = $probe->fetch_assoc()) {
+            if ((int) $row['filled'] === 1) {
+                $filled[(string) $row['t']] = true;
+            }
+        }
+        $probe->free();
+
+        foreach ($tables as $table) {
+            $reset = !array_key_exists($table, $auto)
+                     || $auto[$table] === null
+                     || (int) $auto[$table] <= 1;
+            if (!isset($filled[$table]) && $reset) {
+                continue;
+            }
+            $admin->query('TRUNCATE TABLE `' . $table . '`');
+        }
     }
 }
 
