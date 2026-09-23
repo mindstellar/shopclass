@@ -20,7 +20,9 @@ define('OSC_DEBUG_DB', true);
 ```
 
 Every query is collected and printed at the end of the page, along with how long
-it took and any error code and message.
+it took and any error code and message — but only while you are logged in as an
+admin. On a page nobody is logged in to admin for, nothing prints; use query
+logging below instead.
 
 That gives you the two things you usually need at once: the query count — a page
 issuing four hundred queries has a loop doing lookups it should have batched —

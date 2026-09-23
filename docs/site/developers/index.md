@@ -31,10 +31,11 @@ Worth knowing before you port something:
 - **`oc-includes/assets/chart-js/` is gone** as of 6.2.0. It was added in 2021
   and never used by anything in core. A plugin loading that path directly must
   bundle its own copy.
-- **Delete cascades run in transactions**, and every record type now has
-  `before_delete_*` / `after_delete_*` hooks. A `before_` hook runs before the
-  transaction opens and an `after_` hook only once it has committed, so your own
-  database work is never rolled back with a failed delete.
+- **Delete cascades run in transactions**, and every record type now fires a
+  hook before the transaction opens and `after_delete_*` only once it has
+  committed, so your own database work is never rolled back with a failed
+  delete. Most types name the first hook `before_delete_*`; category and user
+  deletes name it `delete_category` and `delete_user` instead.
 
 ## Where to start
 

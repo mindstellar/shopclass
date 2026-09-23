@@ -20,8 +20,9 @@ define('OSC_DEBUG', true);
 Error reporting rises to `E_ALL | E_STRICT` and `display_errors` is turned on,
 so PHP prints what went wrong instead of a blank page.
 
-With `OSC_DEBUG` off — the default — the level is
-`E_ALL ^ E_NOTICE ^ E_USER_NOTICE`.
+With `OSC_DEBUG` off — the default — PHP reports only fatal and parse errors and
+warnings: `E_ERROR | E_WARNING | E_PARSE | E_CORE_ERROR | E_CORE_WARNING |
+E_COMPILE_ERROR | E_USER_ERROR | E_USER_WARNING`.
 
 :::danger[Never leave this on in production]
 Displayed errors leak file paths, database structure and sometimes credentials
