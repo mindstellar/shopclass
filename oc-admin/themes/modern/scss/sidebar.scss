@@ -184,10 +184,24 @@ $sidebar-gutter: 2.35rem;
   background-color: transparent;
   border: 0;
   font-size: $font-size-sm;
-  // Room above so the group starts under its section rather than against it, and room
-  // below so it closes before the next one begins.
-  margin: .25rem 0 0;
-  padding: 0 0 .4rem;
+  margin: 0;
+  padding: 0;
+
+  // Room above and below the group, as blocks inside it. On the list itself the space
+  // sat outside the height Bootstrap animates, so it jumped in at the end of each toggle.
+  &::before,
+  &::after {
+    content: "";
+    display: block;
+  }
+
+  &::before {
+    height: .25rem;
+  }
+
+  &::after {
+    height: .4rem;
+  }
 
   a {
     border-radius: $border-radius;
@@ -918,6 +932,12 @@ $sidebar-gutter: 2.35rem;
       min-width: 12rem;
       overflow-y: auto;
       padding: .35rem;
+
+      // The panel's own padding spaces it; the expanded group's spacers would double it.
+      &::before,
+      &::after {
+        display: none;
+      }
 
       // In the expanded menu the links are indented to the icon gutter to align under
       // the parent label; in this detached flyout there is no parent row to align to, so
