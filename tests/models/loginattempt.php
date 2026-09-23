@@ -68,8 +68,11 @@ $rows = static function () use ($admin, $table): array {
     return $out;
 };
 
-$at = static function ($secondsAgo): string {
-    return date('Y-m-d H:i:s', time() - $secondsAgo);
+// One clock read for the whole file: two reads a second apart put a row one second
+// inside the window exactly on its cutoff.
+$now = time();
+$at  = static function ($secondsAgo) use ($now): string {
+    return date('Y-m-d H:i:s', $now - $secondsAgo);
 };
 
 /* ----------------------------------------------------------------------------
