@@ -253,7 +253,7 @@ class CategoryForm extends Form
 
             $contentTemp .= '<div class="form-controls"><label>' . __('Description') . '</label>';
             $contentTemp .= '<textarea id="' . $nameTextarea . '" name="' . $nameTextarea
-                . '" rows="10">' . $valueTextarea . '</textarea>';
+                . '" rows="10">' . osc_esc_html($valueTextarea) . '</textarea>';
             $contentTemp .= '</div></div>';
             $tabs[]      = \mindstellar\admin\ui\Field::localeTab(
                 $category['pk_i_id'] . '-' . $locale['pk_c_code'],
