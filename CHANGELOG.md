@@ -49,6 +49,8 @@ In development.
 
 ### Fixed
 
+- Every email now carries a plain-text copy alongside the HTML, with link addresses kept, so
+  it reads in any mail app and is less likely to be marked as spam.
 - Search alert emails greeted registered subscribers by their e-mail address instead of
   their name.
 - An empty listing, page or category permalink setting no longer builds a rule that
