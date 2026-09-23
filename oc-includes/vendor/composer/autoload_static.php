@@ -1029,6 +1029,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\model\\Resource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Resource.php',
         'mindstellar\\pages\\PageTemplateRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
         'mindstellar\\privacy\\PersonalData' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/privacy/PersonalData.php',
+        'mindstellar\\routing\\CoreRoutes' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/routing/CoreRoutes.php',
         'mindstellar\\security\\ActionThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionThrottle.php',
         'mindstellar\\security\\ActionToken' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionToken.php',
         'mindstellar\\security\\LoginThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/LoginThrottle.php',

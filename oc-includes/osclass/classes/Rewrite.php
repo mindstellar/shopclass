@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\routing\CoreRoutes;
+
 /**
  * Class Rewrite
  */
@@ -138,325 +140,33 @@ class Rewrite
     {
         $rewrite = $this;
 
-        $item_url   = osc_get_preference('rewrite_item_url');
-        $page_url   = osc_get_preference('rewrite_page_url');
-        $cat_url    = osc_get_preference('rewrite_cat_url');
-        $search_url = osc_get_preference('rewrite_search_url');
-
         osc_run_hook('before_rewrite_rules', array(&$rewrite));
         $rewrite->clearRules();
 
-        // Contact rules
-        $rewrite->addRule('^' . osc_get_preference('rewrite_contact') . '/?$', 'index.php?page=contact');
-
-        // Feed rules
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_feed') . '/?$',
-            'index.php?page=search&sFeed=rss'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_feed') . '/(.+)/?$',
-            'index.php?page=search&sFeed=$1'
-        );
-
-        // Language rules
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_language') . '/(.*?)/?$',
-            'index.php?page=language&locale=$1'
-        );
-
-        // Search rules
-        $rewrite->addRule('^' . $search_url . '$', 'index.php?page=search');
-        $rewrite->addRule('^' . $search_url . '/(.*)$', 'index.php?page=search&sParams=$1');
-
-        // Item rules
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_mark') . '/(.*?)/([0-9]+)/?$',
-            'index.php?page=item&action=mark&as=$1&id=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_send_friend') . '/([0-9]+)/?$',
-            'index.php?page=item&action=send_friend&id=$1'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_contact') . '/([0-9]+)/?$',
-            'index.php?page=item&action=contact&id=$1'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_new') . '/?$',
-            'index.php?page=item&action=item_add'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_new') . '/([0-9]+)/?$',
-            'index.php?page=item&action=item_add&catId=$1'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_activate') . '/([0-9]+)/(.*?)/?$',
-            'index.php?page=item&action=activate&id=$1&secret=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_edit') . '/([0-9]+)/(.*?)/?$',
-            'index.php?page=item&action=item_edit&id=$1&secret=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_delete') . '/([0-9]+)/(.*?)/?$',
-            'index.php?page=item&action=item_delete&id=$1&secret=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_item_resource_delete')
-            . '/([0-9]+)/([0-9]+)/([0-9A-Za-z]+)/?(.*?)/?$',
-            'index.php?page=item&action=deleteResource&id=$1&item=$2&code=$3&secret=$4'
-        );
-
-        // Item rules
-        $id_pos    = stripos($item_url, '{ITEM_ID}');
-        $title_pos = stripos($item_url, '{ITEM_TITLE}');
-        $cat_pos   = stripos($item_url, '{CATEGORIES');
-        $param_pos = 1;
-        if ($title_pos !== false && $id_pos > $title_pos) {
-            $param_pos++;
-        }
-        if ($cat_pos !== false && $id_pos > $cat_pos) {
-            $param_pos++;
-        }
-        $comments_pos = 1;
-        if ($id_pos !== false) {
-            $comments_pos++;
-        }
-        if ($title_pos !== false) {
-            $comments_pos++;
-        }
-        if ($cat_pos !== false) {
-            $comments_pos++;
-        }
-        $rewrite->addRule(
-            '^([a-z]{2})_([A-Z]{2})/' . str_replace(
-                '{ITEM_CITY}',
-                '.*',
-                str_replace('{CATEGORIES}', '.*', str_replace(
-                    '{ITEM_TITLE}',
-                    '.*',
-                    str_replace('{ITEM_ID}', '([0-9]+)', $item_url . '\?comments-page=([0-9al]*)')
-                ))
-            ) . '$',
-            'index.php?page=item&id=$3&lang=$1_$2&comments-page=$4'
-        );
-        $rewrite->addRule(
-            '^' . str_replace('{ITEM_CITY}', '.*', str_replace(
-                '{CATEGORIES}',
-                '.*',
-                str_replace(
-                    '{ITEM_TITLE}',
-                    '.*',
-                    str_replace('{ITEM_ID}', '([0-9]+)', $item_url . '\?comments-page=([0-9al]*)')
-                )
-            )) . '$',
-            'index.php?page=item&id=$1&comments-page=$2'
-        );
-        $rewrite->addRule('^([a-z]{2})_([A-Z]{2})/' . str_replace(
-            '{ITEM_CITY}',
-            '.*',
-            str_replace(
-                '{CATEGORIES}',
-                '.*',
-                str_replace('{ITEM_TITLE}', '.*', str_replace('{ITEM_ID}', '([0-9]+)', $item_url))
-            )
-        )
-            . '$', 'index.php?page=item&id=$3&lang=$1_$2');
-        $rewrite->addRule(
-            '^' . str_replace('{ITEM_CITY}', '.*', str_replace(
-                '{CATEGORIES}',
-                '.*',
-                str_replace('{ITEM_TITLE}', '.*', str_replace('{ITEM_ID}', '([0-9]+)', $item_url))
-            )) . '$',
-            'index.php?page=item&id=$1'
-        );
-
-        // User rules
-        $rewrite->addRule('^' . osc_get_preference('rewrite_user_login') . '/?$', 'index.php?page=login');
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_dashboard') . '/?$',
-            'index.php?page=user&action=dashboard'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_logout') . '/?$',
-            'index.php?page=main&action=logout'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_register') . '/?$',
-            'index.php?page=register&action=register'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_activate') . '/([0-9]+)/(.*?)/?$',
-            'index.php?page=register&action=validate&id=$1&code=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_activate_alert')
-            . '/([0-9]+)/([a-zA-Z0-9]+)/(.+)$',
-            'index.php?page=user&action=activate_alert&id=$1&email=$3&secret=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_profile') . '/?$',
-            'index.php?page=user&action=profile'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_profile') . '/([0-9]+)/([0-9]+)/?$',
-            'index.php?page=user&action=pub_profile&id=$1&iPage=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_profile') . '/([0-9]+)/?$',
-            'index.php?page=user&action=pub_profile&id=$1'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_profile') . '/([^/]+)/([0-9]+)/?$',
-            'index.php?page=user&action=pub_profile&username=$1&iPage=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_profile') . '/([^/]+)/?$',
-            'index.php?page=user&action=pub_profile&username=$1'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_items') . '/?$',
-            'index.php?page=user&action=items'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_alerts') . '/?$',
-            'index.php?page=user&action=alerts'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_recover') . '/?$',
-            'index.php?page=login&action=recover'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_forgot') . '/([0-9]+)/(.*)/?$',
-            'index.php?page=login&action=forgot&userId=$1&code=$2'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_change_password') . '/?$',
-            'index.php?page=user&action=change_password'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_change_email') . '/?$',
-            'index.php?page=user&action=change_email'
-        );
-        $rewrite->addRule(
-            '^' . osc_get_preference('rewrite_user_change_username') . '/?$',
-            'index.php?page=user&action=change_username'
-        );
-        $rewrite->addRule('^' . osc_get_preference('rewrite_user_change_email_confirm')
-            . '/([0-9]+)/(.*?)/?$', 'index.php?page=user&action=change_email_confirm&userId=$1&code=$2');
-
-        // Billing's three navigable pages. Registered specific-first: the buy path nests
-        // under the wallet's by default, and while both patterns are $-anchored -- which
-        // already keeps them apart -- the order is what stays correct if an admin renames
-        // one into something that does overlap. The gateway callback keeps its
-        // ?page=billing&action=callback form: gateways hold that URL on their side, and a
-        // rule added here would never reach the ones already registered.
-        //
-        // Each path is checked before it is compiled. This table is rebuilt whenever
-        // OSCLASS_VERSION moves, which happens the moment new code is deployed -- before
-        // the release's migration has seeded these preferences, and on a front-end request
-        // that never goes near the upgrade screen. An empty path would compile to '^/?$'
-        // and answer the homepage with the wallet.
-        $billingRoutes = array(
-            'rewrite_billing_buy'    => 'index.php?page=billing&action=buy',
-            'rewrite_billing_orders' => 'index.php?page=billing&action=orders',
-            'rewrite_billing_wallet' => 'index.php?page=billing',
-        );
-        foreach ($billingRoutes as $billingPref => $billingTarget) {
-            $billingPath = trim((string)osc_get_preference($billingPref), '/');
-            if ($billingPath === '') {
-                continue;
-            }
-            $rewrite->addRule('^' . $billingPath . '/?$', $billingTarget);
+        // Everything with a fixed, admin-editable path comes from one table that the
+        // URL builders read too, so a route cannot be matched one way and linked another.
+        foreach (CoreRoutes::rules('listing') as $pattern => $target) {
+            $rewrite->addRule($pattern, $target);
         }
 
-        // Page rules
-        $pos_pID   = stripos($page_url, '{PAGE_ID}');
-        $pos_pSlug = stripos($page_url, '{PAGE_SLUG}');
-        $pID_pos   = 1;
-        $pSlug_pos = 1;
-        if (is_numeric($pos_pID) && is_numeric($pos_pSlug)) {
-            // set the order of the parameters
-            if ($pos_pID > $pos_pSlug) {
-                $pID_pos++;
-            } else {
-                $pSlug_pos++;
-            }
+        foreach (CoreRoutes::templateRules('item') as $pattern => $target) {
+            $rewrite->addRule($pattern, $target);
+        }
 
-            $rewrite->addRule(
-                '^' . str_replace(
-                    '{PAGE_SLUG}',
-                    '([\p{L}\p{N}_\-,]+)',
-                    str_replace('{PAGE_ID}', '([0-9]+)', $page_url)
-                ) . '/?$',
-                'index.php?page=page&id=$' . $pID_pos . '&slug=$' . $pSlug_pos
-            );
-            $rewrite->addRule(
-                '^([a-z]{2})_([A-Z]{2})/' . str_replace(
-                    '{PAGE_SLUG}',
-                    '([\p{L}\p{N}_\-,]+)',
-                    str_replace('{PAGE_ID}', '([0-9]+)', $page_url)
-                ) . '/?$',
-                'index.php?page=page&lang=$1_$2&id=$' . ($pID_pos + 2) . '&slug=$' . ($pSlug_pos + 2)
-            );
-        } elseif (is_numeric($pos_pID)) {
-            $rewrite->addRule(
-                '^' . str_replace('{PAGE_ID}', '([0-9]+)', $page_url) . '/?$',
-                'index.php?page=page&id=$1'
-            );
-            $rewrite->addRule('^([a-z]{2})_([A-Z]{2})/' . str_replace('{PAGE_ID}', '([0-9]+)', $page_url)
-                . '/?$', 'index.php?page=page&lang=$1_$2&id=$3');
-        } else {
-            $rewrite->addRule(
-                '^' . str_replace('{PAGE_SLUG}', '([\p{L}\p{N}_\-,]+)', $page_url) . '/?$',
-                'index.php?page=page&slug=$1'
-            );
-            $rewrite->addRule('^([a-z]{2})_([A-Z]{2})/' . str_replace(
-                '{PAGE_SLUG}',
-                '([\p{L}\p{N}_\-,]+)',
-                $page_url
-            ) . '/?$', 'index.php?page=page&lang=$1_$2&slug=$3');
+        foreach (CoreRoutes::rules('account') as $pattern => $target) {
+            $rewrite->addRule($pattern, $target);
+        }
+
+        foreach (CoreRoutes::templateRules('page') as $pattern => $target) {
+            $rewrite->addRule($pattern, $target);
         }
 
         // Clean archive files
         $rewrite->addRule('^(.+?)\.php(.*)$', '$1.php$2');
 
-        // Category rules
-        $id_pos    = stripos($item_url, '{CATEGORY_ID}');
-        $title_pos = stripos($item_url, '{CATEGORY_NAME}');
-        $cat_pos   = stripos($item_url, '{CATEGORIES');
-        $param_pos = 1;
-        if ($title_pos !== false && $id_pos > $title_pos) {
-            $param_pos++;
+        foreach (CoreRoutes::templateRules('category') as $pattern => $target) {
+            $rewrite->addRule($pattern, $target);
         }
-        if ($cat_pos !== false && $id_pos > $cat_pos) {
-            $param_pos++;
-        }
-        $rewrite->addRule(
-            '^' . str_replace(
-                '{CATEGORIES}',
-                '(.+)',
-                str_replace(
-                    '{CATEGORY_NAME}',
-                    '([^/]+)',
-                    str_replace('{CATEGORY_ID}', '([0-9]+)', $cat_url)
-                )
-            ) . '/([0-9]+)$',
-            'index.php?page=search&sCategory=$' . $param_pos . '&iPage=$' . ($param_pos + 1)
-        );
-        $rewrite->addRule(
-            '^' . str_replace(
-                '{CATEGORIES}',
-                '(.+)',
-                str_replace(
-                    '{CATEGORY_NAME}',
-                    '([^/]+)',
-                    str_replace('{CATEGORY_ID}', '([0-9]+)', $cat_url)
-                )
-            ) . '/?$',
-            'index.php?page=search&sCategory=$' . $param_pos
-        );
 
         $rewrite->addRule('^(.+)/([0-9]+)$', 'index.php?page=search&iPage=$2');
         $rewrite->addRule('^(.+)$', 'index.php?page=search');
