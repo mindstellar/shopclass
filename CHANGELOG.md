@@ -49,6 +49,7 @@ In development.
 
 ### Fixed
 
+- The admin sidebar no longer jumps at the end of opening or closing a group.
 - A refused save no longer moves the admin sidebar's highlight to Dashboard.
 - Saving an email template with a taken internal name no longer saved half of it.
 - The listing-expiry warning email left its last paragraph unclosed.
@@ -153,6 +154,8 @@ In development.
   fields from a registered user.
 - The email template editor matches the page editor: placeholders insert with a click, a
   test sends from the rail, and the internal name can no longer be changed.
+- The email template editor also lists the placeholders every email gets, such as `{WEB_LINK}`.
+- Language tabs open on your own admin language and mark it with a dot.
 - The page editor has a Status panel in its rail, an Advanced group for the internal name,
   and a save bar that counts unsaved changes.
 - The listing and page editors draw their titles and bodies from the shared field, so both
