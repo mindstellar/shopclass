@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Widget type + config columns.
@@ -26,6 +27,8 @@ use mindstellar\migration\MigrationInterface;
  * migration brings an existing install up to the same state.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Add s_type and s_config to t_widget, each only when absent.
      *
@@ -48,26 +51,4 @@ return new class () implements MigrationInterface {
         }
     }
 
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
-    }
 };

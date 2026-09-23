@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Make the location import's source id unique per country rather than globally.
@@ -36,6 +37,8 @@ use mindstellar\migration\MigrationInterface;
  * one.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /** table => the columns the key should cover, in order. */
     private const KEYS = array(
         't_region' => 'uq_region_source',
@@ -87,27 +90,6 @@ return new class () implements MigrationInterface {
         if ($this->indexExists($conn, $city, 'fk_c_country_code')) {
             $conn->execute('ALTER TABLE ' . $city . ' DROP INDEX fk_c_country_code');
         }
-    }
-
-    /**
-     * Whether $index exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
     }
 
     /**

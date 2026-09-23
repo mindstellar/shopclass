@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Schema changes made between 5.0 and 5.2 that were only ever declared in struct.sql.
@@ -33,6 +34,8 @@ use mindstellar\migration\MigrationInterface;
  * every 6.x install, where struct.sql already produced exactly this shape.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Backfill the 5.0-5.2 schema changes that were only ever declared in struct.sql:
      * s_direction, s_meta, the NUMBER field type and the widened user IP columns.
@@ -78,29 +81,6 @@ return new class () implements MigrationInterface {
                 'ALTER TABLE ' . $user . " CHANGE COLUMN s_access_ip s_access_ip VARCHAR(50) NOT NULL DEFAULT ''"
             );
         }
-    }
-
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
     }
 
     /**

@@ -898,6 +898,7 @@ return array(
     'mindstellar\\market\\PackageReconciler' => $baseDir . '/oc-includes/osclass/classes/market/PackageReconciler.php',
     'mindstellar\\migration\\MigrationInterface' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
     'mindstellar\\migration\\MigrationRunner' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationRunner.php',
+    'mindstellar\\migration\\SchemaProbes' => $baseDir . '/oc-includes/osclass/classes/migration/SchemaProbes.php',
     'mindstellar\\model\\FormSubmission' => $baseDir . '/oc-includes/osclass/classes/model/FormSubmission.php',
     'mindstellar\\model\\Resource' => $baseDir . '/oc-includes/osclass/classes/model/Resource.php',
     'mindstellar\\pages\\PageTemplateRegistry' => $baseDir . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',

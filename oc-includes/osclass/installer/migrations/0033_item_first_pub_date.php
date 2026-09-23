@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Two independent fixes to the entitlement layer, in one migration because both
@@ -39,6 +40,8 @@ use mindstellar\migration\MigrationInterface;
  * safe -- including the dedupe, which finds nothing left to merge the second time.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Add t_item.dt_first_pub_date and key t_user_entitlement uniquely on
      * (fk_i_user_id, s_feature).
@@ -151,49 +154,4 @@ return new class () implements MigrationInterface {
         $conn->execute('DROP TEMPORARY TABLE tmp_entitlement_dedupe');
     }
 
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
-    }
-
-    /**
-     * Whether an index (unique or not) named $index already exists on $table.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
-    }
 };

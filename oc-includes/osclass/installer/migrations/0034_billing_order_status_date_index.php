@@ -11,6 +11,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * t_billing_order has no index leading with s_status, so three of the four counts
@@ -28,6 +29,8 @@ use mindstellar\migration\MigrationInterface;
  * interrupted upgrade is safe.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Add the (s_status, dt_date) index to t_billing_order, unless it is already there.
      *
@@ -44,26 +47,4 @@ return new class () implements MigrationInterface {
         }
     }
 
-    /**
-     * Whether an index (unique or not) named $index already exists on $table.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
-    }
 };

@@ -1025,6 +1025,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\market\\PackageReconciler' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/PackageReconciler.php',
         'mindstellar\\migration\\MigrationInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
         'mindstellar\\migration\\MigrationRunner' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationRunner.php',
+        'mindstellar\\migration\\SchemaProbes' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/SchemaProbes.php',
         'mindstellar\\model\\FormSubmission' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/FormSubmission.php',
         'mindstellar\\model\\Resource' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/model/Resource.php',
         'mindstellar\\pages\\PageTemplateRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
