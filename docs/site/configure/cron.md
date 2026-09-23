@@ -1,56 +1,60 @@
 ---
 title: Set up cron
-description: Configure scheduled tasks in ShopClass — a system crontab, the built-in fallback, and what breaks when neither is running.
+description: Make ShopClass run its scheduled jobs — alerts, listing expiry and clean-up — with one crontab line, or the built-in fallback.
 sidebar:
   order: 1
 ---
 
-Some of what a classifieds site does cannot happen inside a page request. E-mail
-alerts have to go out, premium listings have to expire, spam and unactivated
-accounts have to be cleaned up, and the XML sitemap has to be regenerated.
-ShopClass runs all of that on a schedule.
+Some jobs must run on a timer, not when someone opens a page:
 
-**Without a working cron, none of it happens.** That is the single most common
-cause of "my alerts never send" and "expired listings are still showing".
+- sending e-mail alerts
+- ending premium listings when they expire
+- removing spam and accounts that were never activated
+- rebuilding the XML sitemap
+
+A **cron job** is a timer on your server that runs a command on a schedule.
+ShopClass uses one for all of these jobs.
+
+**If cron does not run, none of these jobs happen.** This is the most common
+reason alerts never send and expired listings still show.
 
 ## The recommended setup
 
-Add one crontab entry on the server and let ShopClass decide what is due:
+1. Add this line to your server's **crontab** (its list of cron jobs):
 
-```cron
-*/5 * * * * php /path/to/site/oc-cli.php cron >/dev/null 2>&1
-```
+   ```cron
+   */5 * * * * php /path/to/site/oc-cli.php cron >/dev/null 2>&1
+   ```
 
-That is the whole configuration. The command checks the hourly, daily and weekly
-tiers each time it runs and executes only what is actually due, so running it
-every five minutes costs nothing and keeps alerts prompt.
+   It runs every five minutes. Each time, ShopClass checks the hourly, daily and
+   weekly jobs and runs only the ones that are due. So the short interval costs
+   nothing, and alerts go out on time.
 
-Then turn the fallback **off**, so work is not attempted twice:
+2. Turn the fallback **off**, so jobs do not run twice:
 
-**Admin → Settings → General** → uncheck **Auto-cron**.
+   **Admin → Settings → General** → untick **Automatic cron process**.
 
-### Adding the crontab entry
+### Adding the line
 
-Over SSH:
+Connect to your server over SSH and open your crontab:
 
 ```bash
 crontab -e
 ```
 
-Add the line, save, and confirm it registered:
+Paste the line and save. Then check that it is there:
 
 ```bash
 crontab -l
 ```
 
-You need the **CLI** PHP binary, not the web server's module. If plain `php` is
-not on the path, ask your host for the full path — it is often something like
+Use the **CLI** PHP (the command-line program), not the one your web server
+uses. If plain `php` does not work, ask your host for its full path. It is often
 `/usr/local/bin/php` or `/opt/alt/php82/usr/bin/php`.
 
-### If you prefer separate tiers
+### One line per schedule
 
-The older, explicit form works too, and is what long-running installs already
-have:
+Older sites often have a line for each schedule. That still works:
 
 ```cron
 0 * * * *  php /path/to/site/oc-cli.php cron --type=hourly
@@ -59,47 +63,48 @@ have:
 ```
 
 :::tip
-Not sure what a crontab expression means? [crontab.guru](https://crontab.guru/)
-explains any schedule in plain English.
+Not sure what the five fields at the start of a line mean?
+[crontab.guru](https://crontab.guru/) explains any schedule in plain English.
 :::
 
-## When you have no shell access
+## When you have no SSH access
 
-Many shared hosts do not offer SSH but do offer a cron wizard in the control
-panel (cPanel: **Advanced → Cron Jobs**; Plesk: **Scheduled Tasks**). Point it at
-the same command.
+Many shared hosts have a cron screen in the control panel instead (cPanel:
+**Advanced → Cron Jobs**; Plesk: **Scheduled Tasks**). Give it the same command.
 
-If the panel only allows fetching a URL rather than running a command, use the
-web entry point instead:
+Some panels can only open a web address, not run a command. Then use this:
 
 ```bash
 wget -qO /dev/null https://example.com/index.php?page=cron
 ```
 
-Set it to run hourly. This is weaker than the CLI — it runs inside a web request
-and inherits the web server's timeout — but it is far better than nothing.
+Set it to run hourly. It is less reliable than the command: it runs as a web
+request, so the web server stops it if it takes too long. It is still much better
+than nothing.
 
 ## The built-in fallback
 
-If you cannot schedule anything at all, ShopClass can piggyback on visitor
-traffic instead:
+If you cannot schedule anything, ShopClass can use visits to your site as its
+timer:
 
-**Admin → Settings → General** → check **Auto-cron**.
+**Admin → Settings → General** → tick **Automatic cron process**.
 
-Due tasks are then triggered by ordinary page views, at most once every five
-minutes. Nobody waits for them: on PHP-FPM the page is sent first and the work
-runs afterwards in the same process. On other setups ShopClass falls back to
-asking itself for `?page=cron` over HTTP, which **an origin behind a proxy cannot
-do** — it resolves its own public address to the proxy and never reaches itself,
-so nothing runs and nothing says so. If that is your setup, use a real crontab.
+When someone opens a page, ShopClass runs the jobs that are due, at most once
+every five minutes. Visitors do not wait for them. On PHP-FPM (the usual way a
+server runs PHP), the page is sent first and the jobs run after it.
 
-The real cost that remains either way: nothing runs while the site has no
-visitors.
+On other setups, ShopClass asks for its own `?page=cron` address instead.
+**This fails when your site sits behind a proxy** (a service such as a CDN in
+front of your server). The request goes to the proxy and never reaches your
+server. The jobs do not run, and nothing tells you. If that is your setup, use a
+real cron job.
 
-Use it to get started, then move to a real crontab.
+This fallback has one more limit: when nobody visits, nothing runs.
 
-:::caution[Never enable both]
-If Auto-cron is checked *and* a system crontab is running, jobs can fire twice.
+Use it to get started. Then move to a real cron job.
+
+:::caution[Never use both]
+If **Automatic cron process** is on *and* a cron job runs, jobs can run twice.
 Pick one.
 :::
 
@@ -109,12 +114,11 @@ Pick one.
 php oc-cli.php doctor
 ```
 
-Among its checks, `doctor` reports **cron freshness** — how long since the
-scheduled tasks last completed. If that number keeps growing, your crontab is
-not running the command you think it is.
+`doctor` reports **cron freshness**: how long ago the scheduled jobs last
+finished. If that number keeps growing, your cron job is not running the command
+you think it is.
 
-Run it manually once to see the output rather than the silence a crontab gives
-you:
+A cron job runs silently. To see the output, run the command once yourself:
 
 ```bash
 php /path/to/site/oc-cli.php cron --type=hourly
@@ -122,26 +126,26 @@ php /path/to/site/oc-cli.php cron --type=hourly
 
 ## What runs when
 
-| Tier | Work |
+| Schedule | Jobs |
 |---|---|
 | Hourly | E-mail alerts, expiring premium listings |
 | Daily | Cleanup of expired, spam, blocked and unactivated content; alerts |
 | Weekly | Longer-running maintenance |
 
-Plugins add their own work to these tiers through the `cron_hourly`,
-`cron_daily` and `cron_weekly` hooks.
+Plugins add their own jobs through the `cron_hourly`, `cron_daily` and
+`cron_weekly` hooks.
 
-## Background jobs want their own entry
+## Background jobs want their own line
 
-Slow work — moving uploaded images to remote storage, emptying a large category,
-whatever a plugin queues — is done in the background. That queue is drained from the
-hourly tier, which on a busy site is not often enough, and the hourly tier does too
-much else to be run every few minutes. Give it a second entry of its own:
+Some slow work runs in the background: moving uploaded images to remote storage,
+emptying a large category, or work a plugin adds. Every cron run also works
+through this queue. To pick new work up within a minute, add a second line that
+does only this work:
 
 ```cron
 * * * * * php /path/to/site/oc-cli.php jobs:work --max-seconds=50 >/dev/null 2>&1
 ```
 
-This runs the queue worker and nothing else, so a tight schedule is safe. An empty
-queue costs one query, so it is harmless to add before you need it. See the
+It is safe to run every minute. With no work waiting, it costs one database
+query, so you can add it before you need it. See the
 [CLI reference](/docs/cli/) and [Background jobs](/docs/developers/jobs/).

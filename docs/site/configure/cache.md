@@ -1,46 +1,48 @@
 ---
 title: Object caching
-description: Configure the ShopClass object cache with memcached or APCu — drivers, TTLs, environment variables, and how it differs from a page cache.
+description: Speed up ShopClass by keeping repeated database results in memcached or APCu — setup, how long entries last, environment variables, and how it differs from a page cache.
 sidebar:
   order: 4
 ---
 
-ShopClass has an object cache: a short-lived store for the results of repeated
-database work — category trees, preferences, location lookups — shared across
-requests. On a busy site it is the difference between a handful of queries per
-page and a few dozen.
+Many pages ask the database the same questions again and again: the category
+tree, the site settings, location lookups. An **object cache** keeps those
+answers in memory for a short time, so the next page can reuse them. On a busy
+site, it cuts a page from a few dozen database queries to a handful.
 
-By default the driver is an in-memory array that lives for **one request only**
-and does not persist. That is safe everywhere and helps nothing. Configuring a
-real backend is a two-line change.
+By default, ShopClass keeps these answers for **one page load only**. That is
+safe on any server, but it does not speed anything up. Turning on a real cache
+takes two lines.
 
 :::note[This is not a page cache]
-The object cache stores fragments of work inside PHP. Caching whole responses at
-a reverse proxy or CDN is a separate, complementary layer — see
-[page caching](/docs/configure/page-cache/) for how to turn it on, and the
-[caching contract](/docs/developers/caching/) for what core promises a proxy.
+The object cache keeps small pieces of work inside PHP. A page cache stores whole
+finished pages in front of PHP. You can use both. See
+[page caching](/docs/configure/page-cache/) to turn that on, and the
+[caching contract](/docs/developers/caching/) for what ShopClass tells a proxy.
 :::
 
 ## Before you start
 
-Install the matching PHP extension and confirm PHP can see it:
+The cache needs a PHP extension (an add-on module for PHP). Install the one you
+want, then check that PHP can see it:
 
 ```bash
 php -m | grep -E 'memcached|apcu'
 ```
 
-The setting does nothing if the extension is missing.
+If the extension is missing, the setting does nothing.
 
 ## memcached — recommended
 
-Right for anything with more than one web server, and fine with one.
+**memcached** is a small cache server. Use it if you have more than one web
+server. It is also fine with one.
 
 ```php
 // config.php
 define('OSC_CACHE', 'memcached');
 ```
 
-That connects to `127.0.0.1:11211`. For a different host, or several servers:
+This connects to `127.0.0.1:11211`. For another host, or several servers:
 
 ```php
 define('OSC_CACHE', 'memcached');
@@ -50,62 +52,66 @@ $_cache_config = array(
 );
 ```
 
-## APCu — single server
+## APCu — one server only
 
-Simpler, faster, and confined to one PHP process pool. Right for a single VPS,
-wrong the moment you add a second web server.
+**APCu** keeps the cache inside PHP itself. It is simpler and faster, but each
+web server has its own copy. Use it on a single server. Do not use it once you
+add a second web server.
 
 ```php
 define('OSC_CACHE', 'apcu');
 ```
 
-## Entry lifetime
+## How long entries last
 
-Cached entries live 60 seconds by default. Raise it on a site whose categories
-and preferences rarely change:
+An entry lasts 60 seconds by default. If your categories and settings rarely
+change, keep entries longer:
 
 ```php
 define('OSC_CACHE_TTL', 300);
 ```
 
-Longer TTLs mean an admin change can take that long to appear on the front end.
+The number is in seconds. The longer it is, the longer a change in the admin
+panel can take to show on the site.
 
-## Configuring by environment variable
+## Setting it with environment variables
 
-Handy for containers, where editing `config.php` per environment is awkward:
+On containers, editing `config.php` for each environment is awkward. Use
+environment variables instead:
 
-| Variable | Purpose |
+| Variable | What it sets |
 |---|---|
-| `OSC_CACHE` | Driver name — `memcached`, `apcu`, `memcache` |
-| `OSC_CACHE_HOST` | Server host, for memcached/memcache |
-| `OSC_CACHE_PORT` | Server port, default `11211` |
+| `OSC_CACHE` | The cache type: `memcached`, `apcu` or `memcache` |
+| `OSC_CACHE_HOST` | The cache server's host, for memcached or memcache |
+| `OSC_CACHE_PORT` | The cache server's port. Default `11211` |
 
-An explicit `define()` in `config.php` — or a `$_cache_config` array — always
-wins over the environment.
+A `define()` in `config.php`, or a `$_cache_config` array, always wins over
+these variables.
 
-## Flushing it
+## Emptying the cache
 
-After a bulk import, a direct database edit, or anything that changed data
-behind the application's back:
+After a bulk import, a direct database edit, or any change made outside
+ShopClass, empty the cache:
 
 ```bash
 php oc-cli.php cache:flush
 ```
 
-## Legacy drivers
+## The old memcache driver
 
-`define('OSC_CACHE', 'memcache')` still works and drives the old, unmaintained
-`memcache` extension. It is deprecated — use `memcached`.
+`define('OSC_CACHE', 'memcache')` still works. It uses the old `memcache`
+extension, which nobody maintains any more. It is deprecated: use `memcached`.
 
 ## Troubleshooting
 
 **Changes in the admin panel take a while to show.**
-That is `OSC_CACHE_TTL` doing its job. Lower it, or flush after admin work.
+The cache still holds the old answer until the entry ends. Lower
+`OSC_CACHE_TTL`, or empty the cache after admin work.
 
-**The site got slower after enabling it.**
-The cache server is probably unreachable, so every lookup pays a connection
-timeout before falling through. Confirm the host and port, and that the daemon
+**The site got slower after turning it on.**
+ShopClass probably cannot reach the cache server. Every lookup then waits for the
+connection to time out first. Check the host and port, and check that memcached
 is running.
 
-**Two web servers disagree about what the site looks like.**
-You are on APCu, which is per-server. Move to memcached.
+**Two web servers show different versions of the site.**
+You are using APCu, which keeps one cache per server. Move to memcached.

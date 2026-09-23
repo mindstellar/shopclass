@@ -1,122 +1,132 @@
 ---
 title: Page caching
-description: Cache whole public pages in nginx — the micro-cache switch in the Docker image, holding pages for an hour, and purging them the moment a listing changes.
+description: Serve public pages from nginx without running PHP — the switch in the Docker image, keeping pages for an hour, and clearing them the moment a listing changes.
 sidebar:
   order: 5
 ---
 
-A page cache stores the finished HTML of a public page and hands it to the next
-visitor without PHP running at all. On a listing site most traffic is anonymous
-people reading the same handful of pages, so this is the single largest saving
-available — and unlike the [object cache](/docs/configure/cache/), which stores
-fragments of work inside PHP, it removes the work entirely.
+A **page cache** keeps a copy of a finished public page. The next visitor gets
+that copy, and PHP does not run at all.
 
-:::note[ShopClass decides what is cacheable, not your proxy]
-Core marks public read pages cacheable and emits
-`Cache-Control: public, s-maxage=30, max-age=0, must-revalidate`. Anything
-personalised — a dashboard, a page that starts a session — emits
-`private, no-store` and is never stored. So the proxy needs no URL allow-lists:
-it only has to honour what the application already says. The full contract is in
+On a listing site, most visitors are not logged in and read the same few pages.
+So a page cache saves more work than anything else you can turn on. The
+[object cache](/docs/configure/cache/) makes PHP's work faster. A page cache
+skips that work completely.
+
+:::note[ShopClass decides what may be cached, not your server]
+ShopClass marks each public page as safe to cache with this header:
+`Cache-Control: public, s-maxage=30, max-age=0, must-revalidate`. A personal
+page, such as a dashboard or a page that starts a session (remembers the
+visitor), gets
+`private, no-store` and is never stored. So you do not list pages for your server
+to skip. It only has to follow what ShopClass says. The full rules are in
 [the caching contract](/docs/developers/caching/).
 :::
 
 ## In the Docker image
 
-One environment variable:
+Set one environment variable:
 
 ```yaml
 environment:
   OSC_MICROCACHE: "1"
 ```
 
-The entrypoint writes the nginx configuration for it at start-up, so it survives
-a redeploy — a config edited inside a running container does not. Check it took:
+When the container starts, it writes the nginx settings for you. So they survive
+a redeploy. Settings you edit by hand inside a running container do not.
+
+Check that it works:
 
 ```bash
 curl -sI https://example.com/ | grep -i x-cache
 ```
 
-`X-Cache: MISS` on the first request and `HIT` on the second means it is working.
-`BYPASS` means the request carried a login cookie, which is correct — logged-in
-visitors are never served someone else's page.
+- `X-Cache: MISS` on the first request, then `HIT` on the second: it works.
+- `BYPASS`: the request carried a login cookie. That is correct. A logged-in
+  visitor never gets someone else's page.
 
 ## On your own nginx
 
-The reference configuration is `.docker/nginx/microcache.conf` in the repository.
-It is three pieces: a `fastcgi_cache_path` and a cookie map in `http{}`, and a
-handful of `fastcgi_cache_*` directives inside your existing `location ~ \.php$`.
-Copy it as it is — in particular, do not add `fastcgi_ignore_headers` or a
-`fastcgi_cache_valid` override, because both take the decision away from the
-application and hand it to a rule that cannot tell a public listing from a
-private dashboard.
+Copy the settings in `.docker/nginx/microcache.conf` from the repository. They
+have three parts:
 
-## Holding pages for longer
+- a `fastcgi_cache_path` line, in `http{}`
+- a cookie map, in `http{}`
+- a few `fastcgi_cache_*` lines, inside your existing `location ~ \.php$`
 
-Thirty seconds is short, and deliberately so: with time as the only way an entry
-ever leaves the cache, a longer window means an edited listing showing its old
-price until it expires. Holding a page for an hour is only safe if something can
-say *this one is wrong now*.
+Copy them as they are. Do not add `fastcgi_ignore_headers` or a
+`fastcgi_cache_valid` override. Both make nginx decide what to cache on its own,
+and nginx cannot tell a public listing from a private dashboard.
 
-That is the **nginx Cache** plugin. Install it from **Plugins → Market**, or:
+## Keeping pages for longer
+
+A page stays in the cache for 30 seconds. That is short on purpose. With no other
+way to remove a page, a longer time means an edited listing shows its old price
+until the time runs out. You can keep pages for an hour only if something removes
+a page the moment it changes.
+
+The **nginx Cache** plugin does that. Install it from the **Browse** tab under **Plugins → Manage plugins**, or:
 
 ```bash
 php oc-cli.php market:install nginx-cache
 ```
 
-It raises the window to an hour and purges the affected pages — the listing, the
-home page, its category, the seller's profile — in the same request that changed
-them, so an edit is visible on the next page load rather than at the next cron
-tick.
+It keeps pages for an hour. When something changes, it **purges** (removes) the
+affected pages from the cache in the same request: the listing, the home page,
+its category and the seller's profile. The edit shows on the next page load, not
+at the next cron run.
 
-It needs nginx built with `ngx_cache_purge`. **The Docker image already carries
-it** and writes the purge endpoint whenever `OSC_MICROCACHE` is on, so there is
-nothing to configure there. Elsewhere it is an Alpine or Debian package
-(`nginx-mod-http-cache-purge`, `libnginx-mod-http-cache-purge`); the plugin's
-**Setup** page prints the exact configuration for your install, including the
-version of nginx you are actually running.
+It needs nginx with the `ngx_cache_purge` module.
 
-List every hostname the site answers on, one per line — `www.example.com` as well
-as `example.com`, aliases, a staging domain. nginx keeps a separate copy of every
-page under each `Host` it was asked with, so a name left out of the list goes on
-serving what it already had for the whole window.
+- **The Docker image already has it.** It turns on the purge address whenever
+  `OSC_MICROCACHE` is on. There is nothing to set up.
+- Elsewhere, install it as a package: `nginx-mod-http-cache-purge` on Alpine,
+  `libnginx-mod-http-cache-purge` on Debian. The plugin's **Setup** page prints
+  the exact nginx settings for your install and your nginx version.
 
-Then press **Test purge**. It primes and purges each host in turn, and requires
-the site's own to be among them. Until it has passed, the plugin serves core's own
-thirty seconds and changes nothing — a long window over a purge that silently
-does not work is worse than no plugin at all, so it is not something the plugin
-will take on trust.
+List every hostname your site answers on, one per line: `www.example.com` and
+`example.com`, other names, and any test domain. nginx keeps a separate copy of
+each page for each name. A name you leave out keeps its old copy for the whole
+hour.
 
-### What stays on the short window
+Then press **Test purge**. It stores and then purges a page on each hostname in
+turn. Your site's own hostname must be in the list. Until the test passes, the
+plugin keeps the normal 30 seconds and changes nothing. A long cache with a purge
+that quietly fails is worse than no plugin at all, so the plugin does not take it
+on trust.
 
-Only a URL a purge can name is held longer. Everything else keeps the
-thirty-second window whatever the settings say:
+### What stays at 30 seconds
 
-- **search results with parameters** — every keyword, filter, sort and page
-  number is its own cache entry, the set cannot be enumerated, and a newly
-  posted listing has to appear in them;
-- **any URL carrying a query string**, including `?comments-page=2` on a
-  listing and `?utm_source=…` on a shared link;
-- **every page, if friendly URLs are off** — the canonical URL of each is then a
-  query URL itself. Turn permalinks on under **Settings → Permalinks** first, or
-  this plugin has nothing it can hold.
+The plugin can only purge a page it can name by its address. Everything else
+stays at 30 seconds, whatever the settings say:
+
+- **Search results with options.** Every keyword, filter, sort order and page
+  number makes its own copy. Nobody can list them all, and a new listing must
+  show up in them.
+- **Any address with a query string** (a `?` and options after it). This
+  includes `?comments-page=2` on a listing and `?utm_source=…` on a shared link.
+- **Every page, if friendly URLs are off.** Then every page's address is a query
+  address. Turn permalinks on first, under **Settings → Permalinks**. Without
+  them, the plugin has nothing it can keep.
 
 ### Why an hour and not a day
 
-A cached page carries the security token minted when it was stored, and core
-stops accepting a token two hours after it was issued. A window much past an hour
-starts handing out tokens close to expiry, and every form on the page — contact
-seller, report listing, comment — answers *your session has expired*. Purging
-goes on working perfectly while that happens, which is why the plugin caps the
-setting rather than warning about it.
+Each form on a page carries a security token. A cached page keeps the token from
+when it was stored, and ShopClass stops accepting a token two hours after it was
+made. If pages stayed much longer than an hour, visitors would get tokens close
+to their end. Then every form on the page (contact seller, report listing,
+comment) would answer *your session has expired*. Purging would still work
+perfectly, so nothing would look wrong. That is why the plugin sets a maximum
+instead of just showing a warning.
 
 ## Troubleshooting
 
 | What you see | What it means |
 |---|---|
-| No `X-Cache` header at all | The cache is not configured. In the image, `OSC_MICROCACHE` is not set. |
-| `X-Cache: BYPASS` on every request | The request carries a login or locale cookie. Try it in a private window. |
-| Always `MISS`, never `HIT` | The response is not cacheable — check for a `Set-Cookie` on the page, or a plugin emitting its own `Cache-Control`. |
-| Test purge says a host is not in the list | Visitors reach the site under a name the plugin was not told to purge. Add it — port included. |
-| Test purge says the key does not match | The endpoint's scheme is not the one nginx serves on. It is part of the cache key, so a purge over the wrong one matches nothing. |
-| Test purge returns 404 | The purge location is missing from the nginx config. The Setup page prints it. |
-| An edit is not visible | Check **Purges waiting** on the plugin's settings page; anything there is a page the origin could not be told about, retried on the next cron run. |
+| No `X-Cache` header at all | The cache is not set up. In the Docker image, `OSC_MICROCACHE` is not set. |
+| `X-Cache: BYPASS` on every request | The request carries a login or language cookie. Try a private browser window. |
+| Always `MISS`, never `HIT` | The page cannot be cached. Look for a `Set-Cookie` on the page, or a plugin that sends its own `Cache-Control`. |
+| Test purge says a host is not in the list | Visitors reach the site under a name you did not list. Add it, with the port if there is one. |
+| Test purge says the key does not match | The purge address uses a different scheme (`http` or `https`) from the one nginx serves on. The scheme is part of each page's cache key, so a purge on the wrong one matches nothing. |
+| Test purge returns 404 | Your nginx settings are missing the purge address. The **Setup** page prints it. |
+| An edit does not show | Check **Purges waiting** on the plugin's settings page. Each entry is a page the plugin could not purge. It tries again on the next cron run. |

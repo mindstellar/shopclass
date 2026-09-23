@@ -1,92 +1,102 @@
 ---
 title: Mail server
-description: Configure SMTP in ShopClass so registration, alert and contact e-mails actually arrive — settings, provider examples and deliverability troubleshooting.
+description: Set up SMTP in ShopClass so sign-up, alert and contact e-mails reach the inbox — the settings, provider examples and what to do when mail goes missing.
 sidebar:
   order: 2
 ---
 
 ShopClass sends e-mail for account activation, password resets, listing alerts
-and the contact form. Out of the box it hands those messages to PHP's `mail()`,
-which on most shared hosting means they are sent from an unauthenticated local
-server and land in spam.
+and the contact form.
 
-Configuring real SMTP is the single biggest deliverability improvement you can
-make.
+Out of the box, it hands these messages to PHP's `mail()`. On most shared hosting,
+that sends them from a local server that nobody has verified, and they land in
+spam.
 
-Settings live at **Admin → Settings → Mail server**.
+**SMTP** is the standard way to send mail through a real mail server. Setting it
+up is the best thing you can do to get your mail delivered.
+
+The settings are at **Admin → Settings → Mail server**.
 
 ## The settings
 
 | Field | What to enter |
 |---|---|
-| **Hostname** | Your provider's SMTP host, e.g. `smtp.example.com`. |
-| **Server port** | `587` for STARTTLS (the modern default), `465` for implicit TLS. |
+| **Hostname** | Your provider's SMTP server, e.g. `smtp.example.com`. |
+| **Server port** | `587` for most providers. `465` if your provider says so. |
 | **Username** | The mailbox or API user. Usually the full e-mail address. |
-| **Password** | Its password, or an app-specific password / API key. |
-| **Encryption** | `tls` for port 587, `ssl` for port 465. Leave blank only on a trusted local relay. |
-| **SMTP authentication** | Check it whenever you filled in a username and password. |
+| **Password** | Its password, an app password, or an API key. |
+| **Encryption** | **TLS** for port 587, **SSL** for port 465. Choose **None** only for a mail server on your own trusted network. |
+| **SMTP authentication enabled** | Tick it. |
 
-:::caution[Use port 587 with `tls` unless told otherwise]
-Port 25 is blocked outbound by most hosting providers and by most residential
-networks. If mail silently never leaves, this is the first thing to check.
+:::caution[Tick SMTP authentication enabled]
+ShopClass sends through your SMTP server only when this box is ticked, or when
+**Use POP before SMTP** is ticked. If neither is ticked, it uses PHP's `mail()`.
 :::
 
-## Sending through a transactional provider
+:::caution[Use port 587 with TLS unless your provider says otherwise]
+Most hosting providers and home networks block port 25 for outgoing mail. If
+mail never leaves, check this first.
+:::
 
-A dedicated sending service — Postmark, Mailgun, Amazon SES, Brevo, SendGrid and
-others — will do more for your delivery rate than any setting in ShopClass. They
-all expose plain SMTP credentials that drop into the fields above.
+## Sending through a mail provider
 
-Whichever you use, complete their domain verification and publish the DNS
-records they give you:
+A sending service such as Postmark, Mailgun, Amazon SES, Brevo or SendGrid will
+improve delivery more than any setting in ShopClass. Each one gives you SMTP
+details that go into the fields above.
 
-- **SPF** — authorises the provider to send as your domain.
-- **DKIM** — signs your messages so receivers can verify them.
-- **DMARC** — tells receivers what to do when the first two fail.
+Whichever you pick, finish their domain check. They give you three DNS records
+(entries you add at the company that runs your domain name). Add all three:
 
-Without those three, your mail is unauthenticated no matter how it is sent.
+- **SPF** says which servers may send mail for your domain.
+- **DKIM** signs each message, so receivers can check it really came from you.
+- **DMARC** tells receivers what to do when the first two checks fail.
+
+Without all three, receivers cannot tell your mail from a fake, however you send
+it.
 
 ## Sending through Gmail or Google Workspace
 
-Possible, and fine for a small site, but understand the limits: Google caps
-daily volume and will mark a classifieds site's alert traffic as suspicious
-sooner than a transactional provider would.
+This works, and it is fine for a small site. But Google limits how much you can
+send each day. It also flags a classifieds site's alert mail as suspicious
+sooner than a sending service would.
 
 | Field | Value |
 |---|---|
 | Hostname | `smtp.gmail.com` |
 | Server port | `587` |
 | Username | Your full address, e.g. `you@gmail.com` |
-| Password | An [app password](https://support.google.com/accounts/answer/185833) — not your account password |
-| Encryption | `tls` |
-| SMTP authentication | Checked |
+| Password | An [app password](https://support.google.com/accounts/answer/185833), not your account password |
+| Encryption | **TLS** |
+| SMTP authentication enabled | Ticked |
 
-An app password requires 2-Step Verification on the account. Plain account
-passwords have not worked for SMTP for years.
+An app password needs 2-Step Verification turned on for the account. Gmail has
+not accepted your normal account password for SMTP for years.
 
 ## Testing
 
-Trigger a real message rather than guessing — register a test account, or use
-the contact form — and watch what happens. If nothing arrives, check the spam
-folder before assuming the send failed.
+Save your settings, then press **Send a test email** on the same screen. It
+sends a short message to your site's contact address.
+
+Then try a real message: register a test account, or use the contact form. If
+nothing arrives, look in the spam folder before you decide the send failed.
 
 ## Troubleshooting
 
 **No e-mail arrives at all.**
-Re-read the hostname, port and encryption for typos. Then confirm your host does
-not block outbound SMTP; many block port 25 and some block 587 unless you ask.
-Port 465 is often the one left open.
+Check the hostname, port and encryption for typos. Check that
+**SMTP authentication enabled** is ticked. Then ask your host whether it blocks
+outgoing mail. Many hosts block port 25, and some block 587 until you ask. Port
+465 is often the one left open.
 
 **Mail arrives, but always in spam.**
-Your domain is not authenticated. Publish SPF, DKIM and DMARC records for the
-address in the **From** field, and make sure that address is on a domain you
-control — not a free mailbox.
+Receivers cannot verify your domain. Add the SPF, DKIM and DMARC records for the
+address in **Mail from**. Use an address on a domain you own, not a free mailbox.
 
 **It worked, then stopped.**
-Either the provider suspended sending — check their dashboard for a bounce or
-complaint threshold you crossed — or a burst of alert e-mail hit a rate limit.
-Both are visible on the provider's side, not in ShopClass.
+Either the provider stopped your sending, or a burst of alert mail hit a sending
+limit. Look on the provider's dashboard for bounces, complaints or limits. You
+will not see this in ShopClass.
 
-**Some recipients get it, others never do.**
-That pattern is reputation, not configuration. Move to a transactional provider
-with a warmed sending domain.
+**Some people get it, others never do.**
+That is your domain's reputation, not your settings. Move to a sending service
+that has already built a good reputation for its servers.

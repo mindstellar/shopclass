@@ -1,14 +1,13 @@
 ---
 title: Install location data
-description: Add countries, regions and cities to ShopClass so visitors can filter listings by place — from the admin panel or the command line.
+description: Add countries, regions and cities to ShopClass so visitors can find listings near them — from the admin panel or the command line.
 sidebar:
   order: 3
 ---
 
-Location is half of what makes a classifieds site useful: *for sale near me*
-only works if the site knows what "near me" contains. ShopClass ships with no
-location data — a site serving one country has no business carrying 1.6 million
-place names — so you install the countries you actually serve.
+"For sale near me" only works if your site knows the places near your visitors.
+ShopClass ships with no places at all. A site that serves one country does not
+need 1.6 million place names, so you install only the countries you serve.
 
 ## From the admin panel
 
@@ -17,52 +16,56 @@ place names — so you install the countries you actually serve.
 ### Data — install and update countries
 
 **Data** lists all 255 countries in the published catalog. Filter them by **All**,
-**Installed**, **Updates** or **Not installed**, then install a country; its
+**Installed**, **Updates** or **Not installed**. Install a country, and its
 regions and cities come with it.
 
-Importing never deletes a location that holds listings.
+An import never deletes a place that has listings.
 
-A large country is no problem. Germany's 91,385 places import in well under a
-minute, in chunks, so no single request runs long enough to time out.
+Large countries are fine. Germany's 91,385 places import in well under a minute.
+The import works in small batches, so no single request runs long enough to time
+out.
 
-The tab also shows the catalog release date, with a **Check for updates** button.
+The tab also shows the date of the catalog, and a **Check for updates** button.
 
 #### Listing counts
 
-The number of listings shown against each location can drift after an import or a
-bulk change. **Recalculate** counts them again. It reports progress — *27%
-counted: 24,198 of 88,301 locations* — and the site stays online while it runs.
+The number of listings shown for each place can go wrong after an import or a
+bulk change. **Recalculate** counts them again. It shows its progress, for
+example *27% counted: 24,198 of 88,301 locations*. The site stays online while it
+runs.
 
 ### Browse — edit what you have
 
-**Browse** walks your installed data: countries, then regions, then cities. A
-breadcrumb across the top takes you back up.
+**Browse** shows your installed places: countries, then regions, then cities. The
+breadcrumb at the top takes you back up a level.
 
-Each level shows the name, the slug, how many children it has, how many listings
-it holds, and whether it is active or hidden.
+Each row shows the name, the slug (the name as it appears in web addresses), how
+many places sit under it, how many listings it has, and whether it is shown or
+hidden.
 
 | Tool | What it does |
 |---|---|
-| **Search** | Type a name. Choose **This level** or **Everywhere** to search the whole tree. |
-| **A–Z strip** | Jump to a letter. Appears once a level has many entries. |
-| **Paging** | 50 rows a page — *Showing 1–50 of 17,505 cities*. |
-| **Edit** | Opens a drawer beside the list. Rename, change the slug, hide or show. |
+| **Search** | Type a name. Choose **This level**, or **Everywhere** to search all places. |
+| **A–Z strip** | Jump to a letter. It appears when a level has many entries. |
+| **Paging** | 50 rows a page, for example *Showing 1–50 of 17,505 cities*. |
+| **Edit** | Opens a panel beside the list. Rename, change the slug, hide or show. |
 | **Add** | **Add country**, **Add region** or **Add city**, depending on the level. |
-| **Bulk actions** | Tick rows, then apply an action to all of them. |
+| **Bulk actions** | Tick rows, then apply one action to all of them. |
 
 ### Deleting a location
 
-Delete shows you what goes with it: the places underneath, how many listings are
-deleted, and how many users keep their account but lose their location.
+Before you delete, ShopClass shows what goes with it: the places under it, how
+many listings it deletes, and how many users keep their account but lose their
+location.
 
-If any listing would be deleted, you must type something before the button works —
-the location's name for one row, or the number of listings for a selection. If no
-listing is affected, it just asks you to confirm.
+If any listing will be deleted, you must type something before the button
+works. For one place, type its name. For several, type the number of listings.
+If no listing is affected, you only confirm.
 
-It cannot be undone.
+You cannot undo a delete.
 
 :::caution[Editing locations affects your statistics]
-Listing counts stay as they were until you recalculate them on the **Data** tab.
+The listing counts do not change until you recalculate them on the **Data** tab.
 :::
 
 ## From the command line
@@ -75,46 +78,45 @@ php oc-cli.php location:update --country=IN --dry-run
 ```
 
 :::note[`--all` does not mean "all countries"]
-It updates **every country already installed on this site**. The command
-refreshes what you have; it does not decide what you should have. Adding a new
-country is always an explicit `--country=`.
+It updates **every country already installed on this site**. It never adds a
+country. To add one, always name it with `--country=`.
 :::
 
-`--dry-run` computes every change and then rolls it back, so you can see the
-size of an update before committing to it.
+`--dry-run` works out every change and then undoes it. Use it to see how big an
+update is before you run it for real.
 
 ## Keeping it current
 
-Place names change — councils merge, cities are renamed, spellings are
-corrected. The catalog carries a content-derived version and a per-country
-checksum, so ShopClass answers "is my data current?" with one small request
-rather than by re-downloading anything. `location:status` shows you the answer,
-and the admin screen surfaces it as an update prompt.
+Place names change. Towns merge, cities get new names, spellings get fixed.
 
-Nothing is downloaded until you ask for it, and a routine upstream rebuild that
-finds no changes never produces a prompt.
+ShopClass checks whether your data is current with one small request. It does not
+download anything to find out. `location:status` shows the answer, and the admin
+screen shows an update prompt.
+
+Nothing downloads until you ask. If the catalog is rebuilt but nothing in it
+changed, you get no prompt.
 
 ## Where the data comes from
 
-The dataset is [**mindstellar/location-data**](https://github.com/mindstellar/location-data)
-— countries, administrative divisions and 1.6M+ settlements built from Wikidata
-and published **CC0**. No attribution or share-alike condition travels with the
-data your site imports.
+The data is [**mindstellar/location-data**](https://github.com/mindstellar/location-data):
+countries, regions and more than 1.6 million towns and cities, built from
+Wikidata. It is published under **CC0**, so you owe no credit and no conditions
+for the data your site imports.
 
-The catalog is published at `https://geo.mindstellar.com/releases/latest.json`.
-Core follows that pointer rather than pinning a release, so a corrected place
-name reaches installs without waiting for a ShopClass release.
+The catalog lives at `https://geo.mindstellar.com/releases/latest.json`.
+ShopClass always reads the latest release. So a fixed place name reaches your site
+without waiting for a new ShopClass version.
 
-### Pointing somewhere else
+### Using another source
 
-To use a local mirror, a staging copy or a pinned release, set an environment
+To use a local mirror, a test copy or one fixed release, set this environment
 variable:
 
 ```bash
 OSC_LOCATIONS_JSON_URL=https://mirror.example.com/locations/latest.json
 ```
 
-Or filter it from a plugin:
+Or set it from a plugin:
 
 ```php
 osc_add_filter('locations_json_url', function () {
@@ -122,19 +124,18 @@ osc_add_filter('locations_json_url', function () {
 });
 ```
 
-For safety, a pointer may only resolve to a manifest on its own origin — whoever
-serves the pointer cannot redirect an install somewhere else.
+For safety, the address can only point to a catalog on the same site. Whoever
+serves it cannot send your install to another site.
 
 ## Importing your own data
 
-If you have location data of your own — a country the catalog does not cover
-well, or a custom set of service areas — you can import SQL directly through
-**Admin → Tools → Import**, or with any MySQL client.
+You may have places of your own: a country the catalog covers badly, or your own
+service areas. Import them as SQL through **Admin → Tools → Import**, or with any
+MySQL program.
 
 Two rules:
 
-- Replace the `/*TABLE_PREFIX*/` placeholder with your actual prefix (`oc_` by
-  default) unless you are importing through the admin panel, which substitutes
-  it for you.
-- Do not install a country or region twice. Re-importing over existing rows
-  creates duplicates rather than updating them; remove the old rows first.
+- Replace `/*TABLE_PREFIX*/` with your table prefix (`oc_` by default). The admin
+  import does this for you.
+- Do not import a country or region twice. A second import adds duplicates. It
+  does not update the rows you have. Delete the old rows first.
