@@ -5,8 +5,8 @@ sidebar:
   order: 1
 ---
 
-A fresh install works, but it is empty and its defaults are conservative. This is
-the order worth doing things in, and why each one matters.
+A fresh install works, but it is empty and its defaults are conservative. Do
+the steps below in order.
 
 Everything below lives in the admin panel at `https://example.com/oc-admin/`.
 
@@ -15,25 +15,25 @@ Everything below lives in the admin panel at `https://example.com/oc-admin/`.
 **Settings → General.**
 
 Set the site title, contact e-mail and default language. The title appears in
-page titles, in e-mail and in the browser tab, so it is worth getting right
-before search engines see the site.
+page titles, in e-mail and in the browser tab. Get it right before search
+engines see the site.
 
 ## 2. Locations
 
 **Listings → Locations**, or `php oc-cli.php location:update --country=IN`.
 
-A classifieds site without location data cannot filter by place, which is half
-of what makes it useful. Install the countries you actually serve — see
+Visitors filter listings by place. Without location data, they cannot.
+Install the countries you serve — see
 [installing location data](/docs/configure/locations/).
 
 ## 3. Categories
 
 **Categories.**
 
-The default tree is a starting point, not an answer. Disable what you will not
-use and rename the rest to the words your visitors use. Category structure is
-hard to change once listings exist, because every listing belongs to one — so
-spend time here now rather than later.
+The default category tree is a starting point, not an answer. Disable what
+you will not use and rename the rest to the words your visitors use. Do this
+now: every listing belongs to one category, so the tree is hard to change once
+listings exist.
 
 See [categories](/docs/use/categories/).
 
@@ -45,58 +45,64 @@ Add one crontab entry:
 */5 * * * * php /path/to/site/oc-cli.php cron >/dev/null 2>&1
 ```
 
-Without it, e-mail alerts never send and expired listings never expire. This is
-the most commonly skipped step and the most commonly reported bug. See
+Without it, e-mail alerts never send and expired listings never expire. This
+is the step people skip most, and the bug they report most. See
 [setting up cron](/docs/configure/cron/).
 
 ## 5. Mail
 
 **Settings → Mail server.**
 
-Account activation, password resets and alerts all depend on outgoing mail, and
-PHP's default `mail()` on shared hosting usually lands in spam. Configure real
-SMTP before you invite anybody. See [mail server](/docs/configure/mail-server/).
+Account activation, password resets and alerts all need outgoing mail. PHP's
+default `mail()` usually lands in spam on shared hosting, so set up real SMTP
+before you invite anyone.  See [mail server](/docs/configure/mail-server/).
 
 ## 6. Spam defences
 
 **Settings → Spam and bots.**
 
-Turn on a CAPTCHA — Turnstile or reCAPTCHA — before the site is public. A
-classifieds site with an open publish form is found by bots within days of going
-live. See [spam and abuse](/docs/use/spam-and-abuse/).
+Turn on a CAPTCHA (Turnstile or reCAPTCHA) before the site is public. Bots
+find an open publish form within days of a site going live. See
+[spam and abuse](/docs/use/spam-and-abuse/).
 
 ## 7. Listing rules
 
 **Listings → Settings.**
 
-Decide the rules before people start posting, because changing them later is
-visible to everyone:
+Decide these before people start posting. Changing them later is visible to
+everyone:
 
-- whether new listings are held for moderation, and after how many approved
-  listings a user stops needing it
-- whether publishing requires an account
-- how many photos a listing may carry
-- how long a user must wait between posts
-- how much notice a seller gets before a listing expires
+- Whether new listings from users are held for admin approval
+  (**Hold new listings for admin moderation**), and whether users must
+  validate their own listings before they go live
+  (**Users have to validate their listings**), with a threshold after which a
+  regular user stops needing to.
+- Whether publishing needs an account.
+- How many photos a listing may carry.
+- How long a user must wait between posts.
+- How much notice a seller gets before a listing expires
+  (**Warn about expiration**).
 
-Listing **expiry itself is per category** — *Expiration (days)* on the category,
-with an option to apply it to all subcategories. See
+Listing **expiry itself is set per category** — *Expiration (days)* on the
+category, with an option to apply it to all subcategories. See
 [categories](/docs/use/categories/).
 
 ## 8. Permalinks
 
 **Settings → Permalinks.**
 
-Turn on friendly URLs and confirm a listing page loads. Doing this on day one
-matters: changing URL structure after you have indexed pages means redirects and
-lost rankings. See [permalinks and SEO](/docs/use/permalinks-and-seo/).
+Turn on friendly URLs and confirm a listing page loads. Do this on day one:
+changing URL structure after search engines have indexed your pages means
+redirects and lost rankings.
+
+See [permalinks and SEO](/docs/use/permalinks-and-seo/).
 
 ## 9. A theme
 
 **Appearance.**
 
-The bundled Storefront theme is a real theme, not a placeholder. Set your logo
-and colours before doing anything more ambitious. See
+The bundled Storefront theme is a real theme, not a placeholder. Set your
+logo and colours before doing anything more ambitious. See
 [themes and widgets](/docs/use/themes-and-widgets/).
 
 ## 10. Check your work
@@ -105,9 +111,9 @@ and colours before doing anything more ambitious. See
 php oc-cli.php doctor
 ```
 
-It checks the PHP version and extensions, the database, directory writability,
-whether cron has actually run recently, and the cache — and exits non-zero if
-anything fails.
+`doctor` checks the PHP version and extensions, the database, directory
+writability, whether cron has actually run recently, and the cache. It exits
+non-zero if anything fails.
 
 Then post a listing yourself, from a logged-out browser, exactly as a visitor
 would. It is the fastest way to find the thing you forgot.
