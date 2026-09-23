@@ -446,8 +446,11 @@ function osc_sendMail($params)
 
         $mail->CharSet = 'utf-8';
         $mail->isHTML();
-        // Set ahead of pre_send_mail, so a plugin can still replace it.
-        $mail->AltBody = _osc_mail_alt_body($params);
+        // Set ahead of pre_send_mail, so a plugin can still replace it. One a plugin
+        // already set in init_send_mail is kept, as it always was.
+        if ($mail->AltBody === '') {
+            $mail->AltBody = _osc_mail_alt_body($params);
+        }
 
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
         osc_phpmailer_limit_smtp_wait($mail);
@@ -510,48 +513,72 @@ function osc_mailBeauty($text, $params)
  */
 function _osc_mail_text($html)
 {
-    $text = (string)$html;
-    if ($text === '') {
+    $html = (string)$html;
+    if ($html === '') {
         return '';
     }
 
-    $text = preg_replace('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#is', '', $text);
-    // In HTML a line break in the source is only a space.
-    $text = preg_replace('/\s+/u', ' ', $text);
-
-    $text = preg_replace_callback(
-        // A browser ends a link at "</a" whatever follows it up to ">", so this does too.
-        '#<a\b[^>]*?\bhref\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a\b[^>]*>#is',
-        static function ($m) {
-            $url   = trim($m[2]);
-            $label = trim(strip_tags($m[3]));
-            if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
-                return $label;
-            }
-            if ($label === '' || $label === $url) {
-                return $url;
-            }
-
-            return $label . ' (' . $url . ')';
-        },
-        $text
+    // ASCII whitespace only, and no /u: an ASCII byte never occurs inside a UTF-8
+    // sequence, so this is safe on any text, including text that is not valid UTF-8.
+    $text = preg_replace(
+        array('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#is', '/[ \t\r\n\f\v]+/'),
+        array('', ' '),
+        $html
     );
 
-    $text = preg_replace('#<br\s*/?>#i', "\n", $text);
-    $text = preg_replace('#<li\b[^>]*>#i', "\n- ", $text);
-    $text = preg_replace('#</\s*li\s*>#i', '', $text);
-    $text = preg_replace('#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i', "\n\n", $text);
+    if ($text !== null) {
+        // Quoted attribute values are skipped whole, so an href spelled inside another
+        // attribute is not taken for the real one. The address cannot run past a quote
+        // or ">", and a label cannot swallow the next link. A browser ends a link at
+        // "</a" whatever follows it up to ">", so this does too.
+        $text = preg_replace_callback(
+            '#<a\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*?\shref\s*=\s*(["\'])([^"\'>]*)\1[^>]*>'
+            . '((?:(?!<a\b).)*?)</a\b[^>]*>#is',
+            static function ($m) {
+                $url   = trim($m[2]);
+                $label = trim(strip_tags($m[3]));
+                if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
+                    return $label;
+                }
+                if ($label === '' || $label === $url) {
+                    return $url;
+                }
+
+                return $label . ' (' . $url . ')';
+            },
+            $text
+        );
+    }
+
+    if ($text !== null) {
+        $text = preg_replace(
+            array(
+                '#<br\s*/?>#i',
+                '#<li\b[^>]*>#i',
+                '#</\s*li\s*>#i',
+                '#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i',
+            ),
+            array("\n", "\n- ", '', "\n\n"),
+            $text
+        );
+    }
+
+    // A pattern gave up -- PCRE's backtracking limit on pathological markup. A plainer
+    // copy without link addresses still beats none.
+    if ($text === null) {
+        $text = $html;
+    }
 
     $text = strip_tags($text);
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = str_replace("\xC2\xA0", ' ', $text);
 
     $lines = array();
     foreach (explode("\n", $text) as $line) {
-        $lines[] = trim(preg_replace('/[ \t\x{00A0}]+/u', ' ', $line));
+        $lines[] = trim(preg_replace('/[ \t]+/', ' ', $line));
     }
-    $text = preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines));
 
-    return trim($text);
+    return trim(preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)));
 }
 
 /**

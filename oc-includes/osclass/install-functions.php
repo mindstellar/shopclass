@@ -1155,8 +1155,10 @@ function basic_info()
         . ' ' . 'You can access the administration panel with these details:'), WEB_PATH);
     $body .= '<br/>';
     $body .= '<ul>';
-    $body .= '<li>' . sprintf(__('username: %s'), $admin) . '</li>';
-    $body .= '<li>' . sprintf(__('password: %s'), $password) . '</li>';
+    // The password is raw input and the username may carry "&" or "<"; escaped, both
+    // read exactly as typed in the HTML and in the plain copy made from it.
+    $body .= '<li>' . sprintf(__('username: %s'), htmlspecialchars($admin, ENT_QUOTES, 'UTF-8', false)) . '</li>';
+    $body .= '<li>' . sprintf(__('password: %s'), htmlspecialchars($password, ENT_QUOTES, 'UTF-8')) . '</li>';
     $body .= '</ul>';
     $body .= sprintf(
         __('Remember that for any doubts you might have you can consult our <a href="%1$s">documentation</a>'),
