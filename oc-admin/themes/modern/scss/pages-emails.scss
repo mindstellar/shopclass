@@ -1,0 +1,72 @@
+// Email template editor (emails/frm.php): what belongs to this screen alone. The shell it
+// sits in is editor.scss.
+
+#adminEmailForm {
+  .email-hint {
+    color: var(--osc-ink-muted);
+    font-size: $font-size-label;
+    margin-block: 0 .75rem;
+  }
+
+  // Placeholders: each row is one button, so the whole row is the hit target.
+  .email-vars {
+    display: flex;
+    flex-direction: column;
+    gap: .125rem;
+    list-style: none;
+    margin: 0 -.5rem;
+    padding: 0;
+  }
+
+  .email-var {
+    background: none;
+    border: 0;
+    border-radius: var(--bs-border-radius);
+    color: var(--osc-ink);
+    display: flex;
+    flex-direction: column;
+    gap: .125rem;
+    padding: .375rem .5rem;
+    text-align: start;
+    transition: background-color var(--osc-duration-fast) var(--osc-ease);
+    width: 100%;
+
+    code {
+      align-self: flex-start;
+      color: var(--osc-bronze-deep);
+      font-size: .8125rem;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    span {
+      color: var(--osc-ink-muted);
+      font-size: $font-size-label;
+    }
+
+    &:hover {
+      background: var(--osc-bronze-tint);
+    }
+
+    &:focus-visible {
+      background: var(--osc-bronze-tint);
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: -2px;
+    }
+  }
+
+  .email-test-panel .osc-field {
+    margin-block-end: .75rem;
+  }
+
+  .email-test-status {
+    color: var(--osc-success-deep);
+    font-size: $font-size-label;
+    margin-block: .5rem 0;
+    min-height: 1.25em;
+
+    &.is-error {
+      color: var(--osc-danger);
+    }
+  }
+}

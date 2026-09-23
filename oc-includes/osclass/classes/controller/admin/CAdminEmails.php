@@ -67,8 +67,7 @@ class CAdminEmails extends AdminSecBaseModel
                 break;
             case 'edit_post':
                 osc_csrf_check();
-                $id              = Params::getParam('id');
-                $s_internal_name = Params::getParam('s_internal_name');
+                $id = Params::getParam('id');
 
                 $aFieldsDescription = array();
                 $postParams         = Params::getParamsAsArray('', false);
@@ -82,30 +81,25 @@ class CAdminEmails extends AdminSecBaseModel
                     }
                 }
 
-                Session::newInstance()->_setForm('s_internal_name', $s_internal_name);
                 Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
 
-                if ($not_empty) {
-                    foreach ($aFieldsDescription as $k => $_data) {
-                        $this->emailManager->updateDescription($id, $k, $_data['s_title'], $_data['s_text']);
-                    }
-
-                    if (!$this->emailManager->internalNameExists($id, $s_internal_name)) {
-                        if (!$this->emailManager->isIndelible($id)) {
-                            $this->emailManager->updateInternalName($id, $s_internal_name);
-                        }
-                        Session::newInstance()->_clearVariables();
-                        osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
-                    }
-                    osc_add_flash_error_message(_m('You can\'t repeat internal name'), 'admin');
-                } else {
-                    osc_add_flash_error_message(
-                        _m('The email couldn\'t be updated, at least one title should not be empty'),
-                        'admin'
-                    );
+                // The internal name is how core finds a template to send, so it is never
+                // renamed here.
+                if (!$not_empty) {
+                    $error = _m('The email couldn\'t be updated, at least one title should not be empty');
+                    osc_add_flash_error_message($error, 'admin');
+                    $this->_exportVariableToView('editorErrors', array('s_title' => $error));
+                    $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey($id));
+                    $this->doView('emails/frm.php');
+                    break;
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=emails&action=edit&id=' . $id);
+
+                foreach ($aFieldsDescription as $k => $_data) {
+                    $this->emailManager->updateDescription($id, $k, $_data['s_title'], $_data['s_text']);
+                }
+                Session::newInstance()->_clearVariables();
+                osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 break;
             default:
                 //-

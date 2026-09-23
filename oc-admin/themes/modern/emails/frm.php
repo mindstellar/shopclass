@@ -14,165 +14,222 @@
  */
 
 osc_enqueue_script('tiny_mce');
+osc_enqueue_script('admin-editor');
 
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => __('Edit email template'),
 ));
 
-//customize Head
-/**
- * Emit the email-template form's TinyMCE setup.
- *
- * @return void
- */
-function customHead()
-{
-    ?>
-    <script type="text/javascript">
-        // This runs from the admin_header hook, i.e. before the enqueued tinymce
-        // bundle has executed — calling tinyMCE.init() here threw "tinyMCE is not
-        // defined" and the page silently fell back to bare textareas. Wait for DOM
-        // ready (by which point the library has loaded) and guard, the same way the
-        // page editor does.
-        document.addEventListener('DOMContentLoaded', function () {
-        if (typeof tinymce === 'undefined') {
-            return;
-        }
-        var cfg = <?php echo osc_tinymce_config('basic', array(
-            'selector' => 'textarea',
-            'width'    => '100%',
-            'height'   => '440px',
-            'language' => 'en',
-            // An email template is authored by an admin and is full of markup already, so
-            // this one keeps the source view the public preset no longer carries.
-            'plugins'  => 'autolink lists link code',
-            'toolbar'  => 'undo redo | bold italic underline | bullist numlist | link'
-                          . ' | removeformat | code',
-        )); ?>;
-        tinymce.init(cfg);
-        });
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            // First visible element for a selector (the active-locale field).
-            function firstVisible(sel) {
-                return Array.prototype.slice.call(document.querySelectorAll(sel))
-                    .filter(function (el) { return el.offsetParent !== null; })[0] || null;
-            }
-
-            var displayBtn = document.getElementById('btn-display-test-it');
-            if (displayBtn) {
-                displayBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    document.getElementById('dialog-test-it').showModal();
-                });
-            }
-
-            var testBtn = document.getElementById('btn-test-it');
-            if (testBtn) {
-                testBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    var nameEl = firstVisible('input[name*="#s_title"]');
-                    if (!nameEl) { return; }
-                    var locale = nameEl.getAttribute('name').replace('#s_title', '');
-                    var idTinymce = locale + '#s_text';
-                    var emailEl = firstVisible('input[name="test_email"]');
-                    var titleEl = firstVisible('input[name*="s_title"]');
-
-                    var body = new URLSearchParams();
-                    body.set('page', 'ajax');
-                    body.set('action', 'test_mail_template');
-                    body.set('email', emailEl ? emailEl.value : '');
-                    body.set('title', titleEl ? titleEl.value : '');
-                    body.set('body', tinyMCE.get(idTinymce).getContent({ format: 'html' }));
-
-                    fetch('<?php echo osc_admin_base_url(true); ?>', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: body
-                    }).then(function (r) {
-                        return r.json();
-                    }).then(function (data) {
-                        var mb = document.querySelector('#dialog-test-it .osc-dialog-body');
-                        if (mb) { mb.insertAdjacentHTML('beforeend', data.html); }
-                    });
-                });
-            }
-        });
-
-    </script>
-    <?php
-}
-
-osc_add_hook('admin_header', 'customHead', 10);
-
 $email      = __get('email');
 $aEmailVars = EmailVariables::newInstance()->getVariables($email);
 
-$locales = OSCLocale::newInstance()->listAllEnabled();
+// What was typed wins over what is stored, so a refused save comes back with the work in it.
+$emailErrors    = __get('editorErrors');
+$emailErrors    = is_array($emailErrors) ? $emailErrors : array();
+$emailSubmitted = Session::newInstance()->_getForm('aFieldsDescription');
+$emailName      = (string)($email['s_internal_name'] ?? '');
+$emailLocales  = array();
+$emailSubjects = array();
+$emailBodies   = array();
+foreach (osc_get_admin_locales() as $emailLocale) {
+    $code                 = $emailLocale['pk_c_code'];
+    $emailLocales[$code]  = $emailLocale['s_name'];
+    $emailSubjects[$code] = $emailSubmitted[$code]['s_title'] ?? $email['locale'][$code]['s_title'] ?? '';
+    $emailBodies[$code]   = $emailSubmitted[$code]['s_text'] ?? $email['locale'][$code]['s_text'] ?? '';
+}
+
+$emailBackUrl = osc_admin_base_url(true) . '?page=emails';
 
 osc_current_admin_theme_path('parts/header.php'); ?>
+<div id="adminEmailForm">
+    <?php
+    osc_admin_page_head(__('Edit email template'), array(
+        array('label' => __('Back to email templates'), 'url' => $emailBackUrl, 'variant' => 'dim'),
+    ));
 
-<?php osc_admin_page_head(__('Edit email template')); ?>
-<div id="pretty-form">
-    <div class="col">
-        <div class="row-wrapper">
-            <div id="item-form" class="row">
-                <div class="col" id="left-side">
-                    <?php PageForm::printMultiLangTab(); ?>
-                    <form action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                        <input type="hidden" name="page" value="emails"/>
-                        <input type="hidden" name="action" value="edit_post"/>
-                        <?php PageForm::primary_input_hidden($email); ?>
-                        <div id="left-side">
-                            <div>
-                                <label><?php _e('Internal name'); ?></label>
-                                <?php PageForm::internal_name_input_text($email); ?>
-                                <div class="callout-warning">
-                                    <p><?php _e('Used to identify the email template'); ?></p>
-                                </div>
-                            </div>
-                            <?php PageForm::printMultiLangTitleDesc($email, false)
-?>
-                        </div>
-                        <div class="clear"></div>
-                        <div class="form-actions form-inline">
-                            <button type="submit" class="btn btn-submit"><?php echo osc_esc_html(__('Save changes')); ?></button>
-                            <a id="btn-display-test-it" class="btn btn-secondary"><?php _e('Test it'); ?></a>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-lg-4 col-xl-3" id="right-side">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title"><?php _e('Legend'); ?></h3>
-                        </div>
-                        <div class="card-body">
-                            <?php foreach ($aEmailVars as $key => $value) { ?>
-                                <label><b><?php echo $key; ?></b><br/><?php echo $value; ?></label>
-                                <hr/>
-                            <?php } ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="clear"></div>
-            </div>
-        </div>
+    osc_admin_editor_open(array(
+        'id'           => 'email-form',
+        'class'        => 'email-editor',
+        'page'         => 'emails',
+        'action'       => 'edit_post',
+        'main_id'      => 'left-side',
+        'errors'       => $emailErrors,
+        'error_labels' => array('s_title' => __('Subject')),
+        'error_ids'    => array('s_title' => osc_admin_field_id(array('name' => 's_title'))),
+    ));
+
+    PageForm::primary_input_hidden($email);
+
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'translate_name' => '%s#s_title',
+        'label'          => __('Subject'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        'locales'        => $emailLocales,
+        'value'          => $emailSubjects,
+        'error'          => $emailErrors['s_title'] ?? '',
+        'class'          => 'osc-editor-title',
+    ));
+
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 's_text',
+        'translate_name' => '%s#s_text',
+        'label'          => __('Message'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        // The subject's strip above switches this field too.
+        'tabs'           => false,
+        'locales'        => $emailLocales,
+        'value'          => $emailBodies,
+        'preset'         => 'basic',
+        'height'         => 440,
+        // A template is markup an admin wrote, so it keeps the source view.
+        'config'         => array(
+            'plugins' => 'autolink lists link code',
+            'toolbar' => 'undo redo | bold italic underline | bullist numlist | link | removeformat | code',
+        ),
+    ));
+
+    osc_admin_editor_rail(array('id' => 'right-side'));
+
+    if ($aEmailVars) {
+        osc_admin_panel_open(__('Placeholders'), array('class' => 'email-vars-panel')); ?>
+        <p class="email-hint">
+            <?php _e('Each one is swapped for the real value when the email is sent. Click one to add it where the cursor is.'); ?>
+        </p>
+        <ul class="email-vars">
+            <?php foreach ($aEmailVars as $key => $value) { ?>
+                <li>
+                    <button type="button" class="email-var" data-var="<?php echo osc_esc_html($key); ?>">
+                        <code><?php echo osc_esc_html($key); ?></code>
+                        <span><?php echo osc_esc_html($value); ?></span>
+                    </button>
+                </li>
+            <?php } ?>
+        </ul>
+        <?php
+        osc_admin_panel_close();
+    }
+
+    osc_admin_panel_open(__('Send a test'), array('class' => 'email-test-panel')); ?>
+    <p class="email-hint">
+        <?php _e('Sends the subject and message shown now, in the language on screen. Placeholders are not filled in.'); ?>
+    </p>
+    <div class="osc-field">
+        <label class="form-label" for="email-test-to"><?php _e('Send to'); ?></label>
+        <input type="email" id="email-test-to" class="form-control" autocomplete="email"
+               value="<?php echo osc_esc_html(osc_logged_admin_email()); ?>"/>
     </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="email-test-send"><?php _e('Send test email'); ?></button>
+    <p class="email-test-status" id="email-test-status" role="status" aria-live="polite"></p>
+    <?php
+    osc_admin_panel_close();
+
+    osc_admin_panel_open(__('Template'));
+    osc_admin_definition(array(
+        array('label' => __('Internal name'), 'value' => '<code>' . osc_esc_html($emailName) . '</code>', 'html' => true),
+    ));
+    ?>
+    <p class="email-hint"><?php _e('Core finds this template by its internal name, so it cannot be changed.'); ?></p>
+    <?php
+    osc_admin_panel_close();
+
+    osc_admin_editor_close(array(
+        array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'),
+        array('label' => __('Back to email templates'), 'url' => $emailBackUrl, 'variant' => 'dim'),
+    )); ?>
 </div>
-<dialog id="dialog-test-it" class="osc-dialog">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title"><?php echo __('Send email'); ?></p>
-        <input placeholder="someone@example.com" type="text" name="test_email" class="form-control form-control-sm"/>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
-        <button id="btn-test-it" class="btn btn-primary btn-sm" type="button">
-            <?php _e('Send email'); ?>
-        </button>
-    </div>
-</dialog>
+<script>
+    (function () {
+        'use strict';
+        var form = document.getElementById('email-form');
+        if (!form) { return; }
 
+        // The subject and message of the language on screen. Only the active tab's
+        // panel is visible, so the first visible control is the one being edited.
+        function visible(selector) {
+            return Array.prototype.filter.call(form.querySelectorAll(selector), function (el) {
+                return el.closest('[hidden]') === null && el.closest('.tab-pane:not(.active)') === null;
+            })[0] || null;
+        }
+        function subjectInput() { return visible('input[name$="#s_title"]'); }
+        function messageEditor() {
+            var area = visible('textarea[name$="#s_text"]');
+            return area && window.tinymce ? tinymce.get(area.id) : null;
+        }
+
+        // A placeholder goes to whichever of the two was edited last.
+        var lastField = 'message';
+        form.addEventListener('focusin', function (e) {
+            if (e.target.matches && e.target.matches('input[name$="#s_title"]')) { lastField = 'subject'; }
+        });
+        if (window.tinymce) {
+            tinymce.on('AddEditor', function (e) {
+                e.editor.on('focus', function () { lastField = 'message'; });
+            });
+        }
+
+        form.querySelectorAll('.email-var').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var token = btn.getAttribute('data-var');
+                var input = subjectInput();
+                if (lastField === 'subject' && input) {
+                    var start = input.selectionStart ?? input.value.length;
+                    var end = input.selectionEnd ?? start;
+                    input.setRangeText(token, start, end, 'end');
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                    return;
+                }
+                var editor = messageEditor();
+                if (editor) {
+                    editor.focus();
+                    editor.insertContent(token);
+                }
+            });
+        });
+
+        var sendBtn = document.getElementById('email-test-send');
+        var status = document.getElementById('email-test-status');
+        var to = document.getElementById('email-test-to');
+        function say(text, ok) {
+            status.textContent = text;
+            status.classList.toggle('is-error', !ok);
+        }
+        sendBtn.addEventListener('click', function () {
+            if (!to.checkValidity() || to.value === '') {
+                say(<?php echo json_encode(__('Enter an email address to send the test to.')); ?>, false);
+                to.focus();
+                return;
+            }
+            var editor = messageEditor();
+            var input = subjectInput();
+            var body = new URLSearchParams();
+            body.set('email', to.value);
+            body.set('title', input ? input.value : '');
+            body.set('body', editor ? editor.getContent({ format: 'html' }) : '');
+
+            sendBtn.disabled = true;
+            say(<?php echo json_encode(__('Sending…')); ?>, true);
+            fetch(<?php echo json_encode(
+                osc_admin_base_url(true) . '?page=ajax&action=test_mail_template&' . osc_csrf_token_url()
+            ); ?>, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: body
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                say(data.html || data.msg || '', data.status === '1');
+            }).catch(function () {
+                say(<?php echo json_encode(__('An error occurred while sending email')); ?>, false);
+            }).finally(function () {
+                sendBtn.disabled = false;
+            });
+        });
+    })();
+</script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
