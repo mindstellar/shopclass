@@ -15,8 +15,9 @@ Terms, Privacy, How it works, Contact.
 **Pages → Add page**. A page has a title and body per active language, and a
 URL slug (the name as it appears in web addresses) taken from the title.
 
-Pages are linked from the footer automatically. That is also why deleting one
-warns you: it removes the page's link from the footer too.
+To link a page from the site footer, tick **Show a link in the footer** in the
+page's settings. It is off for a new page. Deleting a page also removes its
+footer link.
 
 ## Two ways to build one
 

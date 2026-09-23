@@ -115,7 +115,7 @@ there until you move it, and the migration tools do that:
 | Action | What it does |
 |---|---|
 | **Offload all local images to remote storage** | Queues every local image for upload. |
-| **Download all remote images back to local disk (offline copy)** | Pulls everything back — an offline copy, and the way out if you change your mind. |
+| **Download all remote images back to local (offline copy)** | Pulls everything back — an offline copy, and the way out if you change your mind. |
 | **Adopt existing Better S3 images** | Takes over images already in a bucket from the Better S3 plugin, rather than re-uploading them. |
 
 ### The queue

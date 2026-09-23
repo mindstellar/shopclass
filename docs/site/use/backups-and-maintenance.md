@@ -57,7 +57,8 @@ with one button to switch it.
 
 ### Two ways to run it
 
-Under **Visitors** there is a checkbox, **Block the public site (HTTP 503)**.
+Under **Visitors** there is a checkbox, **Block the public site (HTTP 503)**. (A 503 is the "temporarily unavailable"
+answer a server gives browsers and search engines.)
 
 | Checkbox | What a visitor gets |
 |---|---|
@@ -151,7 +152,7 @@ data between requests, and stats such as entries, hit rate and memory use when
 the driver reports them.
 
 The default driver holds nothing between requests, so there is nothing to
-clear and no **Clear cache** button to press. To cache between requests,
+clear, and the **Clear cache** button is greyed out. To cache between requests,
 install one of the extensions the screen lists and set
 `define('OSC_CACHE', 'apcu');` (or `memcached`) in your config file.
 
