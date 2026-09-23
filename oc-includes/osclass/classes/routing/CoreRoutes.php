@@ -255,8 +255,8 @@ class CoreRoutes
                 'pref'   => 'rewrite_user_items',
                 'to'     => array('page' => 'user', 'action' => 'items'),
                 'params' => array(
-                    'iPage'    => array('query' => true),
-                    'itemType' => array('query' => true),
+                    'iPage'    => array('query' => true, 'enc' => true),
+                    'itemType' => array('query' => true, 'enc' => true),
                 ),
             ),
             'user_alerts' => array(
@@ -455,37 +455,50 @@ class CoreRoutes
         if (!isset($templates[$name])) {
             return array();
         }
-        $tpl      = $templates[$name];
-        $structure = (string)osc_get_preference($tpl['pref']);
+        $tpl       = $templates[$name];
+        $structure = trim((string)osc_get_preference($tpl['pref']));
+        // An empty structure compiles to '^/?$', which answers the site's front page
+        // with the wrong controller. Reachable: this table is rebuilt the moment new
+        // code is deployed, which can be before a release's migration has seeded a
+        // preference, and the permalinks screen does not require every structure.
+        if ($structure === '') {
+            return array();
+        }
 
-        // Where each placeholder sits in the structure decides which capture it is.
+        // Every placeholder occurrence, in the order it is written: where one sits in
+        // the structure is what decides which capture group it becomes. A structure may
+        // name the same placeholder twice, so occurrences are counted, not placeholders.
         $found = array();
         foreach ($tpl['tokens'] as $token => $spec) {
             if (!isset($spec['re'])) {
                 continue;
             }
-            $at = stripos($structure, $token);
-            if ($at !== false) {
+            $offset = 0;
+            while (($at = stripos($structure, $token, $offset)) !== false) {
                 $found[$at] = array($token, $spec);
+                $offset     = $at + strlen($token);
             }
         }
         ksort($found);
 
-        $body     = $structure;
+        $body     = '';
+        $cursor   = 0;
         $captures = array();
         $index    = 0;
-        foreach ($found as $entry) {
+        foreach ($found as $at => $entry) {
             list($token, $spec) = $entry;
-            $body = str_ireplace($token, $spec['re'], $body);
+            $body   .= substr($structure, $cursor, $at - $cursor) . $spec['re'];
+            $cursor  = $at + strlen($token);
             if (strpos($spec['re'], '(') === 0) {
                 $index++;
-                // First placeholder wins: a structure naming a parameter twice is
+                // First occurrence wins: a structure naming a parameter twice is
                 // answered by the one the reader sees first.
                 if (isset($spec['param']) && !isset($captures[$spec['param']])) {
                     $captures[$spec['param']] = $index;
                 }
             }
         }
+        $body .= substr($structure, $cursor);
 
         $rules = array();
         foreach ($tpl['variants'] as $variant) {
@@ -506,14 +519,31 @@ class CoreRoutes
                 $query[$variant['suffixParam']] = '$' . ($index + $shift + 1);
             }
 
-            $target = 'index.php?';
-            foreach ($query as $k => $v) {
-                $target .= ($target === 'index.php?' ? '' : '&') . $k . '=' . $v;
-            }
-            $rules[$pattern] = $target;
+            $rules[$pattern] = 'index.php?' . self::join($query);
         }
 
         return $rules;
+    }
+
+    /**
+     * The slug path of a category and its ancestors, root first -- what {CATEGORIES}
+     * stands for in a listing or category permalink.
+     *
+     * @param int|string $categoryId
+     *
+     * @return string
+     */
+    public static function categoryPath($categoryId): string
+    {
+        $branch = \Category::newInstance()->hierarchy($categoryId);
+        $slugs  = array();
+        for ($i = count($branch); $i > 0; $i--) {
+            if (isset($branch[$i - 1]['s_slug'])) {
+                $slugs[] = $branch[$i - 1]['s_slug'];
+            }
+        }
+
+        return implode('/', $slugs);
     }
 
     /**
@@ -589,11 +619,7 @@ class CoreRoutes
                 $query[$name] = '$' . (array_search($name, $captures, true) + 1);
             }
 
-            $target = 'index.php?';
-            foreach ($query as $k => $v) {
-                $target .= ($target === 'index.php?' ? '' : '&') . $k . '=' . $v;
-            }
-            $rules[$pattern] = $target;
+            $rules[$pattern] = 'index.php?' . self::join($query);
         }
 
         return $rules;

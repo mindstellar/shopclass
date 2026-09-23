@@ -571,12 +571,8 @@ function osc_item_url_from_item($item, $locale = '')
         if (osc_rewrite_enabled()) {
             $values = array('ITEM_ID' => $itemId, 'ITEM_CITY' => $itemCity, 'ITEM_TITLE' => $itemTitle);
             if (stripos((string)osc_get_preference('rewrite_item_url'), '{CATEGORIES}') !== false) {
-                $sanitized_categories = array();
-                $cat                  = Category::newInstance()->hierarchy($item['fk_i_category_id']);
-                for ($i = count($cat); $i > 0; $i--) {
-                    $sanitized_categories[] = $cat[$i - 1]['s_slug'];
-                }
-                $values['CATEGORIES'] = implode('/', $sanitized_categories);
+                $values['CATEGORIES'] =
+                    \mindstellar\routing\CoreRoutes::categoryPath($item['fk_i_category_id']);
             }
 
             $url  = \mindstellar\routing\CoreRoutes::expand('item', $values);

@@ -542,12 +542,7 @@ class Sitemap extends DAO
                 'ITEM_TITLE' => osc_sanitizeString($itemTitle),
             );
             if (stripos((string)osc_get_preference('rewrite_item_url'), '{CATEGORIES}') !== false) {
-                $sanitizedCategories = array();
-                $cat                 = Category::newInstance()->hierarchy($itemCategory);
-                for ($i = count($cat); $i > 0; $i--) {
-                    $sanitizedCategories[] = $cat[$i - 1]['s_slug'];
-                }
-                $values['CATEGORIES'] = implode('/', $sanitizedCategories);
+                $values['CATEGORIES'] = \mindstellar\routing\CoreRoutes::categoryPath($itemCategory);
             }
             $url  = \mindstellar\routing\CoreRoutes::expand('item', $values);
             $path = osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $url;

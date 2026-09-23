@@ -585,16 +585,8 @@ function osc_search_url($params = null)
                     'CATEGORY_ID'   => $category['pk_i_id'],
                 );
                 if (stripos((string)osc_get_preference('rewrite_cat_url'), '{CATEGORIES}') !== false) {
-                    $categories           =
-                        Category::newInstance()->hierarchy($category['pk_i_id']);
-                    $sanitized_categories = array();
-                    $mCat                 = Category::newInstance();
-                    for ($i = count($categories); $i > 0; $i--) {
-                        $tmpcat                 =
-                            $mCat->findByPrimaryKey($categories[$i - 1]['pk_i_id']);
-                        $sanitized_categories[] = $tmpcat['s_slug'];
-                    }
-                    $values['CATEGORIES'] = implode('/', $sanitized_categories);
+                    $values['CATEGORIES'] =
+                        \mindstellar\routing\CoreRoutes::categoryPath($category['pk_i_id']);
                 }
                 $seo_prefix = '';
                 if (osc_get_preference('seo_url_search_prefix') != '') {
