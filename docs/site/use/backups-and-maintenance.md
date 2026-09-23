@@ -9,12 +9,16 @@ Everything here lives under **Tools** in the admin panel.
 
 ## Backups
 
-**Tools → Backup data** exports two things, and a complete backup needs both:
+**Tools → Backup data** has a **Backup folder** field (where server-side
+backups are written) and a **Backup Method** dropdown with three choices, and a
+complete backup needs both kinds:
 
-1. **A SQL dump** of the database — listings, users, categories, settings,
-   everything. Downloaded directly, or written to a directory on the server.
-2. **A zip of the install**, which carries `oc-content/` — uploads, installed
-   plugins and themes.
+1. **Backup SQL (download file)** or **Backup SQL (store on server)** — a dump
+   of the database: listings, users, categories, settings, everything.
+2. **Backup files (store on server)** — a zip of the whole install folder: the
+   application code plus `oc-content/` (uploads, installed plugins and
+   themes). There is no direct-download option for this one; it is always
+   written to the backup folder.
 
 A database dump without the uploads restores a site whose every photo is
 missing.
@@ -64,7 +68,7 @@ Tick it before a major update, a large migration or a schema change — nobody
 publishes a listing into a database you are in the middle of moving.
 
 Leave it unticked for work that does not risk the data: a theme change, a price
-update, a slow import. Visitors keep shopping and simply know something is going on.
+update, a slow import. Visitors keep shopping and know something is going on.
 
 Your choice is remembered when you turn maintenance mode off again.
 
@@ -72,7 +76,7 @@ Your choice is remembered when you turn maintenance mode off again.
 
 The **Message** box under the checkbox is shown on the banner and on the 503 page.
 Plain text only, up to 500 characters — HTML is stripped. Leave it blank and
-Shopclass writes a polite default using your site name.
+ShopClass writes a polite default using your site name.
 
 :::caution[Do not forget it is on]
 A site left blocked is indistinguishable from a dead one, to visitors and to
@@ -90,46 +94,70 @@ the one exception: it locks out everything except a signed-in admin.
 
 | Group | What it removes |
 |---|---|
+| **Reported listings** | Flagged by visitors as spam |
 | **Expired listings** | Past their expiration date |
 | **Blocked listings** | Disabled or blocked |
-| **Spam listings** | Flagged as spam by visitors |
+| **Spam listings** | Marked as spam |
 | **Unactivated listings** | Never activated from the confirmation e-mail |
-| **Unactivated accounts** | Never activated from the confirmation e-mail |
+| **Unactivated users** | Never activated from the confirmation e-mail |
 
-Run it on demand, or save the settings and let the **daily cron** do it.
+Tick which groups to clean, and set **Older than** (in days) for each one
+except Reported listings, which has no age limit. **Maximum items removed per
+run** caps each run so it cannot time out on a large backlog — run it again to
+work through the rest.
+
+Run it on demand with **Run cleanup now**, or save the settings and let the
+**daily cron** do it.
 
 On an established site this is what keeps the database fast — dead rows cost you
 on every search. Back up before the first run, and think about expired listings
-specifically: deleting them 404s pages that may still rank.
+specifically: deleting them turns pages that may still rank in search into a
+404 (page not found) error.
+
+The same screen also has a **Listing statistics** section: whether to count
+listing views at all, whether to count crawler visits as views (off by
+default), and how many days of daily view history to keep.
 
 ## The activity log
 
-**Tools → Activity log** records admin actions with their details and originating IP,
-searchable by *details, action or IP*.
+**Tools → Activity log** records admin and listing activity, with details and
+originating IP, searchable by *details, action or IP*.
 
 This is what answers "who disabled that category" and "when did this setting
 change" on a site with more than one admin. It can be filtered, and cleared
 entirely.
 
-Behind a reverse proxy, the logged IP is only meaningful if the real client IP
-is being passed through — see the
+Behind a reverse proxy (a server such as a CDN or load balancer sitting in
+front of yours), the logged IP is only meaningful if the real client IP is
+being passed through — see the
 [caching contract](/docs/developers/caching/).
 
 ## Import
 
-**Tools → Import data** takes SQL directly — the route for location data,
+**Tools → Import data** takes a `.sql` file — the route for location data,
 bulk-loading listings, or anything prepared outside the admin.
 
-It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual prefix, which
-is why data prepared for it should keep the placeholder rather than a
-hard-coded `oc_`.
+It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual table
+prefix, which is why SQL prepared for it should keep the placeholder rather
+than a hard-coded `oc_`.
 
 Back up first. An import runs whatever SQL you give it.
 
 ## Cache
 
-**Tools → Cache** clears the object cache after a bulk import or a direct
-database edit — anything that changed data behind the application's back.
+**Tools → Cache** shows which object-cache driver is running (in-request only
+by default, or APCu, Memcached or Memcache if installed), whether it keeps
+data between requests, and stats such as entries, hit rate and memory use when
+the driver reports them.
+
+The default driver holds nothing between requests, so there is nothing to
+clear and no **Clear cache** button to press. To cache between requests,
+install one of the extensions the screen lists and set
+`define('OSC_CACHE', 'apcu');` (or `memcached`) in your config file.
+
+Once a persistent driver is active, use **Clear cache** after a bulk import or
+a direct database edit — anything that changed data behind the application's
+back:
 
 ```bash
 php oc-cli.php cache:flush
@@ -140,8 +168,8 @@ See [object caching](/docs/configure/cache/).
 ## System info and health
 
 **Tools → System info** reports the PHP version, memory limit, upload limits,
-extensions, database version and disk space — the details every bug report
-should include.
+extensions, database server details and free disk space — the details every
+bug report should include.
 
 The same ground, from a shell, with pass/fail verdicts and a non-zero exit code
 when something is wrong:

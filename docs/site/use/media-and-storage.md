@@ -16,17 +16,18 @@ from every upload:
 
 | Size | Used for |
 |---|---|
-| **Thumbnail** | Listing grids and search results |
-| **Preview** | The gallery strip on a listing page |
-| **Normal** | The full view a visitor opens |
+| **Thumbnail size** | Listing grids and search results |
+| **Preview size** | The gallery strip on a listing page |
+| **Normal size** | The full view a visitor opens |
 
 Sizes are entered as dimensions. Bigger is not better here — thumbnails are what
 a browse page loads dozens of at once, and they set how fast the page feels.
 
 ### Regenerating
 
-Changing a size does not touch images that already exist. **Regenerate images**
-rebuilds them from the originals.
+Changing a size does not touch images that already exist. Under
+**Regenerate images**, the **Regenerate** button rebuilds them from the
+originals.
 
 On a large site this is slow and heavy. Run it when traffic is low, and take a
 [backup](/docs/use/backups-and-maintenance/) first.
@@ -37,9 +38,10 @@ On a large site this is slow and heavy. Run it when traffic is low, and take a
 ceiling PHP itself imposes — *Maximum size PHP configuration allows: n KB* — and
 your setting cannot exceed it.
 
-If you need a higher limit than PHP allows, raise `upload_max_filesize` and
-`post_max_size` in PHP's configuration first; the ShopClass setting will not
-override them. A too-low PHP limit shows up as an upload that silently fails on
+If you need a higher limit than PHP allows, raise `upload_max_filesize`,
+`post_max_size` and `memory_limit` in PHP's configuration first; the ShopClass
+setting will not override them — it uses whichever of the three gives the
+lowest number. A too-low PHP limit shows up as an upload that silently fails on
 large photos — see [debugging PHP errors](/docs/developers/debug-php-errors/).
 
 The photo count per listing is set separately, in **Listings → Settings**.
@@ -62,8 +64,12 @@ devalues the listing for the seller who posted it.
 on the web server. That is fine for one server and becomes a problem the moment
 you want two, or when uploads outgrow the disk.
 
-Storage offload moves them to an S3-compatible bucket, served directly to
-visitors.
+Storage offload moves them to an **S3-compatible bucket** — cloud storage that
+speaks the same protocol as Amazon S3, which most storage providers support —
+served directly to visitors.
+
+Turn it on from the **Active storage** field: switch it from **Local disk** to
+**Amazon S3-compatible**, then fill in the connection below.
 
 ### Providers
 
@@ -87,14 +93,17 @@ step, which is much easier to debug than a failed upload later.
 
 Two fields deserve attention:
 
-- **Public URL** — the hostname visitors will load images from. Set this to your
-  CDN or custom domain if the bucket is behind one, not the raw endpoint.
-- **Keep a local copy** — whether the file also stays on the web server. Costs
-  disk, and buys you a working site if the bucket becomes unreachable.
+- **Public URL** — the hostname visitors will load images from. Set this to
+  your CDN (a content delivery network — servers that cache and serve files
+  closer to visitors) or custom domain if the bucket is behind one, not the
+  raw endpoint.
+- **Local copies** — **Keep local copies** or **Delete after upload**. Keeping
+  a copy costs disk, and buys you a working site if the bucket becomes
+  unreachable.
 
 :::note[The secret key is write-only]
 Leaving the secret key field blank keeps the saved one. The admin says so:
-*leave blank to keep the currently saved secret key.* It is never displayed back
+*Leave blank to keep the currently saved secret key.* It is never displayed back
 to you.
 :::
 
@@ -106,7 +115,7 @@ there until you move it, and the migration tools do that:
 | Action | What it does |
 |---|---|
 | **Offload all local images to remote storage** | Queues every local image for upload. |
-| **Download all remote images back to local** | Pulls everything back — an offline copy, and the way out if you change your mind. |
+| **Download all remote images back to local disk (offline copy)** | Pulls everything back — an offline copy, and the way out if you change your mind. |
 | **Adopt existing Better S3 images** | Takes over images already in a bucket from the Better S3 plugin, rather than re-uploading them. |
 
 ### The queue
@@ -129,6 +138,7 @@ wrong and every job is failing the same way.
 - Set a bucket lifecycle policy if your provider charges for storage you forget
   about.
 - Make the bucket's objects publicly readable, or serve them through a CDN that
-  can read them. A private bucket with no signed-URL path shows visitors broken
-  images.
+  can read them. For a private bucket, turn on **Serve files through
+  time-limited signed URLs** — each image link then carries its own
+  time-limited access code, so visitors are not shown broken images.
 - Test with a single new listing before migrating the whole library.

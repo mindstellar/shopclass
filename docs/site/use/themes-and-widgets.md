@@ -11,8 +11,9 @@ where you place widgets into the sections a theme offers.
 ## The bundled theme
 
 New installs get **Storefront** — a real, maintained theme, not a placeholder.
-It has light and dark modes, three WCAG-AA colour palettes and its own settings
-screen, and it is the theme the [live demo](https://demo.mindstellar.com) runs.
+It has light and dark modes, three colour palettes that meet WCAG-AA (the
+standard for readable colour contrast) and its own settings screen, and it is
+the theme the [live demo](https://demo.mindstellar.com) runs.
 
 Start by configuring it rather than replacing it. Most sites need a logo, a
 palette and their own hero copy, which is a settings change, not a theme change.
@@ -54,7 +55,7 @@ Themes are not interchangeable. Check three things:
 
 - **Widget sections differ between themes.** A theme declares its own sections,
   so widgets placed for one theme may have nowhere to go in another. They are
-  not deleted — they simply stop rendering until you place them again.
+  not deleted — they stop rendering until you place them again.
 - **Compatibility.** A theme declares the ShopClass and PHP versions it supports,
   and the card says plainly whether it runs here — *Needs 6.5 or newer*, *Needs
   PHP 8.2* — instead of leaving you to compare numbers.
@@ -81,6 +82,8 @@ section; the order is the order visitors see.
 | **Custom Code (HTML / JavaScript)** | Raw markup and script. |
 
 Plugins register further types, which appear in the same picker.
+
+Only full admins can add a Custom Code widget — moderators cannot.
 
 :::danger[Custom Code runs on your visitors' browsers]
 Anything you paste there executes on every page the widget appears on. Paste
@@ -109,8 +112,8 @@ Two durable approaches:
   See [Child themes](/docs/developers/child-themes/) for what is inherited and
   the two rules that stop a child breaking its parent.
 - **A plugin.** Styles, scripts and behaviour can be added from a plugin with
-  [the enqueue functions](/docs/developers/scripts-and-styles/), leaving the
-  theme untouched entirely.
+  [the functions that register them](/docs/developers/scripts-and-styles/),
+  leaving the theme untouched entirely.
 
 For building a theme from scratch, see the
 [package specification](/docs/developers/package-spec/).

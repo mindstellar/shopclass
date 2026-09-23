@@ -17,9 +17,10 @@ With friendly URLs off, a listing is `index.php?page=item&id=1234`. With them on
 it carries the title. Turn them on **before** the site is indexed — changing URL
 structure afterwards means redirects and lost rankings.
 
-Every route has its own pattern: listings, categories, user pages, contact,
-feeds, and the account flows. The screen lists the keywords each pattern accepts,
-and every one is required — a blank field is rejected.
+Every route has its own pattern: listings, pages, categories, search, contact,
+feeds, listing actions (edit, delete, and the rest) and the account flows. The
+screen lists the keywords each pattern accepts, and every field is required
+except the search prefix, which may be left blank.
 
 Leave the defaults unless you have a specific reason. The one worth thinking
 about is the **listing** pattern: including the category makes the URL
@@ -28,8 +29,8 @@ self-describing, and means the URL changes if a listing is re-categorised.
 :::caution[Friendly URLs need web-server rewriting]
 On Apache, `mod_rewrite` must be enabled and `AllowOverride All` must apply so
 the shipped `.htaccess` is read. On nginx you need a `try_files` rule. If every
-link 404s after turning them on, this is why — see
-[install troubleshooting](/docs/install/#troubleshooting).
+link shows a 404 (page not found) error after turning them on, this is why —
+see [install troubleshooting](/docs/install/#troubleshooting).
 :::
 
 Renaming a category changes its slug and therefore its browse URL. ShopClass
@@ -46,8 +47,9 @@ Choose what goes in:
 - Countries, regions and cities
 - Pages
 
-and set the **frequency** — Hourly, Daily or Monthly — plus **last modified**
-handling. Extra URLs can be added by hand.
+Extra URLs the sitemap would not otherwise find — pages served by a plugin, for
+example — can be added by hand, each with its own **frequency** (Hourly, Daily,
+Weekly, Monthly or Yearly) and **last modified** date.
 
 **Include what has content, exclude what does not.** Categories-with-cities
 multiplies into a very large sitemap, and filling it with combinations that
@@ -66,19 +68,23 @@ php oc-cli.php sitemap:warm
 The same screen edits and saves **robots.txt**.
 
 The default is fine for most sites. Two things worth adding: your sitemap URL,
-and a `Disallow` for search-result URLs — an infinite space of filter
-combinations that wastes crawl budget on pages you do not want ranking anyway.
+and a `Disallow` for search-result URLs. Search engines only crawl so many
+pages on your site per visit (your "crawl budget"), and an infinite space of
+filter combinations wastes it on pages you do not want ranking anyway.
 
 ## Saved-search feeds
 
-Every search has an RSS feed, and users can subscribe to one as an
+Every search has an RSS feed (a machine-readable list of results that updates
+automatically), and users can subscribe to one as an
 [alert](/docs/use/listings-and-moderation/#alerts) delivered by e-mail. Alerts
-are sent by **cron** on the schedule the user picked; without cron they never
-arrive.
+are sent by **cron** (a timer on your server — see
+[Set up cron](/docs/configure/cron/)) on the schedule the user picked; without
+cron they never arrive.
 
-**Settings → Latest searches** controls how many recent queries are stored. That log is
-worth reading: it tells you the words your visitors actually use, which is what
-your category names should match.
+**Settings → Latest searches** controls how long queries are kept — an hour, a
+day, a week, forever, the last 1000, or a number you set. That log is worth
+reading: it tells you the words your visitors actually use, which is what your
+category names should match.
 
 ## Practical SEO for a classifieds site
 
