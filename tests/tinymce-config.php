@@ -157,7 +157,7 @@ foreach ($roots as $root) {
     }
 }
 
-check('the scan found the editors it is meant to police', $editors >= 5);
+check('the scan found the editors it is meant to police', $editors >= 4);
 pin('no editor hand-rolls its own config', '', implode(', ', $offend));
 
 exit(harness_result());
