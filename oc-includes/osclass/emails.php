@@ -100,47 +100,33 @@ function fn_email_alert_validation($alert, $email, $secret)
 osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
 
 /**
- * Email one subscriber the hourly digest of new listings matching their saved search.
+ * The editable page a digest is written from, in the site's language.
  *
- * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
- * @param string              $ads        Pre-rendered HTML list of the matching listings
- * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
- * @param array<int,array<string,mixed>> $items New listings found since the last run
- * @param int                 $totalItems Total number of matches, which may exceed count($items)
+ * @param string $internalName alert_email_hourly or alert_email_weekly
  *
- * @return void
+ * @return array<string,string> The s_title and s_text of that page
  */
-function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
+function _alert_email_template($internalName)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_hourly');
-    $page_description = $page['locale'];
+    $page = Page::newInstance()->findByInternalName($internalName);
 
-    $_title = osc_apply_filter(
-        'email_title',
-        osc_apply_filter(
-            'alert_email_hourly_title',
-            $page_description[$prefLocale]['s_title'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
-    $_body  = osc_apply_filter(
-        'email_description',
-        osc_apply_filter(
-            'alert_email_hourly_description',
-            $page_description[$prefLocale]['s_text'],
-            $user,
-            $ads,
-            $s_search,
-            $items,
-            $totalItems
-        )
-    );
+    return $page['locale'][osc_language()];
+}
 
+/**
+ * Who a digest goes to, and the placeholder values for their copy of it.
+ *
+ * An alert can be subscribed by an account or by a bare address. An account's own
+ * name and address win over whatever the alert was created with.
+ *
+ * @param array<string,mixed> $user     The alert row
+ * @param string              $ads      Rendered listings block
+ * @param array<string,mixed> $s_search The alert, for its unsubscribe secret
+ *
+ * @return array{user:array<string,mixed>,words:array<int,array<int,string>>}
+ */
+function _alert_email_recipient($user, $ads, $s_search)
+{
     if ($user['fk_i_user_id'] != 0) {
         $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
     } else {
@@ -154,49 +140,103 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
     );
     $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
 
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
+    return array(
+        'user'  => $user,
+        'words' => array(
+            array('{USER_NAME}', '{USER_EMAIL}', '{ADS}', '{UNSUB_LINK}'),
+            array($user['s_name'], $user['s_email'], $ads, $unsub_link),
+        ),
     );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
+}
 
-    $title = osc_apply_filter(
-        'alert_email_hourly_title_after',
-        osc_mailBeauty($_title, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-    $body  = osc_apply_filter(
-        'alert_email_hourly_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
+/**
+ * Send a finished digest. The plain-text part is the HTML one, as it always was.
+ *
+ * @param array<string,mixed> $user
+ * @param string              $title
+ * @param string              $body
+ *
+ * @return void
+ */
+function _alert_email_deliver($user, $title, $body)
+{
+    osc_sendMail(array(
         'from'     => _osc_from_email_aux(),
         'to'       => $user['s_email'],
         'to_name'  => $user['s_name'],
         'subject'  => $title,
         'body'     => $body,
         'alt_body' => $body
+    ));
+}
+
+/**
+ * Email one subscriber the hourly digest of new listings matching their saved search.
+ *
+ * @param array<string,mixed> $user       Recipient; s_name, s_email and fk_i_user_id are read
+ * @param string              $ads        Pre-rendered HTML list of the matching listings
+ * @param array<string,mixed> $s_search   Saved-search row; pk_i_id and s_secret build the unsubscribe link
+ * @param array<int,array<string,mixed>> $items New listings found since the last run
+ * @param int                 $totalItems Total number of matches, which may exceed count($items)
+ *
+ * @return void
+ */
+function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
+{
+    $template = _alert_email_template('alert_email_hourly');
+
+    $_title = osc_apply_filter(
+        'email_title',
+        osc_apply_filter(
+            'alert_email_hourly_title',
+            $template['s_title'],
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
+    );
+    $_body  = osc_apply_filter(
+        'email_description',
+        osc_apply_filter(
+            'alert_email_hourly_description',
+            $template['s_text'],
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
 
-    osc_sendMail($emailParams);
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
+
+    _alert_email_deliver(
+        $user,
+        osc_apply_filter(
+            'alert_email_hourly_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_hourly_description_after',
+            osc_mailBeauty($_body, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
+    );
 }
 
 osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
@@ -316,15 +356,13 @@ osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
  */
 function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_weekly');
-    $page_description = $page['locale'];
+    $template = _alert_email_template('alert_email_weekly');
 
     $_title = osc_apply_filter(
         'email_title',
         osc_apply_filter(
             'alert_email_weekly_title',
-            $page_description[$prefLocale]['s_title'],
+            $template['s_title'],
             $user,
             $ads,
             $s_search,
@@ -336,7 +374,7 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
         'email_description',
         osc_apply_filter(
             'alert_email_weekly_description',
-            $page_description[$prefLocale]['s_text'],
+            $template['s_text'],
             $user,
             $ads,
             $s_search,
@@ -345,62 +383,33 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
         )
     );
 
-    if ($user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
-        $user['s_name'] = $user['s_email'];
-    }
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
 
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
-
-    $title = osc_apply_filter(
-        'alert_email_weekly_title_after',
-        osc_mailBeauty($_title, $words),
+    _alert_email_deliver(
         $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
+        osc_apply_filter(
+            'alert_email_weekly_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_weekly_description_after',
+            osc_mailBeauty($_body, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
-    $body  = osc_apply_filter(
-        'alert_email_weekly_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
-    );
-
-    osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
