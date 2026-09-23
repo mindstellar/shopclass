@@ -29,9 +29,10 @@ all of them.
 
 ## Unpacking a release by hand
 
-If you are moving a long-frozen install and would rather not chain updaters,
-unpack the ShopClass release over the site the way
-[Updating ShopClass](/docs/updating/) describes, then reconcile the schema:
+If your install has been stuck on an old version for a long time and you would
+rather not chain several updates, unpack the ShopClass release over the site
+the way [Updating ShopClass](/docs/updating/) describes. Then reconcile the
+schema (bring the database's table structure up to date):
 
 ```bash
 php oc-cli.php db:upgrade
@@ -53,9 +54,10 @@ which matters on old installs where a plugin once added or dropped a column.
 
 ## What is worth testing
 
-Extensions that reach past the public API into legacy internals, or that assume
-jQuery is loaded in the admin panel, may need attention — the core no longer
-loads jQuery on the front end and the admin theme is Bootstrap 5.
+Extensions that reach past the public API into legacy internals may need
+attention. So do ones that assume jQuery is loaded in the admin panel — the
+admin theme is now Bootstrap 5, and the front end no longer loads jQuery at
+all.
 
 Test on a copy of the site first:
 

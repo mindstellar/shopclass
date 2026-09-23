@@ -5,9 +5,9 @@ sidebar:
   order: 1
 ---
 
-ShopClass installs the way PHP applications have always installed: unpack a
-release into your web root and open the site in a browser. There is no build
-step, no bundler and no command line required on the server.
+ShopClass installs like most PHP software: upload a release to your web root
+(the folder your website serves files from) and open the site in a browser.
+There is no build step and no command line needed on the server.
 
 ## Server requirements
 
@@ -19,8 +19,9 @@ step, no bundler and no command line required on the server.
 | Web server | Apache or nginx |
 
 Almost every shared host meets this today. If you are not sure, run the
-installer anyway — its first step checks all of it and tells you exactly what is
-missing before anything is written.
+installer anyway. Its first step checks your PHP version, key extensions
+(MySQLi, GD and cURL) and your folder permissions, and tells you exactly what
+is missing before anything is written.
 
 ## 1. Download a release
 
@@ -43,9 +44,9 @@ case your site lives at `https://example.com/classifieds/`.
 
 ## 3. Create a database
 
-From your hosting control panel, create an empty MySQL/MariaDB database and a
-user with full privileges on it. Note the four values down — the installer asks
-for them next:
+From your hosting control panel, create an empty MySQL or MariaDB database.
+Create a user with full privileges on it too. Write down these four values —
+the installer asks for them next:
 
 - database host (usually `localhost`)
 - database name

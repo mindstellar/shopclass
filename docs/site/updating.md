@@ -5,10 +5,10 @@ sidebar:
   order: 2
 ---
 
-ShopClass updates itself. When a new release lands, a notice appears in the
-admin panel and the built-in updater fetches and applies the package for you.
-The manual route below exists for hosts that block outbound HTTP, and for
-anyone who prefers to see every file move.
+ShopClass updates itself. When a new release comes out, a notice appears in
+the admin panel, and the built-in updater downloads and applies it for you.
+Use the manual route below if your host blocks outgoing web requests, or if
+you would rather move every file yourself.
 
 :::caution[Back up first — every time]
 Take a copy of your **database** and of **`oc-content/`** before you start.
@@ -68,10 +68,10 @@ dependent rows along with their parent. Three consequences:
 
 - **Back up the database first.** This is the one release where that instruction
   is not boilerplate.
-- **It takes time proportional to your row count.** Measured over a quarter of a
-  million listings and three quarters of a million custom-field values, the whole
-  rebuild took about six seconds. A much larger site, or slow shared hosting,
-  should expect longer.
+- **It takes time proportional to your row count.** Tests on a quarter of a
+  million listings and three quarters of a million custom-field values show the
+  whole rebuild takes about six seconds. A much larger site, or slow shared
+  hosting, should expect longer.
 - **A timeout page does not mean it failed.** The upgrade is still running and
   will finish. With shell access you can sidestep the browser entirely:
 
@@ -90,7 +90,7 @@ nothing could reach. The backup is what lets you look at them afterwards.
 
 The **Tracking ID** field has been removed from **Settings → General** and no
 measurement snippet is rendered on public pages. If you were using it, paste
-your own snippet into a **Custom Code** widget under
+your own snippet into a **Custom Code (HTML / JavaScript)** widget under
 **Appearance → Manage widgets**, or install a plugin that provides one.
 
 Your saved measurement ID is left in the database untouched, so a theme printing
