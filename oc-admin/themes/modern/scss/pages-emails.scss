@@ -8,40 +8,54 @@
     margin-block: 0 .75rem;
   }
 
+  .email-vars-group {
+    color: var(--osc-ink-muted);
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    margin-block: 1rem .25rem;
+    text-transform: uppercase;
+  }
+
   // Placeholders: each row is one button, so the whole row is the hit target.
   .email-vars {
     display: flex;
     flex-direction: column;
-    gap: .125rem;
+    gap: 0;
     list-style: none;
     margin: 0 -.5rem;
     padding: 0;
   }
 
+  // One line per placeholder; the description is cut short here and whole in its title.
   .email-var {
+    align-items: baseline;
     background: none;
     border: 0;
     border-radius: var(--bs-border-radius);
     color: var(--osc-ink);
     display: flex;
-    flex-direction: column;
-    gap: .125rem;
-    padding: .375rem .5rem;
+    gap: .5rem;
+    padding: .2rem .5rem;
     text-align: start;
     transition: background-color var(--osc-duration-fast) var(--osc-ease);
     width: 100%;
 
     code {
-      align-self: flex-start;
       color: var(--osc-bronze-deep);
-      font-size: .8125rem;
+      flex: 0 0 auto;
+      font-size: .75rem;
       font-weight: 600;
-      overflow-wrap: anywhere;
     }
 
     span {
       color: var(--osc-ink-muted);
-      font-size: $font-size-label;
+      flex: 1 1 auto;
+      font-size: .75rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &:hover {
@@ -68,5 +82,10 @@
     &.is-error {
       color: var(--osc-danger);
     }
+  }
+
+  // The internal name is a fact, not a warning; Bootstrap paints <code> pink.
+  .osc-deflist code {
+    color: var(--osc-ink);
   }
 }

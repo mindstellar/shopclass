@@ -22,7 +22,8 @@ osc_admin_page(array(
 ));
 
 $email      = __get('email');
-$aEmailVars = EmailVariables::newInstance()->getVariables($email);
+$aEmailVars   = EmailVariables::newInstance()->getVariables($email);
+$aCommonVars  = EmailVariables::newInstance()->getCommonVariables();
 
 // What was typed wins over what is stored, so a refused save comes back with the work in it.
 $emailErrors    = __get('editorErrors');
@@ -96,28 +97,34 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     osc_admin_editor_rail(array('id' => 'right-side'));
 
-    if ($aEmailVars) {
-        osc_admin_panel_open(__('Placeholders'), array('class' => 'email-vars-panel')); ?>
-        <p class="email-hint">
-            <?php _e('Each one is swapped for the real value when the email is sent. Click one to add it where the cursor is.'); ?>
-        </p>
+    // The template's own placeholders, then the ones osc_mailBeauty() fills in every email.
+    $varGroups = array_filter(array(
+        __('In this email')  => $aEmailVars,
+        __('In every email') => $aCommonVars,
+    ));
+    osc_admin_panel_open(__('Placeholders'), array('class' => 'email-vars-panel')); ?>
+    <p class="email-hint">
+        <?php _e('Swapped for real values when the email is sent. Click one to add it at the cursor.'); ?>
+    </p>
+    <?php foreach ($varGroups as $groupName => $groupVars) { ?>
+        <p class="email-vars-group"><?php echo osc_esc_html($groupName); ?></p>
         <ul class="email-vars">
-            <?php foreach ($aEmailVars as $key => $value) { ?>
+            <?php foreach ($groupVars as $key => $value) { ?>
                 <li>
-                    <button type="button" class="email-var" data-var="<?php echo osc_esc_html($key); ?>">
+                    <button type="button" class="email-var" data-var="<?php echo osc_esc_html($key); ?>"
+                            title="<?php echo osc_esc_html($value); ?>">
                         <code><?php echo osc_esc_html($key); ?></code>
                         <span><?php echo osc_esc_html($value); ?></span>
                     </button>
                 </li>
             <?php } ?>
         </ul>
-        <?php
-        osc_admin_panel_close();
-    }
+    <?php }
+    osc_admin_panel_close();
 
     osc_admin_panel_open(__('Send a test'), array('class' => 'email-test-panel')); ?>
     <p class="email-hint">
-        <?php _e('Sends the subject and message shown now, in the language on screen. Placeholders are not filled in.'); ?>
+        <?php _e('Sends what is on screen now. Placeholders are not filled in.'); ?>
     </p>
     <div class="osc-field">
         <label class="form-label" for="email-test-to"><?php _e('Send to'); ?></label>
@@ -134,7 +141,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         array('label' => __('Internal name'), 'value' => '<code>' . osc_esc_html($emailName) . '</code>', 'html' => true),
     ));
     ?>
-    <p class="email-hint"><?php _e('Core finds this template by its internal name, so it cannot be changed.'); ?></p>
+    <p class="email-hint"><?php _e('Core finds the template by this name, so it cannot change.'); ?></p>
     <?php
     osc_admin_panel_close();
 

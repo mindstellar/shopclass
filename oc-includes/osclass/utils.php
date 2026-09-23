@@ -478,14 +478,8 @@ function osc_sendMail($params)
 function osc_mailBeauty($text, $params)
 {
     $text   = str_ireplace($params[0], $params[1], $text);
-    $kwords = array(
-        '{WEB_URL}',
-        '{WEB_TITLE}',
-        '{WEB_LINK}',
-        '{CURRENT_DATE}',
-        '{HOUR}',
-        '{IP_ADDRESS}'
-    );
+    // In the order of EmailVariables::COMMON, which the template editor lists.
+    $kwords = EmailVariables::COMMON;
     $rwords = array(
         osc_base_url(),
         osc_page_title(),
