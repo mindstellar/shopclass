@@ -286,6 +286,38 @@ function input_names(string $html): array
     return $names;
 }
 
+/** The title each locale row of a page holds, keyed by code, read with raw SQL. */
+function locale_titles(mysqli $admin, int $pageId): array
+{
+    $res  = $admin->query(
+        'SELECT fk_c_locale_code, s_title FROM ' . DB_TABLE_PREFIX . 't_pages_description'
+        . ' WHERE fk_i_pages_id = ' . $pageId . ' ORDER BY fk_c_locale_code'
+    );
+    $rows = array();
+    while ($res && ($row = $res->fetch_assoc())) {
+        $rows[$row['fk_c_locale_code']] = $row['s_title'];
+    }
+    if ($res) {
+        $res->free();
+    }
+
+    return $rows;
+}
+
+/** How many locale rows a page has, so a write that added one is not read as an update. */
+function locale_rows(mysqli $admin, int $pageId): int
+{
+    $res = $admin->query(
+        'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . 't_pages_description WHERE fk_i_pages_id = ' . $pageId
+    );
+    $n   = $res ? (int)($res->fetch_assoc()['c'] ?? 0) : -1;
+    if ($res) {
+        $res->free();
+    }
+
+    return $n;
+}
+
 function rows(mysqli $admin, string $table): int
 {
     $res = $admin->query('SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . $table);
@@ -1146,6 +1178,173 @@ pin('the save is clean for the write-only field', array(), $result['errors']);
 $stored = row($admin, 't_ban_rule', (int)$result['id']);
 pin('the scalar field is stored as submitted', 'Arrayed', $stored['s_name'] ?? null);
 pin('and the column that was handed an array is empty, not the word Array', '', $stored['s_ip'] ?? null);
+
+harness_section('a translated field goes to the locale table, one row per locale');
+
+// The answer to the one question the table store left open: an entity's translations are
+// not columns of its row but rows of its own locale table, keyed by the entity and the
+// code. Everything that can go wrong here is silent -- one locale written over every row,
+// a locale enabled later left with no row at all, or the value put in a column of the main
+// table that either does not exist or belongs to something else.
+seed_locale($admin, 'en_US', 'English');
+seed_locale($admin, 'fr_FR', 'French');
+$pageLocales = array('en_US' => 'English', 'fr_FR' => 'French');
+
+SettingsPageRegistry::instance()->register('paged', array(
+    'title'  => 'Page',
+    'menu'   => '',
+    'store'  => array(
+        'table'        => 't_pages',
+        'pk'           => 'pk_i_id',
+        'locale_table' => 't_pages_description',
+        'locale_fk'    => 'fk_i_pages_id',
+    ),
+    'fields' => array(
+        array('type' => 'text', 'name' => 's_internal_name', 'label' => 'Name', 'required' => true),
+        array(
+            'type'           => 'text',
+            'name'           => 's_title',
+            'label'          => 'Title',
+            'translate'      => true,
+            'locales'        => $pageLocales,
+            'translate_name' => '%s#s_title',
+        ),
+        array(
+            'type'        => 'hidden',
+            'name'        => 'dt_pub_date',
+            'write_only'  => true,
+            'persist'     => static fn () => '2026-01-01 00:00:00',
+        ),
+    ),
+));
+
+$result = post('paged', array(
+    's_internal_name' => 'about-us',
+    'en_US#s_title'   => 'About us',
+    'fr_FR#s_title'   => 'A propos',
+));
+pin('a translated insert reports no errors', array(), $result['errors']);
+$pageId = (int)$result['id'];
+check('and hands back the new row', $pageId > 0, describe($result['id']));
+pin('the row holds the columns that are not translated', 'about-us', row($admin, 't_pages', $pageId)['s_internal_name'] ?? null);
+pin(
+    'each locale got its own row, with its own value',
+    array('en_US' => 'About us', 'fr_FR' => 'A propos'),
+    locale_titles($admin, $pageId)
+);
+pin('and one row per locale, not one per field', 2, locale_rows($admin, $pageId));
+
+// The bug an update-only write leaves: the second locale never had a row, so its tab
+// saves cleanly and stores nothing.
+$result = post('paged', array(
+    's_internal_name' => 'about-us',
+    'en_US#s_title'   => 'About the shop',
+    'fr_FR#s_title'   => 'A propos du magasin',
+), $pageId);
+pin('an update reports no errors', array(), $result['errors']);
+pin(
+    'every locale row is updated, each with its own value',
+    array('en_US' => 'About the shop', 'fr_FR' => 'A propos du magasin'),
+    locale_titles($admin, $pageId)
+);
+pin('and no locale row was added by the update', 2, locale_rows($admin, $pageId));
+
+// A locale enabled after the entity was saved has no row of its own yet. Writing one is
+// the difference between a new tab that saves and a new tab that swallows everything.
+seed_locale($admin, 'de_DE', 'German');
+SettingsPageRegistry::instance()->register('paged_de', array(
+    'title'  => 'Page',
+    'menu'   => '',
+    'store'  => array(
+        'table'        => 't_pages',
+        'pk'           => 'pk_i_id',
+        'locale_table' => 't_pages_description',
+        'locale_fk'    => 'fk_i_pages_id',
+    ),
+    'fields' => array(
+        array(
+            'type'           => 'text',
+            'name'           => 's_title',
+            'label'          => 'Title',
+            'translate'      => true,
+            'locales'        => $pageLocales + array('de_DE' => 'German'),
+            'translate_name' => '%s#s_title',
+        ),
+        array('type' => 'text', 'name' => 's_internal_name', 'label' => 'Name'),
+    ),
+));
+$result = post('paged_de', array(
+    's_internal_name' => 'about-us',
+    'en_US#s_title'   => 'About the shop',
+    'fr_FR#s_title'   => 'A propos du magasin',
+    'de_DE#s_title'   => 'Ueber uns',
+), $pageId);
+pin('a locale with no row yet saves cleanly', array(), $result['errors']);
+pin(
+    'and gets a row of its own, beside the ones that were there',
+    array('de_DE' => 'Ueber uns', 'en_US' => 'About the shop', 'fr_FR' => 'A propos du magasin'),
+    locale_titles($admin, $pageId)
+);
+
+harness_section('a translated field reads back per locale, and refuses what it cannot write');
+
+pin(
+    'the stored value comes back keyed by locale code',
+    array('en_US' => 'About the shop', 'fr_FR' => 'A propos du magasin'),
+    osc_settings_value('paged', 's_title', $pageId)
+);
+pin(
+    'and a row with no locale rows at all reads the declared default',
+    array('en_US' => '', 'fr_FR' => ''),
+    osc_settings_value('paged', 's_title', null)
+);
+// Nothing is written unless everything passes, and that has to hold for the locale table
+// too: a rejected save that had already written one tab is half a page.
+$before = locale_titles($admin, $pageId);
+$result = post('paged', array(
+    's_internal_name' => '',
+    'en_US#s_title'   => 'Written by a rejected save',
+    'fr_FR#s_title'   => 'Ecrit par une sauvegarde refusee',
+), $pageId);
+check('a refused save reports its error', $result['errors'] !== array(), describe($result['errors']));
+pin('and writes no locale row', $before, locale_titles($admin, $pageId));
+
+// Without a locale table there is nowhere for one value per locale to go, so the page is
+// refused at registration rather than writing the word Array into a column.
+$refused = '';
+try {
+    SettingsPageRegistry::instance()->register('paged_noloc', array(
+        'title'  => 'Page',
+        'menu'   => '',
+        'store'  => array('table' => 't_pages', 'pk' => 'pk_i_id'),
+        'fields' => array(
+            array('type' => 'text', 'name' => 's_title', 'label' => 'Title', 'translate' => true),
+        ),
+    ));
+} catch (InvalidArgumentException $e) {
+    $refused = $e->getMessage();
+}
+check(
+    'a translated field on a table store with no locale table is refused',
+    strpos($refused, 'cannot be translated on a table store') !== false,
+    describe($refused)
+);
+$refused = '';
+try {
+    SettingsPageRegistry::instance()->register('paged_halfloc', array(
+        'title'  => 'Page',
+        'menu'   => '',
+        'store'  => array('table' => 't_pages', 'pk' => 'pk_i_id', 'locale_table' => 't_pages_description'),
+        'fields' => array(array('type' => 'text', 'name' => 's_internal_name')),
+    ));
+} catch (InvalidArgumentException $e) {
+    $refused = $e->getMessage();
+}
+check(
+    'and a locale table with no key to a row by is refused too',
+    strpos($refused, 'needs a locale_fk') !== false,
+    describe($refused)
+);
 
 harness_section('a key the read path cannot parse reads as no row');
 

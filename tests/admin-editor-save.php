@@ -150,6 +150,8 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
+// The page editor's save is a declared form, so the layer that runs one has to be here.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
 /** Thrown in place of the exit() a real redirect ends the request with. */
@@ -558,6 +560,33 @@ pin(
     'and the page keeps the name it had',
     'about-our-shop',
     row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']
+);
+
+/* ----------------------------------------------------------------------------
+ * The page editor's save is the declaration's, not the controller's.
+ * ------------------------------------------------------------------------- */
+
+harness_section('the page controller reads no editor field out of the request');
+
+// What stops the screen drifting back: a controller that reads one of these again is a
+// second front door onto the same columns, and the two would sanitise differently.
+$pagesCtrl = (string)file_get_contents(
+    ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminPages.php'
+);
+foreach (array('s_internal_name', 'b_link') as $field) {
+    check(
+        'CAdminPages no longer reads "' . $field . '" itself',
+        !preg_match('/Params::getParam[A-Za-z]*\(\s*\047' . preg_quote($field, '/') . '\047/', $pagesCtrl)
+    );
+}
+check(
+    'and it no longer sifts the whole request for the per-locale names',
+    strpos($pagesCtrl, "preg_match('|(.+?)#(.+)|'") === false
+);
+check(
+    'the save goes through the declared form',
+    strpos($pagesCtrl, 'StaticPageForm::register(') !== false
+        && strpos($pagesCtrl, 'osc_settings_save(') !== false
 );
 
 exit(harness_result());

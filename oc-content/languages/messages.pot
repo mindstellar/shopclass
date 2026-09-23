@@ -9,6 +9,10 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "x-generator: scripts/build-i18n.mjs\n"
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "\"%1$s\" extends this theme. Delete it first, or switch it to "
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
 msgstr ""
@@ -133,6 +137,14 @@ msgstr ""
 msgid "%s pages have been deleted correctly"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
+msgid "%s: a page needs a title in at least one language"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "%s: this listing needs a title"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "<a href=\"%s\">Click here to sign-in</a>"
 msgstr ""
@@ -143,6 +155,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
 msgid "A new password has been sent to your e-mail"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
+msgid "A page needs a title in at least one language."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -1167,7 +1183,7 @@ msgstr ""
 msgid "Only registered users can share listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "Oops! That internal name is already in use. We can't make the changes"
 msgstr ""
 
@@ -1770,6 +1786,10 @@ msgstr ""
 msgid "That settings page saves into a table, which needs a controller of its own"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "That theme is not installed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That upgrade is not available"
 msgstr ""
@@ -2010,11 +2030,11 @@ msgstr ""
 msgid "The operation hasn't been completed. You're trying to remove yourself!"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "The page couldn't be added, at least one title should not be empty"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "The page couldn't be updated, at least one title should not be empty"
 msgstr ""
 
@@ -2330,6 +2350,7 @@ msgid "Title too long (%s)."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Title too short (%s)."
 msgstr ""
 
@@ -2510,8 +2531,8 @@ msgstr ""
 msgid "You can't contact the seller, only registered users can"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminEmails.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
 msgid "You can't repeat internal name"
 msgstr ""
 
@@ -2545,11 +2566,11 @@ msgstr ""
 msgid "You have not published anything yet."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "You have to set a different internal name"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "You have to set an internal name"
 msgstr ""
 

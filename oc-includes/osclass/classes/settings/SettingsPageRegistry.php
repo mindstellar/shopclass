@@ -167,6 +167,12 @@ final class SettingsPageRegistry
      *                             controller therefore does not serve a table-backed page
      *                             -- one needs a controller that supplies a row id it has
      *                             validated for this admin.
+     *                             A table store may add 'locale_table', 'locale_fk' and
+     *                             'locale_column' (default 'fk_c_locale_code'), which is
+     *                             where translated fields go: one row per locale, keyed by
+     *                             the entity's id and the locale code. Without it a
+     *                             translated field is refused, because a column holds one
+     *                             value and not one per locale.
      *   'help'       => string    Help-box body for the "?" beside the page title.
      *   'intro'      => string    Explanatory paragraph above the first group.
      *   'groups'     => array[]   array('title' =>, 'intro' =>, 'fields' => array[]).
@@ -194,6 +200,12 @@ final class SettingsPageRegistry
      *                           them itself.
      *   'validate' => callable  callable(mixed $value, array $field): ?string returning
      *                           an error message, or null when the value is good.
+     *   'collect'  => callable  callable(array $field): mixed -- how the submission becomes
+     *                           this field's value, for a control core cannot read by name:
+     *                           one posted as an array, or one a plugin contributes keys to.
+     *                           It replaces the read, the trim and the purify, so the
+     *                           declaration owns the sanitising; a 'sanitize' beside it
+     *                           still runs on what it returns.
      *   'depends'  => string    Another field on this page -- not a custom or translated
      *                           one, and not a cycle. While that field is off, this one is
      *                           hidden, is not required, and its submitted value is
@@ -201,8 +213,14 @@ final class SettingsPageRegistry
      *   'depends_value' => string|string[] With 'depends' only: the field is on while the
      *                           master's value is one of these, instead of while it is on.
      *                           Only for a select or radio master, and only its option keys.
-     *   'translate' => bool     text and textarea only: one control per enabled locale,
-     *                           each stored under the field name plus the locale code.
+     *   'translate' => bool     text, textarea and richtext only: one control per enabled
+     *                           locale, each stored under the field name plus the locale
+     *                           code -- or, on a table store with a locale table, in that
+     *                           table's column of the same name, one row per locale.
+     *   'locales'  => array     With 'translate': the locales to expand over, as code =>
+     *                           name, instead of every enabled one. The save reads the same
+     *                           key the render does, so a screen drawn for the back-office
+     *                           locales saves those.
      *   'purify'   => bool      text, textarea, tel and color only: false stores the value
      *                           as submitted apart from the trim every field gets, for a
      *                           field that holds markup or code on purpose. Defaults to
@@ -382,7 +400,8 @@ final class SettingsPageRegistry
 
     /**
      * Normalise the page's 'store' into array('type' => 'preference') or
-     * array('type' => 'table', 'table' =>, 'pk' =>).
+     * array('type' => 'table', 'table' =>, 'pk' =>), with the locale table a table store
+     * may add.
      *
      * A store nobody implements has to be refused here: accepted, it would fall back to
      * preferences and the page would look saved while its table stayed empty.
@@ -422,7 +441,31 @@ final class SettingsPageRegistry
             }
         }
 
-        return array('type' => 'table', 'table' => $store['table'], 'pk' => $store['pk']);
+        $normalised = array('type' => 'table', 'table' => $store['table'], 'pk' => $store['pk']);
+
+        if (!isset($store['locale_table'])) {
+            return $normalised;
+        }
+
+        // Half a locale binding is worse than none: the table alone has nothing to key a
+        // row by, so it would write every locale over one row.
+        if (!isset($store['locale_fk'])) {
+            throw new InvalidArgumentException($prefix . 'needs a locale_fk beside its locale_table');
+        }
+        $locale = array(
+            'locale_table'  => $store['locale_table'],
+            'locale_fk'     => $store['locale_fk'],
+            'locale_column' => $store['locale_column'] ?? 'fk_c_locale_code',
+        );
+        foreach ($locale as $key => $value) {
+            if (!is_string($value) || $value === '' || !preg_match(self::IDENTIFIER, $value)) {
+                throw new InvalidArgumentException(
+                    $prefix . $key . ' "' . (is_string($value) ? $value : gettype($value)) . '" is not an identifier'
+                );
+            }
+        }
+
+        return $normalised + $locale;
     }
 
     /**
@@ -480,9 +523,19 @@ final class SettingsPageRegistry
             );
         }
         if (!empty($field['translate'])) {
-            throw new InvalidArgumentException(
-                $prefix . 'cannot be translated on a table store: a column holds one value, not one per locale'
-            );
+            if (!isset($store['locale_table'])) {
+                throw new InvalidArgumentException(
+                    $prefix . 'cannot be translated on a table store: a column holds one value, not one per locale'
+                );
+            }
+            // Per locale there is a value, so a rule handed one value has nothing to say
+            // about which. Refused rather than quietly skipped, because a persist that is
+            // never called writes the raw value it was declared to replace.
+            if (array_key_exists('persist', $field)) {
+                throw new InvalidArgumentException(
+                    $prefix . 'is translated, so it cannot declare persist: the locale table takes one value per locale'
+                );
+            }
         }
     }
 
@@ -597,7 +650,7 @@ final class SettingsPageRegistry
                         . '" is custom and needs a render callable'
                     );
                 }
-                foreach (array('sanitize', 'validate') as $cb) {
+                foreach (array('sanitize', 'validate', 'collect') as $cb) {
                     if (isset($field[$cb]) && !is_callable($field[$cb])) {
                         throw new InvalidArgumentException(
                             'SettingsPageRegistry: page "' . $id . '" field "' . $field['name']

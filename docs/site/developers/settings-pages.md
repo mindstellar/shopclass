@@ -96,7 +96,9 @@ Keys every field takes:
 | `validate` | `callable(mixed $value, array $field): ?string` — the error, or null |
 | `depends` | Another field on this page. While that field is off, this one is hidden, is not required, and its posted value is **discarded** |
 | `depends_value` | With `depends`: a string or list of strings. The field is on while the master's value is one of them. Only for a select or radio master, and each must be one of its option keys |
-| `translate` | `text`/`textarea` only: one control per enabled locale |
+| `translate` | `text`/`textarea`/`richtext` only: one control per enabled locale |
+| `locales` | With `translate`: the locales to expand over, as code => name, instead of every enabled one |
+| `collect` | `callable(array $field): mixed` — how the submission becomes this field's value, for a control core cannot read by name. It replaces the read, the trim and the purify |
 | `purify` | `false` to store markup as submitted (see below) |
 | `column` | The key to store under, when it is not the field's own name |
 | `persist` | `false` to store nowhere, or a callable returning what the key takes |
@@ -185,6 +187,25 @@ taken from the request — no key inserts a row, and a key that is not a positiv
 integer is refused. That is why the generic controller does not serve a
 table-backed page: it needs a controller of yours that supplies a row id it has
 already checked this admin may edit.
+
+### Translated fields on a table
+
+A column holds one value, so a translated field goes to the entity's locale
+table instead — one row per locale, keyed by the entity's id and the locale
+code, in the column the field is named after:
+
+```php
+(new FormSpec('acme.route'))
+    ->title(__('Route', 'acme'))
+    ->store('acme_route', 'pk_i_id')
+    ->translateTable('acme_route_description', 'fk_i_route_id')
+    ->text('s_label', __('Label', 'acme'))->translate()
+    ->register();
+```
+
+A locale with no row yet gets one, so enabling a locale after the entity was
+saved does not lose what is typed on its new tab. Without `translateTable()` a
+translated field on a table store is refused at registration.
 
 ## Reacting to a save
 

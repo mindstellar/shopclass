@@ -34,6 +34,12 @@ namespace mindstellar\admin\form\store;
  * column still reads back unless the field also declares 'write_only'. A field that is no
  * column is the exception, because it has none to read.
  *
+ * A translated field is one value per locale, which no column holds, so it lives in the
+ * entity's locale table instead: one row per locale, keyed by the entity's id and the
+ * locale code, in the column of the field's own name. That table is declared once for the
+ * page rather than per field, because it is the entity's -- every translated field on the
+ * screen is a column of the same row.
+ *
  * @package mindstellar\admin\form\store
  */
 final class TableStore implements Store
@@ -42,14 +48,22 @@ final class TableStore implements Store
 
     private string $pk;
 
+    /** @var array{table?:string,fk?:string,column?:string} empty when nothing is translated */
+    private array $locale;
+
     /**
-     * @param string $table Unprefixed table name; DB_TABLE_PREFIX is applied here.
-     * @param string $pk    Primary key column.
+     * @param string                                     $table  Unprefixed table name;
+     *                                                           DB_TABLE_PREFIX is applied here.
+     * @param string                                     $pk     Primary key column.
+     * @param array{table?:string,fk?:string,column?:string} $locale The locale table, the column
+     *                                                           holding the entity's id, and the
+     *                                                           one holding the locale code.
      */
-    public function __construct(string $table, string $pk)
+    public function __construct(string $table, string $pk, array $locale = array())
     {
-        $this->table = $table;
-        $this->pk    = $pk;
+        $this->table  = $table;
+        $this->pk     = $pk;
+        $this->locale = $locale;
     }
 
     /**
@@ -101,11 +115,28 @@ final class TableStore implements Store
      */
     public function load(array $fields, $id = null): array
     {
-        $row = $this->row($this->identify($id));
+        $key = $this->identify($id);
+        $row = $this->row($key);
 
-        $values = array();
+        $values     = array();
+        $localeRows = null;
         foreach ($fields as $name => $field) {
             $type = $field['type'] ?? 'text';
+            $over = $this->localesOf($field);
+            if ($over !== array()) {
+                // Read once for the whole screen: every translated field is a column of
+                // the same per-locale row.
+                if ($localeRows === null) {
+                    $localeRows = $this->localeRows($key);
+                }
+                $column    = self::column($name, $field);
+                $perLocale = array();
+                foreach ($over as $code => $localeName) {
+                    $perLocale[$code] = (string)($localeRows[$code][$column] ?? ($field['default'] ?? ''));
+                }
+                $values[$name] = $perLocale;
+                continue;
+            }
             if ($type === 'custom') {
                 // Core neither reads nor writes a custom field, so it has no column here
                 // either; the plugin owns the value the same way it owns the markup.
@@ -139,8 +170,8 @@ final class TableStore implements Store
      *
      * @param array<string,array<string,mixed>>  $fields  declared fields, keyed by name
      * @param array<string,mixed>                $values  validated values, keyed by field name
-     * @param array<string,array<string,string>> $locales unused: no declared column expands
-     *                                                    over locales
+     * @param array<string,array<string,string>> $locales per field, the locales it expands
+     *                                                    over; those go to the locale table
      * @param int|string|null                    $id      the row, or null to insert one
      *
      * @return array{updated:int,id:int|string|null} rows affected, and the key written
@@ -159,13 +190,25 @@ final class TableStore implements Store
             throw StoreException::noRow('TableStore: ' . $this->table . ' has no row ' . $id);
         }
 
-        $data = array();
+        $data      = array();
+        $perLocale = array();
         foreach ($fields as $name => $field) {
             if ($field['type'] === 'custom' || !array_key_exists($name, $values)) {
                 // A field core never collected names no column here: a custom one it does
                 // not read, or one discarded with its master switched off. Its column keeps
                 // whatever it already held -- a column cannot not exist, so the alternative
                 // is blanking a value the administrator never touched.
+                continue;
+            }
+            if (($locales[$name] ?? array()) !== array()) {
+                // One value per locale, so it is a row of the locale table and not a column
+                // of this one. A listener that replaced the array with a scalar has nothing
+                // to spread over the locales, and the bare name is a column nothing reads.
+                if (is_array($values[$name])) {
+                    foreach ($locales[$name] as $code => $localeName) {
+                        $perLocale[$code][self::column($name, $field)] = (string)($values[$name][$code] ?? '');
+                    }
+                }
                 continue;
             }
             $column = self::persisted($field, $values[$name], $values);
@@ -181,8 +224,14 @@ final class TableStore implements Store
         if ($data === array()) {
             // Every declared field was a custom one or was discarded with its master off:
             // there is no column to set, so an existing row is left alone and no row is
-            // inserted for a submission that named nothing to put in one.
-            return array('updated' => 0, 'id' => $id);
+            // inserted for a submission that named nothing to put in one. A new entity's
+            // translations go with it, so they cannot be written either: there is no row
+            // for them to belong to.
+            if ($id === null) {
+                return array('updated' => 0, 'id' => null);
+            }
+
+            return array('updated' => $this->saveLocales($id, $perLocale), 'id' => $id);
         }
 
         // The builder is immutable, so every clause has to be reassigned or it is dropped
@@ -190,14 +239,100 @@ final class TableStore implements Store
         // QueryBuilder refuses one outright.
         $query = osc_db_table(DB_TABLE_PREFIX . $this->table);
         if ($id === null) {
-            return array('updated' => 1, 'id' => $query->insert($data));
+            $new = $query->insert($data);
+
+            return array('updated' => 1 + $this->saveLocales($new, $perLocale), 'id' => $new);
         }
 
         $query = $query->where($this->pk, $id);
 
         // The row was there a statement ago and the write throws when it fails, so zero
         // affected rows here can only mean the row already said what the form says.
-        return array('updated' => $query->update($data), 'id' => $id);
+        $updated = $query->update($data);
+
+        return array('updated' => $updated + $this->saveLocales($id, $perLocale), 'id' => $id);
+    }
+
+    /**
+     * Write one row of the locale table per locale, inserting the ones that are not there
+     * yet.
+     *
+     * A locale row is created on demand rather than assumed: a locale enabled after the
+     * entity was saved has no row, and an insert that assumed one would lose everything
+     * typed on that tab.
+     *
+     * @param int                              $id        the entity the rows belong to
+     * @param array<string,array<string,mixed>> $perLocale locale code => column => value
+     *
+     * @return int rows actually written
+     * @throws \mindstellar\database\DbException on a failed write
+     */
+    private function saveLocales(int $id, array $perLocale): int
+    {
+        if ($perLocale === array() || $this->locale === array()) {
+            return 0;
+        }
+
+        $existing = $this->localeRows($id);
+        $written  = 0;
+        foreach ($perLocale as $code => $columns) {
+            $query = osc_db_table(DB_TABLE_PREFIX . $this->locale['table']);
+            if (!isset($existing[$code])) {
+                $query->insert($columns + array(
+                    $this->locale['fk']     => $id,
+                    $this->locale['column'] => $code,
+                ));
+                $written++;
+                continue;
+            }
+            $query    = $query->where($this->locale['fk'], $id);
+            $query    = $query->where($this->locale['column'], $code);
+            $written += $query->update($columns);
+        }
+
+        return $written;
+    }
+
+    /**
+     * The locale table's rows for one entity, keyed by locale code.
+     *
+     * @param int|null $id
+     *
+     * @return array<string,array<string,mixed>>
+     * @throws \mindstellar\database\DbException on a failed read
+     */
+    private function localeRows(?int $id): array
+    {
+        if ($id === null || $this->locale === array()) {
+            return array();
+        }
+
+        $query = osc_db_table(DB_TABLE_PREFIX . $this->locale['table']);
+        $query = $query->where($this->locale['fk'], $id);
+
+        $rows = array();
+        foreach ($query->get() as $row) {
+            $rows[(string)$row[$this->locale['column']]] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The locales one field expands over, and none at all when the page bound no locale
+     * table: a translated field the registry let through is one this store can write.
+     *
+     * @param array<string,mixed> $field field spec
+     *
+     * @return array<string,string> code => locale name
+     */
+    private function localesOf(array $field): array
+    {
+        if ($this->locale === array()) {
+            return array();
+        }
+
+        return osc_settings_field_locales($field);
     }
 
     /**

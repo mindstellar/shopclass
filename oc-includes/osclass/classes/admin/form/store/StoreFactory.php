@@ -33,7 +33,17 @@ final class StoreFactory
     public static function forPage(array $page): Store
     {
         if (self::isTable($page)) {
-            return new TableStore((string)$page['store']['table'], (string)$page['store']['pk']);
+            return new TableStore(
+                (string)$page['store']['table'],
+                (string)$page['store']['pk'],
+                isset($page['store']['locale_table'])
+                    ? array(
+                        'table'  => (string)$page['store']['locale_table'],
+                        'fk'     => (string)$page['store']['locale_fk'],
+                        'column' => (string)$page['store']['locale_column'],
+                    )
+                    : array()
+            );
         }
 
         return new PreferenceStore((string)($page['section'] ?? ''));

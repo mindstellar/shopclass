@@ -46,6 +46,9 @@ In development.
 
 ### Fixed
 
+- A refused page save no longer stores the page template, the bodies or the modified date
+  before refusing.
+- A page title or internal name of nothing but spaces is refused rather than stored.
 - With the photo limit set to zero, meaning unlimited, a listing saved only its first photo.
 - Both editors counted one refused title as several and listed it twice.
 - The listing editor posted a `cityAreaId` nothing read, and wired an autocomplete to

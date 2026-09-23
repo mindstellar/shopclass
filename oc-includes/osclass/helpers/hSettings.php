@@ -275,6 +275,10 @@ if (!function_exists('osc_settings_field_locales')) {
      * An install with one enabled locale still gets the per-locale key, otherwise enabling
      * a second locale later would strand everything already stored.
      *
+     * A field may name the list itself, which is the same key the render side reads: a
+     * screen whose controls are drawn for the back-office locales has to save those and
+     * not the front-end ones, or it writes rows for tabs nobody was shown.
+     *
      * @param array $field
      *
      * @return array<string,string> code => locale name
@@ -285,6 +289,10 @@ if (!function_exists('osc_settings_field_locales')) {
             || !in_array($field['type'] ?? 'text', array('text', 'textarea', 'richtext'), true)
         ) {
             return array();
+        }
+
+        if (!empty($field['locales']) && is_array($field['locales'])) {
+            return $field['locales'];
         }
 
         return osc_settings_locales();
@@ -402,12 +410,23 @@ if (!function_exists('osc_settings_sanitize')) {
      * listing custom-field system (t_meta_fields, FormService) and would tie admin
      * settings to it for no gain. A field wanting more supplies its own `sanitize`.
      *
+     * A field may also say how the submission becomes its value at all, with `collect`.
+     * That is for a control core cannot read by name -- one posted as an array, or one a
+     * plugin contributes keys to -- and the declaration then owns the sanitising, because
+     * core no longer knows what shape it is looking at.
+     *
      * @param array $field
      *
      * @return mixed
      */
     function osc_settings_sanitize(array $field)
     {
+        if (isset($field['collect'])) {
+            $value = call_user_func($field['collect'], $field);
+
+            return isset($field['sanitize']) ? call_user_func($field['sanitize'], $value) : $value;
+        }
+
         $name = $field['name'];
 
         if ($field['type'] === 'checkbox') {

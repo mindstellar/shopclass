@@ -180,6 +180,31 @@ final class FormSpec
     }
 
     /**
+     * Where the translated fields of a table-bound page go: one row of this table per
+     * locale, keyed by the entity's id and the locale code, in the column each field is
+     * named after. Declared after store().
+     *
+     * @param string $table  Unprefixed locale table.
+     * @param string $fk     Column holding the entity's primary key.
+     * @param string $column Column holding the locale code.
+     *
+     * @return self
+     * @throws LogicException when the page is not bound to a table yet
+     */
+    public function translateTable(string $table, string $fk, string $column = 'fk_c_locale_code'): self
+    {
+        if (!isset($this->page['store']) || !is_array($this->page['store'])) {
+            throw new LogicException('FormSpec: translateTable() needs store() first');
+        }
+
+        return $this->setPage('store', $this->page['store'] + array(
+            'locale_table'  => $table,
+            'locale_fk'     => $fk,
+            'locale_column' => $column,
+        ));
+    }
+
+    /**
      * Who may open and save the page: 'administrator' (the default) or 'moderator'.
      *
      * @param string $capability

@@ -409,6 +409,7 @@ $notModifiers = array_merge(
         'menuTitle',
         'section',
         'store',
+        'translateTable',
         'capability',
         'help',
         'intro',
@@ -566,6 +567,31 @@ pin(
 check(
     'a page declaring no store emits none, leaving the registry to supply the default',
     !array_key_exists('store', osc_admin_form('acme')->title('Acme')->text('f')->toArray())
+);
+// The locale table rides on the same key, so a translated field on a table page has one
+// place to go. Emitted as a key of its own it would be dropped, and the translated field
+// would be refused as one a column cannot hold.
+pin(
+    'translateTable() joins the store rather than replacing it',
+    array(
+        'table'         => 't_pages',
+        'pk'            => 'pk_i_id',
+        'locale_table'  => 't_pages_description',
+        'locale_fk'     => 'fk_i_pages_id',
+        'locale_column' => 'fk_c_locale_code',
+    ),
+    osc_admin_form('page')->store('t_pages')->translateTable('t_pages_description', 'fk_i_pages_id')->toArray()['store']
+);
+$noStore = null;
+try {
+    osc_admin_form('page')->translateTable('t_pages_description', 'fk_i_pages_id');
+} catch (LogicException $e) {
+    $noStore = $e->getMessage();
+}
+check(
+    'and it refuses to be declared before the store it belongs to',
+    $noStore !== null,
+    'translateTable() without store() has no table to bind the locale rows to'
 );
 
 harness_section('groups');

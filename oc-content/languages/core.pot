@@ -190,6 +190,11 @@ msgstr[1] ""
 msgid "%d submissions"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Editor.php
+msgid "%d things need fixing before this can be saved."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d unsaved changes"
 msgstr ""
@@ -385,6 +390,11 @@ msgstr ""
 msgid "1 day"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Editor.php
+msgid "1 thing needs fixing before this can be saved."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "1 unsaved change"
 msgstr ""
@@ -583,6 +593,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -688,10 +699,6 @@ msgstr ""
 msgid "Add new keyword"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Add new photo"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/add.php
 msgid "Add new theme"
 msgstr ""
@@ -707,6 +714,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Add page"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Add photos"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
@@ -786,6 +797,7 @@ msgstr ""
 msgid "Add, edit or delete the language in which your Shopclass is displayed, "
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Added"
 msgstr ""
@@ -803,7 +815,6 @@ msgstr ""
 msgid "Additional information"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Address"
 msgstr ""
@@ -864,6 +875,8 @@ msgstr ""
 msgid "Adopt existing Better S3 images"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Advanced"
 msgstr ""
@@ -1071,7 +1084,7 @@ msgid "An update is ready for this plugin. Open the Updates tab to apply it."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
-msgid "An update is ready for this theme. Open the Updates tab to apply it."
+msgid "An update is ready for this theme. "
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -1404,8 +1417,16 @@ msgstr ""
 msgid "Back to all countries"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Back to listings"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid "Back to orders"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Back to pages"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
@@ -1558,11 +1579,20 @@ msgstr ""
 msgid "Block"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Block listing"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/maintenance.php
 msgid "Block the public site (HTTP 503)"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Block this listing?"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -1581,6 +1611,8 @@ msgstr ""
 msgid "Boats - Ships"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/classes/form/PageForm.php
 msgid "Body"
 msgstr ""
@@ -1733,9 +1765,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/fields/submissions.php
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/index.php
-#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/index.php
@@ -1745,6 +1775,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/media.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Cancel"
 msgstr ""
 
@@ -1822,6 +1853,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/market.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Category"
 msgstr ""
@@ -1868,6 +1900,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/wallet.php
+#: oc-admin/themes/modern/items/frm.php
 msgid "Change"
 msgstr ""
 
@@ -1897,6 +1930,10 @@ msgid ""
 "variables such as the site’s name, "
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Change the seller"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Change user password link"
 msgstr ""
@@ -1918,6 +1955,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Changes by level"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Changing the category changes which details apply below."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -1999,6 +2040,10 @@ msgstr ""
 msgid "Choose a bulk action first."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "Choose a category"
+msgstr ""
+
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/users/index.php
 msgid "Choose an option"
@@ -2028,18 +2073,22 @@ msgstr ""
 msgid "Cities"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "City"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "City area"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "City area, ZIP, street"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php
@@ -2517,13 +2566,13 @@ msgstr ""
 msgid "Countries from the catalog"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/stats/users.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Country"
 msgstr ""
@@ -2538,6 +2587,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Country not found"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Cover"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -2608,6 +2661,7 @@ msgid "Currencies"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
+#: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Currency"
 msgstr ""
@@ -2782,6 +2836,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Date: %s at %s"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Days from the publishing date, or a date like 2027-03-04. 0 never expires."
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
@@ -3081,6 +3139,7 @@ msgid ""
 "the form and its category assignment. Continue?"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
@@ -3247,6 +3306,16 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "Drop a widget type here"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid ""
+"Drop images here or choose files. The first photo is the cover, and you can "
+"change which."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Drop images here or choose files. The first photo is the cover."
 msgstr ""
 
 #: oc-admin/themes/modern/stats/reports.php
@@ -3582,6 +3651,7 @@ msgstr ""
 msgid "Enter field name"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/form/admin/Item.php
 msgid "Enter price"
 msgstr ""
@@ -3592,6 +3662,8 @@ msgid ""
 "your host's control panel or welcome email usually has them."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/form/PageForm.php
 #: oc-includes/osclass/classes/form/admin/Item.php
 msgid "Enter title here"
@@ -3715,10 +3787,6 @@ msgstr ""
 msgid "Expand all"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Expiration"
-msgstr ""
-
 #: oc-admin/themes/modern/categories/iframe.php
 msgid "Expiration (days)"
 msgstr ""
@@ -3728,12 +3796,21 @@ msgid "Expiration date"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/reports.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Expired"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Expired listings"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Expires"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Expires after"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -3873,6 +3950,11 @@ msgstr ""
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/users/alerts.php
 msgid "Find"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "Find a registered user"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -4329,6 +4411,10 @@ msgstr ""
 msgid "IP Address: %s"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "IP address"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 msgid "IP rule"
@@ -4520,6 +4606,7 @@ msgid "In-request only (default)"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -4639,6 +4726,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/pages/frm.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "Internal name"
 msgstr ""
@@ -4708,10 +4796,6 @@ msgstr ""
 msgid "Invalid upgrade package info"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Ip Address"
-msgstr ""
-
 #: oc-includes/osclass/classes/utility/Utils.php
 msgid "Is allow_url_fopen enabled?"
 msgstr ""
@@ -4722,14 +4806,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "It always appear before the category, region or city url."
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "It could be an integer (days from original publishing date "
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "It could be an integer (days from original publishing date it will "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -4993,6 +5069,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Pagination.php
 msgid "Last page"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Last saved"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -5466,6 +5546,14 @@ msgstr ""
 msgid "Make primary image"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Make this the cover"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Make {file} the cover photo"
+msgstr ""
+
 #: oc-admin/themes/modern/languages/index.php
 msgid "Manage Languages"
 msgstr ""
@@ -5602,6 +5690,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Mark as spam"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Mark this listing as spam?"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -5821,6 +5913,10 @@ msgstr ""
 msgid "More actions"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "More address detail"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-database.php
 msgid "More options"
 msgstr ""
@@ -6012,6 +6108,12 @@ msgid ""
 "better still."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Never"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Never expires"
 msgstr ""
@@ -6034,6 +6136,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "New comments"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "New expiry"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -6133,6 +6239,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "No categories yet"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "No category matches that."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -6329,6 +6439,10 @@ msgstr ""
 msgid "No results for this filter"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "No room for more photos."
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 msgid "No subcategory"
 msgstr ""
@@ -6431,6 +6545,11 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cache.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Not installed"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Not saved yet"
 msgstr ""
 
 #: oc-includes/osclass/classes/utility/SystemInfo.php
@@ -6853,6 +6972,7 @@ msgid "Packages"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/functions.php
 #: oc-includes/osclass/helpers/hPagination.php
 msgid "Page"
@@ -7019,6 +7139,7 @@ msgid "Photo count, the posting wait, and listing runtime are global limits by "
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 msgid "Photos"
 msgstr ""
 
@@ -7032,6 +7153,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "Pick a form to see its submissions"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Picking a user fills the contact fields below. The listing belongs to"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -7123,6 +7248,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Premium"
 msgstr ""
@@ -7160,6 +7286,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/billing/packages.php
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/settings.php
 #: oc-includes/osclass/classes/form/admin/Item.php
 msgid "Price"
@@ -7227,13 +7354,14 @@ msgstr ""
 msgid "Public site"
 msgstr ""
 
-#: oc-admin/themes/modern/pages/frm.php
-msgid "Publish"
-msgstr ""
-
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/functions.php
 msgid "Publish a listing"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Published"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -7430,7 +7558,6 @@ msgstr ""
 msgid "Regenerate images"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -7438,6 +7565,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "Region"
 msgstr ""
 
@@ -7461,6 +7589,7 @@ msgid "Regions"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "Registered user"
 msgstr ""
 
@@ -7492,6 +7621,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/functions.php
 #: oc-admin/themes/modern/settings/sitemap.php
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Remove"
 msgstr ""
@@ -7512,8 +7642,16 @@ msgstr ""
 msgid "Remove image"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Remove premium"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Remove stale content in bulk — expired, unactivated, spam, blocked and "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "Remove {file}"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -7861,6 +7999,14 @@ msgstr ""
 msgid "Search by"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "Search by name or e-mail"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "Search categories"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Search cities in %s"
 msgstr ""
@@ -7995,6 +8141,7 @@ msgstr ""
 msgid "Select a city..."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Select a country..."
@@ -8082,6 +8229,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Sell waiving the flood wait"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Seller"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -8359,15 +8510,12 @@ msgid "Show"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "Show a link in the footer"
 msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Show all listings"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Show e-mail"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
@@ -8395,6 +8543,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "Show technical detail"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Show the e-mail address on the listing"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php
@@ -8552,6 +8704,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/stats/reports.php
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/functions.php
 msgid "Spam"
@@ -8604,6 +8757,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/tools/cache.php
+#: oc-includes/osclass/classes/admin/ui/Editor.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -8653,6 +8807,10 @@ msgstr ""
 msgid ""
 "Stored alongside the resized copies, so uploads take more space. It is "
 "re-saved rather than kept byte for byte, which drops camera metadata."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "Street address"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -8814,6 +8972,10 @@ msgstr ""
 msgid "That form does not name a record that can be saved."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "That photo could not be removed."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "That record no longer exists, so nothing was saved."
 msgstr ""
@@ -8848,6 +9010,10 @@ msgstr ""
 msgid ""
 "The account limit is skipped while a captcha provider is configured above, "
 "because every "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "The active theme extends this one. Deleting it would leave "
 msgstr ""
 
 #: oc-includes/osclass/install-location.php
@@ -8985,6 +9151,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
 msgid "The list could not be loaded. Check your connection and try again."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is hidden from the site and counted"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing is hidden from the site and from"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
@@ -9230,6 +9404,7 @@ msgstr ""
 msgid "This action can't be done because it's a demo site"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "This action can't be undone. Are you sure you want to continue?"
 msgstr ""
@@ -9429,6 +9604,14 @@ msgstr ""
 msgid "This takes %1$s credits back from %2$s. If they have already spent "
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
+msgid "This theme cannot run with \"%1$s\": both declare %2$s, and PHP stops the "
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "This theme extends \"%s\", which is not installed. "
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "This user isn't allowed to create databases. Create the database in your "
 msgstr ""
@@ -9492,7 +9675,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/emails/index.php
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/stats/comments.php
+#: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 #: oc-includes/osclass/classes/form/ItemForm.php
@@ -9771,6 +9957,10 @@ msgstr ""
 msgid "Unblock"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Unblock listing"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/frm.php
 msgid "Unblocked"
 msgstr ""
@@ -9875,10 +10065,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Update date"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Update expiration?"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
@@ -10083,7 +10269,6 @@ msgstr ""
 #: oc-admin/themes/modern/billing/credits.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -10345,7 +10530,7 @@ msgid "View full image"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "View listing on front"
+msgid "View listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -10356,12 +10541,13 @@ msgstr ""
 msgid "View original"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "View page"
 msgstr ""
 
-#: oc-admin/themes/modern/pages/frm.php
-msgid "View page on site"
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "View profile"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -10372,6 +10558,7 @@ msgstr ""
 msgid "View your site"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/stats/items.php
 msgid "Views"
 msgstr ""
@@ -10816,11 +11003,14 @@ msgid ""
 "site. Move them somewhere else, or delete them."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/Picker.php
+msgid "ZIP code"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/iframe.php
 msgid "Zero means listings in this category never expire."
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Zip code"
 msgstr ""
@@ -10922,6 +11112,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "enabled"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "expired"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/index.php
+msgid "extends %s"
 msgstr ""
 
 #: oc-includes/vendor/gettext/gettext/src/Extractors/VueJs.php
@@ -11031,10 +11229,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "on, locked"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "optional"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -11189,6 +11383,7 @@ msgstr ""
 msgid "{WEB_TITLE} - Your site has upgraded to Shopclass {VERSION}"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "{file} could not be uploaded."
 msgstr ""
@@ -11197,8 +11392,21 @@ msgstr ""
 msgid "{file} has an invalid extension. Valid extension(s): {extensions}."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "{file} is not an image this site accepts."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "{file} is too large."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "{n} of {max} photos."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+msgid "{n} photos."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
