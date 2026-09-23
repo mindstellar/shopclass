@@ -438,15 +438,15 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
 | `after_show_pagination_admin` | action | — | `oc-includes/osclass/helpers/hPagination.php` |
 | `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_daily_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_daily_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_hourly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_hourly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_hourly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |

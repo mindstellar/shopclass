@@ -49,6 +49,8 @@ In development.
 
 ### Fixed
 
+- Search alert emails greeted registered subscribers by their e-mail address instead of
+  their name.
 - An empty listing, page or category permalink setting no longer builds a rule that
   answers the site's front page with the wrong screen.
 - Paging a category broke when the category permalink was built from two keywords, such as
@@ -93,6 +95,7 @@ In development.
 
 ### Security
 
+- Search alert emails escape listing titles and the subscriber's name in the message body.
 - Deleting a theme whose directory is a symlink deleted what the link pointed at, rather than
   the link. `is_link()` resolves through a trailing slash and answers false, and the delete
   passes one -- so the check that was there never saw the link. Reported after it emptied a
