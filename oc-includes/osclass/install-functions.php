@@ -1178,7 +1178,7 @@ function basic_info()
     $mail->Subject  = 'Shopclass successfully installed!';
     $mail->addAddress(Params::getParam('email'), 'Shopclass administrator');
     $mail->Body    = $body;
-    $mail->AltBody = $body;
+    $mail->AltBody = _osc_mail_text($body);
 
     try {
         $mail->send();

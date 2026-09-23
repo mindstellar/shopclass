@@ -446,6 +446,8 @@ function osc_sendMail($params)
 
         $mail->CharSet = 'utf-8';
         $mail->isHTML();
+        // Set ahead of pre_send_mail, so a plugin can still replace it.
+        $mail->AltBody = _osc_mail_alt_body($params);
 
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
         osc_phpmailer_limit_smtp_wait($mail);
@@ -492,6 +494,85 @@ function osc_mailBeauty($text, $params)
     $text   = str_ireplace($kwords, $rwords, $text);
 
     return $text;
+}
+
+/**
+ * A plain-text copy of an HTML mail body.
+ *
+ * Link addresses are kept -- "unsubscribe (https://...)" -- because a plain-text
+ * reader has no other way to follow them. Paragraphs, line breaks and list items keep
+ * their shape; everything else a browser would not show is dropped. Tolerant of the
+ * loose markup stored mail templates carry.
+ *
+ * @param string $html
+ *
+ * @return string '' when the body has no text in it
+ */
+function _osc_mail_text($html)
+{
+    $text = (string)$html;
+    if ($text === '') {
+        return '';
+    }
+
+    $text = preg_replace('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#is', '', $text);
+    // In HTML a line break in the source is only a space.
+    $text = preg_replace('/\s+/u', ' ', $text);
+
+    $text = preg_replace_callback(
+        // A browser ends a link at "</a" whatever follows it up to ">", so this does too.
+        '#<a\b[^>]*?\bhref\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a\b[^>]*>#is',
+        static function ($m) {
+            $url   = trim($m[2]);
+            $label = trim(strip_tags($m[3]));
+            if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
+                return $label;
+            }
+            if ($label === '' || $label === $url) {
+                return $url;
+            }
+
+            return $label . ' (' . $url . ')';
+        },
+        $text
+    );
+
+    $text = preg_replace('#<br\s*/?>#i', "\n", $text);
+    $text = preg_replace('#<li\b[^>]*>#i', "\n- ", $text);
+    $text = preg_replace('#</\s*li\s*>#i', '', $text);
+    $text = preg_replace('#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i', "\n\n", $text);
+
+    $text = strip_tags($text);
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    $lines = array();
+    foreach (explode("\n", $text) as $line) {
+        $lines[] = trim(preg_replace('/[ \t\x{00A0}]+/u', ' ', $line));
+    }
+    $text = preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines));
+
+    return trim($text);
+}
+
+/**
+ * The plain copy a mail is sent with.
+ *
+ * Every core mail builder hands over its HTML as alt_body, so HTML there is converted
+ * rather than sent as markup. A plain copy written by hand is sent as written.
+ *
+ * @param array<string,mixed> $params osc_sendMail() parameters
+ *
+ * @return string
+ */
+function _osc_mail_alt_body(array $params)
+{
+    $body = (string)($params['body'] ?? '');
+    $alt  = (string)($params['alt_body'] ?? '');
+    if ($alt !== '' && $alt !== $body && strip_tags($alt) === $alt) {
+        return $alt;
+    }
+
+    return _osc_mail_text($alt !== '' && $alt !== $body ? $alt : $body);
 }
 
 /**
