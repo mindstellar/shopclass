@@ -34,13 +34,13 @@ nothing to declare.
 
 Step 3 is the interesting one: it is the same header, the same footer, the same
 typography and the same widgets as the rest of your site, wrapped around markup
-core owns. The whole of the theming job is CSS.
+core owns. The whole theming job is CSS.
 
 ## The class vocabulary
 
 Core's markup carries the classes below. **These names are a permanent contract**
-— the same promise as the `osc_*` helpers and the admin's class names. They can
-be restyled freely; they will not be renamed or removed.
+— the same promise as the `osc_*` helpers and the admin's class names. You can
+restyle them freely; they will not be renamed or removed.
 
 Every rule core ships is scoped `.oe-page .name`, so match that specificity when
 you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item {}`.
@@ -95,10 +95,13 @@ Core's flash messages keep the class names they have always had —
 `flashmessage` and `flashmessage-{ok,error,warning,info}`. Style those; there is
 no second name for the same thing.
 
-They now carry `role="status"`, or `role="alert"` on an error, so the message
-announces itself with no JavaScript. Core renders no dismiss control: the message
-is dropped from the session as it is printed, so it never returns on the next
-page.
+They carry `role="status"`, or `role="alert"` on an error, so the message
+announces itself with no JavaScript. Each message includes a dismiss link
+(`.flashmessage a.ico-close`), but core does not wire it up — clicking it does
+nothing until your theme's own script binds click and keyboard handling to it,
+the way bender and storefront do. Core renders no dismiss behaviour of its own
+because a message is one-shot anyway: it is dropped from the session as it is
+printed, so it never returns on the next page.
 
 If your header already calls `osc_show_flash_message()`, core's own call is a
 no-op — whichever runs first prints the message, and there is no double render.
@@ -136,8 +139,8 @@ The whole of what makes these pages look native to a theme:
 
 ## Rendering one yourself
 
-`osc_gui_account_view(string $view): bool` runs the resolution above for one view
-name and returns `false` when core has no page for it:
+`osc_gui_account_view(string $themeView): bool` runs the resolution above for
+one view name and returns `false` when core has no page for it:
 
 ```php
 if (!osc_gui_account_view('user-login.php')) {
@@ -209,7 +212,7 @@ dangerous should sit a misclick away from changing an email address.
 
 ## Pages outside the account section
 
-`osc_gui_page_view()` does the same job for two pages that are not account pages:
+`osc_gui_page_view()` does the same job for four pages that are not account pages:
 
 | View | What it is |
 |---|---|

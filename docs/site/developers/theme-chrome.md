@@ -6,13 +6,13 @@ sidebar:
 ---
 
 Some pages belong to core rather than to your theme — the account-delete
-confirmation, the credits wallet, the buy and orders screens. Core will use your
+confirmation, the credits wallet, the buy and orders screens. Core uses your
 theme's view if you ship one. If you do not, it needs somewhere to put the page.
 
 **Theme chrome** is the pair of views that opens and closes a page on your site:
 the one printing `<!doctype html>` through the site header, and the one closing
-`</body>`. Tell core where they are and those core-owned pages render inside your
-layout, with your header, your footer, your typography.
+`</body>`. Tell core where they are, and those core-owned pages render inside
+your layout, with your header, your footer, your typography.
 
 ## You probably do not need to do anything
 
@@ -23,15 +23,16 @@ Core finds chrome on its own, first hit wins:
 3. `common/header.php` + `common/footer.php`
 
 Each is tried in your theme first, then in the parent theme when your
-`index.php` names one — a child theme that ships no chrome inherits its parent's.
-The bundled fallback theme is deliberately not in that walk: it knows nothing
-about your site, so core renders its own page instead.
+`index.php` names one — a child theme that ships no chrome inherits its
+parent's. The bundled fallback theme is deliberately not in that walk: it knows
+nothing about your site, so core renders its own page instead.
 
-Both halves must exist. A header with no footer is not chrome — core would leave
-the page unclosed, so it falls through to its own standalone page instead.
+Both halves must exist. A header with no footer is not chrome — core would
+leave the page unclosed, so it falls through to its own standalone page
+instead.
 
-If your theme uses either conventional pair, it already works. Declare only when
-your layout does not match one.
+If your theme uses either conventional pair, it already works. Declare only
+when your layout does not match one.
 
 ## Declaring
 
@@ -122,7 +123,6 @@ hardcoding one.
 ```php
 in_array('contact', osc_theme_view_names(), true);   // true — reserved by core
 ```
-
 
 ## Declaring widget zones
 

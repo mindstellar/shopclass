@@ -31,6 +31,7 @@ It prints, in order:
 | `description` | `<meta name="description">`, omitted when there is none |
 | `keywords` | `<meta name="keywords">`, omitted when there is none |
 | `canonical` | `<link rel="canonical">`, omitted when there is none |
+| `pagination` | `<link rel="prev">` / `<link rel="next">` on a search results page, omitted elsewhere |
 | `feed` | `<link rel="alternate" type="application/rss+xml">` — the current search's feed on a results page, the site's elsewhere |
 
 and then runs the `header` hook, which is where enqueued styles and scripts, the
