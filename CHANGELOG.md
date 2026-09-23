@@ -8,6 +8,7 @@ In development.
 
 ### New
 
+- A `field-group` class for controls that read as one field, such as an amount and its currency.
 - `osc_admin_category_picker()`, `osc_admin_location_picker()` and `osc_admin_user_picker()`:
   the three composites an entity editor is made of, for plugins as well as core.
 - `osc_admin_photo_grid()` draws a record's photos as a grid of tiles, with the cover marked,
@@ -115,6 +116,7 @@ In development.
 
 ### Changed
 
+- A category's own fields sit on a responsive grid instead of one per line, and share a right edge.
 - On a phone both editors give every small control a 24px tap target, stack the two-up field
   row and show photos two across.
 - `printMultiLangTitleDesc()`, `ItemForm::category_multiple_selects()` in the admin and

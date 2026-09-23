@@ -709,37 +709,16 @@
 // column so its right edge lands where every other field's does. The wrapper is what the
 // category script shows and hides, so the label has to sit inside it -- a label left
 // behind names a control that is not there.
-.osc-price-field {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
-
-  > .form-label {
-    flex: 0 0 100%;
-    margin-block-end: 0;
-  }
-
-  // The width tokens carry !important, so overriding them here has to as well. A flex item
-  // will not shrink past its min-content width either, and an input's is wide enough to push
-  // the currency select onto a line of its own.
-  > .input-text {
-    flex: 1 1 6rem;
-    min-inline-size: 0;
-    width: auto !important;
-  }
-
-  > select.field-select {
-    flex: 0 0 auto;
-    width: 10rem;
-  }
+// The amount and its currency are a .field-group; only the currency's measure is local.
+.osc-price-field .field-group > select.field-select {
+  width: 10rem;
 }
 
 // In the two-up row a control fills its half. The shared measure caps a text field at
 // 32rem, which on a wide screen leaves the category picker ending a long way short of the
 // price beside it.
 .osc-editor-cols > .osc-field > .osc-catpick-value,
-.osc-editor-cols > .osc-price-field > .input-text {
+.osc-editor-cols > .osc-price-field .field-group > .input-text {
   max-inline-size: none;
 }
 

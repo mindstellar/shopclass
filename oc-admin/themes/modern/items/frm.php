@@ -287,12 +287,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         // the wrapper the price input sits in -- so the label belongs inside it.
         echo '<div class="osc-field item-price osc-price-field">';
         echo '<label class="form-label" for="price">' . osc_esc_html(__('Price')) . '</label>';
+        // The amount and its currency are one field, so they share a row under one label.
+        echo '<div class="field-group">';
         osc_admin_field(array(
             'type'        => 'text',
             'id'          => 'price',
             'name'        => 'price',
             'row'         => false,
             'width'       => 'num',
+            'class'       => 'field-grow',
             // A rejected save put the price in the session the way the save stores it --
             // an integer in millionths -- so both sources take the same formatting.
             'value'       => $itemPrice,
@@ -323,6 +326,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             ));
             echo '<span class="field-suffix">' . osc_esc_html($currencies[0]['s_description']) . '</span>';
         }
+        echo '</div>';
         echo '</div>';
     }
 

@@ -57,6 +57,39 @@ input[type="number"].field-num {
   width: 24rem !important;
 }
 
+// Controls that read as one field: an amount and its currency, a number and its unit. The
+// group sits under the field's own label, so spacing above it matches every other field.
+.field-group {
+  align-items: center;
+  column-gap: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: .35rem;
+
+  // The width tokens carry !important, and a flex item will not shrink past an input's
+  // min-content width, so the control that takes the space needs both undone.
+  > .field-grow {
+    flex: 1 1 6rem;
+    max-width: none !important;
+    min-inline-size: 0;
+    width: auto !important;
+  }
+
+  // A trailing select or unit keeps its own measure and never stretches.
+  > select,
+  > .field-select,
+  > .field-suffix {
+    flex: 0 0 auto;
+  }
+
+  // A message or hint belongs under the whole group, not beside one control.
+  > .field-error,
+  > .help,
+  > .help-box {
+    flex: 0 0 100%;
+  }
+}
+
 .field-key {
   font-family: var(--bs-font-monospace);
   font-size: .9em;

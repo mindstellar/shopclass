@@ -144,9 +144,34 @@
   .has-slider {
     padding-inline-start: 180px;
   }
+  // A category's fields are short and there are often several, so they sit on a responsive
+  // grid rather than one per line with most of the row empty.
+  .meta_list,
+  .meta-section {
+    display: grid;
+    gap: .35rem 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  }
+
+  .meta-section,
+  .meta-section-title {
+    grid-column: 1 / -1;
+  }
+
+  // A field that wants the whole measure takes the whole row.
+  .meta:has(textarea),
+  .meta:has(.meta-radio-list),
+  .meta:has(input[type="checkbox"]) {
+    grid-column: 1 / -1;
+  }
+
   .meta {
+    min-inline-size: 0;
+
+    // Each control fills its cell, so a row of fields shares one right edge.
     select, input[type='text'], input[type='email'], input[type='tel'], input[type='number'], input.cf_date {
-      max-width:15rem;
+      max-width: 100%;
+      width: 100%;
     }
   }
 

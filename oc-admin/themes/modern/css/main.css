@@ -15180,6 +15180,30 @@ input[type=number].field-num {
   width: 24rem !important;
 }
 
+.field-group {
+  align-items: center;
+  column-gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.35rem;
+}
+.field-group > .field-grow {
+  flex: 1 1 6rem;
+  max-width: none !important;
+  min-inline-size: 0;
+  width: auto !important;
+}
+.field-group > select,
+.field-group > .field-select,
+.field-group > .field-suffix {
+  flex: 0 0 auto;
+}
+.field-group > .field-error,
+.field-group > .help,
+.field-group > .help-box {
+  flex: 0 0 100%;
+}
+
 .field-key {
   font-family: var(--bs-font-monospace);
   font-size: 0.9em;
@@ -15975,8 +15999,27 @@ pre code {
 #plugin-hook .has-slider {
   padding-inline-start: 180px;
 }
+#plugin-hook .meta_list,
+#plugin-hook .meta-section {
+  display: grid;
+  gap: 0.35rem 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+#plugin-hook .meta-section,
+#plugin-hook .meta-section-title {
+  grid-column: 1/-1;
+}
+#plugin-hook .meta:has(textarea),
+#plugin-hook .meta:has(.meta-radio-list),
+#plugin-hook .meta:has(input[type=checkbox]) {
+  grid-column: 1/-1;
+}
+#plugin-hook .meta {
+  min-inline-size: 0;
+}
 #plugin-hook .meta select, #plugin-hook .meta input[type=text], #plugin-hook .meta input[type=email], #plugin-hook .meta input[type=tel], #plugin-hook .meta input[type=number], #plugin-hook .meta input.cf_date {
-  max-width: 15rem;
+  max-width: 100%;
+  width: 100%;
 }
 #plugin-hook .meta-section {
   border-block-start: 1px solid var(--osc-rule);
@@ -16705,28 +16748,12 @@ select[aria-invalid=true].field-select {
   text-align: center;
 }
 
-.osc-price-field {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.osc-price-field > .form-label {
-  flex: 0 0 100%;
-  margin-block-end: 0;
-}
-.osc-price-field > .input-text {
-  flex: 1 1 6rem;
-  min-inline-size: 0;
-  width: auto !important;
-}
-.osc-price-field > select.field-select {
-  flex: 0 0 auto;
+.osc-price-field .field-group > select.field-select {
   width: 10rem;
 }
 
 .osc-editor-cols > .osc-field > .osc-catpick-value,
-.osc-editor-cols > .osc-price-field > .input-text {
+.osc-editor-cols > .osc-price-field .field-group > .input-text {
   max-inline-size: none;
 }
 
