@@ -112,9 +112,14 @@ abstract class FakeModel
 
 class Category extends FakeModel
 {
+    // 3 and 4 are roots. 20 > 21 > 22 is a three-level branch, so {CATEGORIES} has a
+    // real path to walk and a reversed walk shows up.
     protected static $rows = array(
-        3 => array('pk_i_id' => 3, 's_slug' => 'cars'),
-        4 => array('pk_i_id' => 4, 's_slug' => 'bikes'),
+        3  => array('pk_i_id' => 3, 's_slug' => 'cars', 'fk_i_parent_id' => null),
+        4  => array('pk_i_id' => 4, 's_slug' => 'bikes', 'fk_i_parent_id' => null),
+        20 => array('pk_i_id' => 20, 's_slug' => 'vehicles', 'fk_i_parent_id' => null),
+        21 => array('pk_i_id' => 21, 's_slug' => 'trucks', 'fk_i_parent_id' => 20),
+        22 => array('pk_i_id' => 22, 's_slug' => 'pickups', 'fk_i_parent_id' => 21),
     );
 
     public function findBySlug($slug)
@@ -122,12 +127,17 @@ class Category extends FakeModel
         return $this->findByField('s_slug', $slug);
     }
 
-    /** Root first, as the real one returns it reversed. */
+    /** Leaf first, up to the root -- the order the real one hands back. */
     public function hierarchy($id)
     {
-        $row = $this->findByPrimaryKey($id);
+        $chain = array();
+        $row   = $this->findByPrimaryKey($id);
+        while ($row !== null) {
+            $chain[] = $row;
+            $row     = $row['fk_i_parent_id'] !== null ? $this->findByPrimaryKey($row['fk_i_parent_id']) : null;
+        }
 
-        return $row === null ? array() : array($row);
+        return $chain;
     }
 }
 
@@ -322,22 +332,32 @@ foreach (array('off' => $EXPECT_OFF, 'on' => $EXPECT_ON) as $mode => $expected) 
     }
 }
 
+/**
+ * Walk a place list the way a theme does, but give up after $limit steps. A list
+ * that is reloaded on every call never runs out, and a bare while() would hang
+ * the run instead of failing it.
+ */
+function walk(callable $has, callable $read, $limit = 20)
+{
+    $out = array();
+    while (count($out) < $limit && $has()) {
+        $out[] = $read();
+    }
+
+    return $out;
+}
+
 harness_section('walking a place list');
 
 // Each list is fetched once, on first use, and the walk resets itself at the end so
 // a second loop over the same list starts again from the top.
 viewReset();
-$names = array();
-while (osc_has_list_countries()) {
-    $names[] = osc_list_country_name() . '/' . osc_list_country_code() . '/'
-        . osc_list_country_items();
-}
+$names = walk('osc_has_list_countries', static function () {
+    return osc_list_country_name() . '/' . osc_list_country_code() . '/' . osc_list_country_items();
+});
 pin('every country, once', array('India/IN/9', 'Nepal/NP/2'), $names);
 pin('the list was fetched once', array('countries'), $GLOBALS['__loads']);
-$again = array();
-while (osc_has_list_countries()) {
-    $again[] = osc_list_country_name();
-}
+$again = walk('osc_has_list_countries', 'osc_list_country_name');
 pin('the walk starts again from the top', array('India', 'Nepal'), $again);
 pin('and still only one fetch', array('countries'), $GLOBALS['__loads']);
 pin('counting needs no second fetch', 2, osc_count_list_countries());
@@ -347,11 +367,12 @@ pin('counting on its own fetches the list', 2, osc_count_list_countries());
 pin('that fetch happened', array('countries'), $GLOBALS['__loads']);
 
 viewReset();
-$regions = array();
-while (osc_has_list_regions('IN')) {
-    $regions[] = osc_list_region_name() . '/' . osc_list_region_slug() . '/'
-        . osc_list_region_id() . '/' . osc_list_region_items();
-}
+$regions = walk(static function () {
+    return osc_has_list_regions('IN');
+}, static function () {
+    return osc_list_region_name() . '/' . osc_list_region_slug() . '/' . osc_list_region_id() . '/'
+        . osc_list_region_items();
+});
 pin('every region of a country', array('Gujarat/gujarat/7/4'), $regions);
 pin('the country was passed to the lookup', array('regions:IN'), $GLOBALS['__loads']);
 
@@ -360,11 +381,12 @@ pin('regions with no country asked use the wildcard', 1, osc_count_list_regions(
 pin('and say so', array('regions:%%%%'), $GLOBALS['__loads']);
 
 viewReset();
-$cities = array();
-while (osc_has_list_cities(7)) {
-    $cities[] = osc_list_city_name() . '/' . osc_list_city_slug() . '/' . osc_list_city_id()
-        . '/' . osc_list_city_items();
-}
+$cities = walk(static function () {
+    return osc_has_list_cities(7);
+}, static function () {
+    return osc_list_city_name() . '/' . osc_list_city_slug() . '/' . osc_list_city_id() . '/'
+        . osc_list_city_items();
+});
 pin('every city of a region', array('Surat/surat/11/3', 'Rajkot/rajkot/12/1'), $cities);
 pin('the region was passed to the lookup', array('cities:7'), $GLOBALS['__loads']);
 pin('counting cities needs no second fetch', 2, osc_count_list_cities(7));

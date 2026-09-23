@@ -9,9 +9,9 @@
  */
 
 /**
- * Pins the two search-alert digests: what is sent, and which filters fire on the
- * way. The hourly and weekly builders were the same 86 lines twice over, so this
- * records both before the shared half is pulled out.
+ * Pins the three search-alert digests: what is sent, and which filters fire on the
+ * way. The hourly, daily and weekly builders were the same 86 lines three times
+ * over, and had already drifted -- only daily guarded a missing user column.
  *
  * The eight alert_email_* filters are a published contract -- a plugin rewrites a
  * digest through them -- so the names, their order, and what each is handed are
@@ -29,7 +29,14 @@ $GLOBALS['__sent']    = array();
 
 function osc_apply_filter($name, $content = '', ...$args)
 {
-    $GLOBALS['__filters'][] = array('name' => $name, 'in' => $content, 'args' => count($args));
+    // Which row a filter was handed matters as much as that it fired: the title and
+    // description filters see the alert, the _after ones see the account behind it.
+    $GLOBALS['__filters'][] = array(
+        'name' => $name,
+        'in'   => $content,
+        'args' => count($args),
+        'who'  => isset($args[0]['s_email']) ? $args[0]['s_email'] : null,
+    );
 
     return $content;
 }
@@ -116,7 +123,7 @@ function digest(callable $fn, array $user)
     return array('filters' => $GLOBALS['__filters'], 'sent' => $GLOBALS['__sent']);
 }
 
-foreach (array('hourly', 'weekly') as $period) {
+foreach (array('hourly', 'daily', 'weekly') as $period) {
     harness_section('the ' . $period . ' digest, to a registered user');
 
     $out = digest('fn_alert_email_' . $period, array('fk_i_user_id' => 5, 's_email' => 'old@example.com'));
@@ -135,6 +142,11 @@ foreach (array('hourly', 'weekly') as $period) {
     );
     pin('each alert filter is handed the same five extras', array(5, 0, 5, 0, 5, 5),
         array_column($out['filters'], 'args'));
+    pin(
+        'the first two see the alert row, the _after pair see the account',
+        array('old@example.com', null, 'old@example.com', null, 'jo@example.com', 'jo@example.com'),
+        array_column($out['filters'], 'who')
+    );
     pin('one mail is sent', 1, count($out['sent']));
     pin('it goes to the account address, not the one on the alert',
         'jo@example.com', $out['sent'][0]['to']);
@@ -163,6 +175,12 @@ foreach (array('hourly', 'weekly') as $period) {
         true,
         strpos($out['sent'][0]['body'], 'email=nobody%40example.com') !== false
     );
+
+    harness_section('the ' . $period . ' digest, from an alert row with no user column at all');
+
+    $out = digest('fn_alert_email_' . $period, array('s_email' => 'bare@example.com'));
+    pin('it still goes to the address on the alert', 'bare@example.com', $out['sent'][0]['to']);
+    pin('and still uses it as the name', 'bare@example.com', $out['sent'][0]['to_name']);
 }
 
 exit(harness_result());

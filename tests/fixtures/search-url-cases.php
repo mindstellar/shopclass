@@ -46,6 +46,10 @@ $CASES = array(
     'a region with two categories'    => array(array('sRegion' => 7, 'sCategory' => array(3, 4)), array()),
     'four filters at once'            => array(array('sRegion' => 7, 'sCategory' => 3, 'iPage' => 2, 'sPattern' => 'bike'), array()),
     'a city area'                     => array(array('sCityArea' => 'downtown'), array()),
+    'a nested category'               => array(array('sCategory' => 22), array()),
+    'a nested category by slug'       => array(array('sCategory' => 'pickups'), array()),
+    'a nested category, page 2'       => array(array('sCategory' => 22, 'iPage' => 2), array()),
+    'a middle category'               => array(array('sCategory' => 21), array()),
     'an array under a plain key'      => array(array('sPriceMin' => array(1, 2)), array()),
     'two sellers'                     => array(array('sUser' => array(5, 6)), array()),
     'two custom fields'               => array(array('meta' => array(4 => 'red', 5 => 'blue')), array()),
@@ -141,6 +145,10 @@ $EXPECT_OFF = array(
     'seller subdomain, by name'          => 'http://jo.example.com/',
     'seller subdomain, unknown'          => 'http://example.com/index.php?page=search&sUser=98',
     'subdomain plus a filter'            => 'http://cars.example.com/index.php?page=search&sPattern=bike',
+    'a nested category' => 'http://example.com/index.php?page=search&sCategory=22',
+    'a nested category by slug' => 'http://example.com/index.php?page=search&sCategory=pickups',
+    'a nested category, page 2' => 'http://example.com/index.php?page=search&sCategory=22&iPage=2',
+    'a middle category' => 'http://example.com/index.php?page=search&sCategory=21',
 );
 
 $EXPECT_ON = array(
@@ -208,4 +216,8 @@ $EXPECT_ON = array(
     'seller subdomain, by name'          => 'http://jo.example.com/',
     'seller subdomain, unknown'          => 'http://example.com/search/user,98',
     'subdomain plus a filter'            => 'http://cars.example.com/search/,bike',
+    'a nested category' => 'http://example.com/vehicles/trucks/pickups',
+    'a nested category by slug' => 'http://example.com/vehicles/trucks/pickups',
+    'a nested category, page 2' => 'http://example.com/vehicles/trucks/pickups/2',
+    'a middle category' => 'http://example.com/vehicles/trucks',
 );
