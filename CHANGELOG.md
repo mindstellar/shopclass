@@ -95,7 +95,8 @@ In development.
 
 ### Security
 
-- Search alert emails escape listing titles and the subscriber's name in the message body.
+- Search alert emails escape listing titles and the subscriber's name and address in the
+  message body. The `alert_email_*_description_after` filters now receive that escaped text.
 - Deleting a theme whose directory is a symlink deleted what the link pointed at, rather than
   the link. `is_link()` resolves through a trailing slash and answers false, and the delete
   passes one -- so the check that was there never saw the link. Reported after it emptied a
