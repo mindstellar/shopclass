@@ -455,6 +455,55 @@ pin(
     })
 );
 
+harness_section('structures that would answer the wrong page');
+
+// An empty structure would compile to '^/?$' and answer the site's front page.
+foreach (array('item' => 'rewrite_item_url', 'page' => 'rewrite_page_url',
+    'category' => 'rewrite_cat_url') as $tpl => $pref) {
+    pin(
+        'an empty ' . $tpl . ' structure produces no rule at all',
+        array(),
+        withStructure($pref, '', static function () use ($tpl) {
+            return CoreRoutes::templateRules($tpl);
+        })
+    );
+    pin(
+        'a whitespace-only ' . $tpl . ' structure produces no rule either',
+        array(),
+        withStructure($pref, '   ', static function () use ($tpl) {
+            return CoreRoutes::templateRules($tpl);
+        })
+    );
+}
+
+// A placeholder written twice captures twice, so every later one shifts along.
+pin(
+    'a repeated placeholder does not misplace the ones after it',
+    array(
+        '^([0-9]+)/([\p{L}\p{N}_\-,]+)-([0-9]+)/?$' => 'index.php?page=page&id=$1&slug=$2',
+        '^([a-z]{2})_([A-Z]{2})/([0-9]+)/([\p{L}\p{N}_\-,]+)-([0-9]+)/?$'
+            => 'index.php?page=page&id=$3&slug=$4&lang=$1_$2',
+    ),
+    withStructure('rewrite_page_url', '{PAGE_ID}/{PAGE_SLUG}-{PAGE_ID}', static function () {
+        return CoreRoutes::templateRules('page');
+    })
+);
+
+harness_section('a value that would otherwise escape its parameter');
+
+$GLOBALS['__rw'] = true;
+pin(
+    'a listing filter carrying a separator is encoded',
+    'http://example.com/user/items?itemType=a%26b%3Dc',
+    osc_core_url('user_items', array('itemType' => 'a&b=c'))
+);
+$GLOBALS['__rw'] = false;
+pin(
+    'and encoded with friendly URLs off too',
+    'http://example.com/index.php?page=user&action=items&itemType=a%26b%3Dc',
+    osc_core_url('user_items', array('itemType' => 'a&b=c'))
+);
+
 /* ------------------------------------------------------------------ parse side */
 
 $REF = new ReflectionClass('Rewrite');
