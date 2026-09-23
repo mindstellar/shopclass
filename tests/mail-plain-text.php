@@ -47,11 +47,17 @@ class RecordingMailer extends PHPMailer
 }
 
 $GLOBALS['__altOverride'] = null;
+$GLOBALS['__initAlt']     = null;
 
 function osc_apply_filter($tag, $value, ...$args)
 {
     if ($tag === 'init_send_mail') {
-        return new RecordingMailer(true);
+        $mail = new RecordingMailer(true);
+        if ($GLOBALS['__initAlt'] !== null) {
+            $mail->AltBody = $GLOBALS['__initAlt'];
+        }
+
+        return $mail;
     }
     if ($tag === 'pre_send_mail' && $GLOBALS['__altOverride'] !== null) {
         $value->AltBody = $GLOBALS['__altOverride'];
@@ -188,6 +194,45 @@ pin(
 pin('an empty body has no plain copy', '', _osc_mail_text(''));
 pin('a body of only markup has no plain copy', '', _osc_mail_text('<p></p><br/>'));
 
+harness_section('markup that tries to break the conversion');
+
+// A listing description may carry an attribute that spells "href" in its value. That
+// must not be read as the link's address, and must not let the next, real link lose
+// its own -- here the admin's approve link.
+pin(
+    'an href inside another attribute does not steal the next link',
+    "New listing: https://evil.example/login '\n\nApprove listing (https://site.example/approve?id=9)",
+    _osc_mail_text(
+        '<p>New listing: <a title="href=\'"></a> https://evil.example/login \'</p>'
+        . '<p><a href="https://site.example/approve?id=9">Approve listing</a></p>'
+    )
+);
+pin(
+    'a link left open does not swallow the next one',
+    "Look here\n\nApprove listing (https://site.example/approve?id=9)",
+    _osc_mail_text(
+        '<p><a href="https://evil.example/">Look here</p>'
+        . '<p><a href="https://site.example/approve?id=9">Approve listing</a></p>'
+    )
+);
+pin(
+    'hundreds of open links still leave the text readable',
+    'real text',
+    _osc_mail_text(str_repeat('<a href="x">', 3000) . '<p>real text</p>')
+);
+pin(
+    'text that is not valid UTF-8 still gives a plain copy',
+    true,
+    strpos(_osc_mail_text("<p>caf\xe9 ok</p>"), 'ok') !== false
+);
+// The installer writes the admin password into its mail. It is raw input, so it is
+// escaped into the HTML; the plain copy must decode it back to exactly what was typed.
+pin(
+    'an escaped password reads back exactly as typed',
+    '- password: p<ss>a&amp;b"\'',
+    _osc_mail_text('<li>password: ' . htmlspecialchars('p<ss>a&amp;b"\'', ENT_QUOTES, 'UTF-8') . '</li>')
+);
+
 harness_section('what a real template becomes');
 
 pin(
@@ -242,5 +287,17 @@ $GLOBALS['__altOverride']         = 'Set by a plugin';
 osc_sendMail($base);
 $GLOBALS['__altOverride']         = null;
 pin('a plugin can still replace it in pre_send_mail', 'Set by a plugin', RecordingMailer::$last['AltBody']);
+
+// init_send_mail is where a plugin sets its mailer up, and before this copy existed
+// nothing touched AltBody, so one set there always went out. It still does.
+RecordingMailer::$last = null;
+$GLOBALS['__initAlt']  = 'Set up by a plugin in init_send_mail';
+osc_sendMail($base);
+$GLOBALS['__initAlt']  = null;
+pin(
+    'a plain copy a plugin set in init_send_mail is kept',
+    'Set up by a plugin in init_send_mail',
+    RecordingMailer::$last['AltBody']
+);
 
 exit(harness_result());
