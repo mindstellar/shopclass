@@ -140,6 +140,10 @@ jobs:
       # osc_search_url(). Pins its output, quirks included.
       - name: Search URLs
         run: php tests/search-url.php
+      # The eight alert_email_* filters are a published contract: a plugin rewrites
+      # a digest through them. Pins the names, their order and what each is handed.
+      - name: Alert emails
+        run: php tests/alert-emails.php
       # page=route takes the hook name from the request. Unchecked, anyone can fire cron_hourly.
       - name: Route hook dispatch
         run: php tests/route-hook-dispatch.php
