@@ -88,16 +88,17 @@ redundant on a site where comments are closed or moderated.
 
 The settings that do the most, and are easiest to forget:
 
-- **Listings → Settings → wait *n* seconds between listings.** A bulk poster is
-  stopped by a delay long before they are stopped by a CAPTCHA.
-- **Listings → Settings → only logged in users can post.** The single biggest
-  reduction in spam volume, at the cost of some genuine posts.
-- **Listings → Settings → moderate listings.** Holding new listings until they
-  are approved stops spam reaching visitors at all. Set the threshold so a user
-  stops needing moderation after a few approved listings, and the cost falls to
-  almost nothing once your regulars are established.
-- **Users → Settings → users need to validate their account.** The same, for
-  registration.
+- **Listings → Settings → An user has to wait _n_ seconds between each listing
+  added.** A bulk poster is stopped by a delay long before they are stopped by a
+  CAPTCHA.
+- **Listings → Settings → Only logged in users can post listings.** The single
+  biggest reduction in spam volume, at the cost of some genuine posts.
+- **Listings → Settings → Users have to validate their listings.** Holding new
+  listings until they are validated stops spam reaching visitors at all. Set the
+  threshold so a user stops needing to validate after a few approved listings,
+  and the cost falls to almost nothing once your regulars are established.
+- **Users → Settings → Users need to validate their account.** The same idea,
+  for registration.
 - **Users → Ban rules.** Block a returning abuser's address, domain or IP
   pattern.
 

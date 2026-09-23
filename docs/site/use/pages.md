@@ -6,30 +6,28 @@ sidebar:
 ---
 
 Every classifieds site needs a handful of pages that are not listings — About,
-Terms, Privacy, How it works, Contact. As the admin puts it: *static pages like
-"About Us" or "Info" live here.*
+Terms, Privacy, How it works, Contact.
 
 **Pages** in the admin panel.
 
 ## Creating a page
 
 **Pages → Add page**. A page has a title and body per active language, and a
-URL slug derived from the title.
+URL slug (the name as it appears in web addresses) taken from the title.
 
-Pages are linked from the footer automatically, which is also why deleting one
-warns you: *this permanently removes the page and any link to it in the footer.*
+Pages are linked from the footer automatically. That is also why deleting one
+warns you: it removes the page's link from the footer too.
 
 ## Two ways to build one
 
-**The text editor** is the default: a rich-text field, right for prose. Terms
-and Privacy want exactly this.
+Pick the **Page template** field when creating the page:
 
-**Page builder (blocks)** composes the page from widget blocks instead — *"compose
-this page from widget blocks instead of the text editor"*. Right for a landing
-page or a How-it-works page with images and sections.
+- **Default template** — the text editor. A rich-text field, right for prose.
+  Terms and Privacy want exactly this.
+- **Page builder (blocks)** — composes the page from widget blocks instead.
+  Right for a landing page or a How-it-works page with images and sections.
 
-Pick the template when creating the page. The available blocks are the same
-widget types used elsewhere:
+The available blocks are the same widget types used elsewhere:
 
 | Block | What it is |
 |---|---|

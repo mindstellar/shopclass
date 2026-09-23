@@ -66,8 +66,8 @@ Test Payments hands out credits for nothing. It is for testing only.
 | **Urgent** | An urgency marker, for a set number of days |
 | **Bump to top** | Back to the top of results, with a cooldown between bumps |
 | **Extra photos** | A raised photo cap on one listing |
-| **Extra runtime** | More days than the category's limit allows |
-| **Extra listing slots** | More listings than the free allowance |
+| **Extra listing runtime** | More days than the category's limit allows |
+| **Extra slots** | More listings than the free allowance |
 | **Skip the posting wait** | Waives the flood-control delay between posts |
 
 Each is sold independently — turn on only what you actually want to sell — and
@@ -82,9 +82,9 @@ is nothing for a buyer to purchase.
 ### What buyers see
 
 Sellers get a **wallet** page with their credit balance and history, a page to
-buy bundles, and a list of their past orders. On their own listings they get a
-**Feature this listing** action that spends credits to run it as featured for a
-set number of days.
+buy bundles, and a list of their past orders. On their own listings they get an
+action to spend credits on an upgrade — featuring the listing for a set number
+of days, for example.
 
 Orders are visible to you at **Billing → Orders**, and balances at
 **Billing → Credits**.

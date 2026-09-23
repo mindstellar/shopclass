@@ -7,8 +7,9 @@ sidebar:
 
 Running a marketplace means holding personal data about the people using it —
 profiles, listings, comments, saved searches and, if you sell credits, orders.
-ShopClass gives users both halves of a data-subject request: **erasure**, which
-has always existed, and **export**, added in **6.2.0**.
+Privacy law gives a person two rights over data held about them: to have it
+deleted, and to get a copy of it. ShopClass gives users both: **erasure**,
+which has always existed, and **export**, added in **6.2.0**.
 
 ## Users can download their own data
 
@@ -21,8 +22,8 @@ Two details worth knowing:
 - It is **streamed straight to the browser**, never written to disk on the
   server. There is no export file sitting in your web root waiting to be found.
 - **Password hashes and account secrets are never included.** They authenticate
-  a person rather than describe them, so they are not personal data a subject
-  request should return.
+  a person rather than describe them, so they are not personal data an export
+  should return.
 
 You do not have to do anything to enable it, and you are not in the loop when
 someone uses it.
