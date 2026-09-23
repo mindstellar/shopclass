@@ -553,6 +553,10 @@ class AdminMenu
         // actual url
         $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
         $actual_page = Params::getParam('page');
+        // A refused save redraws its form from a POST, which has no query string.
+        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
+            $actual_url = 'page=' . $actual_page;
+        }
 
         $adminMenu = self::newInstance();
         $aMenu     = $adminMenu->get_array_menu();
