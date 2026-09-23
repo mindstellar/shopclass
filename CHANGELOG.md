@@ -49,6 +49,8 @@ In development.
 
 ### Fixed
 
+- A refused save no longer moves the admin sidebar's highlight to Dashboard.
+- Saving an email template with a taken internal name no longer saved half of it.
 - The listing-expiry warning email left its last paragraph unclosed.
 - Every email now carries a plain-text copy alongside the HTML, with link addresses kept, so
   it reads in any mail app and is less likely to be marked as spam.
@@ -98,6 +100,7 @@ In development.
 
 ### Security
 
+- The email template test send needs a CSRF token.
 - Search alert emails escape listing titles and the subscriber's name and address in the
   message body. The `alert_email_*_description_after` filters now receive that escaped text.
 - Deleting a theme whose directory is a symlink deleted what the link pointed at, rather than
@@ -148,6 +151,8 @@ In development.
   row of cascading selects.
 - The listing's seller says which account it belongs to, and a search fills the contact
   fields from a registered user.
+- The email template editor matches the page editor: placeholders insert with a click, a
+  test sends from the rail, and the internal name can no longer be changed.
 - The page editor has a Status panel in its rail, an Advanced group for the internal name,
   and a save bar that counts unsaved changes.
 - The listing and page editors draw their titles and bodies from the shared field, so both
