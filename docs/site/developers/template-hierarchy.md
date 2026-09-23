@@ -1,16 +1,13 @@
 ---
 title: Template hierarchy
-description: Every front-end page now resolves through an ordered list of candidate views, so a theme can specialise a page or add a view of its own without a patch to ShopClass.
+description: Every front-end page resolves through an ordered list of candidate views, so a theme can specialise a page or add a view of its own without a patch to ShopClass.
 sidebar:
   order: 20
 ---
 
-Every front-end controller used to name exactly one view. Rendering a listing
-meant `item.php`, and that was the whole conversation — a theme that wanted a
-different layout for one category had nowhere to put it.
-
-Controllers now name an **ordered list**, most specific first, and core renders
-the first one a theme actually ships.
+A front-end controller names an **ordered list** of candidate views, most
+specific first. Core renders the first one a theme actually ships. This is what
+lets a theme give one category its own layout without a core patch.
 
 ## What core offers
 
@@ -31,26 +28,29 @@ and every page resolves exactly as before.
 ## Locating a view yourself
 
 ```php
-osc_locate_template(array $candidates, string $context = ''): string
+osc_locate_template($candidates, string $context = ''): string
 ```
 
-Returns the **view name** of the first candidate any theme in the stack can
-render — not a filesystem path, because rendering goes through
+`$candidates` takes a single view name (`string`) or an ordered list
+(`string[]`).
+
+It returns the **view name** of the first candidate any theme in the stack can
+render — not a filesystem path. Rendering goes through
 `osc_current_web_theme_path()`, which also points the theme's own asset URLs at
 whichever theme answered.
 
-When nothing matches, the last candidate comes back. A caller that names one
-view therefore behaves exactly as it did before there was a list.
+When nothing matches, the last candidate comes back. Pass one view name and you
+get that name back unchanged — the same result as before this list existed.
 
 ### Two orderings, and which one wins
 
-Views are resolved against a stack: your theme, its parent when it declares one,
-then the theme core keeps as a last resort.
+Views are resolved against a stack: your theme, then its parent theme if it
+declares one, then the storefront theme core keeps as a last resort.
 
 **Candidate order applies within one theme, and theme order comes first.** If
-your theme ships `item.php` and a fallback theme happens to ship `item-12.php`,
-your generic view wins. Otherwise adding a candidate could hand one of your pages
-to a theme the site is not running.
+your theme ships `item.php` and the fallback theme happens to ship
+`item-12.php`, your generic view still wins. Otherwise adding a candidate could
+hand one of your pages to a theme the site is not running.
 
 `osc_theme_template_paths()` returns that stack as absolute directory paths.
 

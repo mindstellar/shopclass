@@ -5,22 +5,29 @@ sidebar:
   order: 10
 ---
 
-Before the registry existed, a plugin or theme advertised its own updates: you
-put an `Update URI` in the header block, and core polled that URL for a JSON
-document describing the latest version.
+Before the market existed, a plugin or theme advertised its own updates: you
+put an `Update URI` in the header block, and a JSON document at that URL told
+core the latest version.
 
-**That mechanism still works**, and existing packages relying on it keep
-updating. For anything new, [the market](/docs/developers/market/) is the better
-route — including for code you host in your own repository, which can be
-registered with a one-file pointer without moving your source anywhere.
+**Core still parses the header field**, and the code that reads it
+(`mindstellar\upgrade\Plugin::getPackageInfo()`,
+`oc-includes/osclass/classes/upgrade/Plugin.php:68`; `Theme::getPackageInfo()`,
+`oc-includes/osclass/classes/upgrade/Theme.php:68`) still works if something
+calls it. **Nothing in the admin panel or the CLI calls it.** A package that
+relies only on `Update URI` gets no "update available" notice and no one-click
+install in this version — the admin's update badge and install flow come from
+`mindstellar\market\PackageIndex`, which only knows about packages in the
+catalog. For anything new, [the market](/docs/developers/market/) is the route
+that actually shows up in the admin — including for code you host in your own
+repository, registered with a one-file pointer, no source move required.
 
 ## Why the market replaced it
 
-Self-hosted update URLs put one HTTP request per installed package into every
-update check. A site with fifteen plugins made fifteen outbound calls, each to a
-different author's server, each able to be slow, down, or gone. The catalog
-answers for every package in one cached request, and it verifies a `sha256`
-against the real artifact — the update URL mechanism verifies nothing.
+A self-hosted update URL is one more server that has to answer, for every
+plugin and theme, on every update check — slow, down, or gone all count against
+your package. The catalog answers for every package in one cached request per
+site, and it verifies a `sha256` against the real artifact before installing —
+the `Update URI` fields above give core no way to verify anything.
 
 ## The legacy contract
 
@@ -30,35 +37,34 @@ Declare the endpoint in your header block:
 Plugin update URI: https://example.com/updates/myplugin.json
 ```
 
-It must return JSON in this shape:
+`getPackageInfo()` reads that URL two different ways, depending on what it is.
+
+### A GitHub Releases API URL
+
+If the URL contains `api.github.com`, it is read as a real GitHub Releases API
+response (the JSON GitHub itself returns) — not a custom shape. Three fields
+are used: `tag_name` (the version — a leading `v` is stripped),
+`assets[0].browser_download_url` (the zip to download), and `prerelease`
+(skip this release unless the admin turned on pre-releases).
+
+### Any other URL
+
+It must return JSON with these fields. Everything else in the payload is
+ignored:
 
 ```json
 {
-  "s_title": "My Plugin",
-  "s_description": "What it does. HTML accepted.",
-  "s_version": "2.1.0",
-  "e_type": "PLUGIN",
   "s_source_file": "https://example.com/downloads/myplugin-2.1.0.zip",
-  "s_update_url": "https://example.com/updates/myplugin.json",
-  "s_compatible": "6.0.0,6.1.0,6.2.0",
-  "s_contact_name": "Your name",
-  "s_banner": "banner.jpg",
-  "s_banner_path": "https://example.com/banners/",
-  "i_total_downloads": "1234",
-  "dt_mod_date": "2026-01-15 10:00:00",
-  "dt_pub_date": "2025-06-01 09:00:00"
+  "s_version": "2.1.0",
+  "s_compatible": "6.0.0,6.1.0,6.2.0"
 }
 ```
 
 | Field | Notes |
 |---|---|
-| `s_version` | Any alphanumeric string is accepted, but use `MAJOR.MINOR.PATCH` — core has to decide whether it is *newer* than what is installed, and only a sortable version answers that. |
-| `e_type` | One of `PLUGIN`, `THEME` or `LANGUAGE`. |
-| `s_source_file` | Direct link to the zip. Must be reachable without authentication. |
-| `s_update_url` | The endpoint itself, so it can be re-checked after installation. |
-| `s_compatible` | Comma-separated core versions you support. |
-
-The `Update URI` must be unique per package.
+| `s_source_file` | Required. Direct link to the zip, reachable without authentication. Core throws an error if this is missing. |
+| `s_version` | Required. Any alphanumeric string is accepted, but use `MAJOR.MINOR.PATCH` — core has to decide whether it is *newer* than what is installed, and only a sortable version answers that. |
+| `s_compatible` | Optional, comma-separated core versions you support. Core only looks at this when your header block declares none of `Requires Shopclass`, `Tested up to` or `Requires PHP` — declare those instead and this field is never read. |
 
 :::caution[Serve it over HTTPS]
 This endpoint decides what code gets downloaded and executed on somebody else's

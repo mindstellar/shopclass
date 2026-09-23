@@ -120,8 +120,10 @@ Inside `mydynamicroute.php`, read the captured groups with `Params::getParam()`.
 - Parameters in `$url` go between braces: `{parameter}`.
 - Parameter names must match **exactly**, case included, between `osc_add_route`
   and `osc_route_url`.
-- Any file in a folder called `admin` is opened in the admin panel and returns
-  404 on the public site.
+- If `$file`'s path has an `admin` folder in it (e.g. `admin/settings.php`),
+  the public site refuses it with a 404. Naming the folder `admin` does not put
+  the page in the admin panel — for that, link to the route with
+  `osc_route_admin_url()` instead of `osc_route_url()`.
 
 :::danger[Make your patterns unique]
 Regular expressions collide easily, and a greedy pattern can swallow core URLs —
