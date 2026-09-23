@@ -148,6 +148,10 @@ jobs:
       # was never read. Pins the conversion, and that link addresses survive it.
       - name: Mail plain-text copy
         run: php tests/mail-plain-text.php
+      # An English install reads the language copy; the translations repository is fed
+      # the installer copy. Fixing one and not the other goes unnoticed without this.
+      - name: Email templates match in both copies
+        run: diff oc-content/languages/en_US/mail.json oc-includes/osclass/installer/mail.json
       # page=route takes the hook name from the request. Unchecked, anyone can fire cron_hourly.
       - name: Route hook dispatch
         run: php tests/route-hook-dispatch.php
