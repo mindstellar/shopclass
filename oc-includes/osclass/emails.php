@@ -116,20 +116,30 @@ function _alert_email_template($internalName)
 /**
  * Who a digest goes to, and the placeholder values for their copy of it.
  *
- * An alert can be subscribed by an account or by a bare address. An account's own
- * name and address win over whatever the alert was created with.
+ * osc_runAlert() has already looked the account up, so a registered subscriber
+ * arrives as their user row. That row has no fk_i_user_id, and testing for one sent
+ * every registered subscriber into the no-account branch, greeting them by address.
+ * A plugin firing the hook may still hand over an alert row, so that case still
+ * finds the account behind it.
  *
- * @param array<string,mixed> $user     The alert row
+ * The subject is plain text and the body is HTML, so the words come twice: as
+ * written for the subject, escaped for the body.
+ *
+ * @param array<string,mixed> $user     A user row, or an alert row
  * @param string              $ads      Rendered listings block
  * @param array<string,mixed> $s_search The alert, for its unsubscribe secret
  *
- * @return array{user:array<string,mixed>,words:array<int,array<int,string>>}
+ * @return array{user:array<string,mixed>,words:array<int,array<int,string>>,htmlWords:array<int,array<int,string>>}
  */
 function _alert_email_recipient($user, $ads, $s_search)
 {
-    if (isset($user['fk_i_user_id']) && $user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
+    if (empty($user['s_name']) && !empty($user['fk_i_user_id'])) {
+        $account = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
+        if (isset($account['s_email'])) {
+            $user = $account;
+        }
+    }
+    if (empty($user['s_name'])) {
         $user['s_name'] = $user['s_email'];
     }
 
@@ -140,11 +150,14 @@ function _alert_email_recipient($user, $ads, $s_search)
     );
     $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
 
+    $keys = array('{USER_NAME}', '{USER_EMAIL}', '{ADS}', '{UNSUB_LINK}');
+
     return array(
-        'user'  => $user,
-        'words' => array(
-            array('{USER_NAME}', '{USER_EMAIL}', '{ADS}', '{UNSUB_LINK}'),
-            array($user['s_name'], $user['s_email'], $ads, $unsub_link),
+        'user'      => $user,
+        'words'     => array($keys, array($user['s_name'], $user['s_email'], $ads, $unsub_link)),
+        'htmlWords' => array(
+            $keys,
+            array(osc_esc_html($user['s_name']), osc_esc_html($user['s_email']), $ads, $unsub_link),
         ),
     );
 }
@@ -215,6 +228,7 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
     $recipient = _alert_email_recipient($user, $ads, $s_search);
     $user      = $recipient['user'];
     $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
     _alert_email_deliver(
         $user,
@@ -229,7 +243,7 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
         ),
         osc_apply_filter(
             'alert_email_hourly_description_after',
-            osc_mailBeauty($_body, $words),
+            osc_mailBeauty($_body, $htmlWords),
             $user,
             $ads,
             $s_search,
@@ -286,6 +300,7 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
     $recipient = _alert_email_recipient($user, $ads, $s_search);
     $user      = $recipient['user'];
     $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
     _alert_email_deliver(
         $user,
@@ -300,7 +315,7 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
         ),
         osc_apply_filter(
             'alert_email_daily_description_after',
-            osc_mailBeauty($_body, $words),
+            osc_mailBeauty($_body, $htmlWords),
             $user,
             $ads,
             $s_search,
@@ -357,6 +372,7 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
     $recipient = _alert_email_recipient($user, $ads, $s_search);
     $user      = $recipient['user'];
     $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
     _alert_email_deliver(
         $user,
@@ -371,7 +387,7 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
         ),
         osc_apply_filter(
             'alert_email_weekly_description_after',
-            osc_mailBeauty($_body, $words),
+            osc_mailBeauty($_body, $htmlWords),
             $user,
             $ads,
             $s_search,

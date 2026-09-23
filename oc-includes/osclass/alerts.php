@@ -74,10 +74,7 @@ function osc_runAlert($type = null, $last_exec = null)
                 $alerts = Alerts::newInstance()->findUsersBySearchAndType($s_search['s_search'], $type, $active);
 
                 if (count($alerts) > 0) {
-                    $ads = '';
-                    foreach ($items as $item) {
-                        $ads .= '<a href="' . osc_item_url_ns($item['pk_i_id']) . '">' . $item['s_title'] . '</a><br/>';
-                    }
+                    $ads = _alert_email_ads($items);
 
                     foreach ($alerts as $alert) {
                         $user = array();
@@ -106,4 +103,26 @@ function osc_runAlert($type = null, $last_exec = null)
             ));
         }
     }
+}
+
+/**
+ * The listings block a digest carries: one link per new listing.
+ *
+ * Titles are escaped here. The block goes into an HTML body, and although a title
+ * saved through the site has its tags stripped, one written by an importer or a
+ * plugin need not have.
+ *
+ * @param array<int,array<string,mixed>> $items Search result rows
+ *
+ * @return string
+ */
+function _alert_email_ads(array $items)
+{
+    $ads = '';
+    foreach ($items as $item) {
+        $ads .= '<a href="' . osc_item_url_ns($item['pk_i_id']) . '">' . osc_esc_html($item['s_title'])
+            . '</a><br/>';
+    }
+
+    return $ads;
 }
