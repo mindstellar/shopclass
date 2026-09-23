@@ -149,8 +149,8 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `admin_form_render_field` | filter | `$field, $pageId, $values` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |
 | `admin_form_save_failed` | action | `$pageId, $errors, array()` | `oc-includes/osclass/helpers/hSettings.php` |
 | `admin_header` | action | — | `oc-admin/themes/modern/parts/header.php` |
-| `admin_item_description` | filter | `$value, $item, $locale` | `oc-includes/osclass/classes/form/admin/Item.php` |
-| `admin_item_title` | filter | `$value, $item, $locale` | `oc-includes/osclass/classes/form/admin/Item.php` |
+| `admin_item_description` | filter | `$description, $itemRecord, $itemLocale` | `oc-admin/themes/modern/items/frm.php` |
+| `admin_item_title` | filter | `$title, $itemRecord, $itemLocale` | `oc-admin/themes/modern/items/frm.php` |
 | `admin_items_reported_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `admin_items_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `admin_keyword_block_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
@@ -162,9 +162,9 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `admin_logs_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/LogsDataTable.php` |
 | `admin_media_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
 | `admin_menu_init` | action | — | `oc-includes/osclass/classes/AdminMenu.php` |
-| `admin_page_description` | filter | `$description, $page, $locale` | `oc-includes/osclass/classes/form/PageForm.php` |
+| `admin_page_description` | filter | `$description, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_page_header` | action | — | `oc-admin/themes/modern/parts/header.php` |
-| `admin_page_title` | filter | `$title, $page, $locale` | `oc-includes/osclass/classes/form/PageForm.php` |
+| `admin_page_title` | filter | `$title, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_pages_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `admin_post` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 | `admin_profile_form` | action | `__get('admin')` | `oc-includes/osclass/classes/admin/form/AdminAccountForm.php` |
@@ -573,7 +573,7 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `resource_download_filename` | filter | `$name, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_url` | filter | `$url, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_original_url` | filter | `osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
-| `resource_path` | filter | `osc_base_url() . $aRow['s_path'], $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
+| `resource_path` | filter | `$path, $resource` | `oc-includes/osclass/classes/admin/ui/PhotoGrid.php` |
 | `resource_preview_url` | filter | `osc_resource_path() . osc_resource_id() . '_preview.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_thumbnail_url` | filter | `osc_resource_path() . osc_resource_id() . '_thumbnail.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_url` | filter | `osc_resource_path() . osc_resource_id() . '.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |

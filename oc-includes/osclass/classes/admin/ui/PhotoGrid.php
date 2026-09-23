@@ -134,7 +134,8 @@ class PhotoGrid
         $resourceId = (string)($resource['pk_i_id'] ?? '');
         $extension  = (string)($resource['s_extension'] ?? '');
         $file       = $resourceId . ($extension === '' ? '' : '.' . $extension);
-        $base       = osc_apply_filter('resource_path', osc_base_url() . (string)($resource['s_path'] ?? ''), $resource);
+        $path       = osc_base_url() . (string)($resource['s_path'] ?? '');
+        $base       = osc_apply_filter('resource_path', $path, $resource);
         $thumb      = $base . $resourceId . '_thumbnail.' . $extension;
 
         echo '<div class="osc-photo" role="listitem" data-osc-photo'

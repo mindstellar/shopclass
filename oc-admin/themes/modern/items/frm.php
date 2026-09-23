@@ -151,18 +151,12 @@ $sessionBodies = Session::newInstance()->_getForm('description');
 foreach (osc_get_locales() as $itemLocale) {
     $code               = $itemLocale['pk_c_code'];
     $itemLocales[$code] = $itemLocale['s_name'];
-    $itemTitles[$code]  = osc_apply_filter(
-        'admin_item_title',
-        $sessionTitles[$code] ?? $itemRecord['locale'][$code]['s_title'] ?? '',
-        $itemRecord,
-        $itemLocale
-    );
-    $itemBodies[$code]  = osc_apply_filter(
-        'admin_item_description',
-        $sessionBodies[$code] ?? $itemRecord['locale'][$code]['s_description'] ?? '',
-        $itemRecord,
-        $itemLocale
-    );
+    // Named before the filter runs, because the hook reference is generated from these
+    // call sites and a plugin author should read what it is given, not how it was found.
+    $title              = $sessionTitles[$code] ?? $itemRecord['locale'][$code]['s_title'] ?? '';
+    $description        = $sessionBodies[$code] ?? $itemRecord['locale'][$code]['s_description'] ?? '';
+    $itemTitles[$code]  = osc_apply_filter('admin_item_title', $title, $itemRecord, $itemLocale);
+    $itemBodies[$code]  = osc_apply_filter('admin_item_description', $description, $itemRecord, $itemLocale);
 }
 
 // Photos uploaded before the save and refused by it: they are still in uploads/temp/ and

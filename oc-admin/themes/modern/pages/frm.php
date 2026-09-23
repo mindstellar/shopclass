@@ -115,18 +115,12 @@ if (Session::newInstance()->_getForm('s_internal_name') != '') {
 foreach (osc_get_admin_locales() as $pageLocale) {
     $code                = $pageLocale['pk_c_code'];
     $pageLocales[$code]  = $pageLocale['s_name'];
-    $pageTitles[$code]   = osc_apply_filter(
-        'admin_page_title',
-        $pageSubmitted[$code]['s_title'] ?? $page['locale'][$code]['s_title'] ?? '',
-        $page,
-        $pageLocale
-    );
-    $pageBodies[$code]   = osc_apply_filter(
-        'admin_page_description',
-        $pageSubmitted[$code]['s_text'] ?? $page['locale'][$code]['s_text'] ?? '',
-        $page,
-        $pageLocale
-    );
+    // Named before the filter runs, because the hook reference is generated from these
+    // call sites and a plugin author should read what it is given, not how it was found.
+    $title               = $pageSubmitted[$code]['s_title'] ?? $page['locale'][$code]['s_title'] ?? '';
+    $description         = $pageSubmitted[$code]['s_text'] ?? $page['locale'][$code]['s_text'] ?? '';
+    $pageTitles[$code]   = osc_apply_filter('admin_page_title', $title, $page, $pageLocale);
+    $pageBodies[$code]   = osc_apply_filter('admin_page_description', $description, $page, $pageLocale);
 }
 
 // Editor images go to the media library (unattached, reusable), so the flow works on
