@@ -24,7 +24,7 @@ Per view, first hit wins:
    this runs.
 2. **your parent theme ships it** — the parent's file renders, with the parent's
    asset URLs, exactly as it always has.
-3. **you have [chrome](/developers/theme-chrome/)** — your header and footer, with
+3. **you have [chrome](/docs/developers/theme-chrome/)** — your header and footer, with
    core's page between them.
 4. **otherwise** — core's own standalone page.
 
