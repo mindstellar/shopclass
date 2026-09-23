@@ -130,6 +130,9 @@ existing callers get, so nothing changed under them.
 `locales` carries the list, as `code => name`. It is required: the field never queries
 anything to draw itself, so `translate` with no `locales` renders one plain control.
 
+The strip opens on the admin's own language and marks that tab with a dot. If the field
+does not offer that language, it opens on the first one.
+
 ```php
 $locales = array();
 foreach (osc_get_locales() as $locale) {
@@ -433,7 +436,7 @@ These are published and additive. Restyle them freely; they will not be renamed.
 `osc-catpick-value`, `osc-catpick-path`, `osc-photo-grid`, `osc-photo`, `osc-photo-cover`,
 `osc-photo-remove`, `osc-photo-add`, `osc-photo-count`, `osc-disclosure`,
 `osc-disclosure-hint`, `osc-disclosure-body`, `osc-user-card`, `field-error`, and the
-`data-osc-tab-error` attribute on a locale tab.
+`data-osc-tab-error` and `data-osc-tab-mine` attributes on a locale tab.
 
 The rich-text field is the exception: it mounts a third-party editor, whose own markup is
 not a contract. Style it through `.osc-field` around it, not the editor's internals.
