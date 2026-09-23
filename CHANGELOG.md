@@ -49,6 +49,7 @@ In development.
 
 ### Fixed
 
+- The listing-expiry warning email left its last paragraph unclosed.
 - Every email now carries a plain-text copy alongside the HTML, with link addresses kept, so
   it reads in any mail app and is less likely to be marked as spam.
 - Search alert emails greeted registered subscribers by their e-mail address instead of
