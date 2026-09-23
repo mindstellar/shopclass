@@ -437,9 +437,9 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `after_login` | action | `$user, $url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
 | `after_show_pagination_admin` | action | — | `oc-includes/osclass/helpers/hPagination.php` |
-| `alert_email_daily_description` | filter | `$page_description[$prefLocale]['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
-| `alert_email_daily_title` | filter | `$page_description[$prefLocale]['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_email_daily_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_daily_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_hourly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
