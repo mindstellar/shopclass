@@ -8,6 +8,7 @@ In development.
 
 ### New
 
+- `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
 - `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
 - `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
