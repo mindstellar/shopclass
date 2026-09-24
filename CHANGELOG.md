@@ -16,6 +16,7 @@ In development.
 - `ItemActions::asImport()`: no posting wait or e-mails, but listing limits and moderation still apply.
 - An admin-mode listing edit no longer needs the listing's secret.
 - `Params::withRequest()` runs code against given values in place of the request.
+- A declared form's `persist` callable can return `FormSpec::WRITE_NULL` to store NULL.
 - `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
 - `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
   compiled from, so a link and the rule that answers it cannot drift apart.
