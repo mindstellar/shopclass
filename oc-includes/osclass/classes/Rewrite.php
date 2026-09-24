@@ -465,7 +465,8 @@ class Rewrite
             $l      = count($m);
             for ($p = 1; $p < $l; $p++) {
                 $key          = $args[1][$p - 1] ?? ('route_param_' . $p);
-                $params[$key] = $m[$p];
+                // Decoded once, as a query-string value would be.
+                $params[$key] = rawurldecode($m[$p]);
             }
             $params['route'] = $id;
 

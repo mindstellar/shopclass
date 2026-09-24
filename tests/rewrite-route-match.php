@@ -94,6 +94,9 @@ $r = rw_invoke(rw_with_routes($controller), 'resolveRoute', 'api/status');
 pin('controller route -> page=route', 'route', $r['params']['page'] ?? null);
 pin('controller route location null', null, $r['location']);
 
+$r = rw_invoke(rw_with_routes($named), 'resolveRoute', 'blog/42/a%20b%2Bc%2520');
+pin('a captured value is decoded once, like a query value', 'a b+c%20', $r['params']['slug'] ?? null);
+
 pin('no match -> null', null, rw_invoke(rw_with_routes($named), 'resolveRoute', 'nothing/here'));
 
 harness_section('applyMatch — writes the resolved route through to Params/instance');
