@@ -67,8 +67,7 @@ class Theme extends UpgradePackage
      */
     public static function getPackageInfo($theme_short_name): array
     {
-        if (!is_string($theme_short_name)
-            || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $theme_short_name)
+        if (!\mindstellar\utility\Validate::packageName($theme_short_name)
             || !is_dir(THEMES_PATH . $theme_short_name)
         ) {
             throw new RuntimeException(__('Invalid theme name.'));

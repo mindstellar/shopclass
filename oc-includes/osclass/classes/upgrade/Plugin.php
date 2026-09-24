@@ -70,8 +70,7 @@ class Plugin extends UpgradePackage
         // Callers pass either the bare slug or the "slug/index.php" form that
         // Plugins::listAll() emits; getInfo() needs the latter, the paths below the former.
         $slug = is_string($plugin_short_name) ? explode('/', trim($plugin_short_name, '/'))[0] : '';
-        if ($slug === ''
-            || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $slug)
+        if (!\mindstellar\utility\Validate::packageName($slug)
             || !is_file(PLUGINS_PATH . $slug . '/index.php')
         ) {
             throw new RuntimeException(__('Invalid plugin name.'));

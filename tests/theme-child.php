@@ -34,6 +34,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 
 $root = sys_get_temp_dir() . '/osc-theme-child-' . getmypid() . '/';
@@ -185,6 +186,15 @@ pin('a parent named .. is refused', array('child-dotdot', 'storefront'), $walk()
 $makeTheme('child-blank', '');
 WebThemes::$current = 'child-blank';
 pin('an empty Parent Theme is not a parent', array('child-blank', 'storefront'), $walk());
+
+harness_section('Which names count as a theme or plugin folder');
+
+$names = array('storefront', 'my-theme', 'my.theme', 'a..b', '.', '..', '...', '', 'a/b', '../x', null, 5);
+pin(
+    'letters, digits, dots, underscores and hyphens, but never only dots',
+    array(true, true, true, true, false, false, false, false, false, false, false, false),
+    array_map(array(\mindstellar\utility\Validate::class, 'packageName'), $names)
+);
 
 harness_section('A walk cannot loop');
 

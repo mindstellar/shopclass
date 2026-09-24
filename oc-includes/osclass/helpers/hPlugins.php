@@ -399,7 +399,7 @@ function _osc_plugin_icon_asset($plugin)
     }
 
     $slug = strpos($plugin, '/') !== false ? dirname($plugin) : $plugin;
-    if ($slug === '' || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $slug)) {
+    if (!\mindstellar\utility\Validate::packageName($slug)) {
         return null;
     }
 
