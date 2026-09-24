@@ -53,6 +53,7 @@ In development.
 
 ### Breaking
 
+- Route values captured on friendly URLs now arrive decoded, as query values do; a plugin that decoded them itself must stop.
 - Removed the admin CSS kept one release for compatibility with the old Locations screen:
   `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
 - `t_storage_queue` is now `t_job_queue`, and its job types are namespaced -- `offload`
@@ -65,7 +66,6 @@ In development.
 - No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
 - A job run that ran out of time left the rest of its batch waiting 15 minutes; they now run on the next tick.
 - `osc_job_enqueue()` refuses a payload larger than 64 KB instead of storing it cut off.
-- A route's captured values arrive decoded on friendly URLs, the same as with `?page=route`.
 - A theme in a folder with a dot in its name, such as `my.theme`, now shows under Appearance.
 - A plugin symlinked into `oc-content/plugins/` gets its own hook names, so install and uninstall run.
 - The admin sidebar no longer jumps at the end of opening or closing a group.
