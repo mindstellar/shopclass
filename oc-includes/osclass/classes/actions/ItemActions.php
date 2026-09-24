@@ -1983,16 +1983,12 @@ class ItemActions
     }
 
     /**
-     * Return an array with all data necessary for do the action (ADD OR EDIT)
-     *
-     * @param bool $is_add
-     *
-     * @return void
-     */
-    /**
      * prepareData() from plain values instead of the request: the same names the listing
      * form posts, plus 'meta' (custom field values by id) and 'photos' (local file paths,
      * which are moved into the listing and deleted). For an edit, 'id' names the listing.
+     *
+     * Every value is trusted as an admin's would be: 'id' needs no secret and each photo
+     * path is read and deleted. Check data from outside before it reaches here.
      *
      * @param array<string,mixed> $input
      * @param bool                $isAdd
@@ -2019,6 +2015,13 @@ class ItemActions
         $this->data['meta']   = is_array($input['meta'] ?? null) ? $input['meta'] : array();
     }
 
+    /**
+     * Return an array with all data necessary for do the action (ADD OR EDIT)
+     *
+     * @param bool $is_add
+     *
+     * @return void
+     */
     public function prepareData($is_add)
     {
         $aItem = array();

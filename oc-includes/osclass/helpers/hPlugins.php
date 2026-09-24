@@ -440,7 +440,7 @@ function osc_plugin_relative_path($file)
 {
     // Sanitize windows paths and duplicated slashes
     $file = preg_replace('|/+|', '/', str_replace('\\', '/', $file));
-    if (preg_match('#oc-content/plugins/(.*)$#', $file, $m)) {
+    if (preg_match('#^.*oc-content/plugins/(.*)$#', $file, $m)) {
         return $m[1];
     }
 

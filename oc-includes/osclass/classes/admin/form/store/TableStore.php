@@ -214,13 +214,18 @@ final class TableStore implements Store
                 continue;
             }
             $column = self::persisted($field, $values[$name], $values);
+            // Only a persist callable's answer means NULL; a posted value spelling it is text.
+            if ($column === FormSpec::WRITE_NULL && is_callable($field['persist'] ?? null)) {
+                $data[self::column($name, $field)] = null;
+                continue;
+            }
             if ($column === null) {
                 // Declared as no column at all, or derived to nothing: "leave this one
                 // alone", which is how a blank new-password box means "unchanged" without
                 // the store having to know what a password is.
                 continue;
             }
-            $data[self::column($name, $field)] = $column === FormSpec::WRITE_NULL ? null : $column;
+            $data[self::column($name, $field)] = $column;
         }
 
         if ($data === array()) {

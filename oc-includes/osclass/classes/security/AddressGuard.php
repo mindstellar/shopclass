@@ -18,6 +18,9 @@ namespace mindstellar\security;
  * ports pass, and every address the host name resolves to must be public. The checked IPs
  * are handed back, so the download connects to one of them (CURLOPT_RESOLVE) and a second
  * DNS answer cannot point it somewhere else.
+ *
+ * The caller must pin that IP, and must not follow redirects blindly: a public address can
+ * redirect to a private one, so check each redirect target here before fetching it.
  */
 final class AddressGuard
 {
@@ -67,6 +70,12 @@ final class AddressGuard
         $literal = filter_var($host, FILTER_VALIDATE_IP) !== false;
         // cURL decodes a %-escaped host that parse_url keeps, so it would skip the pinned address.
         if (!$literal && preg_match('/^[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?)*\.?$/', $host) !== 1) {
+            return array('ok' => false, 'error' => 'The host name holds characters an address may not.');
+        }
+
+        // cURL reads a host such as 2130706433 or 0x7f.1 as an IP itself and skips the pin.
+        $last = (string)substr(strrchr('.' . rtrim($host, '.'), '.'), 1);
+        if (!$literal && (ctype_digit($last) || strncmp($last, '0x', 2) === 0)) {
             return array('ok' => false, 'error' => 'The host name holds characters an address may not.');
         }
 

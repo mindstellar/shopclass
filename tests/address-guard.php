@@ -69,6 +69,9 @@ foreach (array(
     'http://[64:ff9b:1::a00:1]/a.jpg'        => 'The host is on a private or reserved network.',
     'http://exa%6dple.com/a.jpg'             => 'The host name holds characters an address may not.',
     'https://nowhere.example/a.jpg'          => 'The host name does not resolve.',
+    'http://2130706433/a.jpg'                => 'The host name holds characters an address may not.',
+    'http://0x7f.0.0.1/a.jpg'                => 'The host name holds characters an address may not.',
+    'http://127.1/a.jpg'                     => 'The host name holds characters an address may not.',
 ) as $url => $reason) {
     pin($url, $reason, $guard->check($url)['error'] ?? 'allowed');
 }

@@ -41,13 +41,22 @@ final class RateLimit
         $bucket        = substr($context, 0, 40) . ':' . $windowSeconds . ':' . sha1($key);
         $table         = DB_TABLE_PREFIX . 't_rate_counter';
 
-        try {
+        $increment = static function () use ($table, $bucket, $window, $windowSeconds): void {
             osc_db_execute(
                 'INSERT INTO ' . $table . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, 1)'
                 . ' ON DUPLICATE KEY UPDATE i_count = i_count + 1',
                 array($bucket, $window, $window + $windowSeconds)
             );
-            $count = (int) osc_db_scalar(
+        };
+
+        try {
+            try {
+                $increment();
+            } catch (\Throwable $e) {
+                // A burst on one key can deadlock its own row; one retry settles that.
+                $increment();
+            }
+            $hits = (int) osc_db_scalar(
                 'SELECT i_count FROM ' . $table . ' WHERE s_bucket = ? AND i_window = ?',
                 array($bucket, $window)
             );
@@ -57,7 +66,7 @@ final class RateLimit
             return true;
         }
 
-        return $count <= $max;
+        return $hits <= $max;
     }
 
     /**
@@ -80,7 +89,7 @@ final class RateLimit
     }
 
     /**
-     * Logged once per request, so a broken counter cannot fill the log.
+     * The counter could not be reached, so the limit stands aside.
      *
      * @param \Throwable $e
      *
@@ -88,10 +97,6 @@ final class RateLimit
      */
     private static function unavailable(\Throwable $e): void
     {
-        static $logged = false;
-        if (!$logged) {
-            $logged = true;
-            error_log('RateLimit unavailable, allowing the request: ' . $e->getMessage());
-        }
+        FailOpen::log('RateLimit', 'the request', $e);
     }
 }
