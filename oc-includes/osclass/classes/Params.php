@@ -340,6 +340,26 @@ class Params
     }
 
     /**
+     * Run $fn with the request params replaced by $request, then put the real ones back.
+     * Code that reads a form through Params can then read plain data instead.
+     *
+     * @param array<string,mixed> $request
+     * @param callable            $fn
+     *
+     * @return mixed what $fn returns
+     */
+    public static function withRequest(array $request, callable $fn)
+    {
+        $saved         = self::$request;
+        self::$request = $request;
+        try {
+            return $fn();
+        } finally {
+            self::$request = $saved;
+        }
+    }
+
+    /**
      * Will be removed do not use this
      *
      * @return void

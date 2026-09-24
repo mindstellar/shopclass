@@ -67,6 +67,18 @@ check('array values are purified', ($meta['4'] ?? null) === 'v' && ($meta['5'] ?
 pin('SCALAR value -> empty array', array(), Params::getParamArray('id'));
 pin('missing -> empty array', array(), Params::getParamArray('nope'));
 
+harness_section('withRequest — plain data read as the request, then the request is back');
+$seen = Params::withRequest(array('title' => '<b>Bike</b>'), static fn () => array(Params::getParam('title'), Params::getParam('name')));
+pin('inside, the given values are read and purified the same way', array('Bike', ''), $seen);
+pin('after, the real request is back', 'hithere', Params::getParamString('name'));
+try {
+    Params::withRequest(array(), static function () {
+        throw new RuntimeException('stop');
+    });
+} catch (RuntimeException $e) {
+}
+pin('and it is back after a throw too', 'hithere', Params::getParamString('name'));
+
 $fail = $GLOBALS['failCount'];
 echo "\n" . ($fail === 0
         ? "ALL PASS ({$GLOBALS['okCount']})\n"

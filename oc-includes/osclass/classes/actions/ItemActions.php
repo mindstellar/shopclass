@@ -37,6 +37,8 @@ class ItemActions
 
     public $is_admin;
     public $data;
+    /** @var bool admin mode that still applies listing limits and moderation */
+    private $import = false;
     private $manager;
     private $Sanitize;
 
@@ -50,6 +52,20 @@ class ItemActions
         $this->is_admin = $is_admin;
         $this->manager  = Item::newInstance();
         $this->Sanitize = (new Sanitize());
+    }
+
+    /**
+     * Save listings for an importer: no posting wait and no e-mails, as for an admin, but
+     * the owner's listing limit and the site's moderation still apply.
+     *
+     * @return $this
+     */
+    public function asImport(): self
+    {
+        $this->is_admin = true;
+        $this->import   = true;
+
+        return $this;
     }
 
     /**
@@ -249,7 +265,7 @@ class ItemActions
         // than paying for it twice on every post. Nothing is ever consumed here: a
         // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
         // checked, so there is nothing left to spend once a post is allowed through.
-        if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
+        if ((!$this->is_admin || $this->import) && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
                 $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
@@ -404,7 +420,7 @@ class ItemActions
                 $success = 2;
             }
 
-            if (!$this->is_admin && osc_moderate_admin_post()) {
+            if ((!$this->is_admin || $this->import) && osc_moderate_admin_post()) {
                 $this->disable($item['pk_i_id']);
             }
 
@@ -1220,10 +1236,12 @@ class ItemActions
                 $aUpdate['s_ip'] = $aItem['s_ip'];
             }
 
-            $result = $this->manager->update($aUpdate, array(
-                'pk_i_id'  => $aItem['idItem'],
-                's_secret' => $aItem['secret']
-            ));
+            // The secret proves a poster owns the listing; an admin needs no proof.
+            $where = array('pk_i_id' => $aItem['idItem']);
+            if (!$this->is_admin) {
+                $where['s_secret'] = $aItem['secret'];
+            }
+            $result = $this->manager->update($aUpdate, $where);
             // UPDATE title and description locales
             $this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem']);
             // UPLOAD item resources
@@ -1273,7 +1291,7 @@ class ItemActions
 
             unset($old_item);
 
-            if (!$this->is_admin && osc_moderate_admin_edit()) {
+            if ((!$this->is_admin || $this->import) && osc_moderate_admin_edit()) {
                 $this->disable($aItem['idItem']);
             }
 
@@ -1971,6 +1989,36 @@ class ItemActions
      *
      * @return void
      */
+    /**
+     * prepareData() from plain values instead of the request: the same names the listing
+     * form posts, plus 'meta' (custom field values by id) and 'photos' (local file paths,
+     * which are moved into the listing and deleted). For an edit, 'id' names the listing.
+     *
+     * @param array<string,mixed> $input
+     * @param bool                $isAdd
+     *
+     * @return void
+     */
+    public function prepareDataFrom(array $input, bool $isAdd): void
+    {
+        $photos = array_values(array_filter((array) ($input['photos'] ?? array()), 'is_string'));
+        unset($input['photos'], $input['ajax_photos']);
+        Params::withRequest($input, function () use ($isAdd) {
+            $this->prepareData($isAdd);
+        });
+
+        $files = array('name' => array(), 'type' => array(), 'tmp_name' => array(), 'error' => array(), 'size' => array());
+        foreach ($photos as $path) {
+            $files['name'][]     = basename($path);
+            $files['type'][]     = 'image/*';
+            $files['tmp_name'][] = $path;
+            $files['error'][]    = UPLOAD_ERR_OK;
+            $files['size'][]     = is_file($path) ? (int) filesize($path) : 0;
+        }
+        $this->data['photos'] = $files;
+        $this->data['meta']   = is_array($input['meta'] ?? null) ? $input['meta'] : array();
+    }
+
     public function prepareData($is_add)
     {
         $aItem = array();
