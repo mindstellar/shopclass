@@ -138,6 +138,14 @@ pin('storage is null when not given', null, $column($id, 's_storage'));
 $id = $queue->enqueue('storage.offload', array(), array('storage' => 's3'));
 pin('storage is stored when given', 's3', $column($id, 's_storage'));
 
+$threw = false;
+try {
+    $queue->enqueue('test.one', array('big' => str_repeat('x', JobQueue::MAX_PAYLOAD_BYTES)));
+} catch (InvalidArgumentException $e) {
+    $threw = true;
+}
+check('a payload larger than the column is refused', $threw);
+
 $truncate();
 $queue->enqueue('test.one', array(), array('delay' => 3600));
 check('a delayed job is not due yet', $queue->claim(50) === array());
@@ -338,6 +346,17 @@ check(
     'and the reason names the type',
     strpos((string) $column($id, 's_last_error'), 'test.unregistered') !== false
 );
+
+// A job that uses up the budget ends the run; the rest of its batch goes back to pending
+// rather than waiting out the stale-lock ceiling.
+$truncate();
+JobRegistry::register('test.slow', static function () {
+    usleep(1100000);
+});
+$first = $queue->enqueue('test.slow', array());
+$rest  = array($queue->enqueue('test.slow', array()), $queue->enqueue('test.slow', array()));
+pin('a spent budget stops after the job that spent it', 1, JobWorker::run(1));
+pin('and hands the unrun jobs back', array('pending:a0:wNULL:lkNULL', 'pending:a0:wNULL:lkNULL'), array_map($rowState, $rest));
 
 $truncate();
 pin('an empty queue costs nothing and runs nothing', 0, JobWorker::run(10));

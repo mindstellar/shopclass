@@ -41,6 +41,9 @@ final class JobQueue
     /** A `running` row older than this is treated as a dead worker's and recovered. */
     public const STALE_LOCK_SECONDS = 900;
 
+    /** The largest encoded payload s_payload (TEXT) holds. */
+    public const MAX_PAYLOAD_BYTES = 65535;
+
     /** @var JobQueue|null */
     private static $instance;
 
@@ -75,7 +78,8 @@ final class JobQueue
      *                                     storage: adapter id, for storage.* jobs only.
      *
      * @return int the new job id, or 0 when the insert failed
-     * @throws InvalidArgumentException on a malformed type or an unencodable payload
+     * @throws InvalidArgumentException on a malformed type, or a payload that cannot be encoded
+     *                                  or is larger than MAX_PAYLOAD_BYTES
      */
     public function enqueue(string $type, array $payload = array(), array $options = array()): int
     {
@@ -85,6 +89,11 @@ final class JobQueue
         if ($encoded === false) {
             throw new InvalidArgumentException(
                 'Job payload for "' . $type . '" cannot be encoded: ' . json_last_error_msg()
+            );
+        }
+        if (strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
+            throw new InvalidArgumentException(
+                'Job payload for "' . $type . '" is larger than ' . self::MAX_PAYLOAD_BYTES . ' bytes'
             );
         }
 
@@ -193,6 +202,11 @@ final class JobQueue
 
             return;
         }
+        if (strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
+            $this->fail($id, 'Repeat payload is larger than ' . self::MAX_PAYLOAD_BYTES . ' bytes');
+
+            return;
+        }
 
         try {
             osc_db_table($this->table())->where('pk_i_id', $id)->update(array(
@@ -204,6 +218,33 @@ final class JobQueue
             ));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers it
+        }
+    }
+
+    /**
+     * Hand claimed jobs back unrun, so the next tick takes them at once rather than after
+     * the stale-lock ceiling.
+     *
+     * @param int[] $ids
+     *
+     * @return void
+     */
+    public function release(array $ids): void
+    {
+        if ($ids === array()) {
+            return;
+        }
+        try {
+            osc_db_table($this->table())
+                ->whereIn('pk_i_id', array_map('intval', $ids))
+                ->where('s_status', self::STATUS_RUNNING)
+                ->update(array(
+                    's_status'  => self::STATUS_PENDING,
+                    's_worker'  => null,
+                    'dt_locked' => null,
+                ));
+        } catch (DbException $e) {
+            // absorbed; the stale-lock sweep recovers them
         }
     }
 

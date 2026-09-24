@@ -54,13 +54,14 @@ final class JobWorker
                 break;
             }
 
-            foreach ($rows as $row) {
+            foreach ($rows as $i => $row) {
                 self::process($queue, $row);
                 $ran++;
 
                 // A single job can outlast the budget -- a category batch, a large
-                // upload. Stop claiming more rather than cutting one short.
+                // upload. Stop there, and hand back the claimed jobs not yet run.
                 if ((time() - $start) >= $maxSeconds) {
+                    $queue->release(array_column(array_slice($rows, $i + 1), 'pk_i_id'));
                     break;
                 }
             }
