@@ -39,6 +39,9 @@ use LogicException;
  */
 final class FormSpec
 {
+    /** What a 'persist' callable returns to store NULL, as null itself means "write nothing". */
+    public const WRITE_NULL = "\0osc:write-null";
+
     /**
      * Emission order for page keys, so builder output does not depend on the order the
      * author happened to chain in. Keys never set are not emitted at all.
@@ -634,7 +637,7 @@ final class FormSpec
      * box, a control another field is derived from -- collected and validated like any
      * other and never written. A callable is handed the validated value and every other
      * validated value, and returns what is stored; null from it writes nothing, which is
-     * how "blank means unchanged" is declared.
+     * how "blank means unchanged" is declared. FormSpec::WRITE_NULL stores NULL.
      *
      * It says nothing about what the control shows on the way back: that is writeOnly().
      *

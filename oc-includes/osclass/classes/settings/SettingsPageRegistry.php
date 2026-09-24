@@ -241,7 +241,8 @@ final class SettingsPageRegistry
      *                           never written. A callable(mixed $value, array $values)
      *                           returns the value to write, and null from it writes
      *                           nothing, so "blank means unchanged" is declared rather
-     *                           than special-cased. It says nothing about what the control
+     *                           than special-cased. FormSpec::WRITE_NULL writes NULL on a
+     *                           table store and an empty string on a preference. It says nothing about what the control
      *                           shows; that is 'write_only'.
      *   'image'    fields store the t_resource id of an uploaded image. They take 'required',
      *              'depends', 'depends_value', 'help', 'column' and 'max_kb', live on a

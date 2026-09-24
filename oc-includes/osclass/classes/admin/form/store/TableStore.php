@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form\store;
 
+use mindstellar\admin\ui\FormSpec;
+
 /**
  * One row of one table, addressed by its primary key.
  *
@@ -218,7 +220,7 @@ final class TableStore implements Store
                 // the store having to know what a password is.
                 continue;
             }
-            $data[self::column($name, $field)] = $column;
+            $data[self::column($name, $field)] = $column === FormSpec::WRITE_NULL ? null : $column;
         }
 
         if ($data === array()) {

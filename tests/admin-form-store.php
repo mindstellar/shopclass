@@ -1030,6 +1030,34 @@ $stored = row($admin, 't_ban_rule', $derived);
 pin('its column keeps exactly what it held', 'derived:typed', $stored['s_name'] ?? null);
 pin('while the field beside it still saves', '10.4.0.3', $stored['s_ip'] ?? null);
 
+// null means "write nothing", so NULL itself needs its own value: an optional reference
+// cleared on the form has to reach the column as NULL, not as 0 or ''.
+SettingsPageRegistry::instance()->register('nullable', array(
+    'title'  => 'Nullable column',
+    'menu'   => '',
+    'store'  => array('table' => 't_job_queue', 'pk' => 'pk_i_id'),
+    'fields' => array(
+        array(
+            'type'    => 'text',
+            'name'    => 's_storage',
+            'label'   => 'Storage',
+            'persist' => static fn ($value) => $value === '' ? \mindstellar\admin\ui\FormSpec::WRITE_NULL : $value,
+        ),
+    ),
+));
+$job = seed_exec(
+    $admin,
+    'INSERT INTO ' . DB_TABLE_PREFIX . "t_job_queue (s_type, s_storage, s_payload, dt_next_run, dt_created) VALUES ('test.form', 's3', '{}', NOW(), NOW())",
+    '',
+    array()
+);
+$result = post('nullable', array('s_storage' => ''), $job);
+pin('WRITE_NULL saves cleanly', array(), $result['errors']);
+$stored = row($admin, 't_job_queue', $job);
+pin('and the column holds NULL', array(true, null), array(array_key_exists('s_storage', $stored), $stored['s_storage'] ?? null));
+post('nullable', array('s_storage' => 'r2'), $job);
+pin('a value still writes itself', 'r2', row($admin, 't_job_queue', $job)['s_storage'] ?? null);
+
 // persist is not readback. Riding both on one key blanked a column nobody had been shown:
 // a field deriving its column drew empty, the admin saved the form as it stood, and the
 // column went with it. So a derived field still reads its column unless it says otherwise.
