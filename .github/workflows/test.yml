@@ -144,6 +144,9 @@ jobs:
       # a digest through them. Pins the names, their order and what each is handed.
       - name: Alert emails
         run: php tests/alert-emails.php
+      # Core finds a template to send by its internal name, so a save must never rename it.
+      - name: Email template save
+        run: php tests/admin-email-save.php
       # Every mail used to go out HTML-only: the plain copy each builder handed over
       # was never read. Pins the conversion, and that link addresses survive it.
       - name: Mail plain-text copy
