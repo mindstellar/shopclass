@@ -70,8 +70,10 @@ class CountryStats extends DAO
      */
     public function increaseNumItems($countryCode)
     {
-        $lenght = strlen($countryCode);
-        if ($lenght > 2 || $lenght == '') {
+        // A listing with no country has no counter. The old guard compared the length to '',
+        // which PHP 8 reads as false for 0, so an empty code reached the database.
+        $length = strlen((string)$countryCode);
+        if ($length === 0 || $length > 2) {
             return false;
         }
 
@@ -103,8 +105,8 @@ class CountryStats extends DAO
      */
     public function decreaseNumItems($countryCode)
     {
-        $length = strlen($countryCode);
-        if ($length > 2 || !$length) {
+        $length = strlen((string)$countryCode);
+        if ($length === 0 || $length > 2) {
             return false;
         }
 

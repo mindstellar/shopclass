@@ -20,14 +20,9 @@
  * shape almost every pin below.
  *
  * 1. The foreign key, not the models's own guards, is what rejects most bad
- *    country codes. increaseNumItems()'s length guard reads
- *    `if ($lenght > 2 || $lenght == '')`, and `0 == ''` is FALSE on PHP 8 (the
- *    int is compared as the string '0'), so the empty string sails past the
- *    guard and is rejected by the database one query later. The observable
- *    return is `false` either way — the query COST is what tells the two paths
- *    apart, so both are pinned. decreaseNumItems() writes the same guard as
- *    `!$length`, which does reject 0, giving the two methods genuinely
- *    different bad-input costs.
+ *    country codes. An empty or null code is rejected by both guards without a
+ *    query: a listing saved with no country used to reach the database here and
+ *    print a failed-query error, because `0 == ''` is FALSE on PHP 8.
  *
  * 2. Whether an out-of-range counter is clamped or rejected depends on the
  *    connection, so setNumItems($code, -1) is pinned both ways behind
@@ -207,20 +202,20 @@ pin('a rejected code costs no queries at all', 0, harness_query_count(static fun
 }));
 pin('nothing was written by the rejected code', '12=2,ES=1,US=2', $rows());
 
-harness_section('increaseNumItems — the guard does NOT reject a zero-length code (0 == "" is false)');
+harness_section('increaseNumItems — a zero-length code is refused before the database');
 
-pin('the empty string returns bool false, from the database not the guard', false, $quiet(static function () use ($model) {
+pin('the empty string returns bool false', false, $quiet(static function () use ($model) {
     return $model->increaseNumItems('');
 }));
-pin('and it really did reach the database — one query', 1, harness_query_count(static function () use ($model, $quiet) {
+pin('and costs no query', 0, harness_query_count(static function () use ($model, $quiet) {
     $quiet(static function () use ($model) {
         $model->increaseNumItems('');
     });
 }));
-pin('a null code also reaches the database and returns bool false', false, $quiet(static function () use ($model) {
+pin('a null code returns bool false', false, $quiet(static function () use ($model) {
     return $model->increaseNumItems(null);
 }));
-pin('a null code costs one query too', 1, harness_query_count(static function () use ($model, $quiet) {
+pin('and costs no query either', 0, harness_query_count(static function () use ($model, $quiet) {
     $quiet(static function () use ($model) {
         $model->increaseNumItems(null);
     });
@@ -291,7 +286,7 @@ pin('the decrement landed', 'US=4', $rows());
 harness_section('decreaseNumItems — the guard rejects both over-long and zero-length codes');
 
 pin('a three-character code returns bool false', false, $model->decreaseNumItems('USA'));
-pin('the empty string returns bool false — !$length catches what increase() misses', false, $model->decreaseNumItems(''));
+pin('the empty string returns bool false', false, $model->decreaseNumItems(''));
 pin('a null code returns bool false', false, $model->decreaseNumItems(null));
 pin('a rejected code costs no queries at all', 0, harness_query_count(static function () use ($model) {
     $model->decreaseNumItems('USA');
